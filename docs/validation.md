@@ -17,6 +17,8 @@
 | 证据下钻 | 点击精确位置结果，能看到 API 代码、权限配置、政策原句与完整快照 |
 | 浏览器错误日志 | 检查时未发现前端 error |
 | Git 忽略项 | .env、APK、私人材料、依赖和虚拟环境均被忽略 |
+| GitHub Actions | [首次远程 CI](https://github.com/MrEcho114/-/actions/runs/37017012048) 的 api / web 两项均成功 |
+| 私有仓库同步 | 62 个文件同步至 main；远程文件树与本地 Git 文件树 SHA 一致 |
 
 页面截图：`screenshots/demo-report.png`，仅展示人工构造的演示数据。
 
@@ -28,7 +30,7 @@
 - Windows 下运行开发服务时，esbuild.exe 会被占用，重跑 npm ci 可能无法删除文件。已停止前端服务，重新运行 setup 成功。安装依赖应先于启动服务。
 - 中断后残留的 npm install 曾与后续安装重叠，已停止该任务并用单次 npm ci 恢复；随后成功构建。
 - 未执行真实 APK 扫描、真实政策抽取、LLM 调用、真实 App 精度评测、用户实验或线上部署。
-- CI 配置已建立，本次本机结果不等于 GitHub Actions 已运行。
+- 已核对首次 GitHub Actions 的实际运行结果，后端测试、Ruff、契约一致性与前端构建均通过；这不代表真实 APK 第一里程碑已经验收。
 
 ## GitHub 状态
 

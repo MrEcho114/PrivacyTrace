@@ -1,0 +1,30 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+# Dependencies and generated artifacts
+.venv/
+node_modules/
+dist/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.coverage
+coverage/
+.DS_Store
+Thumbs.db
+# APKs and private research data stay local
+*.apk
+*.aab
+*.dex
+*.sqlite*
+*.db
+data/
+samples/private/
+evidence/private/
+tmp/
+*.log

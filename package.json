@@ -1,0 +1,12 @@
+{
+  "name": "privacytrace",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["apps/web"],
+  "scripts": {
+    "dev": "npm run dev --workspace @privacytrace/web",
+    "build": "npm run build --workspace @privacytrace/web",
+    "typecheck": "npm run typecheck --workspace @privacytrace/web",
+    "preview": "npm run preview --workspace @privacytrace/web"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "schema_version": "0.1.0",
+  "sample_id": "TO_BE_SELECTED",
+  "apk_sha256": null,
+  "ruleset_version": "0.1.0",
+  "reviewer": null,
+  "reviewed_at": null,
+  "cases": [],
+  "note": "Empty template: not an evaluation result."
+}

@@ -1,0 +1,439 @@
+{
+  "$defs": {
+    "AnalysisJob": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "sample_id": {
+          "title": "Sample Id",
+          "type": "string"
+        },
+        "input_mode": {
+          "enum": [
+            "SYNTHETIC",
+            "APK"
+          ],
+          "title": "Input Mode",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "QUEUED",
+            "INTAKE",
+            "STATIC_ANALYSIS",
+            "POLICY_PARSING",
+            "EVALUATING",
+            "REPORTING",
+            "SUCCEEDED",
+            "FAILED",
+            "CANCELLED"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "ruleset_version": {
+          "title": "Ruleset Version",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        }
+      },
+      "required": [
+        "id",
+        "sample_id",
+        "input_mode",
+        "state",
+        "ruleset_version",
+        "created_at"
+      ],
+      "title": "AnalysisJob",
+      "type": "object"
+    },
+    "ContextualHint": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "title": "Value",
+          "type": "string"
+        },
+        "basis": {
+          "const": "CONTEXTUAL_PURPOSE_HINT",
+          "default": "CONTEXTUAL_PURPOSE_HINT",
+          "title": "Basis",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "value",
+        "evidence_ids"
+      ],
+      "title": "ContextualHint",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "MANIFEST",
+            "API",
+            "SDK",
+            "POLICY_DOCUMENT",
+            "POLICY_SENTENCE"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "STATIC_POTENTIAL",
+            "DECLARED"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "source": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "locator": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Locator",
+          "type": "string"
+        },
+        "excerpt": {
+          "maxLength": 10000,
+          "minLength": 1,
+          "title": "Excerpt",
+          "type": "string"
+        },
+        "document_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Document Id"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "status",
+        "source",
+        "locator",
+        "excerpt"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "PolicyClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "data_type": {
+          "title": "Data Type",
+          "type": "string"
+        },
+        "action": {
+          "default": "ACCESS",
+          "enum": [
+            "ACCESS",
+            "UNKNOWN"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "declared_purpose": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Declared Purpose"
+        },
+        "declared_recipient": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Declared Recipient"
+        },
+        "basis": {
+          "const": "POLICY_DECLARATION",
+          "default": "POLICY_DECLARATION",
+          "title": "Basis",
+          "type": "string"
+        },
+        "ambiguity_flags": {
+          "items": {
+            "enum": [
+              "CATCH_ALL",
+              "UNCLEAR_ACTION"
+            ],
+            "type": "string"
+          },
+          "title": "Ambiguity Flags",
+          "type": "array"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "document_id",
+        "data_type",
+        "evidence_ids"
+      ],
+      "title": "PolicyClaim",
+      "type": "object"
+    },
+    "PolicyDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "source_type": {
+          "$ref": "#/$defs/PolicySource"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        },
+        "captured_at": {
+          "format": "date-time",
+          "title": "Captured At",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 200000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "completeness": {
+          "enum": [
+            "COMPLETE",
+            "PARTIAL"
+          ],
+          "title": "Completeness",
+          "type": "string"
+        },
+        "evidence_id": {
+          "title": "Evidence Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "source_type",
+        "title",
+        "version",
+        "captured_at",
+        "sha256",
+        "text",
+        "completeness",
+        "evidence_id"
+      ],
+      "title": "PolicyDocument",
+      "type": "object"
+    },
+    "PolicySource": {
+      "enum": [
+        "IN_APP_POLICY",
+        "STORE_POLICY",
+        "OFFICIAL_WEB_POLICY",
+        "SDK_POLICY"
+      ],
+      "title": "PolicySource",
+      "type": "string"
+    },
+    "PrivacyBehavior": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "data_type": {
+          "title": "Data Type",
+          "type": "string"
+        },
+        "action": {
+          "default": "ACCESS",
+          "enum": [
+            "ACCESS",
+            "CAPABILITY"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "purpose": {
+          "const": "UNKNOWN",
+          "default": "UNKNOWN",
+          "title": "Purpose",
+          "type": "string"
+        },
+        "recipient": {
+          "const": "UNKNOWN",
+          "default": "UNKNOWN",
+          "title": "Recipient",
+          "type": "string"
+        },
+        "transfer": {
+          "const": "UNKNOWN",
+          "default": "UNKNOWN",
+          "title": "Transfer",
+          "type": "string"
+        },
+        "temporal_scope": {
+          "const": "UNKNOWN",
+          "default": "UNKNOWN",
+          "title": "Temporal Scope",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "contextual_hints": {
+          "items": {
+            "$ref": "#/$defs/ContextualHint"
+          },
+          "title": "Contextual Hints",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "data_type",
+        "evidence_ids"
+      ],
+      "title": "PrivacyBehavior",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "job": {
+      "$ref": "#/$defs/AnalysisJob"
+    },
+    "evidence": {
+      "items": {
+        "$ref": "#/$defs/Evidence"
+      },
+      "maxItems": 2000,
+      "title": "Evidence",
+      "type": "array"
+    },
+    "behaviors": {
+      "items": {
+        "$ref": "#/$defs/PrivacyBehavior"
+      },
+      "maxItems": 500,
+      "title": "Behaviors",
+      "type": "array"
+    },
+    "policy_documents": {
+      "items": {
+        "$ref": "#/$defs/PolicyDocument"
+      },
+      "maxItems": 50,
+      "title": "Policy Documents",
+      "type": "array"
+    },
+    "policy_claims": {
+      "items": {
+        "$ref": "#/$defs/PolicyClaim"
+      },
+      "maxItems": 2000,
+      "title": "Policy Claims",
+      "type": "array"
+    }
+  },
+  "required": [
+    "job",
+    "evidence",
+    "behaviors",
+    "policy_documents",
+    "policy_claims"
+  ],
+  "title": "EvaluationInput",
+  "type": "object"
+}

@@ -1,0 +1,16 @@
+{
+  "version": "0.1.0",
+  "status": "SYNTHETIC_SEED_ONLY",
+  "signatures": [
+    {
+      "id": "demo-map",
+      "name": "DemoMap SDK",
+      "vendor": "PrivacyTrace synthetic fixture",
+      "package_prefix": "org.privacytrace.demo.maps",
+      "potential_data_types": [
+        "LOCATION"
+      ],
+      "note": "Not a real vendor signature. SDK presence does not prove data access or transfer."
+    }
+  ]
+}

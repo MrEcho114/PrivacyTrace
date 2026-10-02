@@ -1,0 +1,103 @@
+{
+  "$defs": {
+    "MatchStatus": {
+      "enum": [
+        "EXACT_MATCH",
+        "CATEGORY_MATCH",
+        "NOT_DECLARED",
+        "POLICY_SOURCE_CONFLICT",
+        "AMBIGUOUS_DISCLOSURE",
+        "INSUFFICIENT_EVIDENCE"
+      ],
+      "title": "MatchStatus",
+      "type": "string"
+    },
+    "PrivacyIssue": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "behavior_id": {
+          "title": "Behavior Id",
+          "type": "string"
+        },
+        "data_type": {
+          "title": "Data Type",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/MatchStatus"
+        },
+        "evidence_status": {
+          "const": "STATIC_POTENTIAL",
+          "default": "STATIC_POTENTIAL",
+          "title": "Evidence Status",
+          "type": "string"
+        },
+        "policy_document_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Policy Document Ids",
+          "type": "array"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "explanation": {
+          "title": "Explanation",
+          "type": "string"
+        },
+        "scope": {
+          "const": "DATA_TYPE_DISCLOSURE",
+          "default": "DATA_TYPE_DISCLOSURE",
+          "title": "Scope",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "behavior_id",
+        "data_type",
+        "status",
+        "policy_document_ids",
+        "evidence_ids",
+        "explanation"
+      ],
+      "title": "PrivacyIssue",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "job_id": {
+      "title": "Job Id",
+      "type": "string"
+    },
+    "ruleset_version": {
+      "title": "Ruleset Version",
+      "type": "string"
+    },
+    "issues": {
+      "items": {
+        "$ref": "#/$defs/PrivacyIssue"
+      },
+      "title": "Issues",
+      "type": "array"
+    }
+  },
+  "required": [
+    "job_id",
+    "ruleset_version",
+    "issues"
+  ],
+  "title": "EvaluationResult",
+  "type": "object"
+}

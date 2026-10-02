@@ -1,0 +1,27 @@
+name: PT development task
+description: A scoped task linked to the PrivacyTrace brief
+title: '[PT-xxx] '
+body:
+  - type: input
+    id: pt-id
+    attributes:
+      label: PT task ID
+      placeholder: PT-101
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Input, output and scope
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria and evidence
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation plan

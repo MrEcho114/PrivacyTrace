@@ -1,0 +1,36 @@
+from copy import deepcopy
+from hashlib import sha256
+
+import pytest
+
+from privacytrace.resources import read_json
+
+
+@pytest.fixture
+def bundle_data():
+    data = deepcopy(read_json("samples/demo/evaluation-input.json"))
+    data["behaviors"] = [data["behaviors"][0]]
+    data["policy_documents"] = [data["policy_documents"][0]]
+    doc = data["policy_documents"][0]
+    text = "我们访问精确位置。我们访问位置信息。我们可能访问相关信息。"
+    doc["text"] = text
+    doc["sha256"] = sha256(text.encode()).hexdigest()
+    data["evidence"] = [
+        item
+        for item in data["evidence"]
+        if not item.get("document_id") or item["document_id"] == doc["id"]
+    ]
+    snapshot = next(item for item in data["evidence"] if item["id"] == doc["evidence_id"])
+    snapshot["excerpt"] = text
+    sentence = next(item for item in data["evidence"] if item["kind"] == "POLICY_SENTENCE")
+    sentence["excerpt"] = "我们访问精确位置。"
+    data["policy_claims"] = [
+        {
+            "id": "claim-precise-location",
+            "document_id": doc["id"],
+            "data_type": "PRECISE_LOCATION",
+            "action": "ACCESS",
+            "evidence_ids": [sentence["id"]],
+        }
+    ]
+    return data

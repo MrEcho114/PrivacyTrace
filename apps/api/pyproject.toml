@@ -9,6 +9,11 @@ dependencies = [
   "uvicorn>=0.34,<1",
 ]
 
+[project.optional-dependencies]
+worker = [
+    "androguard==4.1.3",
+]
+
 [dependency-groups]
 dev = ["pytest>=8,<10", "httpx>=0.28,<1", "ruff>=0.11,<1"]
 

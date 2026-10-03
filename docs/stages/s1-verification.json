@@ -1,0 +1,206 @@
+{
+  "phase": "S1",
+  "date": "2026-10-03",
+  "status": "TECHNICAL_LOOP_PASSED_HUMAN_AB_PENDING",
+  "branch": "codex/s1-e2e",
+  "base_commit": "7cee0d06bc9c1c8afe7f00ba97bbc73be54bab0e",
+  "depends_on_pr": 26,
+  "issue_ids": [
+    3,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "test_seams": [
+    "APK_SCAN_CLI",
+    "JOBS_REVIEW_HTTP_API",
+    "BROWSER_E2E"
+  ],
+  "local_verification": {
+    "pytest_passed": 204,
+    "pytest_skipped": 0,
+    "docker_opt_in": true,
+    "warning": "Starlette/HTTPX deprecation",
+    "ruff": "PASS",
+    "schema_export": "PASS",
+    "typecheck": "PASS",
+    "build": "PASS",
+    "test_log_sha256": "2ec70255cfd211c3a31f8be33bc6909e14389f1d11f0b90fe847051f5d2471a0",
+    "corrupted_worker_output_cli_regression": "PASS_STRUCTURED_ERROR_AND_REMOVAL"
+  },
+  "sample": {
+    "name": "GKD",
+    "official_release": "https://github.com/gkd-kit/gkd/releases/tag/v1.12.1",
+    "package_name": "li.songe.gkd",
+    "version_name": "1.12.1",
+    "version_code": 92,
+    "apk_sha256": "edcc03be24bc54d44c04746b46e2e33244120638e2199450b4407195447466a6",
+    "permissions": [
+      "android.permission.FOREGROUND_SERVICE",
+      "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION",
+      "android.permission.FOREGROUND_SERVICE_SPECIAL_USE",
+      "android.permission.GET_APP_OPS_STATS",
+      "android.permission.INTERNET",
+      "android.permission.POST_NOTIFICATIONS",
+      "android.permission.QUERY_ALL_PACKAGES",
+      "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+      "android.permission.REQUEST_INSTALL_PACKAGES",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.WRITE_SECURE_SETTINGS",
+      "com.android.permission.GET_INSTALLED_APPS",
+      "li.songe.gkd.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+      "moe.shizuku.manager.permission.API_V23"
+    ],
+    "dex_entries": [
+      "classes.dex"
+    ]
+  },
+  "result": {
+    "evidence": 6,
+    "behaviors": 3,
+    "policy_claims": 2,
+    "issues": 3,
+    "status_counts": {
+      "INSUFFICIENT_EVIDENCE": 3
+    },
+    "legal_verdict": false,
+    "runtime_execution_proven": false
+  },
+  "policy": {
+    "source": "https://gkd.li/guide/privacy",
+    "immutable_source": "https://raw.githubusercontent.com/gkd-kit/docs/38e29cfd6671d64631cd870bc98eb4934a1af729/docs/guide/privacy.md",
+    "sha256": "bf5917c5c4e9fa2e0700f25db7c17fc0672de0c48de04f6e84e01053871374ea",
+    "completeness": "COMPLETE",
+    "extraction_status": "PARTIAL",
+    "review_status": "UNREVIEWED",
+    "attachments_status": "NOT_CHECKED",
+    "region": "UNKNOWN",
+    "version_association": "PUBLISHER_SOURCE_ASSOCIATION_ONLY",
+    "broad_negative_statement": "PRESERVED_UNMAPPED_NOT_FORCED_INTO_TYPED_CLAIMS"
+  },
+  "isolation": {
+    "worker_image": "sha256:109744f23f1514e39007f943e3c11cfff45e3a2497348223470cd06c2e24e3ed",
+    "user": "65534:65534",
+    "network": "none",
+    "cap_drop": "ALL",
+    "no_new_privileges": true,
+    "readonly_root": true,
+    "readonly_input_only": true,
+    "memory_and_swap_bytes": 1073741824,
+    "cpu_cores": 1,
+    "pids_limit": 32,
+    "tmp_bytes": 16777216,
+    "shm_bytes": 8388608,
+    "timeout_default_seconds": 120,
+    "max_stream_bytes": 4194304,
+    "daemon": "LOCAL_UNIX_SOCKET_ENV_REDIRECTION_REJECTED",
+    "cleanup": "RM_OWN_UUID_NAME_AND_INSPECT_ABSENCE",
+    "apparmor": "DISABLED_ON_THIS_WSL_HOST",
+    "seccomp": "DOCKER_BUILTIN_DEFAULT",
+    "not_vm_or_kernel_escape_proof": true
+  },
+  "reproducibility": {
+    "same_normalized_records": true,
+    "jobs": [
+      "gkd-s1-first",
+      "gkd-s1-repro-2"
+    ],
+    "apk_sha256": "edcc03be24bc54d44c04746b46e2e33244120638e2199450b4407195447466a6",
+    "manifest_permission_count": 15,
+    "code_evidence_count": 3,
+    "policy_claims": 2,
+    "status_counts": {
+      "INSUFFICIENT_EVIDENCE": 3
+    },
+    "policy_sha256": "bf5917c5c4e9fa2e0700f25db7c17fc0672de0c48de04f6e84e01053871374ea",
+    "ruleset_version": "0.3.0",
+    "normalized_sha256": "c82ef4d515d01691305fb51ac14cac5c6a9dbfb7837397045a0308014a6de6af",
+    "human_review_gate": "PENDING_HUMAN_AB",
+    "saved_review_events": 1
+  },
+  "browser": {
+    "real_report": "PASS",
+    "code_and_candidate_sentence_1_click": "PASS",
+    "unicode_highlight": "PASS",
+    "synthetic_source_separation": "PASS",
+    "controlled_partial_failed_cancel": "PASS",
+    "review_old_new_event": "PASS",
+    "api_restart_preserved_event": "PASS",
+    "screenshot": "s1-report-proof.png",
+    "event_authority": "UNAUTHENTICATED_LOCAL_EVENT",
+    "not_human_ab_signature": true
+  },
+  "human_review": {
+    "gate": "PENDING_HUMAN_AB",
+    "reviewer_A": null,
+    "reviewer_B": null,
+    "signed": false
+  },
+  "independent_tools": {
+    "status": "TOOL_REFERENCE_VERIFIED_NOT_HUMAN_SIGNATURE",
+    "aapt2": {
+      "version": "9.4.1-15978811",
+      "exit_code": 0,
+      "manifest_permissions_match": true,
+      "permission_count": 15,
+      "missing": [],
+      "extra": []
+    },
+    "jadx": {
+      "version": "1.5.6",
+      "mode": "fallback",
+      "inline_methods": false,
+      "classes": {
+        "r2": {
+          "exit_code": 0,
+          "reference_output_exists": true,
+          "target_invocation_reference_seen": true,
+          "reference_sha256": "6ff6c1497756eef0ee0485c49a1c766dbd3655829229a7405b89f798141a794a"
+        },
+        "yw": {
+          "exit_code": 0,
+          "reference_output_exists": true,
+          "target_invocation_reference_seen": true,
+          "reference_sha256": "faa88a83e13a88696157197286a3c589a39ee955a2fe6b108c5caf43a5eca700"
+        }
+      },
+      "dex_offsets_authoritative": true,
+      "normal_java_reconstruction_not_guaranteed": true,
+      "production_worker_jadx": "UNAVAILABLE_BYTECODE_FALLBACK"
+    },
+    "artifact_sha256": {
+      "aapt2-9.4.1-15978811-linux.jar": "f5bebd466ecf14d341fd465f2756a16d86052f29eb4532003d5ff7bcffd08de5",
+      "jadx-1.5.6.zip": "545ea2be9c242511bc145755cf4bda2485ade42966e096f8b4d3da2a230e8974",
+      "temurin-17.0.20.1-jre-linux-x64.tar.gz": "0b2b640e3046b64c8ec504de0ab9d91bb5610182bda21fad454681ce54d45a62"
+    },
+    "auxiliary_image_id": "sha256:19914b1a1441d3d7fc5f3d307a8a0f7d0cc4be215de2a4dcfae57079fc425901",
+    "cleanup_verified": true,
+    "private_result_sha256": "ed7c77f9aad589e768aa8b73df016c551036addbaec106395231ae0dba51468f",
+    "full_java_or_logs_published": false,
+    "java_user_home": "BOUNDED_TMPFS_NOT_HOST_CONFIG_CHANGE"
+  },
+  "remote_ci": {
+    "status": "NOT_YET_PUSHED"
+  },
+  "publication_excludes": [
+    "APK/AAB/DEX",
+    "FULL_POLICY",
+    "DECOMPILED_JAVA",
+    "PRIVATE_JOB_AND_AUDIT_RECORDS",
+    "CREDENTIALS",
+    "HOST_MOUNT_PATHS"
+  ],
+  "copy_provenance": {
+    "writer": "Gemini",
+    "specific_payload_authorized": true,
+    "user_replied": "同意",
+    "credential_apk_full_policy_full_java_or_personal_data_sent": false,
+    "status": "SUCCESS_FACT_REVIEWED",
+    "provenance_file": "s1-gemini-provenance.json"
+  },
+  "recorded_at": "2026-10-03T13:29:57.114715+00:00"
+}

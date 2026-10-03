@@ -1,88 +1,96 @@
 # PrivacyTrace
 
-面向普通 Android 用户的 App 隐私体检工具：把多源、可追溯的隐私证据转化为能理解、能复核的报告。
+PrivacyTrace 是一个面向普通 Android 用户的 App 隐私体检工具。它读取 APK 静态代码特征与多源隐私政策原文进行位置对照，生成可追溯的对照记录。
 
-项目依据：`docs/source/PrivacyTrace_PRD_MVP_项目简报_v0.1.pdf`（2026-10-01，组内审阅稿）。本文档中的技术选型是建仓阶段的工程决策，并非比赛官方要求。
+- 阶段状态：技术链路已跑通，当前处于 `PENDING_HUMAN_AB` 状态，仍未完成团队 A+B 双人验收。
+- 技术报告：详细交付与边界说明见 [`docs/stages/s1-report.md`](docs/stages/s1-report.md)。
+- 竞赛材料：赛务对照见 [`docs/competition-checklist.md`](docs/competition-checklist.md)。
+- 依赖许可：依赖库 Androguard 遵循 [Apache-2.0 许可证](https://raw.githubusercontent.com/androguard/androguard/v4.1.3/LICENCE-2.0)。本项目源代码许可待团队最终确定。
 
-## 当前能运行什么
+## 核心能力与分析边界
 
-- FastAPI 服务及 OpenAPI 文档。
-- 事实、政策声明、上下文推断分开的类型模型；证据引用、政策快照与哈希校验。
-- 初版确定性一致性规则：六种状态、上位类别匹配、宿主多源冲突、证据不足。
-- Vue 报告骨架：概览 → 按来源对照 → 权限、API、政策原句与完整快照。
-- 人工构造的演示数据、规则测试、数据库设计基线、CI 与比赛任务清单。
+- **分析范围**：读取 AXML 与全部 `classesN.dex`，识别定位、标识、联系人、相机、麦克风、文件与媒体（含截屏 `SCREEN_CAPTURE`）等敏感调用。
+- **常量推导**：仅支持方法内无分支、无 try 块的局部常量推导，未证实参数保持 `UNKNOWN`。
+- **分析边界**：
+  - 不作合法性、安全性或实际数据收集判定。
+  - 对加壳应用、Native 库（so）、反射、动态加载、Flutter 及混合开发（hybrid）应用覆盖不保证。
+  - 生产分析容器内不含 JADX 反编译引擎，使用字节码兜底（`UNAVAILABLE_BYTECODE_FALLBACK`）。
+  - 无大模型自动生成政策，无动态沙箱抓包与用户行为实验。
+- **存储与安全边界**：
+  - 本地作业存储于 `data/jobs` JSON 文件，SQLite 模式暂未接入运行时。
+  - 分析产生的 `tmp/` 目录运行副本长期保留供复核，无自动清理机制，亦无累计磁盘配额。
+  - 后端接口仅绑定本机回环地址（127.0.0.1），无身份认证与数字签名，禁止公网部署。
 
-**当前是项目骨架。演示 App、代码片段和政策均为人工构造。** 真实 APK 导入、Manifest/DEX 解析、SDK 检测、LLM 政策结构化、数据库持久化和真实样本评测尚未实现。SDK policy 类型已建模，独立 SDK 核验待实现；它不能代替宿主声明。规则只核验数据类型声明，尚不覆盖完整 Purpose/Recipient/Transfer/TemporalScope 一致性。当前既没有实时模型调用，也没有用户实验结果。
+## 运行环境与启动说明
 
-## 本地运行
+运行演示界面无需 Docker，也无需配置任何 API Key。
 
-需要 Node.js 22.12+（或符合 Vite 要求的更新 LTS）、Python 3.11–3.13、Git 和 uv。建仓时验证环境为 Node.js 24 / Python 3.12；依赖分别锁在 `package-lock.json`、`apps/api/uv.lock`。官方参考：[Vite](https://vite.dev/guide/)、[Vue](https://vuejs.org/guide/quick-start.html)、[FastAPI](https://fastapi.tiangolo.com/tutorial/)、[uv](https://docs.astral.sh/uv/getting-started/installation/)。
+### 环境要求
+- Node.js 24（或 22.12+），npm
+- Python 3.11 ~ 3.13，uv 包管理器
+- Docker（仅在执行真实 APK 隔离扫描时需要）
 
-在仓库根目录安装依赖：
+### 启动演示服务
+请在两个独立终端分别启动后端与前端，不可在单终端内合并执行：
 
-```powershell
+```bash
+# 终端 1：启动 API 服务（127.0.0.1:8000）
 npm ci
-uv sync --project apps/api --locked
+uv sync --project apps/api --locked --extra worker
+uv run --project apps/api --locked --extra worker uvicorn privacytrace.main:app --host 127.0.0.1 --port 8000
 ```
 
-打开两个终端，分别启动：
-
-```powershell
-# 终端一：后端
-uv run --project apps/api --locked uvicorn privacytrace.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-```powershell
-# 终端二：前端
+```bash
+# 终端 2：启动前端界面（127.0.0.1:5173）
 npm run dev
 ```
 
-打开 [报告预览](http://127.0.0.1:5173)；接口文档在 [OpenAPI](http://127.0.0.1:8000/docs)。前端通过 Vite 转发 `/api`，无须额外配置 CORS。首次运行不需要 API 密钥或 APK。
+## 真实 APK 隔离扫描与政策摄取
 
-Windows 也可使用 `scripts/setup.ps1`、`scripts/dev-api.ps1`、`scripts/dev-web.ps1`，从任意目录调用。它们优先使用 PATH 中的工具，必要时寻找 Codex 已有的运行时，不安装全局软件。
+对真实未知 APK 的分析必须在 Docker 隔离环境中运行，禁止在宿主机直接解析未知 APK；以下宿主 CLI 负责调用隔离容器。
 
-先安装再启动开发服务。Windows 下服务运行时可能占用 esbuild.exe，重新执行 npm ci 前应停止前端服务。
+### 1. 构建隔离 Worker 镜像
+- **Linux**：`docker build -f apps/api/worker.Dockerfile -t privacytrace-worker:s1 .`
+- **Windows WSL2 (PowerShell)**：
+  ```powershell
+  $root = (wsl.exe -d Ubuntu-24.04 --exec wslpath -u $PWD.Path).Trim()
+  wsl.exe -d Ubuntu-24.04 --exec docker build --file "$root/apps/api/worker.Dockerfile" --tag privacytrace-worker:s1 $root
+  ```
 
-## 验证
+### 2. 政策摄取与扫描作业
+政策摄取需提供已准备好的纯文本 raw 与 candidates 候选文件。摄取将在指定的新目录生成不可变快照，不覆盖旧快照；若原文中出现重复原句，需分别给出各自精确的 start/end offsets。
 
-```powershell
-uv run --project apps/api --locked pytest
-uv run --project apps/api --locked ruff check apps/api/src apps/api/tests
+```bash
+# 政策切片摄取
+uv run --project apps/api --locked --extra worker python -m privacytrace.policy_intake \
+  --raw evidence/private/input-policy.txt \
+  --source-url https://example.org/privacy \
+  --version 1.0 \
+  --output-dir evidence/private/capture-new \
+  --candidates evidence/private/candidates.json
+
+# 执行隔离扫描作业（Job ID 必须全局唯一，不可复用）
+uv run --project apps/api --locked --extra worker python -m privacytrace.pipeline \
+  --apk samples/private/sample.apk \
+  --policy evidence/private/capture-new/policy.capture.json \
+  --name DemoApp \
+  --job-id job-demo-001 \
+  --product-scope DemoApp
+```
+
+## 验证与测试
+
+```bash
+# 规范检查与模式导出
+uv run --project apps/api --locked --extra worker ruff check apps/api/src apps/api/tests scripts/export-schema.py
+uv run --project apps/api --locked --extra worker python scripts/export-schema.py
+npm run typecheck
 npm run build
+
+# 基础自动化测试（默认跳过 Docker 测试）
+uv run --project apps/api --locked --extra worker pytest apps/api/tests
+
+# 包含 Docker 容器调用的完整测试（需已构建 Worker 镜像）
+# PowerShell: $env:PRIVACYTRACE_DOCKER_TESTS="1"; uv run --project apps/api --locked --extra worker pytest apps/api/tests
+# Linux: PRIVACYTRACE_DOCKER_TESTS=1 uv run --project apps/api --locked --extra worker pytest apps/api/tests
 ```
-
-数据库结构定义在 `apps/api/schema.sql`，当前未接入运行时。生成共享 JSON Schema：
-
-```powershell
-uv run --project apps/api --locked python scripts/export-schema.py
-```
-
-## 仓库结构
-
-```text
-apps/api/                 Python API、数据模型、规则引擎、测试、SQL 基线
-apps/web/                 Vue 3 + TypeScript + Vite 报告页面
-packages/contracts/       从后端模型生成的 JSON Schema
-rules/                    分类体系、权限/API/政策词映射与规则版本
-samples/demo/             可公开的人工构造样本
-samples/real-world/       真实样本登记模板；APK 文件保持在本机
-benchmarks/               评测协议与 Ground Truth 模板
-docs/                     原始简报、范围、架构、任务清单、开发记录
-evidence/                 可公开的复核记录模板
-scripts/                  安装、启动、契约导出和私有仓库发布辅助
-.github/                  CI 与工单/PR 模板
-```
-
-## 第一开发里程碑
-
-下一步先选一个官方渠道真实 APK、冻结版本与 SHA-256，然后获得权限和敏感 API 的证据位置，收集一份真实政策并整理可追溯的 PolicyClaim。让引擎输出 3–5 条可解释结果，并在页面点击查看代码证据和政策原句。验收细项见 `docs/milestone-1.md`，任务编号沿用简报 PT-xxx，见 `docs/backlog.md`。
-
-动态分析保持 P1，待静态主线成立后评估。比赛截止日期、队员、指导老师、评分权重和提交格式仍待核对，见 `docs/competition-checklist.md`。
-
-## 协作与数据
-
-每个结论绑定 Evidence IDs；静态结果表述为“潜在行为 / 静态证据”。政策声明不写入代码事实，模型推断独立保存。报告不生成总风险分数或合法性、安全性裁决。
-
-`.gitignore` 排除了密钥、APK、DEX、数据库和私人实验记录。真实政策快照及原始样本存放在本机 `data/` 或 `samples/private/`，公开证据按授权情况整理。当前项目源码许可证待团队决定，依赖许可证单独记录在 `docs/dependencies.md`。
-
-GitHub 公开仓库：[MrEcho114/PrivacyTrace](https://github.com/MrEcho114/PrivacyTrace)，本地项目名为 `privacytrace`。用户于 2026-10-03 授权改为公开并按项目主题重命名，origin 已更新。组员可直接浏览和克隆；参与写入仍需仓库协作权限。后续终端 push 需本机 Git 登录和网络连通。`scripts/publish-private.ps1` 仅用于通过已登录的 GitHub CLI 创建尚不存在的私有远程库。

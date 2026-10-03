@@ -1,0 +1,12 @@
+# Only audited worker build inputs enter the context. APKs/credentials never do.
+**
+!apps/
+!apps/api/
+!apps/api/worker.Dockerfile
+!apps/api/pyproject.toml
+!apps/api/uv.lock
+!apps/api/src/
+!apps/api/src/**
+!rules/
+!rules/taxonomy.v0.3.json
+**/__pycache__/**

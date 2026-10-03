@@ -1,0 +1,16 @@
+{
+  "writer": "Gemini",
+  "model": "gemini-3.8-flash-medium",
+  "conversation_id": "5b5fe6f4-62f6-49e1-a1fa-5242867e73bf",
+  "status": "SUCCESS_FACT_REVIEWED",
+  "user_payload_authorized": true,
+  "raw_draft_sha256": "05e22961f9a2e61aeb7cf313810c3e33364f58c7439b5d0ecb87c3a14031585c",
+  "raw_revision_sha256": "97fc21fa37d165ac83eb349f35227ceb9970c2b8571a374255e4187e56e44b2c",
+  "review": "Corrected task numbering, actual enum names, API-only requirements, no network precision rule, no highlighting, no unverified event requirements",
+  "prose_edits": "None; Gemini revision kept verbatim",
+  "publication_status": "PR_AND_ISSUE_PROGRESS_PUBLISHED_READBACK_VERIFIED",
+  "raw_publication_revision_sha256": "92b6109834ec31ad6d6ef101934175c088f3390ce19f2d161e846c58da8ba2f6",
+  "publication_revision_fact_review": "Write permission resolved; PR 26 open; CI run 37121821632 success for ec8f14b; S1 tracker 3 already exists; no private APK or credentials sent",
+  "publication_snapshot_code_head": "ec8f14bf116b6a86ba27a56dfbdab11272d850a1",
+  "recorded_at": "2026-10-03T12:11:39.867522+00:00"
+}

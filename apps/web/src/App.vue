@@ -21,7 +21,7 @@ const sourceLabels: Record<string, string> = {
 }
 const kindLabels = {
   MANIFEST: '权限配置', API: 'API 代码', SDK: 'SDK 特征',
-  POLICY_DOCUMENT: '政策完整快照', POLICY_SENTENCE: '政策原句',
+  POLICY_DOCUMENT: '政策快照引用', POLICY_SENTENCE: '政策原句',
 }
 const label = (id: string) => taxonomy.value?.data_types.find(item => item.id === id)?.label ?? id
 const selectedEvidence = computed(() => report.value?.evidence.filter(
@@ -109,7 +109,7 @@ onBeforeUnmount(() => controller?.abort())
                 <tr v-for="issue in report.result.issues" :key="issue.id">
                   <td class="type-cell">{{ label(issue.data_type) }}</td>
                   <td>{{ documentLabels(issue.policy_document_ids) }}</td>
-                  <td><span class="tag" :class="issue.status === 'EXACT_MATCH' ? 'clear' : 'review'">{{ statusLabels[issue.status] }}</span></td>
+                  <td><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></td>
                   <td><button class="evidence-button" :aria-expanded="selected?.id === issue.id" aria-controls="evidence-panel" @click="selected = issue">查看 {{ issue.evidence_ids.length }} 条证据 →</button></td>
                 </tr>
               </tbody>
@@ -126,7 +126,12 @@ onBeforeUnmount(() => controller?.abort())
             <article v-for="item in selectedEvidence" :key="item.id" class="evidence-card">
               <div class="section-heading"><strong>{{ kindLabels[item.kind] }}</strong><span class="subtle">{{ item.id }}</span></div>
               <p class="locator">{{ item.source }} · {{ item.locator }}</p>
-              <pre>{{ item.excerpt }}</pre>
+              <p v-if="item.kind === 'POLICY_SENTENCE'" class="subtle">
+                原文位置：[{{ item.start_offset }}, {{ item.end_offset }})，按 Unicode 码点计数。
+              </p>
+              <p v-if="item.kind === 'POLICY_DOCUMENT' && item.excerpt" class="subtle">以下为快照预览，完整政策请在下方展开。</p>
+              <pre v-if="item.excerpt">{{ item.excerpt }}</pre>
+              <p v-else class="subtle">此证据引用完整政策快照，不含预览原句。请在下方展开政策全文。</p>
             </article>
           </div>
         </section>
@@ -136,7 +141,14 @@ onBeforeUnmount(() => controller?.abort())
           <article v-for="doc in report.policy_documents" :key="doc.id">
             <strong>{{ doc.title }}</strong>
             <p>{{ sourceLabels[doc.source_type] }} · {{ doc.version }} · {{ doc.captured_at }}</p>
-            <p class="hash">SHA-256 {{ doc.sha256 }}</p>
+            <p class="hash">SHA-256 {{ doc.artifact.sha256 }}</p>
+            <p class="subtle">
+              快照：{{ doc.completeness }} · 提取：{{ doc.extraction_status }} · 复核：{{ doc.review_status }}
+            </p>
+            <details>
+              <summary>查看政策全文</summary>
+              <pre>{{ doc.artifact.text }}</pre>
+            </details>
           </article>
         </details>
       </template>

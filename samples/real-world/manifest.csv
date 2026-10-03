@@ -1,1 +1,2 @@
 sample_id,role,app_name,package_name,version_name,version_code,official_source_url,acquired_at,apk_sha256,policy_source_type,policy_version,policy_captured_at,policy_sha256,reviewer,status
+gkd-v1.12.1,PRIMARY,GKD,li.songe.gkd,1.12.1,92,https://github.com/gkd-kit/gkd/releases/download/v1.12.1/gkd-v1.12.1.apk,2026-10-03T09:04:38.539631+00:00,edcc03be24bc54d44c04746b46e2e33244120638e2199450b4407195447466a6,,,,,,APK_FROZEN_POLICY_PENDING

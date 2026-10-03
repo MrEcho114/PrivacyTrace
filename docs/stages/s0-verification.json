@@ -1,0 +1,222 @@
+{
+  "phase": "S0",
+  "date": "2026-10-03",
+  "branch": "codex/s0-contracts",
+  "base_commit": "ee23ddb854b506ff180c00271405e3dce7a9e9e7",
+  "implementation_commit": "397e5c4b25af2fdfc0302318ab99a66b132e490a",
+  "status": "PUBLISHED_PR_OPEN_REVIEW_PENDING",
+  "issues": {
+    "PT-010": 7,
+    "PT-511": 8,
+    "PT-709": 9,
+    "phase": 2
+  },
+  "competition": {
+    "official_notice": "https://www.cmit.cn/html/tongzhigonggao/show-144-45826-1.html",
+    "official_deadline": "2026-10-23T23:59:59+08:00",
+    "school_deadline": "PENDING_CONFIRMATION",
+    "school_deadline_is_not_official_deadline": true,
+    "team_size_limit": 5,
+    "track": "PENDING_CONFIRMATION",
+    "teacher": "PENDING_CONFIRMATION",
+    "material_details": "PENDING_CONFIRMATION"
+  },
+  "roles": {
+    "A": "APK",
+    "B": "POLICY_AND_RULES",
+    "C": "WEB_AND_TESTS",
+    "D": "SAMPLES_AND_MATERIALS",
+    "github_assignees": []
+  },
+  "environment": {
+    "node": "24.17.0",
+    "npm": "11.13.0",
+    "python_project_venv": "3.12.13",
+    "python_required": ">=3.11,<3.14",
+    "uv": "0.11.23",
+    "uv_locked_sync": "PASS",
+    "npm_ci": "PASS",
+    "lockfiles_unchanged": true,
+    "path_python": "WINDOWSAPPS_SHIM_UNUSABLE",
+    "jdk": "NOT_FOUND_ON_PATH",
+    "android_sdk": "NOT_FOUND_ON_PATH",
+    "gradle": "NOT_FOUND_ON_PATH",
+    "global_environment_changed": false,
+    "apk_metadata_parser": "Androguard 4.1.3, ephemeral UV environment; not project dependency"
+  },
+  "sample": {
+    "id": "gkd-v1.12.1",
+    "app_name": "GKD",
+    "package_name": "li.songe.gkd",
+    "version_name": "1.12.1",
+    "version_code": 92,
+    "bytes": 3287479,
+    "apk_sha256": "edcc03be24bc54d44c04746b46e2e33244120638e2199450b4407195447466a6",
+    "official_digest_matches": true,
+    "source_page": "https://github.com/gkd-kit/gkd/releases/tag/v1.12.1",
+    "official_guide": "https://gkd.li/guide/",
+    "source_url": "https://github.com/gkd-kit/gkd/releases/download/v1.12.1/gkd-v1.12.1.apk",
+    "path": "samples/private/gkd-v1.12.1.apk",
+    "registry": "samples/real-world/manifest.csv",
+    "ignored": true,
+    "tracked_apk_count": 0,
+    "executed_or_installed": false,
+    "policy_candidate_url": "https://gkd.li/guide/privacy",
+    "policy_version": "1.0",
+    "policy_applicability": "PENDING_S1",
+    "status": "APK_FROZEN_POLICY_PENDING",
+    "closed_source_app_proof": false
+  },
+  "contracts": {
+    "ruleset_version": "0.2.0",
+    "artifact_text_limit": 200000,
+    "excerpt_limit": 10000,
+    "offset_units": "UNICODE_CODEPOINTS",
+    "span_interval": "HALF_OPEN",
+    "normalization": "NONE",
+    "hash_encoding": "UTF-8",
+    "independent_status_fields": [
+      "completeness",
+      "extraction_status",
+      "review_status",
+      "attachments_status"
+    ],
+    "claim_semantics": [
+      "polarity",
+      "condition",
+      "subject"
+    ],
+    "trusted_api_fields": [
+      "target_descriptor",
+      "rule_id",
+      "ruleset_version",
+      "context"
+    ],
+    "api_mapping_is_not_apk_provenance_proof": true,
+    "synthetic_rule_rejected_for_apk": true,
+    "applicability_fields": [
+      "package_name",
+      "version_codes",
+      "regions",
+      "product_scope"
+    ],
+    "scope": "DATA_TYPE_DISCLOSURE",
+    "match_status_count": 6,
+    "static_unknown_fields": [
+      "purpose",
+      "recipient",
+      "transfer",
+      "temporal_scope"
+    ],
+    "absence_requires_full_review": true,
+    "unreviewed_positive_requires_review": true,
+    "unreviewed_positive_excluded_from_conflict": true,
+    "typescript_authority": "Pydantic JSON Schema via scripts/export-schema.py",
+    "sql_runtime_persistence": "NOT_IMPLEMENTED",
+    "old_database_migration": "NOT_IMPLEMENTED"
+  },
+  "validation": {
+    "pytest": {
+      "passed": 120,
+      "baseline_cases_retained": 35,
+      "command": "uv run --project apps/api --locked pytest apps/api/tests -p no:cacheprovider",
+      "warning": "Starlette/HTTPX deprecation"
+    },
+    "ruff": "PASS",
+    "typescript": "PASS",
+    "web_build": "PASS",
+    "schema_sync": "PASS",
+    "sample_registry_hash": "PASS",
+    "private_paths_ignore": "PASS",
+    "browser_demo_quote_span": "PASS",
+    "browser_demo_full_artifact": "PASS",
+    "browser_demo_pending_review": "PASS",
+    "screenshot": "docs/stages/s0-report-proof.jpg",
+    "remote_ci": "PASS",
+    "remote_ci_evidence": {
+      "repo": "MrEcho114/PrivacyTrace",
+      "pr_number": 26,
+      "verified_commit_sha": "ec8f14bf116b6a86ba27a56dfbdab11272d850a1",
+      "workflow_run_id": 37121821632,
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/MrEcho114/PrivacyTrace/actions/runs/37121821632",
+      "api": {
+        "job_id": 111199263244,
+        "conclusion": "success",
+        "pytest_passed": 120,
+        "warnings": 1,
+        "schema_sync": "PASS",
+        "ruff": "PASS"
+      },
+      "web": {
+        "job_id": 111199263292,
+        "conclusion": "success",
+        "build": "PASS"
+      },
+      "snapshot_only": true
+    }
+  },
+  "acceptance_evidence": {
+    "PT-010.deadlines_roles_environment": [
+      "competition",
+      "roles",
+      "environment"
+    ],
+    "PT-010.real_official_sample": [
+      "sample",
+      "scripts/verify-real-samples.py",
+      "apps/api/tests/test_sample_registry.py"
+    ],
+    "PT-511.long_text_hash_span_limits": [
+      "apps/api/tests/test_s0_contracts.py",
+      "apps/api/tests/test_s0_api.py",
+      "apps/api/schema.sql"
+    ],
+    "PT-511.failure_review_negative_states": [
+      "apps/api/src/privacytrace/models.py",
+      "apps/api/tests/test_s0_consistency.py"
+    ],
+    "PT-511.cross_stack_sync": [
+      "scripts/export-schema.py",
+      "apps/api/tests/test_typescript_contracts.py",
+      "apps/web/src/contracts.generated.ts"
+    ],
+    "PT-709.trusted_api_mapping": [
+      "rules/taxonomy.v0.2.json",
+      "apps/api/tests/test_s0_consistency.py",
+      "apps/api/tests/test_s0_api.py"
+    ],
+    "PT-709.conservative_absence_and_source_conflict": [
+      "apps/api/tests/test_s0_consistency.py",
+      "apps/api/tests/test_consistency.py"
+    ],
+    "PT-709.scope_unknown_static_facts_determinism": [
+      "apps/api/tests/test_consistency.py",
+      "apps/api/tests/test_s0_consistency.py"
+    ]
+  },
+  "publication": {
+    "origin_push": "SUCCESS_REMOTE_SHA_VERIFIED",
+    "pr": "https://github.com/MrEcho114/PrivacyTrace/pull/26",
+    "writer": "GEMINI_FACT_REVIEWED_PUBLISHED",
+    "inherited_untracked_files_preserved": true,
+    "main_modified": false,
+    "writer_user_authorized": true,
+    "writer_provenance": "docs/stages/s0-gemini-provenance.json",
+    "current_repo_permissions": {
+      "pull": true,
+      "push": true,
+      "admin": false
+    },
+    "issue_progress": "REMOTE_READBACK_VERIFIED",
+    "issue_progress_receipt": "docs/stages/s0-issue-progress.receipt.json",
+    "pr_state": "OPEN",
+    "pr_merged": false,
+    "verified_remote_code_head": "ec8f14bf116b6a86ba27a56dfbdab11272d850a1",
+    "remote_ci_receipt": "docs/stages/s0-remote-ci.receipt.json",
+    "evidence_is_snapshot_before_final_documentation_commit": true
+  },
+  "recorded_at": "2026-10-03T12:11:39.867522+00:00"
+}

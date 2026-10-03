@@ -43,6 +43,58 @@
           "title": "Created At",
           "type": "string"
         },
+        "package_name": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Package Name"
+        },
+        "version_code": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version Code"
+        },
+        "region": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Region"
+        },
+        "product_scope": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Product Scope"
+        },
         "error": {
           "anyOf": [
             {
@@ -65,6 +117,43 @@
         "created_at"
       ],
       "title": "AnalysisJob",
+      "type": "object"
+    },
+    "ApiCall": {
+      "additionalProperties": false,
+      "properties": {
+        "target_descriptor": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Target Descriptor",
+          "type": "string"
+        },
+        "rule_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Rule Id",
+          "type": "string"
+        },
+        "ruleset_version": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Ruleset Version",
+          "type": "string"
+        },
+        "context": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Context",
+          "type": "object"
+        }
+      },
+      "required": [
+        "target_descriptor",
+        "rule_id",
+        "ruleset_version"
+      ],
+      "title": "ApiCall",
       "type": "object"
     },
     "ContextualHint": {
@@ -137,8 +226,8 @@
           "type": "string"
         },
         "excerpt": {
+          "default": "",
           "maxLength": 10000,
-          "minLength": 1,
           "title": "Excerpt",
           "type": "string"
         },
@@ -153,6 +242,56 @@
           ],
           "default": null,
           "title": "Document Id"
+        },
+        "artifact_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact Sha256"
+        },
+        "start_offset": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Start Offset"
+        },
+        "end_offset": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End Offset"
+        },
+        "api_call": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ApiCall"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -160,10 +299,88 @@
         "kind",
         "status",
         "source",
-        "locator",
-        "excerpt"
+        "locator"
       ],
       "title": "Evidence",
+      "type": "object"
+    },
+    "PolicyApplicability": {
+      "additionalProperties": false,
+      "properties": {
+        "package_name": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Package Name"
+        },
+        "version_codes": {
+          "items": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 1000,
+          "title": "Version Codes",
+          "type": "array"
+        },
+        "regions": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Regions",
+          "type": "array"
+        },
+        "product_scope": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Product Scope"
+        }
+      },
+      "title": "PolicyApplicability",
+      "type": "object"
+    },
+    "PolicyArtifact": {
+      "additionalProperties": false,
+      "description": "Canonical captured text, before any semantic extraction (UTF-8 hash).",
+      "properties": {
+        "text": {
+          "maxLength": 200000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "normalization": {
+          "const": "NONE",
+          "default": "NONE",
+          "title": "Normalization",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text",
+        "sha256"
+      ],
+      "title": "PolicyArtifact",
       "type": "object"
     },
     "PolicyClaim": {
@@ -188,6 +405,40 @@
             "UNKNOWN"
           ],
           "title": "Action",
+          "type": "string"
+        },
+        "polarity": {
+          "default": "UNKNOWN",
+          "enum": [
+            "AFFIRMATIVE",
+            "NEGATIVE",
+            "UNKNOWN"
+          ],
+          "title": "Polarity",
+          "type": "string"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "maxLength": 10000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Condition"
+        },
+        "subject": {
+          "default": "UNKNOWN",
+          "enum": [
+            "HOST_APP",
+            "THIRD_PARTY",
+            "UNKNOWN"
+          ],
+          "title": "Subject",
           "type": "string"
         },
         "declared_purpose": {
@@ -272,16 +523,8 @@
           "title": "Captured At",
           "type": "string"
         },
-        "sha256": {
-          "pattern": "^[a-f0-9]{64}$",
-          "title": "Sha256",
-          "type": "string"
-        },
-        "text": {
-          "maxLength": 200000,
-          "minLength": 1,
-          "title": "Text",
-          "type": "string"
+        "artifact": {
+          "$ref": "#/$defs/PolicyArtifact"
         },
         "completeness": {
           "enum": [
@@ -290,6 +533,39 @@
           ],
           "title": "Completeness",
           "type": "string"
+        },
+        "extraction_status": {
+          "default": "NOT_STARTED",
+          "enum": [
+            "NOT_STARTED",
+            "SUCCEEDED",
+            "PARTIAL",
+            "FAILED"
+          ],
+          "title": "Extraction Status",
+          "type": "string"
+        },
+        "review_status": {
+          "default": "UNREVIEWED",
+          "enum": [
+            "UNREVIEWED",
+            "REVIEWED"
+          ],
+          "title": "Review Status",
+          "type": "string"
+        },
+        "attachments_status": {
+          "default": "NOT_CHECKED",
+          "enum": [
+            "NOT_CHECKED",
+            "COMPLETE",
+            "MISSING"
+          ],
+          "title": "Attachments Status",
+          "type": "string"
+        },
+        "applicability": {
+          "$ref": "#/$defs/PolicyApplicability"
         },
         "evidence_id": {
           "title": "Evidence Id",
@@ -302,8 +578,7 @@
         "title",
         "version",
         "captured_at",
-        "sha256",
-        "text",
+        "artifact",
         "completeness",
         "evidence_id"
       ],

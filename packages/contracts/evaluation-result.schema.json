@@ -60,6 +60,11 @@
           "default": "DATA_TYPE_DISCLOSURE",
           "title": "Scope",
           "type": "string"
+        },
+        "requires_review": {
+          "default": true,
+          "title": "Requires Review",
+          "type": "boolean"
         }
       },
       "required": [

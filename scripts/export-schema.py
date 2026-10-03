@@ -1,15 +1,134 @@
-"""Generate the shared contract from the authoritative Python models."""
+"""Export Pydantic JSON Schema and TypeScript contracts without external tools.
+
+TypeScript describes JSON shapes, not runtime validation: lengths, hashes, numeric
+bounds and cross-record invariants remain enforced by Pydantic. Unknown schema
+constructs fail generation instead of silently widening to any.
+"""
 
 import json
+import re
 from pathlib import Path
 
 from privacytrace.models import EvaluationInput, EvaluationResult
 
-target = Path(__file__).resolve().parents[1] / "packages" / "contracts"
-target.mkdir(parents=True, exist_ok=True)
-for name, model in [("evaluation-input", EvaluationInput), ("evaluation-result", EvaluationResult)]:
-    (target / f"{name}.schema.json").write_text(
-        json.dumps(model.model_json_schema(), ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-print("Updated input and result JSON Schemas")
+ROOT = Path(__file__).resolve().parents[1]
+MODELS = {"evaluation-input": EvaluationInput, "evaluation-result": EvaluationResult}
+ANNOTATIONS = {
+    "title", "description", "default", "format", "examples", "minLength", "maxLength",
+    "pattern", "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum",
+    "minItems", "maxItems", "multipleOf",
+}
+STRUCTURE = {
+    "$ref", "type", "const", "enum", "anyOf", "properties", "required",
+    "additionalProperties", "items", "$defs",
+}
+
+
+def identifier(name: str) -> str:
+    if not re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", name):
+        raise ValueError(f"Unsupported TypeScript identifier: {name}")
+    return name
+
+
+def ts_type(schema: dict, definitions: dict) -> str:
+    if not isinstance(schema, dict):
+        raise ValueError("Boolean schemas and non-object schemas are unsupported")  # noqa: TRY004
+    unknown = schema.keys() - ANNOTATIONS - STRUCTURE
+    if unknown:
+        raise ValueError(f"Unsupported JSON Schema keywords: {sorted(unknown)}")
+    selectors = {"$ref", "const", "enum", "anyOf"} & schema.keys()
+    if len(selectors) > 1:
+        raise ValueError("Combined schema selectors are unsupported")
+    if selectors and schema.keys() & {"properties", "items", "additionalProperties", "required"}:
+        raise ValueError("Schema selector with sibling structural constraints is unsupported")
+    if "$ref" in schema:
+        ref = schema["$ref"]
+        prefix = "#/$defs/"
+        if not ref.startswith(prefix) or ref[len(prefix):] not in definitions:
+            raise ValueError(f"Unsupported or unresolved reference: {ref}")
+        return identifier(ref[len(prefix):])
+    if "const" in schema:
+        if not isinstance(schema["const"], (str, int, float, bool, type(None))):
+            raise ValueError("Only JSON scalar constants are supported")
+        return json.dumps(schema["const"], ensure_ascii=False)
+    if "enum" in schema:
+        if not schema["enum"]:
+            raise ValueError("Empty enum")
+        if any(not isinstance(v, (str, int, float, bool, type(None))) for v in schema["enum"]):
+            raise ValueError("Only JSON scalar enums are supported")
+        return " | ".join(json.dumps(value, ensure_ascii=False) for value in schema["enum"])
+    if "anyOf" in schema:
+        if not schema["anyOf"] or "type" in schema:
+            raise ValueError("Empty or type-constrained anyOf is unsupported")
+        return " | ".join(ts_type(branch, definitions) for branch in schema["anyOf"])
+    kind = schema.get("type")
+    if not isinstance(kind, str):
+        raise ValueError("A single named JSON Schema type is required")  # noqa: TRY004
+    if kind in {"string", "boolean", "null"}:
+        return kind
+    if kind in {"integer", "number"}:
+        return "number"
+    if kind == "array":
+        if "items" not in schema:
+            raise ValueError("Array schema must define items")
+        return f"Array<{ts_type(schema['items'], definitions)}>"
+    if kind == "object":
+        properties = schema.get("properties", {})
+        required = set(schema.get("required", []))
+        if required - properties.keys():
+            raise ValueError("Required fields missing from properties")
+        additional = schema.get("additionalProperties")
+        if not properties and isinstance(additional, dict):
+            return f"Record<string, {ts_type(additional, definitions)}>"
+        if additional is not False:
+            raise ValueError("Object must forbid extra properties or be a typed dictionary")
+        fields = [
+            f"  {json.dumps(name)}{'' if name in required else '?'}: "
+            f"{ts_type(value, definitions)};"
+            for name, value in properties.items()
+        ]
+        return "{\n" + "\n".join(fields) + "\n}"
+    raise ValueError(f"Unsupported or missing JSON Schema type: {kind!r}")
+
+
+def generate_typescript(schemas: dict[str, dict]) -> str:
+    definitions = {}
+    for schema in schemas.values():
+        for name, definition in schema.get("$defs", {}).items():
+            if name in definitions and definitions[name] != definition:
+                raise ValueError(f"Conflicting shared schema definition: {name}")
+            definitions[name] = definition
+    roots = {schema["title"]: schema for schema in schemas.values()}
+    if definitions.keys() & roots.keys():
+        raise ValueError("Root name conflicts with a shared definition")
+    lines = [
+        "// Generated by scripts/export-schema.py from privacytrace.models. DO NOT EDIT.",
+        "// JSON shapes only; semantic constraints are enforced by the Python API.",
+        "",
+    ]
+    for name, schema in sorted((definitions | roots).items()):
+        lines.extend([f"export type {identifier(name)} = {ts_type(schema, definitions)};", ""])
+    return "\n".join(lines)
+
+
+def generated_files() -> dict[Path, str]:
+    schemas = {name: model.model_json_schema() for name, model in MODELS.items()}
+    files = {
+        ROOT / "packages/contracts" / f"{name}.schema.json":
+        json.dumps(schema, ensure_ascii=False, indent=2) + "\n"
+        for name, schema in schemas.items()
+    }
+    files[ROOT / "apps/web/src/contracts.generated.ts"] = generate_typescript(schemas)
+    return files
+
+
+def main() -> None:
+    # Build everything before writing to avoid partial exports on unsupported constructs.
+    for path, content in generated_files().items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8", newline="\n")
+    print("Updated input/result JSON Schemas and TypeScript contracts")
+
+
+if __name__ == "__main__":
+    main()

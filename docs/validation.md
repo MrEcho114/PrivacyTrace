@@ -17,7 +17,7 @@
 | 证据下钻 | 点击精确位置结果，能看到 API 代码、权限配置、政策原句与完整快照 |
 | 浏览器错误日志 | 检查时未发现前端 error |
 | Git 忽略项 | .env、APK、私人材料、依赖和虚拟环境均被忽略 |
-| GitHub Actions | [首次远程 CI](https://github.com/MrEcho114/-/actions/runs/37017012048) 的 api / web 两项均成功 |
+| GitHub Actions | [首次远程 CI](https://github.com/MrEcho114/PrivacyTrace/actions/runs/37017012048) 的 api / web 两项均成功 |
 | 私有仓库同步 | 62 个文件同步至 main；远程文件树与本地 Git 文件树 SHA 一致 |
 
 页面截图：`screenshots/demo-report.png`，仅展示人工构造的演示数据。
@@ -34,4 +34,4 @@
 
 ## GitHub 状态
 
-用户已创建并授权私有仓库 [MrEcho114/-](https://github.com/MrEcho114/-)。GitHub 连接已验证 visibility=private 与 push=true，本地 origin 指向该仓库。代码通过已授权连接同步，保留远程初始提交；后续终端 push 仍需本机 Git 登录和网络连通。GitHub Actions 的运行结果应以远程实际记录为准。
+仓库最初按用户要求创建为私有并完成代码同步。2026-10-03，用户授权改为公开并按项目主题重命名为 [MrEcho114/PrivacyTrace](https://github.com/MrEcho114/PrivacyTrace)。已核对 visibility=public、仓库 ID 保持不变，本地 origin 已更新。代码通过已授权连接同步，保留远程初始提交；后续终端 push 仍需本机 Git 登录和网络连通。GitHub Actions 的运行结果应以远程实际记录为准。

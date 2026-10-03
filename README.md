@@ -85,4 +85,4 @@ scripts/                  安装、启动、契约导出和私有仓库发布辅
 
 `.gitignore` 排除了密钥、APK、DEX、数据库和私人实验记录。真实政策快照及原始样本存放在本机 `data/` 或 `samples/private/`，公开证据按授权情况整理。当前项目源码许可证待团队决定，依赖许可证单独记录在 `docs/dependencies.md`。
 
-GitHub 私有仓库：[MrEcho114/-](https://github.com/MrEcho114/-)，本地项目名为 `privacytrace`。该仓库由用户创建并授权，origin 已配置。后续终端 push 需本机 Git 登录和网络连通。`scripts/publish-private.ps1` 仅用于通过已登录的 GitHub CLI 创建尚不存在的私有远程库。
+GitHub 公开仓库：[MrEcho114/PrivacyTrace](https://github.com/MrEcho114/PrivacyTrace)，本地项目名为 `privacytrace`。用户于 2026-10-03 授权改为公开并按项目主题重命名，origin 已更新。组员可直接浏览和克隆；参与写入仍需仓库协作权限。后续终端 push 需本机 Git 登录和网络连通。`scripts/publish-private.ps1` 仅用于通过已登录的 GitHub CLI 创建尚不存在的私有远程库。

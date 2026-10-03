@@ -8,7 +8,7 @@
 
 | 编号 | 任务 | 建仓状态 |
 |---|---|---|
-| PT-001 | Repository / Monorepo | 本地骨架与已授权的 GitHub 私有仓库就绪 |
+| PT-001 | Repository / Monorepo | 本地骨架与 GitHub 公开仓库 PrivacyTrace 就绪 |
 | PT-002 | Backend 基础项目 | 骨架已实现 |
 | PT-003 | Frontend 基础项目 | 骨架已实现 |
 | PT-004 | Database Schema | SQL 基线；持久化待实现 |

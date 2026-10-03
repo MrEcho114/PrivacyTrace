@@ -176,9 +176,16 @@
   "publication": {
     "origin_push": "403_PERMISSION_DENIED_OASISSABER",
     "pr": "NOT_CREATED",
-    "writer": "AWAITING_USER_AUTHORIZATION_FOR_GEMINI_PAYLOAD",
+    "writer": "GEMINI_FACT_REVIEWED_LOCAL_DRAFT",
     "inherited_untracked_files_preserved": true,
-    "main_modified": false
+    "main_modified": false,
+    "writer_user_authorized": true,
+    "writer_provenance": "docs/stages/s0-gemini-provenance.json",
+    "current_repo_permissions": {
+      "pull": true,
+      "push": false,
+      "admin": false
+    }
   },
   "recorded_at": "2026-10-03T09:26:12.296469+00:00"
 }

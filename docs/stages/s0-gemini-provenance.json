@@ -1,0 +1,12 @@
+{
+  "writer": "Gemini",
+  "model": "gemini-3.8-flash-medium",
+  "conversation_id": "5b5fe6f4-62f6-49e1-a1fa-5242867e73bf",
+  "status": "SUCCESS_FACT_REVIEWED",
+  "user_payload_authorized": true,
+  "raw_draft_sha256": "05e22961f9a2e61aeb7cf313810c3e33364f58c7439b5d0ecb87c3a14031585c",
+  "raw_revision_sha256": "97fc21fa37d165ac83eb349f35227ceb9970c2b8571a374255e4187e56e44b2c",
+  "review": "Corrected task numbering, actual enum names, API-only requirements, no network precision rule, no highlighting, no unverified event requirements",
+  "prose_edits": "None; Gemini revision kept verbatim",
+  "publication_status": "LOCAL_DRAFT_PENDING_GITHUB_WRITE_ACCESS"
+}

@@ -35,12 +35,15 @@
 
 ---
 
-## 4. 复核签字与确认状态
+## 4. 复核 comment 与确认状态
 
-当前状态：`PENDING_HUMAN_AB`（两名技术成员人工逐行核对未完成，禁止单人代签）
+当前状态：`PENDING_HUMAN_AB`（两位技术成员各自在 Issue #15 留逐条人工复核 comment，尚未收到；不再要求签字）。
 
-- **技术成员 A 签字**：____________________ （日期：________）
-- **技术成员 B 签字**：____________________ （日期：________）
+- **技术成员 A comment URL / GitHub 账号 / 时间戳**：[待填写]
+- **技术成员 B comment URL / GitHub 账号 / 时间戳**：[待填写]
+- **复核绑定的实现提交及分歧处理**：[待填写]
+- 正式入口：[Issue #15](https://github.com/MrEcho114/PrivacyTrace/issues/15)；格式见 [comment 模板](https://github.com/MrEcho114/PrivacyTrace/blob/codex/s1-e2e/evidence/review.comment.template.md)。
+- 本表只作核对辅助；工具备注、单条“同意”或代发 comment 不视为双人人工确认。
 
 ---
 

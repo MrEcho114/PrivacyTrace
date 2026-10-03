@@ -2,7 +2,7 @@
 
 PrivacyTrace 是一个面向普通 Android 用户的 App 隐私体检工具。它读取 APK 静态代码特征与多源隐私政策原文进行位置对照，生成可追溯的对照记录。
 
-- 阶段状态：技术链路已跑通，当前处于 `PENDING_HUMAN_AB` 状态，仍未完成团队 A+B 双人验收。
+- 阶段状态：技术链路已跑通，当前处于 `PENDING_HUMAN_AB` 状态，仍未完成团队 A+B 双人验收。复核改用 [Issue #15 的双人 comment](https://github.com/MrEcho114/PrivacyTrace/issues/15)，格式见 [复核 comment 模板](evidence/review.comment.template.md)，不再要求签字。
 - 技术报告：详细交付与边界说明见 [`docs/stages/s1-report.md`](docs/stages/s1-report.md)。
 - 竞赛材料：赛务对照见 [`docs/competition-checklist.md`](docs/competition-checklist.md)。
 - 依赖许可：依赖库 Androguard 遵循 [Apache-2.0 许可证](https://raw.githubusercontent.com/androguard/androguard/v4.1.3/LICENCE-2.0)。本项目源代码许可待团队最终确定。

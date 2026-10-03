@@ -132,13 +132,21 @@
     "api_restart_preserved_event": "PASS",
     "screenshot": "s1-report-proof.png",
     "event_authority": "UNAUTHENTICATED_LOCAL_EVENT",
-    "not_human_ab_signature": true
+    "not_human_ab_review_confirmation": true
   },
   "human_review": {
     "gate": "PENDING_HUMAN_AB",
     "reviewer_A": null,
     "reviewer_B": null,
-    "signed": false
+    "mode": "GITHUB_ISSUE_COMMENT",
+    "canonical_issue_url": "https://github.com/MrEcho114/PrivacyTrace/issues/15",
+    "required_distinct_human_reviewers": 2,
+    "confirmation_status": "PENDING",
+    "comment_urls": [],
+    "review_target_implementation_commit": "3ef27d050752c2194d64f972be363813ca28b8ff",
+    "template": "../../evidence/review.comment.template.md",
+    "formal_signature_required": false,
+    "updated_on": "2026-10-04"
   },
   "independent_tools": {
     "status": "TOOL_REFERENCE_VERIFIED_NOT_HUMAN_SIGNATURE",

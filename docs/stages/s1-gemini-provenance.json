@@ -71,5 +71,15 @@
     }
   },
   "publication_status": "DRAFT_PR_27_PUBLISHED_HUMAN_AB_PENDING",
-  "recorded_at": "2026-10-03T13:51:19.749250+00:00"
+  "recorded_at": "2026-10-03T13:51:19.749250+00:00",
+  "post_adoption_changes": [
+    {
+      "date": "2026-10-04",
+      "author": "Codex",
+      "source": "Direct user request: 签字复核改成comment形式",
+      "scope": "Review medium changed to two human GitHub Issue #15 comments; no change to technical evidence, prior test receipts, or human acceptance requirement.",
+      "template": "../../evidence/review.comment.template.md",
+      "not_new_gemini_output": true
+    }
+  ]
 }

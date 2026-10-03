@@ -3,7 +3,7 @@
 - **日期**：2026-10-03（原计划 10-05 ~ 10-08，提前实施）
 - **基线与分支**：分支 `codex/s1-e2e`，基于提交 `7cee0d06bc9c1c8afe7f00ba97bbc73be54bab0e`。
 - **PR 关系**：依赖前序 PR #26（未合并），以 [Stacked Draft PR #27](https://github.com/MrEcho114/PrivacyTrace/pull/27) 形式提交；关联工单 Refs #3, #10, #11, #12, #13, #14, #15，不代表相关工单已完结。
-- **状态判定**：端到端技术链路已在本地跑通，当前处于 `PENDING_HUMAN_AB` 状态，待技术成员 A 与 B 完成逐行人工核验并签字。
+- **状态判定**：端到端技术链路已在本地跑通，当前处于 `PENDING_HUMAN_AB` 状态，待技术成员 A 与 B 各自在 [Issue #15](https://github.com/MrEcho114/PrivacyTrace/issues/15) 留逐条人工复核 comment（不再要求签字）。
 
 ## 1. 任务交付与边界对照
 
@@ -14,7 +14,7 @@
 | **#12 PT-503** | 政策离线摄取与切片存储 | 离线摄取 UTF-8 文本，按码点半开区间切片，生成不可变快照与审计日志 | 需人工提供候选列表，无 NLP 自动抽取；不虚构未映射的负向声明 |
 | **#13 PT-004** | 作业流水线与审计数据面 | CLI 作业调度、5 秒跨进程文件锁、写入原子化；提供回环审查接口 | SQLite 模式未接运行时；无 HTTP 上传 APK 接口；事件为 `UNAUTHENTICATED_LOCAL_EVENT` |
 | **#14 PT-807** | 报告界面与审查交互 | 真实作业展示、代码证据与候选条款对照、Unicode 原文定位、复核备注 | 不作目的与接收方的综合判定，不作合法性或安全性裁决 |
-| **#15 PT-901** | 真实样本端到端核验 | GKD v1.12.1 隔离扫描比对，生成确定性哈希，双次运行结果一致 | 仅证明开发者发布关联，未证明运行时展示或同意；双人人工复核待签字 |
+| **#15 PT-901** | 真实样本端到端核验 | GKD v1.12.1 隔离扫描比对，生成确定性哈希，双次运行结果一致 | 仅证明开发者发布关联，未证明运行时展示或同意；双人人工复核 comment 待提交 |
 
 ## 2. GKD 样本（v1.12.1）核验事实
 
@@ -30,7 +30,7 @@
 
 - **AAPT2 (9.4.1-15978811)**：在严格隔离辅助容器内导出权限，退出码为 0，导出的 15 条权限与分析数据集完全一致，无多余或缺失。
 - **JADX (1.5.6)**：固定原有只读、非 root 及无网络等严格隔离条件，仅通过 `JAVA_TOOL_OPTIONS` 将 `user.home` 与 `java.io.tmpdir` 指向容器内有界 `/tmp`（此前首次因默认路径无写权限导致插件初始化失败）。采用官方参数 `--decompilation-mode fallback --no-inline-methods` 对 `r2` 与 `yw` 两个类导出成功（exit 0）。两处 `takeScreenshot` 调用参考均可清晰查见（注意 `yw` 中另有一条同名日志字符串，调用点仅计方法调用）。
-- **定位与权威性说明**：辅助工具核验仅作为独立参考，DEX 原始字节码偏移量仍为系统权威证据，生产 Worker 镜像依然不包含 JADX（保持 `UNAVAILABLE_BYTECODE_FALLBACK`）。此项检查不替代人工 A+B 签字。
+- **定位与权威性说明**：辅助工具核验仅作为独立参考，DEX 原始字节码偏移量仍为系统权威证据，生产 Worker 镜像依然不包含 JADX（保持 `UNAVAILABLE_BYTECODE_FALLBACK`）。此项检查不替代 A+B 的 GitHub 人工复核 comment。
 
 ## 4. 安全、隔离与数据保留边界
 
@@ -43,9 +43,10 @@
 ## 5. 本地测试与资料索引
 
 - **本地测试**：在启用 `$env:PRIVACYTRACE_DOCKER_TESTS='1'` 环境下，执行 `pytest apps/api/tests` 取得 204 项 passed（0 skipped，包含真实 Docker 容器测试），有 1 条 Starlette/HTTPX 弃用警告。Ruff、模式导出、TypeScript 类型检查及构建全部 PASS。
-- **三处测试入口**：CLI 扫描器、HTTP 审查接口及前端端到端交互均验证通过。界面中的备注为 Codex 冒烟测试记录（非人工签字），服务重启后保留；受控的取消/失败测试用例与真实样本完全隔离。
+- **三处测试入口**：CLI 扫描器、HTTP 审查接口及前端端到端交互均验证通过。界面中的备注为 Codex 冒烟测试记录（非 GitHub 人工复核 comment），服务重启后保留；受控的取消/失败测试用例与真实样本完全隔离。
 - **远程 CI 说明**：GitHub Actions 单一工作流中包含 `api`、`web`、`isolated-worker` 三个作业。实现提交 `3ef27d050752c2194d64f972be363813ca28b8ff` 的 [GitHub Actions](https://github.com/MrEcho114/PrivacyTrace/actions/runs/37128232003) 已通过：`api`、`web`、`isolated-worker` 三个作业均 success。api 为 197 passed / 7 skipped（默认不启用容器测试）；isolated-worker 启用容器测试，27 passed / 0 skipped。两组测试有重叠，不能相加。记录见 `./s1-remote-ci.receipt.json`。
 - **文件索引**：
   - 运行记录与核验摘要：[`./s1-verification.json`](./s1-verification.json)
   - 界面截图证明：[`./s1-report-proof.png`](./s1-report-proof.png)
-  - 人工复核确认单模板：[`../../evidence/review.template.md`](../../evidence/review.template.md)
+  - 正式复核 comment 模板：[`../../evidence/review.comment.template.md`](../../evidence/review.comment.template.md)
+  - 人工复核辅助表：[`../../evidence/review.template.md`](../../evidence/review.template.md)

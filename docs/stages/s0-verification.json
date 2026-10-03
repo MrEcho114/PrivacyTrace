@@ -185,7 +185,9 @@
       "pull": true,
       "push": false,
       "admin": false
-    }
+    },
+    "issue_progress": "REMOTE_READBACK_VERIFIED",
+    "issue_progress_receipt": "docs/stages/s0-issue-progress.receipt.json"
   },
   "recorded_at": "2026-10-03T09:26:12.296469+00:00"
 }

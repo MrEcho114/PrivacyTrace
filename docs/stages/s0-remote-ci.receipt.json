@@ -1,0 +1,24 @@
+{
+  "repo": "MrEcho114/PrivacyTrace",
+  "pr_number": 26,
+  "verified_commit_sha": "ec8f14bf116b6a86ba27a56dfbdab11272d850a1",
+  "workflow_run_id": 37121821632,
+  "event": "pull_request",
+  "status": "completed",
+  "conclusion": "success",
+  "url": "https://github.com/MrEcho114/PrivacyTrace/actions/runs/37121821632",
+  "api": {
+    "job_id": 111199263244,
+    "conclusion": "success",
+    "pytest_passed": 120,
+    "warnings": 1,
+    "schema_sync": "PASS",
+    "ruff": "PASS"
+  },
+  "web": {
+    "job_id": 111199263292,
+    "conclusion": "success",
+    "build": "PASS"
+  },
+  "snapshot_only": true
+}

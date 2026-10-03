@@ -4,7 +4,7 @@
   "branch": "codex/s0-contracts",
   "base_commit": "ee23ddb854b506ff180c00271405e3dce7a9e9e7",
   "implementation_commit": "397e5c4b25af2fdfc0302318ab99a66b132e490a",
-  "status": "IMPLEMENTED_LOCALLY_PUBLICATION_PENDING",
+  "status": "PUBLISHED_PR_OPEN_REVIEW_PENDING",
   "issues": {
     "PT-010": 7,
     "PT-511": 8,
@@ -132,7 +132,31 @@
     "browser_demo_full_artifact": "PASS",
     "browser_demo_pending_review": "PASS",
     "screenshot": "docs/stages/s0-report-proof.jpg",
-    "remote_ci": "NOT_RUN"
+    "remote_ci": "PASS",
+    "remote_ci_evidence": {
+      "repo": "MrEcho114/PrivacyTrace",
+      "pr_number": 26,
+      "verified_commit_sha": "ec8f14bf116b6a86ba27a56dfbdab11272d850a1",
+      "workflow_run_id": 37121821632,
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/MrEcho114/PrivacyTrace/actions/runs/37121821632",
+      "api": {
+        "job_id": 111199263244,
+        "conclusion": "success",
+        "pytest_passed": 120,
+        "warnings": 1,
+        "schema_sync": "PASS",
+        "ruff": "PASS"
+      },
+      "web": {
+        "job_id": 111199263292,
+        "conclusion": "success",
+        "build": "PASS"
+      },
+      "snapshot_only": true
+    }
   },
   "acceptance_evidence": {
     "PT-010.deadlines_roles_environment": [
@@ -174,20 +198,25 @@
     ]
   },
   "publication": {
-    "origin_push": "403_PERMISSION_DENIED_OASISSABER",
-    "pr": "NOT_CREATED",
-    "writer": "GEMINI_FACT_REVIEWED_LOCAL_DRAFT",
+    "origin_push": "SUCCESS_REMOTE_SHA_VERIFIED",
+    "pr": "https://github.com/MrEcho114/PrivacyTrace/pull/26",
+    "writer": "GEMINI_FACT_REVIEWED_PUBLISHED",
     "inherited_untracked_files_preserved": true,
     "main_modified": false,
     "writer_user_authorized": true,
     "writer_provenance": "docs/stages/s0-gemini-provenance.json",
     "current_repo_permissions": {
       "pull": true,
-      "push": false,
+      "push": true,
       "admin": false
     },
     "issue_progress": "REMOTE_READBACK_VERIFIED",
-    "issue_progress_receipt": "docs/stages/s0-issue-progress.receipt.json"
+    "issue_progress_receipt": "docs/stages/s0-issue-progress.receipt.json",
+    "pr_state": "OPEN",
+    "pr_merged": false,
+    "verified_remote_code_head": "ec8f14bf116b6a86ba27a56dfbdab11272d850a1",
+    "remote_ci_receipt": "docs/stages/s0-remote-ci.receipt.json",
+    "evidence_is_snapshot_before_final_documentation_commit": true
   },
-  "recorded_at": "2026-10-03T09:26:12.296469+00:00"
+  "recorded_at": "2026-10-03T12:11:39.867522+00:00"
 }

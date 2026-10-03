@@ -54,8 +54,22 @@
       "before": 203,
       "after": 204,
       "reason": "Additional actual controlled worker malformed-object public CLI regression passed in final full suite"
+    },
+    "remote_publication_facts": {
+      "reason": "Live GitHub API readback, not new inferred content",
+      "pull_request": 27,
+      "verified_commit": "3ef27d050752c2194d64f972be363813ca28b8ff",
+      "ci_run_id": 37128232003,
+      "jobs_success": [
+        "api",
+        "web",
+        "isolated-worker"
+      ],
+      "api_tests": "197 passed / 7 skipped",
+      "isolated_worker_tests": "27 passed / 0 skipped",
+      "overlapping_test_counts_not_additive": true
     }
   },
-  "publication_status": "DRAFT_PR_PENDING",
+  "publication_status": "DRAFT_PR_27_PUBLISHED_HUMAN_AB_PENDING",
   "recorded_at": "2026-10-03T13:51:19.749250+00:00"
 }

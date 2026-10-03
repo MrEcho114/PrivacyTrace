@@ -2,7 +2,7 @@
 
 - **日期**：2026-10-03（原计划 10-05 ~ 10-08，提前实施）
 - **基线与分支**：分支 `codex/s1-e2e`，基于提交 `7cee0d06bc9c1c8afe7f00ba97bbc73be54bab0e`。
-- **PR 关系**：依赖前序 PR #26（未合并），以 Stacked Draft PR 形式提交；关联工单 Refs #3, #10, #11, #12, #13, #14, #15，不代表相关工单已完结。
+- **PR 关系**：依赖前序 PR #26（未合并），以 [Stacked Draft PR #27](https://github.com/MrEcho114/PrivacyTrace/pull/27) 形式提交；关联工单 Refs #3, #10, #11, #12, #13, #14, #15，不代表相关工单已完结。
 - **状态判定**：端到端技术链路已在本地跑通，当前处于 `PENDING_HUMAN_AB` 状态，待技术成员 A 与 B 完成逐行人工核验并签字。
 
 ## 1. 任务交付与边界对照
@@ -44,7 +44,7 @@
 
 - **本地测试**：在启用 `$env:PRIVACYTRACE_DOCKER_TESTS='1'` 环境下，执行 `pytest apps/api/tests` 取得 204 项 passed（0 skipped，包含真实 Docker 容器测试），有 1 条 Starlette/HTTPX 弃用警告。Ruff、模式导出、TypeScript 类型检查及构建全部 PASS。
 - **三处测试入口**：CLI 扫描器、HTTP 审查接口及前端端到端交互均验证通过。界面中的备注为 Codex 冒烟测试记录（非人工签字），服务重启后保留；受控的取消/失败测试用例与真实样本完全隔离。
-- **远程 CI 说明**：GitHub Actions 单一工作流中包含 `api`、`web`、`isolated-worker` 三个作业。当前分支未推送，远程 CI 尚未运行，结果以推送后生成的 `./s1-remote-ci.receipt.json` 为准。
+- **远程 CI 说明**：GitHub Actions 单一工作流中包含 `api`、`web`、`isolated-worker` 三个作业。实现提交 `3ef27d050752c2194d64f972be363813ca28b8ff` 的 [GitHub Actions](https://github.com/MrEcho114/PrivacyTrace/actions/runs/37128232003) 已通过：`api`、`web`、`isolated-worker` 三个作业均 success。api 为 197 passed / 7 skipped（默认不启用容器测试）；isolated-worker 启用容器测试，27 passed / 0 skipped。两组测试有重叠，不能相加。记录见 `./s1-remote-ci.receipt.json`。
 - **文件索引**：
   - 运行记录与核验摘要：[`./s1-verification.json`](./s1-verification.json)
   - 界面截图证明：[`./s1-report-proof.png`](./s1-report-proof.png)

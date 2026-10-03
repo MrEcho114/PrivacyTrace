@@ -184,7 +184,16 @@
     "java_user_home": "BOUNDED_TMPFS_NOT_HOST_CONFIG_CHANGE"
   },
   "remote_ci": {
-    "status": "NOT_YET_PUSHED"
+    "status": "SUCCESS",
+    "verified_commit": "3ef27d050752c2194d64f972be363813ca28b8ff",
+    "workflow_run_id": 37128232003,
+    "url": "https://github.com/MrEcho114/PrivacyTrace/actions/runs/37128232003",
+    "receipt": "s1-remote-ci.receipt.json",
+    "jobs": {
+      "api": "success",
+      "web": "success",
+      "isolated-worker": "success"
+    }
   },
   "publication_excludes": [
     "APK/AAB/DEX",
@@ -202,5 +211,11 @@
     "status": "SUCCESS_FACT_REVIEWED",
     "provenance_file": "s1-gemini-provenance.json"
   },
-  "recorded_at": "2026-10-03T13:29:57.114715+00:00"
+  "recorded_at": "2026-10-03T13:29:57.114715+00:00",
+  "pull_request": {
+    "number": 27,
+    "url": "https://github.com/MrEcho114/PrivacyTrace/pull/27",
+    "draft": true,
+    "base": "codex/s0-contracts"
+  }
 }

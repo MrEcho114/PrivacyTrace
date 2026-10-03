@@ -11,4 +11,4 @@ def read_json(relative_path: str) -> dict:
 
 
 def taxonomy() -> dict:
-    return read_json("rules/taxonomy.v0.1.json")
+    return read_json("rules/taxonomy.v0.2.json")

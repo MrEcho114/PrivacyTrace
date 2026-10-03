@@ -1,6 +1,7 @@
 """Initial rules evaluate data-type disclosure only, never actual collection or legality."""
 
 from .models import (
+    AnalysisJob,
     EvaluationInput,
     EvaluationResult,
     MatchStatus,
@@ -17,6 +18,28 @@ SOURCE_LABELS = {
     PolicySource.OFFICIAL_WEB_POLICY: "官网政策",
     PolicySource.SDK_POLICY: "SDK 自有政策",
 }
+
+
+def applicability(doc: PolicyDocument, job: AnalysisJob) -> str:
+    """Compare scope before comparing claims; missing metadata is never a match."""
+    scope = doc.applicability
+    checks = [
+        None
+        if not scope.package_name or not job.package_name
+        else scope.package_name == job.package_name,
+        None
+        if not scope.version_codes or job.version_code is None
+        else job.version_code in scope.version_codes,
+        None
+        if not scope.regions or not job.region
+        else "*" in scope.regions or job.region in scope.regions,
+        None
+        if not scope.product_scope or not job.product_scope
+        else scope.product_scope in {"*", job.product_scope},
+    ]
+    if False in checks:
+        return "INAPPLICABLE"
+    return "UNKNOWN" if None in checks else "APPLICABLE"
 
 
 def evaluate(bundle: EvaluationInput) -> EvaluationResult:
@@ -48,6 +71,14 @@ def evaluate(bundle: EvaluationInput) -> EvaluationResult:
             policy_document_ids=[doc.id for doc in docs],
             evidence_ids=list(dict.fromkeys(behavior.evidence_ids + refs)),
             explanation=explanation,
+            requires_review=status != MatchStatus.EXACT_MATCH
+            or any(
+                doc.completeness != "COMPLETE"
+                or doc.extraction_status != "SUCCEEDED"
+                or doc.review_status != "REVIEWED"
+                or doc.attachments_status != "COMPLETE"
+                for doc in docs
+            ),
         )
         issues.append(issue)
         return issue
@@ -55,11 +86,14 @@ def evaluate(bundle: EvaluationInput) -> EvaluationResult:
     for behavior in bundle.behaviors:
         label = types[behavior.data_type]["label"]
         has_api = behavior.action == "ACCESS" and any(
-            evidence[ref].kind == "API" for ref in behavior.evidence_ids
+            evidence[ref].api_call is not None for ref in behavior.evidence_ids
         )
         # SDK policies cannot substitute for a host app's disclosure.
         host_docs = [
-            doc for doc in bundle.policy_documents if doc.source_type != PolicySource.SDK_POLICY
+            doc
+            for doc in bundle.policy_documents
+            if doc.source_type != PolicySource.SDK_POLICY
+            and applicability(doc, bundle.job) != "INAPPLICABLE"
         ]
         if not has_api or not host_docs:
             add(
@@ -72,6 +106,18 @@ def evaluate(bundle: EvaluationInput) -> EvaluationResult:
             continue
         per_source: list[tuple[PolicyDocument, PrivacyIssue]] = []
         for doc in host_docs:
+            if applicability(doc, bundle.job) == "UNKNOWN" or doc.extraction_status in {
+                "FAILED",
+                "NOT_STARTED",
+            }:
+                add(
+                    behavior,
+                    MatchStatus.INSUFFICIENT_EVIDENCE,
+                    [doc],
+                    [doc.evidence_id],
+                    f"关于{label}，政策适用范围尚未确认或条款抽取未成功，需补齐后复核。",
+                )
+                continue
             candidates = [
                 claim
                 for claim in bundle.policy_claims
@@ -84,11 +130,20 @@ def evaluate(bundle: EvaluationInput) -> EvaluationResult:
             clear = [
                 claim
                 for claim in candidates
-                if not claim.ambiguity_flags and claim.action == "ACCESS"
+                if not claim.ambiguity_flags
+                and claim.action == "ACCESS"
+                and claim.polarity == "AFFIRMATIVE"
+                and not claim.condition
+                and claim.subject == "HOST_APP"
             ]
             exact = [claim for claim in clear if claim.data_type == behavior.data_type]
             refs = [doc.evidence_id]
-            if exact:
+            negative = any(claim.polarity == "NEGATIVE" for claim in candidates)
+            if negative:
+                status = MatchStatus.AMBIGUOUS_DISCLOSURE
+                chosen = candidates
+                tail = "包含否定描述，静态调用不能证明承诺被违反，需复核条件和运行情况。"
+            elif exact:
                 status = MatchStatus.EXACT_MATCH
                 chosen = exact
                 tail = "明确提到了这一数据类型；目的、接收方和实际运行情况仍需分别核验。"
@@ -100,14 +155,19 @@ def evaluate(bundle: EvaluationInput) -> EvaluationResult:
                 status = MatchStatus.AMBIGUOUS_DISCLOSURE
                 chosen = candidates
                 tail = "有相关表述，但措辞或行为描述不够清楚。"
-            elif doc.completeness == "PARTIAL":
+            elif (
+                doc.completeness != "COMPLETE"
+                or doc.extraction_status != "SUCCEEDED"
+                or doc.review_status != "REVIEWED"
+                or doc.attachments_status != "COMPLETE"
+            ):
                 status = MatchStatus.INSUFFICIENT_EVIDENCE
                 chosen = []
-                tail = "快照不完整，不能据此判断是否声明了这一数据类型。"
+                tail = "快照、条款抽取、附件检查或全文复核未完成，不能据此判断声明缺失。"
             else:
                 status = MatchStatus.NOT_DECLARED
                 chosen = []
-                tail = "在当前人工整理的结构化声明中没有对应条目，需复核完整政策原文。"
+                tail = "在本次已完成全文及附件复核的适用政策快照中未找到对应条款；不构成法律裁决。"
             for claim in chosen:
                 refs.extend(claim.evidence_ids)
             issue = add(
@@ -123,7 +183,11 @@ def evaluate(bundle: EvaluationInput) -> EvaluationResult:
         conflicting = [
             (d, i)
             for d, i in per_source
-            if i.status in positive or i.status == MatchStatus.NOT_DECLARED
+            if (i.status in positive or i.status == MatchStatus.NOT_DECLARED)
+            and d.completeness == "COMPLETE"
+            and d.extraction_status == "SUCCEEDED"
+            and d.review_status == "REVIEWED"
+            and d.attachments_status == "COMPLETE"
         ]
         has_conflict = any(
             d1.source_type != d2.source_type

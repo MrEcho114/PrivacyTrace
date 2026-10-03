@@ -16,7 +16,7 @@ jobs:
       - run: uv run --project apps/api --locked pytest
       - run: uv run --project apps/api --locked ruff check apps/api/src apps/api/tests
       - run: uv run --project apps/api --locked python scripts/export-schema.py
-      - run: git diff --exit-code -- packages/contracts
+      - run: git diff --exit-code -- packages/contracts apps/web/src/contracts.generated.ts
   web:
     runs-on: ubuntu-latest
     steps:

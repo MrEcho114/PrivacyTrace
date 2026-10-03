@@ -19,7 +19,8 @@ def add_second_policy(data, *, source="STORE_POLICY", complete=True, with_claim=
             "status": "DECLARED",
             "source": "synthetic/second.txt",
             "locator": "snapshot",
-            "excerpt": doc["text"],
+            "excerpt": "",
+            "artifact_sha256": doc["artifact"]["sha256"],
             "document_id": doc["id"],
         }
     )
@@ -32,6 +33,8 @@ def add_second_policy(data, *, source="STORE_POLICY", complete=True, with_claim=
                 "source": "synthetic/second.txt",
                 "locator": "sentence[1]",
                 "excerpt": "我们访问精确位置。",
+                "start_offset": 0,
+                "end_offset": 9,
                 "document_id": doc["id"],
             }
         )
@@ -41,6 +44,8 @@ def add_second_policy(data, *, source="STORE_POLICY", complete=True, with_claim=
                 "document_id": doc["id"],
                 "data_type": "PRECISE_LOCATION",
                 "action": "ACCESS",
+                "polarity": "AFFIRMATIVE",
+                "subject": "HOST_APP",
                 "evidence_ids": ["ev-second-sentence"],
             }
         )
@@ -70,6 +75,7 @@ def test_semantic_states(bundle_data, scenario, expected):
         claim["data_type"] = "LOCATION"
         sentence = next(e for e in bundle_data["evidence"] if e["kind"] == "POLICY_SENTENCE")
         sentence["excerpt"] = "我们访问位置信息。"
+        sentence.update(start_offset=9, end_offset=18)
     elif scenario in {"not_declared", "partial"}:
         bundle_data["policy_claims"] = []
         if scenario == "partial":
@@ -92,6 +98,8 @@ def test_semantic_states(bundle_data, scenario, expected):
         claim["data_type"] = "CONTACTS"
     elif scenario == "child_does_not_cover_parent":
         bundle_data["behaviors"][0]["data_type"] = "LOCATION"
+        call = next(e for e in bundle_data["evidence"] if e["id"] == "ev-location-api")["api_call"]
+        call.update(rule_id="android.location.last-known.generic", context={})
     elif scenario == "capability_with_api":
         bundle_data["behaviors"][0]["action"] = "CAPABILITY"
     result = evaluate(EvaluationInput.model_validate(bundle_data))

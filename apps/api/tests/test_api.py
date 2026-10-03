@@ -8,7 +8,7 @@ client = TestClient(app)
 
 def test_health_and_taxonomy():
     assert client.get("/api/v1/health").json()["mode"] == "scaffold"
-    assert client.get("/api/v1/taxonomy").json()["version"] == "0.1.0"
+    assert client.get("/api/v1/taxonomy").json()["version"] == "0.2.0"
 
 
 def test_demo_report_and_evidence():

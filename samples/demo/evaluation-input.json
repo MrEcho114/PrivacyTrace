@@ -4,8 +4,12 @@
     "sample_id": "synthetic-app-001",
     "input_mode": "SYNTHETIC",
     "state": "SUCCEEDED",
-    "ruleset_version": "0.1.0",
-    "created_at": "2026-10-02T00:00:00Z"
+    "ruleset_version": "0.2.0",
+    "created_at": "2026-10-02T00:00:00Z",
+    "package_name": "org.privacytrace.demo",
+    "version_code": 1,
+    "region": "CN",
+    "product_scope": "HOST_APP"
   },
   "evidence": [
     {
@@ -22,7 +26,15 @@
       "status": "STATIC_POTENTIAL",
       "source": "synthetic/LocationFeature.java",
       "locator": "LocationFeature#readGpsLocation:12",
-      "excerpt": "locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);"
+      "excerpt": "locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);",
+      "api_call": {
+        "rule_id": "android.location.last-known.gps",
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "context": {
+          "provider": "gps"
+        },
+        "ruleset_version": "0.2.0"
+      }
     },
     {
       "id": "ev-contacts-api",
@@ -30,7 +42,15 @@
       "status": "STATIC_POTENTIAL",
       "source": "synthetic/ContactsFeature.java",
       "locator": "ContactsFeature#readContacts:19",
-      "excerpt": "resolver.query(ContactsContract.Contacts.CONTENT_URI, projection, null, null, null);"
+      "excerpt": "resolver.query(ContactsContract.Contacts.CONTENT_URI, projection, null, null, null);",
+      "api_call": {
+        "rule_id": "android.contacts.query",
+        "target_descriptor": "Landroid/content/ContentResolver;->query(Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;",
+        "context": {
+          "uri": "content://com.android.contacts/contacts"
+        },
+        "ruleset_version": "0.2.0"
+      }
     },
     {
       "id": "ev-oaid-api",
@@ -38,7 +58,13 @@
       "status": "STATIC_POTENTIAL",
       "source": "synthetic/DeviceFeature.java",
       "locator": "DeviceFeature#readDemoOaid:21",
-      "excerpt": "SyntheticOaidProvider.readOaid(); // artificial fixture, not a real SDK API"
+      "excerpt": "SyntheticOaidProvider.readOaid(); // artificial fixture, not a real SDK API",
+      "api_call": {
+        "rule_id": "synthetic.oaid.fixture",
+        "target_descriptor": "Lorg/privacytrace/demo/SyntheticOaidProvider;->readOaid()Ljava/lang/String;",
+        "context": {},
+        "ruleset_version": "0.2.0"
+      }
     },
     {
       "id": "ev-demo-sdk",
@@ -54,8 +80,9 @@
       "status": "DECLARED",
       "source": "synthetic/policy-in-app.txt",
       "locator": "complete snapshot",
-      "excerpt": "我们访问位置信息，用于提供地图功能。其他功能使用必要的应用配置。",
-      "document_id": "policy-in-app"
+      "excerpt": "",
+      "document_id": "policy-in-app",
+      "artifact_sha256": "f7abe7b2170da4c7e0d24d9fc963f6c6e3c83c238452b6fa3c2747a32262c5b8"
     },
     {
       "id": "ev-policy-store-snapshot",
@@ -63,8 +90,9 @@
       "status": "DECLARED",
       "source": "synthetic/policy-store.txt",
       "locator": "complete snapshot",
-      "excerpt": "我们访问位置信息，用于提供地图功能。我们访问OAID，用于统计。",
-      "document_id": "policy-store"
+      "excerpt": "",
+      "document_id": "policy-store",
+      "artifact_sha256": "7de0eb7be713291db38c2c02365fc05f5a0247d15dd21704e172adce5c982c15"
     },
     {
       "id": "ev-policy-in-app-location-sentence",
@@ -73,7 +101,9 @@
       "source": "synthetic/policy-in-app.txt",
       "locator": "sentence[1]",
       "excerpt": "我们访问位置信息，用于提供地图功能。",
-      "document_id": "policy-in-app"
+      "document_id": "policy-in-app",
+      "start_offset": 0,
+      "end_offset": 18
     },
     {
       "id": "ev-policy-store-location-sentence",
@@ -82,7 +112,9 @@
       "source": "synthetic/policy-store.txt",
       "locator": "sentence[1]",
       "excerpt": "我们访问位置信息，用于提供地图功能。",
-      "document_id": "policy-store"
+      "document_id": "policy-store",
+      "start_offset": 0,
+      "end_offset": 18
     },
     {
       "id": "ev-store-oaid-sentence",
@@ -91,7 +123,9 @@
       "source": "synthetic/policy-store.txt",
       "locator": "sentence[2]",
       "excerpt": "我们访问OAID，用于统计。",
-      "document_id": "policy-store"
+      "document_id": "policy-store",
+      "start_offset": 18,
+      "end_offset": 32
     }
   ],
   "behaviors": [
@@ -128,10 +162,27 @@
       "title": "示例 App 内隐私政策",
       "version": "synthetic-0.1",
       "captured_at": "2026-10-02T00:00:00Z",
-      "sha256": "f7abe7b2170da4c7e0d24d9fc963f6c6e3c83c238452b6fa3c2747a32262c5b8",
-      "text": "我们访问位置信息，用于提供地图功能。其他功能使用必要的应用配置。",
       "completeness": "COMPLETE",
-      "evidence_id": "ev-policy-in-app-snapshot"
+      "evidence_id": "ev-policy-in-app-snapshot",
+      "artifact": {
+        "text": "我们访问位置信息，用于提供地图功能。其他功能使用必要的应用配置。",
+        "sha256": "f7abe7b2170da4c7e0d24d9fc963f6c6e3c83c238452b6fa3c2747a32262c5b8",
+        "normalization": "NONE"
+      },
+      "extraction_status": "SUCCEEDED",
+      "review_status": "REVIEWED",
+      "attachments_status": "COMPLETE",
+      "applicability": {
+        "package_name": "org.privacytrace.demo",
+        "version_codes": [
+          1,
+          2
+        ],
+        "regions": [
+          "CN"
+        ],
+        "product_scope": "HOST_APP"
+      }
     },
     {
       "id": "policy-store",
@@ -139,10 +190,27 @@
       "title": "示例应用商店声明",
       "version": "synthetic-0.1",
       "captured_at": "2026-10-02T00:00:00Z",
-      "sha256": "7de0eb7be713291db38c2c02365fc05f5a0247d15dd21704e172adce5c982c15",
-      "text": "我们访问位置信息，用于提供地图功能。我们访问OAID，用于统计。",
       "completeness": "COMPLETE",
-      "evidence_id": "ev-policy-store-snapshot"
+      "evidence_id": "ev-policy-store-snapshot",
+      "artifact": {
+        "text": "我们访问位置信息，用于提供地图功能。我们访问OAID，用于统计。",
+        "sha256": "7de0eb7be713291db38c2c02365fc05f5a0247d15dd21704e172adce5c982c15",
+        "normalization": "NONE"
+      },
+      "extraction_status": "SUCCEEDED",
+      "review_status": "REVIEWED",
+      "attachments_status": "COMPLETE",
+      "applicability": {
+        "package_name": "org.privacytrace.demo",
+        "version_codes": [
+          1,
+          2
+        ],
+        "regions": [
+          "CN"
+        ],
+        "product_scope": "HOST_APP"
+      }
     }
   ],
   "policy_claims": [
@@ -154,7 +222,9 @@
       "declared_purpose": "提供地图功能",
       "evidence_ids": [
         "ev-policy-in-app-location-sentence"
-      ]
+      ],
+      "polarity": "AFFIRMATIVE",
+      "subject": "HOST_APP"
     },
     {
       "id": "claim-policy-store-location",
@@ -164,7 +234,9 @@
       "declared_purpose": "提供地图功能",
       "evidence_ids": [
         "ev-policy-store-location-sentence"
-      ]
+      ],
+      "polarity": "AFFIRMATIVE",
+      "subject": "HOST_APP"
     },
     {
       "id": "claim-store-oaid",
@@ -174,7 +246,9 @@
       "declared_purpose": "统计",
       "evidence_ids": [
         "ev-store-oaid-sentence"
-      ]
+      ],
+      "polarity": "AFFIRMATIVE",
+      "subject": "HOST_APP"
     }
   ]
 }

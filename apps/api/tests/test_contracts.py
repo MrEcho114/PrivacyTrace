@@ -37,7 +37,7 @@ def test_invalid_evidence_contracts_are_rejected(bundle_data, failure):
             "编造原句"
         )
     elif failure == "fake_hash":
-        bundle_data["policy_documents"][0]["sha256"] = "0" * 64
+        bundle_data["policy_documents"][0]["artifact"]["sha256"] = "0" * 64
     elif failure == "wrong_version":
         bundle_data["job"]["ruleset_version"] = "unknown"
     elif failure == "declaration_as_fact":
@@ -73,7 +73,8 @@ def test_sql_design_initializes_and_preserves_foreign_keys():
     assert database.execute("PRAGMA foreign_keys").fetchone() == (1,)
     with pytest.raises(sqlite3.IntegrityError):
         database.execute(
-            "INSERT INTO analysis_job VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO analysis_job (id, sample_id, state, ruleset_version, created_at, error) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
             ("job", "nonexistent", "QUEUED", "0.1.0", "2026-10-02", None),
         )
     database.close()

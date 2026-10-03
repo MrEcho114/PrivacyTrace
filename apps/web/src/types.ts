@@ -1,43 +1,22 @@
-export type MatchStatus =
-  | 'EXACT_MATCH' | 'CATEGORY_MATCH' | 'NOT_DECLARED'
-  | 'POLICY_SOURCE_CONFLICT' | 'AMBIGUOUS_DISCLOSURE' | 'INSUFFICIENT_EVIDENCE'
+import type {
+  AnalysisJob, EvaluationResult, Evidence, PolicyDocument, PrivacyBehavior,
+} from './contracts.generated'
 
-export interface Evidence {
-  id: string
-  kind: 'MANIFEST' | 'API' | 'SDK' | 'POLICY_DOCUMENT' | 'POLICY_SENTENCE'
-  status: 'STATIC_POTENTIAL' | 'DECLARED'
-  source: string
-  locator: string
-  excerpt: string
-  document_id: string | null
-}
+export type * from './contracts.generated'
 
-export interface PrivacyIssue {
-  id: string
-  behavior_id: string
-  data_type: string
-  status: MatchStatus
-  evidence_status: 'STATIC_POTENTIAL'
-  evidence_ids: string[]
-  explanation: string
-  policy_document_ids: string[]
-}
-
-export interface PolicyDocument {
-  id: string
-  source_type: string
-  title: string
-  version: string
-  captured_at: string
-  sha256: string
-}
-
+// Demo envelope matches main.demo_report; nested contracts are generated.
 export interface DemoReport {
   demo: true
-  sample: { name: string; package_name: string; version: string }
-  job: { id: string; ruleset_version: string; input_mode: 'SYNTHETIC' }
-  result: { issues: PrivacyIssue[] }
+  sample: {
+    name: string
+    package_name: string
+    version: string
+    input_mode: 'SYNTHETIC'
+  }
+  job: AnalysisJob
+  result: EvaluationResult
   evidence: Evidence[]
+  behaviors: PrivacyBehavior[]
   policy_documents: PolicyDocument[]
 }
 

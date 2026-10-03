@@ -1,0 +1,198 @@
+{
+  "version": "0.2.0",
+  "note": "Eight display groups; Device Identifier belongs under Device Information in the hierarchy.",
+  "display_groups": [
+    "LOCATION",
+    "CONTACTS",
+    "DEVICE_IDENTIFIER",
+    "CAMERA",
+    "MICROPHONE",
+    "FILES_MEDIA",
+    "ACCOUNT_IDENTITY",
+    "DEVICE_USAGE_INFORMATION"
+  ],
+  "data_types": [
+    {
+      "id": "LOCATION",
+      "label": "位置",
+      "parent": null
+    },
+    {
+      "id": "PRECISE_LOCATION",
+      "label": "精确位置",
+      "parent": "LOCATION"
+    },
+    {
+      "id": "COARSE_LOCATION",
+      "label": "粗略位置",
+      "parent": "LOCATION"
+    },
+    {
+      "id": "CONTACTS",
+      "label": "通讯录",
+      "parent": null
+    },
+    {
+      "id": "DEVICE_USAGE_INFORMATION",
+      "label": "设备与使用信息",
+      "parent": null
+    },
+    {
+      "id": "DEVICE_INFORMATION",
+      "label": "设备信息",
+      "parent": "DEVICE_USAGE_INFORMATION"
+    },
+    {
+      "id": "DEVICE_IDENTIFIER",
+      "label": "设备标识符",
+      "parent": "DEVICE_INFORMATION"
+    },
+    {
+      "id": "ANDROID_ID",
+      "label": "Android ID",
+      "parent": "DEVICE_IDENTIFIER"
+    },
+    {
+      "id": "OAID",
+      "label": "OAID",
+      "parent": "DEVICE_IDENTIFIER"
+    },
+    {
+      "id": "IMEI",
+      "label": "IMEI",
+      "parent": "DEVICE_IDENTIFIER"
+    },
+    {
+      "id": "CAMERA",
+      "label": "相机",
+      "parent": null
+    },
+    {
+      "id": "MICROPHONE",
+      "label": "麦克风",
+      "parent": null
+    },
+    {
+      "id": "FILES_MEDIA",
+      "label": "文件与媒体",
+      "parent": null
+    },
+    {
+      "id": "ACCOUNT_IDENTITY",
+      "label": "账号与身份",
+      "parent": null
+    }
+  ],
+  "permission_mappings": [
+    {
+      "permission": "android.permission.ACCESS_FINE_LOCATION",
+      "data_type": "PRECISE_LOCATION",
+      "evidence_strength": "CAPABILITY_ONLY"
+    },
+    {
+      "permission": "android.permission.ACCESS_COARSE_LOCATION",
+      "data_type": "COARSE_LOCATION",
+      "evidence_strength": "CAPABILITY_ONLY"
+    },
+    {
+      "permission": "android.permission.READ_CONTACTS",
+      "data_type": "CONTACTS",
+      "evidence_strength": "CAPABILITY_ONLY"
+    },
+    {
+      "permission": "android.permission.CAMERA",
+      "data_type": "CAMERA",
+      "evidence_strength": "CAPABILITY_ONLY"
+    },
+    {
+      "permission": "android.permission.RECORD_AUDIO",
+      "data_type": "MICROPHONE",
+      "evidence_strength": "CAPABILITY_ONLY"
+    }
+  ],
+  "api_mappings": [
+    {
+      "rule_id": "android.location.last-known.gps",
+      "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "context": {
+        "provider": "gps"
+      },
+      "data_type": "PRECISE_LOCATION",
+      "note": "Static provider argument must resolve to gps; no runtime collection assertion."
+    },
+    {
+      "rule_id": "android.location.last-known.generic",
+      "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "context": {},
+      "data_type": "LOCATION",
+      "note": "Unresolved provider does not justify a precise/coarse subtype."
+    },
+    {
+      "rule_id": "android.contacts.query",
+      "target_descriptor": "Landroid/content/ContentResolver;->query(Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;",
+      "context": {
+        "uri": "content://com.android.contacts/contacts"
+      },
+      "data_type": "CONTACTS",
+      "note": "URI must be statically resolved; arbitrary resolver.query is not contacts evidence."
+    },
+    {
+      "rule_id": "synthetic.oaid.fixture",
+      "target_descriptor": "Lorg/privacytrace/demo/SyntheticOaidProvider;->readOaid()Ljava/lang/String;",
+      "context": {},
+      "data_type": "OAID",
+      "synthetic_only": true,
+      "note": "Artificial demonstration ONLY; forbidden for APK input."
+    }
+  ],
+  "policy_phrase_mappings": [
+    {
+      "phrase": "精确位置",
+      "data_type": "PRECISE_LOCATION"
+    },
+    {
+      "phrase": "位置信息",
+      "data_type": "LOCATION"
+    },
+    {
+      "phrase": "通讯录",
+      "data_type": "CONTACTS"
+    },
+    {
+      "phrase": "设备信息",
+      "data_type": "DEVICE_INFORMATION"
+    },
+    {
+      "phrase": "设备标识符",
+      "data_type": "DEVICE_IDENTIFIER"
+    },
+    {
+      "phrase": "OAID",
+      "data_type": "OAID"
+    },
+    {
+      "phrase": "Android ID",
+      "data_type": "ANDROID_ID"
+    },
+    {
+      "phrase": "IMEI",
+      "data_type": "IMEI"
+    },
+    {
+      "phrase": "相机",
+      "data_type": "CAMERA"
+    },
+    {
+      "phrase": "麦克风",
+      "data_type": "MICROPHONE"
+    },
+    {
+      "phrase": "媒体文件",
+      "data_type": "FILES_MEDIA"
+    },
+    {
+      "phrase": "账号信息",
+      "data_type": "ACCOUNT_IDENTITY"
+    }
+  ]
+}

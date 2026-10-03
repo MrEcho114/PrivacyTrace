@@ -1,4 +1,5 @@
 from copy import deepcopy
+from hashlib import sha256
 
 import pytest
 from pydantic import ValidationError
@@ -51,6 +52,33 @@ def test_mixed_negative_and_positive_claims_require_review(bundle_data):
     claim = deepcopy(bundle_data["policy_claims"][0])
     claim.update(id="negative", polarity="NEGATIVE")
     bundle_data["policy_claims"].append(claim)
+    assert statuses(bundle_data) == ["AMBIGUOUS_DISCLOSURE"]
+
+
+@pytest.mark.parametrize(
+    "text,polarity,condition",
+    [
+        ("我们不收集精确位置。", "NEGATIVE", None),
+        ("我们仅在开启附近功能时访问精确位置。", "AFFIRMATIVE", "开启附近功能"),
+        ("我们不收集精确位置。", None, None),
+    ],
+)
+def test_actual_negative_and_conditional_quotes_are_not_default_positive(
+    bundle_data, text, polarity, condition
+):
+    doc = bundle_data["policy_documents"][0]
+    doc["artifact"] = {"text": text, "sha256": sha256(text.encode()).hexdigest()}
+    next(e for e in bundle_data["evidence"] if e["id"] == doc["evidence_id"])["artifact_sha256"] = (
+        doc["artifact"]["sha256"]
+    )
+    sentence = next(e for e in bundle_data["evidence"] if e["kind"] == "POLICY_SENTENCE")
+    sentence.update(excerpt=text, start_offset=0, end_offset=len(text))
+    claim = bundle_data["policy_claims"][0]
+    if polarity is None:
+        claim.pop("polarity")  # Omitted semantics must remain UNKNOWN, never affirmative.
+    else:
+        claim["polarity"] = polarity
+    claim["condition"] = condition
     assert statuses(bundle_data) == ["AMBIGUOUS_DISCLOSURE"]
 
 

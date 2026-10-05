@@ -3,7 +3,7 @@
 - **日期**：2026-10-05（香港时间）。
 - **基线与分支**：`codex/s1-hardening`，基于 `16223ce09b9a68f50b5a07182c3f59274010c09e`（S1 PR #27）。
 - **PR 关系**：本轮修复以 S1 分支 `codex/s1-e2e` 为目标，关联 Refs #3, #10, #13, #14, #17；不关闭任务或自动合并。S0 PR #26 已合并至 main。
-- **状态判定**：四项修复已实现并完成本地回归；S1 继续保持 `PENDING_HUMAN_AB`。本报告的自动化记录不构成人工复核。
+- **状态判定**：四项修复已实现并完成本地回归；实现提交的远程三项 CI 均通过，交付为 [Draft PR #28](https://github.com/MrEcho114/PrivacyTrace/pull/28)。S1 继续保持 `PENDING_HUMAN_AB`。本报告的自动化记录不构成人工复核。
 
 ## 1. 任务交付与边界对照
 
@@ -36,6 +36,9 @@
 | 浏览器同名任务 | 自动选择真实 `demo` 记录、保存备注、切到人工示例、刷新回到真实任务均通过 |
 | 浏览器控制台 error | 本轮检查为空 |
 | 本机 Docker | 引擎未运行，7 项 opt-in 容器测试未执行；远程 CI 另按具体提交记录 |
+| 实现提交远程 CI | `15e79bb3f33864dfdf11870c0a1c3a25b6d3a3f0` 的 api / web / isolated-worker 全部 success；[run 37319818762](https://github.com/MrEcho114/PrivacyTrace/actions/runs/37319818762) |
+
+远程日志：api 为 215 passed / 7 skipped，web 为 6 项回归通过且构建通过，isolated-worker 为 27 passed。api 与 worker 用例有重叠，不相加为总数。记录见 [CI receipt](s1-hardening-remote-ci.receipt.json)，固定绑定实现提交，避免补录文档的自身哈希循环；不把该结果当成后续文档提交的 CI。容器成功不代替真实 GKD 重测或人工验收。
 
 环境为 Windows、Python 3.11.9、既有锁文件依赖。通过 `PYTHONPATH=apps/api/src` 显式加载本次 checkout，复用本机已有依赖环境；没有升级锁文件。本次未获取或重跑 GKD，不沿用组员的 204 项本机 Docker 通过记录作为本轮结果。
 

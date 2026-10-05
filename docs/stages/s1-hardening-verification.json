@@ -43,7 +43,13 @@
     "frontend": {"failed": 5, "passed": 1},
     "pipeline_race": {"failed": 1}
   },
-  "remote_ci": {"status": "PENDING_PUBLICATION", "note": "Record run and head SHA separately after publishing."},
+  "remote_ci": {
+    "status": "SUCCESS",
+    "implementation_commit": "15e79bb3f33864dfdf11870c0a1c3a25b6d3a3f0",
+    "workflow_run_id": 37319818762,
+    "receipt": "s1-hardening-remote-ci.receipt.json",
+    "note": "api, web and isolated-worker passed for the implementation commit; this receipt does not claim results for later documentation commits."
+  },
   "real_gkd_rerun": false,
   "human_review_gate": "PENDING_HUMAN_AB",
   "ruleset_or_contract_changed": false

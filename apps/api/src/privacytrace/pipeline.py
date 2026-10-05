@@ -24,13 +24,7 @@ def run(apk, policy, name, job_id=None, timeout=120, store_dir=None, product_sco
         created_at=datetime.now(timezone.utc),
         product_scope=product_scope,
     )
-    try:
-        store.get_job(job.id)
-    except KeyError:
-        pass
-    else:
-        raise ValueError("Job already exists; choose a new job ID")
-    store.save_job(job)
+    store.create_job(job)
 
     def cancelled():
         return store.get_job(job.id).state == "CANCELLED"

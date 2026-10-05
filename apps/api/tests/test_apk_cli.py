@@ -33,6 +33,49 @@ def test_cli_reads_binary_manifest_and_real_dex_invocation(tmp_path):
     assert "offset_bytes=6" in call["locator"]
 
 
+@pytest.mark.parametrize("tag", ["uses-permission", "uses-permission-sdk-23"])
+@pytest.mark.parametrize("max_sdk", [None, 28])
+def test_permission_tags_preserve_sdk_bounds_as_capabilities(tmp_path, tag, max_sdk):
+    result, report = scan(apk(
+        tmp_path / "permission.apk", invoke=False,
+        manifest_options={"permission_tag": tag, "max_sdk": max_sdk},
+    ))
+    assert result.returncode == 0, result.stderr
+    assert report["permissions"] == ["android.permission.CAMERA"]
+    assert len(report["behaviors"]) == 1
+    behavior = report["behaviors"][0]
+    assert behavior["action"] == "CAPABILITY"
+    assert behavior["data_type"] == "CAMERA"
+    assert behavior["purpose"] == "UNKNOWN"
+    evidence = report["evidence"][0]
+    assert evidence["kind"] == "MANIFEST"
+    assert behavior["evidence_ids"] == [evidence["id"]]
+    for field in ("locator", "excerpt"):
+        assert ("min_sdk=23" in evidence[field]) == (tag == "uses-permission-sdk-23")
+        assert ("max_sdk=28" in evidence[field]) == (max_sdk == 28)
+
+
+@pytest.mark.parametrize(
+    "version, encoding", [(7, 0x10), (7, 0x11), (2147483647, 0x11), ("007", None)]
+)
+def test_binary_manifest_integer_version_encodings(tmp_path, version, encoding):
+    result, report = scan(apk(
+        tmp_path / "version.apk", invoke=False,
+        manifest_options={"version_code": version, "version_code_type": encoding},
+    ))
+    assert result.returncode == 0, result.stderr
+    assert report["version_code"] == int(version)
+
+
+@pytest.mark.parametrize("version", ["-1", "not-an-integer", "1.5"])
+def test_invalid_version_code_remains_a_structured_error(tmp_path, version):
+    result, report = scan(apk(
+        tmp_path / "invalid-version.apk", manifest_options={"version_code": version},
+    ))
+    assert result.returncode != 0
+    assert report["errors"][0]["code"] == "MANIFEST_INVALID"
+
+
 def test_cli_scans_multidex_and_rejects_corrupted_dex_without_losing_good_evidence(tmp_path):
     damaged = bytearray(dex(camera=True))
     damaged[8] ^= 1  # Independently break the DEX header checksum.

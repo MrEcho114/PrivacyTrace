@@ -1,0 +1,50 @@
+{
+  "phase": "S1_HARDENING",
+  "date": "2026-10-05",
+  "timezone": "Asia/Hong_Kong",
+  "status": "LOCAL_REGRESSION_PASSED_HUMAN_AB_PENDING",
+  "branch": "codex/s1-hardening",
+  "base_commit": "16223ce09b9a68f50b5a07182c3f59274010c09e",
+  "base_pr": 27,
+  "issue_ids": [3, 10, 13, 14, 17],
+  "fixed_boundaries": [
+    "SDK_23_PERMISSION_AND_SDK_BOUNDS",
+    "AXML_HEX_VERSION_CODE",
+    "ATOMIC_JOB_ID_RESERVATION",
+    "REAL_DEMO_JOB_SOURCE_COLLISION"
+  ],
+  "local_verification": {
+    "platform": "Windows",
+    "python": "3.11.9",
+    "pytest_passed": 215,
+    "pytest_skipped": 7,
+    "docker_opt_in": false,
+    "docker_skip_reason": "Docker Desktop Linux engine pipe unavailable",
+    "warning": "Existing Starlette/HTTPX deprecation",
+    "ruff": "PASS",
+    "schema_export": "PASS_NO_GENERATED_DIFF",
+    "frontend_tests_passed": 6,
+    "typecheck": "PASS",
+    "build": "PASS",
+    "multiprocess_contenders": 4,
+    "successful_reservations": 1,
+    "browser": {
+      "fixture": "CONTROLLED_UI_FIXTURE_ONLY",
+      "job_id": "demo",
+      "real_job_and_synthetic_switch": "PASS",
+      "review_note_saved": "PASS",
+      "console_errors": [],
+      "screenshot": "s1-hardening-proof.png",
+      "human_acceptance": false
+    }
+  },
+  "baseline_regression": {
+    "manifest_targeted": {"failed": 5, "passed": 3},
+    "frontend": {"failed": 5, "passed": 1},
+    "pipeline_race": {"failed": 1}
+  },
+  "remote_ci": {"status": "PENDING_PUBLICATION", "note": "Record run and head SHA separately after publishing."},
+  "real_gkd_rerun": false,
+  "human_review_gate": "PENDING_HUMAN_AB",
+  "ruleset_or_contract_changed": false
+}

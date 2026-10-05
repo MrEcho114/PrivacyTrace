@@ -176,6 +176,14 @@ class JobStore:
             self._write(record)
             return report
 
+    def create_job(self, job: AnalysisJob) -> AnalysisJob:
+        """Reserve an ID before intake, under the same cross-process write lock."""
+        with self._transaction():
+            if self._path(job.id).exists():
+                raise ValueError("Job already exists; choose a new job ID")
+            self._write(StoredJob(job=job))
+            return job
+
     def save_job(self, job: AnalysisJob) -> AnalysisJob:
         with self._transaction():
             try:

@@ -8,6 +8,7 @@ const taxonomy = ref<Taxonomy | null>(null)
 const jobs = ref<AnalysisJob[]>([])
 const activeJob = ref<AnalysisJob | null>(null)
 const source = ref('demo')
+const jobSource = (id: string) => `job:${id}`
 const selected = ref<PrivacyIssue | null>(null)
 const loading = ref(false)
 const error = ref('')
@@ -92,13 +93,13 @@ async function reload(initial = false) {
     if (current !== requestId) return
     jobs.value = nextJobs.jobs
     taxonomy.value = nextTaxonomy
-    if (initial && jobs.value.length) source.value = jobs.value[0]!.id
+    if (initial && jobs.value.length) source.value = jobSource(jobs.value[0]!.id)
     if (source.value === 'demo') {
       const nextReport = await loadReport(signal)
       if (current === requestId) report.value = nextReport
     }
     else {
-      const job = await loadJob(source.value, signal)
+      const job = await loadJob(source.value.slice(4), signal)
       if (current !== requestId) return
       activeJob.value = job
       if (job.state === 'SUCCEEDED') {
@@ -156,7 +157,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         <label for="report-source">报告来源</label>
         <select id="report-source" v-model="source" @change="reload()">
           <option value="demo">SYNTHETIC · 人工构造示例</option>
-          <option v-for="job in jobs" :key="job.id" :value="job.id">{{ job.package_name || job.sample_id }} · {{ job.id }} · {{ jobLabels[job.state] }}</option>
+          <option v-for="job in jobs" :key="job.id" :value="jobSource(job.id)">{{ job.package_name || job.sample_id }} · {{ job.id }} · {{ jobLabels[job.state] }}</option>
         </select>
         <p class="subtle">真实任务由 APK 扫描 CLI 创建；示例仅用于演示，不是实际应用的检测结果。</p>
       </section>

@@ -145,16 +145,24 @@ def scan(path, rules, inventory=False):
         if not apk.is_valid_APK() or apk.get_android_manifest_xml() is None:
             raise ScanError("MANIFEST_INVALID", "Binary Android manifest could not be parsed")
         try:
-            version_code = int(apk.get_androidversion_code())
+            raw_version_code = apk.get_androidversion_code()
+            version_code = int(raw_version_code, 16 if raw_version_code.startswith("0x") else 10)
             if version_code < 0:
                 raise ValueError("negative versionCode")
-        except (TypeError, ValueError) as exc:
+        except (AttributeError, TypeError, ValueError) as exc:
             raise ScanError("MANIFEST_INVALID", "Manifest versionCode must be an integer") from exc
+        android_ns = "{http://schemas.android.com/apk/res/android}"
+        declarations = sorted({
+            (element.get(android_ns + "name"), tag, element.get(android_ns + "maxSdkVersion", ""))
+            for tag in ("uses-permission", "uses-permission-sdk-23")
+            for element in apk.get_android_manifest_xml().findall(tag)
+            if element.get(android_ns + "name")
+        })
         result.update(
             package_name=apk.get_package(),
             version_code=version_code,
             version_name=apk.get_androidversion_name(),
-            permissions=sorted(set(apk.get_permissions())),
+            permissions=sorted({name for name, _, _ in declarations}),
         )
         if not result["package_name"]:
             raise ScanError("MANIFEST_INVALID", "Manifest package is missing")
@@ -191,12 +199,19 @@ def scan(path, rules, inventory=False):
             )
 
         for mapping in rules["permission_mappings"]:
-            if mapping["permission"] in result["permissions"]:
+            for permission, tag, max_sdk in declarations:
+                if permission != mapping["permission"]:
+                    continue
+                bounds = ""
+                if tag == "uses-permission-sdk-23":
+                    bounds += ";tag=uses-permission-sdk-23;min_sdk=23"
+                if max_sdk:
+                    bounds += ";max_sdk=" + max_sdk
                 add(
                     "MANIFEST",
                     "AndroidManifest.xml",
-                    "apk_sha256=" + result["apk_sha256"] + ";permission=" + mapping["permission"],
-                    mapping["permission"],
+                    "apk_sha256=" + result["apk_sha256"] + ";permission=" + permission + bounds,
+                    permission + bounds,
                     mapping["data_type"],
                     "CAPABILITY",
                 )

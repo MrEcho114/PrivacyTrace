@@ -20,23 +20,28 @@ def uleb(value):
     return bytes(out)
 
 
-def manifest(split=False, permission="android.permission.CAMERA"):
+def manifest(
+    split=False, permission="android.permission.CAMERA", *,
+    permission_tag="uses-permission", max_sdk=None, version_code="7", version_code_type=None,
+):
     strings = [
         "manifest",
         "package",
         "org.privacytrace.fixture",
         "versionCode",
-        "7",
+        str(version_code),
         "versionName",
         "1.0",
         "http://schemas.android.com/apk/res/android",
         "android",
-        "uses-permission",
+        permission_tag,
         "name",
         permission,
         "split",
         "config.en",
     ]
+    if max_sdk is not None:
+        strings.extend(["maxSdkVersion", str(max_sdk)])
     idx = {s: i for i, s in enumerate(strings)}
     data, offsets = bytearray(), []
     for string in strings:
@@ -79,15 +84,21 @@ def manifest(split=False, permission="android.permission.CAMERA"):
     ns = strings[7]
     attrs = [
         attr("package", strings[2]),
-        attr("versionCode", "7", ns),
+        attr("versionCode", str(version_code), ns) if version_code_type is None else struct.pack(
+            "<IIIHBBI", idx[ns], idx["versionCode"], 0xFFFFFFFF, 8, 0,
+            version_code_type, int(version_code),
+        ),
         attr("versionName", "1.0", ns),
     ]
     if split:
         attrs.append(attr("split", "config.en"))
     chunks = pool + node(0x100, struct.pack("<II", idx["android"], idx[ns]))
     chunks += start("manifest", attrs)
-    chunks += start("uses-permission", [attr("name", strings[11], ns)])
-    chunks += end("uses-permission") + end("manifest")
+    permission_attrs = [attr("name", strings[11], ns)]
+    if max_sdk is not None:
+        permission_attrs.append(attr("maxSdkVersion", str(max_sdk), ns))
+    chunks += start(permission_tag, permission_attrs)
+    chunks += end(permission_tag) + end("manifest")
     chunks += node(0x101, struct.pack("<II", idx["android"], idx[ns]))
     return struct.pack("<HHI", 3, 8, len(chunks) + 8) + chunks
 
@@ -321,13 +332,14 @@ def dex(*, invoke=True, camera=False, provider="gps", branch=False, kind=None):
 
 
 def apk(
-    path: Path, *, entries=None, split=False, permission="android.permission.CAMERA", **dex_options
+    path: Path, *, entries=None, split=False, permission="android.permission.CAMERA",
+    manifest_options=None, **dex_options,
 ):
     if entries is None:
         entries = {"classes.dex": dex(**dex_options)}
     with ZipFile(path, "w", compression=ZIP_STORED) as archive:
         for name, payload in {
-            "AndroidManifest.xml": manifest(split, permission),
+            "AndroidManifest.xml": manifest(split, permission, **(manifest_options or {})),
             **entries,
         }.items():
             info = ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0))

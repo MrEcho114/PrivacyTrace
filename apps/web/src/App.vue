@@ -1,13 +1,20 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { cancelJob, loadJob, loadJobReport, loadJobs, loadReport, loadTaxonomy, submitReview } from './api'
-import type { AnalysisJob, DemoReport, Evidence, MatchStatus, PrivacyIssue, Report, Taxonomy } from './types'
+import type { AnalysisJob, DemoReport, Evidence, MatchStatus, PrivacyIssue, Report, ReportSource, Taxonomy } from './types'
+import { parseSource, serializeSource } from './types'
 
 const report = ref<DemoReport | Report | null>(null)
 const taxonomy = ref<Taxonomy | null>(null)
 const jobs = ref<AnalysisJob[]>([])
 const activeJob = ref<AnalysisJob | null>(null)
-const source = ref('demo')
+const source = ref<ReportSource>({ kind: 'demo' })
+const selectedSourceKey = computed({
+  get: () => serializeSource(source.value),
+  set: (val: string) => {
+    source.value = parseSource(val)
+  },
+})
 const selected = ref<PrivacyIssue | null>(null)
 const loading = ref(false)
 const error = ref('')
@@ -92,13 +99,13 @@ async function reload(initial = false) {
     if (current !== requestId) return
     jobs.value = nextJobs.jobs
     taxonomy.value = nextTaxonomy
-    if (initial && jobs.value.length) source.value = jobs.value[0]!.id
-    if (source.value === 'demo') {
+    if (initial && jobs.value.length) source.value = { kind: 'job', id: jobs.value[0]!.id }
+    if (source.value.kind === 'demo') {
       const nextReport = await loadReport(signal)
       if (current === requestId) report.value = nextReport
     }
     else {
-      const job = await loadJob(source.value, signal)
+      const job = await loadJob(source.value.id, signal)
       if (current !== requestId) return
       activeJob.value = job
       if (job.state === 'SUCCEEDED') {
@@ -154,14 +161,14 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
       </section>
       <section class="source-picker">
         <label for="report-source">报告来源</label>
-        <select id="report-source" v-model="source" @change="reload()">
-          <option value="demo">SYNTHETIC · 人工构造示例</option>
-          <option v-for="job in jobs" :key="job.id" :value="job.id">{{ job.package_name || job.sample_id }} · {{ job.id }} · {{ jobLabels[job.state] }}</option>
+        <select id="report-source" v-model="selectedSourceKey" @change="reload()">
+          <option value="demo:synthetic">SYNTHETIC · 人工构造示例</option>
+          <option v-for="job in jobs" :key="job.id" :value="`job:${job.id}`">{{ job.package_name || job.sample_id }} · {{ job.id }} · {{ jobLabels[job.state] }}</option>
         </select>
         <p class="subtle">真实任务由 APK 扫描 CLI 创建；示例仅用于演示，不是实际应用的检测结果。</p>
       </section>
-      <aside class="demo-note"><strong>{{ source === 'demo' ? 'SYNTHETIC 示例' : '真实 APK 静态报告' }}</strong>
-        {{ source === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。报告不保证覆盖反射、动态加载、原生代码或运行时行为。' }}
+      <aside class="demo-note"><strong>{{ source.kind === 'demo' ? 'SYNTHETIC 示例' : '真实 APK 静态报告' }}</strong>
+        {{ source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。报告不保证覆盖反射、动态加载、原生代码或运行时行为。' }}
         六种状态只对照 DATA_TYPE_DISCLOSURE；“具体类型已声明”不代表目的、接收方、传输或时间范围全部一致，更不是合法性判断。
       </aside>
       <section v-if="activeJob" class="job-state" role="status">
@@ -174,7 +181,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
       <section v-if="error" class="state error" role="alert">{{ error }} <button @click="reload()">重试</button></section>
       <template v-if="report">
         <section class="sample-card">
-          <div class="app-icon">PT</div><div><h2>{{ report.sample.name }}</h2><p class="subtle">{{ report.sample.package_name }} · {{ report.demo ? report.sample.version : report.sample.version_name }}</p></div><span class="badge">{{ report.demo ? '人工示例' : '真实 APK · 静态潜在行为' }}</span>
+          <div class="app-icon">PT</div><div><h2>{{ report.sample.name }}</h2><p class="subtle">{{ report.sample.package_name }} · {{ report.demo ? report.sample.version : (report.sample.version_name ?? ('v' + report.sample.version_code)) }}</p></div><span class="badge">{{ report.demo ? '人工示例' : '真实 APK · 静态潜在行为' }}</span>
         </section>
         <section v-if="realReport" class="coverage-card">
           <h2>扫描覆盖：{{ realReport.coverage.status === 'COMPLETE' ? '本轮 DEX 扫描完成' : 'PARTIAL · 有未完成部分' }}</h2>

@@ -24,3 +24,21 @@ export interface Taxonomy {
   version: string
   data_types: { id: string; label: string; parent: string | null }[]
 }
+
+export type ReportSource =
+  | { kind: 'demo' }
+  | { kind: 'job'; id: string }
+
+export function serializeSource(source: ReportSource): string {
+  return source.kind === 'demo' ? 'demo:synthetic' : `job:${source.id}`
+}
+
+export function parseSource(val: string): ReportSource {
+  if (val === 'demo:synthetic' || val === 'demo') {
+    return { kind: 'demo' }
+  }
+  if (val.startsWith('job:')) {
+    return { kind: 'job', id: val.slice(4) }
+  }
+  return { kind: 'job', id: val }
+}

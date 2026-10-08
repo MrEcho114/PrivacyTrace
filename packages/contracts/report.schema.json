@@ -851,9 +851,17 @@
           "type": "string"
         },
         "version_name": {
-          "maxLength": 200,
-          "title": "Version Name",
-          "type": "string"
+          "anyOf": [
+            {
+              "maxLength": 1024,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version Name"
         },
         "version_code": {
           "minimum": 0,
@@ -885,7 +893,6 @@
       "required": [
         "name",
         "package_name",
-        "version_name",
         "version_code",
         "apk_sha256",
         "permissions",

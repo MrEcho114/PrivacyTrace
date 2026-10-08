@@ -6,7 +6,7 @@ import sys
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 import pytest
-from apk_fixture_builder import apk, dex
+from apk_fixture_builder import apk, dex, manifest
 
 
 def scan(path, *args):
@@ -199,3 +199,143 @@ def test_untrusted_zip_integrity_checks_are_structured_cli_failures(tmp_path, mo
     result, report = scan(path)
     assert result.returncode != 0
     assert report["errors"][0]["code"] == expected
+
+
+def test_uses_permission_sdk_23_is_recognized(tmp_path):
+    path = apk(
+        tmp_path / "sdk23.apk",
+        permission="android.permission.CAMERA",
+        sdk_23_permission="android.permission.RECORD_AUDIO",
+    )
+    result, report = scan(path)
+    assert result.returncode == 0
+    assert "android.permission.RECORD_AUDIO" in report["permissions"]
+    assert any(
+        e["kind"] == "MANIFEST" and "android.permission.RECORD_AUDIO" in e["excerpt"]
+        for e in report["evidence"]
+    )
+    assert any(
+        b["action"] == "CAPABILITY" and b["data_type"] == "MICROPHONE" for b in report["behaviors"]
+    )
+
+
+@pytest.mark.parametrize("tag", ["uses-permission", "uses-permission-sdk-23"])
+def test_cli_ignores_nested_permission_declarations(tmp_path, tag):
+    options = (
+        {"permission": "android.permission.RECORD_AUDIO", "permission_parent": "application"}
+        if tag == "uses-permission"
+        else {
+            "sdk_23_permission": "android.permission.RECORD_AUDIO",
+            "sdk_23_parent": "application",
+        }
+    )
+    path = apk(
+        tmp_path / "nested.apk",
+        entries={"AndroidManifest.xml": manifest(**options), "classes.dex": dex(invoke=False)},
+    )
+    result, report = scan(path)
+    assert result.returncode == 0
+    assert "android.permission.RECORD_AUDIO" not in report["permissions"]
+    assert not any(b["data_type"] == "MICROPHONE" for b in report["behaviors"])
+    assert not any("android.permission.RECORD_AUDIO" in e["excerpt"] for e in report["evidence"])
+
+
+@pytest.mark.parametrize("namespace", [None, "http://schemas.example.com/apk/res/custom"])
+def test_cli_ignores_permission_names_outside_android_namespace(tmp_path, namespace):
+    path = apk(
+        tmp_path / "wrong-namespace.apk",
+        entries={
+            "AndroidManifest.xml": manifest(
+                permission="android.permission.RECORD_AUDIO", permission_namespace=namespace
+            ),
+            "classes.dex": dex(invoke=False),
+        },
+    )
+    result, report = scan(path)
+    assert result.returncode == 0
+    assert report["permissions"] == []
+    assert not any(b["data_type"] == "MICROPHONE" for b in report["behaviors"])
+
+
+@pytest.mark.parametrize(
+    "tag_namespace",
+    ["http://schemas.android.com/apk/res/android", "http://schemas.example.com/apk/res/custom"],
+)
+def test_cli_ignores_namespaced_permission_elements(tmp_path, tag_namespace):
+    path = apk(
+        tmp_path / "namespaced-tags.apk",
+        entries={
+            "AndroidManifest.xml": manifest(
+                permission="android.permission.RECORD_AUDIO",
+                sdk_23_permission="android.permission.RECORD_AUDIO",
+                permission_tag_namespace=tag_namespace,
+            ),
+            "classes.dex": dex(invoke=False),
+        },
+    )
+    result, report = scan(path)
+    assert result.returncode == 0
+    assert report["permissions"] == []
+    assert not any(b["data_type"] == "MICROPHONE" for b in report["behaviors"])
+
+
+@pytest.mark.parametrize("value_type", [0x10, 0x11])
+def test_cli_reads_typed_binary_integer_version_code(tmp_path, value_type):
+    path = apk(
+        tmp_path / "typed-version.apk",
+        entries={
+            "AndroidManifest.xml": manifest(version_code="7", version_code_type=value_type),
+            "classes.dex": dex(invoke=False),
+        },
+    )
+    result, report = scan(path)
+    assert result.returncode == 0
+    assert report["version_code"] == 7
+    assert report["errors"] == []
+
+
+def test_hex_version_code_parsed_without_manifest_invalid(tmp_path):
+    path = apk(tmp_path / "hex_version.apk", version_code="0x00000007")
+    result, report = scan(path)
+    assert result.returncode == 0
+    assert report["version_code"] == 7
+    assert report["errors"] == []
+
+
+def test_sget_object_static_uri_resolves_and_matches_query(tmp_path):
+    path_contacts = apk(tmp_path / "contacts_sget.apk", kind="sget_contacts")
+    res_c, report_c = scan(path_contacts)
+    assert res_c.returncode == 0
+    assert any(
+        b["action"] == "ACCESS" and b["data_type"] == "CONTACTS" for b in report_c["behaviors"]
+    )
+    call_c = next(e for e in report_c["evidence"] if e["kind"] == "API")
+    assert call_c["api_call"]["context"] == {"uri": "content://com.android.contacts/contacts"}
+
+    path_media = apk(tmp_path / "media_sget.apk", kind="sget_media")
+    res_m, report_m = scan(path_media)
+    assert res_m.returncode == 0
+    assert any(
+        b["action"] == "ACCESS" and b["data_type"] == "FILES_MEDIA" for b in report_m["behaviors"]
+    )
+    call_m = next(e for e in report_m["evidence"] if e["kind"] == "API")
+    assert call_m["api_call"]["context"] == {"uri": "content://media/external/images/media"}
+
+
+def test_apk_version_name_none_and_long_are_valid(tmp_path):
+    path_none = apk(tmp_path / "none_version.apk", version_name=None)
+    res_none, report_none = scan(path_none)
+    assert res_none.returncode == 0
+    assert report_none["version_name"] is None
+
+    long_name = "v" * 250
+    path_long = apk(tmp_path / "long_version.apk", version_name=long_name)
+    res_long, report_long = scan(path_long)
+    assert res_long.returncode == 0
+    assert report_long["version_name"] == long_name
+
+    huge_name = "w" * 1200
+    path_huge = apk(tmp_path / "huge_version.apk", version_name=huge_name)
+    res_huge, report_huge = scan(path_huge)
+    assert res_huge.returncode == 0
+    assert len(report_huge["version_name"]) == 1024

@@ -168,7 +168,7 @@ export type ReviewRequest = {
 export type SampleMetadata = {
   "name": string;
   "package_name": string;
-  "version_name": string;
+  "version_name"?: string | null;
   "version_code": number;
   "apk_sha256": string;
   "permissions": Array<string>;

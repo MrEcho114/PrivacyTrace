@@ -176,6 +176,14 @@ class JobStore:
             self._write(record)
             return report
 
+    def create_if_absent(self, job: AnalysisJob) -> AnalysisJob:
+        with self._transaction():
+            path = self._path(job.id)
+            if path.exists():
+                raise ValueError("Job already exists; choose a new job ID")
+            self._write(StoredJob(job=job))
+            return job
+
     def save_job(self, job: AnalysisJob) -> AnalysisJob:
         with self._transaction():
             try:

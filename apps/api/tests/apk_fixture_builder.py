@@ -20,15 +20,24 @@ def uleb(value):
     return bytes(out)
 
 
-def manifest(split=False, permission="android.permission.CAMERA"):
-    strings = [
+def manifest(
+    split=False,
+    permission="android.permission.CAMERA",
+    sdk_23_permission=None,
+    version_code="7",
+    version_name="1.0",
+    permission_parent=None,
+    sdk_23_parent=None,
+    permission_namespace="http://schemas.android.com/apk/res/android",
+    permission_tag_namespace=None,
+    version_code_type=None,
+):
+    raw_strings = [
         "manifest",
         "package",
         "org.privacytrace.fixture",
         "versionCode",
-        "7",
-        "versionName",
-        "1.0",
+        str(version_code),
         "http://schemas.android.com/apk/res/android",
         "android",
         "uses-permission",
@@ -37,6 +46,26 @@ def manifest(split=False, permission="android.permission.CAMERA"):
         "split",
         "config.en",
     ]
+    if version_name is not None:
+        raw_strings.extend(["versionName", str(version_name)])
+    if sdk_23_permission is not None:
+        raw_strings.extend(["uses-permission-sdk-23", str(sdk_23_permission)])
+    raw_strings.extend(
+        value
+        for value in (
+            permission_parent,
+            sdk_23_parent,
+            permission_namespace,
+            permission_tag_namespace,
+        )
+        if value is not None
+    )
+
+    strings = []
+    for s in raw_strings:
+        if s not in strings:
+            strings.append(s)
+
     idx = {s: i for i, s in enumerate(strings)}
     data, offsets = bytearray(), []
     for string in strings:
@@ -62,32 +91,60 @@ def manifest(split=False, permission="android.permission.CAMERA"):
         return struct.pack("<HHIII", kind, 16, 16 + len(payload), 1, 0xFFFFFFFF) + payload
 
     def attr(name, value, ns=None):
+        if name == "versionCode" and version_code_type is not None:
+            return struct.pack(
+                "<IIIHBBI", idx[ns], idx[name], 0xFFFFFFFF, 8, 0, version_code_type, int(value, 0)
+            )
         return struct.pack(
             "<IIIHBBI", idx[ns] if ns else 0xFFFFFFFF, idx[name], idx[value], 8, 0, 3, idx[value]
         )
 
-    def start(name, attrs):
+    def start(name, attrs, tag_ns=None):
         return node(
             0x102,
-            struct.pack("<IIHHHHHH", 0xFFFFFFFF, idx[name], 20, 20, len(attrs), 0, 0, 0)
+            struct.pack(
+                "<IIHHHHHH",
+                idx[tag_ns] if tag_ns else 0xFFFFFFFF,
+                idx[name],
+                20,
+                20,
+                len(attrs),
+                0,
+                0,
+                0,
+            )
             + b"".join(attrs),
         )
 
-    def end(name):
-        return node(0x103, struct.pack("<II", 0xFFFFFFFF, idx[name]))
+    def end(name, tag_ns=None):
+        return node(0x103, struct.pack("<II", idx[tag_ns] if tag_ns else 0xFFFFFFFF, idx[name]))
 
-    ns = strings[7]
+    ns = "http://schemas.android.com/apk/res/android"
     attrs = [
-        attr("package", strings[2]),
-        attr("versionCode", "7", ns),
-        attr("versionName", "1.0", ns),
+        attr("package", "org.privacytrace.fixture"),
+        attr("versionCode", str(version_code), ns),
     ]
+    if version_name is not None:
+        attrs.append(attr("versionName", str(version_name), ns))
     if split:
         attrs.append(attr("split", "config.en"))
     chunks = pool + node(0x100, struct.pack("<II", idx["android"], idx[ns]))
     chunks += start("manifest", attrs)
-    chunks += start("uses-permission", [attr("name", strings[11], ns)])
-    chunks += end("uses-permission") + end("manifest")
+    for tag, value, parent in (
+        ("uses-permission", permission, permission_parent),
+        ("uses-permission-sdk-23", sdk_23_permission, sdk_23_parent),
+    ):
+        if value is None:
+            continue
+        if parent is not None:
+            chunks += start(parent, [])
+        chunks += start(
+            tag, [attr("name", str(value), permission_namespace)], permission_tag_namespace
+        )
+        chunks += end(tag, permission_tag_namespace)
+        if parent is not None:
+            chunks += end(parent)
+    chunks += end("manifest")
     chunks += node(0x101, struct.pack("<II", idx["android"], idx[ns]))
     return struct.pack("<HHI", 3, 8, len(chunks) + 8) + chunks
 
@@ -131,7 +188,7 @@ def dex(*, invoke=True, camera=False, provider="gps", branch=False, kind=None):
             "takeScreenshot",
             [],
         )
-    elif kind in {"contacts", "media", "arbitrary_uri"}:
+    elif kind in {"contacts", "media", "arbitrary_uri", "sget_contacts", "sget_media"}:
         owner, ret, target_name = (
             "Landroid/content/ContentResolver;",
             "Landroid/database/Cursor;",
@@ -148,26 +205,50 @@ def dex(*, invoke=True, camera=False, provider="gps", branch=False, kind=None):
             "contacts": "content://com.android.contacts/contacts",
             "media": "content://media/external/images/media",
             "arbitrary_uri": "content://unknown/anything",
+            "sget_contacts": "",
+            "sget_media": "",
         }[kind]
+    fields = []
+    if kind == "sget_contacts":
+        fields = [
+            (
+                "Landroid/provider/ContactsContract$Contacts;",
+                "Landroid/net/Uri;",
+                "CONTENT_URI",
+            )
+        ]
+    elif kind == "sget_media":
+        fields = [
+            (
+                "Landroid/provider/MediaStore$Images$Media;",
+                "Landroid/net/Uri;",
+                "EXTERNAL_CONTENT_URI",
+            )
+        ]
+    sget_case = bool(fields)
     uri_case = kind in {"contacts", "media", "arbitrary_uri"}
-    types = sorted(
-        {
-            "Lorg/privacytrace/fixture/Main;",
-            "Ljava/lang/Object;",
-            owner,
-            ret,
-            "Ljava/lang/String;",
-            "V",
-            *params,
-        }
-    )
+    type_set = {
+        "Lorg/privacytrace/fixture/Main;",
+        "Ljava/lang/Object;",
+        owner,
+        ret,
+        "Ljava/lang/String;",
+        "V",
+        *params,
+    }
+    for f_cls, f_type, _ in fields:
+        type_set.add(f_cls)
+        type_set.add(f_type)
+    types = sorted(type_set)
     signature = owner + "->" + target_name + "(" + "".join(params) + ")" + ret
     shorty = ("V" if ret == "V" else "L") + "".join(
         "L" if p.startswith(("L", "[")) else p for p in params
     )
-    strings = sorted(
-        set(types + ["run", "parse", target_name, provider, "V", "L", "LL", shorty, signature])
-    )
+    extra_items = ["run", "parse", target_name, provider, "V", "L", "LL", shorty, signature]
+    string_set = set(types + extra_items)
+    for _, _, f_name in fields:
+        string_set.add(f_name)
+    strings = sorted(string_set)
     si, ti = {s: i for i, s in enumerate(strings)}, {s: i for i, s in enumerate(types)}
     # Two protos: run()V and platform target. IDs sorted by return type.
     proto_set = {("V", ()), (ret, tuple(params))}
@@ -191,7 +272,8 @@ def dex(*, invoke=True, camera=False, provider="gps", branch=False, kind=None):
     run_i = next(i for i, m in enumerate(methods) if m[1] == "run")
     string_off, type_off = 112, 112 + len(strings) * 4
     proto_off = type_off + len(types) * 4
-    method_off = proto_off + len(protos) * 12
+    field_off = proto_off + len(protos) * 12
+    method_off = field_off + len(fields) * 8
     class_off = method_off + len(methods) * 8
     data_off = class_off + 32
     data = bytearray()
@@ -216,34 +298,44 @@ def dex(*, invoke=True, camera=False, provider="gps", branch=False, kind=None):
     align()
     code_off = data_off + len(data)
     words = []
-    if not camera:
+    if sget_case:
         words += [0x0012]  # const/4 v0, null receiver / ContentResolver argument
-    if params:
-        if kind == "accessibility_screenshot":
-            words += [0x0112, 0x0212, 0x0312]  # int displayId 0, null executor/callback
-        else:
-            words += [0x011A, si[provider]]  # const-string v1, provider
-    if branch:
-        words += [0x0212]  # const/4 v2, zero branch condition
-        words += [0x0238, 2]  # if-eqz v2, next block: constant cannot cross join
-    if invoke:
-        static = camera or kind == "android_id"
-        count = len(params) + (0 if static else 1)
-        if uri_case:
-            words += [0x0212, 0x0312, 0x0412, 0x0512]  # nullable query filter arguments
-            parse_i = next(i for i, m in enumerate(methods) if m[1] == "parse")
-            words += [0x1071, parse_i, 1, 0x010C]  # Uri.parse(v1), move-result-object v1
-            words += [0x0674, target_i, 0]  # invoke-virtual/range {v0..v5}
-        else:
-            words += [
-                (count << 12) | (0x71 if static else 0x6E),
-                target_i,
-                {1: 0, 2: 0x10, 3: 0x210, 4: 0x3210}.get(count, 0),
-            ]
+        words += [(1 << 8) | 0x62, 0]  # sget-object v1, field@0
+        if branch:
+            words += [0x0212]  # const/4 v2, zero branch condition
+            words += [0x0238, 2]  # if-eqz v2, next block: constant cannot cross join
+        words += [0x0212, 0x0312, 0x0412, 0x0512]  # nullable query filter arguments
+        words += [0x0674, target_i, 0]  # invoke-virtual/range {v0..v5}
+        words += [0x000E]
     else:
-        words += [0x001A, si[signature]]  # ordinary string, not a method invoke
-    words += [0x000E]
-    registers = 6 if uri_case else 4 if kind == "accessibility_screenshot" else 3
+        if not camera:
+            words += [0x0012]  # const/4 v0, null receiver / ContentResolver argument
+        if params:
+            if kind == "accessibility_screenshot":
+                words += [0x0112, 0x0212, 0x0312]  # int displayId 0, null executor/callback
+            else:
+                words += [0x011A, si[provider]]  # const-string v1, provider
+        if branch:
+            words += [0x0212]  # const/4 v2, zero branch condition
+            words += [0x0238, 2]  # if-eqz v2, next block: constant cannot cross join
+        if invoke:
+            static = camera or kind == "android_id"
+            count = len(params) + (0 if static else 1)
+            if uri_case:
+                words += [0x0212, 0x0312, 0x0412, 0x0512]  # nullable query filter arguments
+                parse_i = next(i for i, m in enumerate(methods) if m[1] == "parse")
+                words += [0x1071, parse_i, 1, 0x010C]  # Uri.parse(v1), move-result-object v1
+                words += [0x0674, target_i, 0]  # invoke-virtual/range {v0..v5}
+            else:
+                words += [
+                    (count << 12) | (0x71 if static else 0x6E),
+                    target_i,
+                    {1: 0, 2: 0x10, 3: 0x210, 4: 0x3210}.get(count, 0),
+                ]
+        else:
+            words += [0x001A, si[signature]]  # ordinary string, not a method invoke
+        words += [0x000E]
+    registers = 6 if (uri_case or sget_case) else 4 if kind == "accessibility_screenshot" else 3
     data.extend(struct.pack("<HHHHII", registers, 0, registers, 0, 0, len(words)))
     data.extend(struct.pack("<" + "H" * len(words), *words))
     class_data_off = data_off + len(data)
@@ -262,14 +354,16 @@ def dex(*, invoke=True, camera=False, provider="gps", branch=False, kind=None):
         (0x2000, 1, class_data_off),
         (0x1000, 1, map_off),
     ]
+    if fields:
+        maps.append((4, len(fields), field_off))
     if any(param_offsets):
         maps.append(
             (0x1001, sum(bool(x) for x in param_offsets), min(x for x in param_offsets if x))
         )
     maps.sort(key=lambda m: m[2])
     data.extend(struct.pack("<I", len(maps)))
-    for kind, count, offset in maps:
-        data.extend(struct.pack("<HHII", kind, 0, count, offset))
+    for kind_id, count, offset in maps:
+        data.extend(struct.pack("<HHII", kind_id, 0, count, offset))
     header = b"dex\n035\0" + bytes(24)
     header += struct.pack(
         "<20I",
@@ -285,8 +379,8 @@ def dex(*, invoke=True, camera=False, provider="gps", branch=False, kind=None):
         type_off,
         len(protos),
         proto_off,
-        0,
-        0,
+        len(fields),
+        field_off if fields else 0,
         len(methods),
         method_off,
         1,
@@ -301,6 +395,8 @@ def dex(*, invoke=True, camera=False, provider="gps", branch=False, kind=None):
             "L" if p.startswith(("L", "[")) else p for p in params
         )
         body += struct.pack("<III", si[proto_shorty], ti[ret_type], offset)
+    for cls, f_type, name in fields:
+        body += struct.pack("<HHI", ti[cls], ti[f_type], si[name])
     for cls, name, proto in methods:
         body += struct.pack("<HHI", ti[cls], proto, si[name])
     body += struct.pack(
@@ -321,13 +417,27 @@ def dex(*, invoke=True, camera=False, provider="gps", branch=False, kind=None):
 
 
 def apk(
-    path: Path, *, entries=None, split=False, permission="android.permission.CAMERA", **dex_options
+    path: Path,
+    *,
+    entries=None,
+    split=False,
+    permission="android.permission.CAMERA",
+    sdk_23_permission=None,
+    version_code="7",
+    version_name="1.0",
+    **dex_options,
 ):
     if entries is None:
         entries = {"classes.dex": dex(**dex_options)}
     with ZipFile(path, "w", compression=ZIP_STORED) as archive:
         for name, payload in {
-            "AndroidManifest.xml": manifest(split, permission),
+            "AndroidManifest.xml": manifest(
+                split=split,
+                permission=permission,
+                sdk_23_permission=sdk_23_permission,
+                version_code=version_code,
+                version_name=version_name,
+            ),
             **entries,
         }.items():
             info = ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0))

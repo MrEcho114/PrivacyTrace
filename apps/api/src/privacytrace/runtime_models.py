@@ -20,7 +20,7 @@ from .models import (
 class SampleMetadata(Model):
     name: str = Field(min_length=1, max_length=200)
     package_name: str = Field(min_length=1, max_length=200)
-    version_name: str = Field(max_length=200)
+    version_name: str | None = Field(default=None, max_length=1024)
     version_code: int = Field(ge=0, strict=True)
     apk_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     permissions: list[str] = Field(max_length=2000)

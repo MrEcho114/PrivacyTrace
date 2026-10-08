@@ -480,3 +480,132 @@ def test_external_process_lock_timeout_returns_conflict_and_then_recovers(tmp_pa
             process.terminate()
             process.join()
     assert TestClient(app).get("/api/v1/jobs").status_code == 200
+
+
+def test_concurrent_job_creation_is_atomic(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+    from datetime import datetime, timezone
+
+    from privacytrace.job_store import JobStore
+    from privacytrace.models import AnalysisJob
+
+    store = JobStore(tmp_path)
+    job_id = "concurrent-job-target"
+
+    def attempt_create(idx):
+        job = AnalysisJob(
+            id=job_id,
+            sample_id=f"sample-{idx}",
+            input_mode="APK",
+            state="QUEUED",
+            ruleset_version="0.3",
+            created_at=datetime.now(timezone.utc),
+        )
+        try:
+            store.create_if_absent(job)
+            return "SUCCESS"
+        except ValueError as exc:
+            if "Job already exists" in str(exc):
+                return "ALREADY_EXISTS"
+            raise
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = list(executor.map(attempt_create, range(16)))
+
+    assert results.count("SUCCESS") == 1
+    assert results.count("ALREADY_EXISTS") == 15
+    loaded = store.get(job_id)
+    assert loaded.id == job_id
+    assert loaded.state == "QUEUED"
+
+
+def test_real_job_named_demo_accessible_and_distinct_from_synthetic_demo(tmp_path):
+    from privacytrace.main import create_app
+
+    app = create_app(store_root=tmp_path)
+    bundle = controlled_bundle()
+    bundle.job.id = "demo"
+    bundle.job.package_name = "org.privacytrace.real"
+    bundle.job.version_code = 1
+    app.state.job_store.save(
+        bundle,
+        dict(
+            name="real job named demo",
+            package_name="org.privacytrace.real",
+            version_name="1.0",
+            version_code=1,
+            apk_sha256="b" * 64,
+            permissions=[],
+            dex_entries=["classes.dex"],
+        ),
+        dict(status="COMPLETE", limitations=[], scanned_dex=["classes.dex"], failed_dex=[]),
+        {"scanner": "CONTROLLED"},
+    )
+
+    client = TestClient(app)
+    # 1. Real job API responds
+    res_job = client.get("/api/v1/jobs/demo")
+    assert res_job.status_code == 200
+    assert res_job.json()["id"] == "demo"
+
+    # 2. Real job report responds with demo: false
+    res_report = client.get("/api/v1/jobs/demo/report")
+    assert res_report.status_code == 200
+    assert res_report.json()["demo"] is False
+    assert res_report.json()["sample"]["package_name"] == "org.privacytrace.real"
+
+    # 3. Synthetic demo endpoint still serves synthetic fixture with demo: true
+    res_demo = client.get("/api/v1/demo/report")
+    assert res_demo.status_code == 200
+    assert res_demo.json()["demo"] is True
+    assert res_demo.json()["sample"]["package_name"] == "org.privacytrace.demo"
+
+
+def test_sample_metadata_version_name_none_and_long_persist(tmp_path):
+    from privacytrace.job_store import JobStore
+
+    store = JobStore(tmp_path)
+    bundle_1 = controlled_bundle()
+    bundle_1.job.id = "job-version-none"
+    bundle_1.job.package_name = "org.privacytrace.nonever"
+    bundle_1.job.version_code = 1
+    report_1 = store.save(
+        bundle_1,
+        dict(
+            name="None version test",
+            package_name="org.privacytrace.nonever",
+            version_name=None,
+            version_code=1,
+            apk_sha256="c" * 64,
+            permissions=[],
+            dex_entries=["classes.dex"],
+        ),
+        dict(status="COMPLETE", limitations=[], scanned_dex=["classes.dex"], failed_dex=[]),
+        {"scanner": "CONTROLLED"},
+    )
+    assert report_1.sample.version_name is None
+    loaded_1 = store.report("job-version-none")
+    assert loaded_1.sample.version_name is None
+
+    long_ver = "v" * 500
+    bundle_2 = controlled_bundle()
+    bundle_2.job.id = "job-version-long"
+    bundle_2.job.package_name = "org.privacytrace.longver"
+    bundle_2.job.version_code = 2
+    report_2 = store.save(
+        bundle_2,
+        dict(
+            name="Long version test",
+            package_name="org.privacytrace.longver",
+            version_name=long_ver,
+            version_code=2,
+            apk_sha256="d" * 64,
+            permissions=[],
+            dex_entries=["classes.dex"],
+        ),
+        dict(status="COMPLETE", limitations=[], scanned_dex=["classes.dex"], failed_dex=[]),
+        {"scanner": "CONTROLLED"},
+    )
+    assert report_2.sample.version_name == long_ver
+    loaded_2 = store.report("job-version-long")
+    assert loaded_2.sample.version_name == long_ver

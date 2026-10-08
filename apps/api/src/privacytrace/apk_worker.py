@@ -23,6 +23,16 @@ MAX_EXPANDED = 512 * 1024 * 1024
 MAX_ENTRY = 128 * 1024 * 1024
 MAX_ENTRIES = 20000
 
+FRAMEWORK_STATIC_URIS = {
+    ("Landroid/provider/ContactsContract$Contacts;", "CONTENT_URI"): "content://com.android.contacts/contacts",
+    ("Landroid/provider/MediaStore$Images$Media;", "EXTERNAL_CONTENT_URI"): "content://media/external/images/media",
+    ("Landroid/provider/MediaStore$Images$Media;", "INTERNAL_CONTENT_URI"): "content://media/internal/images/media",
+    ("Landroid/provider/MediaStore$Video$Media;", "EXTERNAL_CONTENT_URI"): "content://media/external/video/media",
+    ("Landroid/provider/MediaStore$Video$Media;", "INTERNAL_CONTENT_URI"): "content://media/internal/video/media",
+    ("Landroid/provider/MediaStore$Audio$Media;", "EXTERNAL_CONTENT_URI"): "content://media/external/audio/media",
+    ("Landroid/provider/MediaStore$Audio$Media;", "INTERNAL_CONTENT_URI"): "content://media/internal/audio/media",
+}
+
 
 class ScanError(Exception):
     def __init__(self, code, message):
@@ -144,17 +154,38 @@ def scan(path, rules, inventory=False):
         apk = APK(str(path))
         if not apk.is_valid_APK() or apk.get_android_manifest_xml() is None:
             raise ScanError("MANIFEST_INVALID", "Binary Android manifest could not be parsed")
+        raw_code = apk.get_androidversion_code()
+        if raw_code is None:
+            raise ScanError("MANIFEST_INVALID", "Manifest versionCode must be an integer")
         try:
-            version_code = int(apk.get_androidversion_code())
+            version_code = int(raw_code.strip(), 0) if isinstance(raw_code, str) else int(raw_code)
             if version_code < 0:
                 raise ValueError("negative versionCode")
         except (TypeError, ValueError) as exc:
             raise ScanError("MANIFEST_INVALID", "Manifest versionCode must be an integer") from exc
+
+        raw_permissions = set()
+        manifest_xml = apk.get_android_manifest_xml()
+        if manifest_xml is not None and manifest_xml.tag == "manifest":
+            # Permission declarations belong directly to <manifest>, not arbitrary
+            # descendants. Upstream helpers search too broadly for this evidence.
+            for tag in manifest_xml:
+                if tag.tag in ("uses-permission", "uses-permission-sdk-23"):
+                    name = tag.get("{http://schemas.android.com/apk/res/android}name")
+                    if name:
+                        raw_permissions.add(name)
+
+        raw_version_name = apk.get_androidversion_name()
+        version_name = raw_version_name[:1024] if isinstance(raw_version_name, str) else None
+
+        cleaned_permissions = {
+            p.strip() for p in raw_permissions if p and isinstance(p, str) and p.strip()
+        }
         result.update(
             package_name=apk.get_package(),
             version_code=version_code,
-            version_name=apk.get_androidversion_name(),
-            permissions=sorted(set(apk.get_permissions())),
+            version_name=version_name,
+            permissions=sorted(cleaned_permissions),
         )
         if not result["package_name"]:
             raise ScanError("MANIFEST_INVALID", "Manifest package is missing")
@@ -250,6 +281,22 @@ def scan(path, rules, inventory=False):
                                 constants.pop(regs[0], None)
                                 if value is not None:
                                     constants[regs[0]] = value
+                            elif op.startswith("sget-object"):
+                                pending = None
+                                uri_val = None
+                                field_refs = [v for v in operands if v[0] == Operand.KIND + 2]
+                                if field_refs and regs:
+                                    try:
+                                        field_idx = field_refs[-1][1]
+                                        owner, proto, field_name = vm.get_cm_field(field_idx)
+                                        uri_val = FRAMEWORK_STATIC_URIS.get((owner, field_name))
+                                    except Exception:
+                                        uri_val = None
+                                if uri_val is not None and not has_flow:
+                                    constants[regs[0]] = uri_val
+                                else:
+                                    for register in regs:
+                                        constants.pop(register, None)
                             elif op.startswith("invoke-") and not op.startswith(
                                 ("invoke-custom", "invoke-polymorphic")
                             ):

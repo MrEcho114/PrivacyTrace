@@ -56,3 +56,7 @@ CLI 以同一 Manifest 的 CAMERA 普通声明（maxSdk=22）与 SDK-23 声明�
 状态仍为 **Draft / PENDING_HUMAN_AB**。Issue #15 需两位不同成员按最终实现/样本/政策版本和哈希逐条留 comment；工具代发、CI 或页面自动化备注不算人类复核。此次未重跑真实 GKD，不关闭阶段工单、不合并 PR。
 
 APK 历史副本、崩溃/拒删残留不自动处理；Windows 私有目录 ACL 是部署前提。具体配置与清理边界见 [生命周期策略](s1-runtime-retention.md)。APK、政策全文、私有收据、临时截图/日志均不提交。
+
+## 10/09 创建 PR 后的真实样本补充核验
+
+上文“此次未重跑真实 GKD”描述 PR29 创建时的验证范围；随后已在整合实现 `bb342843b50dc45aec3df111a51537998c81a632` 上两次重跑同一真实 GKD APK，完成真实 HTTP/浏览器定位、备注写入与 API 进程重启后的报告留存。两次稳定语义相等，3 项仍为 INSUFFICIENT_EVIDENCE。详见 [新的版本绑定记录](s1-pr29-real-sample-verification-20261009.md) 与 [脱敏 JSON](s1-pr29-real-verification-20261009.json)。历史样本和 receipts 不重写；A/B comment 仍未收到，阶段不自动完成。

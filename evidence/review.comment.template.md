@@ -7,7 +7,7 @@
 ```markdown
 ## S1 人工复核 — [A 或 B]
 - GitHub 账号：@[自己的账号]
-- 复核对象：PR #27；实现提交：[完整 SHA]
+- 复核对象：PR #[填写]；实现提交：[完整 SHA，使用下方当前目标或对应历史目标]
 - 样本版本及 APK SHA256：[填写]
 - 政策版本、采集时间及 SHA256：[填写]
 - 规则版本：[填写]
@@ -21,6 +21,8 @@
 - 分歧及处理：[无 / 具体问题和处理；仍待解决不能直接通过]
 ```
 
-GKD 当前核对清单：代码证据 `ev-006e94193f1e009330904b74`、`ev-887b01d4ad83f18a57ed7051`、`ev-be25cc3efeb61d77e109749f`；声明 `policy-claim-1`（`policy-sentence-1`，码点区间 `[363,423)`）与 `policy-claim-2`（`policy-sentence-2`，`[1026,1070)`）。位置参考见本地预填表，公共摘要见 `docs/stages/s1-verification.json`。以上仅列待核对项，不预填人工结论。
+当前目标：[PR #29](https://github.com/MrEcho114/PrivacyTrace/pull/29)，扫描实现 `bb342843b50dc45aec3df111a51537998c81a632`。2026-10-09 在此实现上两次重跑同一 GKD APK；当前摘要见 [真实样本核验记录](../docs/stages/s1-pr29-real-sample-verification-20261009.md) 与 [JSON](../docs/stages/s1-pr29-real-verification-20261009.json)。若后续代码或证据变更，需要重新确认目标，不自动沿用评论。
+
+GKD 当前核对清单：代码证据 `ev-35791bcc4493420937306ecc`、`ev-887b01d4ad83f18a57ed7051`、`ev-be25cc3efeb61d77e109749f`；声明 `policy-claim-1`（`policy-sentence-1`，码点区间 `[363,423)`）与 `policy-claim-2`（`policy-sentence-2`，`[1026,1070)`）。位置参考见本地预填表，历史摘要见 `docs/stages/s1-verification.json`，不作为本轮目标。MANIFEST 待核对项包含 `tag=uses-permission;max_sdk=28`，只能说明声明能力。旧 ID `ev-006e94193f1e009330904b74` 属于 #27 历史定位符，不用于本轮评论。以上仅列待核对项，不预填人工结论。
 
 收到两位成员的完整 comment 后，将两个 URL、账号、时间戳、复核提交和分歧处理结果记入验收记录；尚未收到前保持 `PENDING_HUMAN_AB`。扫描代码或证据变更后，原 comment 不能自动覆盖新版本，需要成员追加复核确认。改变复核形式不自动完成验收、关闭 Issue 或合并 PR。

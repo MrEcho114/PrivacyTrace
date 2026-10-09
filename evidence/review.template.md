@@ -42,7 +42,7 @@
 - **技术成员 A comment URL / GitHub 账号 / 时间戳**：[待填写]
 - **技术成员 B comment URL / GitHub 账号 / 时间戳**：[待填写]
 - **复核绑定的实现提交及分歧处理**：[待填写]
-- 正式入口：[Issue #15](https://github.com/MrEcho114/PrivacyTrace/issues/15)；格式见 [comment 模板](https://github.com/MrEcho114/PrivacyTrace/blob/codex/s1-e2e/evidence/review.comment.template.md)。
+- 正式入口：[Issue #15](https://github.com/MrEcho114/PrivacyTrace/issues/15)；格式见 [comment 模板](review.comment.template.md)。
 - 本表只作核对辅助；工具备注、单条“同意”或代发 comment 不视为双人人工确认。
 
 ---
@@ -50,4 +50,6 @@
 ### 附录：GKD (v1.12.1) 事实位置参考提示（非正式表项，仅供复核定位参考）
 - 调用点 1：`AccessibilityService.takeScreenshot`（调用方 `Lr2;->p` 偏移 2）
 - 调用点 2：`UiAutomation.takeScreenshot`（调用方 `Lyw;->A` 偏移 3936）
-- 能力项 3：清单声明 `WRITE_EXTERNAL_STORAGE`（CAPABILITY_ONLY）
+- 能力项 3：清单声明 `WRITE_EXTERNAL_STORAGE`（CAPABILITY_ONLY，`uses-permission`，`maxSdkVersion=28`；当前证据 `ev-35791bcc4493420937306ecc`）
+
+当前核验目标及版本信息见 [PR29 真实样本核验记录](../docs/stages/s1-pr29-real-sample-verification-20261009.md)。附录仅帮助定位，不替代两位成员逐条复核。

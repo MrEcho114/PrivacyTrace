@@ -43,7 +43,7 @@ def applicability(doc: PolicyDocument, job: AnalysisJob) -> str:
 
 
 def evaluate(bundle: EvaluationInput) -> EvaluationResult:
-    rules = taxonomy()
+    rules = taxonomy(bundle.job.ruleset_version)
     types = {item["id"]: item for item in rules["data_types"]}
     evidence = {item.id: item for item in bundle.evidence}
     issues: list[PrivacyIssue] = []

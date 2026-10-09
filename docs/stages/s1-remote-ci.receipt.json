@@ -1,0 +1,51 @@
+{
+  "phase": "S1",
+  "repository": "MrEcho114/PrivacyTrace",
+  "pull_request": 27,
+  "verified_commit": "3ef27d050752c2194d64f972be363813ca28b8ff",
+  "workflow_run_id": 37128232003,
+  "workflow_run_url": "https://github.com/MrEcho114/PrivacyTrace/actions/runs/37128232003",
+  "workflow_status": "completed",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "id": 111217849546,
+      "name": "web",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 111217849628,
+      "name": "api",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 111217849664,
+      "name": "isolated-worker",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "api_test_result": {
+    "passed": 197,
+    "skipped": 7,
+    "warning_count": 1,
+    "docker_opt_in": false
+  },
+  "isolated_worker_test_result": {
+    "passed": 27,
+    "skipped": 0,
+    "warning_count": 1,
+    "docker_opt_in": true
+  },
+  "local_full_suite": {
+    "passed": 204,
+    "skipped": 0,
+    "docker_opt_in": true
+  },
+  "human_review_gate": "PENDING_HUMAN_AB",
+  "not_stage_acceptance": true,
+  "recorded_at": "2026-10-03T14:08:35Z",
+  "scope_note": "This receipt verifies the implementation commit. Later documentation-only commits require their own live CI check; counts across CI jobs overlap and must not be summed."
+}

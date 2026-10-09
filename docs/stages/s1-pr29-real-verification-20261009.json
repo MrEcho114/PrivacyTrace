@@ -1,0 +1,145 @@
+{
+  "implementation_sha": "bb342843b50dc45aec3df111a51537998c81a632",
+  "apk_sha256": "edcc03be24bc54d44c04746b46e2e33244120638e2199450b4407195447466a6",
+  "worker_image": "sha256:a6b92107f2cfbb4086e894998bdeeac1fe5435601dbeb65cfe792ac58ab44666",
+  "semantic_report_sha256": "19e550c636ddbf805fb1c3f67c7567e1858e8398f384b25d5f0ecda8ef3c2157",
+  "excluded_fields": [
+    "job.id",
+    "job.created_at",
+    "result.job_id",
+    "tools.isolation_receipt"
+  ],
+  "runs": [
+    "gkd-pr29-first",
+    "gkd-pr29-repro"
+  ],
+  "cli_pass": true,
+  "semantic_equal": true,
+  "receipt_checks": [
+    {
+      "sha256": "47722587b71cd00e9f189c0132c48bcaf9cf67e23bafeb55c0ce3ec890daa150",
+      "isolated": true,
+      "cleanup_verified": true
+    },
+    {
+      "sha256": "4a5b24ffed904c7bcdd48d4b26b12d223a60f1bca8c7aba6501a17404e6dc6c9",
+      "isolated": true,
+      "cleanup_verified": true
+    }
+  ],
+  "policy_spans_verified": true,
+  "counts": {
+    "evidence": 6,
+    "behaviors": 3,
+    "claims": 2,
+    "issues": 3
+  },
+  "statuses": [
+    "INSUFFICIENT_EVIDENCE",
+    "INSUFFICIENT_EVIDENCE",
+    "INSUFFICIENT_EVIDENCE"
+  ],
+  "human_gate": "PENDING_HUMAN_AB",
+  "phase": "S1",
+  "date": "2026-10-09",
+  "branch": "codex/s1-integrated",
+  "pr": 29,
+  "scope": "REAL_GKD_CLI_HTTP_BROWSER_TECHNICAL_VERIFICATION_NOT_HUMAN_ACCEPTANCE",
+  "policy": {
+    "version": "1.0",
+    "captured_at": "2026-10-03T12:47:10.664110Z",
+    "sha256": "bf5917c5c4e9fa2e0700f25db7c17fc0672de0c48de04f6e84e01053871374ea",
+    "raw_processed_hashes_verified": true,
+    "lossless_chunks_verified": 60,
+    "initial_audit_sha256": "5310a74bba87ec0d7d036f5254e9abea4d0123ce0423eeecb20bc8e6b8537961",
+    "completeness": "COMPLETE",
+    "extraction_status": "PARTIAL",
+    "review_status": "UNREVIEWED",
+    "attachments_status": "NOT_CHECKED",
+    "region": "UNKNOWN"
+  },
+  "browser": {
+    "pass": true,
+    "job": "gkd-pr29-first",
+    "spans": [
+      {
+        "issue": "issue-1",
+        "evidence": "ev-35791bcc4493420937306ecc",
+        "claim": "policy-claim-2",
+        "span": [
+          1026,
+          1070
+        ],
+        "clicks_from_loaded_report": 2
+      },
+      {
+        "issue": "issue-2",
+        "evidence": "ev-887b01d4ad83f18a57ed7051",
+        "claim": "policy-claim-1",
+        "span": [
+          363,
+          423
+        ],
+        "clicks_from_loaded_report": 2
+      },
+      {
+        "issue": "issue-3",
+        "evidence": "ev-be25cc3efeb61d77e109749f",
+        "claim": "policy-claim-1",
+        "span": [
+          363,
+          423
+        ],
+        "clicks_from_loaded_report": 2
+      }
+    ],
+    "source_switch": true,
+    "review_saved": true,
+    "rule_result_unchanged": true,
+    "policy_not_marked_reviewed": true,
+    "reload_persisted": true,
+    "page_errors": [],
+    "console_errors": [
+      {
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "location": {
+          "url": "http://127.0.0.1:5173/favicon.ico",
+          "line": 0,
+          "column": 0,
+          "lineNumber": 0,
+          "columnNumber": 0
+        }
+      }
+    ],
+    "failed_responses": [],
+    "review_actor": "automation-pr29-NOT-HUMAN",
+    "human_gate": "PENDING_HUMAN_AB"
+  },
+  "api_restart": {
+    "pass": true,
+    "http_report_exactly_equal": true,
+    "browser_note_visible": true,
+    "issue_count": 3,
+    "page_errors": [],
+    "human_gate": "PENDING_HUMAN_AB"
+  },
+  "private_artifact_hashes": {
+    "first-cli.json": "5d70f9088ccfcee9e627d67ae12be0698b7d71de5d27dd88e91fd48f0b90efc1",
+    "repro-cli.json": "6d8a62efce60b25d13f5dc62958b62fe976ffd5d32b206a36a37aaf208a3c6c3",
+    "browser-real-before-review.png": "1ce4d04af763c27ca2b77f9f0b01e9d1c4f1a0933ac122629cbf1118e4e8533d",
+    "browser-proof.json": "43af455ada3f9a79279bad5ffac145b4a5c643167f874302af7b16c55d0a1f56",
+    "restart-proof.json": "3f626b47b28b8b491b0d2709448f65dbe5c2a081c54f11656c7ac47f4a0287c2"
+  },
+  "human_review": {
+    "gate": "PENDING_HUMAN_AB",
+    "issue": 15,
+    "distinct_human_reviewers_required": 2,
+    "comment_urls": []
+  },
+  "public_screenshot": {
+    "path": "s1-pr29-report-proof.png",
+    "sha256": "cc521f906542ef0d8a1818a1914651a3daf4e37f106a529e83aec48c527ebc4c",
+    "policy_tools_review_masked": true,
+    "viewport_only": true
+  }
+}

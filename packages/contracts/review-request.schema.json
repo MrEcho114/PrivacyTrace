@@ -1,0 +1,159 @@
+{
+  "$defs": {
+    "PolicyClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "data_type": {
+          "title": "Data Type",
+          "type": "string"
+        },
+        "action": {
+          "default": "ACCESS",
+          "enum": [
+            "ACCESS",
+            "UNKNOWN"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "polarity": {
+          "default": "UNKNOWN",
+          "enum": [
+            "AFFIRMATIVE",
+            "NEGATIVE",
+            "UNKNOWN"
+          ],
+          "title": "Polarity",
+          "type": "string"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "maxLength": 10000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Condition"
+        },
+        "subject": {
+          "default": "UNKNOWN",
+          "enum": [
+            "HOST_APP",
+            "THIRD_PARTY",
+            "UNKNOWN"
+          ],
+          "title": "Subject",
+          "type": "string"
+        },
+        "declared_purpose": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Declared Purpose"
+        },
+        "declared_recipient": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Declared Recipient"
+        },
+        "basis": {
+          "const": "POLICY_DECLARATION",
+          "default": "POLICY_DECLARATION",
+          "title": "Basis",
+          "type": "string"
+        },
+        "ambiguity_flags": {
+          "items": {
+            "enum": [
+              "CATCH_ALL",
+              "UNCLEAR_ACTION"
+            ],
+            "type": "string"
+          },
+          "title": "Ambiguity Flags",
+          "type": "array"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "document_id",
+        "data_type",
+        "evidence_ids"
+      ],
+      "title": "PolicyClaim",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "actor": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Actor",
+      "type": "string"
+    },
+    "reason": {
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "note": {
+      "maxLength": 10000,
+      "title": "Note",
+      "type": "string"
+    },
+    "claim": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PolicyClaim"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "actor",
+    "reason",
+    "note"
+  ],
+  "title": "ReviewRequest",
+  "type": "object"
+}

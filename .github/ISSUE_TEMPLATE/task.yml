@@ -1,27 +1,10 @@
-name: PT development task
-description: A scoped task linked to the PrivacyTrace brief
-title: '[PT-xxx] '
+name: 开发任务
+description: 写清要解决的问题即可，验证与交付记录由代理补齐。
 body:
-  - type: input
-    id: pt-id
+  - type: textarea
+    id: goal
     attributes:
-      label: PT task ID
-      placeholder: PT-101
+      label: 要解决什么
+      description: 说明期望结果、已知限制或复现步骤；不必填写审计表。
     validations:
       required: true
-  - type: textarea
-    id: scope
-    attributes:
-      label: Input, output and scope
-    validations:
-      required: true
-  - type: textarea
-    id: acceptance
-    attributes:
-      label: Acceptance criteria and evidence
-    validations:
-      required: true
-  - type: textarea
-    id: validation
-    attributes:
-      label: Validation plan

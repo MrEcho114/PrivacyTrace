@@ -1,0 +1,25 @@
+name: Check
+
+on:
+  pull_request:
+    branches: ["main"]
+    types: [opened, edited, reopened, synchronize]
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read # Required only for checkout; PR data comes from the event payload.
+
+concurrency:
+  group: check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 调用 TheMasterplan 中央治理检查（TheMasterplan /TheMasterplan 接入生成；项目验证入口见
+  # with.project-check-path，由接入时选择的 validation_path 渲染）。
+  themasterplan-check:
+    uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@20eee37922175ad443270e1ab38df7ab38ca5d7b
+    with:
+      policy-ref: 20eee37922175ad443270e1ab38df7ab38ca5d7b
+      project-check-path: "scripts/check.sh"

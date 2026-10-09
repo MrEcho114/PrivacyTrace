@@ -56,6 +56,10 @@ export type Evidence = {
   "api_call"?: ApiCall | null;
 };
 
+export type JobsResponse = {
+  "jobs": Array<AnalysisJob>;
+};
+
 export type MatchStatus = "EXACT_MATCH" | "CATEGORY_MATCH" | "NOT_DECLARED" | "POLICY_SOURCE_CONFLICT" | "AMBIGUOUS_DISCLOSURE" | "INSUFFICIENT_EVIDENCE";
 
 export type PolicyApplicability = {
@@ -126,4 +130,57 @@ export type PrivacyIssue = {
   "explanation": string;
   "scope"?: "DATA_TYPE_DISCLOSURE";
   "requires_review"?: boolean;
+};
+
+export type Report = {
+  "demo"?: false;
+  "sample": SampleMetadata;
+  "job": AnalysisJob;
+  "result": EvaluationResult;
+  "evidence": Array<Evidence>;
+  "behaviors": Array<PrivacyBehavior>;
+  "policy_documents": Array<PolicyDocument>;
+  "policy_claims": Array<PolicyClaim>;
+  "coverage": ScanCoverage;
+  "tools": Record<string, string>;
+  "reviews"?: Array<ReviewEvent>;
+};
+
+export type ReviewEvent = {
+  "actor": string;
+  "reason": string;
+  "note": string;
+  "timestamp": string;
+  "old_claim"?: PolicyClaim | null;
+  "new_claim"?: PolicyClaim | null;
+  "old_result": EvaluationResult;
+  "new_result": EvaluationResult;
+  "authority"?: "UNAUTHENTICATED_LOCAL_EVENT";
+};
+
+export type ReviewRequest = {
+  "actor": string;
+  "reason": string;
+  "note": string;
+  "claim"?: PolicyClaim | null;
+};
+
+export type SampleMetadata = {
+  "name": string;
+  "package_name": string;
+  "version_name"?: string | null;
+  "version_code": number;
+  "apk_sha256": string;
+  "permissions": Array<string>;
+  "dex_entries": Array<string>;
+};
+
+export type ScanCoverage = {
+  "status": "COMPLETE" | "PARTIAL";
+  "scope"?: "DEX_ENTRIES";
+  "behavior_detection"?: "LIMITED_RULE_BASED_STATIC";
+  "behavior_limitations"?: Array<string>;
+  "limitations": Array<string>;
+  "scanned_dex": Array<string>;
+  "failed_dex": Array<string>;
 };

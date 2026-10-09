@@ -1,0 +1,330 @@
+{
+  "version": "0.3.0",
+  "note": "Eight display groups; Device Identifier belongs under Device Information in the hierarchy.",
+  "display_groups": [
+    "LOCATION",
+    "CONTACTS",
+    "DEVICE_IDENTIFIER",
+    "CAMERA",
+    "MICROPHONE",
+    "FILES_MEDIA",
+    "ACCOUNT_IDENTITY",
+    "DEVICE_USAGE_INFORMATION"
+  ],
+  "data_types": [
+    {
+      "id": "LOCATION",
+      "label": "位置",
+      "parent": null
+    },
+    {
+      "id": "PRECISE_LOCATION",
+      "label": "精确位置",
+      "parent": "LOCATION"
+    },
+    {
+      "id": "COARSE_LOCATION",
+      "label": "粗略位置",
+      "parent": "LOCATION"
+    },
+    {
+      "id": "CONTACTS",
+      "label": "通讯录",
+      "parent": null
+    },
+    {
+      "id": "DEVICE_USAGE_INFORMATION",
+      "label": "设备与使用信息",
+      "parent": null
+    },
+    {
+      "id": "DEVICE_INFORMATION",
+      "label": "设备信息",
+      "parent": "DEVICE_USAGE_INFORMATION"
+    },
+    {
+      "id": "DEVICE_IDENTIFIER",
+      "label": "设备标识符",
+      "parent": "DEVICE_INFORMATION"
+    },
+    {
+      "id": "ANDROID_ID",
+      "label": "Android ID",
+      "parent": "DEVICE_IDENTIFIER"
+    },
+    {
+      "id": "OAID",
+      "label": "OAID",
+      "parent": "DEVICE_IDENTIFIER"
+    },
+    {
+      "id": "IMEI",
+      "label": "IMEI",
+      "parent": "DEVICE_IDENTIFIER"
+    },
+    {
+      "id": "CAMERA",
+      "label": "相机",
+      "parent": null
+    },
+    {
+      "id": "MICROPHONE",
+      "label": "麦克风",
+      "parent": null
+    },
+    {
+      "id": "FILES_MEDIA",
+      "label": "文件与媒体",
+      "parent": null
+    },
+    {
+      "id": "ACCOUNT_IDENTITY",
+      "label": "账号与身份",
+      "parent": null
+    },
+    {
+      "id": "SCREEN_CAPTURE",
+      "label": "屏幕截图",
+      "parent": "FILES_MEDIA"
+    }
+  ],
+  "permission_mappings": [
+    {
+      "permission": "android.permission.ACCESS_FINE_LOCATION",
+      "data_type": "PRECISE_LOCATION",
+      "evidence_strength": "CAPABILITY_ONLY"
+    },
+    {
+      "permission": "android.permission.ACCESS_COARSE_LOCATION",
+      "data_type": "COARSE_LOCATION",
+      "evidence_strength": "CAPABILITY_ONLY"
+    },
+    {
+      "permission": "android.permission.READ_CONTACTS",
+      "data_type": "CONTACTS",
+      "evidence_strength": "CAPABILITY_ONLY"
+    },
+    {
+      "permission": "android.permission.CAMERA",
+      "data_type": "CAMERA",
+      "evidence_strength": "CAPABILITY_ONLY"
+    },
+    {
+      "permission": "android.permission.RECORD_AUDIO",
+      "data_type": "MICROPHONE",
+      "evidence_strength": "CAPABILITY_ONLY"
+    },
+    {
+      "permission": "android.permission.READ_MEDIA_IMAGES",
+      "data_type": "FILES_MEDIA",
+      "evidence_strength": "CAPABILITY_ONLY"
+    },
+    {
+      "permission": "android.permission.READ_EXTERNAL_STORAGE",
+      "data_type": "FILES_MEDIA",
+      "evidence_strength": "CAPABILITY_ONLY"
+    },
+    {
+      "permission": "android.permission.WRITE_EXTERNAL_STORAGE",
+      "data_type": "FILES_MEDIA",
+      "evidence_strength": "CAPABILITY_ONLY",
+      "source_url": "https://developer.android.com/reference/android/Manifest.permission#WRITE_EXTERNAL_STORAGE",
+      "note": "Declared legacy external-storage write capability only; scoped storage/API/target restrictions apply. Actual use and purpose unknown."
+    }
+  ],
+  "api_mappings": [
+    {
+      "rule_id": "android.location.last-known.gps",
+      "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "context": {
+        "provider": "gps"
+      },
+      "data_type": "PRECISE_LOCATION",
+      "note": "Static provider argument must resolve to gps; no runtime collection assertion."
+    },
+    {
+      "rule_id": "android.location.last-known.generic",
+      "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "context": {},
+      "data_type": "LOCATION",
+      "note": "Unresolved provider does not justify a precise/coarse subtype."
+    },
+    {
+      "rule_id": "android.contacts.query",
+      "target_descriptor": "Landroid/content/ContentResolver;->query(Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;",
+      "context": {
+        "uri": "content://com.android.contacts/contacts"
+      },
+      "data_type": "CONTACTS",
+      "note": "URI must be statically resolved; arbitrary resolver.query is not contacts evidence."
+    },
+    {
+      "rule_id": "synthetic.oaid.fixture",
+      "target_descriptor": "Lorg/privacytrace/demo/SyntheticOaidProvider;->readOaid()Ljava/lang/String;",
+      "context": {},
+      "data_type": "OAID",
+      "synthetic_only": true,
+      "note": "Artificial demonstration ONLY; forbidden for APK input."
+    },
+    {
+      "rule_id": "android.location.last-known.network",
+      "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "data_type": "COARSE_LOCATION",
+      "context": {
+        "provider": "network"
+      },
+      "note": "Static potential only; no assertion of runtime access."
+    },
+    {
+      "rule_id": "android.identifier.android-id",
+      "target_descriptor": "Landroid/provider/Settings$Secure;->getString(Landroid/content/ContentResolver;Ljava/lang/String;)Ljava/lang/String;",
+      "data_type": "ANDROID_ID",
+      "context": {
+        "key": "android_id"
+      },
+      "note": "Static potential only; no assertion of runtime access."
+    },
+    {
+      "rule_id": "android.identifier.imei",
+      "target_descriptor": "Landroid/telephony/TelephonyManager;->getImei()Ljava/lang/String;",
+      "data_type": "IMEI",
+      "context": {},
+      "note": "Static potential only; no assertion of runtime access."
+    },
+    {
+      "rule_id": "android.identifier.imei-slot",
+      "target_descriptor": "Landroid/telephony/TelephonyManager;->getImei(I)Ljava/lang/String;",
+      "data_type": "IMEI",
+      "context": {},
+      "note": "Static potential only; no assertion of runtime access."
+    },
+    {
+      "rule_id": "android.identifier.device-id",
+      "target_descriptor": "Landroid/telephony/TelephonyManager;->getDeviceId()Ljava/lang/String;",
+      "data_type": "DEVICE_IDENTIFIER",
+      "context": {},
+      "note": "Static potential only; no assertion of runtime access."
+    },
+    {
+      "rule_id": "android.camera.open",
+      "target_descriptor": "Landroid/hardware/Camera;->open()Landroid/hardware/Camera;",
+      "data_type": "CAMERA",
+      "context": {},
+      "note": "Static potential only; no assertion of runtime access."
+    },
+    {
+      "rule_id": "android.camera.open-index",
+      "target_descriptor": "Landroid/hardware/Camera;->open(I)Landroid/hardware/Camera;",
+      "data_type": "CAMERA",
+      "context": {},
+      "note": "Static potential only; no assertion of runtime access."
+    },
+    {
+      "rule_id": "android.camera.manager-open",
+      "target_descriptor": "Landroid/hardware/camera2/CameraManager;->openCamera(Ljava/lang/String;Landroid/hardware/camera2/CameraDevice$StateCallback;Landroid/os/Handler;)V",
+      "data_type": "CAMERA",
+      "context": {},
+      "note": "Static potential only; no assertion of runtime access."
+    },
+    {
+      "rule_id": "android.microphone.record",
+      "target_descriptor": "Landroid/media/AudioRecord;->startRecording()V",
+      "data_type": "MICROPHONE",
+      "context": {},
+      "note": "Static potential only; no assertion of runtime access."
+    },
+    {
+      "rule_id": "android.media.query.0",
+      "target_descriptor": "Landroid/content/ContentResolver;->query(Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;",
+      "data_type": "FILES_MEDIA",
+      "context": {
+        "uri": "content://media/external/images/media"
+      },
+      "note": "Static potential only; no assertion of runtime access."
+    },
+    {
+      "rule_id": "android.media.query.1",
+      "target_descriptor": "Landroid/content/ContentResolver;->query(Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;",
+      "data_type": "FILES_MEDIA",
+      "context": {
+        "uri": "content://media/external/video/media"
+      },
+      "note": "Static potential only; no assertion of runtime access."
+    },
+    {
+      "rule_id": "android.media.query.2",
+      "target_descriptor": "Landroid/content/ContentResolver;->query(Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;",
+      "data_type": "FILES_MEDIA",
+      "context": {
+        "uri": "content://media/external/audio/media"
+      },
+      "note": "Static potential only; no assertion of runtime access."
+    },
+    {
+      "rule_id": "android.screen.accessibility-screenshot",
+      "target_descriptor": "Landroid/accessibilityservice/AccessibilityService;->takeScreenshot(ILjava/util/concurrent/Executor;Landroid/accessibilityservice/AccessibilityService$TakeScreenshotCallback;)V",
+      "context": {},
+      "data_type": "SCREEN_CAPTURE",
+      "source_url": "https://developer.android.com/reference/android/accessibilityservice/AccessibilityService#takeScreenshot(int,%20java.util.concurrent.Executor,%20android.accessibilityservice.AccessibilityService.TakeScreenshotCallback)",
+      "note": "Static potential screen capture only; does not prove execution, captured personal data, or image-library access."
+    },
+    {
+      "rule_id": "android.screen.automation-screenshot",
+      "target_descriptor": "Landroid/app/UiAutomation;->takeScreenshot()Landroid/graphics/Bitmap;",
+      "context": {},
+      "data_type": "SCREEN_CAPTURE",
+      "source_url": "https://developer.android.com/reference/android/app/UiAutomation#takeScreenshot()",
+      "note": "Static potential screen capture only; does not prove execution, captured personal data, or image-library access."
+    }
+  ],
+  "policy_phrase_mappings": [
+    {
+      "phrase": "精确位置",
+      "data_type": "PRECISE_LOCATION"
+    },
+    {
+      "phrase": "位置信息",
+      "data_type": "LOCATION"
+    },
+    {
+      "phrase": "通讯录",
+      "data_type": "CONTACTS"
+    },
+    {
+      "phrase": "设备信息",
+      "data_type": "DEVICE_INFORMATION"
+    },
+    {
+      "phrase": "设备标识符",
+      "data_type": "DEVICE_IDENTIFIER"
+    },
+    {
+      "phrase": "OAID",
+      "data_type": "OAID"
+    },
+    {
+      "phrase": "Android ID",
+      "data_type": "ANDROID_ID"
+    },
+    {
+      "phrase": "IMEI",
+      "data_type": "IMEI"
+    },
+    {
+      "phrase": "相机",
+      "data_type": "CAMERA"
+    },
+    {
+      "phrase": "麦克风",
+      "data_type": "MICROPHONE"
+    },
+    {
+      "phrase": "媒体文件",
+      "data_type": "FILES_MEDIA"
+    },
+    {
+      "phrase": "账号信息",
+      "data_type": "ACCOUNT_IDENTITY"
+    }
+  ]
+}

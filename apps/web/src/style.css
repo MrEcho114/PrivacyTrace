@@ -72,3 +72,15 @@ footer { margin-top: 35px; font-size: 12px; color: #8a978b; text-align: center; 
   .evidence-grid { grid-template-columns: 1fr; }
   table { min-width: 640px; }
 }
+
+.source-picker, .coverage-card, .job-state, .review-panel { margin: 20px 0; padding: 20px; border: 1px solid #dde5dd; border-radius: 10px; background: #fff; }
+.source-picker label { font-weight: 600; display: block; margin-bottom: 10px; }
+select, input, textarea { font: inherit; color: inherit; border: 1px solid #cddbd2; border-radius: 6px; padding: 10px; background: white; max-width: 100%; }
+select { width: 100%; }
+.review-panel form { display: grid; gap: 14px; }
+.review-panel label { display: grid; gap: 6px; font-size: 14px; }
+.review-panel button { justify-self: start; }
+.audit-event { border-top: 1px solid #dde5dd; margin-top: 18px; padding-top: 15px; font-size: 13px; }
+summary { cursor: pointer; }
+mark { background: #ffebb3; color: #423711; }
+.job-state button { margin-left: 15px; }

@@ -466,3 +466,19 @@ def test_same_permission_dual_declarations_keep_distinct_sdk_evidence(tmp_path):
         assert len(behavior["evidence_ids"]) == 1
         ev = evidence[behavior["evidence_ids"][0]]
         assert ev["kind"] == "MANIFEST" and ev["status"] == "STATIC_POTENTIAL"
+
+
+@pytest.mark.parametrize("count", [500, 501, 600])
+def test_mapped_output_is_bounded_without_losing_the_report(tmp_path, count):
+    result, report = scan(
+        apk(tmp_path / "many.apk", camera=True, invoke_count=count,
+            permission="android.permission.INTERNET")
+    )
+    assert result.returncode == 0
+    assert len(report["behaviors"]) == 500
+    assert len(report["evidence"]) == 500
+    assert len({e["id"] for e in report["evidence"]}) == 500
+    assert report["coverage"]["completeness"] == "COMPLETE"
+    assert report["coverage"]["scanned_dex"] == ["classes.dex"]
+    truncated = " ".join(report["coverage"]["behavior_limitations"])
+    assert ("output truncated at 500" in truncated) == (count > 500)

@@ -233,6 +233,14 @@ def scan(path, rules, inventory=False):
         ]
 
         def add(kind, source, locator, excerpt, data_type, action="ACCESS", api_call=None):
+            if len(result["behaviors"]) >= 500:
+                warning = (
+                    "Mapped behavior/evidence output truncated at 500; additional hits omitted. "
+                    "DEX processing completion does not imply complete behavior coverage."
+                )
+                if warning not in result["coverage"]["behavior_limitations"]:
+                    result["coverage"]["behavior_limitations"].append(warning)
+                return
             identity = hashlib.sha256((kind + locator).encode()).hexdigest()[:24]
             evidence = dict(
                 id="ev-" + identity,

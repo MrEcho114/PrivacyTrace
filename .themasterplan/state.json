@@ -68,7 +68,7 @@
     ".themasterplan/bin/tmlib/source.py": {
       "source": "<executor>:tmlib/source.py",
       "source_sha256": "6e4d7d1f2f59b7723e9e509bea413465a5f536d207b7821e96a55da34c7dcd9d",
-      "installed_sha256": "6e4d7d1f2f59b7723e9e509bea413465a5f536d207b7821e96a55da34c7dcd9d",
+      "installed_sha256": "7c03946877b2086f11a8ef9745cf05ebf53197f8751f3ac8ffe1f2886d495cb3",
       "ownership": "managed-replace"
     },
     ".themasterplan/bin/tmlib/inspect.py": {
@@ -114,5 +114,12 @@
     "git_version": "2.55.0.windows.2",
     "jj_version": null,
     "status": "PARTIAL"
+  },
+  "local_patches": {
+    ".themasterplan/bin/tmlib/source.py": {
+      "reason": "PR29 Codex review 4229370176: read size-bounded Git tree/blob objects, not local working files or archive attributes",
+      "upstream_sha256": "6e4d7d1f2f59b7723e9e509bea413465a5f536d207b7821e96a55da34c7dcd9d",
+      "installed_sha256": "7c03946877b2086f11a8ef9745cf05ebf53197f8751f3ac8ffe1f2886d495cb3"
+    }
   }
 }

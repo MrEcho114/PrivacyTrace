@@ -636,3 +636,51 @@ def test_old_report_gets_conservative_coverage_scope_without_rewriting_facts(tmp
     assert any("规则" in item for item in report["coverage"]["behavior_limitations"])
     for field in ("result", "evidence", "behaviors", "policy_documents", "policy_claims"):
         assert report[field] == before[field]
+
+
+def test_historical_report_uses_its_rules_after_active_taxonomy_advances(tmp_path, monkeypatch):
+    from copy import deepcopy
+
+    from privacytrace import resources
+    from privacytrace.main import create_app
+
+    app = create_app(store_root=tmp_path)
+    original = seed(app.state.job_store).model_dump(mode="json")
+    old_rules = taxonomy()
+    newer = deepcopy(old_rules)
+    newer["version"] = "0.4.0"
+    newer["data_types"] = []
+    newer["api_mappings"] = []
+    original_read = resources.read_json
+
+    def resource(path):
+        return newer if path == "rules/taxonomy.v0.4.json" else original_read(path)
+
+    monkeypatch.setattr(resources, "read_json", resource)
+    monkeypatch.setattr(resources, "ACTIVE_RULESET_VERSION", "0.4.0")
+    monkeypatch.setattr(resources, "TAXONOMY_FILES",
+                        {"0.3.0": "rules/taxonomy.v0.3.json", "0.4.0": "rules/taxonomy.v0.4.json"})
+    client = TestClient(create_app(store_root=tmp_path))
+    assert client.get("/api/v1/taxonomy").json()["version"] == "0.4.0"
+    assert client.get("/api/v1/jobs").status_code == 200
+    url = f"/api/v1/jobs/{original['job']['id']}"
+    assert client.get(url).status_code == 200
+    response = client.get(url + "/report")
+    assert response.status_code == 200
+    assert response.json() == original
+
+
+def test_historical_report_rejects_unknown_ruleset_without_fallback(tmp_path):
+    import json
+
+    from privacytrace.main import create_app
+
+    app = create_app(store_root=tmp_path)
+    report = seed(app.state.job_store)
+    path = tmp_path / (report.job.id + ".json")
+    record = json.loads(path.read_bytes())
+    record["job"]["ruleset_version"] = "999.0.0"
+    record["bundle"]["job"]["ruleset_version"] = "999.0.0"
+    path.write_text(json.dumps(record), encoding="utf-8")
+    client = TestClient(create_app(store_root=tmp_path))
+    assert client.get(f"/api/v1/jobs/{report.job.id}/report").status_code == 409

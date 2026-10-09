@@ -269,3 +269,28 @@ def test_docker_pipeline_http_cancel_then_new_job_recovers(tmp_path, capture, le
     assert report.json()["policy_documents"][0]["review_status"] == "UNREVIEWED"
     receipt = json.loads((ROOT / report.json()["tools"]["isolation_receipt"]).read_bytes())
     assert receipt["cleanup_verified"] is True
+
+
+@pytest.mark.skipif(
+    __import__("os").environ.get("PRIVACYTRACE_DOCKER_TESTS") != "1",
+    reason="Opt-in real isolated Docker pipeline acceptance",
+)
+def test_many_mapped_invokes_publish_bounded_report_over_http(tmp_path, capture):
+    from apk_fixture_builder import apk
+    from fastapi.testclient import TestClient
+
+    from privacytrace.main import create_app
+
+    fixture = apk(tmp_path / "many.apk", camera=True, invoke_count=501,
+                  permission="android.permission.INTERNET")
+    process, summary = pipeline(tmp_path, capture, apk=fixture, job_id="bounded")
+    assert process.returncode == 0, process.stdout + process.stderr
+    assert summary["status"] == "SUCCEEDED"
+    client = TestClient(create_app(store_root=tmp_path / "jobs"))
+    response = client.get("/api/v1/jobs/bounded/report")
+    assert response.status_code == 200
+    report = response.json()
+    assert len(report["behaviors"]) == 500
+    assert len(report["evidence"]) >= 500
+    assert len(report["evidence"]) <= 2000
+    assert "output truncated at 500" in " ".join(report["coverage"]["behavior_limitations"])

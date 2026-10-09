@@ -157,7 +157,7 @@ def manifest(
     return struct.pack("<HHI", 3, 8, len(chunks) + 8) + chunks
 
 
-def dex(*, invoke=True, camera=False, provider="gps", branch=False, kind=None):
+def dex(*, invoke=True, camera=False, provider="gps", branch=False, kind=None, invoke_count=1):
     owner = "Landroid/hardware/Camera;" if camera else "Landroid/location/LocationManager;"
     ret = "Landroid/hardware/Camera;" if camera else "Landroid/location/Location;"
     target_name = "open" if camera else "getLastKnownLocation"
@@ -339,7 +339,7 @@ def dex(*, invoke=True, camera=False, provider="gps", branch=False, kind=None):
                     (count << 12) | (0x71 if static else 0x6E),
                     target_i,
                     {1: 0, 2: 0x10, 3: 0x210, 4: 0x3210}.get(count, 0),
-                ]
+                ] * invoke_count
         else:
             words += [0x001A, si[signature]]  # ordinary string, not a method invoke
         words += [0x000E]

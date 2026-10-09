@@ -189,7 +189,7 @@ class EvaluationInput(Model):
     def validate_references(self):
         from .resources import taxonomy
 
-        rules = taxonomy()
+        rules = taxonomy(self.job.ruleset_version)
         if self.job.ruleset_version != rules["version"]:
             raise ValueError("Unsupported ruleset version")
         types = {item["id"] for item in rules["data_types"]}

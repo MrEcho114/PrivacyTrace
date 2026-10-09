@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { cancelJob, loadJob, loadJobReport, loadJobs, loadReport, loadTaxonomy, submitReview } from './api'
 import type { AnalysisJob, DemoReport, Evidence, MatchStatus, PrivacyIssue, Report, ReportSource, Taxonomy } from './types'
 import { parseSource, serializeSource } from './types'
@@ -44,11 +44,21 @@ const selectedEvidence = computed(() => report.value?.evidence.filter(item => se
 const dataTypeCount = computed(() => new Set(report.value?.result.issues.map(i => i.data_type)).size)
 const realReport = computed(() => report.value && !report.value.demo ? report.value : null)
 // Candidate clauses are navigation aids, not evaluator-confirmed evidence or matches.
-const relatedCandidates = computed(() => {
+const CANDIDATE_PAGE_SIZE = 20
+const candidatePage = ref(0)
+const candidateClaims = computed(() => {
   if (!realReport.value || !selected.value) return []
+  return realReport.value.policy_claims.filter(claim => claim.data_type === selected.value?.data_type)
+})
+const candidatePageCount = computed(() => Math.ceil(candidateClaims.value.length / CANDIDATE_PAGE_SIZE))
+watch([selected, report], () => {
+  candidatePage.value = 0; openedPolicyId.value = null; provenanceOpen.value = false
+})
+const relatedCandidates = computed(() => {
+  if (!realReport.value) return []
   const current = realReport.value
-  return current.policy_claims
-    .filter(claim => claim.data_type === selected.value?.data_type)
+  return candidateClaims.value
+    .slice(candidatePage.value * CANDIDATE_PAGE_SIZE, (candidatePage.value + 1) * CANDIDATE_PAGE_SIZE)
     .map(claim => ({
       claim,
       document: current.policy_documents.find(doc => doc.id === claim.document_id),
@@ -56,6 +66,26 @@ const relatedCandidates = computed(() => {
         && item.document_id === claim.document_id && claim.evidence_ids.includes(item.id)),
     }))
 })
+// Full artifacts live only in the provenance section, and are inserted on demand.
+const openedPolicyId = ref<string | null>(null)
+const provenanceOpen = ref(false)
+const openPolicy = (id: string) => {
+  provenanceOpen.value = true
+  openedPolicyId.value = id
+  void nextTick(() => {
+    if (typeof document !== 'undefined') document.getElementById('policy-' + id)?.scrollIntoView()
+  })
+}
+const provenanceToggle = (event: Event) => {
+  provenanceOpen.value = (event.target as HTMLDetailsElement).open
+  if (!provenanceOpen.value) openedPolicyId.value = null
+}
+const policyToggle = (event: Event, id: string) => {
+  const details = event.target as HTMLDetailsElement
+  if (details.open) openedPolicyId.value = id
+  else if (openedPolicyId.value === id) openedPolicyId.value = null
+}
+
 const documentFor = (item: Evidence) => report.value?.policy_documents.find(doc => doc.id === item.document_id)
 const sentenceContext = (item: Evidence) => {
   const text = documentFor(item)?.artifact.text
@@ -212,10 +242,15 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
             <pre v-if="sentenceContext(item)">{{ sentenceContext(item)?.before }}<mark>{{ sentenceContext(item)?.sentence }}</mark>{{ sentenceContext(item)?.after }}</pre>
             <pre v-else-if="item.excerpt">{{ item.excerpt }}</pre>
             <p v-else class="subtle">本条引用政策快照，全文见下方。</p>
-            <details v-if="documentFor(item)"><summary>完整政策与适用边界</summary><p>{{ documentFor(item)?.title }} · {{ documentFor(item)?.version }} · {{ documentFor(item)?.captured_at }}</p><p class="hash">SHA-256 {{ documentFor(item)?.artifact.sha256 }}</p><p>快照 {{ documentFor(item)?.completeness }}；提取 {{ documentFor(item)?.extraction_status }}；复核 {{ documentFor(item)?.review_status }}；附件 {{ documentFor(item)?.attachments_status }}</p><p class="hash">适用范围 {{ JSON.stringify(documentFor(item)?.applicability) }}</p><pre>{{ documentFor(item)?.artifact.text }}</pre></details>
+            <button v-if="item.document_id && documentFor(item)" @click="openPolicy(item.document_id)">完整政策与适用边界</button>
           </article></div>
           <section v-if="relatedCandidates.length" class="candidate-clauses">
             <h3>相关候选条款（未确认匹配）</h3>
+            <nav aria-label="候选条款分页">
+              <span>共 {{ candidateClaims.length }} 条 · 第 {{ candidatePage + 1 }} / {{ candidatePageCount }} 页</span>
+              <button :disabled="candidatePage === 0" @click="candidatePage--">上一页</button>
+              <button :disabled="candidatePage + 1 >= candidatePageCount" @click="candidatePage++">下一页</button>
+            </nav>
             <p class="subtle">以下仅按相同数据类型展示候选原句，不属于规则已确认的匹配依据，不改变结论或结论证据引用。SDK 自有政策不能替代宿主声明；候选提取仍需人工核验。</p>
             <p v-if="report.behaviors.find(item => item.id === selected?.behavior_id)?.action === 'CAPABILITY'" class="demo-note">本项只是清单权限能力，不代表实际访问；候选条款不能据此认定已发生访问或已经对应。</p>
             <div class="evidence-grid"><article v-for="candidate in relatedCandidates" :key="candidate.claim.id" class="evidence-card">
@@ -232,14 +267,14 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
                 <pre v-else>{{ item.excerpt || '缺少可定位原句，需补充证据。' }}</pre>
               </div>
               <p v-if="!candidate.evidence.length" class="subtle">没有可定位的候选原句证据，需补充证据。</p>
-              <details v-if="candidate.document"><summary>候选来源全文与适用边界</summary><p>{{ candidate.document.title }} · {{ candidate.document.version }} · {{ candidate.document.captured_at }}</p><p class="hash">SHA-256 {{ candidate.document.artifact.sha256 }}</p><p>快照 {{ candidate.document.completeness }}；提取 {{ candidate.document.extraction_status }}；复核 {{ candidate.document.review_status }}；附件 {{ candidate.document.attachments_status }}</p><p class="hash">适用范围 {{ JSON.stringify(candidate.document.applicability) }}</p><pre>{{ candidate.document.artifact.text }}</pre></details>
+              <button v-if="candidate.document" @click="openPolicy(candidate.document.id)">候选来源全文与适用边界</button>
             </article></div>
           </section>
         </section>
-        <details class="provenance"><summary>报告版本、权限与全部政策快照</summary>
+        <details class="provenance" :open="provenanceOpen" @toggle="provenanceToggle($event)"><summary>报告版本、权限与全部政策快照</summary>
           <p>任务 {{ report.job.id }} · 输入 {{ report.job.input_mode }} · 规则版本 {{ report.job.ruleset_version }}</p>
           <template v-if="realReport"><p v-for="(version, tool) in realReport.tools" :key="tool">{{ tool }}：{{ version }}</p><p class="hash">DEX {{ realReport.sample.dex_entries.join('、') }}</p><details><summary>Android 权限（权限不等于已访问）</summary><ul><li v-for="permission in realReport.sample.permissions" :key="permission">{{ permission }}</li></ul></details></template>
-          <article v-for="doc in report.policy_documents" :key="doc.id"><strong>{{ doc.title }}</strong><p>{{ sourceLabels[doc.source_type] }} · {{ doc.version }} · {{ doc.captured_at }}</p><p class="hash">SHA-256 {{ doc.artifact.sha256 }}</p><p>快照 {{ doc.completeness }} · 提取 {{ doc.extraction_status }} · 复核 {{ doc.review_status }} · 附件 {{ doc.attachments_status }}</p><p class="hash">适用范围 {{ JSON.stringify(doc.applicability) }}</p><details><summary>查看政策全文</summary><pre>{{ doc.artifact.text }}</pre></details></article>
+          <article v-for="doc in report.policy_documents" :key="doc.id" :id="'policy-' + doc.id"><strong>{{ doc.title }}</strong><p>{{ sourceLabels[doc.source_type] }} · {{ doc.version }} · {{ doc.captured_at }}</p><p class="hash">SHA-256 {{ doc.artifact.sha256 }}</p><p>快照 {{ doc.completeness }} · 提取 {{ doc.extraction_status }} · 复核 {{ doc.review_status }} · 附件 {{ doc.attachments_status }}</p><p class="hash">适用范围 {{ JSON.stringify(doc.applicability) }}</p><details :open="openedPolicyId === doc.id" @toggle="policyToggle($event, doc.id)"><summary>查看政策全文</summary><pre v-if="openedPolicyId === doc.id">{{ doc.artifact.text }}</pre></details></article>
         </details>
         <section v-if="realReport" class="review-panel">
           <h2>人工复核备注</h2><p class="subtle">记录谁在何时、因为什么做了复核。这里只保存备注并由纯规则重算，不自动把政策标为已复核，不修改候选声明。填写的身份未认证，最终仍需团队核验。</p>

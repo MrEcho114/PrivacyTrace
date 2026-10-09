@@ -8,6 +8,7 @@ Compatibility:
 
 from __future__ import annotations
 
+import atexit
 import hashlib
 import json
 import os
@@ -100,33 +101,86 @@ def _local_git_head(package_root: Path) -> str | None:
     return sha if FULL_SHA_RE.fullmatch(sha) else None
 
 
-def resolve_local(package_root: Path, commit: str | None = None) -> Source:
-    """Resolve a local package.
+def _remove_local_snapshot(root: Path, parent: Path) -> None:
+    # Only delete the exact temporary directory created by this resolver.
+    if (root.parent == parent and root.name.startswith("themasterplan-local-")
+            and not root.is_symlink()):
+        shutil.rmtree(root, ignore_errors=True)
 
-    Explicit ``commit`` is retained for exported trees and test fixtures.
-    Normal Git checkouts should omit it and use the detected HEAD.
-    """
+
+def resolve_local(
+    package_root: Path, commit: str | None = None, cache_dir: Path | None = None,
+) -> Source:
+    """Snapshot Git tree/blob objects, ignoring mutable files and attributes."""
     package_root = package_root.resolve()
-    manifest = package_manifest(package_root)
-    repository = manifest["source_repository"]
-    _validate_repository(repository)
-
-    resolved_commit = commit or _local_git_head(package_root)
-    if resolved_commit is None:
-        raise SourceError(
-            f"cannot resolve commit for local package {package_root}; pass --commit"
-        )
+    head = _local_git_head(package_root)
+    if head is None:
+        raise SourceError("local source requires a Git checkout; use a pinned remote source")
+    resolved_commit = commit or head
     if not FULL_SHA_RE.fullmatch(resolved_commit):
-        raise SourceError(
-            f"commit must be a full 40-char lowercase SHA: {resolved_commit!r}"
-        )
+        raise SourceError("commit must be a full 40-char lowercase SHA")
 
-    return Source(
-        repository=repository,
-        version=manifest["distribution_version"],
-        commit=resolved_commit,
-        package_root=package_root,
-    )
+    def git(*args, input=None):
+        result = subprocess.run(
+            ["git", "--no-replace-objects", *args], cwd=package_root, input=input,
+            capture_output=True, timeout=30, check=False,
+        )
+        if result.returncode:
+            raise SourceError("cannot read the pinned local source commit")
+        return result.stdout
+
+    if Path(git("rev-parse", "--show-toplevel").decode("utf-8").strip()).resolve() != package_root:
+        raise SourceError("local source must be the Git checkout root")
+
+    entries = []
+    total = 0
+    try:
+        for entry in git("ls-tree", "-rz", "--full-tree", resolved_commit).split(b"\0"):
+            if not entry:
+                continue
+            metadata, name = entry.split(b"\t", 1)
+            mode, kind, oid = metadata.split()
+            if kind != b"blob" or mode not in (b"100644", b"100755"):
+                raise SourceError("local source must contain regular files, not links/submodules")
+            entries.append((mode, oid, name.decode("utf-8")))
+        if len(entries) > MAX_ARCHIVE_MEMBERS:
+            raise SourceError("local source has too many files")
+        objects = b"".join(oid + b"\n" for _, oid, _ in entries)
+        sizes = git("cat-file", "--batch-check", input=objects).splitlines()
+        for (_, oid, _), info in zip(entries, sizes, strict=True):
+            got_oid, kind, size = info.split()
+            if got_oid != oid or kind != b"blob":
+                raise SourceError("invalid source object")
+            total += int(size)
+            if total > MAX_ARCHIVE_BYTES:
+                raise SourceError("local source exceeds safety limit")
+        # Size-check before materializing any snapshot; no archive attributes or filters.
+        blobs = git("cat-file", "--batch", input=objects)
+        parent = (cache_dir if cache_dir is not None else Path(tempfile.gettempdir())).resolve()
+        parent.mkdir(parents=True, exist_ok=True)
+        temporary = Path(tempfile.mkdtemp(prefix="themasterplan-local-", dir=parent)).resolve()
+        atexit.register(_remove_local_snapshot, temporary, parent)
+        offset = 0
+        for mode, oid, name in entries:
+            header_end = blobs.index(b"\n", offset)
+            got_oid, kind, size = blobs[offset:header_end].split()
+            size = int(size)
+            offset = header_end + 1
+            if got_oid != oid or kind != b"blob" or blobs[offset + size:offset + size + 1] != b"\n":
+                raise SourceError("invalid source object content")
+            target = safe_join(temporary, name)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(blobs[offset:offset + size])
+            if mode == b"100755":
+                target.chmod(0o755)
+            offset += size + 1
+        manifest = package_manifest(temporary)
+        repository = manifest["source_repository"]
+        _validate_repository(repository)
+        return Source(repository=repository, version=manifest["distribution_version"],
+                      commit=resolved_commit, package_root=temporary)
+    except (OSError, subprocess.SubprocessError, UnicodeError) as exc:
+        raise SourceError("cannot snapshot local source") from exc
 
 
 def _request_bytes(url: str, *, timeout: int, max_bytes: int) -> bytes:
@@ -473,7 +527,7 @@ def resolve_source(
 ) -> Source:
     candidate = Path(source_ref)
     if candidate.is_dir():
-        source = resolve_local(candidate, commit=commit)
+        source = resolve_local(candidate, commit=commit, cache_dir=cache_dir)
         if (
             expected_repository is not None
             and source.repository != expected_repository

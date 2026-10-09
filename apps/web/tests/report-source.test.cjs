@@ -4,7 +4,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const vm = require('node:vm')
 const { test } = require('node:test')
-const { parse, compileScript } = require('@vue/compiler-sfc')
+const { parse, compileScript, compileTemplate } = require('@vue/compiler-sfc')
 const ts = require('typescript')
 const vue = require('vue')
 
@@ -21,9 +21,9 @@ const typesCode = ts.transpileModule(fs.readFileSync(path.join(__dirname, '../sr
 const typesExports = {}
 vm.runInNewContext(typesCode, { exports: typesExports })
 
-function mount(jobs = []) {
+function mount(jobs = [], fixture = null) {
   const requests = []
-  const report = id => ({ demo: false, job: { id }, result: { issues: [] } })
+  const report = id => fixture ?? ({ demo: false, job: { id }, result: { issues: [] } })
   const api = {
     loadJobs: async () => ({ jobs }),
     loadTaxonomy: async () => ({ data_types: [] }),
@@ -91,4 +91,62 @@ test('cancellation of a running job named demo targets the real job', async () =
     assert.equal(state.activeJob.value.state, 'CANCELLED')
     assert.deepEqual(requests, [['job', 'demo'], ['cancel', 'demo']])
   } finally { unmount() }
+})
+
+const templateCode = compileTemplate({
+  source: descriptor.template.content, filename: file, id: 'report-source-test',
+  compilerOptions: { bindingMetadata: compiled.bindings },
+}).code
+const templateContext = { exports: {}, require: name => {
+  if (name === 'vue') return vue
+  throw new Error(name)
+} }
+vm.runInNewContext(ts.transpileModule(templateCode, {
+  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+}).outputText, templateContext)
+const { renderToString } = require('@vue/server-renderer')
+async function html(state) {
+  const setup = vue.proxyRefs(state)
+  return renderToString(vue.createSSRApp({
+    render() { return templateContext.exports.render(setup, [], {}, setup, {}, {}) },
+  }))
+}
+
+test('candidate navigation is paginated and full artifacts are rendered once on demand', async () => {
+  const doc = { id: 'policy-1', title: 'Fixture policy', version: '1', captured_at: '2026',
+    source_type: 'APP_POLICY', artifact: { text: 'FULL_ARTIFACT_SENTINEL' + 'x'.repeat(199978), sha256: 'a'.repeat(64) },
+    completeness: 'COMPLETE', extraction_status: 'PARTIAL', review_status: 'UNREVIEWED',
+    attachments_status: 'NOT_CHECKED', applicability: {} }
+  const issue = { id: 'issue-1', data_type: 'CAMERA', status: 'INSUFFICIENT_EVIDENCE',
+    explanation: 'Controlled facts only', evidence_ids: [], policy_document_ids: ['policy-1'] }
+  const fixture = { demo: false, job: { id: 'large', input_mode: 'APK', ruleset_version: '0.3.0' },
+    sample: { name: 'Fixture', package_name: 'example.fixture', apk_sha256: 'b'.repeat(64),
+      version_code: 1, permissions: [], dex_entries: [] },
+    coverage: { status: 'COMPLETE', scanned_dex: [], failed_dex: [],
+      limitations: [], behavior_limitations: [] }, tools: {}, reviews: [],
+    result: { issues: [issue] }, evidence: [], behaviors: [],
+    policy_documents: [doc], policy_claims: Array.from({ length: 2000 }, (_, i) => ({
+      id: 'claim-' + i, data_type: 'CAMERA', document_id: 'policy-1', evidence_ids: [],
+    })) }
+  const { state } = mount([{ id: 'large', state: 'SUCCEEDED' }], fixture)
+  await state.reload(true)
+  state.selected.value = issue
+  let output = await html(state)
+  assert.equal((output.match(/class="evidence-card"/g) ?? []).length, 20)
+  assert.equal((output.match(/FULL_ARTIFACT_SENTINEL/g) ?? []).length, 0)
+  state.openPolicy('policy-1')
+  output = await html(state)
+  assert.equal((output.match(/FULL_ARTIFACT_SENTINEL/g) ?? []).length, 1)
+  state.provenanceToggle({ target: { open: false } })
+  state.openPolicy('policy-1')
+  output = await html(state)
+  assert.equal((output.match(/FULL_ARTIFACT_SENTINEL/g) ?? []).length, 1)
+  assert.equal(state.provenanceOpen.value, true)
+  state.policyToggle({ target: { open: false } }, 'policy-1')
+  assert.equal(state.provenanceOpen.value, true)
+  assert.equal((await html(state)).includes('FULL_ARTIFACT_SENTINEL'), false)
+  state.candidatePage.value = 1
+  output = await html(state)
+  assert.match(output, /claim-20/)
+  assert.doesNotMatch(output, /claim-0 ·/)
 })

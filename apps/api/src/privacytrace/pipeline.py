@@ -9,7 +9,7 @@ from uuid import uuid4
 from .isolated_scan import ROOT, ScanError, scan_isolated, validate_input
 from .job_store import JobStore
 from .models import AnalysisJob, EvaluationInput
-from .policy_intake import load_policy
+from .policy_intake import TEAM_REVIEW_GATE, load_policy
 from .resources import taxonomy
 
 
@@ -84,7 +84,7 @@ def run(apk, policy, name, job_id=None, timeout=120, store_dir=None, product_sco
             "policy_initial_audit_path": str(
                 Path(policy).absolute().parent / captured["files"]["audits"]["path"]
             ),
-            "human_review_gate": "PENDING_HUMAN_AB",
+            "human_review_gate": TEAM_REVIEW_GATE,
             "scan_errors": json.dumps(scanned.get("errors", []), ensure_ascii=True),
         }
         if cancelled():
@@ -103,7 +103,7 @@ def run(apk, policy, name, job_id=None, timeout=120, store_dir=None, product_sco
                 "claims": len(report.policy_claims),
                 "issues": len(report.result.issues),
             },
-            "human_review_gate": "PENDING_HUMAN_AB",
+            "human_review_gate": TEAM_REVIEW_GATE,
         }
     except (ScanError, ValueError, OSError, KeyError, TypeError) as exc:
         is_cancelled = cancelled() or (isinstance(exc, ScanError) and exc.code == "CANCELLED")

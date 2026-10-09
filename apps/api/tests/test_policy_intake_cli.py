@@ -70,7 +70,8 @@ def captured(tmp_path):
 def test_lossless_spans_negative_conditional_unknown_and_audits(captured):
     text, out, _, summary = captured
     record = json.loads((out / "policy.capture.json").read_bytes())
-    assert summary["human_review_gate"] == "PENDING_HUMAN_AB"
+    assert summary["human_review_gate"] == "NOT_REQUIRED_BY_WORKFLOW"
+    assert record["human_review_gate"] == "NOT_REQUIRED_BY_WORKFLOW"
     assert (out / "policy.raw.txt").read_bytes() == text.encode()
     assert (out / "policy.processed.txt").read_bytes() == text.encode()
     assert record["document"]["artifact"]["sha256"] == hashlib.sha256(text.encode()).hexdigest()

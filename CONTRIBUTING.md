@@ -1,14 +1,13 @@
 # 协作约定
 
-1. 先查看 `docs/backlog.md`，在工单或开发日志记录对应 PT 编号、输入、输出与验收条件。
-2. 主线保持 Evidence Model → Taxonomy → Consistency Engine → Explainable Report。
-3. 不用 LLM 直接作最终事实裁决。任何新结论都必须绑定可定位的 Evidence IDs。
-4. 事实、政策声明、上下文推断分开存；未知字段保留 UNKNOWN。
-5. 权限只能说明授权能力，SDK 特征只能说明 SDK 存在。静态证据不能证明运行时收集或外传。
-6. 多源政策分别核验，SDK 政策不能替宿主补声明。未获得政策时返回证据不足，不能返回未声明。
-7. 修改分类或匹配规则时更新规则版本、迁移说明与对应语义测试。
-8. 先跑后端测试、lint 和前端构建，再提交。提交信息示例：`feat(PT-701): evaluate data-type disclosure`。
-9. 保存真实开发与 AI 协作记录，不补造提交历史、访谈、测评数值或真实分析结果。
-10. 不提交密钥、APK、个人数据、数据库或未经授权的原始材料。
+日常交付以根部 [AGENTS.md](AGENTS.md) 的 Context Router 和 [工作流](docs/workflow.md) 为准。
 
-团队成员信息尚未登记。初始化提交使用已验证的 GitHub 账号 MrEcho114 和对应的 GitHub noreply 邮箱；后续成员使用各自身份提交。许可证、实际赛期和队员分工待团队确认。
+- 用户提出目标即可；复杂任务用 Issue，小修复可直接按会话授权执行。
+- 一个主交付责任人负责范围、验证、完整 diff、push 和 PR；PR 模板与五项自审由代理完成，不再要求 A/B 签字或逐条评论。
+- 验证统一运行 `bash scripts/check.sh`；Windows 的 `scripts/check.ps1` 委托 Git Bash。CI 使用同一入口并强制开启 Docker 回归。
+- 代码通过、S1 技术验收与 PR 合并是不同状态。未经对应授权，不合并、发布、部署或改分支保护。
+- 主线保持 Evidence Model → Taxonomy → Consistency Engine → Explainable Report。事实、声明、上下文推断分开；UNKNOWN 不编造。权限/静态 invoke 不证明实际采集或外传。
+- SDK 政策不能替宿主补声明；没有足够政策证据时不返回“未声明”。组织流程豁免不把政策标为 REVIEWED，不改变合法性/安全性边界。
+- 分类或匹配规则改变时更新版本、迁移说明和语义测试；不使用 LLM 作最终事实裁决。
+- 不提交密钥、APK、个人数据、数据库或完整政策/反编译材料；不补造开发记录、访谈或评测数据。
+- 保留未知本地改动；不强推、不移动已发布 tag。提交信息简短说明目的即可。

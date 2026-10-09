@@ -1,10 +1,11 @@
-. "$PSScriptRoot\common.ps1"
-$uvTool = Get-PrivacyTraceTool 'uv'
-$npmTool = Get-PrivacyTraceTool 'npm.cmd'
-Push-Location $script:PrivacyTraceRoot
+$ErrorActionPreference = 'Stop'
+$root = Split-Path -Parent $PSScriptRoot
+$git = Get-Command git.exe -ErrorAction Stop
+$gitRoot = Split-Path -Parent (Split-Path -Parent $git.Source)
+$bash = Join-Path $gitRoot 'bin/bash.exe'
+if (-not (Test-Path -LiteralPath $bash)) { throw 'Git for Windows Bash is required.' }
+Push-Location $root
 try {
-    Invoke-PrivacyTraceTool $uvTool @('run', '--project', 'apps/api', '--locked', '--extra', 'worker', 'pytest', 'apps/api/tests')
-    Invoke-PrivacyTraceTool $uvTool @('run', '--project', 'apps/api', '--locked', '--extra', 'worker', 'ruff', 'check', 'apps/api/src', 'apps/api/tests', 'scripts/export-schema.py')
-    Invoke-PrivacyTraceTool $npmTool @('run', 'test', '--workspace', '@privacytrace/web')
-    Invoke-PrivacyTraceTool $npmTool @('run', 'build')
+    & $bash --noprofile --norc scripts/check.sh
+    if ($LASTEXITCODE -ne 0) { throw "Validation failed: $LASTEXITCODE" }
 } finally { Pop-Location }

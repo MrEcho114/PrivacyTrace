@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "source": {
+    "repository": "OasisSaber/TheMasterplan",
+    "version": "v5.0.0",
+    "commit": "20eee37922175ad443270e1ab38df7ab38ca5d7b"
+  },
+  "selection": {
+    "profile": "git",
+    "validation_path": "scripts/check.sh",
+    "default_branch": "main"
+  },
+  "managed_files": {
+    "core/workflow.md": {
+      "source": "core/workflow.md",
+      "source_sha256": "e4f0883857ffd4658516c58bd7d8aa219474da5081e1be26db7836a8b77c7c21",
+      "installed_sha256": "e4f0883857ffd4658516c58bd7d8aa219474da5081e1be26db7836a8b77c7c21",
+      "ownership": "managed-replace"
+    },
+    "core/policy.md": {
+      "source": "core/policy.md",
+      "source_sha256": "a89b5577ead7473fe4d0a122080a48ac654af36e1179f3ee62d21522f6096a2f",
+      "installed_sha256": "a89b5577ead7473fe4d0a122080a48ac654af36e1179f3ee62d21522f6096a2f",
+      "ownership": "managed-replace"
+    },
+    "profiles/git.md": {
+      "source": "profiles/git.md",
+      "source_sha256": "538445b170321332c4d79d4a107947bf5bd0f0f722c49bfe42ecd055e9e27ff9",
+      "installed_sha256": "538445b170321332c4d79d4a107947bf5bd0f0f722c49bfe42ecd055e9e27ff9",
+      "ownership": "managed-replace"
+    },
+    ".themasterplan/bin/tmlib/update_check.py": {
+      "source": "<executor>:tmlib/update_check.py",
+      "source_sha256": "431b7556ff7095332ab5a94801880bd499911dda75856b0d010f9d41715936f2",
+      "installed_sha256": "431b7556ff7095332ab5a94801880bd499911dda75856b0d010f9d41715936f2",
+      "ownership": "managed-replace"
+    },
+    "AGENTS.md": {
+      "source": "distribution/templates/agents-managed-block.md",
+      "source_sha256": "5726dcb11cfb3848416300cfc037a0eeea76ec5a02a17296ef8a19416f06ecb9",
+      "installed_sha256": "e4f55768ea73d34f301af6397464c5766172d7ef6f3d52b669388edd31dc29b7",
+      "ownership": "managed-block"
+    },
+    ".themasterplan/bin/themasterplan.py": {
+      "source": "<executor>:themasterplan.py",
+      "source_sha256": "478475f0b3fc36821e578e65a11674be944e13c498305511e6dea955b3b5905d",
+      "installed_sha256": "478475f0b3fc36821e578e65a11674be944e13c498305511e6dea955b3b5905d",
+      "ownership": "managed-replace"
+    },
+    ".themasterplan/bin/tmlib/__init__.py": {
+      "source": "<executor>:tmlib/__init__.py",
+      "source_sha256": "0c4fb8772ed8a5d5c4442f3a3bab745f47ebd1d023a6f9590b6651f6196e6a4a",
+      "installed_sha256": "0c4fb8772ed8a5d5c4442f3a3bab745f47ebd1d023a6f9590b6651f6196e6a4a",
+      "ownership": "managed-replace"
+    },
+    ".themasterplan/bin/tmlib/util.py": {
+      "source": "<executor>:tmlib/util.py",
+      "source_sha256": "111795128e4c6c9492064043bd8a07e9311f48c363bab3649a6fbdc9a4e7d547",
+      "installed_sha256": "111795128e4c6c9492064043bd8a07e9311f48c363bab3649a6fbdc9a4e7d547",
+      "ownership": "managed-replace"
+    },
+    ".themasterplan/bin/tmlib/manifest.py": {
+      "source": "<executor>:tmlib/manifest.py",
+      "source_sha256": "7a12869f017be78265ff11c6a7aabb8641b76a7ff834b7c36f4fd2caf36bb7e9",
+      "installed_sha256": "7a12869f017be78265ff11c6a7aabb8641b76a7ff834b7c36f4fd2caf36bb7e9",
+      "ownership": "managed-replace"
+    },
+    ".themasterplan/bin/tmlib/source.py": {
+      "source": "<executor>:tmlib/source.py",
+      "source_sha256": "6e4d7d1f2f59b7723e9e509bea413465a5f536d207b7821e96a55da34c7dcd9d",
+      "installed_sha256": "6e4d7d1f2f59b7723e9e509bea413465a5f536d207b7821e96a55da34c7dcd9d",
+      "ownership": "managed-replace"
+    },
+    ".themasterplan/bin/tmlib/inspect.py": {
+      "source": "<executor>:tmlib/inspect.py",
+      "source_sha256": "ba61ad563ff1e5213e6652d4a357bbb5a6456cae55a1ebfe87bbd7041d600da4",
+      "installed_sha256": "ba61ad563ff1e5213e6652d4a357bbb5a6456cae55a1ebfe87bbd7041d600da4",
+      "ownership": "managed-replace"
+    },
+    ".themasterplan/bin/tmlib/planning.py": {
+      "source": "<executor>:tmlib/planning.py",
+      "source_sha256": "2485d6b8ddd81a5f91c6beefd3ceac933d41014473c3e4055624a4bbc6359d93",
+      "installed_sha256": "2485d6b8ddd81a5f91c6beefd3ceac933d41014473c3e4055624a4bbc6359d93",
+      "ownership": "managed-replace"
+    },
+    ".themasterplan/bin/tmlib/apply.py": {
+      "source": "<executor>:tmlib/apply.py",
+      "source_sha256": "2c3120d17d84afe969998faadb08847f53296281f5a2eabd4d0252cdb31d69c7",
+      "installed_sha256": "2c3120d17d84afe969998faadb08847f53296281f5a2eabd4d0252cdb31d69c7",
+      "ownership": "managed-replace"
+    },
+    ".themasterplan/bin/tmlib/verify.py": {
+      "source": "<executor>:tmlib/verify.py",
+      "source_sha256": "8b100b940fd3591a925890448394848a0c3dbb6ca19efa8edfb3af92048ef64f",
+      "installed_sha256": "8b100b940fd3591a925890448394848a0c3dbb6ca19efa8edfb3af92048ef64f",
+      "ownership": "managed-replace"
+    },
+    ".themasterplan/bin/tmlib/update.py": {
+      "source": "<executor>:tmlib/update.py",
+      "source_sha256": "a46cea4c1f9322b7ecb4e8a8865a580dea3e010154eef00ecd53480c4110817e",
+      "installed_sha256": "a46cea4c1f9322b7ecb4e8a8865a580dea3e010154eef00ecd53480c4110817e",
+      "ownership": "managed-replace"
+    },
+    ".themasterplan/bin/tmlib/doctor.py": {
+      "source": "<executor>:tmlib/doctor.py",
+      "source_sha256": "16fd4b6d2162bc04e74b572d383e84acbe8c45c394efb7e2dac4cd754ec67c59",
+      "installed_sha256": "16fd4b6d2162bc04e74b572d383e84acbe8c45c394efb7e2dac4cd754ec67c59",
+      "ownership": "managed-replace"
+    }
+  },
+  "adoption": {
+    "date": "2026-10-09",
+    "platform": "Windows / PowerShell 7 / Git for Windows Bash",
+    "git_version": "2.55.0.windows.2",
+    "jj_version": null,
+    "status": "PARTIAL"
+  }
+}

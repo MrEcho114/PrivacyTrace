@@ -11,7 +11,7 @@ PrivacyTrace 是一个面向普通 Android 用户的应用隐私对照工具。�
 
 S0 已合并。S1 的 PR #27 与 #28 改动已整合为面向 `main` 的新 Draft 交付；采用 [2026-10-09 整合报告](docs/stages/s1-integration-report-20261009.md) 作为最新交付索引，保留 [10/05 硬化记录](docs/stages/s1-hardening-report.md) 和 [开发日志](docs/dev-log/2026-10-05.md) 供追溯。
 
-人工核验仍为 `PENDING_HUMAN_AB`：两位不同成员需在 [Issue #15](https://github.com/MrEcho114/PrivacyTrace/issues/15) 按 [comment 模板](evidence/review.comment.template.md) 逐条复核最终版本。测试、CI 和代码整合不代替人工验收。
+S1 已按用户决定接受现有技术核验，取消双人 comment/签字要求，见 [接受决定](docs/stages/s1-acceptance-20261009.md)。日常交付采用 [TheMasterplan](docs/workflow.md)，验证和 PR 记录由代理完成，用户不必填表。PR 合并仍需单独授权。
 
 ## 运行环境要求
 
@@ -106,7 +106,7 @@ uv run --project apps/api --locked --extra worker pytest apps/api/tests
 
 ## 项目状态与相关文档
 
-- 阶段状态：技术链路已跑通，当前处于 `PENDING_HUMAN_AB` 状态，仍未完成团队 A+B 双人验收。复核改用 [Issue #15 的双人 comment](https://github.com/MrEcho114/PrivacyTrace/issues/15)，格式见 [复核 comment 模板](evidence/review.comment.template.md)，不再要求签字。代码或自动化测试通过不替代人工验收。
+- 阶段状态：`ACCEPTED_BY_USER`，强制双人验收表已撤销；政策未复核/提取不完整仍保留，不等于合法或安全。
 - 技术报告：详细交付与边界说明见 [`docs/stages/s1-report.md`](docs/stages/s1-report.md)。
 - 竞赛材料：赛务对照见 [`docs/competition-checklist.md`](docs/competition-checklist.md)。
 - 依赖许可：依赖库 Androguard 遵循 [Apache-2.0 许可证](https://raw.githubusercontent.com/androguard/androguard/v4.1.3/LICENCE-2.0)。本项目源代码许可待团队最终确定。

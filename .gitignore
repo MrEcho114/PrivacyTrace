@@ -28,3 +28,8 @@ samples/private/
 evidence/private/
 tmp/
 *.log
+
+# TheMasterplan transient state; rules/executor/state.json are tracked.
+.themasterplan/cache/
+.themasterplan/backups/
+.themasterplan/transactions/

@@ -72,7 +72,10 @@ def capture(tmp_path):
 
 @pytest.mark.parametrize(
     "tamper",
-    ["raw", "processed", "audits", "escape", "span", "audit_ref", "review", "chunk", "bad_hash"],
+    [
+        "raw", "processed", "audits", "escape", "span", "audit_ref",
+        "review", "chunk", "bad_hash", "gate",
+    ],
 )
 def test_capture_corruption_rejected_before_scan(tmp_path, capture, tamper):
     record = json.loads(capture.read_bytes())
@@ -94,6 +97,8 @@ def test_capture_corruption_rejected_before_scan(tmp_path, capture, tamper):
         record["files"]["audits"]["sha256"] = hashlib.sha256(data).hexdigest()
     elif tamper == "review":
         record["document"]["review_status"] = "REVIEWED"
+    elif tamper == "gate":
+        record["human_review_gate"] = "APPROVED"
     elif tamper == "chunk":
         record["chunks"][0]["start"] = 1
     elif tamper == "bad_hash":
@@ -178,7 +183,8 @@ def test_job_scope_comes_only_from_cli_input(tmp_path, capture, product_scope):
     __import__("os").environ.get("PRIVACYTRACE_DOCKER_TESTS") != "1",
     reason="Opt-in real isolated Docker pipeline acceptance",
 )
-def test_docker_pipeline_http_cancel_then_new_job_recovers(tmp_path, capture):
+@pytest.mark.parametrize("legacy_capture", [False, True])
+def test_docker_pipeline_http_cancel_then_new_job_recovers(tmp_path, capture, legacy_capture):
     """Cancel at observed STATIC_ANALYSIS, then recover through a fresh CLI job.
 
     This tests the lifecycle boundary, not a promised in-container interruption
@@ -193,6 +199,10 @@ def test_docker_pipeline_http_cancel_then_new_job_recovers(tmp_path, capture):
     from privacytrace.main import create_app
     from privacytrace.resources import ROOT
 
+    if legacy_capture:
+        record = json.loads(capture.read_bytes())
+        record["human_review_gate"] = "PENDING_HUMAN_AB"
+        capture.write_text(json.dumps(record), encoding="utf-8")
     fixture_apk = apk(tmp_path / "controlled-binary.apk")
     client = TestClient(create_app(store_root=tmp_path / "jobs"))
     command = [
@@ -251,8 +261,11 @@ def test_docker_pipeline_http_cancel_then_new_job_recovers(tmp_path, capture):
     )
     assert recovered_process.returncode == 0, recovered_process.stdout + recovered_process.stderr
     assert recovered["status"] == "SUCCEEDED"
+    assert recovered["human_review_gate"] == "NOT_REQUIRED_BY_WORKFLOW"
     report = client.get("/api/v1/jobs/after-cancel/report")
     assert report.status_code == 200
     assert report.json()["job"]["state"] == "SUCCEEDED"
+    assert report.json()["tools"]["human_review_gate"] == "NOT_REQUIRED_BY_WORKFLOW"
+    assert report.json()["policy_documents"][0]["review_status"] == "UNREVIEWED"
     receipt = json.loads((ROOT / report.json()["tools"]["isolation_receipt"]).read_bytes())
     assert receipt["cleanup_verified"] is True

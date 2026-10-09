@@ -1,9 +1,27 @@
-## Problem and resulting behavior
+<!-- 此模板由交付代理填写，用户不用填写；不是 A/B 人工验收表。 -->
 
-PT task:
+## Related task
 
-## Validation
+<!-- 二选一，删除不适用项。不得保留占位文本或伪造 Issue 编号。-->
 
-## Evidence and limits
+- Issue: Closes #<number>
+- Explicit human authorization:
+  - Authorization source:
+  - Goal:
+  - Scope:
 
-Confirm the evidence remains traceable, policy sources remain separate, and static evidence is described as potential behavior.
+## Result
+
+## Changes
+
+## Verification
+
+## Agent self-review
+
+- [ ] 满足 Issue 或明确人类授权
+- [ ] 没有扩大任务范围
+- [ ] 已阅读完整 diff
+- [ ] 必要验证已通过
+- [ ] 没有遗留调试代码、临时文件或缓存
+
+## Notes for human

@@ -18,19 +18,42 @@ import tempfile
 from pathlib import Path, PurePosixPath
 from zipfile import BadZipFile, ZipFile
 
+from .coverage_scope import behavior_limitations
+
 MAX_APK = 150 * 1024 * 1024
 MAX_EXPANDED = 512 * 1024 * 1024
 MAX_ENTRY = 128 * 1024 * 1024
 MAX_ENTRIES = 20000
 
 FRAMEWORK_STATIC_URIS = {
-    ("Landroid/provider/ContactsContract$Contacts;", "CONTENT_URI"): "content://com.android.contacts/contacts",
-    ("Landroid/provider/MediaStore$Images$Media;", "EXTERNAL_CONTENT_URI"): "content://media/external/images/media",
-    ("Landroid/provider/MediaStore$Images$Media;", "INTERNAL_CONTENT_URI"): "content://media/internal/images/media",
-    ("Landroid/provider/MediaStore$Video$Media;", "EXTERNAL_CONTENT_URI"): "content://media/external/video/media",
-    ("Landroid/provider/MediaStore$Video$Media;", "INTERNAL_CONTENT_URI"): "content://media/internal/video/media",
-    ("Landroid/provider/MediaStore$Audio$Media;", "EXTERNAL_CONTENT_URI"): "content://media/external/audio/media",
-    ("Landroid/provider/MediaStore$Audio$Media;", "INTERNAL_CONTENT_URI"): "content://media/internal/audio/media",
+    (
+        "Landroid/provider/ContactsContract$Contacts;",
+        "CONTENT_URI",
+    ): "content://com.android.contacts/contacts",
+    (
+        "Landroid/provider/MediaStore$Images$Media;",
+        "EXTERNAL_CONTENT_URI",
+    ): "content://media/external/images/media",
+    (
+        "Landroid/provider/MediaStore$Images$Media;",
+        "INTERNAL_CONTENT_URI",
+    ): "content://media/internal/images/media",
+    (
+        "Landroid/provider/MediaStore$Video$Media;",
+        "EXTERNAL_CONTENT_URI",
+    ): "content://media/external/video/media",
+    (
+        "Landroid/provider/MediaStore$Video$Media;",
+        "INTERNAL_CONTENT_URI",
+    ): "content://media/internal/video/media",
+    (
+        "Landroid/provider/MediaStore$Audio$Media;",
+        "EXTERNAL_CONTENT_URI",
+    ): "content://media/external/audio/media",
+    (
+        "Landroid/provider/MediaStore$Audio$Media;",
+        "INTERNAL_CONTENT_URI",
+    ): "content://media/internal/audio/media",
 }
 
 
@@ -91,7 +114,15 @@ def empty_result():
         version_name=None,
         permissions=[],
         dex_entries=[],
-        coverage=dict(completeness="PARTIAL", scanned_dex=[], failed_dex=[], limitations=[]),
+        coverage=dict(
+            completeness="PARTIAL",
+            scope="DEX_ENTRIES",
+            behavior_detection="LIMITED_RULE_BASED_STATIC",
+            behavior_limitations=behavior_limitations(),
+            scanned_dex=[],
+            failed_dex=[],
+            limitations=[],
+        ),
         tools={},
         evidence=[],
         behaviors=[],

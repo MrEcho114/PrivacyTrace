@@ -6,6 +6,12 @@ import pytest
 from privacytrace.resources import read_json
 
 
+@pytest.fixture(autouse=True)
+def private_scan_run_root(tmp_path, monkeypatch):
+    # Public runtime configuration, never the user's historical scan cache.
+    monkeypatch.setenv("PRIVACYTRACE_APK_RUN_ROOT", str(tmp_path / "apk-runs"))
+
+
 @pytest.fixture
 def bundle_data():
     data = deepcopy(read_json("samples/demo/evaluation-input.json"))

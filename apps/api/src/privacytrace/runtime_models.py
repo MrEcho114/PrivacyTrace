@@ -5,6 +5,7 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
+from .coverage_scope import behavior_limitations
 from .models import (
     AnalysisJob,
     EvaluationInput,
@@ -28,7 +29,12 @@ class SampleMetadata(Model):
 
 
 class ScanCoverage(Model):
+    """COMPLETE applies to DEX enumeration/processing, never all privacy behavior."""
+
     status: Literal["COMPLETE", "PARTIAL"]
+    scope: Literal["DEX_ENTRIES"] = "DEX_ENTRIES"
+    behavior_detection: Literal["LIMITED_RULE_BASED_STATIC"] = "LIMITED_RULE_BASED_STATIC"
+    behavior_limitations: list[str] = Field(default_factory=behavior_limitations, max_length=1000)
     limitations: list[str] = Field(max_length=1000)
     scanned_dex: list[str] = Field(max_length=1000)
     failed_dex: list[str] = Field(max_length=1000)

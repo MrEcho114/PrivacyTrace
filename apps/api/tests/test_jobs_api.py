@@ -609,3 +609,30 @@ def test_sample_metadata_version_name_none_and_long_persist(tmp_path):
     assert report_2.sample.version_name == long_ver
     loaded_2 = store.report("job-version-long")
     assert loaded_2.sample.version_name == long_ver
+
+
+def test_old_report_gets_conservative_coverage_scope_without_rewriting_facts(tmp_path):
+    import json
+
+    from privacytrace.main import create_app
+
+    app = create_app(store_root=tmp_path)
+    saved = seed(app.state.job_store)
+    client = TestClient(app)
+    before = client.get(f"/api/v1/jobs/{saved.job.id}/report").json()
+    path = tmp_path / f"{saved.job.id}.json"
+    legacy = json.loads(path.read_text(encoding="utf-8"))
+    for field in ("scope", "behavior_detection", "behavior_limitations"):
+        legacy["coverage"].pop(field)
+    path.write_text(json.dumps(legacy), encoding="utf-8")
+    response = TestClient(create_app(store_root=tmp_path)).get(
+        f"/api/v1/jobs/{saved.job.id}/report"
+    )
+    assert response.status_code == 200
+    report = response.json()
+    assert report["coverage"]["status"] == "COMPLETE"
+    assert report["coverage"]["scope"] == "DEX_ENTRIES"
+    assert report["coverage"]["behavior_detection"] == "LIMITED_RULE_BASED_STATIC"
+    assert any("规则" in item for item in report["coverage"]["behavior_limitations"])
+    for field in ("result", "evidence", "behaviors", "policy_documents", "policy_claims"):
+        assert report[field] == before[field]

@@ -33,6 +33,35 @@ def test_cli_reads_binary_manifest_and_real_dex_invocation(tmp_path):
     assert "offset_bytes=6" in call["locator"]
 
 
+@pytest.mark.parametrize(
+    "mode,expected",
+    [
+        ("no_hits", "COMPLETE"),
+        ("no_primary", "PARTIAL"),
+        ("bad_dex", "PARTIAL"),
+        ("split", "PARTIAL"),
+    ],
+)
+def test_dex_completion_never_claims_exhaustive_behavior_detection(tmp_path, mode, expected):
+    options = {"permission": "android.permission.INTERNET", "invoke": False}
+    if mode == "no_primary":
+        options["entries"] = {"classes2.dex": dex(invoke=False)}
+    elif mode == "bad_dex":
+        options["entries"] = {"classes.dex": dex(invoke=False), "classes2.dex": b"bad dex"}
+    elif mode == "split":
+        options["split"] = True
+    result, report = scan(apk(tmp_path / "scope.apk", **options))
+    assert result.returncode == 0
+    coverage = report["coverage"]
+    assert coverage["completeness"] == expected
+    assert coverage["scope"] == "DEX_ENTRIES"
+    assert coverage["behavior_detection"] == "LIMITED_RULE_BASED_STATIC"
+    assert any("反射" in limitation for limitation in coverage["behavior_limitations"])
+    assert any("规则" in limitation for limitation in coverage["behavior_limitations"])
+    if mode == "no_hits":
+        assert report["behaviors"] == []
+
+
 def test_cli_scans_multidex_and_rejects_corrupted_dex_without_losing_good_evidence(tmp_path):
     damaged = bytearray(dex(camera=True))
     damaged[8] ^= 1  # Independently break the DEX header checksum.

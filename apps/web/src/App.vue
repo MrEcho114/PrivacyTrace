@@ -184,9 +184,12 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           <div class="app-icon">PT</div><div><h2>{{ report.sample.name }}</h2><p class="subtle">{{ report.sample.package_name }} · {{ report.demo ? report.sample.version : (report.sample.version_name ?? ('v' + report.sample.version_code)) }}</p></div><span class="badge">{{ report.demo ? '人工示例' : '真实 APK · 静态潜在行为' }}</span>
         </section>
         <section v-if="realReport" class="coverage-card">
-          <h2>扫描覆盖：{{ realReport.coverage.status === 'COMPLETE' ? '本轮 DEX 扫描完成' : 'PARTIAL · 有未完成部分' }}</h2>
+          <h2>DEX 处理范围：{{ realReport.coverage.status === 'COMPLETE' ? '已扫描所支持的 DEX 范围' : 'PARTIAL · DEX 处理有未完成部分' }}</h2>
           <p>已扫描 {{ realReport.coverage.scanned_dex.join('、') || '无' }}；失败 {{ realReport.coverage.failed_dex.join('、') || '无' }}。</p>
           <ul><li v-for="limitation in realReport.coverage.limitations" :key="limitation">{{ limitation }}</li></ul>
+          <p><strong>行为识别：有限的规则静态分析（非穷尽）。</strong></p>
+          <p class="subtle">不保证覆盖反射、动态加载、Native、加壳、第三方与混合运行时、复杂数据流或规则集未覆盖的行为。没有命中规则不代表没有隐私行为。</p>
+          <ul><li v-for="limitation in realReport.coverage.behavior_limitations" :key="limitation">{{ limitation }}</li></ul>
           <p class="hash">输入 APK SHA-256：{{ realReport.sample.apk_sha256 }}</p>
           <p class="subtle">扫描完成只描述本轮处理范围，不等于发现了应用所有隐私行为。</p>
         </section>

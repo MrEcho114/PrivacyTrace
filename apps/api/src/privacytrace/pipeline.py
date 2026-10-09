@@ -115,12 +115,18 @@ def run(apk, policy, name, job_id=None, timeout=120, store_dir=None, product_sco
             if is_cancelled
             else "Pipeline failed; inspect input and tool prerequisites"
         )
-        job.error = json.dumps({"code": code, "message": message})
+        diagnostic = {"errors": [{"code": code, "message": message}]}
+        if isinstance(exc, ScanError):
+            diagnostic = exc.record()
+            # Keep diagnostics and receipt locator, never echo private input.
+            if diagnostic["primary_error"]:
+                diagnostic["primary_error"]["message"] = message
+        job.error = json.dumps({"code": code, "message": message, **diagnostic})
         store.save_job(job)
         return {
             "job_id": job.id,
             "status": job.state,
-            "errors": [{"code": code, "message": message}],
+            **diagnostic,
         }
 
 

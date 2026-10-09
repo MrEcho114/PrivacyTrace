@@ -903,6 +903,7 @@
     },
     "ScanCoverage": {
       "additionalProperties": false,
+      "description": "COMPLETE applies to DEX enumeration/processing, never all privacy behavior.",
       "properties": {
         "status": {
           "enum": [
@@ -911,6 +912,26 @@
           ],
           "title": "Status",
           "type": "string"
+        },
+        "scope": {
+          "const": "DEX_ENTRIES",
+          "default": "DEX_ENTRIES",
+          "title": "Scope",
+          "type": "string"
+        },
+        "behavior_detection": {
+          "const": "LIMITED_RULE_BASED_STATIC",
+          "default": "LIMITED_RULE_BASED_STATIC",
+          "title": "Behavior Detection",
+          "type": "string"
+        },
+        "behavior_limitations": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 1000,
+          "title": "Behavior Limitations",
+          "type": "array"
         },
         "limitations": {
           "items": {

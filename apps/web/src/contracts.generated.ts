@@ -177,6 +177,9 @@ export type SampleMetadata = {
 
 export type ScanCoverage = {
   "status": "COMPLETE" | "PARTIAL";
+  "scope"?: "DEX_ENTRIES";
+  "behavior_detection"?: "LIMITED_RULE_BASED_STATIC";
+  "behavior_limitations"?: Array<string>;
   "limitations": Array<string>;
   "scanned_dex": Array<string>;
   "failed_dex": Array<string>;

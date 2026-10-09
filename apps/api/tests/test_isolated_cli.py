@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -30,6 +31,8 @@ def receipt(output):
     path = ROOT / output["tools"]["isolation_receipt"]
     proof = json.loads(path.read_text(encoding="utf-8"))
     assert proof["cleanup_verified"] is True
+    assert proof["input_removed"] is True
+    assert not (path.parent / "input.apk").exists()
     return proof
 
 
@@ -171,8 +174,9 @@ def test_actual_container_is_nonroot_offline_readonly_and_has_hard_limits(tmp_pa
 def test_corrupted_worker_object_is_structured_and_container_removed(
     tmp_path, controlled_invalid_image
 ):
-    failed, output = public_scan(apk(tmp_path / "invalid-output.apk"),
-                                 "--image", controlled_invalid_image)
+    failed, output = public_scan(
+        apk(tmp_path / "invalid-output.apk"), "--image", controlled_invalid_image
+    )
     assert failed.returncode == 1
     assert output["errors"][0]["code"] == "WORKER_INVALID_OUTPUT"
     receipt(output)
@@ -225,3 +229,109 @@ def test_actual_timed_out_worker_is_removed_and_next_probe_succeeds(
     assert recovered.returncode == 0, recovered.stdout + recovered.stderr
     assert json.loads(report["tools"]["isolation_probe"])["uid"] == 65534
     receipt(report)
+
+
+@DOCKER_ONLY
+def test_actual_cancelled_worker_removes_container_and_input_copy(
+    tmp_path, controlled_timeout_image
+):
+    sample = apk(tmp_path / "cancel.apk")
+    cancel = tmp_path / "cancel-request"
+    root = tmp_path / "cancel-runs"
+    process = subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "privacytrace.isolated_scan",
+            str(sample),
+            "--image",
+            controlled_timeout_image,
+            "--timeout",
+            "15",
+            "--run-root",
+            str(root),
+            "--cancel-file",
+            str(cancel),
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline:
+            proofs = list(root.glob("*/isolation.json"))
+            if proofs and json.loads(proofs[0].read_text(encoding="utf-8")).get(
+                "container_created"
+            ):
+                break
+            assert process.poll() is None
+            time.sleep(0.1)
+        else:
+            pytest.fail("Worker did not reach inspected state")
+        cancel.touch()
+        out, err = process.communicate(timeout=30)
+        record = json.loads(out)
+        assert process.returncode == 1, err.decode("utf-8", errors="replace")
+        assert record["errors"][0]["code"] == "CANCELLED"
+        proof = receipt(record)
+        assert proof["apk_sha256"]
+        assert sample.exists()
+    finally:
+        if process.poll() is None:
+            cancel.touch()
+            process.communicate(timeout=30)
+
+
+@DOCKER_ONLY
+def test_active_quota_reservation_blocks_other_run_without_disturbing_it(
+    tmp_path, controlled_timeout_image
+):
+    sample = apk(tmp_path / "reserved.apk")
+    cancel = tmp_path / "cancel-reserved"
+    root = tmp_path / "shared-run-root"
+    quota = str(sample.stat().st_size + 256 * 1024 + 64 * 1024)
+    common = ["--run-root", str(root), "--quota-bytes", quota]
+    process = subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "privacytrace.isolated_scan",
+            str(sample),
+            "--image",
+            controlled_timeout_image,
+            "--timeout",
+            "15",
+            "--cancel-file",
+            str(cancel),
+            *common,
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline:
+            proofs = list(root.glob("*/isolation.json"))
+            if proofs:
+                break
+            assert process.poll() is None
+            time.sleep(0.1)
+        else:
+            pytest.fail("Worker did not reserve storage")
+        before = proofs[0].read_bytes()
+        failed, record = public_scan(sample, "--probe", *common)
+        assert failed.returncode == 1
+        assert record["errors"][0]["code"] == "STORAGE_QUOTA_EXCEEDED"
+        assert process.poll() is None
+        assert proofs[0].read_bytes() == before
+        assert len(list(root.glob("*/input.apk"))) == 1
+        cancel.touch()
+        out, _ = process.communicate(timeout=30)
+        receipt(json.loads(out))
+        recovered, record = public_scan(sample, "--probe", *common)
+        assert recovered.returncode == 0, recovered.stdout + recovered.stderr
+        receipt(record)
+    finally:
+        if process.poll() is None:
+            cancel.touch()
+            process.communicate(timeout=30)

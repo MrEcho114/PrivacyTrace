@@ -70,6 +70,7 @@ uv run --project apps/api --locked --extra worker python -m privacytrace.pipelin
 
 - **分析范围**：读取 AXML 与全部 `classesN.dex`，识别定位、标识、联系人、相机、麦克风、文件与媒体（含截屏 `SCREEN_CAPTURE`）等敏感调用。
 - **常量推导**：仅支持方法内无分支、无 try 块的局部常量推导，未证实参数保持 `UNKNOWN`。
+- **覆盖语义**：COMPLETE 仅表示所支持 DEX 范围处理完成；行为识别始终是有限规则静态分析，未命中规则不代表没有隐私行为。
 - **分析边界**：
   - 清单中的权限声明仅代表应用申请了对应能力，不代表实际发生调用；代码中存在调用线索，也不作合法性、安全性或实际数据收集判定。
   - 对加壳应用、Native 库（so）、反射、动态加载、Flutter 及混合开发（hybrid）应用覆盖不保证。
@@ -77,7 +78,7 @@ uv run --project apps/api --locked --extra worker python -m privacytrace.pipelin
   - 无大模型自动生成政策，无动态沙箱抓包与用户行为实验。
 - **存储与安全边界**：
   - 本地作业存储于 `data/jobs` JSON 文件，SQLite 模式暂未接入运行时。
-  - 在已提交的 S1 版本中，分析产生的 `tmp/` 目录运行副本长期保留供复核，没有自动清理机制，也没有累计磁盘配额。
+  - APK 运行副本默认在扫描退出后删除，仅保留受限隔离收据；累计预算默认 1 GiB，复制前跨进程预留。历史文件不自动删除，失败与崩溃残留需人工核对处理。配置、访问权限与清理边界见 [运行时保留策略](docs/stages/s1-runtime-retention.md)。
   - 后端接口仅绑定本机回环地址（127.0.0.1），无身份认证与数字签名，禁止公网部署。
 
 ## 验证与测试

@@ -1,4 +1,4 @@
-name: Verify scaffold
+name: Verify PrivacyTrace
 on:
   push:
   pull_request:
@@ -12,10 +12,10 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: '3.12'
-      - run: uv sync --project apps/api --locked
-      - run: uv run --project apps/api --locked pytest apps/api/tests
-      - run: uv run --project apps/api --locked ruff check apps/api/src apps/api/tests
-      - run: uv run --project apps/api --locked python scripts/export-schema.py
+      - run: uv sync --project apps/api --locked --extra worker
+      - run: uv run --project apps/api --locked --extra worker pytest apps/api/tests
+      - run: uv run --project apps/api --locked --extra worker ruff check apps/api/src apps/api/tests scripts/export-schema.py
+      - run: uv run --project apps/api --locked --extra worker python scripts/export-schema.py
       - run: git diff --exit-code -- packages/contracts apps/web/src/contracts.generated.ts
   web:
     runs-on: ubuntu-latest
@@ -26,4 +26,18 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - run: npm run test --workspace apps/web
       - run: npm run build
+  isolated-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - run: uv sync --project apps/api --locked --extra worker
+      - run: docker build --file apps/api/worker.Dockerfile --tag privacytrace-worker:s1 .
+      - run: uv run --project apps/api --locked --extra worker pytest apps/api/tests/test_isolated_cli.py apps/api/tests/test_pipeline_cli.py
+        env:
+          PRIVACYTRACE_DOCKER_TESTS: '1'

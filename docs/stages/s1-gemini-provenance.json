@@ -1,0 +1,85 @@
+{
+  "writer": "Gemini",
+  "model": "gemini-3.8-flash-medium",
+  "conversation_id": "5b5fe6f4-62f6-49e1-a1fa-5242867e73bf",
+  "status": "SUCCESS_FACT_REVIEWED",
+  "specific_payload_authorized": true,
+  "excluded_from_transmission": [
+    "APK",
+    "FULL_POLICY",
+    "DECOMPILED_FULL_JAVA",
+    "CREDENTIALS",
+    "PERSONAL_DATA"
+  ],
+  "draft_sha256": "a99689ef76a8d332ef49675b6aae5d95a5a1369847b937c3a1cedc250d595ead",
+  "revision_sha256": "42bfd546d386b2ab56bcc593c5ae1ac0ebb8df75d3c9b147b22b688539d4fe5e",
+  "final_sha256": "d345894a3bc94461f82bc98156a8a7680087f2bd2fddf7a94c202e0143ae68ad",
+  "fact_review": [
+    "PT101 vs PT301",
+    "6 total evidence not 6 code evidence",
+    "human unsigned template",
+    "source version association not runtime consent",
+    "203 local tests with Docker flag",
+    "AAPT2 and JADX fallback independent reference",
+    "public document relative paths"
+  ],
+  "mechanical_corrections": {
+    "readme_markdown": [
+      [
+        "禁止在宿主机直接执行分析命令",
+        "禁止在宿主机直接解析未知 APK；以下宿主 CLI 负责调用隔离容器"
+      ]
+    ],
+    "s1_report_markdown": [
+      [
+        "启动前对镜像进行 inspect 检查",
+        "启动前对容器有效配置进行 inspect 检查"
+      ],
+      [
+        "16 MiB /tmp、8 MiB /shm",
+        "16 MiB /tmp、8 MiB /dev/shm"
+      ],
+      [
+        "（`samples/private/`、`evidence/private/`、`tmp/`）",
+        "（`samples/private/`、`evidence/private/`、`data/`、`tmp/`）"
+      ]
+    ],
+    "pr_body_markdown": [
+      [
+        "`./s1-remote-ci.receipt.json`",
+        "`docs/stages/s1-remote-ci.receipt.json`"
+      ]
+    ],
+    "final_test_count": {
+      "before": 203,
+      "after": 204,
+      "reason": "Additional actual controlled worker malformed-object public CLI regression passed in final full suite"
+    },
+    "remote_publication_facts": {
+      "reason": "Live GitHub API readback, not new inferred content",
+      "pull_request": 27,
+      "verified_commit": "3ef27d050752c2194d64f972be363813ca28b8ff",
+      "ci_run_id": 37128232003,
+      "jobs_success": [
+        "api",
+        "web",
+        "isolated-worker"
+      ],
+      "api_tests": "197 passed / 7 skipped",
+      "isolated_worker_tests": "27 passed / 0 skipped",
+      "overlapping_test_counts_not_additive": true
+    }
+  },
+  "publication_status": "DRAFT_PR_27_PUBLISHED_HUMAN_AB_PENDING",
+  "recorded_at": "2026-10-03T13:51:19.749250+00:00",
+  "post_adoption_changes": [
+    {
+      "date": "2026-10-04",
+      "author": "Codex",
+      "source": "Direct user request: 签字复核改成comment形式",
+      "scope": "Review medium changed to two human GitHub Issue #15 comments; no change to technical evidence, prior test receipts, or human acceptance requirement.",
+      "template": "../../evidence/review.comment.template.md",
+      "not_new_gemini_output": true
+    }
+  ]
+}

@@ -31,6 +31,9 @@ def manifest(
     permission_namespace="http://schemas.android.com/apk/res/android",
     permission_tag_namespace=None,
     version_code_type=None,
+    permission_tag="uses-permission",
+    max_sdk=None,
+    sdk_23_max_sdk=None,
 ):
     raw_strings = [
         "manifest",
@@ -40,7 +43,7 @@ def manifest(
         str(version_code),
         "http://schemas.android.com/apk/res/android",
         "android",
-        "uses-permission",
+        permission_tag,
         "name",
         permission,
         "split",
@@ -50,6 +53,9 @@ def manifest(
         raw_strings.extend(["versionName", str(version_name)])
     if sdk_23_permission is not None:
         raw_strings.extend(["uses-permission-sdk-23", str(sdk_23_permission)])
+    for bound in (max_sdk, sdk_23_max_sdk):
+        if bound is not None:
+            raw_strings.extend(["maxSdkVersion", str(bound)])
     raw_strings.extend(
         value
         for value in (
@@ -93,7 +99,8 @@ def manifest(
     def attr(name, value, ns=None):
         if name == "versionCode" and version_code_type is not None:
             return struct.pack(
-                "<IIIHBBI", idx[ns], idx[name], 0xFFFFFFFF, 8, 0, version_code_type, int(value, 0)
+                "<IIIHBBI", idx[ns], idx[name], 0xFFFFFFFF, 8, 0, version_code_type,
+                int(value, 16 if value.lower().startswith("0x") else 10)
             )
         return struct.pack(
             "<IIIHBBI", idx[ns] if ns else 0xFFFFFFFF, idx[name], idx[value], 8, 0, 3, idx[value]
@@ -130,17 +137,18 @@ def manifest(
         attrs.append(attr("split", "config.en"))
     chunks = pool + node(0x100, struct.pack("<II", idx["android"], idx[ns]))
     chunks += start("manifest", attrs)
-    for tag, value, parent in (
-        ("uses-permission", permission, permission_parent),
-        ("uses-permission-sdk-23", sdk_23_permission, sdk_23_parent),
+    for tag, value, parent, bound in (
+        (permission_tag, permission, permission_parent, max_sdk),
+        ("uses-permission-sdk-23", sdk_23_permission, sdk_23_parent, sdk_23_max_sdk),
     ):
         if value is None:
             continue
         if parent is not None:
             chunks += start(parent, [])
-        chunks += start(
-            tag, [attr("name", str(value), permission_namespace)], permission_tag_namespace
-        )
+        permission_attrs = [attr("name", str(value), permission_namespace)]
+        if bound is not None:
+            permission_attrs.append(attr("maxSdkVersion", str(bound), permission_namespace))
+        chunks += start(tag, permission_attrs, permission_tag_namespace)
         chunks += end(tag, permission_tag_namespace)
         if parent is not None:
             chunks += end(parent)
@@ -425,19 +433,17 @@ def apk(
     sdk_23_permission=None,
     version_code="7",
     version_name="1.0",
+    manifest_options=None,
     **dex_options,
 ):
     if entries is None:
         entries = {"classes.dex": dex(**dex_options)}
+    options = dict(split=split, permission=permission, sdk_23_permission=sdk_23_permission,
+                   version_code=version_code, version_name=version_name)
+    options.update(manifest_options or {})
     with ZipFile(path, "w", compression=ZIP_STORED) as archive:
         for name, payload in {
-            "AndroidManifest.xml": manifest(
-                split=split,
-                permission=permission,
-                sdk_23_permission=sdk_23_permission,
-                version_code=version_code,
-                version_name=version_name,
-            ),
+            "AndroidManifest.xml": manifest(**options),
             **entries,
         }.items():
             info = ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0))

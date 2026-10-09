@@ -189,34 +189,41 @@ def scan(path, rules, inventory=False):
         if raw_code is None:
             raise ScanError("MANIFEST_INVALID", "Manifest versionCode must be an integer")
         try:
-            version_code = int(raw_code.strip(), 0) if isinstance(raw_code, str) else int(raw_code)
-            if version_code < 0:
-                raise ValueError("negative versionCode")
+            if isinstance(raw_code, str):
+                raw_code = raw_code.strip()
+                version_code = int(raw_code, 16 if raw_code.lower().startswith("0x") else 10)
+            else:
+                version_code = int(raw_code)
+            # Support the nonnegative range of Android's signed 32-bit field.
+            # TYPE_INT_HEX must not turn negative bit patterns into large positives.
+            if not 0 <= version_code <= 0x7fffffff:
+                raise ValueError("versionCode outside supported signed 32-bit range")
         except (TypeError, ValueError) as exc:
-            raise ScanError("MANIFEST_INVALID", "Manifest versionCode must be an integer") from exc
+            raise ScanError(
+                "MANIFEST_INVALID", "Manifest versionCode must be an integer in 0..2147483647"
+            ) from exc
 
-        raw_permissions = set()
+        declarations = set()
+        android_ns = "{http://schemas.android.com/apk/res/android}"
         manifest_xml = apk.get_android_manifest_xml()
         if manifest_xml is not None and manifest_xml.tag == "manifest":
             # Permission declarations belong directly to <manifest>, not arbitrary
-            # descendants. Upstream helpers search too broadly for this evidence.
-            for tag in manifest_xml:
-                if tag.tag in ("uses-permission", "uses-permission-sdk-23"):
-                    name = tag.get("{http://schemas.android.com/apk/res/android}name")
-                    if name:
-                        raw_permissions.add(name)
+            # descendants. Preserve each tag/SDK condition, not just its name.
+            for element in manifest_xml:
+                if element.tag in ("uses-permission", "uses-permission-sdk-23"):
+                    name = element.get(android_ns + "name")
+                    if isinstance(name, str) and name.strip():
+                        max_sdk = element.get(android_ns + "maxSdkVersion", "").strip()
+                        declarations.add((name.strip(), element.tag, max_sdk))
 
         raw_version_name = apk.get_androidversion_name()
         version_name = raw_version_name[:1024] if isinstance(raw_version_name, str) else None
 
-        cleaned_permissions = {
-            p.strip() for p in raw_permissions if p and isinstance(p, str) and p.strip()
-        }
         result.update(
             package_name=apk.get_package(),
             version_code=version_code,
             version_name=version_name,
-            permissions=sorted(cleaned_permissions),
+            permissions=sorted({name for name, _, _ in declarations}),
         )
         if not result["package_name"]:
             raise ScanError("MANIFEST_INVALID", "Manifest package is missing")
@@ -253,12 +260,19 @@ def scan(path, rules, inventory=False):
             )
 
         for mapping in rules["permission_mappings"]:
-            if mapping["permission"] in result["permissions"]:
+            for permission, tag, max_sdk in sorted(declarations):
+                if permission != mapping["permission"]:
+                    continue
+                bounds = ";tag=" + tag
+                if tag == "uses-permission-sdk-23":
+                    bounds += ";min_sdk=23"
+                if max_sdk:
+                    bounds += ";max_sdk=" + max_sdk
                 add(
                     "MANIFEST",
                     "AndroidManifest.xml",
-                    "apk_sha256=" + result["apk_sha256"] + ";permission=" + mapping["permission"],
-                    mapping["permission"],
+                    "apk_sha256=" + result["apk_sha256"] + ";permission=" + permission + bounds,
+                    permission + bounds,
                     mapping["data_type"],
                     "CAPABILITY",
                 )

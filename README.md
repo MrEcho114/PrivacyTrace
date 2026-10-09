@@ -7,6 +7,12 @@ PrivacyTrace 是一个面向普通 Android 用户的应用隐私对照工具。�
 - **查看演示报告**：不用准备 APK，也不用启动 Docker，启动服务后即可在浏览器中查看样例应用的代码线索和政策原文位置。演示报告仅用于体验界面与流程，不代表真实应用分析结果，也不支持保存复核备注。
 - **分析真实 APK**：通过宿主命令行触发 Docker 容器，扫描未知 APK 中的敏感权限与调用，结合人工整理的政策文本生成对照作业。生成的真实作业可以在前端查看，并支持填写与保存人工复核备注。
 
+## 当前开发状态
+
+S0 已合并。S1 的 PR #27 与 #28 改动已整合为面向 `main` 的新 Draft 交付；采用 [2026-10-09 整合报告](docs/stages/s1-integration-report-20261009.md) 作为最新交付索引，保留 [10/05 硬化记录](docs/stages/s1-hardening-report.md) 和 [开发日志](docs/dev-log/2026-10-05.md) 供追溯。
+
+人工核验仍为 `PENDING_HUMAN_AB`：两位不同成员需在 [Issue #15](https://github.com/MrEcho114/PrivacyTrace/issues/15) 按 [comment 模板](evidence/review.comment.template.md) 逐条复核最终版本。测试、CI 和代码整合不代替人工验收。
+
 ## 运行环境要求
 
 - Node.js 24（或 22.12+），npm

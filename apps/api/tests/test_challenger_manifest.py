@@ -133,7 +133,7 @@ def rules():
         ("0x00000007", 7),
         ("0x10", 16),
         ("0x7fffffff", 2147483647),
-        ("0xFFFFFFFF", 4294967295),
+        ("0x7FFFFFFF", 2147483647),
         ("0x0", 0),
         ("0", 0),
         ("12345", 12345),
@@ -152,6 +152,7 @@ def test_version_code_valid_hex_and_integers(tmp_path, rules, hex_code, expected
 @pytest.mark.parametrize(
     "invalid_code",
     [
+        "0xFFFFFFFF",
         "-1",
         "-0x10",
         "-7",
@@ -178,13 +179,14 @@ def test_version_code_rejects_negative_and_malformed(tmp_path, rules, invalid_co
 
 
 def test_version_code_large_number(tmp_path, rules):
-    # Test large 64-bit integer
+    # versionCode is not versionCodeMajor/longVersionCode: reject unsupported 64-bit values.
     large_val = "9223372036854775807"
     p = tmp_path / "vc_large.apk"
     axml = build_custom_manifest(version_code=large_val)
     apk(p, entries={"AndroidManifest.xml": axml})
-    res = scan(p, rules)
-    assert res["version_code"] == 9223372036854775807
+    with pytest.raises(ScanError) as exc_info:
+        scan(p, rules)
+    assert exc_info.value.code == "MANIFEST_INVALID"
 
 
 # --- Permissions & SDK-23 Tests ---

@@ -368,3 +368,101 @@ def test_apk_version_name_none_and_long_are_valid(tmp_path):
     res_huge, report_huge = scan(path_huge)
     assert res_huge.returncode == 0
     assert len(report_huge["version_name"]) == 1024
+
+
+@pytest.mark.parametrize("tag", ["uses-permission", "uses-permission-sdk-23"])
+@pytest.mark.parametrize("max_sdk", [None, 28])
+def test_permission_tags_preserve_sdk_bounds_as_capabilities(tmp_path, tag, max_sdk):
+    result, report = scan(apk(
+        tmp_path / "permission.apk", invoke=False,
+        manifest_options={"permission_tag": tag, "max_sdk": max_sdk},
+    ))
+    assert result.returncode == 0, result.stderr
+    assert report["permissions"] == ["android.permission.CAMERA"]
+    assert len(report["behaviors"]) == 1
+    behavior = report["behaviors"][0]
+    assert behavior["action"] == "CAPABILITY"
+    assert behavior["data_type"] == "CAMERA"
+    assert behavior["purpose"] == "UNKNOWN"
+    evidence = report["evidence"][0]
+    assert evidence["kind"] == "MANIFEST"
+    assert behavior["evidence_ids"] == [evidence["id"]]
+    for field in ("locator", "excerpt"):
+        assert ("min_sdk=23" in evidence[field]) == (tag == "uses-permission-sdk-23")
+        assert ("max_sdk=28" in evidence[field]) == (max_sdk == 28)
+
+
+@pytest.mark.parametrize(
+    "version, encoding", [(7, 0x10), (7, 0x11), (2147483647, 0x11), ("007", None)]
+)
+def test_binary_manifest_integer_version_encodings(tmp_path, version, encoding):
+    result, report = scan(apk(
+        tmp_path / "version.apk", invoke=False,
+        manifest_options={"version_code": version, "version_code_type": encoding},
+    ))
+    assert result.returncode == 0, result.stderr
+    assert report["version_code"] == int(version)
+
+
+@pytest.mark.parametrize("version", ["-1", "not-an-integer", "1.5"])
+def test_invalid_version_code_remains_a_structured_error(tmp_path, version):
+    result, report = scan(apk(
+        tmp_path / "invalid-version.apk", manifest_options={"version_code": version},
+    ))
+    assert result.returncode != 0
+    assert report["errors"][0]["code"] == "MANIFEST_INVALID"
+
+
+@pytest.mark.parametrize("version,encoding", [
+    (0x80000000, 0x11), (0xffffffff, 0x11), (0x80000000, 0x10),
+    ("2147483648", None), ("9223372036854775807", None),
+])
+def test_version_code_outside_nonnegative_signed_32_bit_range_is_rejected(
+    tmp_path, version, encoding
+):
+    result, report = scan(apk(
+        tmp_path / "outside-range.apk", invoke=False,
+        manifest_options={"version_code": version, "version_code_type": encoding},
+    ))
+    assert result.returncode != 0
+    assert report["errors"][0]["code"] == "MANIFEST_INVALID"
+    assert report["version_code"] is None
+    assert report["behaviors"] == []
+    assert report["evidence"] == []
+
+
+@pytest.mark.parametrize("version,encoding", [(0, 0x10), (0, 0x11), (2147483647, 0x10)])
+def test_version_code_supported_range_endpoints(tmp_path, version, encoding):
+    result, report = scan(apk(
+        tmp_path / "endpoint.apk", invoke=False,
+        manifest_options={"version_code": version, "version_code_type": encoding},
+    ))
+    assert result.returncode == 0, result.stderr
+    assert report["version_code"] == version
+
+
+def test_same_permission_dual_declarations_keep_distinct_sdk_evidence(tmp_path):
+    result, report = scan(apk(
+        tmp_path / "dual-permission.apk", invoke=False,
+        sdk_23_permission="android.permission.CAMERA",
+        manifest_options={"max_sdk": 22, "sdk_23_max_sdk": 28},
+    ))
+    assert result.returncode == 0, result.stderr
+    assert report["permissions"] == ["android.permission.CAMERA"]
+    assert len(report["evidence"]) == len(report["behaviors"]) == 2
+    evidence = {e["id"]: e for e in report["evidence"]}
+    assert len(evidence) == 2
+    assert len({b["id"] for b in report["behaviors"]}) == 2
+    ordinary = next(e for e in evidence.values() if ";tag=uses-permission;" in e["locator"])
+    sdk23 = next(e for e in evidence.values() if ";tag=uses-permission-sdk-23;" in e["locator"])
+    for field in ("locator", "excerpt"):
+        assert "max_sdk=22" in ordinary[field]
+        assert "min_sdk=" not in ordinary[field]
+        assert "min_sdk=23" in sdk23[field] and "max_sdk=28" in sdk23[field]
+    for behavior in report["behaviors"]:
+        assert behavior["action"] == "CAPABILITY"
+        assert behavior["data_type"] == "CAMERA"
+        assert behavior["purpose"] == "UNKNOWN"
+        assert len(behavior["evidence_ids"]) == 1
+        ev = evidence[behavior["evidence_ids"][0]]
+        assert ev["kind"] == "MANIFEST" and ev["status"] == "STATIC_POTENTIAL"

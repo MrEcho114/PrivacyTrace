@@ -92,6 +92,60 @@ def test_descriptor_conversion_handles_objects_and_arrays():
     assert labelled is not None and labelled.id == "sdk-bugly"
 
 
+@pytest.mark.parametrize(
+    "class_name,expected_prefix",
+    [
+        # A signature with several prefixes must report the one that matched,
+        # not the first one it happens to publish.
+        ("com.umeng.analytics.MobclickAgent", "com.umeng.analytics"),
+        ("com.umeng.commonsdk.UMConfigure", "com.umeng.commonsdk"),
+        ("cn.jiguang.verifysdk.api.JVerificationInterface", "cn.jiguang.verifysdk"),
+        ("cn.jiguang.sdk.api.JPushInterface", "cn.jiguang.sdk"),
+        ("com.tencent.smtt.sdk.WebView", "com.tencent.smtt"),
+        ("com.tencent.tbs.core.webkit.WebView", "com.tencent.tbs"),
+        ("com.mob.MobSDK", "com.mob"),
+        ("cn.sharesdk.framework.ShareSDK", "cn.sharesdk"),
+        # The prefix itself matches, and is what gets reported.
+        ("com.tencent.bugly", "com.tencent.bugly"),
+    ],
+)
+def test_match_reports_the_prefix_that_actually_matched(class_name, expected_prefix):
+    found = INDEX.match_prefix(class_name)
+    assert found is not None, class_name
+    assert found.prefix == expected_prefix
+    assert found.prefix in found.signature.package_prefixes
+    assert found.class_name == class_name
+    # The narrowing accessor must agree with the label-only one.
+    assert INDEX.match(class_name) is found.signature
+    descriptor = "L" + class_name.replace(".", "/") + ";"
+    assert INDEX.match_descriptor_with_prefix(descriptor).prefix == expected_prefix
+
+
+def test_a_second_prefix_is_never_reported_as_the_first():
+    """Guard the P2 regression directly: index 0 must not stand in for a match."""
+    umeng = next(s for s in RULES["signatures"] if s["id"] == "sdk-umeng-analytics")
+    assert umeng["package_prefixes"][0] == "com.umeng.analytics"
+    found = INDEX.match_prefix("com.umeng.commonsdk.UMConfigure")
+    assert found.prefix == "com.umeng.commonsdk"
+    assert found.prefix != umeng["package_prefixes"][0]
+
+
+def test_match_prefix_is_none_for_rejected_names():
+    assert INDEX.match_prefix("androidx.core.app.ActivityCompat") is None
+    assert INDEX.match_prefix("com.amap.api.locationx.Fake") is None
+    assert INDEX.match_prefix("") is None
+
+
+def test_match_descriptor_with_prefix_reports_the_prefix():
+    found = INDEX.match_descriptor_with_prefix("Lcom/umeng/commonsdk/UMConfigure;")
+    assert found is not None
+    assert found.prefix == "com.umeng.commonsdk"
+    assert found.class_name == "com.umeng.commonsdk.UMConfigure"
+    # Primitives and malformed descriptors still resolve to nothing.
+    assert INDEX.match_descriptor_with_prefix("I") is None
+    assert INDEX.match_descriptor_with_prefix("com/umeng/analytics") is None
+
+
 def test_signature_prefixes_do_not_overlap_across_vendors():
     """Two rules claiming one prefix would make attribution ambiguous."""
     seen: dict[str, str] = {}

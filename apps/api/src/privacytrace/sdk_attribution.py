@@ -18,9 +18,27 @@ consumes a validated instance.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from .sdk_ruleset import SdkSignature, SdkSignatureRuleset
 
 PREFIX = "L"
+
+
+@dataclass(frozen=True)
+class SdkMatch:
+    """One attribution plus the exact prefix that produced it.
+
+    A signature may publish several prefixes (``com.umeng.analytics`` and
+    ``com.umeng.commonsdk``). Reporting the signature alone would let a caller
+    guess ``package_prefixes[0]`` and publish a prefix the class never touched,
+    so the matched prefix travels with the label.
+    """
+
+    signature: SdkSignature
+    prefix: str
+    class_name: str
+    dex: str = ""
 
 
 def descriptor_to_class(descriptor: str) -> str | None:
@@ -68,14 +86,25 @@ class SdkIndex:
             reverse=True,
         )
 
-    def match(self, class_name: str) -> SdkSignature | None:
-        """Return the attribution label for a class name, or ``None``."""
+    def match_prefix(self, class_name: str) -> SdkMatch | None:
+        """Return the label plus the exact matching prefix, or ``None``."""
         if not class_name or _is_excluded(class_name, self.excluded):
             return None
         for prefix, signature in self._index:
             if _matches_prefix(class_name, prefix):
-                return signature
+                return SdkMatch(signature=signature, prefix=prefix, class_name=class_name)
         return None
+
+    def match(self, class_name: str) -> SdkSignature | None:
+        """Return the attribution label for a class name, or ``None``."""
+        found = self.match_prefix(class_name)
+        return found.signature if found is not None else None
+
+    def match_descriptor_with_prefix(self, descriptor: str) -> SdkMatch | None:
+        class_name = descriptor_to_class(descriptor)
+        if class_name is None:
+            return None
+        return self.match_prefix(class_name)
 
     def match_descriptor(self, descriptor: str) -> SdkSignature | None:
         class_name = descriptor_to_class(descriptor)

@@ -85,3 +85,123 @@ Spec 要求「SDK 自身政策不能替代宿主 App 的声明」「启发式归
 - **Spec**：6 项（3 缺漏/越界 + 3 实现问题）。最严重：**SP1 截断警告归入 `behavior_limitations`，与"本模块不产生行为"直接矛盾，会误导用户读覆盖范围**。
 
 两条轴线刻意不跨轴排名。若要修，SP1 与 S1 是实质项，`package_of` 死代码与 backlog 越界改写是顺手可清的。
+
+---
+
+## 追加：PR #34 review comment 三项（2026-10-10）
+
+固定点：`49464a7`（PR34 第二提交）→ HEAD `bdee855`
+来源：PR [#34](https://github.com/MrEcho114/PrivacyTrace/pull/34) COMMENT 评审
+处理：三项全部修复，`rules/sdk-signatures.v1.0.json` 未改动（无新增前缀需求）。
+
+### [P1] 上限截断会让某些 SDK 完全不可见
+
+原先按 DEX 类遍历顺序填满 `MAX_SDK_ATTRIBUTIONS = 500`，不按签名保留名额。
+若某厂商 SDK 的 500+ 个类排在前面，后续另一厂商即使已命中也不会输出任何
+证据，报告只留一条通用截断警告 → 会被解读成"未检出该 SDK"。
+
+修复：归属改为在 DEX 遍历时**只收集**（`sdk_matches: dict[str, SdkMatch]`），
+循环结束后由 `_select_sdk_attributions()` 统一选择并输出：
+
+- 每个命中的签名先保留 `reserved` 条代表性类路径；
+  `reserved = clamp(MAX_SDK_ATTRIBUTIONS // 签名数, MIN_SDK_REPRESENTATIVES,
+  MAX_SDK_REPRESENTATIVES)` — 下界保证不会被上限清空，上界
+  （`MAX_SDK_REPRESENTATIVES = 100`）防止恶意 APK 用极多签名抬高保底。
+- 剩余额度再按遍历顺序补类级明细（spill）。
+- 截断警告改为同时报出命中总数。
+
+**文案不得承诺付不起的保证**：签名数 > 上限时，数学上做不到「每种各留一条」。
+截断文案因此按 `_per_sdk_floor_is_achievable()` 分支：只有
+`签名数 × MIN_SDK_REPRESENTATIVES <= MAX_SDK_ATTRIBUTIONS` 时才写入
+「已保证每个命中的 SDK 至少保留 N 条」；否则只陈述截断事实。
+
+注意上限是「类路径条数」而非「SDK 种类数」。`reserved` 是配额而非硬性每种一条。
+
+新增测试：`test_a_large_sdk_cannot_crowd_a_second_sdk_out_of_the_cap`（前一 SDK
+占满额度时后一 SDK 仍须出现在报告中）、
+`test_cap_below_the_sdk_count_does_not_claim_an_unpayable_guarantee`（签名数超上限时
+文案不得出现「已保证」）、`test_truncation_note_advertises_the_floor_only_when_the_budget_allows_it`、
+稳定性与契约测试。
+
+### [P2] 证据文案使用固定索引 0，而非实际命中的包前缀
+
+`match_descriptor()` 只返回签名，worker 用 `match.package_prefixes[0]` 写 excerpt。
+规则集中**友盟、极光 JCore、Mob、腾讯 TBS 各有两个前缀**，第二个前缀命中时
+excerpt 仍声称匹配第一个 → 可追溯解释失真。
+
+修复：`sdk_attribution.py` 新增 `SdkMatch`（`signature` / `prefix` / `class_name` / `dex`）
+与 `match_prefix()`、`match_descriptor_with_prefix()`，携带真实命中的前缀。
+excerpt 改写为实际命中前缀。`match()` / `match_descriptor()` 签名与返回值不变
+（内部改为委托新方法），老调用方零改动。
+
+新增测试：`test_match_reports_the_prefix_that_actually_matched`（参数化覆盖全部
+多前缀签名）、`test_a_second_prefix_is_never_reported_as_the_first`（直接锁
+index 0 回归）、`test_evidence_excerpt_names_the_prefix_that_actually_matched`、
+`test_the_prefix_cited_is_always_a_published_prefix_of_the_labelled_sdk`。
+
+### [P3] CLI 帮助与默认行为不一致
+
+`--sdk-rules` 带非空默认值 → 省略即**启用**归属，但帮助写 `omit to disable
+SDK attribution`；且 `type=Path` 下传空值不是可靠禁用方式。
+
+修复：新增 `--no-sdk-attribution` 显式开关（`action="store_true"`），优先级高于
+`--sdk-rules`；修正 `--sdk-rules` 帮助文案为 `(default: the shipped ruleset)`。
+判定条件由 `if args.sdk_rules` 改为
+`if args.sdk_rules is not None and not args.no_sdk_attribution`。
+
+新增测试：默认启用 + `--no-sdk-attribution` 关闭、关闭优先于显式 `--sdk-rules`、
+`--help` 含新开关且不再含 `omit to disable`。
+
+### 顺带
+
+输出改在 DEX 循环结束后统一发出，故报告对同一输入保持字节一致
+（`test_same_bytes_produce_same_ids_and_locators` 与新增
+`test_attribution_selection_is_stable_across_runs` 锁定）。
+
+### 测试夹具容量（新发现，非本次评审提出）
+
+`test_sdk_worker.minimal_dex()` 的 `class_def_item` 映射由**单个** class-data
+偏移构造（`(0x2000, n_classes, class_data_offsets[0])`），故它可靠承载的类数
+上限是 **4**。传 5 或 6 个类时 DEX 解析失败 → `failed_dex=["classes.dex"]` →
+所有 SDK 断言退化成「无证据」而**静默通过**，是个容易写出假绿测试的陷阱。
+（既有正例测试最多只用到 3 个类，因此此前未暴露。）
+
+新增 `test_minimal_dex_fixture_capacity_matches_what_the_tests_assume` 显式锁定
+该边界：4 个类必须全部产出证据，5 个类必须报 DEX 解析失败。本次新增的多类
+用例（稳定性、前缀可追溯）已全部收敛到 ≤ 4 个类。
+
+### 验证
+
+- `ruff check apps/api/src apps/api/tests scripts/export-schema.py` → All checks passed。
+- `python scripts/export-schema.py` → 与 `packages/contracts`、`contracts.generated.ts`
+  零差异（契约与模型一致）。
+- 定向：`pytest test_sdk_worker.py test_sdk_attribution.py` → **87 passed**（6.81s）。
+- 全量 `pytest apps/api/tests` → **413 tests / 400 passed / 11 skipped / 2 failed**。
+
+**差分对照（同一环境，先后独占运行）**
+
+| 提交 | 用例总数 | 通过 | 失败 | 跳过 |
+| :--- | :--- | :--- | :--- | :--- |
+| 本 PR HEAD `802f300` | 413 | 400 | 2 | 11 |
+| 基线 `49464a7`（改动前） | 389 | 376 | 2 | 11 |
+
+本 PR 净增 24 个用例、全部通过，**新增失败为 0**。
+
+**那 2 项失败的归属（已证清）**
+
+两项均为 `test_job_creation.py`，报错与基线**逐字一致**：
+
+- `test_one_reservation_wins_across_processes_and_survives_restart` → `_queue.Empty`
+- `test_concurrent_pipeline_never_scans_both_inputs_for_one_id` →
+  `PermissionError: [Errno 13] Permission denied: ...\.lock`
+
+根因是 `job_store.JobStore._transaction()` 的 `os.open(O_CREAT|O_RDWR)` 无重试，
+Windows 对并发 `CreateFile` 返回瞬态共享冲突；与本 PR 无关（`job_store.py`、
+`pipeline.py`、`test_job_creation.py` 均不在 `git diff origin/main...HEAD` 内），
+且二者**单独运行必过**（7 passed / 2.05s）。已在 `docs/backlog.md` 另记，本 PR 不修。
+
+**一处需纠正的前次记录**：初次全量运行时曾观察到 `test_governance_cli.py` ×2 失败，
+当时记为「既有失败」。后续定位为**并发争用假象**——那次运行与另一批 pytest 同时进行。
+独占运行时 `test_governance_cli.py` **4 passed**，全量套件下亦通过。该文件确未被本 PR
+触及，但此前的「既有失败」结论不成立，特此更正。
+

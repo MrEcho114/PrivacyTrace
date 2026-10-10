@@ -2,7 +2,10 @@ import os
 import re
 import sys
 
-import yaml
+try:
+    import yaml
+except ImportError:
+    yaml = None
 
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
@@ -10,11 +13,69 @@ if hasattr(sys.stdout, 'reconfigure'):
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+def _parse_simple_yaml(text: str) -> dict:
+    data = {'body': []}
+    current_elem = None
+    current_sub = None
+
+    for raw_line in text.splitlines():
+        line = raw_line.rstrip()
+        if not line or line.strip().startswith('#'):
+            continue
+        if ' #' in line:
+            line = line.split(' #', 1)[0].rstrip()
+        stripped = line.strip()
+        indent = len(line) - len(line.lstrip())
+
+        if indent == 0:
+            if ':' in stripped:
+                k, v = stripped.split(':', 1)
+                k = k.strip()
+                v = v.strip().strip("'\"")
+                if k == 'body':
+                    data['body'] = []
+                else:
+                    data[k] = v
+            current_elem = None
+            current_sub = None
+        elif stripped.startswith('- '):
+            current_elem = {}
+            data['body'].append(current_elem)
+            current_sub = None
+            item = stripped[2:].strip()
+            if ':' in item:
+                k, v = item.split(':', 1)
+                current_elem[k.strip()] = v.strip().strip("'\"")
+        elif current_elem is not None:
+            if ':' in stripped:
+                k, v = stripped.split(':', 1)
+                k = k.strip()
+                v = v.strip()
+                if not v:
+                    current_sub = {}
+                    current_elem[k] = current_sub
+                else:
+                    val = v.strip("'\"")
+                    if val.lower() == 'true':
+                        val = True
+                    elif val.lower() == 'false':
+                        val = False
+                    if current_sub is not None and indent >= 6:
+                        current_sub[k] = val
+                    else:
+                        current_elem[k] = val
+    return data
+
+
 def check_task_yaml():
     path = os.path.join(ROOT_DIR, '.github', 'ISSUE_TEMPLATE', 'task.yml')
     assert os.path.exists(path), f"File not found: {path}"
     with open(path, 'r', encoding='utf-8') as f:
-        data = yaml.safe_load(f)
+        content = f.read()
+    if yaml is not None:
+        data = yaml.safe_load(content)
+    else:
+        data = _parse_simple_yaml(content)
     print("task.yml keys:", list(data.keys()))
     assert 'name' in data, "task.yml missing 'name'"
     assert 'description' in data, "task.yml missing 'description'"
@@ -257,7 +318,7 @@ def check_scenario_routing_table():
         return [c.replace(r'\|', '|').strip() for c in raw_cells]
 
     def is_separator(cells):
-        return bool(cells) and all(re.match(r'^:?\s*-+\s*:?$', c) for c in cells if c)
+        return bool(cells) and all(bool(re.match(r'^:?\s*-+\s*:?$', c)) for c in cells)
 
     for line in lines:
         stripped = line.strip()
@@ -306,8 +367,9 @@ def check_scenario_routing_table():
 
     routing_map = {}
     for idx, row in enumerate(table_rows):
-        assert len(row) >= 3, f"Row {idx} has fewer than 3 columns: {row}"
+        assert len(row) == 5, f"Row {idx} expected 5 columns, found {len(row)}: {row}"
         clean_key = re.sub(r'[*`_]', '', row[0]).strip()
+        assert clean_key not in routing_map, f"Duplicate scenario row in routing table: '{clean_key}'"
         routing_map[clean_key] = row[2]
 
     for idx, (title, skill) in enumerate(required_scenarios):
@@ -455,6 +517,10 @@ def check_skills_version_baseline():
     with open(contrib_path, 'r', encoding='utf-8') as f:
         contrib_content = f.read()
 
+    agents_path = os.path.join(ROOT_DIR, 'AGENTS.md')
+    with open(agents_path, 'r', encoding='utf-8') as f:
+        agents_content = f.read()
+
     expected_repo = 'https://github.com/vinvcn/mattpocock-skills-zh-CN'
     expected_sha = 'bf98e53f92089fec9b4885f128a565d7eac0337f'
     expected_date = '2026-10-10'
@@ -471,17 +537,32 @@ def check_skills_version_baseline():
     assert '流程维护工单' in wf_content, (
         "Upgrade protocol ('流程维护工单') missing in skills-workflow.md"
     )
+    assert '流程维护工单' in contrib_content, (
+        "Upgrade protocol ('流程维护工单') missing in CONTRIBUTING.md"
+    )
 
-    # Ensure no floating branch baseline descriptions
-    assert '主分支最新可用稳定基线' not in wf_content, (
-        "Floating baseline description '主分支最新可用稳定基线' found in skills-workflow.md"
-    )
-    assert '主分支最新稳定版本' not in contrib_content, (
-        "Floating baseline description '主分支最新稳定版本' found in CONTRIBUTING.md"
-    )
-    assert '最新可用稳定基线' not in wf_content, (
-        "Floating baseline description '最新可用稳定基线' found in skills-workflow.md"
-    )
+    # Ensure no floating branch baseline descriptions across all entry docs
+    floating_terms = [
+        '主分支最新可用稳定基线',
+        '主分支最新稳定版本',
+        '最新可用稳定基线',
+    ]
+    for doc_name, doc_text in [
+        ('skills-workflow.md', wf_content),
+        ('CONTRIBUTING.md', contrib_content),
+        ('AGENTS.md', agents_content),
+    ]:
+        for term in floating_terms:
+            if term in doc_text:
+                for line in doc_text.splitlines():
+                    if term in line:
+                        is_prohibition = any(
+                            p in line
+                            for p in ['不再使用', '禁止', '严格避免', 'Avoid']
+                        )
+                        assert is_prohibition, (
+                            f"Floating baseline term '{term}' found in {doc_name}: {line.strip()}"
+                        )
 
     print("Skills version baseline check: PINNED TO FIXED COMMIT SHA (NO FLOATING TERMS)")
     return True

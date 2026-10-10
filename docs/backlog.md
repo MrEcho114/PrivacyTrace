@@ -11,14 +11,14 @@ PR #27 与 #28 的增量已在独立分支整合，面向已合并 S0 的 `main`
 - S2 待办保留 #17 的异常浏览器矩阵，并加入来源值严格校验/新来源类型的契约测试、进程强制退出后的陈旧非终态作业识别与恢复测试。这两项是 #28 的非阻塞建议，本轮不设计完整调度器。
 - 当前优先：新工作流的自动验证与 PR 交付 → S2 受控场景和公平基准。不要再要求 A/B 填表；历史预约日期不代表后续任务已完成。
 
-### 2026-10-10 待确认缺陷（PT-401 修复期间发现，非 PT-401 引入）
+### 2026-10-10 已修缺陷（PT-401 修复期间发现，非 PT-401 引入）
 
 `job_store.JobStore._transaction()` 在 Windows 上存在多进程竞争缺陷：`os.open(path, O_CREAT | O_RDWR)` 本身没有重试，只有其后的加锁步骤有。多个进程同时首次创建 `.lock` 时，Windows 会对并发 `CreateFile` 返回瞬态共享冲突，表现为 `PermissionError: [Errno 13]`。
 
-- 复现：4 个 `spawn` 进程经 `Barrier` 同步后同时 `os.open` 同一 `.lock`，60/60 轮全部失败（至少 1 个进程报 errno 13）。
+- 复现：4 个 `spawn` 进程经 `Barrier` 同步后同时 `os.open` 同一 `.lock`，无重试时 10 轮 x4 进程共 30 次 `PermissionError`、每轮仅 1 个成功。
 - 表现：`test_job_creation.py::test_one_reservation_wins_across_processes_and_survives_restart` 在全量套件下偶发失败、单独运行必过；属负载/时序敏感。
-- 影响面：真实使用中即为多进程/多调用方首次并发建锁的窗口，值得单独修复（把打开动作纳入同一重试与超时策略）。
-- 归属：与 PT-401 无关，本次不修；待确认后另开工单。
+- **已修**：把打开动作纳入与加锁同一套重试与超时预算（`deadline` 上提到两个循环之外）；只捕获 `PermissionError`（实测并发 open 唯一失败即 errno 13，缺失目录应立刻报错而非空等）。修复后 40/40 全部成功。
+- 回归测试：`test_concurrent_first_lock_creation_never_fails_to_open`（已确认在未修复代码上确定性失败）、`test_missing_lock_directory_still_fails_fast`、`test_lock_file_is_reused_across_transactions`。
 
 ## 2026-10-05 历史进度与优先顺序
 

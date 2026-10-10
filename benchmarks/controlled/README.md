@@ -65,6 +65,8 @@ uv run --project apps/api --locked --extra worker python -m privacytrace.control
 
 计数单位在真值中固定为 `(case_id, data_type, ACCESS)`。清单 CAPABILITY 行完整保留在报告中，不与 API ACCESS 目标混算；C02 整份报告仍可能包含权限行的证据不足。多个调用结果保留状态集合。每个目标、每个方案都有一行；失败/缺失目标为 `ABSTAIN`，PARTIAL 保留且不能记验收通过。两场景只做诊断比较，P/R/F1 为 N/A，不宣传精度优势。
 
+预测收据的耗时覆盖输入检查、政策摄取、隔离扫描、报告导出与三方案计算，到预测文件落盘前结束；不用于比较三方案各自的性能。构建耗时另列在构建收据中。
+
 ## 验证与浏览器
 
 - 权威工程检查仍是 `bash scripts/check.sh`。

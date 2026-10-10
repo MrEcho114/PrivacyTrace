@@ -132,7 +132,6 @@ def run_case(args):
         "job_id": args.job_id,
         "analysis_context": "CONTROLLED_EVALUATION",
         "status": summary["status"],
-        "generated_at": datetime.now(timezone.utc).isoformat(),
         "started_at": started_at,
         "input_hashes": hashes,
         "apk_sha256": context.apk_sha256,
@@ -142,7 +141,6 @@ def run_case(args):
         "preparation": case.preparation,
         "counting_unit": "case_id + data_type + ACCESS; retain all report rows",
         "failure_policy": "Retain FAILED/PARTIAL/empty predictions; missing target is ABSTAIN",
-        "elapsed_seconds": round(time.perf_counter() - started, 3),
         "schemes": {},
         "errors": summary.get("errors", []),
     }
@@ -163,6 +161,11 @@ def run_case(args):
             coverage=report.coverage.model_dump(mode="json"),
             schemes=predictions(report),
         )
+    # Include capture, isolation, report export and all three schemes in the interval.
+    result.update(
+        generated_at=datetime.now(timezone.utc).isoformat(),
+        elapsed_seconds=round(time.perf_counter() - started, 3),
+    )
     (out / "predictions.json").write_text(
         json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )

@@ -5,7 +5,11 @@ import sys
 try:
     import yaml
 except ImportError:
-    yaml = None
+    sys.stderr.write(
+        "Error: PyYAML is required to run scripts/verify_workflow.py.\n"
+        "Please install PyYAML (e.g., 'pip install PyYAML') or run via uv (e.g., 'uv run --with pyyaml python scripts/verify_workflow.py').\n"
+    )
+    sys.exit(1)
 
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
@@ -13,69 +17,12 @@ if hasattr(sys.stdout, 'reconfigure'):
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def _parse_simple_yaml(text: str) -> dict:
-    data = {'body': []}
-    current_elem = None
-    current_sub = None
-
-    for raw_line in text.splitlines():
-        line = raw_line.rstrip()
-        if not line or line.strip().startswith('#'):
-            continue
-        if ' #' in line:
-            line = line.split(' #', 1)[0].rstrip()
-        stripped = line.strip()
-        indent = len(line) - len(line.lstrip())
-
-        if indent == 0:
-            if ':' in stripped:
-                k, v = stripped.split(':', 1)
-                k = k.strip()
-                v = v.strip().strip("'\"")
-                if k == 'body':
-                    data['body'] = []
-                else:
-                    data[k] = v
-            current_elem = None
-            current_sub = None
-        elif stripped.startswith('- '):
-            current_elem = {}
-            data['body'].append(current_elem)
-            current_sub = None
-            item = stripped[2:].strip()
-            if ':' in item:
-                k, v = item.split(':', 1)
-                current_elem[k.strip()] = v.strip().strip("'\"")
-        elif current_elem is not None:
-            if ':' in stripped:
-                k, v = stripped.split(':', 1)
-                k = k.strip()
-                v = v.strip()
-                if not v:
-                    current_sub = {}
-                    current_elem[k] = current_sub
-                else:
-                    val = v.strip("'\"")
-                    if val.lower() == 'true':
-                        val = True
-                    elif val.lower() == 'false':
-                        val = False
-                    if current_sub is not None and indent >= 6:
-                        current_sub[k] = val
-                    else:
-                        current_elem[k] = val
-    return data
-
-
 def check_task_yaml():
     path = os.path.join(ROOT_DIR, '.github', 'ISSUE_TEMPLATE', 'task.yml')
     assert os.path.exists(path), f"File not found: {path}"
     with open(path, 'r', encoding='utf-8') as f:
         content = f.read()
-    if yaml is not None:
-        data = yaml.safe_load(content)
-    else:
-        data = _parse_simple_yaml(content)
+    data = yaml.safe_load(content)
     print("task.yml keys:", list(data.keys()))
     assert 'name' in data, "task.yml missing 'name'"
     assert 'description' in data, "task.yml missing 'description'"
@@ -563,6 +510,13 @@ def check_skills_version_baseline():
                         assert is_prohibition, (
                             f"Floating baseline term '{term}' found in {doc_name}: {line.strip()}"
                         )
+
+    # Verify minimal executable installation steps in skills-workflow.md
+    assert 'git clone' in wf_content, "Missing 'git clone' step in skills-workflow.md"
+    assert 'git checkout' in wf_content, "Missing 'git checkout' step in skills-workflow.md"
+    assert 'git rev-parse HEAD' in wf_content, "Missing 'git rev-parse HEAD' command in skills-workflow.md"
+    for agent_kw in ['Claude Code', 'Codex', 'Google Antigravity', 'Cursor']:
+        assert agent_kw in wf_content, f"Missing Agent configuration for '{agent_kw}' in skills-workflow.md"
 
     print("Skills version baseline check: PINNED TO FIXED COMMIT SHA (NO FLOATING TERMS)")
     return True

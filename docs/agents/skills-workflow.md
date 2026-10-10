@@ -10,14 +10,48 @@
 
 - **主要安装来源（中文技能库）**：[`vinvcn/mattpocock-skills-zh-CN`](https://github.com/vinvcn/mattpocock-skills-zh-CN)
 - **上游参考源**：[`mattpocock/skills`](https://github.com/mattpocock/skills)
-- **多 Coding Agent 适配**：
-  团队成员可根据个人使用的 Coding Agent / CLI 选择对应安装方式：
-  - **Claude Code**：通过 Skill 配置或目录链接引入；
-  - **Codex / OpenCode**：按工具规范放入 skills 配置目录；
-  - **Google Antigravity / WorkBuddy**：使用技能管理工具（如 `cross-tool-skill-sync`、`find-skills`）同步或软链接至对应 skills 目录；
-  - **Cursor / 其他开发环境**：按对应规则加载 Markdown 技能说明。
-  
-  团队不强制统一单一 Coding Agent，但所有成员须遵循相同的任务路由与协作产出约束。
+
+### 1.1 最小可执行安装步骤
+
+为确保跨成员、跨 Coding Agent 协作的可复现性与语义一致性，团队所有成员及 Coding Agent 必须基于固化 Commit SHA (`bf98e53f92089fec9b4885f128a565d7eac0337f`) 进行安装与配置：
+
+1. **克隆技能库到本地目录**：
+   ```bash
+   git clone https://github.com/vinvcn/mattpocock-skills-zh-CN.git ~/.skills-zh-CN
+   ```
+2. **切换至团队固化 Commit SHA**：
+   ```bash
+   cd ~/.skills-zh-CN
+   git checkout bf98e53f92089fec9b4885f128a565d7eac0337f
+   ```
+3. **核验当前 Commit SHA**：
+   ```bash
+   git rev-parse HEAD
+   ```
+   *核验输出必须严格为：`bf98e53f92089fec9b4885f128a565d7eac0337f`*。
+
+### 1.2 各 Coding Agent 配置路径与挂载方式
+
+团队成员可根据个人使用的 Coding Agent / CLI 选择对应配置路径进行挂载或加载：
+
+- **Claude Code**：
+  - 用户级技能路径：`~/.claude/skills/`
+  - 项目级技能路径：`.claude/skills/`
+  - 挂载方式：通过目录软链接或按配置载入，例如：
+    ```bash
+    ln -s ~/.skills-zh-CN/skills/* ~/.claude/skills/
+    ```
+- **Codex / OpenCode**：
+  - 技能配置路径：`~/.codex/skills/` 或 OpenCode 指定配置路径
+  - 挂载方式：将技能目录软链接或复制至配置目录，按工具规范加载。
+- **Google Antigravity / WorkBuddy**：
+  - 技能路径：`~/.gemini/config/skills/` 与 `~/.workbuddy/skills/`
+  - 挂载方式：使用技能同步管理工具（如 `cross-tool-skill-sync`、`find-skills`）同步，或建立软链接指向已检出的技能目录。
+- **Cursor / 其他开发环境**：
+  - 规则/提示词路径：`.cursor/rules/` 或系统提示词目录
+  - 挂载方式：按需将技能 Markdown 规则说明直接挂载或载入系统提示。
+
+团队不强制统一单一 Coding Agent，但所有成员须基于相同固化 Commit SHA 遵循统一的任务路由与协作产出约束。
 
 ---
 

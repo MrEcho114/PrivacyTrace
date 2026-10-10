@@ -235,16 +235,30 @@ def check_scenario_routing_table():
     with open(workflow_path, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # Parse Markdown routing table rows structurally
+    # Locate section "## 4. 任务路由表" to avoid picking up unrelated tables
+    section_marker = "## 4. 任务路由表"
+    assert section_marker in content, f"Section '{section_marker}' missing from skills-workflow.md"
+    section_start = content.index(section_marker)
+    # Find next top-level section starting with "## " or end of file
+    next_section = re.search(r'\n##\s+', content[section_start + len(section_marker):])
+    if next_section:
+        section_content = content[section_start : section_start + len(section_marker) + next_section.start()]
+    else:
+        section_content = content[section_start:]
+
+    # Parse Markdown routing table rows structurally within the section
     table_rows = []
-    for line in content.splitlines():
+    for line in section_content.splitlines():
         line = line.strip()
         if not line.startswith('|') or not line.endswith('|'):
             continue
-        cells = [c.strip() for c in line.split('|')[1:-1]]
-        if not cells or any(c.startswith(':--') or c.startswith('---') for c in cells):
+        # Split on non-escaped pipes
+        cells = [c.strip() for c in re.split(r'(?<!\\)\|', line)[1:-1]]
+        # Skip separator rows (e.g. | :--- | :--- |)
+        if not cells or any(re.match(r'^:?-+:?$', c) for c in cells):
             continue
-        if cells[0] in ('场景类型', '**场景类型**'):
+        # Skip table header row
+        if cells[0].replace('*', '').strip() == '场景类型':
             continue
         table_rows.append(cells)
 
@@ -265,27 +279,32 @@ def check_scenario_routing_table():
         f"Expected {len(required_scenarios)} table rows in routing table, found {len(table_rows)}"
     )
 
+    def skill_matches(expected_skill: str, cell_text: str) -> bool:
+        pattern = r'(?<![\w-])' + re.escape(expected_skill) + r'(?![\w-])'
+        return bool(re.search(pattern, cell_text))
+
     routing_map = {}
     for idx, row in enumerate(table_rows):
         assert len(row) >= 3, f"Row {idx} has fewer than 3 columns: {row}"
-        routing_map[row[0]] = row[2]
+        clean_key = row[0].replace('*', '').strip()
+        routing_map[clean_key] = row[2]
 
     for idx, (title, skill) in enumerate(required_scenarios):
         row = table_rows[idx]
-        assert title in row[0], (
-            f"Row {idx} scenario title mismatch: expected '{title}' in '{row[0]}'"
+        clean_row_title = row[0].replace('*', '').strip()
+        assert clean_row_title == title, (
+            f"Row {idx} scenario title mismatch: expected exact title '{title}', got '{clean_row_title}'"
         )
-        assert skill in row[2], (
+        assert skill_matches(skill, row[2]), (
             f"Routing table row {idx} mismatch for scenario '{title}': "
             f"expected skill '{skill}' in '{row[2]}'"
         )
 
-        matching_keys = [k for k in routing_map if title in k]
-        assert len(matching_keys) == 1, (
-            f"Expected exactly 1 table row matching scenario '{title}', found {len(matching_keys)}"
+        assert title in routing_map, (
+            f"Expected table row key matching scenario '{title}' in routing map"
         )
-        actual_skill = routing_map[matching_keys[0]]
-        assert skill in actual_skill, (
+        actual_skill = routing_map[title]
+        assert skill_matches(skill, actual_skill), (
             f"Routing table mapping mismatch for scenario '{title}': "
             f"expected skill '{skill}' in '{actual_skill}'"
         )

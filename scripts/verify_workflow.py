@@ -246,19 +246,40 @@ def check_scenario_routing_table():
     else:
         section_content = content[section_start:]
 
-    # Parse Markdown routing table rows structurally within the section
+    # Parse specifically the Markdown routing table (from header row to table termination)
+    lines = section_content.splitlines()
+    in_routing_table = False
+    header_found = False
     table_rows = []
-    for line in section_content.splitlines():
-        line = line.strip()
-        if not line.startswith('|') or not line.endswith('|'):
+
+    def parse_cells(l: str):
+        raw_cells = re.split(r'(?<!\\)\|', l)[1:-1]
+        return [c.replace(r'\|', '|').strip() for c in raw_cells]
+
+    def is_separator(cells):
+        return bool(cells) and all(re.match(r'^:?\s*-+\s*:?$', c) for c in cells if c)
+
+    for line in lines:
+        stripped = line.strip()
+        if not (stripped.startswith('|') and stripped.endswith('|')):
+            if in_routing_table:
+                # Contiguous markdown table has terminated
+                break
             continue
-        # Split on non-escaped pipes
-        cells = [c.strip() for c in re.split(r'(?<!\\)\|', line)[1:-1]]
-        # Skip separator rows (e.g. | :--- | :--- |)
-        if not cells or any(re.match(r'^:?-+:?$', c) for c in cells):
+
+        cells = parse_cells(stripped)
+        if not header_found:
+            clean_first = re.sub(r'[*`_]', '', cells[0]).strip() if cells else ''
+            if clean_first == '场景类型':
+                header_found = True
             continue
-        # Skip table header row
-        if cells[0].replace('*', '').strip() == '场景类型':
+
+        if not in_routing_table:
+            assert is_separator(cells), f"Expected separator row following table header, got: {stripped}"
+            in_routing_table = True
+            continue
+
+        if is_separator(cells):
             continue
         table_rows.append(cells)
 
@@ -281,17 +302,17 @@ def check_scenario_routing_table():
 
     def skill_matches(expected_skill: str, cell_text: str) -> bool:
         pattern = r'(?<![\w-])' + re.escape(expected_skill) + r'(?![\w-])'
-        return bool(re.search(pattern, cell_text))
+        return bool(re.search(pattern, cell_text, re.IGNORECASE))
 
     routing_map = {}
     for idx, row in enumerate(table_rows):
         assert len(row) >= 3, f"Row {idx} has fewer than 3 columns: {row}"
-        clean_key = row[0].replace('*', '').strip()
+        clean_key = re.sub(r'[*`_]', '', row[0]).strip()
         routing_map[clean_key] = row[2]
 
     for idx, (title, skill) in enumerate(required_scenarios):
         row = table_rows[idx]
-        clean_row_title = row[0].replace('*', '').strip()
+        clean_row_title = re.sub(r'[*`_]', '', row[0]).strip()
         assert clean_row_title == title, (
             f"Row {idx} scenario title mismatch: expected exact title '{title}', got '{clean_row_title}'"
         )
@@ -425,6 +446,47 @@ def check_evidence_boundaries():
     return True
 
 
+def check_skills_version_baseline():
+    workflow_path = os.path.join(ROOT_DIR, 'docs', 'agents', 'skills-workflow.md')
+    with open(workflow_path, 'r', encoding='utf-8') as f:
+        wf_content = f.read()
+
+    contrib_path = os.path.join(ROOT_DIR, 'CONTRIBUTING.md')
+    with open(contrib_path, 'r', encoding='utf-8') as f:
+        contrib_content = f.read()
+
+    expected_repo = 'https://github.com/vinvcn/mattpocock-skills-zh-CN'
+    expected_sha = 'bf98e53f92089fec9b4885f128a565d7eac0337f'
+    expected_date = '2026-10-10'
+
+    assert expected_repo in wf_content, (
+        f"Skills repo '{expected_repo}' missing in skills-workflow.md"
+    )
+    assert expected_sha in wf_content, (
+        f"Baseline commit SHA '{expected_sha}' missing in skills-workflow.md"
+    )
+    assert expected_date in wf_content, (
+        f"Verification date '{expected_date}' missing in skills-workflow.md"
+    )
+    assert '流程维护工单' in wf_content, (
+        "Upgrade protocol ('流程维护工单') missing in skills-workflow.md"
+    )
+
+    # Ensure no floating branch baseline descriptions
+    assert '主分支最新可用稳定基线' not in wf_content, (
+        "Floating baseline description '主分支最新可用稳定基线' found in skills-workflow.md"
+    )
+    assert '主分支最新稳定版本' not in contrib_content, (
+        "Floating baseline description '主分支最新稳定版本' found in CONTRIBUTING.md"
+    )
+    assert '最新可用稳定基线' not in wf_content, (
+        "Floating baseline description '最新可用稳定基线' found in skills-workflow.md"
+    )
+
+    print("Skills version baseline check: PINNED TO FIXED COMMIT SHA (NO FLOATING TERMS)")
+    return True
+
+
 if __name__ == '__main__':
     print("=" * 60)
     print("Running Comprehensive Workflow Verification Suite")
@@ -434,6 +496,7 @@ if __name__ == '__main__':
     check_markdown_links()
     check_forbidden_terms()
     check_scenario_routing_table()
+    check_skills_version_baseline()
     check_blockers_and_handoff_rules()
     check_evidence_boundaries()
     print("=" * 60)

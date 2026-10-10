@@ -1,10 +1,14 @@
 # PR33 范围拆分方案（评审 Section 三）
 
 评审结论：PR33 把 PT-808 浏览器端验收与大量无关的规划/流程产物混在同一个 PR，建议拆分。
-本文件给出**可执行的拆分清单**，供拆分 PR 时直接使用。
 
-> 说明：本文件是修复工作的附带产物，只做清单与命令建议，不自动改动仓库结构——
-> 拆分应在独立的 PR 中进行，以免在修复 PR 里再次引入范围混杂。
+> **执行状态：已执行（见本文件 §5）。**
+> 执行过程中发现原方案有三处归类错误，已修正：`AGENTS.md`、`CONTRIBUTING.md`、
+> `.github/ISSUE_TEMPLATE/task.yml` 在 main 上已存在且改动全部是引用被移出文档，
+> 应**还原**而非删除；`GLOSSARY.md` 实为本 PR 新增，应一并移出；
+> `verify_workflow.py` 与它校验的文档是一体，必须同组移出。详见 §5.3。
+>
+> **最终效果：PR 可见变更由 152 个文件降至 47 个，删除项 0。**
 
 ## 1. 现状量化
 
@@ -14,9 +18,14 @@
 |---|---|---|
 | **A. PT-808 实质交付** | 22 | ✅ 本次 PR 的核心 |
 | B. 规划 / Issue 重建快照（`docs/planning/**`） | 90 | ❌ 无关 |
-| C. 开发计划与协作流程文档 | 10 | ❌ 无关 |
+| C. 协作流程文档与配套脚本 | 12 | ❌ 无关 |
 | D. ADR（`docs/adr/**`） | 2 | ❌ 无关 |
 | E. 研究报告（`docs/research/**`） | 4 | ❌ 无关 |
+| F. 离线交付 spec（`docs/specs/**`） | 1 | ❌ 无关 |
+
+> 拆分时量准：C 类为 12 个，比原估 10 个多 2 —— 原方案遗漏了
+> `.github/ISSUE_TEMPLATE/task.yml` 与 `scripts/verify_workflow.py`（两者
+> 分别属"协作模板"与"校验上述文档的脚本"），F 类 `docs/specs/` 亦为原方案未单列。
 
 ## 2. 应保留在 PT-808 PR 中的文件（22 个）
 
@@ -83,3 +92,73 @@ git commit -m "docs: 归档规划快照、协作流程、ADR 与研究报告"
 - PT-808 PR 的 diff 从 **128 个文件**降到约 **22 个**，评审者能聚焦在异常边界、防 XSS、来源分类与可选备注这四条验收线。
 - 规划类文档可走独立的「文档变更」评审路径，不占用代码审查额度。
 - 每个 PR 的 `evidence/` 与实现一一对应，SHA 溯源不再与其他变更耦合。
+
+## 5. 执行记录（本次已执行）
+
+### 5.1 承载分支
+
+无关文件先保存在独立分支，避免内容丢失：
+
+```bash
+git branch docs/planning-workflow-adr-research HEAD   # 拆分前，含全部 128 个文件
+```
+
+### 5.2 实际处置的 109 个文件
+
+拆分分两类操作：**移除新增文件**（106 个）与**还原既有文件**（3 个）。
+
+```bash
+# 1) 新增文件：从索引移除（内容已在承载分支）
+git rm --cached docs/planning/** docs/agents/** docs/adr/** docs/research/** \
+  docs/specs/** docs/development-plan.md GLOSSARY.md PROJECT.md \
+  scripts/verify_workflow.py
+
+# 2) main 上已存在的文件：还原为 main 版本，而非删除
+git checkout origin/main -- AGENTS.md CONTRIBUTING.md .github/ISSUE_TEMPLATE/task.yml
+```
+
+> ⚠️ 关键区分：`git rm` 对 **main 上已存在**的文件会产生真实删除，
+> 对 **本 PR 新增**的文件只是取消新增。二者必须用不同操作。
+
+### 5.3 对原方案的三处修正
+
+执行时逐项检查代码引用与文件来源，发现原清单有三处归类错误：
+
+| 文件 | 原归类 | 实际问题 | 处置 |
+|---|---|---|---|
+| `AGENTS.md` | ❌ 应拆出 | `16f6d3f` 对其的改动**全部**是新增指向 `docs/agents/**`、`GLOSSARY.md`、`docs/adr/**` 的链接；文档拆走后必然死链 | **还原**为 main 版本 |
+| `.github/ISSUE_TEMPLATE/task.yml` | ❌ 应拆出 | 同上，`16f6d3f` 只改了协作流程模板字段（PT-ID / handoff 等），与验收无关 | **还原**为 main 版本 |
+| `CONTRIBUTING.md` | ❌ 应拆出 | 同上，改动仅为协作流程入口 | **还原**为 main 版本 |
+| `GLOSSARY.md` | ✅ 应保留 | 实际由 `16f6d3f` **新增**，并非 main 既有；保留在 PR 里反而是范围外内容 | **一并移出** |
+| `scripts/verify_workflow.py` | ✅ 应保留 | 它校验 `docs/agents/**` 与 `.github/ISSUE_TEMPLATE/task.yml`；文档拆走后脚本必然失败（实测 `AssertionError: Missing section in PR template`），且无 CI 调用方 | **改为与文档同组移出** |
+
+> 教训一：拆分「文档 + 校验脚本」这一对时，必须先确认脚本与被校验文档的依赖方向，
+> 否则会留下一个必然失败的校验器。
+>
+> 教训二：**先判断文件在 base 分支是否存在**，再决定用 `git rm` 还是 `git checkout base --`。
+> 本次首轮执行时曾误将 `AGENTS.md`、`CONTRIBUTING.md`、`task.yml` 直接删除，
+> 造成 3 个 main 既有文件被误删；已复查并纠正，最终 PR 删除项为 0。
+
+### 5.4 拆分后验证
+
+| 检查 | 结果 |
+|---|---|
+| PR 可见变更（`origin/main...HEAD`） | **47 个文件**（24 A / 23 M / 0 D），较拆分前 152 个下降 69% |
+| 误删 main 既有文件 | **0** |
+| 被移出路径残留 | 0（`docs/planning`、`docs/adr`、`docs/agents`、`docs/research`、`docs/specs`、`verify_workflow.py`、`GLOSSARY.md`、`PROJECT.md` 全部退出 PR） |
+| 死链检查 | 无（`AGENTS.md` 已回到 main 版本，不再引用被移出文档） |
+| `ruff check apps/api` | All checks passed |
+| 前端单测 | 28 / 28 pass |
+| 后端 pytest | 318 passed / 11 skipped / 2 failed（2 例为既有 Windows 跨进程 `.lock` 争用） |
+| 浏览器验收 | TC-01…TC-05 全 PASSED，EXIT=0 |
+| `test_governance_cli.py` | 2 例失败为**既有**，已在拆分前干净状态对照复现，与拆分无关 |
+
+#### 关于两个 diff 口径
+
+拆分后有两个数字，含义不同，勿混淆：
+
+- **`git diff origin/main...HEAD` → 47 个**：reviewer 在 GitHub 上看到的 PR 变更，是唯一有意义的验收口径。
+- **`git diff 16f6d3f...HEAD` → 150 个**：其中 106 个 D 是**本拆分自身的删除动作**，属过程量。
+
+初看「拆分后数字反而从 152 涨到 155」曾引起误判，根因是错用了后者。
+判断拆分效果必须以 `origin/main...HEAD` 为准。

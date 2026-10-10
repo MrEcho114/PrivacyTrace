@@ -1,7 +1,0 @@
-{
-  "parent": 30,
-  "sub_issues": [
-    31
-  ],
-  "source": "GitHub GET issues/30/sub_issues"
-}

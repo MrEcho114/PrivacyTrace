@@ -704,7 +704,9 @@ def test_reloaded_real_scan_keeps_origin_but_becomes_persisted_replay(tmp_path):
     client = TestClient(create_app(store_root=tmp_path))
     reloaded = client.get(f"/api/v1/jobs/{fresh.job.id}/report").json()
     assert reloaded["job"]["source_origin"] == original_origin, "Origin must not change on reload"
-    assert reloaded["delivery_mode"] == "PERSISTED_REPLAY", "A reloaded report is not a live generation"
+    assert reloaded["delivery_mode"] == "PERSISTED_REPLAY", (
+        "A reloaded report is not a live generation"
+    )
 
     # Reviewing a stored report is also a replay, not a fresh generation.
     reviewed = client.post(

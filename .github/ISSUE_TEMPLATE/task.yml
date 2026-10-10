@@ -1,62 +1,10 @@
-name: PT development task
-description: A scoped task linked to the PrivacyTrace brief
-title: '[PT-xxx] '
+name: 开发任务
+description: 写清要解决的问题即可，验证与交付记录由代理补齐。
 body:
-  - type: input
-    id: pt-id
-    attributes:
-      label: PT task ID
-      placeholder: PT-101
-    validations:
-      required: true
   - type: textarea
     id: goal
     attributes:
-      label: 任务目标 (Goal)
-      description: 本次任务的核心目标与交付价值
-      placeholder: 简述本次任务要解决的问题或实现的功能
+      label: 要解决什么
+      description: 说明期望结果、已知限制或复现步骤；不必填写审计表。
     validations:
       required: true
-  - type: textarea
-    id: scope
-    attributes:
-      label: Input, output and scope
-      description: 输入材料、产出物及任务具体实施范围
-    validations:
-      required: true
-  - type: textarea
-    id: out-of-scope
-    attributes:
-      label: 范围外事项 (Out of scope)
-      description: 明确本次任务不包含的内容，防止范围蔓延 (Scope Creep)
-      placeholder: 暂不涉及的功能、非本次范围的改动
-  - type: textarea
-    id: specs-and-adrs
-    attributes:
-      label: 关联 Spec / ADR
-      description: 关联的需求 Spec、ADR 或架构决策文档路径与链接
-      placeholder: 如 docs/adr/0001-...md 或 #32
-  - type: textarea
-    id: blockers
-    attributes:
-      label: 阻塞依赖 (Blockers)
-      description: 需等待解决的依赖前置任务或 Issue 编号；若无填无。有未解阻塞时需等待解除方可启动
-      placeholder: 无 / 依赖 #...
-  - type: textarea
-    id: acceptance
-    attributes:
-      label: Acceptance criteria and evidence
-      description: 可复核的验收条件与证据材料
-    validations:
-      required: true
-  - type: textarea
-    id: validation
-    attributes:
-      label: Validation plan
-      description: 本地测试、构建、CI 或场景验证计划
-  - type: textarea
-    id: handoff
-    attributes:
-      label: 接手材料与交接信息 (Handoff)
-      description: 跨会话或换人接手所需的分支、最新提交、已有进展与剩余工作清单
-      placeholder: 分支名、最新 commit、已有进展、剩余工作清单

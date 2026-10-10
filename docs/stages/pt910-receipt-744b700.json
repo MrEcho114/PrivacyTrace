@@ -1,0 +1,507 @@
+{
+  "commit": "744b7009cbf7209a926fabfe2505919ab84dcea4",
+  "run_url": "https://github.com/MrEcho114/PrivacyTrace/actions/runs/38043694460",
+  "human_preparation_minutes": 0,
+  "human_review_performed": false,
+  "human_time_source": "User confirmation in Codex conversation, 2026-10-10",
+  "frozen": {
+    "schema_version": 1,
+    "frozen_at": "2026-10-10T10:06:22.106896+00:00",
+    "labels_sha256": "e2bbbac009dda14fdc06443648886b694f322b9e3c93c54e9fa1580f6c6d8639",
+    "cases": {
+      "C02": {
+        "input_hashes": {
+          "input.json": "a0dc2029fc1f8299bf25de088fb42f225a195aa0bb5311e1497bdd33eca785a1",
+          "policy.txt": "65f08feef1475663b527b6937b19c5920f4bfca5f41017e367bf7bf550533d63",
+          "candidates.json": "d10fbe717099e7580312ccb76fd8871766b3ce42f4a8f731de3bb2d4b12d1eb3"
+        },
+        "source_hashes": {
+          "AndroidManifest.xml": "df8193a48f34318bf5f1e6ce11f52720e48a1f98d6128bc8f4d4bed937d5c2a4",
+          "src/Scenario.java": "1ce8404d8e90c4547e560dbc92232e3cebfe8162694054271768603e5d3eac7f"
+        }
+      },
+      "C06": {
+        "input_hashes": {
+          "input.json": "6d308512ef9fe304f66d84056b05776e9f6431f717c6b47c6cabd6a75dd1c21f",
+          "policy.txt": "083d584ba8d4a7dbda9d85504bd7cb30f48ded3ca057cfa449d42ad2878f2015",
+          "candidates.json": "b0e738a337fe93cb160c232e3b2da20d3f0caaa84e9ddb2f860533b950621fcf"
+        },
+        "source_hashes": {
+          "AndroidManifest.xml": "469f6d48b26b3ba850a121fe01b4eabd263baedd8ffa6f104127f41be242b508",
+          "src/Scenario.java": "9b1344f4a882ebf575614ed6be8959bc90ddf4c8926b6155cfc4af61790a4de4"
+        }
+      }
+    },
+    "toolchain_sha256": "69e092f12709256d1801c7d5acc2752e0123de6599026f8b70838fb0838b75b4"
+  },
+  "comparison": {
+    "schema_version": 1,
+    "target_count": 2,
+    "rows": [
+      {
+        "case_id": "C02",
+        "data_type": "CAMERA",
+        "scheme": "permission_keywords",
+        "expected": "EXACT_MATCH",
+        "actual": [
+          "EXACT_MATCH"
+        ],
+        "run_status": "SUCCEEDED",
+        "coverage": "COMPLETE",
+        "matches": true
+      },
+      {
+        "case_id": "C02",
+        "data_type": "CAMERA",
+        "scheme": "api_flat",
+        "expected": "EXACT_MATCH",
+        "actual": [
+          "EXACT_MATCH"
+        ],
+        "run_status": "SUCCEEDED",
+        "coverage": "COMPLETE",
+        "matches": true
+      },
+      {
+        "case_id": "C02",
+        "data_type": "CAMERA",
+        "scheme": "privacytrace",
+        "expected": "EXACT_MATCH",
+        "actual": [
+          "EXACT_MATCH"
+        ],
+        "run_status": "SUCCEEDED",
+        "coverage": "COMPLETE",
+        "matches": true
+      },
+      {
+        "case_id": "C06",
+        "data_type": "MICROPHONE",
+        "scheme": "permission_keywords",
+        "expected": "INSUFFICIENT_EVIDENCE",
+        "actual": [
+          "EXACT_MATCH"
+        ],
+        "run_status": "SUCCEEDED",
+        "coverage": "COMPLETE",
+        "matches": false
+      },
+      {
+        "case_id": "C06",
+        "data_type": "MICROPHONE",
+        "scheme": "api_flat",
+        "expected": "INSUFFICIENT_EVIDENCE",
+        "actual": [
+          "EXACT_MATCH"
+        ],
+        "run_status": "SUCCEEDED",
+        "coverage": "COMPLETE",
+        "matches": false
+      },
+      {
+        "case_id": "C06",
+        "data_type": "MICROPHONE",
+        "scheme": "privacytrace",
+        "expected": "INSUFFICIENT_EVIDENCE",
+        "actual": [
+          "INSUFFICIENT_EVIDENCE"
+        ],
+        "run_status": "SUCCEEDED",
+        "coverage": "COMPLETE",
+        "matches": true
+      }
+    ],
+    "freeze_sha256": "6cd7b0bbb2fdc468716c84278bc6f0febffc259e7de2f5fa4d028a6cb9b93fd2",
+    "labels_sha256": "e2bbbac009dda14fdc06443648886b694f322b9e3c93c54e9fa1580f6c6d8639",
+    "artifacts": [
+      {
+        "case_id": "C02",
+        "predictions_sha256": "a4cd0cee0dbc1e7a59857d7f3cff101e736d6ed484579310eda3a8f038152bef"
+      },
+      {
+        "case_id": "C06",
+        "predictions_sha256": "a08c2bea846a435d7ee828a3755da955dc5978ee86a7fc2a3c61a962a5d635a7"
+      }
+    ],
+    "metrics": "N/A: two diagnostic scenarios, no precision advantage claim"
+  },
+  "browser": {
+    "commit": "744b7009cbf7209a926fabfe2505919ab84dcea4",
+    "browser": "145.0.7632.6",
+    "cases": [
+      {
+        "case_id": "C02",
+        "status": "EXACT_MATCH",
+        "job_id": "pt910-C02",
+        "apk_sha256": "74ee535955306ba270558910d51edc0b2ea9c1ec10ae76c664d63ec2afc6dc14",
+        "evidence_navigation": "PASSED",
+        "policy_text": "PASSED"
+      },
+      {
+        "case_id": "C06",
+        "status": "INSUFFICIENT_EVIDENCE",
+        "job_id": "pt910-C06",
+        "apk_sha256": "08d45a9f0098f3c6def96715718d6a4822b70a4f1600b581ead6e94447b3e272",
+        "evidence_navigation": "PASSED",
+        "policy_text": "PASSED"
+      }
+    ],
+    "pageErrors": [],
+    "consoleErrors": [],
+    "status": "PASSED"
+  },
+  "cases": {
+    "C02": {
+      "build": {
+        "schema_version": 1,
+        "case_id": "C02",
+        "source_hashes": {
+          "AndroidManifest.xml": "df8193a48f34318bf5f1e6ce11f52720e48a1f98d6128bc8f4d4bed937d5c2a4",
+          "src/Scenario.java": "1ce8404d8e90c4547e560dbc92232e3cebfe8162694054271768603e5d3eac7f"
+        },
+        "toolchain_sha256": "69e092f12709256d1801c7d5acc2752e0123de6599026f8b70838fb0838b75b4",
+        "apk": "scenario.apk",
+        "apk_sha256": "74ee535955306ba270558910d51edc0b2ea9c1ec10ae76c664d63ec2afc6dc14",
+        "tools": {
+          "jdk": "24.0.2",
+          "platform": "android-37.0",
+          "build_tools": "36.0.0",
+          "android.jar_sha256": "bf1b4387cc7ca94fc6ef684f040d9d16fbf16248e181819f020736ea2053f177",
+          "aapt2_sha256": "1a6a396b9cd071f7040071fdd108718cb98c3c9f4960044f373b288993d19eb7",
+          "d8.jar_sha256": "4097ff9c46c185c6e7214da7fe9b1befb5adeea5cc9ca349270e0249904f9240",
+          "jdk-release_sha256": "dce6e5df2b4bfa81cf8a81cd37684d74642fdb8df8e9b8cb8f6623bbc3cfaaae",
+          "javac_sha256": "86636a66f9a67746a7cf978ee16210b314bf7012a1e7f5e11b738195af3071b3",
+          "java_sha256": "0616f6ec10e9e928236ccc09fa780d02c9467b41dc6df92bcc568a31615b75c4",
+          "ct.sym_sha256": "42177b007e41bba7814ea56483b5153526bd1b8cf3bba2a88cac9fc09977a351"
+        },
+        "commands": [
+          [
+            "<jdk>/bin/javac",
+            "--release",
+            "8",
+            "-g",
+            "-encoding",
+            "UTF-8",
+            "-proc:none",
+            "-classpath",
+            "<sdk>/platforms/android-37.0/android.jar",
+            "-d",
+            "<output>/classes",
+            "<output>/source/src/Scenario.java"
+          ],
+          [
+            "<jdk>/bin/java",
+            "-cp",
+            "<sdk>/build-tools/36.0.0/lib/d8.jar",
+            "com.android.tools.r8.D8",
+            "--debug",
+            "--min-api",
+            "23",
+            "--lib",
+            "<sdk>/platforms/android-37.0/android.jar",
+            "--output",
+            "<output>/dex",
+            "<output>/classes/org/privacytrace/controlled/c02/Scenario.class"
+          ],
+          [
+            "<sdk>/build-tools/36.0.0/aapt2",
+            "link",
+            "-I",
+            "<sdk>/platforms/android-37.0/android.jar",
+            "--manifest",
+            "<output>/source/AndroidManifest.xml",
+            "--min-sdk-version",
+            "23",
+            "--target-sdk-version",
+            "35",
+            "-o",
+            "<output>/resources.apk"
+          ]
+        ],
+        "built_at": "2026-10-10T10:06:23.756277+00:00",
+        "elapsed_seconds": 1.403
+      },
+      "prediction": {
+        "schema_version": 1,
+        "case_id": "C02",
+        "job_id": "pt910-C02",
+        "analysis_context": "CONTROLLED_EVALUATION",
+        "status": "SUCCEEDED",
+        "started_at": "2026-10-10T10:06:23.945608+00:00",
+        "input_hashes": {
+          "input.json": "a0dc2029fc1f8299bf25de088fb42f225a195aa0bb5311e1497bdd33eca785a1",
+          "policy.txt": "65f08feef1475663b527b6937b19c5920f4bfca5f41017e367bf7bf550533d63",
+          "candidates.json": "d10fbe717099e7580312ccb76fd8871766b3ce42f4a8f731de3bb2d4b12d1eb3"
+        },
+        "apk_sha256": "74ee535955306ba270558910d51edc0b2ea9c1ec10ae76c664d63ec2afc6dc14",
+        "source_hashes": {
+          "AndroidManifest.xml": "df8193a48f34318bf5f1e6ce11f52720e48a1f98d6128bc8f4d4bed937d5c2a4",
+          "src/Scenario.java": "1ce8404d8e90c4547e560dbc92232e3cebfe8162694054271768603e5d3eac7f"
+        },
+        "toolchain_sha256": "69e092f12709256d1801c7d5acc2752e0123de6599026f8b70838fb0838b75b4",
+        "build_receipt_sha256": "3a5c71a324cfe4ca728571fd6aaa81e5cc8209c7676cc744a90b4d132ec8550f",
+        "preparation": "Codex-assisted source and candidate authoring; no human review or observed runtime behavior asserted.",
+        "counting_unit": "case_id + data_type + ACCESS; retain all report rows",
+        "failure_policy": "Retain FAILED/PARTIAL/empty predictions; missing target is ABSTAIN",
+        "schemes": {
+          "permission_keywords": {
+            "uses": [
+              "permissions",
+              "policy artifact text",
+              "versioned permission/phrase mappings"
+            ],
+            "rows": [
+              {
+                "data_type": "CAMERA",
+                "statuses": [
+                  "EXACT_MATCH"
+                ]
+              }
+            ]
+          },
+          "api_flat": {
+            "uses": [
+              "same API evidence and complete descriptors",
+              "same candidates"
+            ],
+            "rows": [
+              {
+                "data_type": "CAMERA",
+                "behavior_id": "behavior-67c50a8404595e668af6393f",
+                "statuses": [
+                  "EXACT_MATCH"
+                ],
+                "evidence_ids": [
+                  "ev-67c50a8404595e668af6393f"
+                ],
+                "descriptors": [
+                  "Landroid/hardware/Camera;->open()Landroid/hardware/Camera;"
+                ]
+              }
+            ]
+          },
+          "privacytrace": {
+            "uses": [
+              "same evidence/candidates",
+              "applicability",
+              "policy states"
+            ],
+            "rows": [
+              {
+                "data_type": "CAMERA",
+                "behavior_id": "behavior-67c50a8404595e668af6393f",
+                "statuses": [
+                  "EXACT_MATCH"
+                ],
+                "evidence_ids": [
+                  "ev-67c50a8404595e668af6393f"
+                ]
+              }
+            ]
+          }
+        },
+        "errors": [],
+        "report_sha256": "39f366ea14820a179baa006615e77aeacc09809aac67821c6c128d2c4b8feb2c",
+        "ruleset_version": "0.3.0",
+        "coverage": {
+          "status": "COMPLETE",
+          "scope": "DEX_ENTRIES",
+          "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+          "behavior_limitations": [
+            "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+            "不保证覆盖反射、动态加载及运行时生成的调用。",
+            "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+            "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+            "静态潜在行为不能证明实际访问、收集或外传。"
+          ],
+          "limitations": [
+            "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+            "JADX unavailable or timed out; bytecode evidence retained"
+          ],
+          "scanned_dex": [
+            "classes.dex"
+          ],
+          "failed_dex": []
+        },
+        "generated_at": "2026-10-10T10:06:24.872306+00:00",
+        "elapsed_seconds": 0.927
+      }
+    },
+    "C06": {
+      "build": {
+        "schema_version": 1,
+        "case_id": "C06",
+        "source_hashes": {
+          "AndroidManifest.xml": "469f6d48b26b3ba850a121fe01b4eabd263baedd8ffa6f104127f41be242b508",
+          "src/Scenario.java": "9b1344f4a882ebf575614ed6be8959bc90ddf4c8926b6155cfc4af61790a4de4"
+        },
+        "toolchain_sha256": "69e092f12709256d1801c7d5acc2752e0123de6599026f8b70838fb0838b75b4",
+        "apk": "scenario.apk",
+        "apk_sha256": "08d45a9f0098f3c6def96715718d6a4822b70a4f1600b581ead6e94447b3e272",
+        "tools": {
+          "jdk": "24.0.2",
+          "platform": "android-37.0",
+          "build_tools": "36.0.0",
+          "android.jar_sha256": "bf1b4387cc7ca94fc6ef684f040d9d16fbf16248e181819f020736ea2053f177",
+          "aapt2_sha256": "1a6a396b9cd071f7040071fdd108718cb98c3c9f4960044f373b288993d19eb7",
+          "d8.jar_sha256": "4097ff9c46c185c6e7214da7fe9b1befb5adeea5cc9ca349270e0249904f9240",
+          "jdk-release_sha256": "dce6e5df2b4bfa81cf8a81cd37684d74642fdb8df8e9b8cb8f6623bbc3cfaaae",
+          "javac_sha256": "86636a66f9a67746a7cf978ee16210b314bf7012a1e7f5e11b738195af3071b3",
+          "java_sha256": "0616f6ec10e9e928236ccc09fa780d02c9467b41dc6df92bcc568a31615b75c4",
+          "ct.sym_sha256": "42177b007e41bba7814ea56483b5153526bd1b8cf3bba2a88cac9fc09977a351"
+        },
+        "commands": [
+          [
+            "<jdk>/bin/javac",
+            "--release",
+            "8",
+            "-g",
+            "-encoding",
+            "UTF-8",
+            "-proc:none",
+            "-classpath",
+            "<sdk>/platforms/android-37.0/android.jar",
+            "-d",
+            "<output>/classes",
+            "<output>/source/src/Scenario.java"
+          ],
+          [
+            "<jdk>/bin/java",
+            "-cp",
+            "<sdk>/build-tools/36.0.0/lib/d8.jar",
+            "com.android.tools.r8.D8",
+            "--debug",
+            "--min-api",
+            "23",
+            "--lib",
+            "<sdk>/platforms/android-37.0/android.jar",
+            "--output",
+            "<output>/dex",
+            "<output>/classes/org/privacytrace/controlled/c06/Scenario.class"
+          ],
+          [
+            "<sdk>/build-tools/36.0.0/aapt2",
+            "link",
+            "-I",
+            "<sdk>/platforms/android-37.0/android.jar",
+            "--manifest",
+            "<output>/source/AndroidManifest.xml",
+            "--min-sdk-version",
+            "23",
+            "--target-sdk-version",
+            "35",
+            "-o",
+            "<output>/resources.apk"
+          ]
+        ],
+        "built_at": "2026-10-10T10:06:26.528067+00:00",
+        "elapsed_seconds": 1.412
+      },
+      "prediction": {
+        "schema_version": 1,
+        "case_id": "C06",
+        "job_id": "pt910-C06",
+        "analysis_context": "CONTROLLED_EVALUATION",
+        "status": "SUCCEEDED",
+        "started_at": "2026-10-10T10:06:26.723391+00:00",
+        "input_hashes": {
+          "input.json": "6d308512ef9fe304f66d84056b05776e9f6431f717c6b47c6cabd6a75dd1c21f",
+          "policy.txt": "083d584ba8d4a7dbda9d85504bd7cb30f48ded3ca057cfa449d42ad2878f2015",
+          "candidates.json": "b0e738a337fe93cb160c232e3b2da20d3f0caaa84e9ddb2f860533b950621fcf"
+        },
+        "apk_sha256": "08d45a9f0098f3c6def96715718d6a4822b70a4f1600b581ead6e94447b3e272",
+        "source_hashes": {
+          "AndroidManifest.xml": "469f6d48b26b3ba850a121fe01b4eabd263baedd8ffa6f104127f41be242b508",
+          "src/Scenario.java": "9b1344f4a882ebf575614ed6be8959bc90ddf4c8926b6155cfc4af61790a4de4"
+        },
+        "toolchain_sha256": "69e092f12709256d1801c7d5acc2752e0123de6599026f8b70838fb0838b75b4",
+        "build_receipt_sha256": "9bf20740f353198468a49c0a68c83711802b9876adc9380cb7f43eb5bacce748",
+        "preparation": "Codex-assisted source and candidate authoring; job region intentionally unknown, with no human review asserted.",
+        "counting_unit": "case_id + data_type + ACCESS; retain all report rows",
+        "failure_policy": "Retain FAILED/PARTIAL/empty predictions; missing target is ABSTAIN",
+        "schemes": {
+          "permission_keywords": {
+            "uses": [
+              "permissions",
+              "policy artifact text",
+              "versioned permission/phrase mappings"
+            ],
+            "rows": [
+              {
+                "data_type": "MICROPHONE",
+                "statuses": [
+                  "EXACT_MATCH"
+                ]
+              }
+            ]
+          },
+          "api_flat": {
+            "uses": [
+              "same API evidence and complete descriptors",
+              "same candidates"
+            ],
+            "rows": [
+              {
+                "data_type": "MICROPHONE",
+                "behavior_id": "behavior-6c171bf2682bd75258040e4d",
+                "statuses": [
+                  "EXACT_MATCH"
+                ],
+                "evidence_ids": [
+                  "ev-6c171bf2682bd75258040e4d"
+                ],
+                "descriptors": [
+                  "Landroid/media/AudioRecord;->startRecording()V"
+                ]
+              }
+            ]
+          },
+          "privacytrace": {
+            "uses": [
+              "same evidence/candidates",
+              "applicability",
+              "policy states"
+            ],
+            "rows": [
+              {
+                "data_type": "MICROPHONE",
+                "behavior_id": "behavior-6c171bf2682bd75258040e4d",
+                "statuses": [
+                  "INSUFFICIENT_EVIDENCE"
+                ],
+                "evidence_ids": [
+                  "ev-6c171bf2682bd75258040e4d"
+                ]
+              }
+            ]
+          }
+        },
+        "errors": [],
+        "report_sha256": "cb8a467fbc85d2166a14da528c5bfef2c31b572dad54e57983cd8a6aa76dd375",
+        "ruleset_version": "0.3.0",
+        "coverage": {
+          "status": "COMPLETE",
+          "scope": "DEX_ENTRIES",
+          "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+          "behavior_limitations": [
+            "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+            "不保证覆盖反射、动态加载及运行时生成的调用。",
+            "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+            "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+            "静态潜在行为不能证明实际访问、收集或外传。"
+          ],
+          "limitations": [
+            "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+            "JADX unavailable or timed out; bytecode evidence retained"
+          ],
+          "scanned_dex": [
+            "classes.dex"
+          ],
+          "failed_dex": []
+        },
+        "generated_at": "2026-10-10T10:06:27.643021+00:00",
+        "elapsed_seconds": 0.92
+      }
+    }
+  }
+}

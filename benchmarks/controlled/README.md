@@ -25,7 +25,7 @@ uv run --project apps/api --locked --extra worker python -m privacytrace.control
 
 ## 冻结、预测、比较
 
-`input.json` 只含自建场景事实，拒绝额外字段；`policy.txt`、`candidates.json` 是人工准备的输入。本轮文本和候选由 Codex 辅助编写，未声称有真人核验，人工准备耗时未测。政策摄取仍是 `UNREVIEWED/PARTIAL/NOT_CHECKED`，C02 的明确对应也保留待复核标记。
+`input.json` 只含自建场景事实，拒绝额外字段；`policy.txt`、`candidates.json` 是手工整理的输入。本轮源码、文本和候选由 Codex 编写；用户于 2026-10-10 确认额外人工准备/核对为 **0 分钟**，没有真人核验。Agent 用时不冒充人工时间。政策摄取仍是 `UNREVIEWED/PARTIAL/NOT_CHECKED`，C02 的明确对应也保留待复核标记。
 
 先冻结独立真值和全部输入的哈希：
 
@@ -77,3 +77,5 @@ uv run --project apps/api --locked --extra worker python -m privacytrace.control
 - `scripts/verify-controlled-browser.cjs` 只停止它自己启动的进程；8000/5173 被占用时退出，不终止别人的服务。
 
 本机首次核查缺少扫描器指定的 `Ubuntu-24.04` WSL 发行版，源码构建已成功，隔离验收需用可用 Linux Docker 环境完成。工程 fixture/单测通过不替代源码 APK 端到端结果；实际通过状态以交付 SHA 的 CI 与浏览器收据为准。
+
+2026-10-10 的 Linux 源码到浏览器链路已实际通过；运行版本、三方案差异、哈希、耗时及中央 CI 阻塞见[验收记录](../../docs/stages/pt910-acceptance-20261010.md)。这份记录只证明其明确列出的 SHA，不替代后续提交的检查。

@@ -1,0 +1,8 @@
+{
+  "java_version": "24.0.2",
+  "platform": "android-37.0",
+  "platform_revision": "2",
+  "build_tools": "36.0.0",
+  "min_api": 23,
+  "java_release": "8"
+}

@@ -19,7 +19,9 @@
 
 S1 双人门槛已撤销，见 [接受决定](stages/s1-acceptance-20261009.md)。产品的本地备注可选，既不是账号认证，也不是政策已复核证明；不要求用户填写。
 
-`.github/workflows/check.yml` 是唯一交付 CI，通过 v5.0.0 对应的完整 SHA 调用中央检查，使用 `scripts/check.sh` 执行全部 API/web 回归及 CI 的 Docker 分支。自动检查由代理维护，不新增人类表单。
+`.github/workflows/check.yml` 是中央交付检查，通过 v5.0.0 对应的完整 SHA 调用中央检查，使用 `scripts/check.sh` 执行全部 API/web 回归及 CI 的 Docker 分支。PT-910 的 `.github/workflows/controlled-scenarios.yml` 另负责源码重复构建、两个受控 APK 的隔离扫描、三方案比较及实际 Chromium 验收。本任务需两项检查均绑定交付 SHA 通过；中央工程回归不能替代受控场景验收。自动检查由代理维护，不新增人类表单。
+
+2026-10-10，上游同一仓库（GitHub repository ID `1309061768`）的 owner 从 `OasisSaber` 更名为 `OasisViridis`。Actions 的 reusable workflow 引用不支持重定向，因此当前 `uses` 改用新地址；完整 SHA、policy-ref、安装来源版本和本地执行器均不变。历史来源名保留，不借此升级治理协议。
 
 缓存、事务记录、私人样本不提交。升级不自动进行；日常实现不预加载发布/升级资料。采纳工具可运行 `.themasterplan/bin/themasterplan.py verify/doctor/check-update`。
 

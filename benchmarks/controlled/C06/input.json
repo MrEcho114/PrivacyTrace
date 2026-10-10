@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "case_id": "C06",
+  "name": "C06 自建适用信息不足场景",
+  "package_name": "org.privacytrace.controlled.c06",
+  "version_code": 1,
+  "product_scope": "PrivacyTrace controlled C06",
+  "region": null,
+  "policy_regions": ["TEST_ONLY"],
+  "preparation": "Codex-assisted source and candidate authoring; job region intentionally unknown, with no human review asserted."
+}

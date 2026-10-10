@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
+from .controlled_inputs import ControlledContext
 from .isolated_scan import ROOT, ScanError, scan_isolated, validate_input
 from .job_store import JobStore
 from .models import AnalysisJob, EvaluationInput
@@ -13,7 +14,17 @@ from .policy_intake import TEAM_REVIEW_GATE, load_policy
 from .resources import taxonomy
 
 
-def run(apk, policy, name, job_id=None, timeout=120, store_dir=None, product_scope=None):
+def run(
+    apk,
+    policy,
+    name,
+    job_id=None,
+    timeout=120,
+    store_dir=None,
+    product_scope=None,
+    *,
+    controlled: ControlledContext | None = None,
+):
     store = JobStore(store_dir or ROOT / "data" / "jobs")
     job = AnalysisJob(
         id=job_id or uuid4().hex,
@@ -23,6 +34,7 @@ def run(apk, policy, name, job_id=None, timeout=120, store_dir=None, product_sco
         ruleset_version=taxonomy()["version"],
         created_at=datetime.now(timezone.utc),
         product_scope=product_scope,
+        controlled_case_id=controlled.case.case_id if controlled else None,
     )
     store.create_if_absent(job)
 
@@ -47,11 +59,20 @@ def run(apk, policy, name, job_id=None, timeout=120, store_dir=None, product_sco
             raise ScanError("POLICY_INPUT_INVALID", "Policy capture failed validation") from exc
         transition("STATIC_ANALYSIS")
         scanned = scan_isolated(apk, timeout=timeout, cancelled=cancelled)
+        if controlled and (
+            scanned["apk_sha256"] != controlled.apk_sha256
+            or scanned["package_name"] != controlled.case.package_name
+            or scanned["version_code"] != controlled.case.version_code
+            or product_scope != controlled.case.product_scope
+        ):
+            raise ScanError(
+                "CONTROLLED_BINDING_MISMATCH", "Scanned APK differs from source receipt"
+            )
         transition("POLICY_PARSING")
         job.package_name = scanned["package_name"]
         job.version_code = scanned["version_code"]
         # An unconfirmed policy region must not become an asserted APK location.
-        job.region = None
+        job.region = controlled.case.region if controlled else None
         transition("EVALUATING")
         bundle = EvaluationInput.model_validate(
             {
@@ -87,6 +108,16 @@ def run(apk, policy, name, job_id=None, timeout=120, store_dir=None, product_sco
             "human_review_gate": TEAM_REVIEW_GATE,
             "scan_errors": json.dumps(scanned.get("errors", []), ensure_ascii=True),
         }
+        if controlled:
+            tools.update(
+                {
+                    "analysis_context": "CONTROLLED_EVALUATION",
+                    "controlled_case_id": controlled.case.case_id,
+                    "controlled_build_receipt_sha256": controlled.build_receipt_sha256,
+                    "controlled_input_sha256": controlled.input_sha256,
+                    "controlled_preparation": controlled.case.preparation,
+                }
+            )
         if cancelled():
             raise ScanError("CANCELLED", "Job cancelled before report publication")
         job.state = "SUCCEEDED"

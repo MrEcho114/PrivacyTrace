@@ -1,0 +1,60 @@
+name: Controlled source scenarios
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: controlled-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-to-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '24.0.2'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+        with:
+          cmdline-tools-version: '15859902'
+          packages: 'platform-tools platforms;android-37.0 build-tools;36.0.0'
+      - name: Prepare locked application dependencies and isolated scanner
+        run: |
+          python3 -m pip install uv==0.11.23
+          uv sync --project apps/api --locked --extra worker
+          npm ci
+          docker build -f apps/api/worker.Dockerfile -t privacytrace-worker:s1 .
+      - name: Source rebuild, negative cases and isolated CLI to HTTP tests
+        run: |
+          export PRIVACYTRACE_ANDROID_SDK="$ANDROID_HOME"
+          export PRIVACYTRACE_JAVA_HOME="$JAVA_HOME"
+          export PRIVACYTRACE_DOCKER_TESTS=1
+          uv run --project apps/api --locked --extra worker pytest apps/api/tests/test_controlled_cli.py apps/api/tests/test_controlled_source_cli.py -q -p no:cacheprovider
+      - name: Freeze independent truth then run both scenarios
+        run: bash scripts/validate-controlled.sh
+      - name: Verify actual Chromium report and evidence navigation
+        run: |
+          npm install --prefix tmp/pt910-playwright --no-package-lock --no-save playwright@1.58.2
+          tmp/pt910-playwright/node_modules/.bin/playwright install --with-deps chromium
+          node scripts/verify-controlled-browser.cjs
+      - name: Retain controlled results and browser evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pt910-${{ github.event.pull_request.head.sha || github.sha }}
+          path: tmp/pt910-acceptance/
+          if-no-files-found: warn
+          retention-days: 14

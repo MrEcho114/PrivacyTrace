@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "case_id": "C02",
+  "name": "C02 自建相机声明场景",
+  "package_name": "org.privacytrace.controlled.c02",
+  "version_code": 1,
+  "product_scope": "PrivacyTrace controlled C02",
+  "region": "TEST_ONLY",
+  "policy_regions": ["TEST_ONLY"],
+  "preparation": "Codex-assisted source and candidate authoring; no human review or observed runtime behavior asserted."
+}

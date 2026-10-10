@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "counting_unit": "case_id + data_type + ACCESS; manifest CAPABILITY rows retained in reports but scored separately",
+  "targets": [
+    {"case_id":"C02","data_type":"CAMERA","action":"ACCESS","expected":"EXACT_MATCH","reason":"Camera.open() source call and an affirmative host camera clause, with known matching package/version/product/region."},
+    {"case_id":"C06","data_type":"MICROPHONE","action":"ACCESS","expected":"INSUFFICIENT_EVIDENCE","reason":"AudioRecord.startRecording() source call exists, but the job region is unknown so policy applicability cannot be established."}
+  ]
+}

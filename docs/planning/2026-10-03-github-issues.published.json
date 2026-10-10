@@ -1,0 +1,433 @@
+{
+  "repository": "MrEcho114/PrivacyTrace",
+  "writer": "Gemini gemini-3.8-flash-medium",
+  "issues": [
+    {
+      "id": "overview",
+      "number": 1,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/1",
+      "title": "PrivacyTrace 研发与交付排期追踪",
+      "body": "### 项目当前状态与基线\n项目当前代码停留在 `ee23ddb854b506ff180c00271405e3dce7a9e9e7`，已具备 Vue + FastAPI + Pydantic 框架基础与 6 状态比对规则，且已有 35 个单测通过。但目前运行依赖于磁盘合成 demo 数据，真实的 APK/DEX 分析、长政策文本解析、分析作业持久化存储和基准评测均处于待做状态。\n\n本期比赛的保底交付目标为：**1 个官方渠道国产 App + 6 至 8 个自建受控 APK 场景 + 证据可查的对照报告 + 完整提交包**。\n\n---\n\n### 阶段导航与关键时间节点\n- [S0 #2](https://github.com/MrEcho114/PrivacyTrace/issues/2) **规范确认与契约改造**（2026-10-03 至 10-04，必做）：核验环境依赖，重构数据契约以支持长文本与原句切片。\n- [S1 #3](https://github.com/MrEcho114/PrivacyTrace/issues/3) **单样本端到端跑通**（2026-10-05 至 10-08，必做）：**10/08 止损评估**。必须跑通 1 个真实样本全流程。3 至 5 条发现为预期目标，真实结果偏少则按事实交付，失败如实记录并不虚装通过。\n- [S2 #4](https://github.com/MrEcho114/PrivacyTrace/issues/4) **受控场景与基准评测**（2026-10-09 至 10-16，必做）：**10/12 止损评估**。评估并冻结可复现范围，若进度紧张优先舍弃 SDK 与在线大模型，保留证据链与人工复核；保底 6 至 8 个受控 APK 场景可推进至 10/16 完成。\n- [S3 #5](https://github.com/MrEcho114/PrivacyTrace/issues/5) **提交包与交付归档**（2026-10-17 至 10-22，必做）：**10/17 代码冻结**。停止增加新功能，全面转入离线运行验证、说明材料整理与审核提交流程。10/23 23:59:59 为官方平台截止时间，校内实际截止时间待确认且通常更早，严禁将 10/23 视作校内截止日。\n- [P1 #6](https://github.com/MrEcho114/PrivacyTrace/issues/6) **进阶探索能力**（选做，主线通过后按余力推进）：包含大模型抽取插件、第三方 SDK 特征、样本扩充与赛后动态分析预研，绝不阻塞主线提交流程。\n\n---\n\n### 角色分工说明\n- **角色 A（代码）**：负责 APK 清单与 DEX 字节码调用提取、受控测试 APK 编写。\n- **角色 B（代码）**：负责数据模型契约、政策解析规范、对照判定规则与后端持久化支持。\n- **角色 C（代码）**：负责前端证据下钻展示、复核交互、自动化测试脚本与离线环境验证。\n- **角色 D（辅助）**：负责样本与公开政策采集录入、材料与视频模板整理。技术判断与事实核验由 A/B/C 完成。\n\n<!-- privacytrace-plan:2026-10-03:overview -->"
+    },
+    {
+      "id": "S0",
+      "number": 2,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/2",
+      "title": "[S0] 规范确认与契约改造 (2026-10-03 ~ 10-04)",
+      "body": "### 阶段目标\n明确校内节点与开发环境，消除长政策文本与原句证据的字段限制，使数据模型支持证据不足和抽取失败状态。\n\n### 阶段任务清单\n- [ ] [PT-010 #7](https://github.com/MrEcho114/PrivacyTrace/issues/7)\n- [ ] [PT-511 #8](https://github.com/MrEcho114/PrivacyTrace/issues/8)\n- [ ] [PT-709 #9](https://github.com/MrEcho114/PrivacyTrace/issues/9)\n\n返回总索引：[#1](https://github.com/MrEcho114/PrivacyTrace/issues/1)\n\n<!-- privacytrace-plan:2026-10-03:S0 -->"
+    },
+    {
+      "id": "S1",
+      "number": 3,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/3",
+      "title": "[S1] 单样本端到端跑通 (2026-10-05 ~ 10-08)",
+      "body": "### 阶段目标与止损说明\n实现 1 个官方真实国产 App 的清单解析、DEX 调用提取、政策声明对照与本地结果保存。\n**10/08 止损线**：必须跑通 1 个真实样本的完整链路。输出 3 至 5 条结果为目标指引，若样本规范无问题则按实际情况记录，绝不为凑数虚构问题；若遇到技术阻塞如实记录并缩减范围，不伪装通过。\n\n### 阶段任务清单\n- [ ] [PT-101 #10](https://github.com/MrEcho114/PrivacyTrace/issues/10)\n- [ ] [PT-301 #11](https://github.com/MrEcho114/PrivacyTrace/issues/11)\n- [ ] [PT-503 #12](https://github.com/MrEcho114/PrivacyTrace/issues/12)\n- [ ] [PT-004 #13](https://github.com/MrEcho114/PrivacyTrace/issues/13)\n- [ ] [PT-807 #14](https://github.com/MrEcho114/PrivacyTrace/issues/14)\n- [ ] [PT-901 #15](https://github.com/MrEcho114/PrivacyTrace/issues/15)\n\n返回总索引：[#1](https://github.com/MrEcho114/PrivacyTrace/issues/1)\n\n<!-- privacytrace-plan:2026-10-03:S1 -->"
+    },
+    {
+      "id": "S2",
+      "number": 4,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/4",
+      "title": "[S2] 受控场景与基准评测 (2026-10-09 ~ 10-16)",
+      "body": "### 阶段目标与止损说明\n建立 6 至 8 个自建受控 APK 场景，开展基线对比实验，并在浏览器中验证异常降级。\n**10/12 止损线**：评估整体进度并冻结可复现实验范围。若时间紧迫，直接砍掉 SDK 匹配与实时大模型任务，严保代码证据、状态降级与人工复核机制。受控场景编写可推进至 10/13，基准实验与浏览器测试至 10/16 完成。\n\n### 阶段任务清单\n- [ ] [PT-902 #16](https://github.com/MrEcho114/PrivacyTrace/issues/16)\n- [ ] [PT-903 #25](https://github.com/MrEcho114/PrivacyTrace/issues/25)\n- [ ] [PT-808 #17](https://github.com/MrEcho114/PrivacyTrace/issues/17)\n\n返回总索引：[#1](https://github.com/MrEcho114/PrivacyTrace/issues/1)\n\n<!-- privacytrace-plan:2026-10-03:S2 -->"
+    },
+    {
+      "id": "S3",
+      "number": 5,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/5",
+      "title": "[S3] 提交包与交付归档 (2026-10-17 ~ 10-22)",
+      "body": "### 阶段目标与提交说明\n**10/17 代码冻结**：停止功能开发。全员转入干净环境离线验证、文案事实审校与提交流程。\n官方截止时间为 2026-10-23 23:59:59，但团队必须提前确认校内实际审核截止日，建议在 10/20 至 10/22 间完成提交，不把 10/23 当作无风险期限。\n\n### 阶段任务清单\n- [ ] [PT-904 #18](https://github.com/MrEcho114/PrivacyTrace/issues/18)\n- [ ] [PT-905 #19](https://github.com/MrEcho114/PrivacyTrace/issues/19)\n- [ ] [PT-906 #20](https://github.com/MrEcho114/PrivacyTrace/issues/20)\n\n返回总索引：[#1](https://github.com/MrEcho114/PrivacyTrace/issues/1)\n\n<!-- privacytrace-plan:2026-10-03:S3 -->"
+    },
+    {
+      "id": "P1",
+      "number": 6,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/6",
+      "title": "[P1] 进阶探索能力 (选做，不阻塞提交)",
+      "body": "### 阶段说明\n本阶段全部任务为选做项，仅在 S0 至 S3 核心任务验收且时间充裕时按需承接，任何选做任务未完成均不影响最终作品提交。\n\n### 阶段任务清单\n- [ ] [PT-506 #21](https://github.com/MrEcho114/PrivacyTrace/issues/21)\n- [ ] [PT-401 #22](https://github.com/MrEcho114/PrivacyTrace/issues/22)\n- [ ] [PT-907 #23](https://github.com/MrEcho114/PrivacyTrace/issues/23)\n- [ ] [PT-908 #24](https://github.com/MrEcho114/PrivacyTrace/issues/24)\n\n返回总索引：[#1](https://github.com/MrEcho114/PrivacyTrace/issues/1)\n\n<!-- privacytrace-plan:2026-10-03:P1 -->"
+    },
+    {
+      "id": "PT-010",
+      "number": 7,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/7",
+      "title": "[PT-010] 确认赛项要求、环境依赖与首个真实样本",
+      "body": "### 任务信息\n- **所属阶段**：[S0 #2](https://github.com/MrEcho114/PrivacyTrace/issues/2)\n- **角色分工**：A + B + C + D 协同开展\n- **建议完成日期**：2026-10-04\n- **优先级**：必做\n- **前置依赖**：无\n\n### 为什么做\n排查开发依赖，确定校内提交流程与节点，选定首个真实评测样本，避免后续因环境不一致或样本来源不明返工。\n\n### 做什么（输入与输出）\n- **输入**：竞赛通知、团队本地环境配置、候选官方应用市场样本。\n- **输出**：\n  1. 核实校内截止时间，在未取得教务或指导老师确切通知前显式标注为“待确认”，不把 10/23 官方截止时间当做学校期限；\n  2. 确认开发依赖：Python 要求 >=3.11 且 <3.14，Node.js 推荐 22.12+ 或满足 Vite 要求的 LTS 版本，确认 uv 及 lockfile 可用，检查 JDK 与 Android SDK 工具链，不擅改全局环境变量；\n  3. 选定 1 个官方渠道国产 App 作为首样本，在公开登记表 `samples/real-world/manifest.csv` 中登记既有字段：`package_name`, `version_name`, `version_code`, `apk_sha256`, `official_source_url`, `acquired_at`；真实 APK 文件仅存放在私有路径 `samples/private/`，不提交至公共代码库。\n\n### 完成标准（验收证据）\n- 校内期限明确记录核对状态；\n- 任务按角色 A（APK）、B（政策与规则）、C（前端与测试）、D（样本与材料辅助）分工，不绑定具体个人账号；\n- `samples/real-world/manifest.csv` 格式与哈希无误，真实文件已放置在忽略路径。\n\n### 怎么检查（验证计划）\n- 检查 `python --version`、`node --version`、`uv --version` 输出；\n- 检查 `samples/real-world/manifest.csv` 表头及数据行，验证哈希计算脚本；\n- 检查 `.gitignore` 确保 `samples/private/` 与真实 APK 被排除。\n\n### 这次不做\n- 不在无隔离环境下执行未知 APK；\n- 不收集任何真实用户凭证或隐私数据；\n- 不在仓库中公开发布未经授权的第三方安装包。\n\n<!-- privacytrace-plan:2026-10-03:PT-010 -->"
+    },
+    {
+      "id": "PT-511",
+      "number": 8,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/8",
+      "title": "[PT-511] 支持政策长文本与原句位置切片",
+      "body": "### 任务信息\n- **所属阶段**：[S0 #2](https://github.com/MrEcho114/PrivacyTrace/issues/2)\n- **角色分工**：B 负责主写，A 与 C 负责复核\n- **建议完成日期**：2026-10-04\n- **优先级**：必做\n- **前置依赖**：无\n\n### 为什么做\n当前代码中 `PolicyDocument.text` 上限为 200,000 字符，`Evidence.excerpt` 上限为 10,000 字符，且快照要求摘录必须与全文完全相等，导致长政策文本无法处理。需要引入全文存储哈希与原句位置坐标（span），解除摘录必须等同全文的不合理约束。\n\n### 做什么（输入与输出）\n- **输入**：现有的 Pydantic 数据模型与前端 TypeScript 类型定义。\n- **输出**：\n  1. 优化数据结构，全文保留在 artifact 并记录 SHA-256，证据摘录仅保存单句或必要原句文本；\n  2. 为原句摘录提供字符偏移范围（`start_offset`, `end_offset`），明确原文与规范化文本的对应关系；\n  3. 将“文本快照完整性”、“条款抽取状态”与“人工复核状态”拆分为独立字段；\n  4. `PolicyClaim` 增加对否定描述、限定条件与收集主体的支持；\n  5. 明确 200,000 字符的合法上限边界及超限时的错误处理，同步更新 Pydantic、JSON Schema、前端类型与存储契约。\n\n### 完成标准（验收证据）\n- 使用 12,032 字符的构造长文本测试样例及边界用例进行测试，能完整保存与定位，无截断报错；超过 200,000 字符时返回清晰错误；\n- 摘录能根据偏移量在全文中准确还原原句，文本哈希校验生效；\n- 抽取失败、未复核能够被程序区分，否定句不默认当作收集声明；\n- pytest 测试通过，前后端类型定义一致。\n\n### 怎么检查（验证计划）\n- 编写单元测试覆盖：构造的长文本测试输入、哈希不一致拦截、越界偏移拦截、否定修饰解析；\n- 执行 `pytest` 和 `ruff check` 确保已有 35 个单测与新增契约测试全部通过；\n- 执行前后端类型与 Schema 导出比对。\n\n### 这次不做\n- 不做全量法律语义建模；\n- 不引入大模型进行概率性风险评分。\n\n<!-- privacytrace-plan:2026-10-03:PT-511 -->"
+    },
+    {
+      "id": "PT-709",
+      "number": 9,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/9",
+      "title": "[PT-709] 按可信规则校验代码调用并升级声明对照状态",
+      "body": "### 任务信息\n- **所属阶段**：[S0 #2](https://github.com/MrEcho114/PrivacyTrace/issues/2)\n- **角色分工**：B 负责主写，A 负责核对\n- **建议完成日期**：2026-10-04\n- **优先级**：必做\n- **前置依赖**：[PT-511 #8](https://github.com/MrEcho114/PrivacyTrace/issues/8)\n\n### 为什么做\n比对环节需要严格依据代码证据与政策声明给出客观对照状态，避免把日志字样当成敏感行为，并在政策信息不全时准确表达证据不足，不做主观违规裁决。\n\n### 做什么（输入与输出）\n- **输入**：代码调用特征（类、方法描述符、规则 ID）与结构化政策声明。\n- **输出**：\n  1. 保持并规范 6 种对照状态：`EXACT_MATCH`、`CATEGORY_MATCH`、`NOT_DECLARED`、`POLICY_SOURCE_CONFLICT`、`AMBIGUOUS_DISCLOSURE`、`INSUFFICIENT_EVIDENCE`，比对范围收敛于数据类型声明对照（`DATA_TYPE_DISCLOSURE`）；\n  2. 敏感行为映射校验：代码证据必须包含完整方法描述符（descriptor）、`rule_id` 与对应 `ruleset`，并验证其映射有效性，禁止仅凭 `kind=API` 或日志关键词建立敏感行为结论；\n  3. 降级保护：当政策提取失败、部分缺失、附件未查或版本适用范围不确定时，归入待复核项或 `INSUFFICIENT_EVIDENCE`，不直接判定为强未声明（`NOT_DECLARED`）；\n  4. 跨来源检查：优先核实是否属于同一 App、适用版本范围、地域与业务范围，允许多个 APK 版本对应同一份政策文本；\n  5. 保持代码事实边界：收集目的（purpose）与接收方（recipient）在静态代码分析中保持 `UNKNOWN`，不使用政策文本内容回填代码事实。\n\n### 完成标准（验收证据）\n- 未完成全文复核的缺失项不输出确定性缺失结论；\n- 伪造标签或错误描述符的输入无法通过规则映射校验；\n- 针对否定声明、条件收集及部分缺失场景给出合理的对照状态；\n- 给定相同输入与规则版本，比对结果完全确定且可复现。\n\n### 怎么检查（验证计划）\n- 编写纯函数单元测试，覆盖错误 API 标签、缺失抽取降级、版本适用范围匹配、否定修饰处理等用例；\n- 运行 `pytest` 校验核验模块逻辑。\n\n### 这次不做\n- 不做出任何具有法律裁决性质的定性断言；\n- 不计算虚构的综合安全分；\n- 不通过大模型直接决定最终判定状态。\n\n<!-- privacytrace-plan:2026-10-03:PT-709 -->"
+    },
+    {
+      "id": "PT-101",
+      "number": 10,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/10",
+      "title": "[PT-101] 在受限隔离环境中解析 APK 清单与元数据",
+      "body": "### 任务信息\n- **所属阶段**：[S1 #3](https://github.com/MrEcho114/PrivacyTrace/issues/3)\n- **角色分工**：A 独立认领\n- **建议完成日期**：2026-10-06\n- **优先级**：必做\n- **前置依赖**：[PT-010 #7](https://github.com/MrEcho114/PrivacyTrace/issues/7), [PT-511 #8](https://github.com/MrEcho114/PrivacyTrace/issues/8)\n\n### 为什么做\n安全、规范地从 APK 文件中读取包名、版本信息及声明的权限列表，作为后续分析的静态输入。\n\n### 做什么（输入与输出）\n- **输入**：本地测试样本或自建 fixture 安装包。\n- **输出**：\n  1. 运行环境安全控制：在低权限容器或虚拟机中执行，默认断开网络连接，输入文件以只读方式挂载，不挂载宿主机敏感凭据，设置 CPU、内存、磁盘写入量与超时时间；若暂未具备隔离环境，仅限分析自建测试包；\n  2. 元数据解析：计算 `apk_sha256`，提取包名、`versionCode`、`versionName`；\n  3. Manifest 解析：提取所有声明的权限；\n  4. 分包识别：检测主 DEX 与分包集合，遇 split APK 或缺失情况明确标记 partial 并说明原因；\n  5. 异常处理：支持取消任务，超时或格式损坏时记录结构化错误，不崩溃退出。\n\n### 完成标准（验收证据）\n- 输入 1 个真实 APK 与损坏包、超大文件测试包，均能得到清晰的元数据或明确的错误码；\n- 仅输出权限声明事实，不推断代码实际行为；\n- 出现异常时工作进程能够恢复，不影响系统后续运行。\n\n### 怎么检查（验证计划）\n- 使用已知工具手动提取测试包 Manifest，与本工具输出的权限清单逐项比对；\n- 运行畸形 ZIP、路径穿越用例，验证安全拦截与超时恢复；\n- 检查运行环境是否保持无网与只读挂载。\n\n### 这次不做\n- 不做通用加固脱壳；\n- 不在模拟器或真机中动态运行未知 APK；\n- 不修改宿主机全局配置，不对外开放公网接口。\n\n<!-- privacytrace-plan:2026-10-03:PT-101 -->"
+    },
+    {
+      "id": "PT-301",
+      "number": 11,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/11",
+      "title": "[PT-301] 扫描 DEX 敏感调用并提取代码位置",
+      "body": "### 任务信息\n- **所属阶段**：[S1 #3](https://github.com/MrEcho114/PrivacyTrace/issues/3)\n- **角色分工**：A 独立认领\n- **建议完成日期**：2026-10-07\n- **优先级**：必做\n- **前置依赖**：[PT-101 #10](https://github.com/MrEcho114/PrivacyTrace/issues/10), [PT-511 #8](https://github.com/MrEcho114/PrivacyTrace/issues/8)\n\n### 为什么做\n在 DEX 字节码层面静态检索是否存在对敏感 API 的 invoke 调用指令，并定位具体的类与方法，生成可查证的代码线索，避免将静态存在误称为实际运行发生。\n\n### 做什么（输入与输出）\n- **输入**：经解析确认完整的 DEX 文件集合。\n- **输出**：\n  1. 遍历所有可解析的 DEX 文件（包含 Multidex 全部可用分包）；\n  2. 针对 4 至 6 类核心敏感数据（如位置、设备标识、通讯录等）扫描敏感 invoke 指令；其中粗/精细位置结合 provider 与上下文判断，不单凭权限定性；\n  3. 生成代码定位信息（locator）：包含 `apk_sha256`、DEX 条目名、调用方类与方法描述符（caller descriptor）、指令偏移（invoke offset）、目标方法描述符（target descriptor）、规则 ID 与规则集版本；\n  4. 辅助反编译展示：局部调用 JADX 反编译作为阅读参考，明确标注行号不等于源码硬保证；反编译失败时回退显示字节码指令；\n  5. 明确未覆盖范围：在报告中清晰标注加固代码、Native 动态库、Flutter 及混合开发（Hybrid）代码未在本次静态扫描覆盖内。\n\n### 完成标准（验收证据）\n- 已知测试调用点准确检出，无关普通字符串不被误报为 API 调用；\n- Multidex 分包均被扫描，不遗漏非主包；\n- 每条定位均可由人工在反编译工具中核验，相同输入下定位结果与归一化描述完全一致（不强求包含时间戳的整体报告哈希一致）。\n\n### 怎么检查（验证计划）\n- 使用自建正负样本工程进行测试，验证调用点检出情况；\n- 人工抽查真实样本中输出的调用类名、方法名与指令偏移；\n- 传入错误 API 映射用例，验证系统是否正确拦截。\n\n### 这次不做\n- 不做全局污点分析或数据流向推导；\n- 不声称代码在运行时必然执行了收集或外传；\n- 不做混淆语义反推；\n- 不分析 C/C++ 动态链接库或 Dart 字节码。\n\n<!-- privacytrace-plan:2026-10-03:PT-301 -->"
+    },
+    {
+      "id": "PT-503",
+      "number": 12,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/12",
+      "title": "[PT-503] 录入首个真实隐私政策分句与人工声明",
+      "body": "### 任务信息\n- **所属阶段**：[S1 #3](https://github.com/MrEcho114/PrivacyTrace/issues/3)\n- **角色分工**：D 负责采集与原句定位，B 与 A 负责专业最终核验\n- **建议完成日期**：2026-10-07\n- **优先级**：必做\n- **前置依赖**：[PT-010 #7](https://github.com/MrEcho114/PrivacyTrace/issues/7), [PT-511 #8](https://github.com/MrEcho114/PrivacyTrace/issues/8)\n\n### 为什么做\n为首个真实样本建立可靠的政策声明基准。由辅助角色整理原句并提取声明，再经技术角色复核，形成结构化数据与审计留痕。\n\n### 做什么（输入与输出）\n- **输入**：来自官方应用渠道的首个真实国产 App 隐私政策文本（记录来源渠道、适用版本与获取时间）。\n- **输出**：\n  1. 原始文本与处理后文本分别保存并计算 SHA-256；\n  2. 句子级无损拆分，为每句话标注字符区间坐标（span）；\n  3. 人工提取核心声明（PolicyClaim），标注数据类型、否定描述、适用条件与收集主体；\n  4. 审计留痕：任何新增或修订的 claim 必须记录原值、新值、修改理由、操作人与时间戳；\n  5. 说明边界：说明完整原文不等于完整提取了所有声明，人工复核结果供比对参考，不作为绝对法律真值。\n\n### 完成标准（验收证据）\n- 每个 claim 均能通过 span 精准定位到全文对应的原始句子；\n- 否定语句（如“不会获取您的通讯录”）与前置条件得到准确标注，不被误作为常规收集声明；\n- 人工整理的结构化数据可直接被比对逻辑读取，无需联网或依赖外部大模型接口；\n- 录入数据经由角色 B 与 A 完成最终核验。\n\n### 怎么检查（验证计划）\n- 运行自动化校验脚本，检查每个 claim 的 span 截取内容是否与引用的原句完全一致；\n- 抽查否定句与带条件句子的标注准确性；\n- 校验审阅事件记录字段完整性。\n\n### 这次不做\n- 不编写自动爬虫抓取动态政策页面；\n- 不强依赖在线大模型做实时结构化抽取；\n- 不公开未经授权的商业机构完整政策材料。\n\n<!-- privacytrace-plan:2026-10-03:PT-503 -->"
+    },
+    {
+      "id": "PT-004",
+      "number": 13,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/13",
+      "title": "[PT-004] 接入作业执行与核验结果本地持久化",
+      "body": "### 任务信息\n- **所属阶段**：[S1 #3](https://github.com/MrEcho114/PrivacyTrace/issues/3)\n- **角色分工**：B + C 协同开发\n- **建议完成日期**：2026-10-07\n- **优先级**：必做\n- **前置依赖**：[PT-511 #8](https://github.com/MrEcho114/PrivacyTrace/issues/8)\n\n### 为什么做\n目前系统展示主要依赖磁盘上的合成 fixture，真实分析作业未与持久化存储打通。需要接入轻量本地存储（SQLite 或规范 JSON 文件），保存真实分析过程与人工复核记录。\n\n### 做什么（输入与输出）\n- **输入**：[PT-101 #10](https://github.com/MrEcho114/PrivacyTrace/issues/10) 的元数据、[PT-301 #11](https://github.com/MrEcho114/PrivacyTrace/issues/11) 的代码线索、[PT-503 #12](https://github.com/MrEcho114/PrivacyTrace/issues/12) 的政策数据及 [PT-709 #9](https://github.com/MrEcho114/PrivacyTrace/issues/9) 的对照结果。\n- **输出**：\n  1. 存储结构实现：保存样本元数据、作业信息、代码证据、政策快照、核验对照及人工 review 记录；\n  2. 沿用现有作业状态枚举：`QUEUED`, `INTAKE`, `STATIC_ANALYSIS`, `POLICY_PARSING`, `EVALUATING`, `REPORTING`, `SUCCEEDED`, `FAILED`, `CANCELLED`，不随意更改命名；\n  3. 针对分析不完整的情况，通过独立的结果完整性/覆盖范围字段表达 partial 状态，并与模型 schema 保持同步；\n  4. 本地接口支持：提供查询作业状态、结果详情与记录人工复核意见的接口，服务重启后能够正确读取已存数据。\n\n### 完成标准（验收证据）\n- 后端服务重启后，已保存的真实分析报告与人工复核记录依然存在，外键与哈希引用完整；\n- 静态扫描线索、政策声明与人工复核记录清晰区分，分析失败或 partial 不伪装为正常成功；\n- 数据存储位于私有目录并受 `.gitignore` 保护，仅限本地访问，不引入 Redis 或 Celery 等重型依赖。\n\n### 怎么检查（验证计划）\n- 编写集成测试，模拟作业执行写入、服务重启重读及异常数据回滚；\n- 验证既有 API 接口调用正常且无报错；\n- 检查存储文件位置与忽略规则。\n\n### 这次不做\n- 不搭建公网部署的多用户注册登录系统；\n- 不引入复杂的分布式任务队列或图数据库。\n\n<!-- privacytrace-plan:2026-10-03:PT-004 -->"
+    },
+    {
+      "id": "PT-807",
+      "number": 14,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/14",
+      "title": "[PT-807] 前端展示真实分析作业并支持证据下钻与复核",
+      "body": "### 任务信息\n- **所属阶段**：[S1 #3](https://github.com/MrEcho114/PrivacyTrace/issues/3)\n- **角色分工**：C 独立认领\n- **建议完成日期**：2026-10-08\n- **优先级**：必做\n- **前置依赖**：[PT-004 #13](https://github.com/MrEcho114/PrivacyTrace/issues/13), [PT-301 #11](https://github.com/MrEcho114/PrivacyTrace/issues/11), [PT-503 #12](https://github.com/MrEcho114/PrivacyTrace/issues/12), [PT-709 #9](https://github.com/MrEcho114/PrivacyTrace/issues/9)\n\n### 为什么做\n改造前端页面，接入真实分析作业数据，保留已有的合成 demo 切换入口，提供证据下钻查看与人工意见提交功能。\n\n### 做什么（输入与输出）\n- **输入**：[PT-004 #13](https://github.com/MrEcho114/PrivacyTrace/issues/13) 提供的真实分析与对照数据接口。\n- **输出**：\n  1. 真实作业展示：展示分析进度与阶段状态，明确区分“合成 demo 演示”与“真实作业数据”标签；\n  2. 对照列表展示：展示 6 种匹配状态，明确说明 `EXACT_MATCH` 仅代表数据类型匹配，并不代表全维度一致；\n  3. 证据下钻查看：支持从待复核项点击下钻查看代码定位（类、方法、指令偏移）与政策原句及上下文；反编译失败时显示字节码指令；\n  4. 候选未声明项支持查看全文检索范围与审核边界；\n  5. 人工复核交互：支持在前端编辑候选 claim 或填写审阅意见，保存后触发纯规则重新评估（而不是前端直接改写最终判定）；\n  6. 展示当前规则库版本、工具版本、输入文件哈希及未覆盖说明。\n\n### 完成标准（验收证据）\n- 页面可通过 2 至 3 次点击下钻查看真实代码位置与政策原句；\n- 合成 demo 与真实分析数据标识明确，用户不会发生混淆；\n- 用户提交复核意见后，系统通过规则引擎重新计算状态，留痕记录清晰；\n- 前端生产构建通过，无类型错误。\n\n### 怎么检查（验证计划）\n- 运行 `npm run build` 和 `vue-tsc` 进行静态构建与类型检查；\n- 在浏览器中完整走通下钻流程，截图记录从待复核项到代码定位与政策原句的路径；\n- 验证提交一条人工复核后重新触发计算的过程。\n\n### 这次不做\n- 不更换现有前端技术栈；\n- 不制作复杂的大屏监控图或力导向图；\n- 不给出主观打分或卸载建议。\n\n<!-- privacytrace-plan:2026-10-03:PT-807 -->"
+    },
+    {
+      "id": "PT-901",
+      "number": 15,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/15",
+      "title": "[PT-901] 跑通首个真实国产 App 最小分析闭环",
+      "body": "### 任务信息\n- **所属阶段**：[S1 #3](https://github.com/MrEcho114/PrivacyTrace/issues/3)\n- **角色分工**：A 与 B 负责结果复核，C 负责界面联动，D 负责归档记录\n- **建议完成日期**：2026-10-08\n- **优先级**：必做（S1 止损点）\n- **前置依赖**：[PT-807 #14](https://github.com/MrEcho114/PrivacyTrace/issues/14)\n\n### 为什么做\n验证系统各模块面对真实国产 App 时的协同工作能力，完成第一个真实样本的数据闭环，确保交付物具备客观真实基础。\n\n### 做什么（输入与输出）\n- **输入**：[PT-010 #7](https://github.com/MrEcho114/PrivacyTrace/issues/7) 登记的首个真实国产 App 安装包及人工结构化政策。\n- **输出**：\n  1. 运行系统生成第一份真实样本分析报告，以获得 3 至 5 条客观事实线索（例如明确声明并调用的位置、声明未调用的权限或调用但声明模糊的 API）为目标指引；\n  2. 真实线索较少时如实记录，绝不为凑数制造问题；若分析遇阻，如实记录未覆盖原因与局部失败点，不伪造通过；\n  3. 由 A 与 B 两位技术成员逐条复核报告中的代码定位与政策原文，记录争议项与未覆盖情况；\n  4. 整理归档材料：记录输入文件哈希、脱敏后的报告截图及运行日志，真实 APK 保持私有。\n\n### 完成标准（验收证据）\n- 报告中的每项对照结果均可溯源到具体的 APK 哈希、代码定位或政策原句切片；\n- 静态扫描线索不夸大为实际发生，报告真实客观；\n- 合成 demo 与真实分析结果分界清晰；\n- 复核表填写完整，技术成员完成核对确认。\n\n### 怎么检查（验证计划）\n- 使用模板 `evidence/review.template.md` 逐条核对代码调用指令与政策原句；\n- 在相同环境下重新运行，确认输出结果与哈希一致；\n- 归档检查运行日志与界面截图。\n\n### 这次不做\n- 不向公网发布商业 App 的安装包或完整反编译代码；\n- 不做出任何越权的主观违法定性。\n\n<!-- privacytrace-plan:2026-10-03:PT-901 -->"
+    },
+    {
+      "id": "PT-902",
+      "number": 16,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/16",
+      "title": "[PT-902] 构建 6 至 8 个受控 APK 测试场景",
+      "body": "### 任务信息\n- **所属阶段**：[S2 #4](https://github.com/MrEcho114/PrivacyTrace/issues/4)\n- **角色分工**：A 与 B 编写源码与测试用例，C 负责自动化执行\n- **建议完成日期**：2026-10-13\n- **优先级**：必做（S2 核心支撑）\n- **前置依赖**：[PT-010 #7](https://github.com/MrEcho114/PrivacyTrace/issues/7), [PT-301 #11](https://github.com/MrEcho114/PrivacyTrace/issues/11), [PT-503 #12](https://github.com/MrEcho114/PrivacyTrace/issues/12), [PT-709 #9](https://github.com/MrEcho114/PrivacyTrace/issues/9)\n\n### 为什么做\n真实商业 App 逻辑复杂且不可控，必须构建由自建源码编译、具有明确真实答案的受控 APK 场景，作为客观评测系统能力的基准。\n\n### 做什么（输入与输出）\n- **输入**：自建 Android 测试工程源码及配对的隐私政策文本。\n- **输出**：\n  1. 编译构建 6 至 8 个受控 APK 场景（可多个场景合并至少数 APK 中）：\n     - 场景 1：申请权限但无敏感 API 调用；\n     - 场景 2：存在敏感 invoke 调用且政策已做对应声明；\n     - 场景 3：存在敏感 invoke 调用但政策未做声明；\n     - 场景 4：政策中声明为上位数据类别（CATEGORY_MATCH）；\n     - 场景 5：政策中包含否定描述（如“不收集通讯录”）但代码存在调用；\n     - 场景 6：政策原文完整但抽取遗漏；\n     - 场景 7：输入信息不全触发 partial 或证据不足；\n     - 场景 8：Multidex 多包下的调用检出或解析失败容错；\n  2. 固化每个场景的人工真值（Ground Truth）、预期状态与输入文件哈希；\n  3. 保持测试工程源码与构建配置独立，避免同模板导致的数据泄漏。\n\n### 完成标准（验收证据）\n- 6 至 8 个受控场景均能通过系统适配器端到端运行并输出结构化报告；\n- 既有的 35 个规则单测与本次新增的受控 APK 端到端测试计数分开统计，不互相混充；\n- 测试工程源码与构建脚本齐备，可独立重复编译复现。\n\n### 怎么检查（验证计划）\n- 执行脚本完成编译并运行全链路分析；\n- 比对系统输出状态与预设人工真值，统计匹配准确率；\n- 验证异常场景下的容错输出。\n\n### 这次不做\n- 不在受控 APK 中加入自动联网发起真实请求的代码；\n- 不使用未经验证的猜测性数据作为测试真值。\n\n<!-- privacytrace-plan:2026-10-03:PT-902 -->"
+    },
+    {
+      "id": "PT-903",
+      "number": 25,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/25",
+      "title": "[PT-903] 运行基准对比实验并记录指标与开销",
+      "body": "### 任务信息\n- **所属阶段**：[S2 #4](https://github.com/MrEcho114/PrivacyTrace/issues/4)\n- **角色分工**：C 负责编写评测脚本与运行实验，A 与 B 负责真值构建与结果核验\n- **建议完成日期**：2026-10-16\n- **优先级**：必做\n- **前置依赖**：[PT-902 #16](https://github.com/MrEcho114/PrivacyTrace/issues/16), [PT-901 #15](https://github.com/MrEcho114/PrivacyTrace/issues/15)\n\n### 为什么做\n客观评估系统各模块的真实表现，不提前预设优势。在相同输入、相同候选证据范围和独立真值下，对比本方案与基线方案的差异，以严谨的数学标准记录各项指标、误差分布与系统开销，为答辩与报告提供可复查的事实依据。\n\n### 做什么（输入与输出）\n- **输入**：[PT-902 #16](https://github.com/MrEcho114/PrivacyTrace/issues/16) 的受控场景、[PT-901 #15](https://github.com/MrEcho114/PrivacyTrace/issues/15) 的真实样本；预先独立固化的人工真值（Ground Truth）与测试集留出策略（避免同模板导致数据泄漏）。\n- **输出**：\n  1. 实施 3 组方案在同等条件下的横向比对：\n     - 基线 1（权限+关键词）：仅依据 Manifest 声明权限与政策全文中的数据类型关键词做粗粒度匹配；\n     - 基线 2（API+扁平匹配）：使用与本系统完整方案**完全相同**的 APK/DEX 候选证据及**相同正确**的 API 完整方法描述符，仅将政策类型比对简化为扁平文本名义匹配，不包含上位分类层级、覆盖门槛、降级状态机与人工复核机制（严禁故意不校验描述符来人为制造弱基线）；\n     - 方案 3（本系统完整链路）：代码证据严格映射 + 规则状态机（含 6 状态、否定/条件处理与降级保护）+ 人工复核交互；\n  2. 评测维度专项拆解：\n     - 证据检出与映射：评估敏感调用点（类名、方法描述符、指令偏移）提取与规则映射的准确度；\n     - 政策条款抽取评估：对人工结构化条款，分别评估数据类型（data_type）、否定修饰（polarity）与限定条件（condition）的标注一致性与覆盖情况，不把本期未实际实施的大模型抽取硬塞为必测项；\n     - 判定状态混淆矩阵：按各对照状态（如 EXACT_MATCH、CATEGORY_MATCH、NOT_DECLARED、INSUFFICIENT_EVIDENCE 等）分别统计混淆矩阵；\n  3. 指标数学标准与开销记录：\n     - 严格遵循标准数学公式：Precision = TP / (TP + FP)，Recall = TP / (TP + FN)，F1 = 2 * Precision * Recall / (Precision + Recall)；零分母统一标注为 N/A；\n     - 异常样本口径处理：失败、partial 与弃判样本不随意加为传统 P/R 分母中的 FP，必须保留在全样本的“覆盖率”、“解析成功率”与“弃判率”统计分母中，并明确说明如何计入各个可测目标的漏报（FN）或归为不可测状态，严禁悄悄删除困难样本；\n     - 算法自动给出的候选结果与人工修正后的最终结果分列两组独立统计；\n     - 受控真值按可测目标计数；对商业闭源 App，明确指出代码全局真实行为在客观上不可测，不虚构召回率；\n     - 记录端到端分析耗时、内存峰值与人工复核时间。\n\n### 完成标准（验收证据）\n- 生成自动化评测脚本与输出报表（Markdown 与 JSON 格式），计算公式与分母口径完全符合数学规范；\n- 报表数据全部来自真实运行统计，无测试数据前不写任何“提升”结论，零分母如实标注 N/A；\n- 混淆矩阵与全样本覆盖率指标自洽，困难样本、失败样本有清晰留痕；\n- 实验所用的输入哈希、规则版本与运行环境参数清晰记入报告。\n\n### 怎么检查（验证计划）\n- 运行基准测试 runner 脚本，验证能否自动跑完全部对比用例并导出统计文件；\n- 检查基线 2 的实现代码，确认其使用了与方案 3 相同的完整方法描述符与解析输入；\n- 抽查受控场景的人工真值，核对 TP/FP/FN 与计算出的 Precision/Recall/F1 数值；\n- 核实困难样本未被剔除，分母统计口径无误。\n\n### 这次不做\n- 不提前假设或宣称本方案优于基线方案；\n- 不通过故意削弱基线 2 的代码解析能力来反衬方案效果；\n- 不在统计中悄悄移除解析失败或 partial 的样本；\n- 不把未落地的实时大模型抽取作为必测项；\n- 不对商业闭源 App 做出无法实测验证的全局行为召回率断言。\n\n<!-- privacytrace-plan:2026-10-03:PT-903 -->"
+    },
+    {
+      "id": "PT-808",
+      "number": 17,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/17",
+      "title": "[PT-808] 浏览器实测、异常降级与复核联动检查",
+      "body": "### 任务信息\n- **所属阶段**：[S2 #4](https://github.com/MrEcho114/PrivacyTrace/issues/4)\n- **角色分工**：C 独立认领\n- **建议完成日期**：2026-10-16\n- **优先级**：必做\n- **前置依赖**：[PT-807 #14](https://github.com/MrEcho114/PrivacyTrace/issues/14), [PT-709 #9](https://github.com/MrEcho114/PrivacyTrace/issues/9)\n\n### 为什么做\n在实际浏览器环境下测试界面交互，重点检验边界长文本、模型关闭、反编译失败、网络超时等异常条件下的系统稳定性与安全性。\n\n### 做什么（输入与输出）\n- **输入**：包含正常报告、长篇政策（许可长度范围内的长文本）、反编译异常、分析超时的测试数据。\n- **输出**：\n  1. 浏览器实测：在主流浏览器中测试核心交互，验证控制台无未捕获 JavaScript 错误；\n  2. 展示安全：政策原句与代码证据做纯文本安全渲染，测试恶意 HTML 注入用例，杜绝 XSS 风险；\n  3. 容错表现：在大模型关闭、JADX 反编译失败、数据 partial、分析超时或任务取消时，界面正常展示降级提示或字节码指令，不白屏卡死；\n  4. 明确标识缓存回放与实时生成的数据来源；\n  5. 前端复核修改 claim 后，触发后端纯规则重新评估并正确展示状态变化，不直接由前端篡改最终判定。\n\n### 完成标准（验收证据）\n- 在实测浏览器中操作证据展开、下钻与复核流程顺畅，控制台无未捕获异常；\n- 恶意注入测试用例被转义显示，无代码执行风险；\n- 构建错误完全修复，如有编译 warning 如实记录，不夸大宣称零告警；\n- 各种异常降级场景均有可复现的界面表现。\n\n### 怎么检查（验证计划）\n- 逐项在浏览器中执行测试用例并检查开发者工具 Console 面板；\n- 输入包含 `<script>` 等标签的特殊文本进行渲染验证；\n- 截取长文本渲染、降级提示与复核流转界面的完整截图。\n\n### 这次不做\n- 不以单一接口测试通过替代界面实际测试；\n- 不做未经测试的全平台全浏览器兼容性断言；\n- 不在界面中添加缺乏实用价值的动画效果。\n\n<!-- privacytrace-plan:2026-10-03:PT-808 -->"
+    },
+    {
+      "id": "PT-904",
+      "number": 18,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/18",
+      "title": "[PT-904] 制作离线提交包并在独立环境验证回放",
+      "body": "### 任务信息\n- **所属阶段**：[S3 #5](https://github.com/MrEcho114/PrivacyTrace/issues/5)\n- **角色分工**：C 负责打包，A 与 B 负责验收\n- **建议完成日期**：2026-10-18\n- **优先级**：必做（10/17 代码冻结后实施）\n- **前置依赖**：[PT-808 #17](https://github.com/MrEcho114/PrivacyTrace/issues/17), [PT-903 #25](https://github.com/MrEcho114/PrivacyTrace/issues/25)\n\n### 为什么做\n确保提交的作品能在断网、无外部大模型密钥的评审环境下顺利运行，并能通过离线回放模式完整查看预冻结的分析报告。\n\n### 做什么（输入与输出）\n- **输入**：冻结的代码、依赖锁文件、预先生成的分析报告快照与测试样本。\n- **输出**：\n  1. 构建离线交付包，包含前端构建静态文件、后端源码、锁定版本的依赖清单及预置数据；\n  2. 编写单机运行操作指引，清晰记录系统启动步骤与前置依赖要求；\n  3. 提供离线回放功能：在无大模型 API 密钥且无外网连接时，可直接查阅预冻结的报告，明确标注“离线回放数据”及生成时间；\n  4. 实测验证依赖离线安装的可行性，不夸大宣称“任何全新电脑一键秒级运行”；\n  5. 清理包内文件：彻底移除私有凭证、临时调试文件与未授权的商业二进制文件。\n\n### 完成标准（验收证据）\n- 按照说明文档在独立或干净环境中能正常启动服务并访问离线回放报告；\n- 交付包内无任何硬编码密钥或未授权数据，文件清单与 SHA-256 记录完整；\n- 最终的 pytest、Ruff 检查、类型检查与前端 build 均有通过记录，结果记录在案。\n\n### 怎么检查（验证计划）\n- 在独立环境或虚拟机中解压该包，断开网络执行启动命令并验证页面功能；\n- 运行敏感词与私钥扫描脚本，检查包内是否存在 `.env` 或凭据文件；\n- 核对包内文件清单与哈希值。\n\n### 这次不做\n- 不向公开代码库发布未授权的商业依赖或正式 Release；\n- 绝不通过虚假录屏将离线回放伪装成是实时联网分析。\n\n<!-- privacytrace-plan:2026-10-03:PT-904 -->"
+    },
+    {
+      "id": "PT-905",
+      "number": 19,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/19",
+      "title": "[PT-905] 编写说明文档、答辩视频与实际贡献说明",
+      "body": "### 任务信息\n- **所属阶段**：[S3 #5](https://github.com/MrEcho114/PrivacyTrace/issues/5)\n- **角色分工**：由 Gemini 起草文案，D 负责材料与模板，A/B/C 负责技术事实审校并反馈 Gemini 修订\n- **建议完成日期**：2026-10-20\n- **优先级**：必做（从 PT-010 后即可着手草稿，最终核验依赖 PT-904）\n- **前置依赖**：[PT-010 #7](https://github.com/MrEcho114/PrivacyTrace/issues/7)\n\n### 为什么做\n真实、清晰地呈现作品技术内容与团队工作，说明生成式 AI 工具的具体应用边界与队员的实际贡献，确保学术诚信。\n\n### 做什么（输入与输出）\n- **输入**：项目架构设计（参考 `docs/architecture.md`）、[PT-903 #25](https://github.com/MrEcho114/PrivacyTrace/issues/25) 的实验数据及 [PT-904 #18](https://github.com/MrEcho114/PrivacyTrace/issues/18) 的交付物。\n- **输出**：\n  1. 落实撰写协作流程：由 Gemini 起草产品介绍、技术报告文案与答辩说明，代码成员 A、B、C 逐条审校技术事实并反馈，由 Gemini 统一修订迭代；\n  2. 编制技术说明文档与演示文稿，录制 3 至 5 分钟的真实系统演示视频；\n  3. 梳理开源组件与数据许可清单，明确区分自研代码与第三方工具边界；\n  4. 编写《生成式 AI 使用说明》：客观说明使用的 AI 工具型号、具体应用环节（如脚手架生成、文案润色）、Prompt 与工作流、人工筛选与修改内容、学生原创贡献；\n  5. 语言风格保持平实人话，彻底剔除套话空话，未核验的参赛细则不随意猜测。\n\n### 完成标准（验收证据）\n- 第三方组件与团队自研成果边界清晰准确；\n- 视频演示内容完全取材于真实可运行的系统界面，无虚假夸大剪辑；\n- 文档中不出现“绝对自研”、“隐私测谎仪”等不实词汇，真实反映现状与局限；\n- 最终文案与 [PT-904 #18](https://github.com/MrEcho114/PrivacyTrace/issues/18) 交付物的实际状态完全吻合。\n\n### 怎么检查（验证计划）\n- 对照实际系统界面核验视频演示步骤；\n- 全体技术成员逐段通读报告，核对技术事实；\n- 检查第三方开源许可清单完整性。\n\n### 这次不做\n- 不要求非技术成员独立裁定代码真实性；\n- 不在申报材料中涉及队员个人隐私或敏感人事信息；\n- 不做未经证实的获奖宣传。\n\n<!-- privacytrace-plan:2026-10-03:PT-905 -->"
+    },
+    {
+      "id": "PT-906",
+      "number": 20,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/20",
+      "title": "[PT-906] 核对校内与赛项要求并组织提前提交",
+      "body": "### 任务信息\n- **所属阶段**：[S3 #5](https://github.com/MrEcho114/PrivacyTrace/issues/5)\n- **角色分工**：团队负责人 + 指导老师主核，D 协助整理\n- **建议完成日期**：2026-10-21\n- **优先级**：必做\n- **前置依赖**：[PT-904 #18](https://github.com/MrEcho114/PrivacyTrace/issues/18), [PT-905 #19](https://github.com/MrEcho114/PrivacyTrace/issues/19)\n\n### 为什么做\n严格按官方与校内规定核对文件格式与提交资格，预留充足缓冲时间完成最终提交，防止延误。\n\n### 做什么（输入与输出）\n- **输入**：全部工程文件、文档材料、演示视频及官方报名系统规范。\n- **输出**：\n  1. 核实校内具体提交截止时间，若校内要求早于 10/23 则按校内时间逆排；建议在 10/20 至 10/22 间提前完成最终提交；\n  2. 逐项核对材料格式、文件命名、附件大小限制与参赛资格声明；\n  3. 由指导老师与负责人完成材料在官方报名系统的上传与最终提交；\n  4. 保存提交成功的完整回执与时间戳记录。\n\n### 完成标准（验收证据）\n- 材料格式与文件大小完全符合赛项要求，压缩包经重新下载解压检验无损坏；\n- 所有必做任务均已通过实际验收，未完成项如实归入未来规划，不虚假填报；\n- 获得报名系统官方回执并私下安全归档。\n\n### 怎么检查（验证计划）\n- 重新下载已上传的附件包，验证文件完整性与视频可播放性；\n- 核对回执状态并由指导老师与团队共同确认。\n\n### 这次不做\n- 不由自动化工具代签、代报名或代上传；\n- 绝不把 10/23 官方截止时间当做校内流程的无风险最后期限；\n- 不虚构参赛状态或竞赛荣誉。\n\n<!-- privacytrace-plan:2026-10-03:PT-906 -->"
+    },
+    {
+      "id": "PT-506",
+      "number": 21,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/21",
+      "title": "[PT-506] 接入可选的大模型政策辅助抽取插件",
+      "body": "### 任务信息\n- **所属阶段**：[P1 #6](https://github.com/MrEcho114/PrivacyTrace/issues/6)\n- **角色分工**：B 负责\n- **建议完成日期**：主线任务全部完成后视余力开展\n- **优先级**：选做（绝不阻塞提交）\n- **前置依赖**：[PT-503 #12](https://github.com/MrEcho114/PrivacyTrace/issues/12), [PT-709 #9](https://github.com/MrEcho114/PrivacyTrace/issues/9), [PT-901 #15](https://github.com/MrEcho114/PrivacyTrace/issues/15)\n\n### 为什么做\n探索利用大语言模型辅助人工快速提取政策声明的可行性，作为可选插件实现，验证系统的模块扩展能力。\n\n### 做什么（输入与输出）\n- **输入**：经由 [PT-503 #12](https://github.com/MrEcho114/PrivacyTrace/issues/12) 分句处理后的政策文本。\n- **输出**：\n  1. 实现可随时启闭的 LLM 抽取插件；\n  2. 针对单句或上下文提取候选声明，并进行严格的 JSON Schema 与原句引用校验；\n  3. 记录模型版本、Prompt 版本与抽取规则版本，支持抽取失败重试与本地缓存；\n  4. 外部文本隔离防护：防范政策文本中的提示词注入；\n  5. 明确边界：原句引用存在不代表模型理解语义完全无误，抽取失败或异常时只能转入待复核，绝不自动升级为强缺失；密钥仅通过后端环境变量配置。\n\n### 完成标准（验收证据）\n- 在大模型关闭或无网络状态下，系统无缝回退至纯人工声明处理链路，无报错；\n- 模型输出的不符合原文引用的幻觉内容被校验逻辑准确拦截；\n- 记录抽取的调用时间、Token 消耗与错误处理情况。\n\n### 怎么检查（验证计划）\n- 编写 Mock 测试验证畸形 JSON 返回、错误原句引用及提示词注入时的拦截处理；\n- 使用少量真实政策句子进行抽取实验，比对人工真值。\n\n### 这次不做\n- 不允许大模型直接给出最终的判定裁决；\n- 不将大模型实时在线调用作为系统运行或提实验收的前提条件。\n\n<!-- privacytrace-plan:2026-10-03:PT-506 -->"
+    },
+    {
+      "id": "PT-401",
+      "number": 22,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/22",
+      "title": "[PT-401] 识别常见第三方 SDK 特征签名",
+      "body": "### 任务信息\n- **所属阶段**：[P1 #6](https://github.com/MrEcho114/PrivacyTrace/issues/6)\n- **角色分工**：A 负责\n- **建议完成日期**：主线任务全部完成后视余力开展\n- **优先级**：选做（绝不阻塞提交）\n- **前置依赖**：[PT-301 #11](https://github.com/MrEcho114/PrivacyTrace/issues/11), [PT-901 #15](https://github.com/MrEcho114/PrivacyTrace/issues/15)\n\n### 为什么做\n为代码中的调用点提供参考性的第三方归属提示，帮助分析人员区分调用是来自 App 自身还是第三方代码。\n\n### 做什么（输入与输出）\n- **输入**：[PT-301 #11](https://github.com/MrEcho114/PrivacyTrace/issues/11) 输出的代码类路径与调用特征。\n- **输出**：\n  1. 建立具有明确公开依据的有限 SDK 特征签名集合（明确来源出处、许可与规则版本）；\n  2. 启发式匹配：判断调用点是否落在已知 SDK 包路径范围内，输出参考标签；\n  3. 明确边界：SDK 的静态存在不等于实际收集或外发，SDK 自身政策不能替代宿主 App 的声明，启发式归属不构成法律主体认定。\n\n### 完成标准（验收证据）\n- 在自建测试样本中，能正确标记已知 SDK 特征范围内的调用点；\n- 负例测试：结构相似的自定义类不发生误碰；\n- 明确声明这仅是小范围有据签名，不作覆盖全国产生态的过度承诺。\n\n### 怎么检查（验证计划）\n- 使用包含和不包含特定签名的测试用例验证匹配准确性；\n- 检查签名来源的公开依据与版本记录。\n\n### 这次不做\n- 不声称构建了全量商业 SDK 数据库；\n- 不把“检测到某 SDK”直接判定为存在隐私违规；\n- 不自动推测第三方服务器地址或数据用途。\n\n<!-- privacytrace-plan:2026-10-03:PT-401 -->"
+    },
+    {
+      "id": "PT-907",
+      "number": 23,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/23",
+      "title": "[PT-907] 补充测试样本与开展非技术人员理解测试",
+      "body": "### 任务信息\n- **所属阶段**：[P1 #6](https://github.com/MrEcho114/PrivacyTrace/issues/6)\n- **角色分工**：A/B/C 提供技术支持，D 负责招募与记录\n- **建议完成日期**：主线任务全部完成后视余力开展\n- **优先级**：选做（绝不阻塞提交）\n- **前置依赖**：[PT-901 #15](https://github.com/MrEcho114/PrivacyTrace/issues/15), [PT-903 #25](https://github.com/MrEcho114/PrivacyTrace/issues/25), [PT-808 #17](https://github.com/MrEcho114/PrivacyTrace/issues/17)\n\n### 为什么做\n在完成保底目标后，视余力补充代表性样本，并邀请不熟悉隐私技术的普通用户阅读报告，测试界面的易读性与理解准确度。\n\n### 做什么（输入与输出）\n- **输入**：3 个代表性真实 App + 1 个复杂挑战 App，12 至 16 个自建场景（冲刺目标，非保底）；邀请 6 至 10 位非项目且不熟悉隐私技术的参与者（不限定非计算机专业）。\n- **输出**：\n  1. 运行系统分析新增样本，如实记录分析过程中遇到的加固、反编译不完整等实际困难，不掩盖失败情况；\n  2. 组织匿名理解测试：对比普通权限清单+政策原篇与本系统报告，采用交叉顺序或等价案例避免学习偏差；\n  3. 记录任务指标：准确判断数、定位证据所需耗时及概念误解计数；\n  4. 规范用语：使用客观中立的描述，不使用容易误导普通用户的词汇暗示违法。\n\n### 完成标准（验收证据）\n- 真实记录新增样本的分析情况（包含 partial 或分析受限的案例）；\n- 整理客观的用户测试记录与匿名知情同意书，不伪造数据；\n- 本项作为探索性补充，不拖延主线提交流程。\n\n### 怎么检查（验证计划）\n- 检查新增样本的哈希记录与运行日志；\n- 抽查用户测试记录与反馈问卷。\n\n### 这次不做\n- 不强行追求必须达成 7 个真实 App；\n- 不伪造测试人数或调查数据；\n- 不根据小样本测试宣称具备普遍显著统计结论。\n\n<!-- privacytrace-plan:2026-10-03:PT-907 -->"
+    },
+    {
+      "id": "PT-908",
+      "number": 24,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/24",
+      "title": "[PT-908] 动态分析与高阶代码分析后续演进调研",
+      "body": "### 任务信息\n- **所属阶段**：[P1 #6](https://github.com/MrEcho114/PrivacyTrace/issues/6)\n- **角色分工**：后续规划，赛后分配\n- **建议完成日期**：赛后规划（本届不实施）\n- **优先级**：选做（技术积累与调研备忘）\n- **前置依赖**：[PT-904 #18](https://github.com/MrEcho114/PrivacyTrace/issues/18), [PT-903 #25](https://github.com/MrEcho114/PrivacyTrace/issues/25)\n\n### 为什么做\n为系统长期发展梳理技术路线，针对动态分析与深度污点分析的技术可行性进行前期调研，为答辩中的“未来工作”提供客观依据。\n\n### 做什么（输入与输出）\n- **输入**：动态沙箱技术方案、FlowDroid 官方技术文档及公开基准。\n- **输出**：\n  1. 撰写技术路线预研备忘录；\n  2. 针对自建或授权小样本，评估动态监控与 FlowDroid source-sink 真实标记的成本与资源覆盖边界；\n  3. 明确网络安全控制边界：对于证书绑定（SSL Pinning）导致无法解密流量的情况，记录为未知，完全不做绕过尝试；\n  4. 评估在完整仓库持续集成（CI）与版本差异（Delta）分析中引入稳定证据标识的可行性。\n\n### 完成标准（验收证据）\n- 产出清晰客观的调研备忘录，明确注明技术边界；\n- 答辩材料中明确将其标识为“未来规划”，不宣称本届已实现；\n- 方案设计符合安全合规边界。\n\n### 怎么检查（验证计划）\n- 审阅调研备忘录的技术合理性与合规边界。\n\n### 这次不做\n- 本届比赛周期内不开发任何脱壳或安全对抗工具；\n- 不对未授权的第三方 App 进行自动化动态发包测试。\n\n<!-- privacytrace-plan:2026-10-03:PT-908 -->"
+    }
+  ],
+  "remoteAudit": [
+    {
+      "id": "overview",
+      "number": 1,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/1",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "S0",
+      "number": 2,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/2",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "S1",
+      "number": 3,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/3",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "S2",
+      "number": 4,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/4",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "S3",
+      "number": 5,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/5",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "P1",
+      "number": 6,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/6",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-010",
+      "number": 7,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/7",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-511",
+      "number": 8,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/8",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-709",
+      "number": 9,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/9",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-101",
+      "number": 10,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/10",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-301",
+      "number": 11,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/11",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-503",
+      "number": 12,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/12",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-004",
+      "number": 13,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/13",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-807",
+      "number": 14,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/14",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-901",
+      "number": 15,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/15",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-902",
+      "number": 16,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/16",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-903",
+      "number": 25,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/25",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-808",
+      "number": 17,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/17",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-904",
+      "number": 18,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/18",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-905",
+      "number": 19,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/19",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-906",
+      "number": 20,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/20",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-506",
+      "number": 21,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/21",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-401",
+      "number": 22,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/22",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-907",
+      "number": 23,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/23",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    },
+    {
+      "id": "PT-908",
+      "number": 24,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/24",
+      "ok": true,
+      "bodyMatches": true,
+      "titleMatches": true,
+      "state": "open",
+      "unassigned": true
+    }
+  ]
+}

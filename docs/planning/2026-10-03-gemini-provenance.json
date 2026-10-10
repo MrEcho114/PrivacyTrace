@@ -1,0 +1,17 @@
+{
+  "writer": "Gemini",
+  "model": "gemini-3.8-flash-medium",
+  "conversation_id": "4254f247-0cfe-4dda-836d-70464e8ef281",
+  "status": "SUCCESS",
+  "duration_seconds": 65.1871782,
+  "raw_sha256": "58798123c0944c4e627a9bd17d01685988fd04e03a07d75c08d413b466ebb4c9",
+  "draft_sha256": "8dd4cf498ec652d5a4374caa6b2fce01d2f5036df588acba064d212ebeac02f2",
+  "facts_sha256": "fb920cd97b8205e79d56ed9d80b8ecf292451d277bbf624851ec79a4dd8e27bc",
+  "scope": "Issue文案；主代理核对技术事实并替换依赖链接；未开始代码开发",
+  "review_status": "facts_reviewed_and_25_remote_readbacks_verified",
+  "revision_raw_sha256": "35a9a813ae9f6f4d67b91740aaf9f87c32bc87c862e4b1a1c62c085f60923abf",
+  "metrics_final_raw_sha256": "e4c89effbbf21509a1b2b8621a40c74b8df01533e588815ef47941c14f791840",
+  "final_copy_sha256": "58815958b1b402a2069feac858155961ce53e17781bd96506cacde3094b85cb7",
+  "published_copy_sha256": "b5f4ccc7a7a038bc9e79eb5217e3f39225eb41ad793780b5809c24e249eda9ac",
+  "publication_edits": "Only mechanical task/phase/overview link replacement and stable HTML id marker; prose and titles are Gemini-generated"
+}

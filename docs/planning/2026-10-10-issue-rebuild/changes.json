@@ -1,0 +1,296 @@
+{
+  "repository": "MrEcho114/PrivacyTrace",
+  "date": "2026-10-10",
+  "status": "remote_verified",
+  "authorization_boundary": "用户明确确认按这版同步GitHub：新增1张、更新11张、关闭S0#2、补齐标签和6条依赖；不包括功能实现或代码交付。",
+  "main_sha": "7e2e018c18a9db4159687b932e0d9b064a8428ec",
+  "source_snapshots": [
+    "../2026-10-10-issues.snapshot.json",
+    "../2026-10-10-prs.snapshot.json",
+    "dependencies.snapshot.json",
+    "spec-30.snapshot.json"
+  ],
+  "create_labels_if_missing": [
+    {
+      "name": "ready-for-agent",
+      "color": "0E8A16",
+      "description": "已充分说明，可交给agent实施；仍须检查open blockers"
+    },
+    {
+      "name": "ready-for-human",
+      "color": "FBCA04",
+      "description": "需要人工实施或决定的任务"
+    }
+  ],
+  "create": [
+    {
+      "key": "PT-910",
+      "title": "[PT-910] 打通 C02/C06 最小受控对照闭环",
+      "body_file": "issues/new-PT-910.md",
+      "labels": [
+        "ready-for-agent"
+      ],
+      "parent": 30
+    }
+  ],
+  "update": [
+    {
+      "number": 1,
+      "title": "PrivacyTrace 研发与交付排期追踪（2026-10-10 重建）",
+      "body_file": "issues/issue-1.md",
+      "add_labels": [
+        "documentation"
+      ],
+      "state_after": "OPEN",
+      "preserve_existing_labels": true,
+      "preserve_assignees": true,
+      "preserve_milestone": true,
+      "baseline": {
+        "title": "PrivacyTrace 研发与交付排期追踪",
+        "state": "OPEN",
+        "updatedAt": "2026-10-09T10:32:07Z",
+        "body_sha256": "d9a90c4489b81228f30475f78a305156a7bae78f6b17205412309825478367bb"
+      }
+    },
+    {
+      "number": 2,
+      "title": "[S0] 契约与规则基线已交付（阶段收尾）",
+      "body_file": "issues/issue-2.md",
+      "add_labels": [
+        "documentation"
+      ],
+      "state_after": "CLOSED",
+      "preserve_existing_labels": true,
+      "preserve_assignees": true,
+      "preserve_milestone": true,
+      "baseline": {
+        "title": "[S0] 规范确认与契约改造 (2026-10-03 ~ 10-04)",
+        "state": "OPEN",
+        "updatedAt": "2026-10-03T12:13:15Z",
+        "body_sha256": "058fa590036be9ca8287a2c7fdae5b2569e7f425789cc2195078a7c43c2f791b"
+      }
+    },
+    {
+      "number": 4,
+      "title": "[S2] 六场景受控对照与公平评测（10/12 双场景检查）",
+      "body_file": "issues/issue-4.md",
+      "add_labels": [
+        "ready-for-agent"
+      ],
+      "state_after": "OPEN",
+      "preserve_existing_labels": true,
+      "preserve_assignees": true,
+      "preserve_milestone": true,
+      "baseline": {
+        "title": "[S2] 受控场景与基准评测 (2026-10-09 ~ 10-16)",
+        "state": "OPEN",
+        "updatedAt": "2026-10-03T08:32:11Z",
+        "body_sha256": "b7f56b4d64c12bbae4e5c5af23f3fda5cc6883f66961843104cc1b856021d966"
+      }
+    },
+    {
+      "number": 5,
+      "title": "[S3] 10/16 离线首验、10/17 冻结与提交归档",
+      "body_file": "issues/issue-5.md",
+      "add_labels": [
+        "documentation"
+      ],
+      "state_after": "OPEN",
+      "preserve_existing_labels": true,
+      "preserve_assignees": true,
+      "preserve_milestone": true,
+      "baseline": {
+        "title": "[S3] 提交包与交付归档 (2026-10-17 ~ 10-22)",
+        "state": "OPEN",
+        "updatedAt": "2026-10-03T08:32:20Z",
+        "body_sha256": "56e70977068cf1bc03ed4d0d930f0ecc802ce5da823e81d86124f27c317420c5"
+      }
+    },
+    {
+      "number": 6,
+      "title": "[P1] 后续探索需求（本期暂停，不阻塞主线）",
+      "body_file": "issues/issue-6.md",
+      "add_labels": [
+        "documentation"
+      ],
+      "state_after": "OPEN",
+      "preserve_existing_labels": true,
+      "preserve_assignees": true,
+      "preserve_milestone": true,
+      "baseline": {
+        "title": "[P1] 进阶探索能力 (选做，不阻塞提交)",
+        "state": "OPEN",
+        "updatedAt": "2026-10-03T08:32:35Z",
+        "body_sha256": "7c5ffa34f953acbe213c35eea97af1be10b7a920cec3f287b2f52301b5f2b67b"
+      }
+    },
+    {
+      "number": 16,
+      "title": "[PT-902] 扩至六个源码构建受控场景",
+      "body_file": "issues/issue-16.md",
+      "add_labels": [
+        "ready-for-agent"
+      ],
+      "state_after": "OPEN",
+      "preserve_existing_labels": true,
+      "preserve_assignees": true,
+      "preserve_milestone": true,
+      "baseline": {
+        "title": "[PT-902] 构建 6 至 8 个受控 APK 测试场景",
+        "state": "OPEN",
+        "updatedAt": "2026-10-03T08:28:15Z",
+        "body_sha256": "1521fe516ba401d5bf34f2a8f919ca0eaed0a4173742d4a27b6d4a1bee824e8f"
+      }
+    },
+    {
+      "number": 17,
+      "title": "[PT-808] 实际浏览器异常与回放来源验收",
+      "body_file": "issues/issue-17.md",
+      "add_labels": [
+        "ready-for-agent"
+      ],
+      "state_after": "OPEN",
+      "preserve_existing_labels": true,
+      "preserve_assignees": true,
+      "preserve_milestone": true,
+      "baseline": {
+        "title": "[PT-808] 浏览器实测、异常降级与复核联动检查",
+        "state": "OPEN",
+        "updatedAt": "2026-10-03T08:28:27Z",
+        "body_sha256": "d087a043afa260649c2aeb9881cec3ee27bf79c10fed180f94b06b1f5cf9ab3a"
+      }
+    },
+    {
+      "number": 18,
+      "title": "[PT-904] 干净环境断网回放交付包",
+      "body_file": "issues/issue-18.md",
+      "add_labels": [
+        "ready-for-agent"
+      ],
+      "state_after": "OPEN",
+      "preserve_existing_labels": true,
+      "preserve_assignees": true,
+      "preserve_milestone": true,
+      "baseline": {
+        "title": "[PT-904] 制作离线提交包并在独立环境验证回放",
+        "state": "OPEN",
+        "updatedAt": "2026-10-03T08:34:48Z",
+        "body_sha256": "fbf46f8e23ff4c8b6fe357856d79a849f2a38dc222660455c6341852d93a63e4"
+      }
+    },
+    {
+      "number": 19,
+      "title": "[PT-905] 完成与真实交付一致的说明与演示",
+      "body_file": "issues/issue-19.md",
+      "add_labels": [
+        "ready-for-agent"
+      ],
+      "state_after": "OPEN",
+      "preserve_existing_labels": true,
+      "preserve_assignees": true,
+      "preserve_milestone": true,
+      "baseline": {
+        "title": "[PT-905] 编写说明文档、答辩视频与实际贡献说明",
+        "state": "OPEN",
+        "updatedAt": "2026-10-03T08:34:57Z",
+        "body_sha256": "e51b7ec329b98fbdb41beea134abebbbb5a08c3ff55dfacd243b186f215d544f"
+      }
+    },
+    {
+      "number": 20,
+      "title": "[PT-906] 核对规则与提前正式提交",
+      "body_file": "issues/issue-20.md",
+      "add_labels": [
+        "ready-for-human"
+      ],
+      "state_after": "OPEN",
+      "preserve_existing_labels": true,
+      "preserve_assignees": true,
+      "preserve_milestone": true,
+      "baseline": {
+        "title": "[PT-906] 核对校内与赛项要求并组织提前提交",
+        "state": "OPEN",
+        "updatedAt": "2026-10-03T08:29:01Z",
+        "body_sha256": "70fd78f7a52faea21b3eda85faf031d4d2c46fcafa0e80cb7f7c670e6c86220f"
+      }
+    },
+    {
+      "number": 25,
+      "title": "[PT-903] 六场景公平评测与误差报告",
+      "body_file": "issues/issue-25.md",
+      "add_labels": [
+        "ready-for-agent"
+      ],
+      "state_after": "OPEN",
+      "preserve_existing_labels": true,
+      "preserve_assignees": true,
+      "preserve_milestone": true,
+      "baseline": {
+        "title": "[PT-903] 运行基准对比实验并记录指标与开销",
+        "state": "OPEN",
+        "updatedAt": "2026-10-03T08:30:38Z",
+        "body_sha256": "33a646fb1b824736ab4c467025f3721d8548861eec1dff195d30f351a2a975fa"
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "blocker": "PT-910",
+      "blocked": 16
+    },
+    {
+      "blocker": 16,
+      "blocked": 25
+    },
+    {
+      "blocker": 17,
+      "blocked": 18
+    },
+    {
+      "blocker": 25,
+      "blocked": 18
+    },
+    {
+      "blocker": 18,
+      "blocked": 19
+    },
+    {
+      "blocker": 19,
+      "blocked": 20
+    }
+  ],
+  "preserve_issues": [
+    3,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    21,
+    22,
+    23,
+    24,
+    30
+  ],
+  "preserve_comments": true,
+  "placeholder_resolution": {
+    "{{PT-910}}": "PT-910新建后替换为完整GitHub issue Markdown link"
+  },
+  "stop_if_remote_changed": "重新读取updatedAt/body/state并比对快照；发生变化先合并，不能盲目覆盖",
+  "verification": "回读标题/正文/状态/标签、原生依赖、历史评论和创建数量；保存实际操作收据",
+  "never_in_this_transaction": [
+    "代码实现",
+    "commit/push",
+    "PR合并",
+    "Release/部署",
+    "比赛报名/正式提交"
+  ],
+  "reject_unresolved_placeholders": true,
+  "strip_draft_notice_after_placeholder_resolution": true,
+  "canonical_spec": 30,
+  "created_issue_number": 31
+}

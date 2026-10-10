@@ -161,7 +161,7 @@ export type ReviewEvent = {
 export type ReviewRequest = {
   "actor": string;
   "reason": string;
-  "note": string;
+  "note"?: string;
   "claim"?: PolicyClaim | null;
 };
 

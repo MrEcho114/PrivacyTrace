@@ -1,0 +1,241 @@
+{
+  "repository": "MrEcho114/PrivacyTrace",
+  "date": "2026-10-03",
+  "status": "remote_verified",
+  "writer": "Gemini gemini-3.8-flash-medium",
+  "issues": [
+    {
+      "id": "overview",
+      "number": 1,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/1",
+      "title": "PrivacyTrace 研发与交付排期追踪"
+    },
+    {
+      "id": "S0",
+      "number": 2,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/2",
+      "title": "[S0] 规范确认与契约改造 (2026-10-03 ~ 10-04)"
+    },
+    {
+      "id": "S1",
+      "number": 3,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/3",
+      "title": "[S1] 单样本端到端跑通 (2026-10-05 ~ 10-08)"
+    },
+    {
+      "id": "S2",
+      "number": 4,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/4",
+      "title": "[S2] 受控场景与基准评测 (2026-10-09 ~ 10-16)"
+    },
+    {
+      "id": "S3",
+      "number": 5,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/5",
+      "title": "[S3] 提交包与交付归档 (2026-10-17 ~ 10-22)"
+    },
+    {
+      "id": "P1",
+      "number": 6,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/6",
+      "title": "[P1] 进阶探索能力 (选做，不阻塞提交)"
+    },
+    {
+      "id": "PT-010",
+      "number": 7,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/7",
+      "title": "[PT-010] 确认赛项要求、环境依赖与首个真实样本",
+      "phase": "S0"
+    },
+    {
+      "id": "PT-511",
+      "number": 8,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/8",
+      "title": "[PT-511] 支持政策长文本与原句位置切片",
+      "phase": "S0"
+    },
+    {
+      "id": "PT-709",
+      "number": 9,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/9",
+      "title": "[PT-709] 按可信规则校验代码调用并升级声明对照状态",
+      "phase": "S0"
+    },
+    {
+      "id": "PT-101",
+      "number": 10,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/10",
+      "title": "[PT-101] 在受限隔离环境中解析 APK 清单与元数据",
+      "phase": "S1"
+    },
+    {
+      "id": "PT-301",
+      "number": 11,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/11",
+      "title": "[PT-301] 扫描 DEX 敏感调用并提取代码位置",
+      "phase": "S1"
+    },
+    {
+      "id": "PT-503",
+      "number": 12,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/12",
+      "title": "[PT-503] 录入首个真实隐私政策分句与人工声明",
+      "phase": "S1"
+    },
+    {
+      "id": "PT-004",
+      "number": 13,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/13",
+      "title": "[PT-004] 接入作业执行与核验结果本地持久化",
+      "phase": "S1"
+    },
+    {
+      "id": "PT-807",
+      "number": 14,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/14",
+      "title": "[PT-807] 前端展示真实分析作业并支持证据下钻与复核",
+      "phase": "S1"
+    },
+    {
+      "id": "PT-901",
+      "number": 15,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/15",
+      "title": "[PT-901] 跑通首个真实国产 App 最小分析闭环",
+      "phase": "S1"
+    },
+    {
+      "id": "PT-902",
+      "number": 16,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/16",
+      "title": "[PT-902] 构建 6 至 8 个受控 APK 测试场景",
+      "phase": "S2"
+    },
+    {
+      "id": "PT-808",
+      "number": 17,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/17",
+      "title": "[PT-808] 浏览器实测、异常降级与复核联动检查",
+      "phase": "S2"
+    },
+    {
+      "id": "PT-904",
+      "number": 18,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/18",
+      "title": "[PT-904] 制作离线提交包并在独立环境验证回放",
+      "phase": "S3"
+    },
+    {
+      "id": "PT-905",
+      "number": 19,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/19",
+      "title": "[PT-905] 编写说明文档、答辩视频与实际贡献说明",
+      "phase": "S3"
+    },
+    {
+      "id": "PT-906",
+      "number": 20,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/20",
+      "title": "[PT-906] 核对校内与赛项要求并组织提前提交",
+      "phase": "S3"
+    },
+    {
+      "id": "PT-506",
+      "number": 21,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/21",
+      "title": "[PT-506] 接入可选的大模型政策辅助抽取插件",
+      "phase": "P1"
+    },
+    {
+      "id": "PT-401",
+      "number": 22,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/22",
+      "title": "[PT-401] 识别常见第三方 SDK 特征签名",
+      "phase": "P1"
+    },
+    {
+      "id": "PT-907",
+      "number": 23,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/23",
+      "title": "[PT-907] 补充测试样本与开展非技术人员理解测试",
+      "phase": "P1"
+    },
+    {
+      "id": "PT-908",
+      "number": 24,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/24",
+      "title": "[PT-908] 动态分析与高阶代码分析后续演进调研",
+      "phase": "P1"
+    },
+    {
+      "id": "PT-903",
+      "number": 25,
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/25",
+      "title": "[PT-903] 运行基准对比实验并记录指标与开销",
+      "phase": "S2"
+    }
+  ],
+  "audit": {
+    "taskCount": 19,
+    "phaseCount": 5,
+    "overviewCount": 1,
+    "requiredTasks": 15,
+    "optionalTasks": 4,
+    "remoteReadbacks": 25,
+    "phaseMembership": [
+      {
+        "phase": "S0",
+        "ok": true,
+        "tasks": [
+          "PT-010",
+          "PT-511",
+          "PT-709"
+        ]
+      },
+      {
+        "phase": "S1",
+        "ok": true,
+        "tasks": [
+          "PT-101",
+          "PT-301",
+          "PT-503",
+          "PT-004",
+          "PT-807",
+          "PT-901"
+        ]
+      },
+      {
+        "phase": "S2",
+        "ok": true,
+        "tasks": [
+          "PT-902",
+          "PT-903",
+          "PT-808"
+        ]
+      },
+      {
+        "phase": "S3",
+        "ok": true,
+        "tasks": [
+          "PT-904",
+          "PT-905",
+          "PT-906"
+        ]
+      },
+      {
+        "phase": "P1",
+        "ok": true,
+        "tasks": [
+          "PT-506",
+          "PT-401",
+          "PT-907",
+          "PT-908"
+        ]
+      }
+    ],
+    "dependencyLinks": true,
+    "noCodeChangesRequested": true,
+    "writer": "Gemini",
+    "placeholderFree": true,
+    "unassigned": true
+  }
+}

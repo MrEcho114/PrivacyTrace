@@ -1,0 +1,41 @@
+[
+  {
+    "number": 16,
+    "blocked_by": [
+      31
+    ]
+  },
+  {
+    "number": 17,
+    "blocked_by": []
+  },
+  {
+    "number": 18,
+    "blocked_by": [
+      17,
+      25
+    ]
+  },
+  {
+    "number": 19,
+    "blocked_by": [
+      18
+    ]
+  },
+  {
+    "number": 20,
+    "blocked_by": [
+      19
+    ]
+  },
+  {
+    "number": 25,
+    "blocked_by": [
+      16
+    ]
+  },
+  {
+    "number": 31,
+    "blocked_by": []
+  }
+]

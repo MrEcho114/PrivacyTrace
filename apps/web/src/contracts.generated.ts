@@ -180,7 +180,32 @@ export type ScanCoverage = {
   "scope"?: "DEX_ENTRIES";
   "behavior_detection"?: "LIMITED_RULE_BASED_STATIC";
   "behavior_limitations"?: Array<string>;
+  "sdk_attribution_limitations"?: Array<string>;
   "limitations": Array<string>;
   "scanned_dex": Array<string>;
   "failed_dex": Array<string>;
+};
+
+export type SdkSignature = {
+  "id": string;
+  "name": string;
+  "vendor": string;
+  "package_prefixes": Array<string>;
+  "potential_data_types": Array<string>;
+  "source": string;
+  "source_url": string;
+  "license": string;
+  "verified_at": string;
+  "note": string;
+};
+
+export type SdkSignatureRuleset = {
+  "version": string;
+  "status": "SYNTHETIC_SEED_ONLY" | "LIMITED_SOURCED_SEED";
+  "scope_note": string;
+  "boundaries": Array<string>;
+  "evidence_kind": "VENDOR_PUBLISHED_PACKAGE_NAME";
+  "signatures": Array<SdkSignature>;
+  "excluded_namespaces": Array<string>;
+  "exclusion_note": string;
 };

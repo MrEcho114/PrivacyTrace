@@ -37,7 +37,7 @@ INDEX = load_index(RULES)
 def test_known_signatures_are_labelled(class_name, expected):
     match = INDEX.match(class_name)
     assert match is not None, class_name
-    assert match["id"] == expected
+    assert match.id == expected
 
 
 @pytest.mark.parametrize(
@@ -89,7 +89,7 @@ def test_descriptor_conversion_handles_objects_and_arrays():
     assert descriptor_to_class("") is None
     assert descriptor_to_class("com/tencent/bugly") is None
     labelled = INDEX.match_descriptor("Lcom/tencent/bugly/crashreport/CrashReport;")
-    assert labelled is not None and labelled["id"] == "sdk-bugly"
+    assert labelled is not None and labelled.id == "sdk-bugly"
 
 
 def test_signature_prefixes_do_not_overlap_across_vendors():

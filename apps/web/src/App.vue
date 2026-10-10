@@ -220,6 +220,11 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           <p><strong>行为识别：有限的规则静态分析（非穷尽）。</strong></p>
           <p class="subtle">不保证覆盖反射、动态加载、Native、加壳、第三方与混合运行时、复杂数据流或规则集未覆盖的行为。没有命中规则不代表没有隐私行为。</p>
           <ul><li v-for="limitation in realReport.coverage.behavior_limitations" :key="limitation">{{ limitation }}</li></ul>
+          <template v-if="realReport.coverage.sdk_attribution_limitations?.length">
+            <p><strong>第三方 SDK 归属：仅按公开包前缀作参考标记。</strong></p>
+            <p class="subtle">归属命中只表示类路径落在某个已公开的 SDK 包范围内，不代表该 SDK 实际收集或外发数据，也不能替代宿主 App 自身的声明。</p>
+            <ul><li v-for="limitation in realReport.coverage.sdk_attribution_limitations" :key="limitation">{{ limitation }}</li></ul>
+          </template>
           <p class="hash">输入 APK SHA-256：{{ realReport.sample.apk_sha256 }}</p>
           <p class="subtle">扫描完成只描述本轮处理范围，不等于发现了应用所有隐私行为。</p>
         </section>

@@ -13,7 +13,22 @@
 3. **扫描接入** — `apps/api/src/privacytrace/apk_worker.py`。
    `scan(..., sdk_rules=...)` 在 DEX 类遍历中产出 `kind=SDK`、`status=STATIC_POTENTIAL` 的证据；CLI 新增 `--sdk-rules`（缺省启用，传空可关闭）。
    worker 镜像 `worker.Dockerfile` 增加该规则文件拷贝，容器内可用。
-4. **回归测试** — `apps/api/tests/test_sdk_attribution.py`（37 条，匹配层）与 `apps/api/tests/test_sdk_worker.py`（14 条，端到端 worker 装配）。
+4. **回归测试** — `apps/api/tests/test_sdk_attribution.py`（匹配层）与 `apps/api/tests/test_sdk_worker.py`（端到端 worker 装配）。
+
+## 评审后修复（2026-10-10，同日）
+
+首次提交后经两轴代码评审（`docs/stages/pt401-code-review-20261010.md`），对确认的缺陷做了修复：
+
+| 编号 | 问题 | 修复 |
+| :--- | :--- | :--- |
+| SP1 | SDK 截断警告被写入 `coverage.behavior_limitations`，而本模块不产生任何行为；前端把该字段渲染在"行为识别"标题下，会把 SDK 缺口误读成行为缺口 | 新增独立字段 `coverage.sdk_attribution_limitations`（`runtime_models.ScanCoverage`），截断警告改写入此处；`App.vue` 增加独立的第三方 SDK 归属段落 |
+| S1 | 新增的版本化规则集未纳入契约生成，与其他资源相比缺少模型权威 | 新增 `sdk_ruleset.py`（`SdkSignature` / `SdkSignatureRuleset` 模型，校验前缀形状、来源 URL、日期格式、前缀冲突与重名）；注册进 `scripts/export-schema.py`，产出 `packages/contracts/sdk-signatures.schema.json` 与 TS 类型；契约测试断言磁盘规则集可通过模型校验 |
+| S2 | `resources.py` 中两个版本化加载函数逐行重复 | 抽出 `_load_versioned()`，两个入口共用同一套"版本 → 快照 → 版本自校验"机制 |
+| smell | 描述符解析重复实现、匹配结果用裸 dict、`attributed` 命名含糊、魔数 500 内联 | worker 复用 `descriptor_to_class()`；匹配返回模型实例而非 dict；`attributed` 改为带类型注解的 `set[tuple[str, str]]`；提取 `MAX_SDK_ATTRIBUTIONS` 常量 |
+| 越界 | `docs/backlog.md` 把 PT-402..PT-406 一并改写为"已完成"，但本次只交付 PT-401 | 回退 PT-402..PT-406 为"待开发"，仅保留 PT-401 一行 |
+| SP3 | worker 级正例只覆盖 11 条签名中的 4 条 | 补足全部 11 条签名，并加 `test_every_shipped_signature_has_a_worker_level_positive` 守护：新增签名若无正例即失败 |
+
+顺带修掉一个被静默吞掉的真实缺陷：重构时 worker 未导入 `descriptor_to_class`，`NameError` 被 `except Exception` 捕获后只记为 `DEX_PARSE_FAILED`，导致**所有** SDK 归属静默失效。除补上导入外，错误记录现在带上异常消息（此前只记异常类型），避免同类问题再次难以定位。
 
 ## 有据来源（厂商公开包名）
 
@@ -37,7 +52,7 @@
 
 | 完成标准 | 证据 |
 | :--- | :--- |
-| 自建样本中能正确标记已知 SDK 特征范围内的调用点 | `test_worker_labels_known_sdk_packages`（4 条，覆盖高德/友盟/Bugly/极光），断言 locator 含包路径、excerpt 含厂商 |
+| 自建样本中能正确标记已知 SDK 特征范围内的调用点 | `test_worker_labels_known_sdk_packages`（15 条，覆盖全部 11 条签名的每条包前缀），断言 locator 含包路径、excerpt 含厂商；`test_every_shipped_signature_has_a_worker_level_positive` 守护覆盖率 |
 | 负例：结构相似的自定义类不误碰 | `test_worker_does_not_label_lookalikes`（6 条：`com.tencent.buglyx`、`cn.jpush.androidx`、`com.example.bugly`、`androidx.*`、`com.android.*`、宿主自身类） |
 | 不声称全量覆盖生态 | 规则集 `status=LIMITED_SOURCED_SEED` + `boundaries` 四条显式边界；`test_boundaries_state_the_limits_of_attribution` 断言边界文案存在 |
 | 签名来源与版本可查 | `test_every_signature_is_sourced_and_versioned` 逐条断言 source/source_url(https)/license/verified_at |

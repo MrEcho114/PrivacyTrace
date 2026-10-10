@@ -933,6 +933,14 @@
           "title": "Behavior Limitations",
           "type": "array"
         },
+        "sdk_attribution_limitations": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 1000,
+          "title": "Sdk Attribution Limitations",
+          "type": "array"
+        },
         "limitations": {
           "items": {
             "type": "string"

@@ -1,9 +1,8 @@
 # Acceptance Test Matrix: PT-808 异常边界与离线回放来源浏览器端验收
 
 - **Milestone**: M1 (PT-808 真实浏览器异常边界、防 XSS 渲染、回放来源与可选本地备注重评)
-- **Git Commit SHA**: 见 `evidence/browser-proof.json` 的 `git_commit` / `git_commit_anchored`
-  - 本次修复运行环境无法 spawn shell 执行 `git rev-parse HEAD`，因此 `git_commit` 记为 `unknown`、`git_commit_anchored=false`
-  - **合并前必须在可解析 SHA 的环境重跑一次**，确认 `git_commit_anchored=true` 后再把 SHA 填到此处
+- **Git Commit SHA**: `a10bb023d364938de5e1b2a8a900211b08031e53`（`evidence/browser-proof.json` 的 `git_commit`，`git_commit_anchored: true`）
+  - 与 `git rev-parse HEAD` 一致，证据已锚定到真实提交，合并时随分支更新
 - **Execution Date**: 2026-10-10（修复后重跑，证据见 `evidence/browser-proof.json`）
 - **Test Environment**:
   - **OS**: Windows 11 Pro (x64)
@@ -25,6 +24,7 @@
 | 依赖 git-ignored 的 `data/jobs/gkd-s1-first.json` | 已改为入库的最小 fixtures：`fixtures/acceptance-jobs/*.json` |
 | 通过 `netstat` + `taskkill /F /PID` 强杀 8000 端口上的**任意**进程 | 已删除；脚本只终止**自己 spawn 的子进程**；端口被占用时直接报错退出 |
 | TC-05 直接改写持久化报告，再在 `finally` 中整体回写快照 | 已删除；TC-05 在隔离 store 上运行，不再触碰真实报告文件 |
+| 收据 SHA 依赖可执行 shell（`execSync git rev-parse`），受限环境直接记 `unknown` | 已改为**纯文件解析** `resolveGitCommit()`：支持 `.git` 为目录（普通检出）或为文件（linked worktree）、detached HEAD、loose ref 与 `packed-refs`、`commondir` 重定向；不再 spawn 任何 shell |
 
 复现命令：
 

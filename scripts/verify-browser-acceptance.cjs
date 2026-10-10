@@ -78,6 +78,78 @@ function revealOrigin(sampleId, sourceOrigin) {
   return sourceOrigin || (sampleId ? 'UNANNOTATED' : 'UNANNOTATED');
 }
 
+const SHA_RE = /^[0-9a-f]{40}$/;
+
+// Resolves `HEAD` to a 40-char SHA by reading Git's own files, never by
+// spawning a shell. Some sandboxes refuse to spawn `cmd.exe` (EBUSY on
+// Windows), so `git rev-parse` is unavailable there. Handles:
+//   - normal checkout:      .git is a directory
+//   - linked worktree:      .git is a FILE containing `gitdir: <path>`
+//   - detached HEAD:        HEAD holds the SHA directly
+//   - symbolic HEAD:        HEAD holds `ref: refs/heads/x`, possibly in
+//                           `<commondir>/packed-refs` rather than a loose file
+// Returns 'unknown' when nothing trustworthy can be read.
+function resolveGitCommit(startDir) {
+  const readIfExists = (p) => {
+    try {
+      return fs.readFileSync(p, 'utf-8').trim();
+    } catch {
+      return null;
+    }
+  };
+
+  try {
+    // 1. Locate the (possibly per-worktree) git dir.
+    const dotGit = path.join(startDir, '.git');
+    let gitDir = null;
+    if (fs.existsSync(dotGit) && fs.statSync(dotGit).isDirectory()) {
+      gitDir = dotGit;
+    } else {
+      const pointer = readIfExists(dotGit);
+      if (pointer && pointer.startsWith('gitdir:')) {
+        const raw = pointer.slice('gitdir:'.length).trim();
+        gitDir = path.isAbsolute(raw) ? raw : path.resolve(startDir, raw);
+      }
+    }
+    if (!gitDir) return 'unknown';
+
+    // 2. Read HEAD. `commondir` points at the shared .git of the main
+    //    checkout, where packed-refs lives for linked worktrees.
+    const head = readIfExists(path.join(gitDir, 'HEAD'));
+    if (!head) return 'unknown';
+    if (SHA_RE.test(head)) return head; // detached HEAD
+
+    if (!head.startsWith('ref:')) return 'unknown';
+    const refName = head.slice('ref:'.length).trim();
+    if (!refName) return 'unknown';
+
+    // 3. Try the loose ref in the worktree's own git dir, then the common dir.
+    const commonDirRaw = readIfExists(path.join(gitDir, 'commondir'));
+    const commonDir = commonDirRaw
+      ? path.resolve(gitDir, commonDirRaw)
+      : gitDir;
+
+    for (const base of [gitDir, commonDir]) {
+      const loose = readIfExists(path.join(base, refName));
+      if (loose && SHA_RE.test(loose)) return loose;
+    }
+
+    // 4. Fall back to packed-refs.
+    const packed = readIfExists(path.join(commonDir, 'packed-refs'));
+    if (packed) {
+      for (const line of packed.split('\n')) {
+        if (!line || line.startsWith('#') || line.startsWith('^')) continue;
+        const [sha, name] = line.split(' ');
+        if (name === refName && SHA_RE.test(sha)) return sha;
+      }
+    }
+
+    return 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
 function createIsolatedStore(projectRoot) {
   // A fresh store per run: the checked-in fixtures are copied in, so the
   // repository's own data directory is never read from or written to.
@@ -634,31 +706,18 @@ async function main() {
     // ------------------------------------------------------------------------
     // Generate proof artifact evidence/browser-proof.json
     // ------------------------------------------------------------------------
-    let gitCommit = 'unknown';
-    try {
-      gitCommit = execSync('git rev-parse HEAD', { cwd: projectRoot, encoding: 'utf-8' }).trim();
-    } catch {}
-    if (!/^[0-9a-f]{40}$/.test(gitCommit)) {
-      // Some restricted environments cannot spawn a shell for git. Try reading
-      // the ref files directly before giving up.
-      try {
-        const headFile = fs.readFileSync(path.join(projectRoot, '.git', 'HEAD'), 'utf-8').trim();
-        const candidate = headFile.startsWith('ref: ')
-          ? fs.readFileSync(path.join(projectRoot, '.git', headFile.slice(5).trim()), 'utf-8').trim()
-          : headFile;
-        if (/^[0-9a-f]{40}$/.test(candidate)) gitCommit = candidate;
-      } catch {}
-    }
     // Never silently present an unanchored receipt as authoritative evidence.
-    const commitAnchored = /^[0-9a-f]{40}$/.test(gitCommit);
-    if (!commitAnchored) {
-      console.warn(
-        '[Receipt] WARNING: could not resolve the Git commit SHA in this environment. ' +
-          'The receipt records git_commit="unknown" and must be re-run on a checkout ' +
-          'where `git rev-parse HEAD` works before it is treated as final evidence.'
-      );
-    } else {
+    const gitCommit = resolveGitCommit(projectRoot);
+    const commitAnchored = SHA_RE.test(gitCommit);
+    if (commitAnchored) {
       console.log(`[Receipt] Anchoring proof to commit ${gitCommit}`);
+    } else {
+      console.warn(
+        '[Receipt] WARNING: could not resolve the Git commit SHA from Git\'s own files. ' +
+          'This checkout may not be a Git repository, or it is a linked worktree whose ' +
+          'gitdir is unreachable. The receipt records git_commit="unknown" and must be ' +
+          're-run on a normal checkout before it is treated as final evidence.'
+      );
     }
 
     const proof = {

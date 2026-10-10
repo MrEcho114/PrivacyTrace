@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.privacytrace.controlled.c06" android:versionCode="1" android:versionName="1.0">
+    <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="35" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <application android:label="PrivacyTrace C06" android:hasCode="true" />
+</manifest>

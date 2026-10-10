@@ -13,6 +13,7 @@ export type AnalysisJob = {
   "region"?: string | null;
   "product_scope"?: string | null;
   "error"?: string | null;
+  "controlled_case_id"?: string | null;
 };
 
 export type ApiCall = {

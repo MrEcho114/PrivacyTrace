@@ -112,6 +112,14 @@ async function html(state) {
   }))
 }
 
+test('source-built controlled jobs are labelled during failure and report loading', async () => {
+  const { state } = mount([{ id: 'controlled', state: 'FAILED', controlled_case_id: 'C02' }])
+  await state.reload(true)
+  const output = await html(state)
+  assert.match(output, /受控源码场景 C02/)
+  assert.doesNotMatch(output, /真实 APK 静态报告/)
+})
+
 test('candidate navigation is paginated and full artifacts are rendered once on demand', async () => {
   const doc = { id: 'policy-1', title: 'Fixture policy', version: '1', captured_at: '2026',
     source_type: 'APP_POLICY', artifact: { text: 'FULL_ARTIFACT_SENTINEL' + 'x'.repeat(199978), sha256: 'a'.repeat(64) },

@@ -43,6 +43,10 @@ const label = (id: string) => taxonomy.value?.data_types.find(item => item.id ==
 const selectedEvidence = computed(() => report.value?.evidence.filter(item => selected.value?.evidence_ids.includes(item.id)) ?? [])
 const dataTypeCount = computed(() => new Set(report.value?.result.issues.map(i => i.data_type)).size)
 const realReport = computed(() => report.value && !report.value.demo ? report.value : null)
+const controlledCase = computed(() => realReport.value?.job.controlled_case_id
+  ?? activeJob.value?.controlled_case_id ?? null)
+const sourceTitle = computed(() => source.value.kind === 'demo' ? 'SYNTHETIC 示例'
+  : controlledCase.value ? `受控源码场景 ${controlledCase.value}` : '真实 APK 静态报告')
 // Candidate clauses are navigation aids, not evaluator-confirmed evidence or matches.
 const CANDIDATE_PAGE_SIZE = 20
 const candidatePage = ref(0)
@@ -193,12 +197,12 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         <label for="report-source">报告来源</label>
         <select id="report-source" v-model="selectedSourceKey" @change="reload()">
           <option value="demo:synthetic">SYNTHETIC · 人工构造示例</option>
-          <option v-for="job in jobs" :key="job.id" :value="`job:${job.id}`">{{ job.package_name || job.sample_id }} · {{ job.id }} · {{ jobLabels[job.state] }}</option>
+          <option v-for="job in jobs" :key="job.id" :value="`job:${job.id}`">{{ job.controlled_case_id ? `受控 ${job.controlled_case_id} · ` : '' }}{{ job.package_name || job.sample_id }} · {{ job.id }} · {{ jobLabels[job.state] }}</option>
         </select>
-        <p class="subtle">真实任务由 APK 扫描 CLI 创建；示例仅用于演示，不是实际应用的检测结果。</p>
+        <p class="subtle">APK 任务由本地 CLI 创建；受控源码场景与人工合成示例均有独立标识。</p>
       </section>
-      <aside class="demo-note"><strong>{{ source.kind === 'demo' ? 'SYNTHETIC 示例' : '真实 APK 静态报告' }}</strong>
-        {{ source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。报告不保证覆盖反射、动态加载、原生代码或运行时行为。' }}
+      <aside class="demo-note"><strong>{{ sourceTitle }}</strong>
+        {{ source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : controlledCase ? '自建源码编译 APK，搭配人工准备的测试政策与候选；只做静态扫描，不代表商业 App 或运行时采集。' : 'APK 只做静态扫描，没有安装或运行。报告不保证覆盖反射、动态加载、原生代码或运行时行为。' }}
         六种状态只对照 DATA_TYPE_DISCLOSURE；“具体类型已声明”不代表目的、接收方、传输或时间范围全部一致，更不是合法性判断。
       </aside>
       <section v-if="activeJob" class="job-state" role="status">
@@ -211,7 +215,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
       <section v-if="error" class="state error" role="alert">{{ error }} <button @click="reload()">重试</button></section>
       <template v-if="report">
         <section class="sample-card">
-          <div class="app-icon">PT</div><div><h2>{{ report.sample.name }}</h2><p class="subtle">{{ report.sample.package_name }} · {{ report.demo ? report.sample.version : (report.sample.version_name ?? ('v' + report.sample.version_code)) }}</p></div><span class="badge">{{ report.demo ? '人工示例' : '真实 APK · 静态潜在行为' }}</span>
+          <div class="app-icon">PT</div><div><h2>{{ report.sample.name }}</h2><p class="subtle">{{ report.sample.package_name }} · {{ report.demo ? report.sample.version : (report.sample.version_name ?? ('v' + report.sample.version_code)) }}</p></div><span class="badge">{{ report.demo ? '人工示例' : controlledCase ? `受控源码 ${controlledCase}` : '真实 APK · 静态潜在行为' }}</span>
         </section>
         <section v-if="realReport" class="coverage-card">
           <h2>DEX 处理范围：{{ realReport.coverage.status === 'COMPLETE' ? '已扫描所支持的 DEX 范围' : 'PARTIAL · DEX 处理有未完成部分' }}</h2>
@@ -273,6 +277,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         </section>
         <details class="provenance" :open="provenanceOpen" @toggle="provenanceToggle($event)"><summary>报告版本、权限与全部政策快照</summary>
           <p>任务 {{ report.job.id }} · 输入 {{ report.job.input_mode }} · 规则版本 {{ report.job.ruleset_version }}</p>
+          <p v-if="controlledCase">受控源码场景 {{ controlledCase }} · 报告读取已有结果，刷新页面不会重新扫描。任务创建于 {{ report.job.created_at }}。</p>
           <template v-if="realReport"><p v-for="(version, tool) in realReport.tools" :key="tool">{{ tool }}：{{ version }}</p><p class="hash">DEX {{ realReport.sample.dex_entries.join('、') }}</p><details><summary>Android 权限（权限不等于已访问）</summary><ul><li v-for="permission in realReport.sample.permissions" :key="permission">{{ permission }}</li></ul></details></template>
           <article v-for="doc in report.policy_documents" :key="doc.id" :id="'policy-' + doc.id"><strong>{{ doc.title }}</strong><p>{{ sourceLabels[doc.source_type] }} · {{ doc.version }} · {{ doc.captured_at }}</p><p class="hash">SHA-256 {{ doc.artifact.sha256 }}</p><p>快照 {{ doc.completeness }} · 提取 {{ doc.extraction_status }} · 复核 {{ doc.review_status }} · 附件 {{ doc.attachments_status }}</p><p class="hash">适用范围 {{ JSON.stringify(doc.applicability) }}</p><details :open="openedPolicyId === doc.id" @toggle="policyToggle($event, doc.id)"><summary>查看政策全文</summary><pre v-if="openedPolicyId === doc.id">{{ doc.artifact.text }}</pre></details></article>
         </details>

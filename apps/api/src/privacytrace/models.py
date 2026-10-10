@@ -176,6 +176,13 @@ class AnalysisJob(Model):
     region: str | None = Field(default=None, min_length=1)
     product_scope: str | None = Field(default=None, min_length=1)
     error: str | None = None
+    controlled_case_id: str | None = Field(default=None, pattern=r"^C[0-9]{2}$")
+
+    @model_validator(mode="after")
+    def validate_controlled_mode(self):
+        if self.controlled_case_id is not None and self.input_mode != "APK":
+            raise ValueError("Controlled source scenarios require APK input")
+        return self
 
 
 class EvaluationInput(Model):

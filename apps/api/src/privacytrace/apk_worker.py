@@ -25,6 +25,11 @@ MAX_EXPANDED = 512 * 1024 * 1024
 MAX_ENTRY = 128 * 1024 * 1024
 MAX_ENTRIES = 20000
 
+# Cap on how many SDK attribution entries one scan emits. A Dex can reference
+# far more classes than a report can sensibly list; truncation is reported in
+# `coverage.sdk_attribution_limitations`, never silently dropped.
+MAX_SDK_ATTRIBUTIONS = 500
+
 FRAMEWORK_STATIC_URIS = {
     (
         "Landroid/provider/ContactsContract$Contacts;",
@@ -119,6 +124,7 @@ def empty_result():
             scope="DEX_ENTRIES",
             behavior_detection="LIMITED_RULE_BASED_STATIC",
             behavior_limitations=behavior_limitations(),
+            sdk_attribution_limitations=[],
             scanned_dex=[],
             failed_dex=[],
             limitations=[],
@@ -164,20 +170,27 @@ def isolation_probe(path):
     return result
 
 
-def scan(path, rules, inventory=False):
+def scan(path, rules, inventory=False, sdk_rules=None):
     from androguard.core.apk import APK
     from androguard.core.dex import DEX, Operand
     from loguru import logger
+
+    from .sdk_attribution import descriptor_to_class, load_index
 
     logger.remove()
     logger.add(sys.stderr, level="WARNING")
     result = empty_result()
     inventory_calls = []
     inventory_truncated = False
+    sdk_index = load_index(sdk_rules) if sdk_rules else None
+    attributed: set[tuple[str, str]] = set()
+    sdk_truncation_reported = False
     result["tools"] = {
         "androguard": importlib.metadata.version("androguard"),
         "ruleset": rules["version"],
     }
+    if sdk_index is not None:
+        result["tools"]["sdk_signatures"] = sdk_index.version
     with checked_entries(path) as archive:
         result["apk_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
         if "AndroidManifest.xml" not in archive.namelist():
@@ -298,6 +311,56 @@ def scan(path, rules, inventory=False):
             try:
                 vm = DEX(archive.read(name))
                 for cls in vm.get_classes():
+                    # PT-401: attribute a class to a published vendor package range.
+                    # This records a reference label only. It creates no behavior,
+                    # because an SDK's static presence is not a collection event.
+                    if sdk_index is not None:
+                        class_descriptor = cls.get_name()
+                        match = sdk_index.match_descriptor(class_descriptor)
+                        if match is not None:
+                            key = (match.id, class_descriptor)
+                            if key not in attributed:
+                                if len(attributed) < MAX_SDK_ATTRIBUTIONS:
+                                    attributed.add(key)
+                                    class_name = descriptor_to_class(class_descriptor)
+                                    result["evidence"].append(
+                                        dict(
+                                            id="ev-sdk-"
+                                            + hashlib.sha256(
+                                                (match.id + class_descriptor).encode()
+                                            ).hexdigest()[:24],
+                                            kind="SDK",
+                                            status="STATIC_POTENTIAL",
+                                            source=name,
+                                            locator=(
+                                                "apk_sha256="
+                                                + result["apk_sha256"]
+                                                + ";dex="
+                                                + name
+                                                + ";class="
+                                                + class_name
+                                            ),
+                                            excerpt=(
+                                                class_name
+                                                + " matches published package prefix "
+                                                + match.package_prefixes[0]
+                                                + " of "
+                                                + match.name
+                                                + " ("
+                                                + match.vendor
+                                                + "); attribution only, not evidence "
+                                                + "of collection or transfer."
+                                            ),
+                                        )
+                                    )
+                                elif not sdk_truncation_reported:
+                                    # Attribution gaps are not behavior gaps; file them
+                                    # under the SDK coverage list, never behavior ones.
+                                    sdk_truncation_reported = True
+                                    result["coverage"]["sdk_attribution_limitations"].append(
+                                        f"SDK 归属输出上限为 {MAX_SDK_ATTRIBUTIONS} 条类，"
+                                        "其余同类包路径未逐条列出；上限截断不代表没有更多 SDK。"
+                                    )
                     for method in cls.get_methods():
                         caller = (
                             method.get_class_name()
@@ -455,7 +518,10 @@ def scan(path, rules, inventory=False):
             except Exception as exc:
                 result["coverage"]["failed_dex"].append(name)
                 result["errors"].append(
-                    dict(code="DEX_PARSE_FAILED", message=name + ": " + type(exc).__name__)
+                    dict(
+                        code="DEX_PARSE_FAILED",
+                        message=name + ": " + type(exc).__name__ + ": " + str(exc)[:200],
+                    )
                 )
         if (
             "classes.dex" in names
@@ -490,6 +556,12 @@ def main():
         default=Path(__file__).resolve().parents[4] / "rules/taxonomy.v0.3.json",
     )
     parser.add_argument(
+        "--sdk-rules",
+        type=Path,
+        default=Path(__file__).resolve().parents[4] / "rules/sdk-signatures.v1.0.json",
+        help="Sourced third-party package prefixes; omit to disable SDK attribution",
+    )
+    parser.add_argument(
         "--jadx", nargs="?", const="jadx", help="Optional reference decompiler binary"
     )
     args = parser.parse_args()
@@ -502,6 +574,11 @@ def main():
                     args.apk,
                     json.loads(args.rules.read_text(encoding="utf-8")),
                     inventory=args.inventory,
+                    sdk_rules=(
+                        json.loads(args.sdk_rules.read_text(encoding="utf-8"))
+                        if args.sdk_rules
+                        else None
+                    ),
                 )
             )
         if args.jadx:

@@ -1,0 +1,229 @@
+{
+  "version": "1.0.0",
+  "status": "LIMITED_SOURCED_SEED",
+  "scope_note": "A small, explicitly bounded set of third-party SDK attributions. Each entry traces to a vendor-published package name. This is not a census of commercial SDKs, and SDK presence is not evidence of collection, transfer, or any privacy violation.",
+  "boundaries": [
+    "SDK 的静态存在不等于实际收集或外发；归属标签只描述包路径与已公开声明的对应关系。",
+    "SDK 自身政策不能替代宿主 App 的声明，归属结论不参与政策一致性判定。",
+    "启发式归属不构成法律主体认定，也不推断第三方服务器地址或数据用途。",
+    "仅收录有厂商公开依据的有限签名，不承诺覆盖全国产生态。"
+  ],
+  "evidence_kind": "VENDOR_PUBLISHED_PACKAGE_NAME",
+  "signatures": [
+    {
+      "id": "sdk-amap-location",
+      "name": "高德定位 SDK",
+      "vendor": "北京高德图强科技有限公司",
+      "package_prefixes": [
+        "com.amap.api.location"
+      ],
+      "potential_data_types": [
+        "LOCATION",
+        "OAID"
+      ],
+      "source": "高德开放平台 Android 定位 SDK 下载页（SDK 版本 V11.2.100，标注包名 com.amap.api.location）",
+      "source_url": "https://lbs.amap.com/api/android-location-sdk/download",
+      "license": "Proprietary vendor SDK; package name published by vendor in its SDK compliance notice.",
+      "verified_at": "2026-10-10",
+      "note": "Vendor discloses location and device-identifier collection within its own SDK; presence still does not prove runtime access."
+    },
+    {
+      "id": "sdk-amap-maps",
+      "name": "高德地图 SDK",
+      "vendor": "北京高德图强科技有限公司",
+      "package_prefixes": [
+        "com.amap.api.maps"
+      ],
+      "potential_data_types": [
+        "LOCATION",
+        "OAID"
+      ],
+      "source": "高德地图开放平台隐私权政策（地图 SDK 条目，包名 com.amap.api.maps）",
+      "source_url": "https://lbs.amap.com/pages/privacy/",
+      "license": "Proprietary vendor SDK; package name published by vendor in its privacy policy.",
+      "verified_at": "2026-10-10",
+      "note": "Vendor discloses map display and device-identifier collection within its own SDK."
+    },
+    {
+      "id": "sdk-umeng-analytics",
+      "name": "友盟移动统计 SDK（U-App）",
+      "vendor": "友盟同欣（北京）科技有限公司",
+      "package_prefixes": [
+        "com.umeng.analytics",
+        "com.umeng.commonsdk"
+      ],
+      "potential_data_types": [
+        "DEVICE_IDENTIFIER",
+        "ANDROID_ID",
+        "OAID",
+        "IMEI"
+      ],
+      "source": "友盟+开发者中心初始化文档与合规告知（使用 SDK 名称：友盟 SDK；收集设备信息 IMEI/MAC/Android ID/IDFA/OpenUDID/GUID/SIM 卡 IMSI 等）",
+      "source_url": "https://developer.umeng.com/docs/67966/detail/254826",
+      "license": "Proprietary vendor SDK; package name and collection list published by vendor for disclosure compliance.",
+      "verified_at": "2026-10-10",
+      "note": "Vendor-published disclosure text names these identifier categories; this rule does not assert which code path is used."
+    },
+    {
+      "id": "sdk-bugly",
+      "name": "腾讯 Bugly",
+      "vendor": "深圳市腾讯计算机系统有限公司",
+      "package_prefixes": [
+        "com.tencent.bugly"
+      ],
+      "potential_data_types": [
+        "ANDROID_ID",
+        "DEVICE_IDENTIFIER"
+      ],
+      "source": "腾讯隐私政策第三方 SDK 目录（第三方 SDK 名称：腾讯 Bugly；使用目的：应用崩溃统计与分析；代码包名 com.tencent.bugly；收集信息：AndroidID、网络类型、SIM ICCID、读取系统属性）",
+      "source_url": "https://bugly.qq.com/docs/user-guide/instruction-manual-android",
+      "license": "Proprietary vendor SDK; package name published by vendor and in host-app disclosure tables.",
+      "verified_at": "2026-10-10",
+      "note": "Crash-report SDK; the package name is vendor-published as com.tencent.bugly."
+    },
+    {
+      "id": "sdk-jpush",
+      "name": "极光推送 JPush SDK",
+      "vendor": "深圳市和讯华谷信息技术有限公司",
+      "package_prefixes": [
+        "cn.jpush.android"
+      ],
+      "potential_data_types": [
+        "ANDROID_ID",
+        "OAID",
+        "DEVICE_IDENTIFIER"
+      ],
+      "source": "极光文档中心资源下载页（SDK 名称：极光推送 - JPush SDK - Android；包名 cn.jpush.android；版本号 v6.2.1）",
+      "source_url": "https://docs.jiguang.cn/jpush/resources",
+      "license": "Proprietary vendor SDK; package name published by vendor on its SDK download page.",
+      "verified_at": "2026-10-10",
+      "note": "Push SDK; JCore is published alongside as cn.jiguang.sdk and is covered by the jiguang entry below."
+    },
+    {
+      "id": "sdk-jiguang-core",
+      "name": "极光 JCore / 安全认证 SDK",
+      "vendor": "深圳市和讯华谷信息技术有限公司",
+      "package_prefixes": [
+        "cn.jiguang.verifysdk",
+        "cn.jiguang.sdk"
+      ],
+      "potential_data_types": [
+        "ANDROID_ID",
+        "OAID",
+        "DEVICE_IDENTIFIER"
+      ],
+      "source": "极光文档中心 Android 集成文档（JCore 依赖坐标 cn.jiguang.sdk:jcore）与 JVerification 包名 cn.jiguang.verifysdk",
+      "source_url": "https://docs.jiguang.cn/jpush/resources",
+      "license": "Proprietary vendor SDK; package names published by vendor.",
+      "verified_at": "2026-10-10",
+      "note": "Covers JCore runtime and phone-number verification; attribution only."
+    },
+    {
+      "id": "sdk-tencent-map",
+      "name": "腾讯地图 / 定位 SDK",
+      "vendor": "深圳市腾讯计算机系统有限公司",
+      "package_prefixes": [
+        "com.tencent.tencentmap.mapsdk"
+      ],
+      "potential_data_types": [
+        "LOCATION",
+        "OAID"
+      ],
+      "source": "第三方 SDK 清单公示（SDK 名称：腾讯地图 SDK；代码包名 com.tencent.tencentmap.mapsdk.maps）",
+      "source_url": "https://privacy.qq.com/document/preview/a10a8634f237464da9a95f4f07e73e40",
+      "license": "Proprietary vendor SDK; package name published by vendor in its privacy documentation.",
+      "verified_at": "2026-10-10",
+      "note": "Map/LBS SDK package namespace."
+    },
+    {
+      "id": "sdk-wechat-opensdk",
+      "name": "微信 OpenSDK",
+      "vendor": "深圳市腾讯计算机系统有限公司",
+      "package_prefixes": [
+        "com.tencent.mm.opensdk"
+      ],
+      "potential_data_types": [
+        "ACCOUNT_IDENTITY"
+      ],
+      "source": "第三方 SDK 清单公示（SDK 名称：微信 OpenSDK Android；代码包名 com.tencent.mm.opensdk；使用目的：微信支付、分享调起）",
+      "source_url": "https://support.weixin.qq.com/cgi-bin/mmsupportacctnodeweb-bin/pages/RYiYJkLOrQwu0nb8",
+      "license": "Proprietary vendor SDK; package name published by vendor.",
+      "verified_at": "2026-10-10",
+      "note": "Login/share/payment bridge; account identity potential only."
+    },
+    {
+      "id": "sdk-mob",
+      "name": "MobTech / ShareSDK",
+      "vendor": "上海游昆信息技术有限公司",
+      "package_prefixes": [
+        "com.mob",
+        "cn.sharesdk"
+      ],
+      "potential_data_types": [
+        "DEVICE_IDENTIFIER",
+        "OAID",
+        "IMEI",
+        "LOCATION"
+      ],
+      "source": "腾讯隐私政策第三方 SDK 目录（代码包名 com.mob；收集信息：系统运行信息、IMEI、OAID、IMSI、IDFA、网络状态信息、基站信息、地理位置信息、应用列表信息）",
+      "source_url": "https://www.mob.com/about/policy",
+      "license": "Proprietary vendor SDK; package name published by vendor and in host-app disclosure tables.",
+      "verified_at": "2026-10-10",
+      "note": "Broad share/analytics SDK; vendor discloses a wide identifier and location list."
+    },
+    {
+      "id": "sdk-turingfd",
+      "name": "腾讯 TuringFD",
+      "vendor": "深圳市腾讯计算机系统有限公司",
+      "package_prefixes": [
+        "com.tencent.turingfd"
+      ],
+      "potential_data_types": [
+        "DEVICE_IDENTIFIER",
+        "ANDROID_ID"
+      ],
+      "source": "腾讯隐私政策第三方 SDK 目录（第三方 SDK 名称：腾讯 Tbs；代码包名含 com.tencent.turingfd.sdk.tbs；使用目的：优化移动端 webview 体验）",
+      "source_url": "https://cftweb.3g.qq.com/privacy/privacyPolicy?content_id=a2b4d7b13129002c4af9ed7b9bdc6cbd",
+      "license": "Proprietary vendor SDK; package name published by vendor in its privacy policy.",
+      "verified_at": "2026-10-10",
+      "note": "Vendor publishes this namespace as part of the TBS family; attribution only."
+    },
+    {
+      "id": "sdk-tencent-tbs",
+      "name": "腾讯浏览服务 TBS / X5",
+      "vendor": "深圳市腾讯计算机系统有限公司",
+      "package_prefixes": [
+        "com.tencent.smtt",
+        "com.tencent.tbs"
+      ],
+      "potential_data_types": [
+        "DEVICE_IDENTIFIER",
+        "ANDROID_ID"
+      ],
+      "source": "腾讯隐私政策第三方 SDK 目录（第三方 SDK 名称：腾讯 Tbs；代码包名 com.tencent.smtt、com.tencent.tbs）",
+      "source_url": "https://cftweb.3g.qq.com/privacy/privacyPolicy?content_id=a2b4d7b13129002c4af9ed7b9bdc6cbd",
+      "license": "Proprietary vendor SDK; package names published by vendor in its privacy policy.",
+      "verified_at": "2026-10-10",
+      "note": "WebView kernel; vendor discloses deviceId, IMSI, AndroidID and related fields."
+    }
+  ],
+  "excluded_namespaces": [
+    "android",
+    "androidx",
+    "java",
+    "javax",
+    "kotlin",
+    "kotlinx",
+    "org.jetbrains",
+    "dalvik",
+    "libcore",
+    "com.android",
+    "sun",
+    "org.apache",
+    "org.json",
+    "org.xml",
+    "org.w3c",
+    "org.intellij"
+  ],
+  "exclusion_note": "Platform and language-runtime namespaces are never attributed to a vendor, even when a rule prefix could otherwise overlap."
+}

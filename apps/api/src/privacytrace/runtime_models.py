@@ -35,6 +35,7 @@ class ScanCoverage(Model):
     scope: Literal["DEX_ENTRIES"] = "DEX_ENTRIES"
     behavior_detection: Literal["LIMITED_RULE_BASED_STATIC"] = "LIMITED_RULE_BASED_STATIC"
     behavior_limitations: list[str] = Field(default_factory=behavior_limitations, max_length=1000)
+    sdk_attribution_limitations: list[str] = Field(default_factory=list, max_length=1000)
     limitations: list[str] = Field(max_length=1000)
     scanned_dex: list[str] = Field(max_length=1000)
     failed_dex: list[str] = Field(max_length=1000)

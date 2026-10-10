@@ -112,7 +112,8 @@ test('R1 Boundary: sentenceContext handles astral plane Unicode surrogate pairs 
 // ---------------------------------------------------------------------------
 // Replicates the App.vue sourceInfo rule: provenance is read from the explicit
 // backend `source_origin` field. sample_id naming is never consulted.
-type Origin = 'SYNTHETIC' | 'CONTROLLED' | 'OFFLINE_REPLAY' | 'REAL_SCAN'
+type Origin = 'SYNTHETIC' | 'CONTROLLED' | 'REAL_SCAN'
+type DeliveryMode = 'LIVE_GENERATED' | 'PERSISTED_REPLAY'
 
 function getSourceInfo(report: { demo: boolean; job?: { sample_id?: string; source_origin?: string } } | null) {
   if (!report) return null
@@ -121,12 +122,24 @@ function getSourceInfo(report: { demo: boolean; job?: { sample_id?: string; sour
   const labels: Record<string, { badge: string; label: string }> = {
     SYNTHETIC: { badge: '人工示例 · SYNTHETIC', label: 'SYNTHETIC · 人工构造示例' },
     CONTROLLED: { badge: '受控评测 · CONTROLLED', label: 'CONTROLLED · 受控测试输入' },
-    OFFLINE_REPLAY: { badge: '离线回放 · OFFLINE_REPLAY', label: 'OFFLINE_REPLAY · 真实 APK 静态报告' },
-    REAL_SCAN: { badge: '本机扫描 · REAL_SCAN', label: 'REAL_SCAN · 本机真实 APK 静态扫描' },
+    REAL_SCAN: { badge: '真实 APK · REAL_SCAN', label: 'REAL_SCAN · 真实 APK 静态扫描' },
   }
   const known = labels[origin]
   if (!known) return { type: origin, badge: `未识别来源 · ${origin}`, label: `未识别来源 · ${origin}` }
   return { type: origin, ...known }
+}
+
+function getDeliveryInfo(report: { delivery_mode?: string } | null) {
+  if (!report) return null
+  const mode = report.delivery_mode
+  if (!mode) return { type: 'UNKNOWN', badge: '投递方式未标注' }
+  const labels: Record<string, { badge: string }> = {
+    LIVE_GENERATED: { badge: '本次生成 · LIVE' },
+    PERSISTED_REPLAY: { badge: '持久化回放 · REPLAY' },
+  }
+  const known = labels[mode]
+  if (!known) return { type: mode, badge: `未识别投递 · ${mode}` }
+  return { type: mode, ...known }
 }
 
 test('R4 Source classification: demo envelope is always SYNTHETIC', () => {
@@ -143,9 +156,10 @@ test('R4 Source classification follows source_origin, not sample_id naming', () 
   const controlledJobNamedDemo = { demo: false, job: { id: 'b', sample_id: 'demo', source_origin: 'CONTROLLED' } }
   assert.strictEqual(getSourceInfo(controlledJobNamedDemo)?.type, 'CONTROLLED')
 
-  // A plain offline replay is classified from the field alone.
-  const replay = { demo: false, job: { id: 'c', sample_id: 'gkd-s1-first', source_origin: 'OFFLINE_REPLAY' } }
-  assert.strictEqual(getSourceInfo(replay)?.type, 'OFFLINE_REPLAY')
+  // A persisted real scan keeps REAL_SCAN even when it is a replay: origin is
+  // immutable, and how it was loaded is reported separately as delivery_mode.
+  const replay = { demo: false, job: { id: 'c', sample_id: 'gkd-s1-first', source_origin: 'REAL_SCAN' } }
+  assert.strictEqual(getSourceInfo(replay)?.type, 'REAL_SCAN')
 })
 
 test('R4 Source classification: missing or unknown origin is never silently mislabelled', () => {
@@ -159,9 +173,53 @@ test('R4 Source classification: missing or unknown origin is never silently misl
 })
 
 test('R4 Every known origin maps to a distinct badge', () => {
-  const origins: Origin[] = ['SYNTHETIC', 'CONTROLLED', 'OFFLINE_REPLAY', 'REAL_SCAN']
+  const origins: Origin[] = ['SYNTHETIC', 'CONTROLLED', 'REAL_SCAN']
   const badges = origins.map(o => getSourceInfo({ demo: false, job: { source_origin: o } })?.badge)
   assert.strictEqual(new Set(badges).size, origins.length, 'Each origin needs a unique badge')
+})
+
+test('R4 A real scan is LIVE_GENERATED when produced and PERSISTED_REPLAY when reloaded', () => {
+  // Same immutable origin, two different delivery modes: the distinction the
+  // review asked for must be expressible without touching source_origin.
+  const job = { sample_id: 'com.example.app', source_origin: 'REAL_SCAN' }
+  assert.strictEqual(getSourceInfo({ demo: false, job })?.type, 'REAL_SCAN')
+  assert.strictEqual(getSourceInfo({ demo: false, job })?.type, 'REAL_SCAN', 'Origin never changes with reload')
+
+  const liveDelivery = getDeliveryInfo({ delivery_mode: 'LIVE_GENERATED' })!
+  const replayDelivery = getDeliveryInfo({ delivery_mode: 'PERSISTED_REPLAY' })!
+  assert.strictEqual(liveDelivery.type, 'LIVE_GENERATED')
+  assert.strictEqual(replayDelivery.type, 'PERSISTED_REPLAY')
+  assert.notStrictEqual(liveDelivery.badge, replayDelivery.badge)
+
+  // The UI must not claim "本机扫描" for a historical reload; the delivery badge
+  // carries that meaning instead of the origin badge.
+  assert(!liveDelivery.badge.includes('REAL_SCAN'))
+  assert(!replayDelivery.badge.includes('REAL_SCAN'))
+})
+
+test('R4 Delivery mode is independent of origin across all combinations', () => {
+  const origins: Origin[] = ['SYNTHETIC', 'CONTROLLED', 'REAL_SCAN']
+  const modes: DeliveryMode[] = ['LIVE_GENERATED', 'PERSISTED_REPLAY']
+  const seen = new Set<string>()
+  for (const o of origins) {
+    for (const m of modes) {
+      const originInfo = getSourceInfo({ demo: false, job: { source_origin: o } })!
+      const deliveryInfo = getDeliveryInfo({ delivery_mode: m })!
+      assert.strictEqual(originInfo.type, o)
+      assert.strictEqual(deliveryInfo.type, m)
+      seen.add(`${originInfo.badge} | ${deliveryInfo.badge}`)
+    }
+  }
+  assert.strictEqual(seen.size, origins.length * modes.length, 'All origin x delivery combinations must be distinguishable')
+})
+
+test('R4 Unknown delivery mode is reported, never assumed to be live', () => {
+  assert.strictEqual(getDeliveryInfo({})?.type, 'UNKNOWN')
+  assert.strictEqual(getDeliveryInfo(null), null)
+  // An unrecognised mode must not fall back to LIVE_GENERATED.
+  const odd = getDeliveryInfo({ delivery_mode: 'TELEPORTED' })!
+  assert.strictEqual(odd.type, 'TELEPORTED')
+  assert(odd.badge.includes('未识别投递'))
 })
 
 // Replicates exact implementation from App.vue:118-126

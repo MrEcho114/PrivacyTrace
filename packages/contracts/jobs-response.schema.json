@@ -124,11 +124,10 @@
       "type": "object"
     },
     "SourceOrigin": {
-      "description": "Explicit provenance of a job, recorded instead of inferred from names.\n\nOFFLINE_REPLAY means a real APK scan whose report is replayed from persisted\nstorage; REAL_SCAN means the scan was produced by this process. CONTROLLED\nand SYNTHETIC never describe a real user application.",
+      "description": "Immutable provenance of the underlying data, recorded instead of inferred.\n\nThis field answers \"where did the data come from\". It never changes once a\njob is created. It does NOT describe how a report is being served right now\n-- a job created by a real scan keeps REAL_SCAN even when its report is later\nreplayed from persisted storage. Use `delivery_mode` for the loading path.\n\nCONTROLLED and SYNTHETIC never describe a real user application.",
       "enum": [
         "SYNTHETIC",
         "CONTROLLED",
-        "OFFLINE_REPLAY",
         "REAL_SCAN"
       ],
       "title": "SourceOrigin",

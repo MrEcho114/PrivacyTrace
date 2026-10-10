@@ -11,7 +11,7 @@ from threading import RLock
 from uuid import uuid4
 
 from .consistency import evaluate
-from .models import AnalysisJob, EvaluationInput
+from .models import AnalysisJob, DeliveryMode, EvaluationInput
 from .runtime_models import (
     Report,
     ReviewEvent,
@@ -137,13 +137,14 @@ class JobStore:
         finally:
             temp.unlink(missing_ok=True)
 
-    def _report(self, record):
+    def _report(self, record, delivery_mode: DeliveryMode = DeliveryMode.PERSISTED_REPLAY):
         if record.bundle is None or record.sample is None or record.coverage is None:
             raise ValueError("Job report is not available")
         bundle = record.bundle
         return Report(
             sample=record.sample,
             job=record.job,
+            delivery_mode=delivery_mode,
             result=evaluate(bundle),
             evidence=bundle.evidence,
             behaviors=bundle.behaviors,
@@ -172,7 +173,7 @@ class JobStore:
                 coverage=ScanCoverage.model_validate(coverage),
                 tools=tools,
             )
-            report = self._report(record)
+            report = self._report(record, DeliveryMode.LIVE_GENERATED)
             self._write(record)
             return report
 
@@ -252,7 +253,9 @@ class JobStore:
             )
             record.bundle = bundle
             record.reviews.append(event)
-            report = self._report(record)
+            # A review re-evaluates a report loaded from storage; it is not a
+            # freshly produced scan, so it is delivered as a persisted replay.
+            report = self._report(record, DeliveryMode.PERSISTED_REPLAY)
             self._write(record)
             return report
 

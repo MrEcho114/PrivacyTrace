@@ -29,6 +29,8 @@ export type ContextualHint = {
   "evidence_ids": Array<string>;
 };
 
+export type DeliveryMode = "LIVE_GENERATED" | "PERSISTED_REPLAY";
+
 export type EvaluationInput = {
   "job": AnalysisJob;
   "evidence": Array<Evidence>;
@@ -137,6 +139,7 @@ export type Report = {
   "demo"?: false;
   "sample": SampleMetadata;
   "job": AnalysisJob;
+  "delivery_mode"?: DeliveryMode;
   "result": EvaluationResult;
   "evidence": Array<Evidence>;
   "behaviors": Array<PrivacyBehavior>;
@@ -186,4 +189,4 @@ export type ScanCoverage = {
   "failed_dex": Array<string>;
 };
 
-export type SourceOrigin = "SYNTHETIC" | "CONTROLLED" | "OFFLINE_REPLAY" | "REAL_SCAN";
+export type SourceOrigin = "SYNTHETIC" | "CONTROLLED" | "REAL_SCAN";

@@ -155,7 +155,10 @@ def main() -> None:
         {"id": "behavior-screen-capture", "data_type": "SCREEN_CAPTURE", "action": "ACCESS", "evidence_ids": ["ev-dex-screenshot-api"]}
     )
     replay_bundle = EvaluationInput.model_validate(replay_data)
-    replay_job = replay_bundle.job.model_copy(update={"source_origin": SourceOrigin.OFFLINE_REPLAY})
+    # The data came from a real APK scan, so its immutable origin is REAL_SCAN.
+    # That this fixture is served from persisted storage is a property of the
+    # loading path, reported per response as Report.delivery_mode, not of the data.
+    replay_job = replay_bundle.job.model_copy(update={"source_origin": SourceOrigin.REAL_SCAN})
     replay_bundle = replay_bundle.model_copy(update={"job": replay_job})
     write_record(
         "gkd-s1-first",
@@ -163,7 +166,7 @@ def main() -> None:
             job=replay_job,
             bundle=replay_bundle,
             sample={
-                "name": "离线回放样本（真实 APK 静态报告）",
+                "name": "持久化回放样本（真实 APK 静态报告）",
                 "package_name": "org.privacytrace.fixture",
                 "version_name": "1",
                 "version_code": 1,
@@ -177,7 +180,7 @@ def main() -> None:
                 scanned_dex=["classes.dex"],
                 failed_dex=[],
             ),
-            tools={"scanner": "OFFLINE_REPLAY_FIXTURE", "jadx": "UNAVAILABLE_BYTECODE_FALLBACK"},
+            tools={"scanner": "REAL_SCAN_FIXTURE", "jadx": "UNAVAILABLE_BYTECODE_FALLBACK"},
         ),
     )
 

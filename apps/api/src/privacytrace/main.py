@@ -85,6 +85,9 @@ def create_app(store_root: Path | None = None):
                 "input_mode": "SYNTHETIC",
             },
             "job": bundle.job,
+            # The demo report is assembled in this response, not loaded from a
+            # stored job, so its delivery mode is a live generation.
+            "delivery_mode": "LIVE_GENERATED",
             "result": evaluate(bundle),
             "evidence": bundle.evidence,
             "behaviors": bundle.behaviors,

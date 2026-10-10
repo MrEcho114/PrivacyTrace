@@ -155,17 +155,32 @@ class PolicyClaim(Model):
 
 
 class SourceOrigin(StrEnum):
-    """Explicit provenance of a job, recorded instead of inferred from names.
+    """Immutable provenance of the underlying data, recorded instead of inferred.
 
-    OFFLINE_REPLAY means a real APK scan whose report is replayed from persisted
-    storage; REAL_SCAN means the scan was produced by this process. CONTROLLED
-    and SYNTHETIC never describe a real user application.
+    This field answers "where did the data come from". It never changes once a
+    job is created. It does NOT describe how a report is being served right now
+    -- a job created by a real scan keeps REAL_SCAN even when its report is later
+    replayed from persisted storage. Use `delivery_mode` for the loading path.
+
+    CONTROLLED and SYNTHETIC never describe a real user application.
     """
 
     SYNTHETIC = "SYNTHETIC"
     CONTROLLED = "CONTROLLED"
-    OFFLINE_REPLAY = "OFFLINE_REPLAY"
     REAL_SCAN = "REAL_SCAN"
+
+
+class DeliveryMode(StrEnum):
+    """How a report reached the client in this response. Repeated per request.
+
+    This field answers "how was it loaded", which is mutable: the same
+    persisted job can be delivered as LIVE_GENERATED in the run that produced
+    it and as PERSISTED_REPLAY on any later load. It is never persisted on the
+    job, because it depends on the serving path rather than on the data.
+    """
+
+    LIVE_GENERATED = "LIVE_GENERATED"
+    PERSISTED_REPLAY = "PERSISTED_REPLAY"
 
 
 class AnalysisJob(Model):

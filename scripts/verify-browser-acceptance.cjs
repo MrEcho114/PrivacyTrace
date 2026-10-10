@@ -66,6 +66,72 @@ function killProcessTree(pid) {
   } catch {}
 }
 
+// Terminates the spawned children and waits until they are gone, so the temp
+// store is never removed while a server still holds files inside it.
+async function stopChildren(children) {
+  for (const child of children) {
+    killProcessTree(child.pid);
+  }
+  const deadline = Date.now() + 10000;
+  while (Date.now() < deadline) {
+    const alive = children.filter(c => c.exitCode === null && c.signalCode === null && c.pid);
+    if (alive.length === 0) return;
+    await new Promise(r => setTimeout(r, 100));
+  }
+}
+
+// Proves the frontend on WEB_PORT is the instance this run owns: it must serve
+// this project's own dev HTML. A developer's unrelated Vite instance, or any
+// other server squatting on the port, must never be reused -- it could proxy to
+// a real backend and write outside the isolated store.
+async function identifyFrontend(origin) {
+  try {
+    const res = await fetch(`${origin}/`, { signal: AbortSignal.timeout(2000) });
+    if (!res.ok) return { ours: false, reason: `HTTP ${res.status}` };
+    const html = await res.text();
+    // Vite serves the app's own index.html, which mounts this app's entry
+    // module. Any other server will not carry this marker.
+    const ours = html.includes('/src/main.ts') && html.includes('id="app"');
+    return { ours, reason: ours ? 'matched PrivacyTrace dev entry' : 'no PrivacyTrace dev entry in HTML' };
+  } catch (err) {
+    return { ours: false, reason: `unreachable: ${err.message}` };
+  }
+}
+
+// Confirms the frontend actually proxies /api to *this* run's isolated API.
+async function verifyFrontendProxy(origin) {
+  try {
+    const res = await fetch(`${origin}/api/v1/jobs`, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) return { ok: false, reason: `proxy returned HTTP ${res.status}` };
+    const body = await res.json();
+    const ids = Array.isArray(body.jobs) ? body.jobs.map(j => j.id) : [];
+    // The isolated store is seeded only from fixtures/acceptance-jobs.
+    const expected = fixtureJobIds();
+    const leaked = ids.filter(id => !expected.includes(id));
+    if (leaked.length > 0) {
+      return { ok: false, reason: `proxy exposes jobs outside the isolated store: ${leaked.join(', ')}` };
+    }
+    if (!expected.some(id => ids.includes(id))) {
+      return { ok: false, reason: 'proxy does not serve the isolated fixture store' };
+    }
+    return { ok: true, reason: 'proxy targets the isolated API' };
+  } catch (err) {
+    return { ok: false, reason: `unreachable: ${err.message}` };
+  }
+}
+
+let _fixtureIds = null;
+function fixtureJobIds(projectRoot) {
+  if (_fixtureIds) return _fixtureIds;
+  const root = projectRoot || path.resolve(__dirname, '..');
+  const dir = path.join(root, 'fixtures', 'acceptance-jobs');
+  _fixtureIds = fs
+    .readdirSync(dir)
+    .filter(n => n.endsWith('.json'))
+    .map(n => n.replace(/\.json$/, ''));
+  return _fixtureIds;
+}
+
 async function selectSource(page, value) {
   await page.locator(`#report-source option[value="${value}"]`).waitFor({ state: 'attached', timeout: 15000 });
   await page.locator('#report-source').selectOption(value);
@@ -171,68 +237,95 @@ async function main() {
 
   const childrenToKill = [];
 
-  // Boot the API against an isolated, fixture-seeded store. Only a process this
-  // script spawns is ever terminated; no foreign port owner is touched.
-  const storeDir = createIsolatedStore(projectRoot);
-  console.log(`[Server] Using isolated store: ${storeDir}`);
+  // Every resource acquired below lives inside this outermost try/finally, from
+  // the temporary store onwards. If Chromium is missing, the API fails to boot,
+  // or the port check throws, cleanup still runs and no child or temp directory
+  // is leaked. `browser`/`storeDir` stay mutable so cleanup tolerates the case
+  // where acquisition failed part-way.
+  let storeDir = null;
+  let browser = null;
+  let fatal = null;
 
-  let apiProc = null;
-  if (await isPortOpen(`${API_ORIGIN}/api/v1/jobs`)) {
-    throw new Error(
-      `Port ${API_PORT} is already serving requests. Stop the process using it or set ` +
-        'PRIVACYTRACE_ACCEPTANCE_API_PORT to a free port. This script never terminates processes it did not start.'
-    );
-  }
-  console.log(`[Server] Starting API backend on port ${API_PORT}...`);
-  apiProc = spawn('uv', ['run', '--project', 'apps/api', 'uvicorn', 'privacytrace.main:app', '--port', String(API_PORT)], {
-    cwd: projectRoot,
-    shell: true,
-    stdio: 'pipe',
-    env: { ...process.env, PRIVACYTRACE_STORE_ROOT: storeDir },
-  });
-  childrenToKill.push(apiProc);
-  if (!(await waitForServer(`${API_ORIGIN}/api/v1/jobs`, 60000))) {
-    throw new Error(`Failed to start API backend on port ${API_PORT}`);
-  }
-  console.log('[Server] API backend is ready.');
+  try {
+    // Boot the API against an isolated, fixture-seeded store. Only a process this
+    // script spawns is ever terminated; no foreign port owner is touched.
+    storeDir = createIsolatedStore(projectRoot);
+    console.log(`[Server] Using isolated store: ${storeDir}`);
 
-  // Ensure the Vite frontend is running against the isolated API.
-  if (!(await isPortOpen(WEB_ORIGIN))) {
-    console.log(`[Server] Starting Vite frontend on port ${WEB_PORT}...`);
-    const webProc = spawn('npm', ['--prefix', 'apps/web', 'run', 'dev'], {
+    if (await isPortOpen(`${API_ORIGIN}/api/v1/jobs`)) {
+      throw new Error(
+        `Port ${API_PORT} is already serving requests. Stop the process using it or set ` +
+          'PRIVACYTRACE_ACCEPTANCE_API_PORT to a free port. This script never terminates processes it did not start.'
+      );
+    }
+    console.log(`[Server] Starting API backend on port ${API_PORT}...`);
+    const apiProc = spawn('uv', ['run', '--project', 'apps/api', 'uvicorn', 'privacytrace.main:app', '--port', String(API_PORT)], {
       cwd: projectRoot,
       shell: true,
       stdio: 'pipe',
-      env: { ...process.env, PRIVACYTRACE_API_ORIGIN: API_ORIGIN, PRIVACYTRACE_WEB_PORT: String(WEB_PORT) },
+      env: { ...process.env, PRIVACYTRACE_STORE_ROOT: storeDir },
     });
-    childrenToKill.push(webProc);
-    if (!(await waitForServer(WEB_ORIGIN, 60000))) {
-      throw new Error(`Failed to start Vite frontend on port ${WEB_PORT}`);
+    childrenToKill.push(apiProc);
+    if (!(await waitForServer(`${API_ORIGIN}/api/v1/jobs`, 60000))) {
+      throw new Error(`Failed to start API backend on port ${API_PORT}`);
     }
-    console.log('[Server] Vite frontend is ready.');
-  } else {
-    console.log(`[Server] Vite frontend is already running on port ${WEB_PORT}.`);
-  }
+    console.log('[Server] API backend is ready.');
 
-  const { chromium } = getPlaywright();
-  const execPath = getChromiumExecutable();
-  console.log(`[Browser] Launching Chromium with executable: ${execPath || 'default'}`);
+    // The frontend must be an instance this run owns and controls. Reusing a
+    // foreign server on WEB_PORT is refused: it may proxy to a real backend and
+    // write outside the isolated store.
+    if (await isPortOpen(WEB_ORIGIN)) {
+      const identity = await identifyFrontend(WEB_ORIGIN);
+      if (!identity.ours) {
+        throw new Error(
+          `Port ${WEB_PORT} is already serving a server this run does not own (${identity.reason}). ` +
+            'Refusing to reuse it because its API proxy target is unknown. Stop that server or set ' +
+            'PRIVACYTRACE_ACCEPTANCE_WEB_PORT to a free port.'
+        );
+      }
+      const proxy = await verifyFrontendProxy(WEB_ORIGIN);
+      if (!proxy.ok) {
+        throw new Error(
+          `The frontend on port ${WEB_PORT} looks like PrivacyTrace but is not wired to this run's ` +
+            `isolated API (${proxy.reason}). Refusing to reuse it. Stop that server or set ` +
+            'PRIVACYTRACE_ACCEPTANCE_WEB_PORT to a free port.'
+        );
+      }
+      console.log(`[Server] Reusing the frontend on port ${WEB_PORT} (${proxy.reason}).`);
+    } else {
+      console.log(`[Server] Starting Vite frontend on port ${WEB_PORT}...`);
+      const webProc = spawn('npm', ['--prefix', 'apps/web', 'run', 'dev'], {
+        cwd: projectRoot,
+        shell: true,
+        stdio: 'pipe',
+        env: { ...process.env, PRIVACYTRACE_API_ORIGIN: API_ORIGIN, PRIVACYTRACE_WEB_PORT: String(WEB_PORT) },
+      });
+      childrenToKill.push(webProc);
+      if (!(await waitForServer(WEB_ORIGIN, 60000))) {
+        throw new Error(`Failed to start Vite frontend on port ${WEB_PORT}`);
+      }
+      console.log('[Server] Vite frontend is ready.');
+    }
 
-  const browser = await chromium.launch({
-    headless: true,
-    ...(execPath ? { executablePath: execPath } : {}),
-  });
+    const { chromium } = getPlaywright();
+    const execPath = getChromiumExecutable();
+    console.log(`[Browser] Launching Chromium with executable: ${execPath || 'default'}`);
 
-  const browserVersion = browser.version();
-  console.log(`[Browser] Chromium launched successfully (version: ${browserVersion})`);
+    browser = await chromium.launch({
+      headless: true,
+      ...(execPath ? { executablePath: execPath } : {}),
+    });
 
-  const context = await browser.newContext({
-    viewport: { width: 1280, height: 900 },
-  });
-  const page = await context.newPage();
+    const browserVersion = browser.version();
+    console.log(`[Browser] Chromium launched successfully (version: ${browserVersion})`);
 
-  const consoleLogs = [];
-  const pageErrors = [];
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 900 },
+    });
+    const page = await context.newPage();
+
+    const consoleLogs = [];
+    const pageErrors = [];
   const errorLogs = [];
   const stepSequences = [];
   const testResults = [];
@@ -252,16 +345,14 @@ async function main() {
     console.log(`[${tc}] ${action}: ${details}`);
   };
 
-  try {
-    // ------------------------------------------------------------------------
-    // TC-01: R1 Long-text rendering (200k chars), pagination switching (20/page),
-    // full text expand/collapse/re-expand, locator jumps.
-    // ------------------------------------------------------------------------
-    console.log('\n--- Running TC-01: R1 Long-text, pagination, expand/collapse ---');
-    const realReportRes = await fetch(`${API_ORIGIN}/api/v1/jobs/gkd-s1-first/report`);
+  // ------------------------------------------------------------------------
+  // TC-01: R1 Long-text rendering (200k chars), pagination switching (20/page),
+  // full text expand/collapse/re-expand, locator jumps.
+  // ------------------------------------------------------------------------
+  console.log('\n--- Running TC-01: R1 Long-text, pagination, expand/collapse ---');
+  const realReportRes = await fetch(`${API_ORIGIN}/api/v1/jobs/gkd-s1-first/report`);
     assert(realReportRes.ok, 'Failed to fetch base report for gkd-s1-first');
     const baseReport = await realReportRes.json();
-
     const longReport = structuredClone(baseReport);
     // Expand policy document to 200,000 characters
     const textChunk = '本隐私政策规定了我们如何收集、使用、存储和保护您的个人信息，包括但不限于位置权限与系统信息。';
@@ -555,20 +646,24 @@ async function main() {
     testResults.push({ id: 'TC-03', name: 'R3 Error states, timeout & bytecode fallback', status: 'PASSED' });
 
     // ------------------------------------------------------------------------
-    // TC-04: R4 Multi-source badges (synthetic demo, controlled fixture, offline replay with job.created_at timestamp),
+    // TC-04: R4 Origin vs delivery badges (synthetic demo, controlled fixture,
+    // persisted real-APK replay with job.created_at timestamp),
     // audit PT-910 / S1 reports (gkd-s1-first.json)
     // ------------------------------------------------------------------------
-    console.log('\n--- Running TC-04: R4 Multi-source badges & created_at timestamp ---');
+    console.log('\n--- Running TC-04: R4 Origin/delivery badges & created_at timestamp ---');
 
     // 1. Synthetic Demo
     await selectSource(page, 'demo:synthetic');
     recordStep('TC-04', 'select_demo', 'Selected demo:synthetic');
     await page.locator('.sample-card').waitFor();
-    const demoBadge = await page.locator('.sample-card .badge').innerText();
+    const demoBadge = await page.locator('.badge-stack .badge').first().innerText();
     assert(demoBadge.includes('人工示例') && demoBadge.includes('SYNTHETIC'), `Badge should show 人工示例 · SYNTHETIC, got: ${demoBadge}`);
+    // The demo envelope is assembled per response, so it is a live generation.
+    const demoDeliveryBadge = await page.locator('.badge-stack .badge').last().innerText();
+    assert(demoDeliveryBadge.includes('本次生成') && demoDeliveryBadge.includes('LIVE'), `Demo delivery badge should show 本次生成 · LIVE, got: ${demoDeliveryBadge}`);
     const demoNote = await page.locator('.demo-note').innerText();
     assert(demoNote.includes('SYNTHETIC · 人工构造示例'), 'Demo note should show SYNTHETIC label');
-    recordStep('TC-04', 'verify_synthetic_badge', 'Confirmed SYNTHETIC demo badge and label');
+    recordStep('TC-04', 'verify_synthetic_badge', 'Confirmed SYNTHETIC demo origin badge and live delivery badge');
     const screenshotTc04Demo = path.join(screenshotDir, 'tc04-source-synthetic.png');
     await page.screenshot({ path: screenshotTc04Demo, fullPage: true });
 
@@ -576,7 +671,7 @@ async function main() {
     await selectSource(page, 'job:ui-controlled-partial');
     recordStep('TC-04', 'select_controlled', 'Selected job:ui-controlled-partial (source_origin=CONTROLLED)');
     await page.locator('.sample-card').waitFor();
-    const controlledBadge = await page.locator('.sample-card .badge').innerText();
+    const controlledBadge = await page.locator('.badge-stack .badge').first().innerText();
     assert(controlledBadge.includes('受控评测') && controlledBadge.includes('CONTROLLED'), `Badge should show 受控评测 · CONTROLLED, got: ${controlledBadge}`);
     const controlledNote = await page.locator('.demo-note').innerText();
     assert(controlledNote.includes('CONTROLLED · 受控测试输入'), 'Note should show CONTROLLED label');
@@ -584,29 +679,33 @@ async function main() {
     const screenshotTc04Controlled = path.join(screenshotDir, 'tc04-source-controlled.png');
     await page.screenshot({ path: screenshotTc04Controlled, fullPage: true });
 
-    // 3. Offline Replay with a persisted real-APK report (gkd-s1-first)
+    // 3. A persisted real-APK report: origin stays REAL_SCAN, delivery is a replay
     await selectSource(page, 'job:gkd-s1-first');
     recordStep('TC-04', 'select_replay', 'Selected job:gkd-s1-first');
     await page.locator('.sample-card').waitFor();
-    const replayBadge = await page.locator('.sample-card .badge').innerText();
-    assert(replayBadge.includes('离线回放') && replayBadge.includes('OFFLINE_REPLAY'), `Badge should show 离线回放 · OFFLINE_REPLAY, got: ${replayBadge}`);
+
+    // The two badges are orthogonal: origin describes the data, delivery
+    // describes this load. Reloading a REAL_SCAN job must never relabel it as
+    // "本机扫描/本次生成" -- the replay-ness lives in the delivery badge.
+    const originBadge = await page.locator('.badge-stack .badge').first().innerText();
+    const deliveryBadge = await page.locator('.badge-stack .badge').last().innerText();
+    assert(originBadge.includes('真实 APK') && originBadge.includes('REAL_SCAN'), `Origin badge should show 真实 APK · REAL_SCAN, got: ${originBadge}`);
+    assert(deliveryBadge.includes('持久化回放') && deliveryBadge.includes('REPLAY'), `Delivery badge should show 持久化回放 · REPLAY, got: ${deliveryBadge}`);
+    assert(!deliveryBadge.includes('本次生成'), 'A reloaded report must not claim it was generated in this run');
+    recordStep('TC-04', 'verify_delivery_mode', `Confirmed independent origin (${originBadge}) and delivery (${deliveryBadge}) badges`);
 
     // Classification must follow source_origin, never the sample_id naming.
     // These two probe jobs carry misleading sample_id prefixes on purpose.
-    const sourceProbe = await page.evaluate(async () => {
-      const results = {};
-      for (const [label, payload] of Object.entries({
-        realJobNamedControlled: { sample_id: 'CONTROLLED-LOOKALIKE', source_origin: 'REAL_SCAN' },
-        controlledJobNamedDemo: { sample_id: 'demo', source_origin: 'CONTROLLED' },
-      })) {
-        results[label] = payload;
-      }
-      return results;
-    });
-    assert.equal(sourceProbe.realJobNamedControlled.source_origin, 'REAL_SCAN', 'A real scan must not be classified from its sample_id');
     assert.equal(revealOrigin('CONTROLLED-LOOKALIKE', 'REAL_SCAN'), 'REAL_SCAN', 'sample_id prefix must not override an explicit REAL_SCAN origin');
     assert.equal(revealOrigin('demo', 'CONTROLLED'), 'CONTROLLED', 'a sample_id named demo must not override an explicit CONTROLLED origin');
     recordStep('TC-04', 'verify_origin_precedence', 'Confirmed source classification reads source_origin, not sample_id naming');
+
+    // The backend contract must carry delivery_mode on the report, and the
+    // reloaded fixture must be a PERSISTED_REPLAY with an untouched origin.
+    const replayReport = await (await fetch(`${API_ORIGIN}/api/v1/jobs/gkd-s1-first/report`)).json();
+    assert.equal(replayReport.job.source_origin, 'REAL_SCAN', 'Persisted report keeps its immutable REAL_SCAN origin');
+    assert.equal(replayReport.delivery_mode, 'PERSISTED_REPLAY', `A reloaded report must be PERSISTED_REPLAY, got: ${replayReport.delivery_mode}`);
+    recordStep('TC-04', 'verify_delivery_contract', 'Confirmed report.delivery_mode=PERSISTED_REPLAY with source_origin=REAL_SCAN');
 
     // Verify job.created_at timestamp display
     const sampleCardText = await page.locator('.sample-card').innerText();
@@ -768,6 +867,8 @@ async function main() {
         notes_optional: true,
         authority_unauthenticated: true,
         source_origin_explicit: true,
+        delivery_mode_explicit: true,
+        origin_and_delivery_independent: true,
         real_timeout_covered: true,
         isolated_store: true,
       },
@@ -776,23 +877,38 @@ async function main() {
     const proofPath = path.join(evidenceDir, 'browser-proof.json');
     fs.writeFileSync(proofPath, JSON.stringify(proof, null, 2), 'utf-8');
     console.log(`\n[Receipt] Written browser proof receipt to: ${proofPath}`);
-
+  } catch (err) {
+    // Hold the error so cleanup runs first; rethrow after the finally block.
+    fatal = err;
   } finally {
-    try {
-      fs.rmSync(storeDir, { recursive: true, force: true });
-      console.log(`[Cleanup] Removed isolated store ${storeDir}. The repository data directory was never touched.`);
-    } catch (err) {
-      console.log(`[Cleanup] Could not remove isolated store ${storeDir}: ${err}`);
+    // Order matters: close the browser, then stop and await the servers, and
+    // only then remove the temp store -- a live server may still hold files
+    // inside it, which would leave the directory behind.
+    if (browser) {
+      try {
+        await browser.close();
+        console.log('[Browser] Chromium browser closed cleanly.');
+      } catch (err) {
+        console.log(`[Cleanup] Could not close Chromium: ${err}`);
+      }
     }
 
-    await browser.close();
-    console.log('[Browser] Chromium browser closed cleanly.');
-
-    for (const child of childrenToKill) {
-      killProcessTree(child.pid);
+    if (childrenToKill.length > 0) {
+      await stopChildren(childrenToKill);
+      console.log('[Cleanup] Stopped servers spawned by this run.');
     }
-    console.log('[Cleanup] Stopped servers spawned by this run.');
+
+    if (storeDir) {
+      try {
+        fs.rmSync(storeDir, { recursive: true, force: true });
+        console.log(`[Cleanup] Removed isolated store ${storeDir}. The repository data directory was never touched.`);
+      } catch (err) {
+        console.log(`[Cleanup] Could not remove isolated store ${storeDir}: ${err}`);
+      }
+    }
   }
+
+  if (fatal) throw fatal;
 }
 
 main().catch(err => {

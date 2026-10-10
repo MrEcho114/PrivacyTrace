@@ -8,6 +8,7 @@ from pydantic import Field, model_validator
 from .coverage_scope import behavior_limitations
 from .models import (
     AnalysisJob,
+    DeliveryMode,
     EvaluationInput,
     EvaluationResult,
     Evidence,
@@ -63,6 +64,10 @@ class Report(Model):
     demo: Literal[False] = False
     sample: SampleMetadata
     job: AnalysisJob
+    # How this report was loaded, as opposed to where its data came from
+    # (`job.source_origin`, immutable). A real scan is LIVE_GENERATED in the run
+    # that produced it and PERSISTED_REPLAY on every later load.
+    delivery_mode: DeliveryMode = DeliveryMode.PERSISTED_REPLAY
     result: EvaluationResult
     evidence: list[Evidence]
     behaviors: list[PrivacyBehavior]

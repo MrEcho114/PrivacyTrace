@@ -126,6 +126,10 @@ const formatTimestamp = (ts?: string) => {
 
 // Source classification reads the explicit backend `source_origin` field.
 // Naming conventions (sample_id prefixes) never decide provenance.
+//
+// `source_origin` is the immutable origin of the data. How the report reached
+// us *now* is a separate field, `delivery_mode`, because the same persisted job
+// is LIVE_GENERATED in the run that produced it and PERSISTED_REPLAY afterwards.
 const SOURCE_LABELS: Record<string, { badge: string; label: string; desc: string }> = {
   SYNTHETIC: {
     badge: '人工示例 · SYNTHETIC',
@@ -137,23 +141,28 @@ const SOURCE_LABELS: Record<string, { badge: string; label: string; desc: string
     label: 'CONTROLLED · 受控测试输入',
     desc: '来自受控测试环境的标准测试用例，用于验证边界与特定异常行为。',
   },
-  OFFLINE_REPLAY: {
-    badge: '离线回放 · OFFLINE_REPLAY',
-    label: 'OFFLINE_REPLAY · 真实 APK 静态报告',
-    desc: '既有已完成扫描的离线持久化报告回放，已保留完整证据链与原生成时点。',
-  },
   REAL_SCAN: {
-    badge: '本机扫描 · REAL_SCAN',
-    label: 'REAL_SCAN · 本机真实 APK 静态扫描',
-    desc: '由本机扫描流程直接产出的真实 APK 静态报告，已保留完整证据链与原生成时点。',
+    badge: '真实 APK · REAL_SCAN',
+    label: 'REAL_SCAN · 真实 APK 静态扫描',
+    desc: '数据来自真实 APK 静态扫描，已保留完整证据链与原生成时点。',
+  },
+}
+
+const DELIVERY_LABELS: Record<string, { badge: string; desc: string }> = {
+  LIVE_GENERATED: {
+    badge: '本次生成 · LIVE',
+    desc: '本次运行刚刚产出的结果。',
+  },
+  PERSISTED_REPLAY: {
+    badge: '持久化回放 · REPLAY',
+    desc: '从持久化存储加载的既有报告，不是本次运行新产出的结果。',
   },
 }
 
 const sourceOptionPrefix = (origin?: string) => {
   if (origin === 'CONTROLLED') return '[受控评测] '
   if (origin === 'SYNTHETIC') return '[人工示例] '
-  if (origin === 'REAL_SCAN') return '[本机扫描] '
-  if (origin === 'OFFLINE_REPLAY') return '[离线回放] '
+  if (origin === 'REAL_SCAN') return '[真实 APK] '
   return '[来源未标注] '
 }
 
@@ -168,6 +177,21 @@ const sourceInfo = computed(() => {
     return { type: origin, badge: `未识别来源 · ${origin}`, label: `未识别来源 · ${origin}`, desc: '后端返回了未知的来源类型，请检查契约版本是否匹配。' }
   }
   return { type: origin, ...known }
+})
+
+// Delivery badge is independent of origin: a REAL_SCAN report is "本机生成"
+// only in the run that produced it, and "持久化回放" on any later load.
+const deliveryInfo = computed(() => {
+  if (!report.value) return null
+  const mode = report.value.delivery_mode
+  if (!mode) {
+    return { type: 'UNKNOWN', badge: '投递方式未标注', desc: '报告缺少投递方式标注，无法判断是否为本次生成。' }
+  }
+  const known = DELIVERY_LABELS[mode]
+  if (!known) {
+    return { type: mode, badge: `未识别投递 · ${mode}`, desc: '后端返回了未知的投递方式，请检查契约版本是否匹配。' }
+  }
+  return { type: mode, ...known }
 })
 
 // Structured error parsing for activeJob
@@ -344,7 +368,10 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
             <p class="subtle">{{ report.sample.package_name }} · {{ report.demo ? report.sample.version : (report.sample.version_name ?? ('v' + report.sample.version_code)) }}</p>
             <p v-if="report.job?.created_at" class="subtle origin-timestamp">原生成时间：{{ formatTimestamp(report.job.created_at) }} ({{ report.job.created_at }})</p>
           </div>
-          <span class="badge" :class="sourceInfo?.type?.toLowerCase()">{{ sourceInfo?.badge }}</span>
+          <div class="badge-stack">
+            <span class="badge" :class="sourceInfo?.type?.toLowerCase()" :title="sourceInfo?.desc ?? ''">{{ sourceInfo?.badge }}</span>
+            <span class="badge" :class="deliveryInfo?.type?.toLowerCase()" :title="deliveryInfo?.desc ?? ''">{{ deliveryInfo?.badge }}</span>
+          </div>
         </section>
         <section v-if="realReport" class="coverage-card">
           <h2>DEX 处理范围：{{ realReport.coverage.status === 'COMPLETE' ? '已扫描所支持的 DEX 范围' : 'PARTIAL · DEX 处理有未完成部分' }}</h2>

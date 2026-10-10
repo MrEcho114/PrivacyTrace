@@ -3,7 +3,7 @@
     "id": "gkd-s1-first",
     "sample_id": "gkd-s1-first",
     "input_mode": "APK",
-    "source_origin": "OFFLINE_REPLAY",
+    "source_origin": "REAL_SCAN",
     "state": "SUCCEEDED",
     "ruleset_version": "0.3.0",
     "created_at": "2026-10-03T12:48:35.211974Z",
@@ -18,7 +18,7 @@
       "id": "gkd-s1-first",
       "sample_id": "gkd-s1-first",
       "input_mode": "APK",
-      "source_origin": "OFFLINE_REPLAY",
+      "source_origin": "REAL_SCAN",
       "state": "SUCCEEDED",
       "ruleset_version": "0.3.0",
       "created_at": "2026-10-03T12:48:35.211974Z",
@@ -331,7 +331,7 @@
     ]
   },
   "sample": {
-    "name": "离线回放样本（真实 APK 静态报告）",
+    "name": "持久化回放样本（真实 APK 静态报告）",
     "package_name": "org.privacytrace.fixture",
     "version_name": "1",
     "version_code": 1,
@@ -361,7 +361,7 @@
     "failed_dex": []
   },
   "tools": {
-    "scanner": "OFFLINE_REPLAY_FIXTURE",
+    "scanner": "REAL_SCAN_FIXTURE",
     "jadx": "UNAVAILABLE_BYTECODE_FALLBACK"
   },
   "reviews": []

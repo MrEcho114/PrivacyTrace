@@ -11,6 +11,18 @@ PR #27 与 #28 的增量已在独立分支整合，面向已合并 S0 的 `main`
 - S2 待办保留 #17 的异常浏览器矩阵，并加入来源值严格校验/新来源类型的契约测试、进程强制退出后的陈旧非终态作业识别与恢复测试。这两项是 #28 的非阻塞建议，本轮不设计完整调度器。
 - 当前优先：新工作流的自动验证与 PR 交付 → S2 受控场景和公平基准。不要再要求 A/B 填表；历史预约日期不代表后续任务已完成。
 
+### 2026-10-10 已修缺陷（PT-401 修复期间发现，非 PT-401 引入）
+
+`job_store.JobStore._transaction()` 在 Windows 上存在多进程竞争缺陷：`os.open(path, O_CREAT | O_RDWR)` 本身没有重试，只有其后的加锁步骤有。多个进程同时首次创建 `.lock` 时，Windows 会对并发 `CreateFile` 返回瞬态共享冲突，表现为 `PermissionError: [Errno 13]`。
+
+- 复现：4 个 `spawn` 进程经 `Barrier` 同步后同时 `os.open` 同一 `.lock`，无重试时 10 轮 x4 进程共 30 次 `PermissionError`、每轮仅 1 个成功。
+- 表现：`test_job_creation.py::test_one_reservation_wins_across_processes_and_survives_restart` 在全量套件下偶发失败、单独运行必过；属负载/时序敏感。
+- **已修**：把打开动作纳入与加锁同一套重试与超时预算（`deadline` 上提到两个循环之外）；只捕获 `PermissionError`（实测并发 open 唯一失败即 errno 13，缺失目录应立刻报错而非空等）。修复后 40/40 全部成功。
+- 回归测试：`test_concurrent_first_lock_creation_never_fails_to_open`（已确认在未修复代码上确定性失败）、`test_missing_lock_directory_still_fails_fast`、`test_lock_file_is_reused_across_transactions`。
+- PR #35 review 续修（2026-10-10）：
+  - **[P2]** 原并发用例只排除 `oserror`，把锁超时的 `ValueError` 归入 `contended` 而忽略，于是"4 个进程全部超时、无人进入事务"也会判为通过，无法支撑"40/40 全部成功"。已改为逐轮断言全部结果为 `ok`（实测旧断言在"4 个全被拒"与"3 超时+1 成功"两种输入下均漏报通过）。
+  - **[P3]** 多进程用例依赖 Windows 真实触发共享冲突，Linux 上即使删掉 open 重试也可能通过。已补两条确定性注入测试：`test_lock_open_is_retried_until_the_contention_clears`（mock `os.open` 前两次抛 `EACCES`、第三次成功，断言失败尝试被替换而非叠加）、`test_lock_open_retry_gives_up_at_the_shared_deadline`（持续 `EACCES` 须在共享预算内抛 `ValueError("lock unavailable")`，不裸抛也不无限重试）。现有多进程用例保留为压力回归。
+
 ## 2026-10-05 历史进度与优先顺序
 
 | 阶段 / 任务 | 当前状态 | 下一步 |
@@ -73,7 +85,7 @@ PR #27 与 #28 的增量已在独立分支整合，面向已合并 S0 的 `main`
 
 | 编号 | 任务 | 建仓状态 |
 |---|---|---|
-| PT-401 | SDK Signature Schema | 合成 signature seed |
+| PT-401 | SDK Signature Schema | 有据签名 v1.0.0；来源/许可/版本逐条记录 |
 | PT-402 | 常见 SDK Signature | 待开发 |
 | PT-403 | SDK Detection | 待开发 |
 | PT-404 | SDK → Vendor | 待开发 |

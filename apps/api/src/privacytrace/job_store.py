@@ -47,7 +47,21 @@ class JobStore:
             if path.is_symlink() or getattr(path, "is_junction", lambda: False)():
                 raise ValueError("Linked storage lock is not allowed")
             flags = os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
-            fd = os.open(path, flags, 0o600)
+            deadline = time.monotonic() + self.LOCK_TIMEOUT_SECONDS
+            # Opening for create is itself contended: concurrent first-touch of
+            # the same path raises a transient sharing violation (EACCES) on
+            # Windows. Retry that on the same budget as acquisition, so contention
+            # becomes a bounded wait instead of a bare PermissionError. Other
+            # errors stay fatal -- a missing directory should fail fast, not
+            # stall for the whole timeout.
+            while True:
+                try:
+                    fd = os.open(path, flags, 0o600)
+                    break
+                except PermissionError as exc:
+                    if time.monotonic() >= deadline:
+                        raise ValueError("Local job transaction lock unavailable") from exc
+                    time.sleep(0.02)
             acquired = False
             try:
                 info = os.fstat(fd)
@@ -58,7 +72,6 @@ class JobStore:
                     or (info.st_dev, info.st_ino) != (current.st_dev, current.st_ino)
                 ):
                     raise ValueError("Unsafe storage lock")
-                deadline = time.monotonic() + self.LOCK_TIMEOUT_SECONDS
                 while True:
                     try:
                         os.lseek(fd, 0, os.SEEK_SET)

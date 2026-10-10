@@ -1,12 +1,14 @@
 # Acceptance Test Matrix: PT-808 异常边界与离线回放来源浏览器端验收
 
 - **Milestone**: M1 (PT-808 真实浏览器异常边界、防 XSS 渲染、回放来源与可选本地备注重评)
-- **Git Commit SHA**: `PENDING_FINAL_HEAD`（见 `evidence/browser-proof.json` 的 `git_commit`，在最终 Head 上重跑后填定）
-- **Execution Date**: 待最终 Head 重跑后回填
+- **Git Commit SHA**: 见 `evidence/browser-proof.json` 的 `git_commit` / `git_commit_anchored`
+  - 本次修复运行环境无法 spawn shell 执行 `git rev-parse HEAD`，因此 `git_commit` 记为 `unknown`、`git_commit_anchored=false`
+  - **合并前必须在可解析 SHA 的环境重跑一次**，确认 `git_commit_anchored=true` 后再把 SHA 填到此处
+- **Execution Date**: 2026-10-10（修复后重跑，证据见 `evidence/browser-proof.json`）
 - **Test Environment**:
   - **OS**: Windows 11 Pro (x64)
   - **Runtime**: Node.js v24.17.0, Python 3.12.13
-  - **Browser Engine**: Headless Chromium 152.0.7977.8 (Playwright v1.64.0，仓库 devDependency)
+  - **Browser Engine**: Headless Chromium 156.0.8078.4 (Playwright v1.64.0，仓库 devDependency)
   - **Frontend Dev/Preview**: Vite v7.3.6, Vue v3.5.13
   - **Backend API**: FastAPI / Uvicorn，运行于**隔离端口**（默认 8123，可用 `PRIVACYTRACE_ACCEPTANCE_API_PORT` 覆盖）
   - **Data Store**: 每次运行在系统临时目录新建**一次性 store**，由 `fixtures/acceptance-jobs/` 播种；仓库 `data/` 目录全程只读

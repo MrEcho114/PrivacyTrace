@@ -1,13 +1,25 @@
 {
-  "timestamp": "2026-10-10T02:07:00.035Z",
-  "git_commit": "b13b9548c49994de20ddf81e8c5e97b2dd71b08f",
-  "browser": "Chromium 152.0.7977.8",
-  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/152.0.0.0 Safari/537.36",
+  "timestamp": "2026-10-10T03:51:29.286Z",
+  "git_commit": "unknown",
+  "git_commit_anchored": false,
+  "browser": "Chromium 156.0.8078.4",
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
   "viewport": {
     "width": 1280,
     "height": 900
   },
   "overall_status": "PASSED",
+  "console_error_claim": {
+    "uncaught_page_exceptions": 0,
+    "http_error_console_logs": 1,
+    "statement": "0 uncaught page exceptions; non-zero HTTP error logs are expected."
+  },
+  "environment": {
+    "api_origin": "http://127.0.0.1:8123",
+    "web_origin": "http://127.0.0.1:5273",
+    "isolated_store": true,
+    "store_seeded_from": "fixtures/acceptance-jobs"
+  },
   "tests": [
     {
       "id": "TC-01",
@@ -21,7 +33,7 @@
     },
     {
       "id": "TC-03",
-      "name": "R3 Error states & bytecode fallback",
+      "name": "R3 Error states, timeout & bytecode fallback",
       "status": "PASSED"
     },
     {
@@ -39,244 +51,263 @@
     {
       "tc": "TC-01",
       "action": "navigate",
-      "details": "Loaded main page at http://127.0.0.1:5173",
-      "timestamp": "2026-10-10T02:06:51.490Z"
+      "details": "Loaded main page at http://127.0.0.1:5273",
+      "timestamp": "2026-10-10T03:51:19.941Z"
     },
     {
       "tc": "TC-01",
       "action": "select_job",
       "details": "Selected job:gkd-s1-first",
-      "timestamp": "2026-10-10T02:06:51.984Z"
+      "timestamp": "2026-10-10T03:51:20.433Z"
     },
     {
       "tc": "TC-01",
       "action": "expand_evidence",
       "details": "Clicked view evidence button",
-      "timestamp": "2026-10-10T02:06:52.141Z"
+      "timestamp": "2026-10-10T03:51:20.580Z"
     },
     {
       "tc": "TC-01",
       "action": "verify_page_1",
       "details": "Confirmed 20 items per page and 100 total pages",
-      "timestamp": "2026-10-10T02:06:52.151Z"
+      "timestamp": "2026-10-10T03:51:20.587Z"
     },
     {
       "tc": "TC-01",
       "action": "switch_page_2",
       "details": "Successfully switched to page 2",
-      "timestamp": "2026-10-10T02:06:52.416Z"
+      "timestamp": "2026-10-10T03:51:20.854Z"
     },
     {
       "tc": "TC-01",
       "action": "switch_page_1",
       "details": "Successfully switched back to page 1",
-      "timestamp": "2026-10-10T02:06:52.677Z"
+      "timestamp": "2026-10-10T03:51:21.103Z"
     },
     {
       "tc": "TC-01",
       "action": "open_policy",
       "details": "Clicked 完整政策与适用边界 to jump to provenance and mount policy",
-      "timestamp": "2026-10-10T02:06:52.795Z"
+      "timestamp": "2026-10-10T03:51:21.210Z"
     },
     {
       "tc": "TC-01",
       "action": "verify_policy_mount",
       "details": "Verified exactly 1 pre tag mounted with 200k codepoints",
-      "timestamp": "2026-10-10T02:06:52.817Z"
+      "timestamp": "2026-10-10T03:51:21.235Z"
     },
     {
       "tc": "TC-01",
       "action": "collapse_policy",
       "details": "Verified pre tag unmounted on collapse",
-      "timestamp": "2026-10-10T02:06:53.158Z"
+      "timestamp": "2026-10-10T03:51:21.460Z"
     },
     {
       "tc": "TC-01",
       "action": "reexpand_policy",
       "details": "Verified pre tag remounted on re-expand",
-      "timestamp": "2026-10-10T02:06:53.375Z"
+      "timestamp": "2026-10-10T03:51:21.692Z"
     },
     {
       "tc": "TC-01",
       "action": "screenshot",
-      "details": "Captured screenshot at D:\\Project\\GitProject\\PrivacyTrace\\evidence\\screenshots\\tc01-long-text-pagination.png",
-      "timestamp": "2026-10-10T02:06:53.968Z"
+      "details": "Captured screenshot at C:\\Users\\Oasis\\WorkBuddy\\Worktrees\\PrivacyTrace\\main-4130efdc\\evidence\\screenshots\\tc01-long-text-pagination.png",
+      "timestamp": "2026-10-10T03:51:22.256Z"
     },
     {
       "tc": "TC-02",
       "action": "inject_payloads",
       "details": "Loaded report with multiple malicious HTML/script payloads",
-      "timestamp": "2026-10-10T02:06:55.004Z"
+      "timestamp": "2026-10-10T03:51:23.295Z"
     },
     {
       "tc": "TC-02",
       "action": "assert_no_script_execution",
       "details": "Verified window.__xss_executed is undefined",
-      "timestamp": "2026-10-10T02:06:55.348Z"
+      "timestamp": "2026-10-10T03:51:23.654Z"
     },
     {
       "tc": "TC-02",
       "action": "assert_dom_purity",
       "details": "Verified 0 executable script/img elements in main content",
-      "timestamp": "2026-10-10T02:06:55.350Z"
+      "timestamp": "2026-10-10T03:51:23.656Z"
     },
     {
       "tc": "TC-02",
       "action": "assert_csp",
       "details": "Confirmed CSP meta tag in head: default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';",
-      "timestamp": "2026-10-10T02:06:55.351Z"
+      "timestamp": "2026-10-10T03:51:23.657Z"
     },
     {
       "tc": "TC-02",
       "action": "screenshot",
-      "details": "Captured screenshot at D:\\Project\\GitProject\\PrivacyTrace\\evidence\\screenshots\\tc02-xss-defense.png",
-      "timestamp": "2026-10-10T02:06:55.486Z"
+      "details": "Captured screenshot at C:\\Users\\Oasis\\WorkBuddy\\Worktrees\\PrivacyTrace\\main-4130efdc\\evidence\\screenshots\\tc02-xss-defense.png",
+      "timestamp": "2026-10-10T03:51:23.765Z"
     },
     {
       "tc": "TC-03",
       "action": "select_partial",
       "details": "Selected job:ui-controlled-partial",
-      "timestamp": "2026-10-10T02:06:55.900Z"
+      "timestamp": "2026-10-10T03:51:24.179Z"
     },
     {
       "tc": "TC-03",
       "action": "verify_partial_coverage",
       "details": "Confirmed PARTIAL coverage and classes2.dex failure display",
-      "timestamp": "2026-10-10T02:06:55.903Z"
+      "timestamp": "2026-10-10T03:51:24.182Z"
     },
     {
       "tc": "TC-03",
       "action": "verify_jadx_fallback",
       "details": "Confirmed tools.jadx explicitly records UNAVAILABLE_BYTECODE_FALLBACK without faking JADX",
-      "timestamp": "2026-10-10T02:06:55.915Z"
+      "timestamp": "2026-10-10T03:51:24.198Z"
     },
     {
       "tc": "TC-03",
       "action": "select_failed",
       "details": "Selected job:ui-controlled-failed",
-      "timestamp": "2026-10-10T02:06:56.411Z"
+      "timestamp": "2026-10-10T03:51:24.705Z"
     },
     {
       "tc": "TC-03",
       "action": "verify_structured_error",
       "details": "Confirmed structured error card (code: ZIP_INVALID, formatted msg) instead of raw JSON",
-      "timestamp": "2026-10-10T02:06:56.418Z"
+      "timestamp": "2026-10-10T03:51:24.711Z"
+    },
+    {
+      "tc": "TC-03",
+      "action": "select_timeout",
+      "details": "Selected job:ui-controlled-timeout",
+      "timestamp": "2026-10-10T03:51:25.182Z"
+    },
+    {
+      "tc": "TC-03",
+      "action": "verify_timeout",
+      "details": "Confirmed SCAN_TIMEOUT structured error, failure message and absent report card",
+      "timestamp": "2026-10-10T03:51:25.195Z"
     },
     {
       "tc": "TC-03",
       "action": "select_cancelled",
       "details": "Selected job:ui-controlled-cancel",
-      "timestamp": "2026-10-10T02:06:56.876Z"
+      "timestamp": "2026-10-10T03:51:25.668Z"
     },
     {
       "tc": "TC-03",
       "action": "verify_cancelled_state",
       "details": "Confirmed CANCELLED state and prompt",
-      "timestamp": "2026-10-10T02:06:56.879Z"
+      "timestamp": "2026-10-10T03:51:25.671Z"
+    },
+    {
+      "tc": "TC-03",
+      "action": "select_running",
+      "details": "Selected job:ui-running-cancel for the cancel race",
+      "timestamp": "2026-10-10T03:51:26.103Z"
     },
     {
       "tc": "TC-03",
       "action": "verify_409_handling",
       "details": "Confirmed 409 terminal cancellation is gracefully handled",
-      "timestamp": "2026-10-10T02:06:56.918Z"
+      "timestamp": "2026-10-10T03:51:26.133Z"
     },
     {
       "tc": "TC-04",
       "action": "select_demo",
       "details": "Selected demo:synthetic",
-      "timestamp": "2026-10-10T02:06:57.324Z"
+      "timestamp": "2026-10-10T03:51:26.553Z"
     },
     {
       "tc": "TC-04",
       "action": "verify_synthetic_badge",
       "details": "Confirmed SYNTHETIC demo badge and label",
-      "timestamp": "2026-10-10T02:06:57.327Z"
+      "timestamp": "2026-10-10T03:51:26.556Z"
     },
     {
       "tc": "TC-04",
       "action": "select_controlled",
-      "details": "Selected job:ui-controlled-partial (sample_id starts with CONTROLLED)",
-      "timestamp": "2026-10-10T02:06:57.788Z"
+      "details": "Selected job:ui-controlled-partial (source_origin=CONTROLLED)",
+      "timestamp": "2026-10-10T03:51:27.047Z"
     },
     {
       "tc": "TC-04",
       "action": "verify_controlled_badge",
       "details": "Confirmed CONTROLLED fixture badge and label",
-      "timestamp": "2026-10-10T02:06:57.792Z"
+      "timestamp": "2026-10-10T03:51:27.051Z"
     },
     {
       "tc": "TC-04",
       "action": "select_replay",
       "details": "Selected job:gkd-s1-first",
-      "timestamp": "2026-10-10T02:06:58.285Z"
+      "timestamp": "2026-10-10T03:51:27.546Z"
+    },
+    {
+      "tc": "TC-04",
+      "action": "verify_origin_precedence",
+      "details": "Confirmed source classification reads source_origin, not sample_id naming",
+      "timestamp": "2026-10-10T03:51:27.550Z"
     },
     {
       "tc": "TC-04",
       "action": "verify_timestamp",
       "details": "Confirmed job.created_at original timestamp displayed in both header and provenance",
-      "timestamp": "2026-10-10T02:06:58.304Z"
+      "timestamp": "2026-10-10T03:51:27.564Z"
     },
     {
       "tc": "TC-04",
       "action": "audit_s1_chain",
       "details": "Confirmed complete evidence chain matching S1 authoritative report",
-      "timestamp": "2026-10-10T02:06:58.331Z"
+      "timestamp": "2026-10-10T03:51:27.602Z"
     },
     {
       "tc": "TC-05",
       "action": "verify_optional_button",
       "details": "Confirmed submit button enabled with empty note",
-      "timestamp": "2026-10-10T02:06:58.450Z"
+      "timestamp": "2026-10-10T03:51:27.706Z"
     },
     {
       "tc": "TC-05",
       "action": "submit_empty_note",
       "details": "Successfully submitted review without note and verified authority guardrail",
-      "timestamp": "2026-10-10T02:06:58.670Z"
+      "timestamp": "2026-10-10T03:51:27.982Z"
     },
     {
       "tc": "TC-05",
       "action": "submit_with_note",
       "details": "Successfully submitted review with note text",
-      "timestamp": "2026-10-10T02:06:59.385Z"
+      "timestamp": "2026-10-10T03:51:28.729Z"
     },
     {
       "tc": "TC-05",
       "action": "verify_persistence",
       "details": "Confirmed 100% persistence consistency across full page reload",
-      "timestamp": "2026-10-10T02:06:59.876Z"
+      "timestamp": "2026-10-10T03:51:29.202Z"
     }
   ],
   "console_logs": [
     {
       "type": "debug",
       "text": "[vite] connecting...",
-      "time": "2026-10-10T02:06:51.442Z"
+      "time": "2026-10-10T03:51:19.901Z"
     },
     {
       "type": "debug",
       "text": "[vite] connected.",
-      "time": "2026-10-10T02:06:51.447Z"
+      "time": "2026-10-10T03:51:19.941Z"
     },
     {
       "type": "error",
       "text": "Failed to load resource: the server responded with a status of 409 (Conflict)",
-      "time": "2026-10-10T02:06:56.916Z"
+      "time": "2026-10-10T03:51:26.132Z"
     },
     {
       "type": "debug",
       "text": "[vite] connecting...",
-      "time": "2026-10-10T02:06:59.412Z"
+      "time": "2026-10-10T03:51:28.748Z"
     },
     {
       "type": "debug",
       "text": "[vite] connected.",
-      "time": "2026-10-10T02:06:59.417Z"
-    },
-    {
-      "type": "error",
-      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
-      "time": "2026-10-10T02:06:59.425Z"
+      "time": "2026-10-10T03:51:28.752Z"
     }
   ],
   "page_errors": [],
@@ -285,6 +316,7 @@
     "evidence/screenshots/tc02-xss-defense.png",
     "evidence/screenshots/tc03-partial-bytecode-fallback.png",
     "evidence/screenshots/tc03-structured-error-failed.png",
+    "evidence/screenshots/tc03-timeout-failed.png",
     "evidence/screenshots/tc03-job-cancelled.png",
     "evidence/screenshots/tc04-source-synthetic.png",
     "evidence/screenshots/tc04-source-controlled.png",
@@ -297,6 +329,9 @@
     "long_text_codepoints": 200000,
     "pagination_page_size": 20,
     "notes_optional": true,
-    "authority_unauthenticated": true
+    "authority_unauthenticated": true,
+    "source_origin_explicit": true,
+    "real_timeout_covered": true,
+    "isolated_store": true
   }
 }

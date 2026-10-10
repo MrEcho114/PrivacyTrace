@@ -638,10 +638,35 @@ async function main() {
     try {
       gitCommit = execSync('git rev-parse HEAD', { cwd: projectRoot, encoding: 'utf-8' }).trim();
     } catch {}
+    if (!/^[0-9a-f]{40}$/.test(gitCommit)) {
+      // Some restricted environments cannot spawn a shell for git. Try reading
+      // the ref files directly before giving up.
+      try {
+        const headFile = fs.readFileSync(path.join(projectRoot, '.git', 'HEAD'), 'utf-8').trim();
+        const candidate = headFile.startsWith('ref: ')
+          ? fs.readFileSync(path.join(projectRoot, '.git', headFile.slice(5).trim()), 'utf-8').trim()
+          : headFile;
+        if (/^[0-9a-f]{40}$/.test(candidate)) gitCommit = candidate;
+      } catch {}
+    }
+    // Never silently present an unanchored receipt as authoritative evidence.
+    const commitAnchored = /^[0-9a-f]{40}$/.test(gitCommit);
+    if (!commitAnchored) {
+      console.warn(
+        '[Receipt] WARNING: could not resolve the Git commit SHA in this environment. ' +
+          'The receipt records git_commit="unknown" and must be re-run on a checkout ' +
+          'where `git rev-parse HEAD` works before it is treated as final evidence.'
+      );
+    } else {
+      console.log(`[Receipt] Anchoring proof to commit ${gitCommit}`);
+    }
 
     const proof = {
       timestamp: new Date().toISOString(),
       git_commit: gitCommit,
+      // True only when the receipt could be anchored to a real 40-char SHA.
+      // A "false" value means this file is NOT yet valid final evidence.
+      git_commit_anchored: commitAnchored,
       browser: `Chromium ${browserVersion}`,
       user_agent: await page.evaluate(() => navigator.userAgent),
       viewport: { width: 1280, height: 900 },

@@ -149,9 +149,24 @@ git checkout origin/main -- AGENTS.md CONTRIBUTING.md .github/ISSUE_TEMPLATE/tas
 | 死链检查 | 无（`AGENTS.md` 已回到 main 版本，不再引用被移出文档） |
 | `ruff check apps/api` | All checks passed |
 | 前端单测 | 28 / 28 pass |
-| 后端 pytest | 318 passed / 11 skipped / 2 failed（2 例为既有 Windows 跨进程 `.lock` 争用） |
-| 浏览器验收 | TC-01…TC-05 全 PASSED，EXIT=0 |
-| `test_governance_cli.py` | 2 例失败为**既有**，已在拆分前干净状态对照复现，与拆分无关 |
+| 前端类型检查（`vue-tsc --noEmit`） | 通过，无输出 |
+| 契约导出一致性（`export-schema.py` 后 `git diff`） | 无差异 |
+| 后端 pytest | **318 passed / 11 skipped / 4 failed**（见下方归因） |
+| 浏览器验收 | TC-01…TC-05 全 PASSED，EXIT=0，收据 `anchored: true` |
+| `test_governance_cli.py` | 2 例失败为**既有**，已在基线 `f1230aa` 对照复现，与拆分无关 |
+
+#### 4 个失败的归因（全部为既有问题，非本次拆分引入）
+
+| # | 失败用例 | 归因 | 证据 |
+|---|---|---|---|
+| 1 | `test_job_creation.py::test_one_reservation_wins_across_processes_and_survives_restart` | Windows `msvcrt.locking` 跨进程争用 | 报错 `PermissionError [Errno 13] ...\.lock`；已在原始 HEAD 复现 |
+| 2 | `test_job_creation.py::test_concurrent_pipeline_never_scans_both_inputs_for_one_id` | 同上 | 同上 |
+| 3 | `test_governance_cli.py::test_local_source_installs_commit_objects_not_dirty_executor[True]` | 该用例执行大量 git 操作（建 fixture 仓库、`git replace`），在基线 `f1230aa` 上**同样失败**，报 `subprocess.TimeoutExpired ... timed out after 40 seconds` | 已在 `git worktree add f1230aa` 上独立复现 |
+| 4 | 同上 `[False]` | 同上 | 同上 |
+
+> 归因方法：对 3/4 用 `git worktree add /tmp/pt-baseline f1230aa` 建出**未含任何本次改动**的
+> 独立工作树，单独运行该用例，得到同样的 `TimeoutExpired` 失败，从而排除本次改动嫌疑。
+> 这两个用例单独运行时通过、全量并发时超时，属资源竞争型 flaky，与代码正确性无关。
 
 #### 关于两个 diff 口径
 

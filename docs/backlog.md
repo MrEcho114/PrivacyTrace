@@ -19,6 +19,9 @@ PR #27 与 #28 的增量已在独立分支整合，面向已合并 S0 的 `main`
 - 表现：`test_job_creation.py::test_one_reservation_wins_across_processes_and_survives_restart` 在全量套件下偶发失败、单独运行必过；属负载/时序敏感。
 - **已修**：把打开动作纳入与加锁同一套重试与超时预算（`deadline` 上提到两个循环之外）；只捕获 `PermissionError`（实测并发 open 唯一失败即 errno 13，缺失目录应立刻报错而非空等）。修复后 40/40 全部成功。
 - 回归测试：`test_concurrent_first_lock_creation_never_fails_to_open`（已确认在未修复代码上确定性失败）、`test_missing_lock_directory_still_fails_fast`、`test_lock_file_is_reused_across_transactions`。
+- PR #35 review 续修（2026-10-10）：
+  - **[P2]** 原并发用例只排除 `oserror`，把锁超时的 `ValueError` 归入 `contended` 而忽略，于是"4 个进程全部超时、无人进入事务"也会判为通过，无法支撑"40/40 全部成功"。已改为逐轮断言全部结果为 `ok`（实测旧断言在"4 个全被拒"与"3 超时+1 成功"两种输入下均漏报通过）。
+  - **[P3]** 多进程用例依赖 Windows 真实触发共享冲突，Linux 上即使删掉 open 重试也可能通过。已补两条确定性注入测试：`test_lock_open_is_retried_until_the_contention_clears`（mock `os.open` 前两次抛 `EACCES`、第三次成功，断言失败尝试被替换而非叠加）、`test_lock_open_retry_gives_up_at_the_shared_deadline`（持续 `EACCES` 须在共享预算内抛 `ValueError("lock unavailable")`，不裸抛也不无限重试）。现有多进程用例保留为压力回归。
 
 ## 2026-10-05 历史进度与优先顺序
 

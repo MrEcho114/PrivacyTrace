@@ -1,6 +1,8 @@
 """Independent processes must never reserve the same analysis job twice."""
 
+import errno
 import multiprocessing
+import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -8,6 +10,7 @@ from threading import Barrier
 
 import pytest
 
+from privacytrace import job_store as job_store_module
 from privacytrace.job_store import JobStore
 from privacytrace.models import AnalysisJob
 from privacytrace.resources import taxonomy
@@ -32,18 +35,22 @@ def reserve(root, sample, ready, outcomes):
 
 
 def touch_lock(root, ready, outcomes):
-    """Enter the transaction and report only whether opening the lock succeeded."""
+    """Acquire the transaction lock and report the outcome of the attempt.
+
+    ``ok`` means the lock was actually held; ``oserror`` is a bare open/lock
+    failure that the retry path failed to absorb; ``contended`` is the bounded
+    ``ValueError`` raised when the shared deadline expires. Callers assert on
+    ``ok``, not merely on the absence of ``oserror``.
+    """
     store = JobStore(root)
     ready.wait(timeout=20)
     try:
         with store._transaction():
-            pass
+            outcomes.put(("ok", "", ""))
     except OSError as exc:
         outcomes.put(("oserror", type(exc).__name__, str(exc)))
     except ValueError as exc:
         outcomes.put(("contended", type(exc).__name__, str(exc)))
-    else:
-        outcomes.put(("ok", "", ""))
 
 
 @pytest.mark.parametrize("rounds", [12])
@@ -54,12 +61,16 @@ def test_concurrent_first_lock_creation_never_fails_to_open(tmp_path, rounds):
     sharing violation on Windows. The lock *acquisition* has a retry budget, so
     the *open* needs one too, or first-touch contention surfaces as a bare
     ``PermissionError`` instead of a bounded wait.
+
+    Every process must actually *acquire* the lock. Reporting the open failure
+    only as "not a bare OSError" would pass even when all four processes are
+    turned away, which is why failures are asserted per outcome below.
     """
     roots = [tmp_path / f"root-{i}" for i in range(rounds)]
     for root in roots:
         root.mkdir(parents=True)
     ctx = multiprocessing.get_context("spawn")
-    failures = []
+    unacquired = []
     for attempt, root in enumerate(roots):
         ready, outcomes = ctx.Barrier(4), ctx.Queue()
         processes = [ctx.Process(target=touch_lock, args=(root, ready, outcomes)) for _ in range(4)]
@@ -69,12 +80,14 @@ def test_concurrent_first_lock_creation_never_fails_to_open(tmp_path, rounds):
             results = [outcomes.get(timeout=30) for _ in processes]
             for process in processes:
                 process.join(timeout=10)
-            # Every process must reach the transaction. Contention may exhaust
-            # the budget and report a ValueError, but a bare OSError means the
-            # open path was not retried at all.
-            bare_errors = [result for result in results if result[0] == "oserror"]
-            if bare_errors:
-                failures.append((attempt, bare_errors))
+            # The lock must be *acquired* by every process -- the holder waits
+            # out the other three, and all four succeed in turn. A bare OSError
+            # means the open was never retried; ValueError means the shared
+            # budget expired without anyone getting in. Either way the retry
+            # did not do its job, so both are failures.
+            rejected = [result for result in results if result[0] != "ok"]
+            if rejected:
+                unacquired.append((attempt, rejected))
         finally:
             for process in processes:
                 if process.is_alive():
@@ -82,7 +95,68 @@ def test_concurrent_first_lock_creation_never_fails_to_open(tmp_path, rounds):
                 if process.pid is not None:
                     process.join(timeout=10)
             outcomes.close()
-    assert not failures, f"lock open was not retried under contention: {failures[:3]}"
+    assert not unacquired, (
+        "lock was not acquired by all processes under contention: "
+        f"{unacquired[:3]}"
+    )
+
+
+def test_lock_open_is_retried_until_the_contention_clears(tmp_path, monkeypatch):
+    """Two transient open refusals must be absorbed, not surfaced to callers.
+
+    The multi-process test above only produces contention on platforms that
+    actually raise for concurrent ``CreateFile``; on Linux it can pass without
+    ever exercising the retry. Injecting ``EACCES`` twice pins the retry down
+    deterministically regardless of platform.
+    """
+    store = JobStore(tmp_path)
+    real_open = os.open
+    refused = []
+    lock_open_depths = []
+
+    def flaky_open(path, flags, mode=0o777):
+        if str(path).endswith(".lock"):
+            # Nested re-entry would mean the transaction opened the lock twice;
+            # the retry must replace the failed attempt, not stack on top of it.
+            lock_open_depths.append(len(lock_open_depths))
+            if len(refused) < 2:
+                refused.append(path)
+                raise PermissionError(errno.EACCES, "Permission denied", str(path))
+        return real_open(path, flags, mode)
+
+    monkeypatch.setattr(job_store_module.os, "open", flaky_open)
+    with store._transaction():
+        pass
+    assert len(refused) == 2, "the injected refusals were not both consumed"
+    assert lock_open_depths == [0, 1, 2], f"unexpected open sequence: {lock_open_depths}"
+
+
+def test_lock_open_retry_gives_up_at_the_shared_deadline(tmp_path, monkeypatch):
+    """Persistent refusals must stay bounded and fold into the lock contract.
+
+    The open retry shares one deadline with acquisition, so a lock that can
+    never be opened has to raise the same ``ValueError`` callers already handle
+    rather than a bare ``PermissionError`` -- and it must do so within the
+    budget instead of retrying forever.
+    """
+    store = JobStore(tmp_path)
+    real_open = os.open
+    attempts = []
+
+    def never_open(path, flags, mode=0o777):
+        if str(path).endswith(".lock"):
+            attempts.append(time.monotonic())
+            raise PermissionError(errno.EACCES, "Permission denied", str(path))
+        return real_open(path, flags, mode)
+
+    monkeypatch.setattr(job_store_module.os, "open", never_open)
+    started = time.monotonic()
+    with pytest.raises(ValueError, match="lock unavailable"):
+        with store._transaction():
+            pass
+    elapsed = time.monotonic() - started
+    assert len(attempts) > 1, "persistent refusals were not retried at all"
+    assert elapsed < JobStore.LOCK_TIMEOUT_SECONDS + 1.0, f"retry overshot budget: {elapsed:.2f}s"
 
 
 def test_one_reservation_wins_across_processes_and_survives_restart(tmp_path):

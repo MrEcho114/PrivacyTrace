@@ -1,3 +1,10 @@
+"""Workflow verification suite for PrivacyTrace documentation, templates, and agent configs.
+
+This script performs structural integrity and link validity checks on workflow guides,
+issue/PR templates, and domain vocabulary. It is a non-mandatory local self-check suite
+(invoked via `uv run --with pyyaml python scripts/verify_workflow.py`).
+"""
+
 import os
 import re
 import sys
@@ -100,24 +107,29 @@ def check_pr_template():
     with open(path, 'r', encoding='utf-8') as f:
         content = f.read()
     sections = [
-        "## 关联 Issue",
-        "## Problem and resulting behavior",
-        "## 验收结果",
-        "## Validation",
-        "## Review 结论",
+        "## Related task",
+        "## Result",
+        "## Changes",
+        "## Verification",
+        "## Agent self-review",
         "## Evidence and limits",
         "## 未验证项",
     ]
     for s in sections:
         assert s in content, f"Missing section in PR template: {s}"
 
-    # Check Review checklist items
+    # Check Acceptance and Validation subsections under Verification
+    assert "### 验收结果" in content, "Missing '### 验收结果' in PR template"
+    assert "### Validation" in content, "Missing '### Validation' in PR template"
+    assert "Issue: Closes #<number>" in content, "Missing 'Issue: Closes #<number>' in PR template"
+
+    # Check Review checklist items matching TheMasterplan CI check exactly
     review_checks = [
         "满足 Issue 或明确人类授权",
         "没有扩大任务范围",
         "已阅读完整 diff",
-        "必要验证（单元测试 / 类型检查 / 构建）已通过",
-        "证据边界准确",
+        "必要验证已通过",
+        "没有遗留调试代码、临时文件或缓存",
     ]
     for rc in review_checks:
         assert rc in content, (
@@ -512,9 +524,18 @@ def check_skills_version_baseline():
                         )
 
     # Verify minimal executable installation steps in skills-workflow.md
-    assert 'git clone' in wf_content, "Missing 'git clone' step in skills-workflow.md"
-    assert 'git checkout' in wf_content, "Missing 'git checkout' step in skills-workflow.md"
-    assert 'git rev-parse HEAD' in wf_content, "Missing 'git rev-parse HEAD' command in skills-workflow.md"
+    assert 'git clone https://github.com/vinvcn/mattpocock-skills-zh-CN.git' in wf_content, (
+        "Missing 'git clone' repository URL in skills-workflow.md"
+    )
+    assert f'git checkout {expected_sha}' in wf_content, (
+        f"Missing 'git checkout {expected_sha}' step in skills-workflow.md"
+    )
+    assert 'git rev-parse HEAD' in wf_content, (
+        "Missing 'git rev-parse HEAD' command in skills-workflow.md"
+    )
+    assert f'*核验输出必须严格为：`{expected_sha}`*' in wf_content, (
+        f"Verification output missing expected SHA '{expected_sha}' in skills-workflow.md"
+    )
     for agent_kw in ['Claude Code', 'Codex', 'Google Antigravity', 'Cursor']:
         assert agent_kw in wf_content, f"Missing Agent configuration for '{agent_kw}' in skills-workflow.md"
 

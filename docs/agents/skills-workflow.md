@@ -37,16 +37,21 @@
 - **Claude Code**：
   - 用户级技能路径：`~/.claude/skills/`
   - 项目级技能路径：`.claude/skills/`
-  - 挂载方式：通过目录软链接或按配置载入，例如：
+  - 挂载方式：通过目录软链接或按配置载入。由于技能库按类别组织（`engineering`、`productivity` 等），软链接须指向具体技能目录（即 `skills/*/*`），例如：
     ```bash
-    ln -s ~/.skills-zh-CN/skills/* ~/.claude/skills/
+    # Linux / macOS (或 Windows Git Bash)
+    ln -s ~/.skills-zh-CN/skills/*/* ~/.claude/skills/
+    ```
+    *在 Windows PowerShell 下可使用 `New-Item` 创建符号链接或目录联接：*
+    ```powershell
+    Get-ChildItem ~/.skills-zh-CN/skills/*/* | ForEach-Object { New-Item -ItemType SymbolicLink -Path ~/.claude/skills/ -Name $_.Name -Target $_.FullName }
     ```
 - **Codex / OpenCode**：
   - 技能配置路径：`~/.codex/skills/` 或 OpenCode 指定配置路径
-  - 挂载方式：将技能目录软链接或复制至配置目录，按工具规范加载。
+  - 挂载方式：将具体技能子目录软链接或复制至配置目录，按工具规范加载（如 `ln -s ~/.skills-zh-CN/skills/*/* ~/.codex/skills/`）。
 - **Google Antigravity / WorkBuddy**：
   - 技能路径：`~/.gemini/config/skills/` 与 `~/.workbuddy/skills/`
-  - 挂载方式：使用技能同步管理工具（如 `cross-tool-skill-sync`、`find-skills`）同步，或建立软链接指向已检出的技能目录。
+  - 挂载方式：使用技能同步管理工具（如 `cross-tool-skill-sync`、`find-skills`）同步，或建立软链接指向已检出的技能目录（如 `ln -s ~/.skills-zh-CN/skills/*/* ~/.workbuddy/skills/`）。
 - **Cursor / 其他开发环境**：
   - 规则/提示词路径：`.cursor/rules/` 或系统提示词目录
   - 挂载方式：按需将技能 Markdown 规则说明直接挂载或载入系统提示。
@@ -67,7 +72,10 @@
 - **协同升级约定**：
   1. 任何团队成员不得擅自私自升级技能库或引入未经核验的提交，以避免协作分歧；
   2. 技能库升级必须在团队沟通后，由指定成员通过专门的流程维护工单统一步调执行，并完成场景兼容性走查与基线 SHA 更新；
-  3. 升级若涉及 prompt 指令、模板字段或任务路由变化，须同步更新本文档与验证套件。
+  3. 升级若涉及 prompt 指令、模板字段或任务路由变化，须同步更新本文档，并运行非强制工作流自检套件核验：
+     ```bash
+     uv run --with pyyaml python scripts/verify_workflow.py
+     ```
 
 ---
 
@@ -145,14 +153,15 @@
 ## 7. PR 提交与代码审查规范
 
 ### 7.1 PR 模板要素
-提交 PR 时使用 [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)，完整填写：
-1. **关联 Issue**：明确标注 `Closes #<id>` 或 `Refs #<id>`；
-2. **Problem and resulting behavior**：描述解决的问题与行为变更，标注 PT task；
-3. **验收结果**：对照关联 Issue 验收条件逐一勾选并说明结果；
-4. **Validation**：记录实际运行的测试命令与输出；
-5. **Review 结论**：自查清单（无范围蔓延、阅读完整 diff、单测通过等）；
+提交 PR 时使用统一模板 [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)，遵循 TheMasterplan 治理与 Issue #32 规范，完整填写：
+1. **Related task**：明确标注 `Issue: Closes #<number>` 或明确人类授权来源与范围；
+2. **Result**：描述解决的核心问题与最终表现，包含对应的 PT 编号；
+3. **Changes**：列出主要修改的文件及改动要点；
+4. **Verification**：记录实际执行的验证命令、自动化测试及结果，并在「验收结果」小节对照关联 Issue 验收条件逐项说明；
+5. **Agent self-review**：交付代理的五项自审检查清单（满足授权、未扩大范围、已阅读完整 diff、必要验证已通过、无遗留调试代码与缓存）；
 6. **Evidence and limits**：遵循证据边界（保持证据可溯源、政策来源独立、静态证据仅表达潜在行为）；
-7. **未验证项**：如实列出未覆盖的边界测试或未进行真实成员试用的情况。
+7. **未验证项**：如实列出未覆盖的边界测试或未进行真实成员试用的情况（标记为文档场景走查）；
+8. **Notes for human**：供人类审阅者参考的上下文与注意事项。
 
 ### 7.2 审查者判断标准
 - 审查者依据**变更合理性、测试验证结果、证据边界准确性**来评估 PR，严禁以“是否记录技能调用日志”等无意义形式主义作为审查标准。

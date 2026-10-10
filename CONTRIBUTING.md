@@ -12,7 +12,7 @@
 - **推荐技能来源（中文技能库）**：[`vinvcn/mattpocock-skills-zh-CN`](https://github.com/vinvcn/mattpocock-skills-zh-CN)
 - **上游参考库**：[`mattpocock/skills`](https://github.com/mattpocock/skills)
 - **多 Agent 支持**：团队成员可选用 Claude Code、Codex、Antigravity、OpenCode 等任何 Coding Agent，通过各自工具的技能目录或同步插件安装对应技能。团队不强制统一单一 Agent。
-- **版本基线与升级**：以固化的核验基准提交为准（来源仓库、Commit SHA 与核验日期详见 [技能协作流程指南](docs/agents/skills-workflow.md)）；升级须通过专门流程维护工单统一步调执行，禁止私自单独升级造成流程分歧。
+- **版本基线与升级**：以固化的核验基准提交为准（来源仓库、Commit SHA 与核验日期详见 [技能协作流程指南](docs/agents/skills-workflow.md)）；升级须通过专门流程维护工单统一步调执行，禁止私自单独升级造成流程分歧。自检文档链接与模板规范可运行非强制套件：`uv run --with pyyaml python scripts/verify_workflow.py`。
 
 ### 2. 读取已有项目配置
 新成员无需重复初始化协作配置，进入项目后直接复用既有体系：
@@ -39,7 +39,7 @@
 - **领取任务**：在 GitHub Issue 上指定 Assignee（`gh issue edit <n> --add-assignee @me`）。
 - **依赖等待**：检查工单中的阻塞依赖（`Blockers`），**若存在未关闭的 blocker，必须原地等待，严禁在阻塞未解除前提前启动开发**。
 - **任务交接**：暂停或换人时，须在 Issue 的接手材料字段或最新 Comment 留下分支名、最新 Commit、已有进展与剩余工作清单。
-- **提交 PR 与代码审查**：遵循 [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md) 提交 Pull Request，对照关联 Issue 验收条件逐项确认完成情况，完成 Review 结论自查，并如实标注未验证项与证据边界。
+- **提交 PR 与代码审查**：遵循 [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md) 提交 Pull Request，对照关联 Issue 验收条件逐项确认完成情况，完成 Agent self-review 五项自审，并如实标注未验证项与证据边界。
 
 ---
 

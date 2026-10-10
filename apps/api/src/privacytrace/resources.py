@@ -24,3 +24,20 @@ def taxonomy(version: str | None = None) -> dict:
     if rules["version"] != selected:
         raise ValueError("Taxonomy snapshot version mismatch")
     return rules
+
+
+# PT-401: the sourced seed replaces the synthetic demo entry. The earlier
+# sdk-signatures.v0.1.json stays on disk as the superseded synthetic snapshot.
+ACTIVE_SDK_SIGNATURES_VERSION = "1.0.0"
+SDK_SIGNATURE_FILES = {"1.0.0": "rules/sdk-signatures.v1.0.json"}
+
+
+def sdk_signatures(version: str | None = None) -> dict:
+    selected = ACTIVE_SDK_SIGNATURES_VERSION if version is None else version
+    path = SDK_SIGNATURE_FILES.get(selected)
+    if path is None:
+        raise ValueError("Unsupported SDK signature ruleset version")
+    rules = read_json(path)
+    if rules["version"] != selected:
+        raise ValueError("SDK signature snapshot version mismatch")
+    return rules

@@ -73,12 +73,12 @@ PR #27 与 #28 的增量已在独立分支整合，面向已合并 S0 的 `main`
 
 | 编号 | 任务 | 建仓状态 |
 |---|---|---|
-| PT-401 | SDK Signature Schema | 合成 signature seed |
-| PT-402 | 常见 SDK Signature | 待开发 |
-| PT-403 | SDK Detection | 待开发 |
-| PT-404 | SDK → Vendor | 待开发 |
-| PT-405 | SDK → Potential DataType | 待开发 |
-| PT-406 | SDK Evidence | 待开发 |
+| PT-401 | SDK Signature Schema | 有据签名 v1.0.0；来源/许可/版本逐条记录 |
+| PT-402 | 常见 SDK Signature | 有限有据集合（11 条厂商签名）；非全量商业库 |
+| PT-403 | SDK Detection | 包路径前缀启发式；apk_worker 已接入 |
+| PT-404 | SDK → Vendor | 厂商归属标签（参考性，非法律认定） |
+| PT-405 | SDK → Potential DataType | 记录厂商公开声明的潜在类型，不参与一致性判定 |
+| PT-406 | SDK Evidence | kind=SDK 静态证据，含包路径与 apk_sha256 |
 
 ## Epic 5 · Policy Pipeline · P0
 

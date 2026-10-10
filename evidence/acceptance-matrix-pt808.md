@@ -52,11 +52,24 @@ npm run acceptance:browser
 
 ## 2. Quality Gate Verification Results
 
-全套工程质量门禁需在同一 Git SHA 下实测（结果于最终 Head 重跑后回填）：
+以下为在 `fix/pr33-code-review`（基于 PR Head `16f6d3f` + 修复提交）上的实测结果：
 
-1. **后端单元与集成测试 (Pytest)**: 待回填
-2. **代码静态分析 (Ruff)**: 待回填
-3. **前端类型检查与构建 (vue-tsc & Vite)**: 待回填
-4. **契约导出验证 (`scripts/export-schema.py`)**: 待回填
-5. **前端单元测试 (`npm --prefix apps/web test`)**: 待回填
-6. **浏览器端自动化验收 (`scripts/verify-browser-acceptance.cjs`)**: 待回填
+| # | 门禁项 | 命令 | 结果 |
+|---|---|---|---|
+| 1 | 后端单元与集成测试 | `uv run --project apps/api --extra worker pytest apps/api/tests -q` | **318 passed, 11 skipped, 2 failed** |
+| 2 | 代码静态分析 (Ruff) | `uv run --project apps/api ruff check apps/api/src apps/api/tests scripts` | **All checks passed!** |
+| 3 | 前端类型检查与构建 | `npm run build --workspace @privacytrace/web`（`vue-tsc --noEmit` + Vite） | **通过，0 error** |
+| 4 | 契约导出验证 | `uv run --project apps/api python scripts/export-schema.py` + `git diff --exit-code` | **0 diff（幂等）** |
+| 5 | 前端单元测试 | `npm run test --workspace @privacytrace/web` | **25 / 25 pass, 0 fail** |
+| 6 | 浏览器端自动化验收 | `npm run acceptance:browser` | **TC-01…TC-05 全部 PASSED，EXIT=0，10 张截图** |
+
+### 关于门禁 #1 的 2 例失败（**非本次改动引入**）
+
+```
+FAILED apps/api/tests/test_job_creation.py::test_one_reservation_wins_across_processes_and_survives_restart
+FAILED apps/api/tests/test_job_creation.py::test_concurrent_pipeline_never_scans_both_inputs_for_one_id
+```
+
+- 失败原因：`PermissionError: [Errno 13] Permission denied: ...\.lock`，Windows 平台下跨进程 `msvcrt.locking` 争用。
+- **归因验证**：`git stash` 本次全部改动后，在原始 Head 上重跑同样两条用例，得到**相同**的 `F.....F` 结果 → 属**既有环境问题**，与本 PR 的修复无因果关系。
+- 建议：不在本 PR 内处理（会扩大改动面）；另开 issue 跟踪 Windows 下 `JobStore` 跨进程锁的健壮性。

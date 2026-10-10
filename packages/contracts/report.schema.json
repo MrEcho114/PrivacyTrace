@@ -19,6 +19,9 @@
           "title": "Input Mode",
           "type": "string"
         },
+        "source_origin": {
+          "$ref": "#/$defs/SourceOrigin"
+        },
         "state": {
           "enum": [
             "QUEUED",
@@ -112,6 +115,7 @@
         "id",
         "sample_id",
         "input_mode",
+        "source_origin",
         "state",
         "ruleset_version",
         "created_at"
@@ -966,6 +970,17 @@
       ],
       "title": "ScanCoverage",
       "type": "object"
+    },
+    "SourceOrigin": {
+      "description": "Explicit provenance of a job, recorded instead of inferred from names.\n\nOFFLINE_REPLAY means a real APK scan whose report is replayed from persisted\nstorage; REAL_SCAN means the scan was produced by this process. CONTROLLED\nand SYNTHETIC never describe a real user application.",
+      "enum": [
+        "SYNTHETIC",
+        "CONTROLLED",
+        "OFFLINE_REPLAY",
+        "REAL_SCAN"
+      ],
+      "title": "SourceOrigin",
+      "type": "string"
     }
   },
   "additionalProperties": false,

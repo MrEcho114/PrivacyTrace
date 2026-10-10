@@ -1,5 +1,6 @@
 """Local persisted jobs, review audit events, and explicit synthetic demo API."""
 
+import os
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -12,6 +13,8 @@ from .job_store import JobStore
 from .models import AnalysisJob, EvaluationInput, EvaluationResult
 from .resources import ROOT, read_json, taxonomy
 from .runtime_models import JobsResponse, Report, ReviewRequest
+
+STORE_ROOT_ENV = "PRIVACYTRACE_STORE_ROOT"
 
 
 def operation(action):
@@ -44,7 +47,10 @@ def create_app(store_root: Path | None = None):
     app.add_middleware(
         TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]", "testserver"]
     )
-    app.state.job_store = JobStore(store_root or ROOT / "data/jobs")
+    # An explicit argument wins; the environment variable lets the acceptance
+    # harness boot an isolated instance without touching the repository data dir.
+    configured = store_root or (os.environ.get(STORE_ROOT_ENV) or None)
+    app.state.job_store = JobStore(Path(configured) if configured else ROOT / "data/jobs")
 
     @app.middleware("http")
     async def bound_job_writes(request: Request, call_next):

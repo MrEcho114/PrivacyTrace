@@ -21,6 +21,7 @@ def controlled_bundle():
         b for b in data["behaviors"] if not removed.intersection(b["evidence_ids"])
     ]
     data["job"]["input_mode"] = "APK"
+    data["job"]["source_origin"] = "CONTROLLED"
     return EvaluationInput.model_validate(data)
 
 
@@ -497,6 +498,7 @@ def test_concurrent_job_creation_is_atomic(tmp_path):
             id=job_id,
             sample_id=f"sample-{idx}",
             input_mode="APK",
+            source_origin="REAL_SCAN",
             state="QUEUED",
             ruleset_version="0.3",
             created_at=datetime.now(timezone.utc),

@@ -5,6 +5,7 @@ export type AnalysisJob = {
   "id": string;
   "sample_id": string;
   "input_mode": "SYNTHETIC" | "APK";
+  "source_origin": SourceOrigin;
   "state": "QUEUED" | "INTAKE" | "STATIC_ANALYSIS" | "POLICY_PARSING" | "EVALUATING" | "REPORTING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
   "ruleset_version": string;
   "created_at": string;
@@ -184,3 +185,5 @@ export type ScanCoverage = {
   "scanned_dex": Array<string>;
   "failed_dex": Array<string>;
 };
+
+export type SourceOrigin = "SYNTHETIC" | "CONTROLLED" | "OFFLINE_REPLAY" | "REAL_SCAN";

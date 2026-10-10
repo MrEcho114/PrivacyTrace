@@ -76,6 +76,8 @@ class Report(Model):
     def validate_real_mode(self):
         if self.job.input_mode != "APK":
             raise ValueError("Non-demo reports require an APK job")
+        if self.job.source_origin == "SYNTHETIC":
+            raise ValueError("Non-demo reports cannot claim a synthetic sample")
         return self
 
 
@@ -95,6 +97,8 @@ class StoredJob(Model):
     def validate_record(self):
         if self.job.input_mode != "APK":
             raise ValueError("Local persisted jobs require APK input mode")
+        if self.job.source_origin == "SYNTHETIC":
+            raise ValueError("Persisted jobs cannot claim a synthetic sample")
         if self.job.created_at.tzinfo is None:
             raise ValueError("Job created_at requires a timezone")
         if self.bundle:

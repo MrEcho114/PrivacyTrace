@@ -154,10 +154,25 @@ class PolicyClaim(Model):
     evidence_ids: list[str] = Field(min_length=1)
 
 
+class SourceOrigin(StrEnum):
+    """Explicit provenance of a job, recorded instead of inferred from names.
+
+    OFFLINE_REPLAY means a real APK scan whose report is replayed from persisted
+    storage; REAL_SCAN means the scan was produced by this process. CONTROLLED
+    and SYNTHETIC never describe a real user application.
+    """
+
+    SYNTHETIC = "SYNTHETIC"
+    CONTROLLED = "CONTROLLED"
+    OFFLINE_REPLAY = "OFFLINE_REPLAY"
+    REAL_SCAN = "REAL_SCAN"
+
+
 class AnalysisJob(Model):
     id: str
     sample_id: str
     input_mode: Literal["SYNTHETIC", "APK"]
+    source_origin: SourceOrigin
     state: Literal[
         "QUEUED",
         "INTAKE",

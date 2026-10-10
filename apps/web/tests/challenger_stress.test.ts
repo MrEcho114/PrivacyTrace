@@ -110,50 +110,58 @@ test('R1 Boundary: sentenceContext handles astral plane Unicode surrogate pairs 
 // ---------------------------------------------------------------------------
 // 3. Source Classification & Timestamp Edge Cases
 // ---------------------------------------------------------------------------
-// Replicates exact implementation from App.vue:128-153
-function getSourceInfo(report: { demo: boolean; job?: { sample_id?: string } } | null) {
+// Replicates the App.vue sourceInfo rule: provenance is read from the explicit
+// backend `source_origin` field. sample_id naming is never consulted.
+type Origin = 'SYNTHETIC' | 'CONTROLLED' | 'OFFLINE_REPLAY' | 'REAL_SCAN'
+
+function getSourceInfo(report: { demo: boolean; job?: { sample_id?: string; source_origin?: string } } | null) {
   if (!report) return null
-  if (report.demo) {
-    return {
-      type: 'SYNTHETIC',
-      badge: '人工示例 · SYNTHETIC',
-      label: 'SYNTHETIC · 人工构造示例',
-    }
+  const origin: string | undefined = report.demo ? 'SYNTHETIC' : report.job?.source_origin
+  if (!origin) return { type: 'UNKNOWN', badge: '来源未标注', label: '来源未标注' }
+  const labels: Record<string, { badge: string; label: string }> = {
+    SYNTHETIC: { badge: '人工示例 · SYNTHETIC', label: 'SYNTHETIC · 人工构造示例' },
+    CONTROLLED: { badge: '受控评测 · CONTROLLED', label: 'CONTROLLED · 受控测试输入' },
+    OFFLINE_REPLAY: { badge: '离线回放 · OFFLINE_REPLAY', label: 'OFFLINE_REPLAY · 真实 APK 静态报告' },
+    REAL_SCAN: { badge: '本机扫描 · REAL_SCAN', label: 'REAL_SCAN · 本机真实 APK 静态扫描' },
   }
-  const sampleId = report.job?.sample_id || ''
-  if (sampleId.startsWith('CONTROLLED')) {
-    return {
-      type: 'CONTROLLED',
-      badge: '受控评测 · CONTROLLED',
-      label: 'CONTROLLED · 受控测试输入',
-    }
-  }
-  return {
-    type: 'OFFLINE_REPLAY',
-    badge: '离线回放 · OFFLINE_REPLAY',
-    label: 'OFFLINE_REPLAY · 真实 APK 静态报告',
-  }
+  const known = labels[origin]
+  if (!known) return { type: origin, badge: `未识别来源 · ${origin}`, label: `未识别来源 · ${origin}` }
+  return { type: origin, ...known }
 }
 
-test('R4 Edge Case: Real job named demo vs Synthetic Demo', () => {
-  const syntheticReport = { demo: true, job: { id: 'demo' } }
-  assert.strictEqual(getSourceInfo(syntheticReport)?.type, 'SYNTHETIC')
-
-  const realJobNamedDemo = { demo: false, job: { id: 'demo', sample_id: 'com.example.real' } }
-  assert.strictEqual(getSourceInfo(realJobNamedDemo)?.type, 'OFFLINE_REPLAY')
-
-  const controlledJobNamedDemo = { demo: false, job: { id: 'demo', sample_id: 'CONTROLLED-DEMO-FIXTURE' } }
-  assert.strictEqual(getSourceInfo(controlledJobNamedDemo)?.type, 'CONTROLLED')
+test('R4 Source classification: demo envelope is always SYNTHETIC', () => {
+  assert.strictEqual(getSourceInfo({ demo: true, job: { id: 'demo' } })?.type, 'SYNTHETIC')
+  assert.strictEqual(getSourceInfo({ demo: true, job: { sample_id: 'com.example.real', source_origin: 'REAL_SCAN' } })?.type, 'SYNTHETIC')
 })
 
-test('R4 Edge Case: CONTROLLED prefix sensitivity', () => {
-  assert.strictEqual(getSourceInfo({ demo: false, job: { sample_id: 'CONTROLLED-1' } })?.type, 'CONTROLLED')
-  assert.strictEqual(getSourceInfo({ demo: false, job: { sample_id: 'CONTROLLED' } })?.type, 'CONTROLLED')
-  // Lowercase or substring in middle should NOT match CONTROLLED
-  assert.strictEqual(getSourceInfo({ demo: false, job: { sample_id: 'controlled-1' } })?.type, 'OFFLINE_REPLAY')
-  assert.strictEqual(getSourceInfo({ demo: false, job: { sample_id: 'UNCONTROLLED' } })?.type, 'OFFLINE_REPLAY')
-  assert.strictEqual(getSourceInfo({ demo: false, job: { sample_id: '' } })?.type, 'OFFLINE_REPLAY')
-  assert.strictEqual(getSourceInfo({ demo: false, job: {} })?.type, 'OFFLINE_REPLAY')
+test('R4 Source classification follows source_origin, not sample_id naming', () => {
+  // A real scan whose sample_id looks controlled must stay REAL_SCAN.
+  const realJobNamedControlled = { demo: false, job: { id: 'a', sample_id: 'CONTROLLED-LOOKALIKE', source_origin: 'REAL_SCAN' } }
+  assert.strictEqual(getSourceInfo(realJobNamedControlled)?.type, 'REAL_SCAN')
+
+  // A controlled fixture whose sample_id is literally "demo" must stay CONTROLLED.
+  const controlledJobNamedDemo = { demo: false, job: { id: 'b', sample_id: 'demo', source_origin: 'CONTROLLED' } }
+  assert.strictEqual(getSourceInfo(controlledJobNamedDemo)?.type, 'CONTROLLED')
+
+  // A plain offline replay is classified from the field alone.
+  const replay = { demo: false, job: { id: 'c', sample_id: 'gkd-s1-first', source_origin: 'OFFLINE_REPLAY' } }
+  assert.strictEqual(getSourceInfo(replay)?.type, 'OFFLINE_REPLAY')
+})
+
+test('R4 Source classification: missing or unknown origin is never silently mislabelled', () => {
+  // No origin recorded: report it as unannotated instead of assuming a replay.
+  assert.strictEqual(getSourceInfo({ demo: false, job: { sample_id: 'CONTROLLED-1' } })?.type, 'UNKNOWN')
+  assert.strictEqual(getSourceInfo({ demo: false, job: {} })?.type, 'UNKNOWN')
+  // An unrecognised origin surfaces verbatim rather than degrading to a real-APK label.
+  const unknown = getSourceInfo({ demo: false, job: { sample_id: 'x', source_origin: 'MADE_UP' } })
+  assert.strictEqual(unknown?.type, 'MADE_UP')
+  assert(unknown!.badge.includes('未识别来源'))
+})
+
+test('R4 Every known origin maps to a distinct badge', () => {
+  const origins: Origin[] = ['SYNTHETIC', 'CONTROLLED', 'OFFLINE_REPLAY', 'REAL_SCAN']
+  const badges = origins.map(o => getSourceInfo({ demo: false, job: { source_origin: o } })?.badge)
+  assert.strictEqual(new Set(badges).size, origins.length, 'Each origin needs a unique badge')
 })
 
 // Replicates exact implementation from App.vue:118-126

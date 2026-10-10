@@ -1,0 +1,21 @@
+{
+  "job": {
+    "id": "ui-running-cancel",
+    "sample_id": "CONTROLLED-RUNNING",
+    "input_mode": "APK",
+    "source_origin": "CONTROLLED",
+    "state": "STATIC_ANALYSIS",
+    "ruleset_version": "0.3.0",
+    "created_at": "2026-10-03T12:48:35.211974Z",
+    "package_name": "org.privacytrace.fixture",
+    "version_code": 1,
+    "region": null,
+    "product_scope": null,
+    "error": null
+  },
+  "bundle": null,
+  "sample": null,
+  "coverage": null,
+  "tools": {},
+  "reviews": []
+}

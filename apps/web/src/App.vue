@@ -124,31 +124,50 @@ const formatTimestamp = (ts?: string) => {
   }
 }
 
-const sourceInfo = computed(() => {
-  if (!report.value) return null
-  if (report.value.demo) {
-    return {
-      type: 'SYNTHETIC',
-      badge: '人工示例 · SYNTHETIC',
-      label: 'SYNTHETIC · 人工构造示例',
-      desc: '人工构造的代码片段与政策文本，不属于真实 APK。',
-    }
-  }
-  const sampleId = report.value.job?.sample_id || ''
-  if (sampleId.startsWith('CONTROLLED')) {
-    return {
-      type: 'CONTROLLED',
-      badge: '受控评测 · CONTROLLED',
-      label: 'CONTROLLED · 受控测试输入',
-      desc: '来自受控测试环境的标准测试用例，用于验证边界与特定异常行为。',
-    }
-  }
-  return {
-    type: 'OFFLINE_REPLAY',
+// Source classification reads the explicit backend `source_origin` field.
+// Naming conventions (sample_id prefixes) never decide provenance.
+const SOURCE_LABELS: Record<string, { badge: string; label: string; desc: string }> = {
+  SYNTHETIC: {
+    badge: '人工示例 · SYNTHETIC',
+    label: 'SYNTHETIC · 人工构造示例',
+    desc: '人工构造的代码片段与政策文本，不属于真实 APK。',
+  },
+  CONTROLLED: {
+    badge: '受控评测 · CONTROLLED',
+    label: 'CONTROLLED · 受控测试输入',
+    desc: '来自受控测试环境的标准测试用例，用于验证边界与特定异常行为。',
+  },
+  OFFLINE_REPLAY: {
     badge: '离线回放 · OFFLINE_REPLAY',
     label: 'OFFLINE_REPLAY · 真实 APK 静态报告',
     desc: '既有已完成扫描的离线持久化报告回放，已保留完整证据链与原生成时点。',
+  },
+  REAL_SCAN: {
+    badge: '本机扫描 · REAL_SCAN',
+    label: 'REAL_SCAN · 本机真实 APK 静态扫描',
+    desc: '由本机扫描流程直接产出的真实 APK 静态报告，已保留完整证据链与原生成时点。',
+  },
+}
+
+const sourceOptionPrefix = (origin?: string) => {
+  if (origin === 'CONTROLLED') return '[受控评测] '
+  if (origin === 'SYNTHETIC') return '[人工示例] '
+  if (origin === 'REAL_SCAN') return '[本机扫描] '
+  if (origin === 'OFFLINE_REPLAY') return '[离线回放] '
+  return '[来源未标注] '
+}
+
+const sourceInfo = computed(() => {
+  if (!report.value) return null
+  const origin = report.value.demo ? 'SYNTHETIC' : report.value.job?.source_origin
+  if (!origin) {
+    return { type: 'UNKNOWN', badge: '来源未标注', label: '来源未标注', desc: '报告缺少来源标注，无法判断该报告的真实性级别。' }
   }
+  const known = SOURCE_LABELS[origin]
+  if (!known) {
+    return { type: origin, badge: `未识别来源 · ${origin}`, label: `未识别来源 · ${origin}`, desc: '后端返回了未知的来源类型，请检查契约版本是否匹配。' }
+  }
+  return { type: origin, ...known }
 })
 
 // Structured error parsing for activeJob
@@ -233,10 +252,23 @@ async function cancel() {
     if (current === requestId) {
       const msg = cause instanceof Error ? cause.message : String(cause)
       if (msg.includes('409')) {
+        // The job moved on while we tried to cancel. Resolve the latest state
+        // instead of leaving a SUCCEEDED job without its report.
         error.value = '任务已处于终态或无法取消（状态已更新）。'
         try {
           const latest = await loadJob(id, signal)
-          if (current === requestId) activeJob.value = latest
+          if (current !== requestId) return
+          activeJob.value = latest
+          if (latest.state === 'SUCCEEDED') {
+            report.value = await loadJobReport(latest.id, signal)
+            if (current === requestId) error.value = ''
+          } else if (!terminal(latest)) {
+            // Still running after a rejected cancel: resume polling.
+            error.value = ''
+            timer = setTimeout(() => { void reload() }, 1500)
+          } else {
+            report.value = null
+          }
         } catch {}
       } else {
         error.value = failure(cause)
@@ -283,7 +315,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         <select id="report-source" v-model="selectedSourceKey" @change="reload()">
           <option value="demo:synthetic">SYNTHETIC · 人工构造示例</option>
           <option v-for="job in jobs" :key="job.id" :value="`job:${job.id}`">
-            {{ (job.sample_id && job.sample_id.startsWith('CONTROLLED')) ? `[受控评测] ` : `[离线回放] ` }}{{ job.package_name || job.sample_id }} · {{ job.id }} · {{ jobLabels[job.state] }}
+            {{ sourceOptionPrefix(job.source_origin) }}{{ job.package_name || job.sample_id }} · {{ job.id }} · {{ jobLabels[job.state] }}
           </option>
         </select>
         <p class="subtle">真实任务由 APK 扫描 CLI 创建；示例仅用于演示，不是实际应用的检测结果。</p>

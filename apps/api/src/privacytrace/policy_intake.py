@@ -242,6 +242,7 @@ def validate_bundle(record):
                 id="policy-validation",
                 sample_id="policy-only",
                 input_mode="APK",
+                source_origin="CONTROLLED",
                 state="POLICY_PARSING",
                 ruleset_version=taxonomy()["version"],
                 created_at=datetime.now(timezone.utc),

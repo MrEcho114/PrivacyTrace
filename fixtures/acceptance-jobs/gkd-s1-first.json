@@ -1,0 +1,368 @@
+{
+  "job": {
+    "id": "gkd-s1-first",
+    "sample_id": "gkd-s1-first",
+    "input_mode": "APK",
+    "source_origin": "OFFLINE_REPLAY",
+    "state": "SUCCEEDED",
+    "ruleset_version": "0.3.0",
+    "created_at": "2026-10-03T12:48:35.211974Z",
+    "package_name": "org.privacytrace.fixture",
+    "version_code": 1,
+    "region": null,
+    "product_scope": null,
+    "error": null
+  },
+  "bundle": {
+    "job": {
+      "id": "gkd-s1-first",
+      "sample_id": "gkd-s1-first",
+      "input_mode": "APK",
+      "source_origin": "OFFLINE_REPLAY",
+      "state": "SUCCEEDED",
+      "ruleset_version": "0.3.0",
+      "created_at": "2026-10-03T12:48:35.211974Z",
+      "package_name": "org.privacytrace.fixture",
+      "version_code": 1,
+      "region": null,
+      "product_scope": null,
+      "error": null
+    },
+    "evidence": [
+      {
+        "id": "ev-location-permission",
+        "kind": "MANIFEST",
+        "status": "STATIC_POTENTIAL",
+        "source": "synthetic/AndroidManifest.xml",
+        "locator": "uses-permission[1]",
+        "excerpt": "<uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\" />",
+        "document_id": null,
+        "artifact_sha256": null,
+        "start_offset": null,
+        "end_offset": null,
+        "api_call": null
+      },
+      {
+        "id": "ev-location-api",
+        "kind": "API",
+        "status": "STATIC_POTENTIAL",
+        "source": "synthetic/LocationFeature.java",
+        "locator": "LocationFeature#readGpsLocation:12",
+        "excerpt": "locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);",
+        "document_id": null,
+        "artifact_sha256": null,
+        "start_offset": null,
+        "end_offset": null,
+        "api_call": {
+          "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "rule_id": "android.location.last-known.gps",
+          "ruleset_version": "0.3.0",
+          "context": {
+            "provider": "gps"
+          }
+        }
+      },
+      {
+        "id": "ev-contacts-api",
+        "kind": "API",
+        "status": "STATIC_POTENTIAL",
+        "source": "synthetic/ContactsFeature.java",
+        "locator": "ContactsFeature#readContacts:19",
+        "excerpt": "resolver.query(ContactsContract.Contacts.CONTENT_URI, projection, null, null, null);",
+        "document_id": null,
+        "artifact_sha256": null,
+        "start_offset": null,
+        "end_offset": null,
+        "api_call": {
+          "target_descriptor": "Landroid/content/ContentResolver;->query(Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;",
+          "rule_id": "android.contacts.query",
+          "ruleset_version": "0.3.0",
+          "context": {
+            "uri": "content://com.android.contacts/contacts"
+          }
+        }
+      },
+      {
+        "id": "ev-demo-sdk",
+        "kind": "SDK",
+        "status": "STATIC_POTENTIAL",
+        "source": "synthetic/package-list.txt",
+        "locator": "package-prefix",
+        "excerpt": "org.privacytrace.demo.maps // synthetic SDK fixture",
+        "document_id": null,
+        "artifact_sha256": null,
+        "start_offset": null,
+        "end_offset": null,
+        "api_call": null
+      },
+      {
+        "id": "ev-policy-in-app-snapshot",
+        "kind": "POLICY_DOCUMENT",
+        "status": "DECLARED",
+        "source": "synthetic/policy-in-app.txt",
+        "locator": "complete snapshot",
+        "excerpt": "",
+        "document_id": "policy-in-app",
+        "artifact_sha256": "f7abe7b2170da4c7e0d24d9fc963f6c6e3c83c238452b6fa3c2747a32262c5b8",
+        "start_offset": null,
+        "end_offset": null,
+        "api_call": null
+      },
+      {
+        "id": "ev-policy-store-snapshot",
+        "kind": "POLICY_DOCUMENT",
+        "status": "DECLARED",
+        "source": "synthetic/policy-store.txt",
+        "locator": "complete snapshot",
+        "excerpt": "",
+        "document_id": "policy-store",
+        "artifact_sha256": "7de0eb7be713291db38c2c02365fc05f5a0247d15dd21704e172adce5c982c15",
+        "start_offset": null,
+        "end_offset": null,
+        "api_call": null
+      },
+      {
+        "id": "ev-policy-in-app-location-sentence",
+        "kind": "POLICY_SENTENCE",
+        "status": "DECLARED",
+        "source": "synthetic/policy-in-app.txt",
+        "locator": "sentence[1]",
+        "excerpt": "我们访问位置信息，用于提供地图功能。",
+        "document_id": "policy-in-app",
+        "artifact_sha256": null,
+        "start_offset": 0,
+        "end_offset": 18,
+        "api_call": null
+      },
+      {
+        "id": "ev-policy-store-location-sentence",
+        "kind": "POLICY_SENTENCE",
+        "status": "DECLARED",
+        "source": "synthetic/policy-store.txt",
+        "locator": "sentence[1]",
+        "excerpt": "我们访问位置信息，用于提供地图功能。",
+        "document_id": "policy-store",
+        "artifact_sha256": null,
+        "start_offset": 0,
+        "end_offset": 18,
+        "api_call": null
+      },
+      {
+        "id": "ev-store-oaid-sentence",
+        "kind": "POLICY_SENTENCE",
+        "status": "DECLARED",
+        "source": "synthetic/policy-store.txt",
+        "locator": "sentence[2]",
+        "excerpt": "我们访问OAID，用于统计。",
+        "document_id": "policy-store",
+        "artifact_sha256": null,
+        "start_offset": 18,
+        "end_offset": 32,
+        "api_call": null
+      },
+      {
+        "id": "ev-dex-screenshot-api",
+        "kind": "API",
+        "status": "STATIC_POTENTIAL",
+        "source": "bytecode/classes.dex",
+        "locator": "dex=classes.dex;offset_bytes=0x1a2b",
+        "excerpt": "invoke-static {}, Landroid/app/UiAutomation;->takeScreenshot()Landroid/graphics/Bitmap;",
+        "document_id": null,
+        "artifact_sha256": null,
+        "start_offset": null,
+        "end_offset": null,
+        "api_call": {
+          "target_descriptor": "Landroid/app/UiAutomation;->takeScreenshot()Landroid/graphics/Bitmap;",
+          "rule_id": "android.screen.automation-screenshot",
+          "ruleset_version": "0.3.0",
+          "context": {}
+        }
+      }
+    ],
+    "behaviors": [
+      {
+        "id": "behavior-location",
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "purpose": "UNKNOWN",
+        "recipient": "UNKNOWN",
+        "transfer": "UNKNOWN",
+        "temporal_scope": "UNKNOWN",
+        "evidence_ids": [
+          "ev-location-permission",
+          "ev-location-api"
+        ],
+        "contextual_hints": []
+      },
+      {
+        "id": "behavior-contacts",
+        "data_type": "CONTACTS",
+        "action": "ACCESS",
+        "purpose": "UNKNOWN",
+        "recipient": "UNKNOWN",
+        "transfer": "UNKNOWN",
+        "temporal_scope": "UNKNOWN",
+        "evidence_ids": [
+          "ev-contacts-api"
+        ],
+        "contextual_hints": []
+      },
+      {
+        "id": "behavior-screen-capture",
+        "data_type": "SCREEN_CAPTURE",
+        "action": "ACCESS",
+        "purpose": "UNKNOWN",
+        "recipient": "UNKNOWN",
+        "transfer": "UNKNOWN",
+        "temporal_scope": "UNKNOWN",
+        "evidence_ids": [
+          "ev-dex-screenshot-api"
+        ],
+        "contextual_hints": []
+      }
+    ],
+    "policy_documents": [
+      {
+        "id": "policy-in-app",
+        "source_type": "IN_APP_POLICY",
+        "title": "示例 App 内隐私政策",
+        "version": "synthetic-0.1",
+        "captured_at": "2026-10-02T00:00:00Z",
+        "artifact": {
+          "text": "我们访问位置信息，用于提供地图功能。其他功能使用必要的应用配置。",
+          "sha256": "f7abe7b2170da4c7e0d24d9fc963f6c6e3c83c238452b6fa3c2747a32262c5b8",
+          "normalization": "NONE"
+        },
+        "completeness": "COMPLETE",
+        "extraction_status": "SUCCEEDED",
+        "review_status": "REVIEWED",
+        "attachments_status": "COMPLETE",
+        "applicability": {
+          "package_name": "org.privacytrace.demo",
+          "version_codes": [
+            1,
+            2
+          ],
+          "regions": [
+            "CN"
+          ],
+          "product_scope": "HOST_APP"
+        },
+        "evidence_id": "ev-policy-in-app-snapshot"
+      },
+      {
+        "id": "policy-store",
+        "source_type": "STORE_POLICY",
+        "title": "示例应用商店声明",
+        "version": "synthetic-0.1",
+        "captured_at": "2026-10-02T00:00:00Z",
+        "artifact": {
+          "text": "我们访问位置信息，用于提供地图功能。我们访问OAID，用于统计。",
+          "sha256": "7de0eb7be713291db38c2c02365fc05f5a0247d15dd21704e172adce5c982c15",
+          "normalization": "NONE"
+        },
+        "completeness": "COMPLETE",
+        "extraction_status": "SUCCEEDED",
+        "review_status": "REVIEWED",
+        "attachments_status": "COMPLETE",
+        "applicability": {
+          "package_name": "org.privacytrace.demo",
+          "version_codes": [
+            1,
+            2
+          ],
+          "regions": [
+            "CN"
+          ],
+          "product_scope": "HOST_APP"
+        },
+        "evidence_id": "ev-policy-store-snapshot"
+      }
+    ],
+    "policy_claims": [
+      {
+        "id": "claim-policy-in-app-location",
+        "document_id": "policy-in-app",
+        "data_type": "LOCATION",
+        "action": "ACCESS",
+        "polarity": "AFFIRMATIVE",
+        "condition": null,
+        "subject": "HOST_APP",
+        "declared_purpose": "提供地图功能",
+        "declared_recipient": null,
+        "basis": "POLICY_DECLARATION",
+        "ambiguity_flags": [],
+        "evidence_ids": [
+          "ev-policy-in-app-location-sentence"
+        ]
+      },
+      {
+        "id": "claim-policy-store-location",
+        "document_id": "policy-store",
+        "data_type": "LOCATION",
+        "action": "ACCESS",
+        "polarity": "AFFIRMATIVE",
+        "condition": null,
+        "subject": "HOST_APP",
+        "declared_purpose": "提供地图功能",
+        "declared_recipient": null,
+        "basis": "POLICY_DECLARATION",
+        "ambiguity_flags": [],
+        "evidence_ids": [
+          "ev-policy-store-location-sentence"
+        ]
+      },
+      {
+        "id": "claim-store-oaid",
+        "document_id": "policy-store",
+        "data_type": "OAID",
+        "action": "ACCESS",
+        "polarity": "AFFIRMATIVE",
+        "condition": null,
+        "subject": "HOST_APP",
+        "declared_purpose": "统计",
+        "declared_recipient": null,
+        "basis": "POLICY_DECLARATION",
+        "ambiguity_flags": [],
+        "evidence_ids": [
+          "ev-store-oaid-sentence"
+        ]
+      }
+    ]
+  },
+  "sample": {
+    "name": "离线回放样本（真实 APK 静态报告）",
+    "package_name": "org.privacytrace.fixture",
+    "version_name": "1",
+    "version_code": 1,
+    "apk_sha256": "edcc03be24bc54d44c04746b46e2e33244120638e2199450b4407195447466a6",
+    "permissions": [
+      "android.permission.ACCESS_FINE_LOCATION"
+    ],
+    "dex_entries": [
+      "classes.dex"
+    ]
+  },
+  "coverage": {
+    "status": "COMPLETE",
+    "scope": "DEX_ENTRIES",
+    "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+    "behavior_limitations": [
+      "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+      "不保证覆盖反射、动态加载及运行时生成的调用。",
+      "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+      "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+      "静态潜在行为不能证明实际访问、收集或外传。"
+    ],
+    "limitations": [],
+    "scanned_dex": [
+      "classes.dex"
+    ],
+    "failed_dex": []
+  },
+  "tools": {
+    "scanner": "OFFLINE_REPLAY_FIXTURE",
+    "jadx": "UNAVAILABLE_BYTECODE_FALLBACK"
+  },
+  "reviews": []
+}

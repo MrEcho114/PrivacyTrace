@@ -1,39 +1,32 @@
 // Challenger Adversarial Browser Stress-Testing Suite for PT-808
 // Independent verification script written by challenger_s3_2
+//
+// Runs against an isolated API instance seeded from `fixtures/acceptance-jobs/`.
+// `playwright` is a declared devDependency; no machine-specific paths are probed.
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const assert = require('node:assert/strict');
 const { spawn, execSync } = require('node:child_process');
 
+const API_PORT = Number(process.env.PRIVACYTRACE_ACCEPTANCE_API_PORT || 8124);
+const WEB_PORT = Number(process.env.PRIVACYTRACE_ACCEPTANCE_WEB_PORT || 5274);
+const API_ORIGIN = `http://127.0.0.1:${API_PORT}`;
+const WEB_ORIGIN = `http://127.0.0.1:${WEB_PORT}`;
+
 function getPlaywright() {
   try {
     return require('playwright');
   } catch {
-    const candidates = [
-      'C:/Users/Oasis/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright',
-      'C:/Users/Oasis/AppData/Roaming/npm/node_modules/playwright',
-    ];
-    for (const p of candidates) {
-      try {
-        return require(p);
-      } catch {}
-    }
-    throw new Error('Playwright module not found');
+    throw new Error(
+      'Playwright is not installed. Run `npm ci` at the repository root before this run.'
+    );
   }
 }
 
 function getChromiumExecutable() {
-  if (process.env.PRIVACYTRACE_CHROMIUM) return process.env.PRIVACYTRACE_CHROMIUM;
-  const candidates = [
-    'C:/Users/Oasis/AppData/Local/ms-playwright/chromium-1237/chrome-win64/chrome.exe',
-    'C:/Program Files/Google/Chrome/Application/chrome.exe',
-    'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
-  ];
-  for (const c of candidates) {
-    if (fs.existsSync(c)) return c;
-  }
-  return undefined;
+  return process.env.PRIVACYTRACE_CHROMIUM || undefined;
 }
 
 async function isPortOpen(url) {
@@ -45,13 +38,30 @@ async function isPortOpen(url) {
   }
 }
 
-async function waitForServer(url, timeoutMs = 15000) {
+async function waitForServer(url, timeoutMs = 30000) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     if (await isPortOpen(url)) return true;
     await new Promise(r => setTimeout(r, 500));
   }
   return false;
+}
+
+function killSpawned(pid) {
+  if (!pid) return;
+  try {
+    if (process.platform === 'win32') execSync(`taskkill /F /T /PID ${pid}`, { stdio: 'ignore' });
+    else process.kill(-pid, 'SIGKILL');
+  } catch {}
+}
+
+function createIsolatedStore(projectRoot) {
+  const storeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'privacytrace-challenger-'));
+  const fixtureDir = path.join(projectRoot, 'fixtures', 'acceptance-jobs');
+  for (const name of fs.readdirSync(fixtureDir).filter(n => n.endsWith('.json'))) {
+    fs.copyFileSync(path.join(fixtureDir, name), path.join(storeDir, name));
+  }
+  return storeDir;
 }
 
 async function selectSource(page, value) {
@@ -64,40 +74,40 @@ async function runChallengerSuite() {
   console.log('=== PrivacyTrace PT-808 Challenger Adversarial Test Suite ===');
   const projectRoot = path.resolve(__dirname, '..');
   const childrenToKill = [];
+  const storeDir = createIsolatedStore(projectRoot);
+  console.log(`[Server] Using isolated store: ${storeDir}`);
 
-  // Ensure API backend is running
-  let apiHealthy = false;
-  try {
-    const res = await fetch('http://127.0.0.1:8000/api/v1/jobs', { signal: AbortSignal.timeout(1000) });
-    if (res.ok) apiHealthy = true;
-  } catch {}
-
-  if (!apiHealthy) {
-    console.log('[Server] Starting API backend on port 8000...');
-    const apiProc = spawn('uv', ['run', '--project', 'apps/api', 'uvicorn', 'privacytrace.main:app', '--port', '8000'], {
-      cwd: projectRoot,
-      shell: true,
-      stdio: 'pipe',
-    });
-    childrenToKill.push(apiProc);
-    const ready = await waitForServer('http://127.0.0.1:8000/api/v1/jobs', 15000);
-    if (!ready) throw new Error('Failed to start API backend on port 8000');
-    console.log('[Server] API backend ready.');
-  } else {
-    console.log('[Server] API backend already listening.');
+  if (await isPortOpen(`${API_ORIGIN}/api/v1/jobs`)) {
+    throw new Error(
+      `Port ${API_PORT} is already serving requests. This script only terminates processes it starts.`
+    );
   }
+  console.log(`[Server] Starting API backend on port ${API_PORT}...`);
+  const apiProc = spawn('uv', ['run', '--project', 'apps/api', 'uvicorn', 'privacytrace.main:app', '--port', String(API_PORT)], {
+    cwd: projectRoot,
+    shell: true,
+    stdio: 'pipe',
+    env: { ...process.env, PRIVACYTRACE_STORE_ROOT: storeDir },
+  });
+  childrenToKill.push(apiProc);
+  if (!(await waitForServer(`${API_ORIGIN}/api/v1/jobs`, 60000))) {
+    throw new Error(`Failed to start API backend on port ${API_PORT}`);
+  }
+  console.log('[Server] API backend ready.');
 
-  // Ensure Vite frontend is running
-  if (!(await isPortOpen('http://127.0.0.1:5173'))) {
-    console.log('[Server] Starting Vite frontend on port 5173...');
+  // Ensure the Vite frontend is running against the isolated API.
+  if (!(await isPortOpen(WEB_ORIGIN))) {
+    console.log(`[Server] Starting Vite frontend on port ${WEB_PORT}...`);
     const webProc = spawn('npm', ['--prefix', 'apps/web', 'run', 'dev'], {
       cwd: projectRoot,
       shell: true,
       stdio: 'pipe',
+      env: { ...process.env, PRIVACYTRACE_API_ORIGIN: API_ORIGIN, PRIVACYTRACE_WEB_PORT: String(WEB_PORT) },
     });
     childrenToKill.push(webProc);
-    const ready = await waitForServer('http://127.0.0.1:5173', 15000);
-    if (!ready) throw new Error('Failed to start Vite frontend on port 5173');
+    if (!(await waitForServer(WEB_ORIGIN, 60000))) {
+      throw new Error(`Failed to start Vite frontend on port ${WEB_PORT}`);
+    }
     console.log('[Server] Vite frontend ready.');
   } else {
     console.log('[Server] Vite frontend already listening.');
@@ -122,7 +132,7 @@ async function runChallengerSuite() {
   page.on('pageerror', err => pageErrors.push({ message: err.message, stack: err.stack }));
 
   const fetchBaseReport = async () => {
-    const res = await fetch('http://127.0.0.1:8000/api/v1/jobs/gkd-s1-first/report');
+    const res = await fetch(`${API_ORIGIN}/api/v1/jobs/gkd-s1-first/report`);
     assert(res.ok, 'Failed to fetch base report');
     return await res.json();
   };
@@ -165,7 +175,7 @@ async function runChallengerSuite() {
       body: JSON.stringify(xssReport),
     }));
 
-    await page.goto('http://127.0.0.1:5173');
+    await page.goto(WEB_ORIGIN);
     await selectSource(page, 'job:gkd-s1-first');
 
     // Expand review section to render injected review
@@ -480,7 +490,7 @@ async function runChallengerSuite() {
     const demoJobReportUrl = '**/api/v1/jobs/demo/report';
     const realDemoReport = structuredClone(baseReport);
     realDemoReport.demo = false;
-    realDemoReport.job = { id: 'demo', sample_id: 'com.demo.realapp', state: 'SUCCEEDED', input_mode: 'APK', ruleset_version: '1.0.0' };
+    realDemoReport.job = { id: 'demo', sample_id: 'com.demo.realapp', source_origin: 'OFFLINE_REPLAY', state: 'SUCCEEDED', input_mode: 'APK', ruleset_version: '1.0.0' };
     realDemoReport.sample.package_name = 'com.demo.realapp';
 
     await page.route(demoJobReportUrl, route => route.fulfill({
@@ -495,7 +505,7 @@ async function runChallengerSuite() {
       body: JSON.stringify(realDemoReport.job),
     }));
 
-    await page.goto('http://127.0.0.1:5173');
+    await page.goto(WEB_ORIGIN);
     await selectSource(page, 'job:demo');
     await page.locator('.sample-card').waitFor();
 
@@ -517,12 +527,13 @@ async function runChallengerSuite() {
     await page.unroute(demoJobReportUrl);
     await page.unroute('**/api/v1/jobs/demo');
 
-    // 3.2 Sample IDs starting with CONTROLLED vs ordinary sample IDs
-    console.log('[CHALLENGE 3.2] Testing sample IDs prefix sensitivity...');
-    const testSampleIdBadge = async (sampleId, expectedType, expectedBadgeText) => {
+    // 3.2 Classification follows source_origin; sample_id naming must be ignored
+    console.log('[CHALLENGE 3.2] Testing source_origin precedence over sample_id naming...');
+    const testSourceOrigin = async (sampleId, sourceOrigin, expectedType, expectedBadgeText) => {
       const rep = structuredClone(baseReport);
       rep.demo = false;
       rep.job.sample_id = sampleId;
+      rep.job.source_origin = sourceOrigin;
 
       await page.route(reportUrl, route => route.fulfill({
         status: 200,
@@ -535,14 +546,18 @@ async function runChallengerSuite() {
       await page.locator('.sample-card').waitFor();
 
       const badge = await page.locator('.sample-card .badge').innerText();
-      assert(badge.includes(expectedBadgeText), `Expected ${expectedBadgeText} for sample_id "${sampleId}", got: ${badge}`);
+      assert(badge.includes(expectedBadgeText),
+        `Expected ${expectedBadgeText} for sample_id "${sampleId}" / source_origin "${sourceOrigin}", got: ${badge}`);
       await page.unroute(reportUrl);
     };
 
-    await testSampleIdBadge('CONTROLLED-SENSITIVE-FIXTURE', 'CONTROLLED', '受控评测 · CONTROLLED');
-    await testSampleIdBadge('controlled-lowercase-fixture', 'OFFLINE_REPLAY', '离线回放 · OFFLINE_REPLAY');
-    await testSampleIdBadge('NORMAL_APP_PACKAGE', 'OFFLINE_REPLAY', '离线回放 · OFFLINE_REPLAY');
-    console.log('  ✔ CONTROLLED prefix sensitivity strictly verified');
+    // The field decides; a misleading sample_id must not change the verdict.
+    await testSourceOrigin('CONTROLLED-SENSITIVE-FIXTURE', 'CONTROLLED', 'CONTROLLED', '受控评测 · CONTROLLED');
+    await testSourceOrigin('demo', 'CONTROLLED', 'CONTROLLED', '受控评测 · CONTROLLED');
+    await testSourceOrigin('CONTROLLED-LOOKALIKE', 'REAL_SCAN', 'REAL_SCAN', '本机扫描 · REAL_SCAN');
+    await testSourceOrigin('controlled-lowercase-fixture', 'REAL_SCAN', 'REAL_SCAN', '本机扫描 · REAL_SCAN');
+    await testSourceOrigin('NORMAL_APP_PACKAGE', 'OFFLINE_REPLAY', 'OFFLINE_REPLAY', '离线回放 · OFFLINE_REPLAY');
+    console.log('  ✔ source_origin precedence strictly verified (sample_id naming is ignored)');
 
     // 3.3 Non-standard timestamp formats in created_at
     console.log('[CHALLENGE 3.3] Testing non-standard timestamp formats in created_at...');

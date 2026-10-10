@@ -19,6 +19,9 @@
           "title": "Input Mode",
           "type": "string"
         },
+        "source_origin": {
+          "$ref": "#/$defs/SourceOrigin"
+        },
         "state": {
           "enum": [
             "QUEUED",
@@ -112,6 +115,7 @@
         "id",
         "sample_id",
         "input_mode",
+        "source_origin",
         "state",
         "ruleset_version",
         "created_at"
@@ -662,6 +666,16 @@
       ],
       "title": "PrivacyBehavior",
       "type": "object"
+    },
+    "SourceOrigin": {
+      "description": "Immutable provenance of the underlying data, recorded instead of inferred.\n\nThis field answers \"where did the data come from\". It never changes once a\njob is created. It does NOT describe how a report is being served right now\n-- a job created by a real scan keeps REAL_SCAN even when its report is later\nreplayed from persisted storage. Use `delivery_mode` for the loading path.\n\nCONTROLLED and SYNTHETIC never describe a real user application.",
+      "enum": [
+        "SYNTHETIC",
+        "CONTROLLED",
+        "REAL_SCAN"
+      ],
+      "title": "SourceOrigin",
+      "type": "string"
     }
   },
   "additionalProperties": false,

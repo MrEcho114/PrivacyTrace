@@ -154,10 +154,40 @@ class PolicyClaim(Model):
     evidence_ids: list[str] = Field(min_length=1)
 
 
+class SourceOrigin(StrEnum):
+    """Immutable provenance of the underlying data, recorded instead of inferred.
+
+    This field answers "where did the data come from". It never changes once a
+    job is created. It does NOT describe how a report is being served right now
+    -- a job created by a real scan keeps REAL_SCAN even when its report is later
+    replayed from persisted storage. Use `delivery_mode` for the loading path.
+
+    CONTROLLED and SYNTHETIC never describe a real user application.
+    """
+
+    SYNTHETIC = "SYNTHETIC"
+    CONTROLLED = "CONTROLLED"
+    REAL_SCAN = "REAL_SCAN"
+
+
+class DeliveryMode(StrEnum):
+    """How a report reached the client in this response. Repeated per request.
+
+    This field answers "how was it loaded", which is mutable: the same
+    persisted job can be delivered as LIVE_GENERATED in the run that produced
+    it and as PERSISTED_REPLAY on any later load. It is never persisted on the
+    job, because it depends on the serving path rather than on the data.
+    """
+
+    LIVE_GENERATED = "LIVE_GENERATED"
+    PERSISTED_REPLAY = "PERSISTED_REPLAY"
+
+
 class AnalysisJob(Model):
     id: str
     sample_id: str
     input_mode: Literal["SYNTHETIC", "APK"]
+    source_origin: SourceOrigin
     state: Literal[
         "QUEUED",
         "INTAKE",

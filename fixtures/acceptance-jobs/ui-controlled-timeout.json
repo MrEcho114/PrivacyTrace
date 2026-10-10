@@ -1,0 +1,21 @@
+{
+  "job": {
+    "id": "ui-controlled-timeout",
+    "sample_id": "CONTROLLED-TIMEOUT",
+    "input_mode": "APK",
+    "source_origin": "CONTROLLED",
+    "state": "FAILED",
+    "ruleset_version": "0.3.0",
+    "created_at": "2026-10-03T12:48:35.211974Z",
+    "package_name": "org.privacytrace.fixture",
+    "version_code": 1,
+    "region": null,
+    "product_scope": null,
+    "error": "{\"code\": \"SCAN_TIMEOUT\", \"message\": \"Static analysis exceeded the configured timeout budget\", \"primary_error\": \"worker killed after 120s\"}"
+  },
+  "bundle": null,
+  "sample": null,
+  "coverage": null,
+  "tools": {},
+  "reviews": []
+}

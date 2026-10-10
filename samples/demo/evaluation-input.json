@@ -3,6 +3,7 @@
     "id": "demo-job-001",
     "sample_id": "synthetic-app-001",
     "input_mode": "SYNTHETIC",
+    "source_origin": "SYNTHETIC",
     "state": "SUCCEEDED",
     "ruleset_version": "0.3.0",
     "created_at": "2026-10-02T00:00:00Z",

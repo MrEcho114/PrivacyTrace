@@ -21,6 +21,7 @@ def controlled_bundle():
         b for b in data["behaviors"] if not removed.intersection(b["evidence_ids"])
     ]
     data["job"]["input_mode"] = "APK"
+    data["job"]["source_origin"] = "CONTROLLED"
     return EvaluationInput.model_validate(data)
 
 
@@ -497,6 +498,7 @@ def test_concurrent_job_creation_is_atomic(tmp_path):
             id=job_id,
             sample_id=f"sample-{idx}",
             input_mode="APK",
+            source_origin="REAL_SCAN",
             state="QUEUED",
             ruleset_version="0.3",
             created_at=datetime.now(timezone.utc),
@@ -667,7 +669,64 @@ def test_historical_report_uses_its_rules_after_active_taxonomy_advances(tmp_pat
     assert client.get(url).status_code == 200
     response = client.get(url + "/report")
     assert response.status_code == 200
-    assert response.json() == original
+    reloaded = response.json()
+    # save() returns a LIVE_GENERATED report; reloading it over HTTP is a
+    # PERSISTED_REPLAY of the same data. The origin and every evaluated field
+    # must be identical -- only the delivery path differs.
+    assert original["delivery_mode"] == "LIVE_GENERATED"
+    assert reloaded["delivery_mode"] == "PERSISTED_REPLAY"
+    assert reloaded["job"] == original["job"]
+    assert reloaded["result"] == original["result"]
+    assert reloaded["job"]["source_origin"] == original["job"]["source_origin"]
+    assert {
+        k: v for k, v in reloaded.items() if k != "delivery_mode"
+    } == {
+        k: v for k, v in original.items() if k != "delivery_mode"
+    }
+
+
+def test_reloaded_real_scan_keeps_origin_but_becomes_persisted_replay(tmp_path):
+    """A stored job keeps its origin across reloads; only its delivery mode changes.
+
+    This is the distinction the review asked for: `source_origin` is immutable
+    data provenance, while `delivery_mode` reports how the report was loaded
+    this time. Without it, a report reloaded after a restart would still claim
+    to be a freshly produced on-device scan.
+    """
+    from privacytrace.main import create_app
+
+    app = create_app(store_root=tmp_path)
+    fresh = seed(app.state.job_store)
+    original_origin = fresh.job.source_origin
+    assert fresh.delivery_mode == "LIVE_GENERATED"
+
+    # A brand-new client over the same store models a process restart.
+    client = TestClient(create_app(store_root=tmp_path))
+    reloaded = client.get(f"/api/v1/jobs/{fresh.job.id}/report").json()
+    assert reloaded["job"]["source_origin"] == original_origin, "Origin must not change on reload"
+    assert reloaded["delivery_mode"] == "PERSISTED_REPLAY", (
+        "A reloaded report is not a live generation"
+    )
+
+    # Reviewing a stored report is also a replay, not a fresh generation.
+    reviewed = client.post(
+        f"/api/v1/jobs/{fresh.job.id}/reviews",
+        headers={"X-PrivacyTrace-Local": "1"},
+        json={"actor": "local", "reason": "spot check"},
+    )
+    assert reviewed.status_code == 200
+    assert reviewed.json()["delivery_mode"] == "PERSISTED_REPLAY"
+    assert reviewed.json()["job"]["source_origin"] == original_origin
+
+
+def test_demo_report_is_a_live_generation():
+    """The demo envelope is assembled per response, never replayed from storage."""
+    from privacytrace.main import create_app
+
+    client = TestClient(create_app())
+    body = client.get("/api/v1/demo/report").json()
+    assert body["delivery_mode"] == "LIVE_GENERATED"
+    assert body["job"]["source_origin"] == "SYNTHETIC"
 
 
 def test_historical_report_rejects_unknown_ruleset_without_fallback(tmp_path):

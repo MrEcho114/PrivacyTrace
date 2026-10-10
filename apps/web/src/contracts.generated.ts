@@ -5,6 +5,7 @@ export type AnalysisJob = {
   "id": string;
   "sample_id": string;
   "input_mode": "SYNTHETIC" | "APK";
+  "source_origin": SourceOrigin;
   "state": "QUEUED" | "INTAKE" | "STATIC_ANALYSIS" | "POLICY_PARSING" | "EVALUATING" | "REPORTING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
   "ruleset_version": string;
   "created_at": string;
@@ -27,6 +28,8 @@ export type ContextualHint = {
   "basis"?: "CONTEXTUAL_PURPOSE_HINT";
   "evidence_ids": Array<string>;
 };
+
+export type DeliveryMode = "LIVE_GENERATED" | "PERSISTED_REPLAY";
 
 export type EvaluationInput = {
   "job": AnalysisJob;
@@ -136,6 +139,7 @@ export type Report = {
   "demo"?: false;
   "sample": SampleMetadata;
   "job": AnalysisJob;
+  "delivery_mode"?: DeliveryMode;
   "result": EvaluationResult;
   "evidence": Array<Evidence>;
   "behaviors": Array<PrivacyBehavior>;
@@ -161,7 +165,7 @@ export type ReviewEvent = {
 export type ReviewRequest = {
   "actor": string;
   "reason": string;
-  "note": string;
+  "note"?: string;
   "claim"?: PolicyClaim | null;
 };
 
@@ -184,3 +188,5 @@ export type ScanCoverage = {
   "scanned_dex": Array<string>;
   "failed_dex": Array<string>;
 };
+
+export type SourceOrigin = "SYNTHETIC" | "CONTROLLED" | "REAL_SCAN";

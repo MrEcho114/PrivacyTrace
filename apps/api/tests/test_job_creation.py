@@ -14,7 +14,7 @@ from privacytrace.resources import taxonomy
 
 def job(sample):
     return AnalysisJob(
-        id="same-id", sample_id=sample, input_mode="APK", state="QUEUED",
+        id="same-id", sample_id=sample, input_mode="APK", source_origin="REAL_SCAN", state="QUEUED",
         ruleset_version=taxonomy()["version"], created_at=datetime.now(timezone.utc),
     )
 

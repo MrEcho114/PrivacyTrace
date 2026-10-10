@@ -33,3 +33,5 @@ tmp/
 .themasterplan/cache/
 .themasterplan/backups/
 .themasterplan/transactions/
+.agents/
+.workbuddy/

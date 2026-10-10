@@ -235,7 +235,20 @@ def check_scenario_routing_table():
     with open(workflow_path, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # Verify all 9 scenario keys exist in the routing table
+    # Parse Markdown routing table rows structurally
+    table_rows = []
+    for line in content.splitlines():
+        line = line.strip()
+        if not line.startswith('|') or not line.endswith('|'):
+            continue
+        cells = [c.strip() for c in line.split('|')[1:-1]]
+        if not cells or any(c.startswith(':--') or c.startswith('---') for c in cells):
+            continue
+        if cells[0] in ('场景类型', '**场景类型**'):
+            continue
+        table_rows.append(cells)
+
+    # Verify all 9 scenario keys exist in the routing table with strict 1-to-1 mapping
     required_scenarios = [
         ('1. 入口不确定', 'ask-matt'),
         ('2. 新功能需求梳理', 'grill-with-docs'),
@@ -248,10 +261,33 @@ def check_scenario_routing_table():
         ('9. 换人交接 / 跨会话接手', 'Handoff'),
     ]
 
-    for title, skill in required_scenarios:
-        assert title in content, f"Scenario '{title}' missing from skills-workflow.md"
-        assert skill in content, (
-            f"Skill '{skill}' for scenario '{title}' missing from skills-workflow.md"
+    assert len(table_rows) == len(required_scenarios), (
+        f"Expected {len(required_scenarios)} table rows in routing table, found {len(table_rows)}"
+    )
+
+    routing_map = {}
+    for idx, row in enumerate(table_rows):
+        assert len(row) >= 3, f"Row {idx} has fewer than 3 columns: {row}"
+        routing_map[row[0]] = row[2]
+
+    for idx, (title, skill) in enumerate(required_scenarios):
+        row = table_rows[idx]
+        assert title in row[0], (
+            f"Row {idx} scenario title mismatch: expected '{title}' in '{row[0]}'"
+        )
+        assert skill in row[2], (
+            f"Routing table row {idx} mismatch for scenario '{title}': "
+            f"expected skill '{skill}' in '{row[2]}'"
+        )
+
+        matching_keys = [k for k in routing_map if title in k]
+        assert len(matching_keys) == 1, (
+            f"Expected exactly 1 table row matching scenario '{title}', found {len(matching_keys)}"
+        )
+        actual_skill = routing_map[matching_keys[0]]
+        assert skill in actual_skill, (
+            f"Routing table mapping mismatch for scenario '{title}': "
+            f"expected skill '{skill}' in '{actual_skill}'"
         )
 
     # Verify CONTRIBUTING.md contains matching entry points for all 9 scenarios
@@ -382,5 +418,5 @@ if __name__ == '__main__':
     check_blockers_and_handoff_rules()
     check_evidence_boundaries()
     print("=" * 60)
-    print("ALL WORKFLOW VERIFICATION CHECKS PASSED (100% SUITE PASS)")
+    print("Workflow structure and link integrity verified (docs & templates)")
     print("=" * 60)

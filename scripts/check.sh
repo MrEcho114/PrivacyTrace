@@ -32,6 +32,7 @@ uv run --project apps/api --locked --extra worker pytest apps/api/tests -q -p no
 uv run --project apps/api --locked --extra worker ruff check apps/api/src apps/api/tests scripts/export-schema.py
 uv run --project apps/api --locked --extra worker python scripts/export-schema.py
 git diff --exit-code -- packages/contracts apps/web/src/contracts.generated.ts
+uv run --project apps/api --locked python scripts/verify_workflow.py
 npm ci
 npm run test --workspace @privacytrace/web
 npm run build

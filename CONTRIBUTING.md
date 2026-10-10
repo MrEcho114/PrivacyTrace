@@ -12,7 +12,7 @@
 - **推荐技能来源（中文技能库）**：[`vinvcn/mattpocock-skills-zh-CN`](https://github.com/vinvcn/mattpocock-skills-zh-CN)
 - **上游参考库**：[`mattpocock/skills`](https://github.com/mattpocock/skills)
 - **多 Agent 支持**：团队成员可选用 Claude Code、Codex、Antigravity、OpenCode 等任何 Coding Agent，通过各自工具的技能目录或同步插件安装对应技能。团队不强制统一单一 Agent。
-- **版本基线与升级**：以安装时中文技能库的最新可用稳定基线为准；技能升级由团队统一协调并走查兼容性，禁止私自单独升级造成流程分歧。
+- **版本基线与升级**：以固化的核验基准提交为准（来源仓库、Commit SHA 与核验日期详见 [技能协作流程指南](docs/agents/skills-workflow.md)）；升级须通过专门流程维护工单统一步调执行，禁止私自单独升级造成流程分歧。
 
 ### 2. 读取已有项目配置
 新成员无需重复初始化协作配置，进入项目后直接复用既有体系：

@@ -205,3 +205,109 @@ Windows 对并发 `CreateFile` 返回瞬态共享冲突；与本 PR 无关（`jo
 独占运行时 `test_governance_cli.py` **4 passed**，全量套件下亦通过。该文件确未被本 PR
 触及，但此前的「既有失败」结论不成立，特此更正。
 
+
+---
+
+## 追加：第二轮评审（四项问题设计稿）修复（2026-10-11）
+
+固定点：`fc094c4` → HEAD `eed5371`
+来源：外部四项问题设计稿（SDK 证据展示 / 扫描资源上限 / 截断回归测试 / 签名来源可信度）
+处理：**逐条核实后四项全部成立**，按选定方案全部修复。
+
+### 核实结论（含对设计稿的修正）
+
+| 指控 | 核实 | 补充 |
+| :--- | :--- | :--- |
+| ① SDK 证据不可见 | 成立 | 更严重：`report.evidence.length` 被用作「可查看的证据」计数，**把点不开的 SDK 证据也算了进去**；且 SDK 区块仅在发生截断时渲染 |
+| ② 扫描内存无界增长 | 成立，**系本次改动引入的回归** | 基线 `attributed` 原有 `len(attributed) < 500` 的界，上一版换成 `sdk_matches` 后界消失 |
+| ③ P1 回归测试假覆盖 | 成立 | `cap=4` 却只构造 3 个命中，永不触发截断，旧实现同样通过 |
+| ④ 前缀宽于来源 | 成立，**范围比设计稿所列更大** | 除腾讯地图 / TuringFD，Mob 的 `cn.sharesdk` 来源未提及；友盟两个前缀的来源文案未给出任何包名 |
+
+### ① SDK 证据独立展示
+
+`selectedEvidence` 只渲染被选中结论引用的证据，而 SDK 归属按设计不被任何结论引用
+（不产生 behavior，不参与政策对照），因此 PT-401 的产出在页面上没有出口。
+
+新增 `apps/web/src/sdkEvidence.ts`：只做筛选、计数、分页，**不解析 excerpt 文案**，
+避免前端与 worker 各自漂移。`App.vue` 新增与「隐私声明对照」平级的 `#sdk-panel`，
+直接渲染 `excerpt` / `source` / `locator` / `id`，**不新增契约字段**（采纳最小方案）。
+零命中时明示「未命中当前有限的签名规则集」，并补「没有命中不代表 APK 不含第三方 SDK」。
+25 条/页分页，报告切换重置页码、切换选中结论不重置，越界页码夹回有效范围。
+原先散在覆盖卡片里的 SDK 截断提示移入该面板，SDK 信息集中一处。
+
+测试：纯函数 10 例 + 组件级 SSR 6 例（无结论引用时仍渲染、混合证据只取 SDK、
+零命中限定说明、30 条分页 25+5 不重不漏、重置语义、未截断仍显示）。
+`.cjs` 打桩器补 `./sdkEvidence`，注入**真实模块**（`ts.transpileModule` 编译 src）。
+
+### ② 有界收集器
+
+新增 `SdkAttributionCollector`（`sdk_attribution.py`）：
+
+- **representatives**：每签名保留 `order_key` 最小的一条，保证上限永远不会把某个已命中
+  的 SDK 整体挤出报告；上界由规则集签名数决定（契约限 500）。
+- **candidates**：容量 `MAX_SDK_ATTRIBUTIONS` 的候选池，最大堆维护 `order_key` 最小的 K 条，
+  插入 `O(log K)`，**与遍历顺序无关**。
+
+额外内存 `O(签名数 + 容量)`，与命中类数无关。
+
+诚实性修正：`observed` 是**命中事件数（含重复）**，不是唯一类数量；`capped` 才是
+「输出是子集」的判据，取代原先依赖全量集合的 `len(sdk_matches) > 上限`。
+`SdkMatch.key` 刻意**不含 dex**——同一个类出现在两个 dex 属于同一条归属，
+早先含 dex 会产出两条共享同一 `evidence_id` 的记录。
+
+测试 `apps/api/tests/test_sdk_collector.py`（18 例）：10 万条合成命中有界、
+单 SDK 洪泛不挤掉他者代表、重复只记一次、同类跨 dex 仍一条、输出 ID 唯一、
+多次运行一致、与插入顺序无关、500 签名 / 500 额度边界刚好可付、签名数超额度不虚报保底、
+额度上下界、零容量拒绝。
+
+**该测试抓到并修掉一个真实缺陷**：淘汰时未比较「新来的是否更优」而无条件踢掉当前最大值，
+导致保留集合依赖插入顺序（同一输入正序得 `{0,1,9}`、逆序得 `{0,1,2}`）。
+
+### ③ 截断回归测试
+
+改为 `cap=3` + 4 个类。关键细节：**DEX 类按描述符字母序遍历**，`Lcn/jpush/...` 先于
+`Lcom/tencent/bugly/...`，因此让 JPush 当洪泛方、Bugly 当被挤掉的受害者。
+
+**反向校验已做**：临时把选择逻辑还原为顺序截断 → 该测试失败（Bugly 缺失）；
+恢复新实现 → 通过。另加 `failed_dex == []` 前置断言，防止夹具静默溢出使断言空转。
+
+### ④ 包前缀按来源收窄
+
+| 签名 | 原前缀 | 收窄后 | 依据 |
+| :--- | :--- | :--- | :--- |
+| `sdk-tencent-map` | `com.tencent.tencentmap.mapsdk` | `com.tencent.tencentmap.mapsdk.maps` | 腾讯位置服务 Android SDK 参考手册；腾讯隐私政策第三方 SDK 目录 |
+| `sdk-turingfd` | `com.tencent.turingfd` | `com.tencent.turingfd.sdk` | 多份 SDK 披露清单 |
+
+`sdk-umeng-analytics` / `sdk-mob` 前缀不变，来源文案补正为逐条点名
+（友盟 `com.umeng.commonsdk` + `com.umeng.analytics.game`；Mob `cn.sharesdk` + `com.mob`）。
+
+**诚实标注**：腾讯官方《图灵盾风险识别旗舰版 SDK 合规使用指南》只描述初始化接口、
+**未公布包名**，故 TuringFD 这条依据弱于本规则集「以厂商发布说明为准」的标准，
+已写入 `source` 并在 `docs/stages/pt401-sdk-signatures-20261010.md` 追加修订节记录缺口。
+未为了让正例继续通过而放宽该前缀（收窄到 `.sdk.tbs` 会破坏
+`com.tencent.turingfd.sdk.ams.ga.QQCaptcha`，收窄到 `.sdk` 则正例保留）。
+
+新增不变量测试 `test_every_prefix_is_named_in_its_own_source`：**每个前缀必须在其签名的
+source 文案中被点名**，把「来源可追溯」从声明变成断言。另加收窄生效的负例
+（`com.tencent.tencentmap.mapsdk.AMap`、`com.tencent.turingfd.TuringManager` 不得命中）
+与正例（已确认厂商包路径仍可识别）。
+
+### 验证（本机 Windows，Git Bash 独占运行）
+
+- `ruff check apps/api/src apps/api/tests scripts/export-schema.py` → All checks passed
+- `python scripts/export-schema.py` → 与 `packages/contracts`、`contracts.generated.ts` 零差异
+- 前端 `npm run test --workspace @privacytrace/web` → **28 passed**
+- 前端 `npm run typecheck` / `npm run build` → 通过
+- 全量 `pytest apps/api/tests` → **438 tests / 425 passed / 11 skipped / 2 failed**
+
+**三轮递进差分**
+
+| 提交 | 用例总数 | 通过 | 失败 | 跳过 |
+| :--- | :--- | :--- | :--- | :--- |
+| 基线 `49464a7` | 389 | 376 | 2 | 11 |
+| 第一轮 `fc094c4` | 413 | 400 | 2 | 11 |
+| 第二轮 `eed5371` | 438 | 425 | 2 | 11 |
+
+累计净增 49 个用例全部通过，**新增失败为 0**。那 2 项始终是 `test_job_creation.py` 的
+既有 `job_store` 建锁竞争（`_queue.Empty` 与 `PermissionError errno 13 on .lock`），
+在基线 `49464a7` 上报错逐字一致，且二者单独运行必过（7 passed），本 PR 不修。

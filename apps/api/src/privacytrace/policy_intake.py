@@ -69,7 +69,9 @@ CANDIDATE_FIELDS = {
 }
 
 
-def preflight_capture(raw_path, source_url, output_dir, candidates=None):
+def preflight_capture(raw_path, source_url, output_dir, candidates=None, *,
+                      version="preflight", package=None, version_code=None,
+                      product_scope=None, regions=None):
     """Reject invalid work before any optional external LLM request."""
     parsed = urlparse(source_url)
     if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
@@ -84,9 +86,15 @@ def preflight_capture(raw_path, source_url, output_dir, candidates=None):
         raise ValueError("Symlink output directory is not allowed")
     if out.exists():
         raise ValueError("Capture output already exists; choose a new directory")
+    _build_document(
+        raw, text, version, package, version_code, product_scope, regions,
+        datetime.now(timezone.utc).isoformat(),
+    )
     if candidates is not None:
         if not isinstance(candidates, list):
             raise ValueError("Candidates must be a JSON list")
+        if len(candidates) > 1999:
+            raise ValueError("Policy capture cannot exceed 1999 candidates")
         for candidate in candidates:
             if not isinstance(candidate, dict):
                 raise ValueError("Each candidate must be an object")
@@ -112,6 +120,31 @@ def preflight_capture(raw_path, source_url, output_dir, candidates=None):
             })
     return raw, text
 
+
+
+def _build_document(raw, text, version, package, version_code,
+                    product_scope, regions, now):
+    return PolicyDocument.model_validate(
+        {
+            "id": "policy-official",
+            "source_type": "OFFICIAL_WEB_POLICY",
+            "title": "Captured official policy",
+            "version": version,
+            "captured_at": now,
+            "artifact": {"text": text, "sha256": digest(raw), "normalization": "NONE"},
+            "completeness": "COMPLETE",
+            "extraction_status": "PARTIAL",
+            "review_status": "UNREVIEWED",
+            "attachments_status": "NOT_CHECKED",
+            "applicability": {
+                "package_name": package,
+                "version_codes": [] if version_code is None else [version_code],
+                "regions": regions or [],
+                "product_scope": product_scope,
+            },
+            "evidence_id": "policy-snapshot",
+        }
+    ).model_dump(mode="json")
 
 
 # Candidate deduplication requires *semantic* equality, not merely matching evidence.
@@ -343,7 +376,11 @@ def capture(
     llm_config=None,
     candidate_conflicts=None,
 ):
-    raw, text = preflight_capture(raw_path, source_url, output_dir, candidates)
+    raw, text = preflight_capture(
+        raw_path, source_url, output_dir, candidates, version=version,
+        package=package, version_code=version_code,
+        product_scope=product_scope, regions=regions,
+    )
     sources = dict(candidate_provenance or {})
     conflicts = list(candidate_conflicts or [])
     dropped_candidates = 0
@@ -359,27 +396,9 @@ def capture(
         llm_result.telemetry.limited_candidates += dropped_candidates
         llm_result.status = "PARTIAL"
     now = datetime.now(timezone.utc).isoformat()
-    document = PolicyDocument.model_validate(
-        {
-            "id": "policy-official",
-            "source_type": "OFFICIAL_WEB_POLICY",
-            "title": "Captured official policy",
-            "version": version,
-            "captured_at": now,
-            "artifact": {"text": text, "sha256": digest(raw), "normalization": "NONE"},
-            "completeness": "COMPLETE",
-            "extraction_status": "PARTIAL",
-            "review_status": "UNREVIEWED",
-            "attachments_status": "NOT_CHECKED",
-            "applicability": {
-                "package_name": package,
-                "version_codes": [] if version_code is None else [version_code],
-                "regions": regions or [],
-                "product_scope": product_scope,
-            },
-            "evidence_id": "policy-snapshot",
-        }
-    ).model_dump(mode="json")
+    document = _build_document(
+        raw, text, version, package, version_code, product_scope, regions, now
+    )
     evidence = [
         {
             "id": "policy-snapshot",
@@ -705,7 +724,12 @@ def main():
         if not isinstance(candidates, list):
             raise ValueError("Candidates must be a JSON list")
         # Validate user input and publication destination before external calls.
-        preflight_capture(args.raw, args.source_url, args.output_dir, candidates)
+        preflight_capture(
+            args.raw, args.source_url, args.output_dir, candidates,
+            version=args.version, package=args.package,
+            version_code=args.version_code, product_scope=args.product_scope,
+            regions=args.region,
+        )
         llm_summary = None
         source_overrides = {}
         actor = "Codex-assisted candidate"

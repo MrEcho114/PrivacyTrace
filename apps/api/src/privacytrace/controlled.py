@@ -48,7 +48,8 @@ def load_features(path: Path, artifacts: Path):
     build_bytes = read_safe(artifacts / "build-receipt.json")
     build = json.loads(build_bytes)
     if (
-        build.get("schema_version") != 1
+        not isinstance(build, dict)
+        or build.get("schema_version") != 1
         or build.get("artifact_use") != "UNSIGNED_STATIC_ANALYSIS_ONLY"
         or build.get("toolchain") != json.loads(read_safe(SUITE / "toolchain.lock.json"))
     ):

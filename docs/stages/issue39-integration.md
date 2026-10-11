@@ -6,7 +6,9 @@
 
 开始执行时重新 fetch 并通过 GitHub 核对：main 为 `4b066fecfef7b96b93a3866bef850d9dad7722d0`，#37 HEAD 为 `be3230e8ce056b4113460c1fd40340639c891e46`，#38 HEAD 为 `44275a29ccb8b243967777aaf14a51b611570e59`，两个旧 PR 均 OPEN。工作区无继承修改；未导入未跟踪研究资料。main/#38 merge-base 为 `1d0be28b09ecfd15e81de943c7e6c18daa239dd2`，main/#37 与 #38/#37 merge-base 均为 `7e2e018c18a9db4159687b932e0d9b064a8428ec`。不把 PR 返回的 base SHA 当作 merge-base。
 
-从最新 main 建新分支，合并 #38 的提交；没有修改两个原开发分支，也没有合并 #37。实际文本冲突只有 `App.vue` 一处，其余下表项目进行了语义核验。
+从最新 main 建新分支，合并 #38 的提交；没有修改两个原开发分支，也没有合并 #37。首次实际文本冲突只有 `App.vue` 一处，其余下表项目进行了语义核验。
+
+交付前再次 fetch 发现 main 已推进到 `c06803b48cf6d29412b4f118e49272708e11c7ee`（#36 协作规范和 #40 研究文档），#38 已推进到 `9a282098e7b960ae0d9dab63dd794e0094b16a77`（合入 SDK/锁修复，补 SDK 规则指纹与回放版本）。再次计算 main/#38 merge-base 为 `4b066fecfef7b96b93a3866bef850d9dad7722d0`，main/#37 仍为 `7e2e018c18a9db4159687b932e0d9b064a8428ec`。两条新进展已分别合入整合分支；额外冲突为 backlog 同期索引与 App.vue 重复状态定义，逐项处理如下，未丢弃新主线资料。
 
 | 文件 | 处理与理由 |
 |---|---|
@@ -15,11 +17,14 @@
 | `apps/api/src/privacytrace/pipeline.py` | 普通输入继续 REAL_SCAN、未知地区与原政策状态；受控入口核对扫描所得 APK/hash/package/version，再使用冻结场景事实。 |
 | `apps/api/src/privacytrace/runtime_models.py` | 保留主线 `delivery_mode` 与 `sdk_attribution_limitations`，允许受控 APK 持久化。旧记录默认回放及 UNKNOWN 迁移边界保持原实现。 |
 | 3 个 JSON Schema、`contracts.generated.ts` | 从 Python 权威模型执行 `scripts/export-schema.py` 重导出，不手工拼接。 |
-| `docs/backlog.md` | 保留主线 SDK 与 JobStore 进度并加入 #38 的六场景记录；历史验证仍按其原版本解释。 |
+| `docs/backlog.md` | 合并同期索引冲突，同时保留 Spec30 历史验收、主线 PT-908 研究进度、SDK 与 JobStore 条目；历史验证仍按其原版本解释。 |
+| `App.vue` 第二次合并 | #38 新提交将同一组受控/离线状态移到 SDK 状态之前；保留单一定义及本分支 activeJob 失败态来源逻辑，未重复声明。 |
+| `benchmark.py`、`export-offline.py` | 接入 #38 新增 SDK 规则文件指纹及 `sdk_signatures` 回放元数据，保留本次收据严格校验与 CLI 信任边界。 |
+| `AGENTS.md`、CONTRIBUTING、协作指南、ADR、研究文档、PR/Issue 模板、`verify_workflow.py` 与 `check.sh` | 全部保留新 main 内容，按新 PR 模板交付并继续同一权威验证入口。 |
 | `.github/workflows/check.yml` | 逐字保留 main 已修复的 OasisViridis owner 与固定 SHA/policy-ref。 |
 | JobStore、SDK 扫描/归属模块和已有测试 | 保留 main 实现，完整工程回归与原 Browser Acceptance 继续运行。新增浏览器观察 SDK 面板及其与政策判定的区别。 |
-| `benchmarks/controlled/**` | 与 #38 HEAD 字节一致，包括源码、六份自建政策、特征、标签和所有锁文件。没有导入 #37 同名但不同含义的 CAMERA/MICROPHONE 场景。 |
-| `docs/stages/spec30/*`、`spec30-verification.md` | 原样保留 #38 的历史证据；其中原 SHA 与 implementation hash 不代表此次整合的执行结果。新结果使用新的 CI artifact。 |
+| `benchmarks/controlled/**` | 与 #38 两次核对的 HEAD 字节一致，包括源码、六份自建政策、特征、标签和所有锁文件。没有导入 #37 同名但不同含义的 CAMERA/MICROPHONE 场景。 |
+| `docs/stages/spec30/*`、`spec30-verification.md` | 保留 #38 自身新提交携带的历史证据；其中原 SHA 与 implementation hash 不代表此次整合的执行结果。本分支没有改写原收据，新结果使用新的 CI artifact。 |
 
 ## #37 独有实现的取舍
 

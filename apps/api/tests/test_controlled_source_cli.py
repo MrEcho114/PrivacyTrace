@@ -49,7 +49,8 @@ def test_source_cli_http_roundtrip(tmp_path, scenario, expected):
         assert report["policy_documents"][0]["review_status"] == "UNREVIEWED"
 
 
-@pytest.mark.parametrize("tamper", ["apk", "sources", "toolchain", "artifact_use", "schema"])
+@pytest.mark.parametrize("tamper", ["apk", "sources", "toolchain", "artifact_use", "schema",
+                                  "receipt_type"])
 def test_tampered_build_rejected_before_creating_job(tmp_path, tamper):
     build = tmp_path / "build"
     build.mkdir()
@@ -62,6 +63,8 @@ def test_tampered_build_rejected_before_creating_job(tmp_path, tamper):
         record["schema_version"] = 2
     elif tamper == "sources":
         record["source_hashes"] = {}
+    elif tamper == "receipt_type":
+        record = []
     else:
         record[tamper] = "altered"
     (build / "build-receipt.json").write_text(json.dumps(record), encoding="utf-8")

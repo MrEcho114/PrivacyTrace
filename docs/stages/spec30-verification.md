@@ -1,14 +1,14 @@
 # Spec30 验证记录（2026-10-11）
 
-[Issue #30](https://github.com/MrEcho114/PrivacyTrace/issues/30) 的六场景保底已完成本地实际验收。结果基于主线 `1d0be28b09ecfd15e81de943c7e6c18daa239dd2` 整合后的实现；每个 API 模块及规则的执行字节哈希在 [comparison.json](spec30/comparison.json)。交付 commit 与对应远端 CI 另由 PR 绑定，不借用历史 CI。
+[Issue #30](https://github.com/MrEcho114/PrivacyTrace/issues/30) 的六场景保底已完成本地实际验收。结果基于主线 `4b066fecfef7b96b93a3866bef850d9dad7722d0` 整合后的实现，保留 PR34 的 SDK 证据与 PR35 的并发锁修复；每个 API 模块及当前 taxonomy / SDK 规则的执行字节哈希在 [comparison.json](spec30/comparison.json)。交付 commit 与对应远端 CI 另由 PR 绑定，不借用历史 CI。
 
 ## 工程检查
 
-执行 `PRIVACYTRACE_DOCKER_TESTS=1 pwsh -NoProfile -File scripts/check.ps1`，由它委托同一 `scripts/check.sh`：API **342 passed**，Web **28 passed**，均无 skip；ruff、契约校验、TypeScript 和生产构建通过。保留一条既有 Starlette/httpx 弃用警告。此前 10/10 的检查和报告只是历史运行，不作为这次主线整合的验证。
+执行 `PRIVACYTRACE_DOCKER_TESTS=1 pwsh -NoProfile -File scripts/check.ps1`，由它委托同一 `scripts/check.sh`：API **469 passed**，Web **44 passed**，均无 skip；ruff、契约校验、TypeScript 和生产构建通过。保留一条既有 Starlette/httpx 弃用警告。此前 10/10 及较早主线的检查和报告只是历史运行，不作为这次主线整合的验证。
 
 新增测试经公共 CLI/HTTP 检查标签字段不能作为受控输入、缺失 APK 时 18 行/三组六分母仍保留、普通 APK 输入拒绝 CONTROLLED_POLICY。这些工程用例不计入六场景评测规模。
 
-远端原有浏览器套件发现生成来源说明复用 `.demo-note` 导致唯一选择器冲突，已改为独立 `.report-provenance` 并保留同样外观。修复后重跑 28 个 Web 测试、类型/生产构建、原有 TC-01～TC-05 实际浏览器套件，以及受控查看和独立断网包验证，均通过；原套件产生的临时截图保留本地，不改写主线历史 evidence。
+远端原有浏览器套件发现生成来源说明复用 `.demo-note` 导致唯一选择器冲突，已改为独立 `.report-provenance` 并保留同样外观。最终主线整合后重跑 44 个 Web 测试、类型/生产构建、原有 TC-01～TC-05 实际浏览器套件，以及受控查看和独立断网包验证，均通过；原套件产生的临时截图保留本地，不改写主线历史 evidence。
 
 ## 源码构建与冻结输入
 
@@ -43,7 +43,7 @@
 
 [独立离线 proof](spec30/offline-proof.json) 在新容器 `--network=none` 内实际执行：仅 loopback、外网连接失败、六报告 HTTP 成功、真正渲染 Vue 并切换六来源、原分析时间保留、page_errors=[]。仅挂载包、验证脚本、预备浏览器依赖和输出，不挂载仓库、开发虚拟环境或模型密钥。测试依赖预备时联网，独立验收过程断网；交付 viewer 只需 Python 3.11+ 标准库。
 
-包 manifest SHA256：`fc5091a9a353d4fa2b940c8f301782c761b1a883f0aca11922bb51cde68cb6db`。proof 记录不可变测试镜像 ID、验证脚本/浏览器驱动哈希、Playwright 版本，以及实际挂载 Chromium 版本和可执行文件 SHA256。系统库没有冒充构建工具链锁。
+包 manifest SHA256：`d5e33fcad27515a1938a558e31d8993089fad828f347163327044a6ee36fb08a`。六份回放报告均保留实际 SDK 规则版本 `1.0.0`。proof 记录不可变测试镜像 ID、验证脚本/浏览器驱动哈希、Playwright 版本，以及实际挂载 Chromium 版本和可执行文件 SHA256。系统库没有冒充构建工具链锁。
 
 最终交付前已将执行目录的 API 文件换行字节与 Git 提交对象对齐，并重新实际运行六场景、普通入口边界、浏览器和独立断网回放，结果不变。验证 JSON 保留原始字节；提交对象中所有实现/receipt 哈希逐一匹配记录，避免 Windows 换行转换破坏版本绑定。
 

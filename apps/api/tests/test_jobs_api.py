@@ -164,6 +164,62 @@ def test_corrupt_and_oversized_storage_rejects_without_exposing_payload(tmp_path
     assert client.get(f"/api/v1/jobs/{report.job.id}").status_code == 409
 
 
+def test_legacy_record_without_source_origin_still_loads_as_unknown(tmp_path):
+    """A record written before source_origin existed must not brick the store.
+
+    Upgrading must not take historical scans, their reviews, or the whole job
+    list offline. The origin is absent from the stored bytes, so it is recorded
+    as UNKNOWN rather than guessed -- asserting REAL_SCAN would claim a real
+    scan that was never recorded. The migration is read-time only, so the
+    original bytes survive on disk for audit.
+    """
+    import json
+
+    from privacytrace.main import create_app
+
+    app = create_app(store_root=tmp_path)
+    report = seed(app.state.job_store)
+    path = tmp_path / f"{report.job.id}.json"
+
+    # Serialise the record exactly as the previous version did: the job is
+    # embedded twice and neither copy carried source_origin.
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["job"].pop("source_origin")
+    payload["bundle"]["job"].pop("source_origin")
+    legacy_bytes = json.dumps(payload, indent=2).encode("utf-8")
+    path.write_bytes(legacy_bytes)
+
+    client = TestClient(app)
+
+    listed = client.get("/api/v1/jobs")
+    assert listed.status_code == 200
+    assert [job["id"] for job in listed.json()["jobs"]] == [report.job.id]
+
+    loaded = client.get(f"/api/v1/jobs/{report.job.id}")
+    assert loaded.status_code == 200
+    assert loaded.json()["source_origin"] == "UNKNOWN"
+
+    # Read-time migration: the stored bytes are never rewritten by a read.
+    assert path.read_bytes() == legacy_bytes
+
+
+def test_one_unreadable_record_does_not_break_the_job_list(tmp_path):
+    """A single damaged file must not take down every client of /api/v1/jobs."""
+    from privacytrace.main import create_app
+
+    app = create_app(store_root=tmp_path)
+    report = seed(app.state.job_store)
+    (tmp_path / "broken.json").write_text("{not json", encoding="utf-8")
+
+    client = TestClient(app)
+    listed = client.get("/api/v1/jobs")
+    assert listed.status_code == 200
+    assert [job["id"] for job in listed.json()["jobs"]] == [report.job.id]
+
+    # Fetching the damaged record directly still reports the failure.
+    assert client.get("/api/v1/jobs/broken").status_code == 409
+
+
 def test_storage_record_limit_and_cancelled_scan_cannot_publish(tmp_path):
     import pytest
 

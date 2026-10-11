@@ -8,7 +8,9 @@ const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const assert = require('node:assert/strict');
-const { spawn, execSync } = require('node:child_process');
+const { spawn } = require('node:child_process');
+
+const { stopChildren, spawnOptions } = require('./lib/process-control.cjs');
 
 const API_PORT = Number(process.env.PRIVACYTRACE_ACCEPTANCE_API_PORT || 8124);
 const WEB_PORT = Number(process.env.PRIVACYTRACE_ACCEPTANCE_WEB_PORT || 5274);
@@ -47,14 +49,6 @@ async function waitForServer(url, timeoutMs = 30000) {
   return false;
 }
 
-function killSpawned(pid) {
-  if (!pid) return;
-  try {
-    if (process.platform === 'win32') execSync(`taskkill /F /T /PID ${pid}`, { stdio: 'ignore' });
-    else process.kill(-pid, 'SIGKILL');
-  } catch {}
-}
-
 function createIsolatedStore(projectRoot) {
   const storeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'privacytrace-challenger-'));
   const fixtureDir = path.join(projectRoot, 'fixtures', 'acceptance-jobs');
@@ -74,73 +68,76 @@ async function runChallengerSuite() {
   console.log('=== PrivacyTrace PT-808 Challenger Adversarial Test Suite ===');
   const projectRoot = path.resolve(__dirname, '..');
   const childrenToKill = [];
-  const storeDir = createIsolatedStore(projectRoot);
-  console.log(`[Server] Using isolated store: ${storeDir}`);
+  let storeDir = null;
+  let browser = null;
+  let fatal = null;
 
-  if (await isPortOpen(`${API_ORIGIN}/api/v1/jobs`)) {
-    throw new Error(
-      `Port ${API_PORT} is already serving requests. This script only terminates processes it starts.`
-    );
-  }
-  console.log(`[Server] Starting API backend on port ${API_PORT}...`);
-  const apiProc = spawn('uv', ['run', '--project', 'apps/api', 'uvicorn', 'privacytrace.main:app', '--port', String(API_PORT)], {
-    cwd: projectRoot,
-    shell: true,
-    stdio: 'pipe',
-    env: { ...process.env, PRIVACYTRACE_STORE_ROOT: storeDir },
-  });
-  childrenToKill.push(apiProc);
-  if (!(await waitForServer(`${API_ORIGIN}/api/v1/jobs`, 60000))) {
-    throw new Error(`Failed to start API backend on port ${API_PORT}`);
-  }
-  console.log('[Server] API backend ready.');
+  // Every resource acquired below lives inside these try blocks, from the
+  // temporary store onwards. Chromium launch, API boot and the port check all
+  // happen after the temp store is created, so a failure there must still stop
+  // the servers and remove the store instead of leaking both.
+  try {
+    storeDir = createIsolatedStore(projectRoot);
+    console.log(`[Server] Using isolated store: ${storeDir}`);
 
-  // Ensure the Vite frontend is running against the isolated API.
-  if (!(await isPortOpen(WEB_ORIGIN))) {
+    if (await isPortOpen(`${API_ORIGIN}/api/v1/jobs`)) {
+      throw new Error(
+        `Port ${API_PORT} is already serving requests. This script only terminates processes it starts.`
+      );
+    }
+    console.log(`[Server] Starting API backend on port ${API_PORT}...`);
+    const apiProc = spawn('uv', ['run', '--project', 'apps/api', 'uvicorn', 'privacytrace.main:app', '--port', String(API_PORT)], spawnOptions(projectRoot, { PRIVACYTRACE_STORE_ROOT: storeDir }));
+    childrenToKill.push(apiProc);
+    if (!(await waitForServer(`${API_ORIGIN}/api/v1/jobs`, 60000))) {
+      throw new Error(`Failed to start API backend on port ${API_PORT}`);
+    }
+    console.log('[Server] API backend ready.');
+
+    // The frontend must be an instance this run owns. Reuse is refused for the
+    // same reason as in the acceptance harness: no request can prove which
+    // store a foreign server's proxy writes to.
+    if (await isPortOpen(WEB_ORIGIN)) {
+      throw new Error(
+        `Port ${WEB_PORT} is already serving requests. This script refuses to reuse it because it ` +
+          'cannot prove the frontend proxies to this run\'s isolated store. Stop that server or set ' +
+          'PRIVACYTRACE_ACCEPTANCE_WEB_PORT to a free port.'
+      );
+    }
     console.log(`[Server] Starting Vite frontend on port ${WEB_PORT}...`);
-    const webProc = spawn('npm', ['--prefix', 'apps/web', 'run', 'dev'], {
-      cwd: projectRoot,
-      shell: true,
-      stdio: 'pipe',
-      env: { ...process.env, PRIVACYTRACE_API_ORIGIN: API_ORIGIN, PRIVACYTRACE_WEB_PORT: String(WEB_PORT) },
-    });
+    const webProc = spawn('npm', ['--prefix', 'apps/web', 'run', 'dev'], spawnOptions(projectRoot, { PRIVACYTRACE_API_ORIGIN: API_ORIGIN, PRIVACYTRACE_WEB_PORT: String(WEB_PORT) }));
     childrenToKill.push(webProc);
     if (!(await waitForServer(WEB_ORIGIN, 60000))) {
       throw new Error(`Failed to start Vite frontend on port ${WEB_PORT}`);
     }
     console.log('[Server] Vite frontend ready.');
-  } else {
-    console.log('[Server] Vite frontend already listening.');
-  }
 
-  const { chromium } = getPlaywright();
-  const execPath = getChromiumExecutable();
-  console.log(`[Browser] Launching Chromium (executable: ${execPath || 'default'})...`);
+    const { chromium } = getPlaywright();
+    const execPath = getChromiumExecutable();
+    console.log(`[Browser] Launching Chromium (executable: ${execPath || 'default'})...`);
 
-  const browser = await chromium.launch({
-    headless: true,
-    ...(execPath ? { executablePath: execPath } : {}),
-  });
+    browser = await chromium.launch({
+      headless: true,
+      ...(execPath ? { executablePath: execPath } : {}),
+    });
 
-  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
-  const page = await context.newPage();
+    const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const page = await context.newPage();
 
-  const consoleLogs = [];
-  const pageErrors = [];
+    const consoleLogs = [];
+    const pageErrors = [];
 
-  page.on('console', msg => consoleLogs.push({ type: msg.type(), text: msg.text() }));
-  page.on('pageerror', err => pageErrors.push({ message: err.message, stack: err.stack }));
+    page.on('console', msg => consoleLogs.push({ type: msg.type(), text: msg.text() }));
+    page.on('pageerror', err => pageErrors.push({ message: err.message, stack: err.stack }));
 
-  const fetchBaseReport = async () => {
-    const res = await fetch(`${API_ORIGIN}/api/v1/jobs/gkd-s1-first/report`);
-    assert(res.ok, 'Failed to fetch base report');
-    return await res.json();
-  };
+    const fetchBaseReport = async () => {
+      const res = await fetch(`${API_ORIGIN}/api/v1/jobs/gkd-s1-first/report`);
+      assert(res.ok, 'Failed to fetch base report');
+      return await res.json();
+    };
 
-  const reportUrl = '**/api/v1/jobs/gkd-s1-first/report';
-  const jobUrl = '**/api/v1/jobs/gkd-s1-first';
+    const reportUrl = '**/api/v1/jobs/gkd-s1-first/report';
+    const jobUrl = '**/api/v1/jobs/gkd-s1-first';
 
-  try {
     // =========================================================================
     // SECTION 1: Extreme XSS & Injection Payloads Across All Target Fields
     // Fields: actor, reason, note, sample.package_name, error.message, policy text
@@ -264,7 +261,7 @@ async function runChallengerSuite() {
 
       rep.policy_claims = Array.from({ length: claimCount }, (_, i) => ({
         id: `claim-stress-${i}`,
-        document_id: 'policy-official',
+        document_id: 'policy-in-app',
         data_type: targetType,
         evidence_ids: ['policy-sentence-1'],
         polarity: 'PERMITTED',
@@ -410,7 +407,7 @@ async function runChallengerSuite() {
     const uniEvidence = {
       id: 'ev-unicode-emoji',
       kind: 'POLICY_SENTENCE',
-      document_id: 'policy-official',
+      document_id: 'policy-in-app',
       source: 'OFFICIAL_WEB_POLICY',
       locator: 'sentence=14..15',
       start_offset: 14,
@@ -421,7 +418,7 @@ async function runChallengerSuite() {
     const uniCjkEvidence = {
       id: 'ev-unicode-cjk',
       kind: 'POLICY_SENTENCE',
-      document_id: 'policy-official',
+      document_id: 'policy-in-app',
       source: 'OFFICIAL_WEB_POLICY',
       locator: 'sentence=26..27',
       start_offset: 26,
@@ -432,7 +429,7 @@ async function runChallengerSuite() {
     const negativeEvidence = {
       id: 'ev-negative-offset',
       kind: 'POLICY_SENTENCE',
-      document_id: 'policy-official',
+      document_id: 'policy-in-app',
       source: 'OFFICIAL_WEB_POLICY',
       locator: 'sentence=-10..5',
       start_offset: -10,
@@ -490,7 +487,11 @@ async function runChallengerSuite() {
     const demoJobReportUrl = '**/api/v1/jobs/demo/report';
     const realDemoReport = structuredClone(baseReport);
     realDemoReport.demo = false;
-    realDemoReport.job = { id: 'demo', sample_id: 'com.demo.realapp', source_origin: 'OFFLINE_REPLAY', state: 'SUCCEEDED', input_mode: 'APK', ruleset_version: '1.0.0' };
+    // A real scan whose id happens to be "demo": the origin must come from
+    // source_origin, and being served from storage is a separate axis reported
+    // as delivery_mode.
+    realDemoReport.job = { id: 'demo', sample_id: 'com.demo.realapp', source_origin: 'REAL_SCAN', state: 'SUCCEEDED', input_mode: 'APK', ruleset_version: '1.0.0' };
+    realDemoReport.delivery_mode = 'PERSISTED_REPLAY';
     realDemoReport.sample.package_name = 'com.demo.realapp';
 
     await page.route(demoJobReportUrl, route => route.fulfill({
@@ -509,18 +510,27 @@ async function runChallengerSuite() {
     await selectSource(page, 'job:demo');
     await page.locator('.sample-card').waitFor();
 
-    const badgeRealJobDemo = await page.locator('.sample-card .badge').innerText();
-    assert(badgeRealJobDemo.includes('离线回放') && badgeRealJobDemo.includes('OFFLINE_REPLAY'),
-      `Job with ID "demo" must be classified as OFFLINE_REPLAY, got: ${badgeRealJobDemo}`);
-    assert(!badgeRealJobDemo.includes('SYNTHETIC'), 'Must NOT classify real job "demo" as SYNTHETIC!');
-    console.log('  ✔ Real job with ID "demo" correctly classified as OFFLINE_REPLAY, not SYNTHETIC');
+    // Origin and delivery are two independent badges; origin is first.
+    const originBadgeRealDemo = await page.locator('.badge-stack .badge').first().innerText();
+    const deliveryBadgeRealDemo = await page.locator('.badge-stack .badge').last().innerText();
+    assert(originBadgeRealDemo.includes('真实 APK') && originBadgeRealDemo.includes('REAL_SCAN'),
+      `Job with ID "demo" must be classified as REAL_SCAN, got: ${originBadgeRealDemo}`);
+    assert(!originBadgeRealDemo.includes('SYNTHETIC'), 'Must NOT classify real job "demo" as SYNTHETIC!');
+    assert(deliveryBadgeRealDemo.includes('持久化回放') && deliveryBadgeRealDemo.includes('REPLAY'),
+      `A report loaded from storage must say PERSISTED_REPLAY, got: ${deliveryBadgeRealDemo}`);
+    assert(!deliveryBadgeRealDemo.includes('本次生成'),
+      'A stored report must not claim it was generated in this run');
+    console.log('  ✔ Real job with ID "demo" correctly classified as REAL_SCAN + PERSISTED_REPLAY, not SYNTHETIC');
 
     // Switch to synthetic demo
     await selectSource(page, 'demo:synthetic');
     await page.waitForTimeout(300);
-    const badgeSynthetic = await page.locator('.sample-card .badge').innerText();
+    const badgeSynthetic = await page.locator('.badge-stack .badge').first().innerText();
     assert(badgeSynthetic.includes('人工示例') && badgeSynthetic.includes('SYNTHETIC'),
       `Synthetic demo must show SYNTHETIC badge, got: ${badgeSynthetic}`);
+    const deliverySynthetic = await page.locator('.badge-stack .badge').last().innerText();
+    assert(deliverySynthetic.includes('本次生成') && deliverySynthetic.includes('LIVE'),
+      `The demo report is assembled in this response, so it must say LIVE_GENERATED, got: ${deliverySynthetic}`);
     console.log('  ✔ Synthetic demo correctly classified as SYNTHETIC');
 
     await page.unroute(jobListUrl);
@@ -545,7 +555,7 @@ async function runChallengerSuite() {
       await selectSource(page, 'job:gkd-s1-first');
       await page.locator('.sample-card').waitFor();
 
-      const badge = await page.locator('.sample-card .badge').innerText();
+      const badge = await page.locator('.badge-stack .badge').first().innerText();
       assert(badge.includes(expectedBadgeText),
         `Expected ${expectedBadgeText} for sample_id "${sampleId}" / source_origin "${sourceOrigin}", got: ${badge}`);
       await page.unroute(reportUrl);
@@ -554,9 +564,10 @@ async function runChallengerSuite() {
     // The field decides; a misleading sample_id must not change the verdict.
     await testSourceOrigin('CONTROLLED-SENSITIVE-FIXTURE', 'CONTROLLED', 'CONTROLLED', '受控评测 · CONTROLLED');
     await testSourceOrigin('demo', 'CONTROLLED', 'CONTROLLED', '受控评测 · CONTROLLED');
-    await testSourceOrigin('CONTROLLED-LOOKALIKE', 'REAL_SCAN', 'REAL_SCAN', '本机扫描 · REAL_SCAN');
-    await testSourceOrigin('controlled-lowercase-fixture', 'REAL_SCAN', 'REAL_SCAN', '本机扫描 · REAL_SCAN');
-    await testSourceOrigin('NORMAL_APP_PACKAGE', 'OFFLINE_REPLAY', 'OFFLINE_REPLAY', '离线回放 · OFFLINE_REPLAY');
+    await testSourceOrigin('CONTROLLED-LOOKALIKE', 'REAL_SCAN', 'REAL_SCAN', '真实 APK · REAL_SCAN');
+    await testSourceOrigin('controlled-lowercase-fixture', 'REAL_SCAN', 'REAL_SCAN', '真实 APK · REAL_SCAN');
+    // A record written before the field existed: unknown, never silently REAL_SCAN.
+    await testSourceOrigin('NORMAL_APP_PACKAGE', 'UNKNOWN', 'UNKNOWN', '来源未知 · UNKNOWN');
     console.log('  ✔ source_origin precedence strictly verified (sample_id naming is ignored)');
 
     // 3.3 Non-standard timestamp formats in created_at
@@ -601,15 +612,56 @@ async function runChallengerSuite() {
     assert.strictEqual(pageErrors.length, 0, `Uncaught page errors occurred during stress tests: ${JSON.stringify(pageErrors)}`);
     console.log('\n=== ALL CHALLENGER ADVERSARIAL STRESS TESTS PASSED (0 page errors, 0 XSS, strict boundaries) ===');
 
+  } catch (err) {
+    // Hold the failure so cleanup runs first; rethrow after the finally block.
+    fatal = err;
   } finally {
-    await browser.close();
-    for (const p of childrenToKill) {
+    // Order matters: close the browser, then stop and await the servers, and
+    // only then remove the temp store -- a live server may still hold files
+    // inside it, which would leave the directory behind.
+    if (browser) {
       try {
-        if (process.platform === 'win32') execSync(`taskkill /F /T /PID ${p.pid}`, { stdio: 'ignore' });
-        else p.kill('SIGKILL');
-      } catch {}
+        await browser.close();
+        console.log('[Browser] Chromium browser closed cleanly.');
+      } catch (err) {
+        console.log(`[Cleanup] Could not close Chromium: ${err}`);
+      }
+    }
+
+    const survivors = await stopChildren(childrenToKill);
+    if (childrenToKill.length > 0 && survivors.length === 0) {
+      console.log('[Cleanup] Stopped servers spawned by this run.');
+    }
+    if (survivors.length > 0) {
+      const pids = survivors.map(child => child.pid).join(', ');
+      console.error(
+        `[Cleanup] FAILED to stop spawned process(es) still alive after SIGKILL: ${pids}. ` +
+          'Their listening ports stay bound and the isolated store is kept so nothing is ' +
+          'deleted under a running server.'
+      );
+    }
+
+    if (storeDir && survivors.length === 0) {
+      try {
+        fs.rmSync(storeDir, { recursive: true, force: true });
+        console.log(`[Cleanup] Removed isolated store ${storeDir}. The repository data directory was never touched.`);
+      } catch (err) {
+        console.log(`[Cleanup] Could not remove isolated store ${storeDir}: ${err}`);
+      }
+    } else if (storeDir) {
+      console.error(`[Cleanup] Kept isolated store ${storeDir} because a server is still running.`);
+    }
+
+    if (fatal === null && survivors.length > 0) {
+      fatal = new Error(
+        `Could not stop every server this run started (still alive: ${survivors
+          .map(child => child.pid)
+          .join(', ')}).`
+      );
     }
   }
+
+  if (fatal) throw fatal;
 }
 
 runChallengerSuite().catch(err => {

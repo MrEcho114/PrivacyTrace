@@ -189,4 +189,4 @@ export type ScanCoverage = {
   "failed_dex": Array<string>;
 };
 
-export type SourceOrigin = "SYNTHETIC" | "CONTROLLED" | "REAL_SCAN";
+export type SourceOrigin = "SYNTHETIC" | "CONTROLLED" | "REAL_SCAN" | "UNKNOWN";

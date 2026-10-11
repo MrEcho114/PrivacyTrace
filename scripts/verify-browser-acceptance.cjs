@@ -13,7 +13,9 @@ const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const assert = require('node:assert/strict');
-const { spawn, execSync } = require('node:child_process');
+const { spawn } = require('node:child_process');
+
+const { stopChildren, spawnOptions } = require('./lib/process-control.cjs');
 
 // Dedicated ports keep the run isolated from a developer's own dev servers.
 const API_PORT = Number(process.env.PRIVACYTRACE_ACCEPTANCE_API_PORT || 8123);
@@ -54,83 +56,12 @@ async function waitForServer(url, timeoutMs = 30000) {
   return false;
 }
 
-// Terminates only a process tree this script spawned; never an unknown PID.
-function killProcessTree(pid) {
-  if (!pid) return;
-  try {
-    if (process.platform === 'win32') {
-      execSync(`taskkill /F /T /PID ${pid}`, { stdio: 'ignore' });
-    } else {
-      process.kill(-pid, 'SIGKILL');
-    }
-  } catch {}
-}
-
-// Terminates the spawned children and waits until they are gone, so the temp
-// store is never removed while a server still holds files inside it.
-async function stopChildren(children) {
-  for (const child of children) {
-    killProcessTree(child.pid);
-  }
-  const deadline = Date.now() + 10000;
-  while (Date.now() < deadline) {
-    const alive = children.filter(c => c.exitCode === null && c.signalCode === null && c.pid);
-    if (alive.length === 0) return;
-    await new Promise(r => setTimeout(r, 100));
-  }
-}
-
-// Proves the frontend on WEB_PORT is the instance this run owns: it must serve
-// this project's own dev HTML. A developer's unrelated Vite instance, or any
-// other server squatting on the port, must never be reused -- it could proxy to
-// a real backend and write outside the isolated store.
-async function identifyFrontend(origin) {
-  try {
-    const res = await fetch(`${origin}/`, { signal: AbortSignal.timeout(2000) });
-    if (!res.ok) return { ours: false, reason: `HTTP ${res.status}` };
-    const html = await res.text();
-    // Vite serves the app's own index.html, which mounts this app's entry
-    // module. Any other server will not carry this marker.
-    const ours = html.includes('/src/main.ts') && html.includes('id="app"');
-    return { ours, reason: ours ? 'matched PrivacyTrace dev entry' : 'no PrivacyTrace dev entry in HTML' };
-  } catch (err) {
-    return { ours: false, reason: `unreachable: ${err.message}` };
-  }
-}
-
-// Confirms the frontend actually proxies /api to *this* run's isolated API.
-async function verifyFrontendProxy(origin) {
-  try {
-    const res = await fetch(`${origin}/api/v1/jobs`, { signal: AbortSignal.timeout(3000) });
-    if (!res.ok) return { ok: false, reason: `proxy returned HTTP ${res.status}` };
-    const body = await res.json();
-    const ids = Array.isArray(body.jobs) ? body.jobs.map(j => j.id) : [];
-    // The isolated store is seeded only from fixtures/acceptance-jobs.
-    const expected = fixtureJobIds();
-    const leaked = ids.filter(id => !expected.includes(id));
-    if (leaked.length > 0) {
-      return { ok: false, reason: `proxy exposes jobs outside the isolated store: ${leaked.join(', ')}` };
-    }
-    if (!expected.some(id => ids.includes(id))) {
-      return { ok: false, reason: 'proxy does not serve the isolated fixture store' };
-    }
-    return { ok: true, reason: 'proxy targets the isolated API' };
-  } catch (err) {
-    return { ok: false, reason: `unreachable: ${err.message}` };
-  }
-}
-
-let _fixtureIds = null;
-function fixtureJobIds(projectRoot) {
-  if (_fixtureIds) return _fixtureIds;
-  const root = projectRoot || path.resolve(__dirname, '..');
-  const dir = path.join(root, 'fixtures', 'acceptance-jobs');
-  _fixtureIds = fs
-    .readdirSync(dir)
-    .filter(n => n.endsWith('.json'))
-    .map(n => n.replace(/\.json$/, ''));
-  return _fixtureIds;
-}
+// The guards that used to live here tried to prove a pre-existing frontend was
+// safe to reuse by matching its HTML against this app's entry module and
+// checking that /api/v1/jobs returned fixture-named job IDs. Neither test is a
+// proof of identity: HTML markers are copyable and the ID check only shows that
+// some names overlap, so a developer's own instance holding a fixture-named job
+// would pass. Reuse is therefore refused outright in main().
 
 async function selectSource(page, value) {
   await page.locator(`#report-source option[value="${value}"]`).waitFor({ state: 'attached', timeout: 15000 });
@@ -260,10 +191,7 @@ async function main() {
     }
     console.log(`[Server] Starting API backend on port ${API_PORT}...`);
     const apiProc = spawn('uv', ['run', '--project', 'apps/api', 'uvicorn', 'privacytrace.main:app', '--port', String(API_PORT)], {
-      cwd: projectRoot,
-      shell: true,
-      stdio: 'pipe',
-      env: { ...process.env, PRIVACYTRACE_STORE_ROOT: storeDir },
+      ...spawnOptions(projectRoot, { PRIVACYTRACE_STORE_ROOT: storeDir }),
     });
     childrenToKill.push(apiProc);
     if (!(await waitForServer(`${API_ORIGIN}/api/v1/jobs`, 60000))) {
@@ -272,40 +200,29 @@ async function main() {
     console.log('[Server] API backend is ready.');
 
     // The frontend must be an instance this run owns and controls. Reusing a
-    // foreign server on WEB_PORT is refused: it may proxy to a real backend and
-    // write outside the isolated store.
+    // server found on WEB_PORT is refused outright, because no request can
+    // prove which store its proxy writes to: a probe can only show that some
+    // job IDs overlap, and a developer's own PrivacyTrace instance holding
+    // fixture-named jobs would pass such a check while TC-05 then writes review
+    // events into that developer's real data.
     if (await isPortOpen(WEB_ORIGIN)) {
-      const identity = await identifyFrontend(WEB_ORIGIN);
-      if (!identity.ours) {
-        throw new Error(
-          `Port ${WEB_PORT} is already serving a server this run does not own (${identity.reason}). ` +
-            'Refusing to reuse it because its API proxy target is unknown. Stop that server or set ' +
-            'PRIVACYTRACE_ACCEPTANCE_WEB_PORT to a free port.'
-        );
-      }
-      const proxy = await verifyFrontendProxy(WEB_ORIGIN);
-      if (!proxy.ok) {
-        throw new Error(
-          `The frontend on port ${WEB_PORT} looks like PrivacyTrace but is not wired to this run's ` +
-            `isolated API (${proxy.reason}). Refusing to reuse it. Stop that server or set ` +
-            'PRIVACYTRACE_ACCEPTANCE_WEB_PORT to a free port.'
-        );
-      }
-      console.log(`[Server] Reusing the frontend on port ${WEB_PORT} (${proxy.reason}).`);
-    } else {
-      console.log(`[Server] Starting Vite frontend on port ${WEB_PORT}...`);
-      const webProc = spawn('npm', ['--prefix', 'apps/web', 'run', 'dev'], {
-        cwd: projectRoot,
-        shell: true,
-        stdio: 'pipe',
-        env: { ...process.env, PRIVACYTRACE_API_ORIGIN: API_ORIGIN, PRIVACYTRACE_WEB_PORT: String(WEB_PORT) },
-      });
-      childrenToKill.push(webProc);
-      if (!(await waitForServer(WEB_ORIGIN, 60000))) {
-        throw new Error(`Failed to start Vite frontend on port ${WEB_PORT}`);
-      }
-      console.log('[Server] Vite frontend is ready.');
+      throw new Error(
+        `Port ${WEB_PORT} is already serving requests. This run refuses to reuse it: it cannot ` +
+          'prove the frontend proxies to this run\'s isolated store, so any write could land in ' +
+          'another instance\'s data. Stop that server or set PRIVACYTRACE_ACCEPTANCE_WEB_PORT to ' +
+          'a free port.'
+      );
     }
+
+    console.log(`[Server] Starting Vite frontend on port ${WEB_PORT}...`);
+    const webProc = spawn('npm', ['--prefix', 'apps/web', 'run', 'dev'], {
+      ...spawnOptions(projectRoot, { PRIVACYTRACE_API_ORIGIN: API_ORIGIN, PRIVACYTRACE_WEB_PORT: String(WEB_PORT) }),
+    });
+    childrenToKill.push(webProc);
+    if (!(await waitForServer(WEB_ORIGIN, 60000))) {
+      throw new Error(`Failed to start Vite frontend on port ${WEB_PORT}`);
+    }
+    console.log('[Server] Vite frontend is ready.');
 
     const { chromium } = getPlaywright();
     const execPath = getChromiumExecutable();
@@ -604,44 +521,67 @@ async function main() {
     const screenshotTc03Cancel = path.join(screenshotDir, 'tc03-job-cancelled.png');
     await page.screenshot({ path: screenshotTc03Cancel, fullPage: true });
 
-    // 5. Graceful 409 cancel handling for a job that finished while cancelling.
-    // Covers the cancel race: the API rejects the cancel because the job already
-    // reached SUCCEEDED, and the UI must then load the report instead of leaving
-    // an empty panel.
+    // 5. Cancel race: the job reaches SUCCEEDED while the cancel request is in
+    // flight, so the API answers 409. This clicks the REAL cancel button and
+    // asserts what the user ends up seeing, so deleting the 409 branch in
+    // App.vue's cancel() makes it fail -- the state would stay RUNNING with no
+    // report and an error banner.
     await selectSource(page, 'job:ui-running-cancel');
     recordStep('TC-03', 'select_running', 'Selected job:ui-running-cancel for the cancel race');
     await page.locator('.job-state').waitFor();
-    assert.equal(await page.locator('.job-state button:has-text("取消任务")').count(), 1, 'A running job must offer the cancel button');
+    const cancelButton = page.locator('.job-state button:has-text("取消任务")');
+    assert.equal(await cancelButton.count(), 1, 'A running job must offer the cancel button');
 
-    await page.route('**/api/v1/jobs/*/cancel', async route => {
-      // Resolve the job to SUCCEEDED first, then answer the cancel with 409.
-      if (route.request().method() === 'POST') {
-        await fetch(`${API_ORIGIN}/api/v1/jobs/ui-running-cancel/cancel`, {
-          method: 'POST',
-          headers: { 'X-PrivacyTrace-Local': '1' },
-        }).catch(() => {});
-      }
-      return route.fulfill({
+    // The terminal state the raced job has already reached, and the report the
+    // UI must show for it. Taken from a real succeeded job so the panel renders
+    // real content rather than a stub.
+    const racedJob = await (await fetch(`${API_ORIGIN}/api/v1/jobs/ui-controlled-partial`)).json();
+    racedJob.id = 'ui-running-cancel';
+    const racedReport = await (await fetch(`${API_ORIGIN}/api/v1/jobs/ui-controlled-partial/report`)).json();
+    racedReport.job = { ...racedReport.job, id: 'ui-running-cancel' };
+
+    await page.route('**/api/v1/jobs/ui-running-cancel/cancel', route =>
+      route.fulfill({
         status: 409,
         contentType: 'application/json',
         body: JSON.stringify({ detail: 'Terminal job cannot be cancelled' }),
-      });
-    });
-    await page.evaluate(async () => {
-      try {
-        const res = await fetch('/api/v1/jobs/ui-controlled-cancel/cancel', {
-          method: 'POST',
-          headers: { 'X-PrivacyTrace-Local': '1' },
-        });
-        window.__cancel_status = res.status;
-      } catch (e) {
-        window.__cancel_error = e.message;
-      }
-    });
-    const cancelStatus = await page.evaluate(() => window.__cancel_status);
-    assert.equal(cancelStatus, 409, 'Cancel on terminal job should return 409');
-    await page.unroute('**/api/v1/jobs/*/cancel');
-    recordStep('TC-03', 'verify_409_handling', 'Confirmed 409 terminal cancellation is gracefully handled');
+      })
+    );
+    await page.route('**/api/v1/jobs/ui-running-cancel/report', route =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(racedReport) })
+    );
+    await page.route('**/api/v1/jobs/ui-running-cancel', route =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(racedJob) })
+    );
+
+    await cancelButton.click();
+    await page.locator('.job-state strong:has-text("报告已生成")').waitFor({ timeout: 15000 });
+    recordStep('TC-03', 'click_cancel', 'Clicked the real cancel button while the job finished concurrently');
+
+    const racedState = await page.locator('.job-state').innerText();
+    assert(racedState.includes('SUCCEEDED'), `The raced job must resolve to SUCCEEDED, got: ${racedState}`);
+    assert.equal(
+      await page.locator('.job-state button:has-text("取消任务")').count(),
+      0,
+      'A terminal job must no longer offer the cancel button'
+    );
+    assert.equal(await page.locator('.state.error').count(), 0, 'A handled 409 must not leave an error banner');
+    assert.equal(
+      await page.locator('.state:has-text("正在加载")').count(),
+      0,
+      'A handled 409 must not leave a permanent loading state'
+    );
+    const racedSample = await page.locator('.sample-card h2').innerText();
+    assert(racedSample.trim().length > 0, 'The report that already existed must be displayed');
+    recordStep(
+      'TC-03',
+      'verify_409_recovers_report',
+      'Confirmed the UI recovered the SUCCEEDED state and its report after a 409 cancel'
+    );
+
+    await page.unroute('**/api/v1/jobs/ui-running-cancel/cancel');
+    await page.unroute('**/api/v1/jobs/ui-running-cancel/report');
+    await page.unroute('**/api/v1/jobs/ui-running-cancel');
 
     testResults.push({ id: 'TC-03', name: 'R3 Error states, timeout & bytecode fallback', status: 'PASSED' });
 
@@ -734,7 +674,7 @@ async function main() {
     assert(evidenceText.includes('未提供 JADX Java 源码时以字节码作为依据'), 'Should explicitly explain bytecode fallback');
     recordStep('TC-04', 'audit_s1_chain', 'Confirmed complete evidence chain matching S1 authoritative report');
 
-    const screenshotTc04Replay = path.join(screenshotDir, 'tc04-source-offline-replay-s1.png');
+    const screenshotTc04Replay = path.join(screenshotDir, 'tc04-source-real-scan-s1.png');
     await page.screenshot({ path: screenshotTc04Replay, fullPage: true });
 
     testResults.push({ id: 'TC-04', name: 'R4 Multi-source badges & timestamps', status: 'PASSED' });
@@ -856,7 +796,7 @@ async function main() {
         'evidence/screenshots/tc03-job-cancelled.png',
         'evidence/screenshots/tc04-source-synthetic.png',
         'evidence/screenshots/tc04-source-controlled.png',
-        'evidence/screenshots/tc04-source-offline-replay-s1.png',
+        'evidence/screenshots/tc04-source-real-scan-s1.png',
         'evidence/screenshots/tc05-optional-notes-review.png',
       ],
       assertions: {
@@ -893,18 +833,42 @@ async function main() {
       }
     }
 
+    // A server that refuses to die must be reported, not swallowed: silently
+    // continuing would delete the store out from under a live process and leak
+    // its listening port for the rest of the session.
+    let survivors = [];
     if (childrenToKill.length > 0) {
-      await stopChildren(childrenToKill);
-      console.log('[Cleanup] Stopped servers spawned by this run.');
+      survivors = await stopChildren(childrenToKill);
+      if (survivors.length === 0) {
+        console.log('[Cleanup] Stopped servers spawned by this run.');
+      } else {
+        const pids = survivors.map(child => child.pid).join(', ');
+        console.error(
+          `[Cleanup] FAILED to stop spawned process(es) still alive after SIGKILL: ${pids}. ` +
+            'Their listening ports stay bound and the isolated store is kept so nothing is ' +
+            'deleted under a running server.'
+        );
+      }
     }
 
-    if (storeDir) {
+    // Keep the store whenever a server may still hold files inside it.
+    if (storeDir && survivors.length === 0) {
       try {
         fs.rmSync(storeDir, { recursive: true, force: true });
         console.log(`[Cleanup] Removed isolated store ${storeDir}. The repository data directory was never touched.`);
       } catch (err) {
         console.log(`[Cleanup] Could not remove isolated store ${storeDir}: ${err}`);
       }
+    } else if (storeDir) {
+      console.error(`[Cleanup] Kept isolated store ${storeDir} because a server is still running.`);
+    }
+
+    if (fatal === null && survivors.length > 0) {
+      fatal = new Error(
+        `Could not stop every server this run started (still alive: ${survivors
+          .map(child => child.pid)
+          .join(', ')}).`
+      );
     }
   }
 

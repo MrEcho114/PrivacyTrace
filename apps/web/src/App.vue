@@ -146,6 +146,14 @@ const SOURCE_LABELS: Record<string, { badge: string; label: string; desc: string
     label: 'REAL_SCAN · 真实 APK 静态扫描',
     desc: '数据来自真实 APK 静态扫描，已保留完整证据链与原生成时点。',
   },
+  // Records written before source_origin existed. Their provenance was never
+  // recorded, so it is reported as unknown instead of being guessed: "unknown"
+  // must never be read as "real scan".
+  UNKNOWN: {
+    badge: '来源未知 · UNKNOWN',
+    label: 'UNKNOWN · 来源未记录',
+    desc: '该记录写于来源字段引入之前，磁盘上没有留存来源信息，因此无法判断它是真实扫描、受控用例还是人工示例。',
+  },
 }
 
 const DELIVERY_LABELS: Record<string, { badge: string; desc: string }> = {
@@ -163,6 +171,7 @@ const sourceOptionPrefix = (origin?: string) => {
   if (origin === 'CONTROLLED') return '[受控评测] '
   if (origin === 'SYNTHETIC') return '[人工示例] '
   if (origin === 'REAL_SCAN') return '[真实 APK] '
+  if (origin === 'UNKNOWN') return '[来源未知] '
   return '[来源未标注] '
 }
 

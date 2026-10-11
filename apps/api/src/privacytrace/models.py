@@ -163,11 +163,17 @@ class SourceOrigin(StrEnum):
     replayed from persisted storage. Use `delivery_mode` for the loading path.
 
     CONTROLLED and SYNTHETIC never describe a real user application.
+
+    UNKNOWN is reserved for records written before this field existed: their
+    origin cannot be recovered from the stored data, so it is recorded as
+    unknown rather than guessed. It is never produced by a live scan and must
+    not be read as evidence that the data came from a real application.
     """
 
     SYNTHETIC = "SYNTHETIC"
     CONTROLLED = "CONTROLLED"
     REAL_SCAN = "REAL_SCAN"
+    UNKNOWN = "UNKNOWN"
 
 
 class DeliveryMode(StrEnum):

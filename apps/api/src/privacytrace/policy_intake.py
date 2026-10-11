@@ -152,6 +152,17 @@ def capture(
                 cand.get("data_type"),
             )
             key_by_excerpt = (cand.get("excerpt"), cand.get("data_type"))
+            if key_with_offsets in existing_keys or key_by_excerpt in existing_keys:
+                for position, existing in enumerate(candidates):
+                    if (existing.get("excerpt"), existing.get("data_type")) == key_by_excerpt:
+                        if existing.get("polarity", "UNKNOWN") != cand.get("polarity", "UNKNOWN"):
+                            old_actor, old_reason = sources.get(position, (actor, reason))
+                            sources[position] = (
+                                old_actor,
+                                old_reason + "; conflicting LLM polarity requires human review",
+                            )
+                        break
+                continue
             if key_with_offsets not in existing_keys and key_by_excerpt not in existing_keys:
                 existing_keys.add(key_with_offsets)
                 sources[len(candidates)] = (
@@ -542,6 +553,7 @@ def main():
                 if c.get("start_offset") is None and c.get("end_offset") is None:
                     existing_keys.add((c.get("excerpt"), c.get("data_type")))
 
+            llm_summary["conflicting_candidates"] = []
             for cand in llm_res.candidates:
                 key_with_offsets = (
                     cand.get("excerpt"),
@@ -550,6 +562,28 @@ def main():
                     cand.get("data_type"),
                 )
                 key_by_excerpt = (cand.get("excerpt"), cand.get("data_type"))
+                if key_with_offsets in existing_keys or key_by_excerpt in existing_keys:
+                    for position, existing in enumerate(candidates):
+                        if (existing.get("excerpt"), existing.get("data_type")) == key_by_excerpt:
+                            old_polarity = existing.get("polarity", "UNKNOWN")
+                            new_polarity = cand.get("polarity", "UNKNOWN")
+                            if old_polarity != new_polarity:
+                                llm_summary["conflicting_candidates"].append({
+                                    "candidate_index": position + 1,
+                                    "data_type": cand.get("data_type"),
+                                    "existing_polarity": old_polarity,
+                                    "llm_polarity": new_polarity,
+                                    "requires_human_review": True,
+                                })
+                                old_actor, old_reason = source_overrides.get(
+                                    position, (actor, reason)
+                                )
+                                source_overrides[position] = (
+                                    old_actor,
+                                    old_reason + "; conflicting LLM polarity requires human review",
+                                )
+                            break
+                    continue
                 if key_with_offsets not in existing_keys and key_by_excerpt not in existing_keys:
                     existing_keys.add(key_with_offsets)
                     source_overrides[len(candidates)] = (

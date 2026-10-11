@@ -393,6 +393,7 @@ def capture(
         llm_result = llm_extractor.extract_from_spans(
             text, split_spans(text),
             max_candidate_budget=max(0, 1999 - len(candidates or [])),
+            existing_candidates=candidates or [],
         )
         candidates, sources, conflicts, dropped_candidates = merge_llm_candidates(
             text, candidates or [], llm_result.candidates, llm_config.model, actor, reason
@@ -768,7 +769,8 @@ def main():
             text = raw.decode("utf-8")
             spans = split_spans(text)
             llm_res = llm_extractor.extract_from_spans(
-                text, spans, max_candidate_budget=max(0, 1999 - len(candidates))
+                text, spans, max_candidate_budget=max(0, 1999 - len(candidates)),
+                existing_candidates=candidates,
             )
             llm_summary = {
                 "status": llm_res.status,

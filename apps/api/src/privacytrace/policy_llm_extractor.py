@@ -519,6 +519,7 @@ class PolicyLLMExtractor:
         text: str,
         spans: list[dict[str, Any]],
         max_candidate_budget: int | None = None,
+        existing_candidates: list[dict[str, Any]] | None = None,
     ) -> LLMExtractionResult:
         """Extract candidates across all spans of a policy document."""
         overall_telemetry = ExtractionTelemetry(
@@ -535,6 +536,10 @@ class PolicyLLMExtractor:
                 telemetry=overall_telemetry,
             )
 
+        # Use exactly the same semantic identity as the final capture merge.
+        from .policy_intake import _candidate_identity
+
+        seen = {_candidate_identity(item, text) for item in (existing_candidates or [])}
         all_candidates: list[dict[str, Any]] = []
         all_rejected: list[dict[str, Any]] = []
 
@@ -595,12 +600,16 @@ class PolicyLLMExtractor:
                     telemetry=ExtractionTelemetry(errors=["LLM_REQUEST_FAILED"]),
                 )
 
-            room = max(0, candidate_cap - len(all_candidates))
-            if len(res.candidates) > room:
-                overall_telemetry.limited_candidates += len(res.candidates) - room
-                all_candidates.extend(res.candidates[:room])
-            else:
-                all_candidates.extend(res.candidates)
+            # Duplicates, including matches against manual claims, do not use slots.
+            for candidate in res.candidates:
+                identity = _candidate_identity(candidate, text)
+                if identity in seen:
+                    continue
+                if len(all_candidates) >= candidate_cap:
+                    overall_telemetry.limited_candidates += 1
+                    continue
+                seen.add(identity)
+                all_candidates.append(candidate)
             all_rejected.extend(res.rejected_candidates)
             overall_telemetry.prompt_tokens += res.telemetry.prompt_tokens
             overall_telemetry.completion_tokens += res.telemetry.completion_tokens

@@ -184,7 +184,7 @@ const sourceInfo = computed(() => {
   if (!report.value) return null
   const origin = report.value.demo ? 'SYNTHETIC' : report.value.job?.source_origin
   if (origin === 'CONTROLLED' && controlledReport.value) return {
-    badge: '受控评测 · CONTROLLED', label: 'CONTROLLED_APK · 自建受控场景',
+    type: origin, badge: '受控评测 · CONTROLLED', label: 'CONTROLLED_APK · 自建受控场景',
     desc: '源码构建的测试 APK；政策事实仅适用于此受控场景，不代表真实应用政策已核验。候选由代理辅助整理。',
   }
   if (!origin) {

@@ -56,6 +56,12 @@ def main():
         if process.returncode:
             raise RuntimeError(process.stderr[-3000:])
         browser_proof = json.loads(process.stdout)
+        browser_executable = Path("/browser/chrome-linux64/chrome")
+        browser_version = subprocess.check_output(
+            [str(browser_executable), "--version"], text=True, timeout=10
+        ).strip()
+        with browser_executable.open("rb") as browser_file:
+            browser_sha256 = hashlib.file_digest(browser_file, "sha256").hexdigest()
         dom = Path("/output/offline-dom.html").read_bytes()
         proof = {
             "passed": True,
@@ -66,6 +72,8 @@ def main():
             "runtime": "Fresh Python 3.12.13-slim container with prepared browser runtime "
             "libraries; stdlib-only viewer; Chromium mounted read-only, no repository",
             **browser_proof,
+            "browser_executable_version": browser_version,
+            "browser_executable_sha256": browser_sha256,
             "dom_sha256": hashlib.sha256(dom).hexdigest(),
             "package_manifest_sha256": hashlib.sha256(
                 (package / "manifest.json").read_bytes()

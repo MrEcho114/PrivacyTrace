@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "external_network_blocked": true,
+  "interfaces": [
+    "lo"
+  ],
+  "six_reports_http": true,
+  "real_browser_vue_loaded": true,
+  "runtime": "Fresh Python 3.12.13-slim container with prepared browser runtime libraries; stdlib-only viewer; Chromium mounted read-only, no repository",
+  "browser": "152.0.7977.8",
+  "six_sources": true,
+  "page_errors": [],
+  "browser_executable_version": "Google Chrome for Testing 152.0.7977.8",
+  "browser_executable_sha256": "5ba22c3d2a8c6ee5a940193c8060665dead08796288afa5ae7a524eeb3ccdd3f",
+  "dom_sha256": "7723ce1ce86c9df5220c4a89ee1116c8009244e18a7100edfe15265b4bc6535f",
+  "package_manifest_sha256": "3faed9ae102d9572a16ee16c7988c2ad53d558ad16a413e5d3d93b66681bbf3e",
+  "test_image": "sha256:35703cd97a990f9c62577a43909177faf30da20744fb0cc29956a14e894abb00",
+  "validation_script_sha256": "2e9ac89cb6a3297cb5f9f72620fb508c337e13a385acb80d27ff80ef9fee4eb9",
+  "browser_driver_sha256": "6e8caeca5f773ba59817937fe4e2acae7c371f95d7d13d02a36cd0aa31e95796",
+  "playwright_version": "1.62.1"
+}

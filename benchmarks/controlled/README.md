@@ -85,4 +85,6 @@ uv run --project apps/api --locked --extra worker python scripts/verify-offline.
 
 离线包仅供本任务内部核验。源码许可证尚待团队决定，不自动选择许可证或授权公开分发／正式参赛提交。包内仅自建政策和报告、Vue/Vite 许可证；不包含 APK、真实 App 资料、本地路径、审阅姓名／备注、凭证或依赖二进制。对外发布前另行核对项目与 SDK/JDK 分发条件。
 
+用户于 2026-10-11 明确允许这六份自建政策 fixture 随源码提交；真实政策仍禁止提交。此例外只覆盖本目录自建文本。
+
 保底真实案例沿用 [GKD 1.12.1 的版本绑定历史核验](../../docs/stages/s1-pr29-real-sample-verification-20261009.md) 与 [接受决定](../../docs/stages/s1-acceptance-20261009.md)。它不进入六场景分母、不进入离线包，不称本次重扫或完整真值。工程回归、受控六场景和历史真实案例分别记录在 [Spec30 验证记录](../../docs/stages/spec30-verification.md)。不合并、部署、公开 Release 或关闭其他工单。

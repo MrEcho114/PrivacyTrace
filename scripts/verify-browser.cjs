@@ -42,7 +42,7 @@ async function main() {
     assert.equal(await page.locator('#evidence-panel').count(), 0);
     assert((await page.locator('table').innerText()).includes('证据不足'));
     await page.locator('#report-source').selectOption('demo:synthetic');
-    await page.getByText('SYNTHETIC 示例', { exact: true }).waitFor();
+    await page.getByRole('complementary').getByText('SYNTHETIC · 人工构造示例', { exact: true }).waitFor();
     checks.push('C06 cautious result, source switching resets drill-down, synthetic source distinct');
 
     const long = structuredClone(report);
@@ -115,6 +115,8 @@ async function main() {
       await page.locator('#report-source').selectOption(`job:${job.id}`);
       await page.getByRole('heading', { name: job.sample_id, exact: true }).waitFor();
       assert((await page.getByLabel('报告生成来源').innerText()).includes('回放包生成时点'));
+      const saved = await (await fetch(`http://127.0.0.1:8000/api/v1/jobs/${job.id}/report`)).json();
+      assert((await page.getByLabel('报告生成来源').innerText()).includes(saved.tools.analysis_generated_at));
     }
     const rejected = await fetch(`http://127.0.0.1:8765/api/v1/jobs/${c02.id}/reviews`, { method: 'POST' });
     assert.equal(rejected.status, 405);

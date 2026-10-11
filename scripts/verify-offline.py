@@ -71,6 +71,10 @@ def main():
             + daemon_path(ROOT / "scripts/verify-offline-container.py")
             + ",target=/verify.py,readonly",
             "--mount",
+            "type=bind,source="
+            + daemon_path(ROOT / "scripts/controlled/offline-browser.cjs")
+            + ",target=/offline-browser.cjs,readonly",
+            "--mount",
             "type=bind,source=" + args.browser_runtime + ",target=/browser,readonly",
             "--mount",
             "type=bind,source="
@@ -94,6 +98,12 @@ def main():
         validation_script_sha256=digest(
             read_safe(ROOT / "scripts/verify-offline-container.py")
         ),
+        browser_driver_sha256=digest(
+            read_safe(ROOT / "scripts/controlled/offline-browser.cjs")
+        ),
+        playwright_version=json.loads(
+            read_safe(args.playwright_modules / "playwright/package.json")
+        )["version"],
     )
     proof.write_text(json.dumps(record, indent=2), encoding="utf-8")
 

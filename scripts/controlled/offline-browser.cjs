@@ -20,6 +20,9 @@ async function main() {
       await page.locator('#report-source').selectOption(value);
       await page.getByRole('table').waitFor();
       assert((await page.locator('[aria-label="报告生成来源"]').innerText()).includes('回放包生成时点'));
+      const id = value.slice(4);
+      const saved = await (await page.request.get(`http://127.0.0.1:8765/api/v1/jobs/${id}/report`)).json();
+      assert((await page.locator('[aria-label="报告生成来源"]').innerText()).includes(saved.tools.analysis_generated_at));
     }
     assert.deepEqual(errors, []);
     fs.writeFileSync('/output/offline-dom.html', await page.content());

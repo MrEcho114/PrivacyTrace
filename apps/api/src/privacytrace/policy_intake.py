@@ -386,7 +386,10 @@ def capture(
     dropped_candidates = 0
     if llm_extractor is not None and getattr(llm_extractor.config, "enabled", False):
         llm_config = llm_extractor.config
-        llm_result = llm_extractor.extract_from_spans(text, split_spans(text))
+        llm_result = llm_extractor.extract_from_spans(
+            text, split_spans(text),
+            max_candidate_budget=max(0, 1999 - len(candidates or [])),
+        )
         candidates, sources, conflicts, dropped_candidates = merge_llm_candidates(
             text, candidates or [], llm_result.candidates, llm_config.model, actor, reason
         )
@@ -718,6 +721,9 @@ def main():
     parser.add_argument("--llm-max-spans", type=int, default=64)
     parser.add_argument("--llm-max-requests", type=int, default=96)
     parser.add_argument("--llm-max-elapsed-seconds", type=float, default=120.0)
+    parser.add_argument("--llm-max-output-tokens", type=int, default=2048)
+    parser.add_argument("--llm-max-response-bytes", type=int, default=2 * 1024 * 1024)
+    parser.add_argument("--llm-max-candidates-per-response", type=int, default=100)
     args = parser.parse_args()
     try:
         candidates = json.loads(read_safe(args.candidates)) if args.candidates else []
@@ -749,12 +755,17 @@ def main():
                 max_spans=args.llm_max_spans,
                 max_requests=args.llm_max_requests,
                 max_elapsed_seconds=args.llm_max_elapsed_seconds,
+                max_output_tokens=args.llm_max_output_tokens,
+                max_response_bytes=args.llm_max_response_bytes,
+                max_candidates_per_response=args.llm_max_candidates_per_response,
             )
             llm_extractor = PolicyLLMExtractor(config)
             raw = read_safe(args.raw, max_bytes=MAX_BYTES)
             text = raw.decode("utf-8")
             spans = split_spans(text)
-            llm_res = llm_extractor.extract_from_spans(text, spans)
+            llm_res = llm_extractor.extract_from_spans(
+                text, spans, max_candidate_budget=max(0, 1999 - len(candidates))
+            )
             llm_summary = {
                 "status": llm_res.status,
                 "extracted_claims": len(llm_res.candidates),

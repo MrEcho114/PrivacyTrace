@@ -84,10 +84,33 @@ def test_generated_contracts_match_authoritative_models():
     import json
 
     from privacytrace.models import EvaluationResult
+    from privacytrace.sdk_ruleset import SdkSignatureRuleset
 
     for name, model in [
         ("evaluation-input", EvaluationInput),
         ("evaluation-result", EvaluationResult),
+        ("sdk-signatures", SdkSignatureRuleset),
     ]:
         path: Path = ROOT / "packages/contracts" / f"{name}.schema.json"
         assert json.loads(path.read_text(encoding="utf-8")) == model.model_json_schema()
+
+
+def test_shipped_sdk_ruleset_validates_against_its_contract():
+    """The active ruleset is data; the contract is code. Keep them in step."""
+    from privacytrace.resources import sdk_signatures
+    from privacytrace.sdk_ruleset import SdkSignatureRuleset
+
+    rules = sdk_signatures()
+    validated = SdkSignatureRuleset.model_validate(rules)
+    assert validated.version == rules["version"]
+    assert validated.signatures, "active ruleset must ship at least one signature"
+    assert validated.excluded_namespaces, "platform namespaces must stay excluded"
+
+
+@pytest.mark.parametrize("version", ["1.0", "1.0.0.0", "v1.0.0", ""])
+def test_sdk_ruleset_rejects_malformed_version(version):
+    from privacytrace.sdk_ruleset import SdkSignatureRuleset
+
+    rules = {"version": version}
+    with pytest.raises(ValidationError):
+        SdkSignatureRuleset.model_validate(rules)

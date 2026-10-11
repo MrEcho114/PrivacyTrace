@@ -11,6 +11,15 @@ PR #27 与 #28 的增量已在独立分支整合，面向已合并 S0 的 `main`
 - S2 待办保留 #17 的异常浏览器矩阵，并加入来源值严格校验/新来源类型的契约测试、进程强制退出后的陈旧非终态作业识别与恢复测试。这两项是 #28 的非阻塞建议，本轮不设计完整调度器。
 - 当前优先：新工作流的自动验证与 PR 交付 → S2 受控场景和公平基准。不要再要求 A/B 填表；历史预约日期不代表后续任务已完成。
 
+### 2026-10-10 待确认缺陷（PT-401 修复期间发现，非 PT-401 引入）
+
+`job_store.JobStore._transaction()` 在 Windows 上存在多进程竞争缺陷：`os.open(path, O_CREAT | O_RDWR)` 本身没有重试，只有其后的加锁步骤有。多个进程同时首次创建 `.lock` 时，Windows 会对并发 `CreateFile` 返回瞬态共享冲突，表现为 `PermissionError: [Errno 13]`。
+
+- 复现：4 个 `spawn` 进程经 `Barrier` 同步后同时 `os.open` 同一 `.lock`，60/60 轮全部失败（至少 1 个进程报 errno 13）。
+- 表现：`test_job_creation.py::test_one_reservation_wins_across_processes_and_survives_restart` 在全量套件下偶发失败、单独运行必过；属负载/时序敏感。
+- 影响面：真实使用中即为多进程/多调用方首次并发建锁的窗口，值得单独修复（把打开动作纳入同一重试与超时策略）。
+- 归属：与 PT-401 无关，本次不修；待确认后另开工单。
+
 ## 2026-10-05 历史进度与优先顺序
 
 | 阶段 / 任务 | 当前状态 | 下一步 |
@@ -73,7 +82,7 @@ PR #27 与 #28 的增量已在独立分支整合，面向已合并 S0 的 `main`
 
 | 编号 | 任务 | 建仓状态 |
 |---|---|---|
-| PT-401 | SDK Signature Schema | 合成 signature seed |
+| PT-401 | SDK Signature Schema | 有据签名 v1.0.0；来源/许可/版本逐条记录 |
 | PT-402 | 常见 SDK Signature | 待开发 |
 | PT-403 | SDK Detection | 待开发 |
 | PT-404 | SDK → Vendor | 待开发 |

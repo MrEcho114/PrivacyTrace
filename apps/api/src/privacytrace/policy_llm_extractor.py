@@ -5,6 +5,7 @@ and graceful offline fallback.
 """
 
 import hashlib
+import ipaddress
 import json
 import os
 import re
@@ -56,17 +57,29 @@ UNTRUSTED_CLOSE = "</untrusted_policy_text>"
 
 
 def validate_and_normalize_api_base(url: str) -> str:
+    """Require HTTPS for remote hosts and allow HTTP only on loopback."""
     if not isinstance(url, str) or not url.strip():
         raise ValueError("api_base must be a non-empty string")
-    parsed = urllib.parse.urlparse(url.strip())
+    parsed = urllib.parse.urlsplit(url.strip())
     if parsed.scheme not in {"http", "https"}:
-        raise ValueError(f"api_base scheme must be http or https, got {parsed.scheme!r}")
-    if not parsed.netloc:
-        raise ValueError(f"api_base must include a valid host, got {url!r}")
-    if parsed.username or parsed.password:
+        raise ValueError("api_base scheme must be http or https")
+    if not parsed.hostname:
+        raise ValueError("api_base must include a valid host")
+    if parsed.username is not None or parsed.password is not None:
         raise ValueError("api_base must not contain credentials")
     if parsed.query or parsed.fragment:
         raise ValueError("api_base must not contain query parameters or fragments")
+    try:
+        _ = parsed.port
+    except ValueError as exc:
+        raise ValueError("Invalid LLM endpoint port") from exc
+    if parsed.scheme == "http" and parsed.hostname != "localhost":
+        try:
+            is_loopback = ipaddress.ip_address(parsed.hostname).is_loopback
+        except ValueError:
+            is_loopback = False
+        if not is_loopback:
+            raise ValueError("Non-loopback LLM endpoints must use HTTPS")
     return url.strip().rstrip("/")
 
 
@@ -119,7 +132,14 @@ class UrllibLLMClient:
             method="POST",
         )
 
-        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+        # Forbid redirects that could downgrade transport or forward credentials.
+        class NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, request, fp, code, msg, headers, newurl):
+                raise urllib.error.HTTPError(
+                    request.full_url, code, "LLM endpoint redirects are forbidden", headers, fp
+                )
+
+        with urllib.request.build_opener(NoRedirect()).open(req, timeout=self.timeout) as resp:
             data = json.loads(resp.read().decode("utf-8"))
 
         choices = data.get("choices")
@@ -175,11 +195,20 @@ class LLMExtractorConfig:
     cache_dir: Path | None = None
     max_retries: int = 2
     timeout_seconds: float = 30.0
+    max_spans: int = 64
+    max_requests: int = 96
+    max_elapsed_seconds: float = 120.0
     client: LLMClientProtocol | None = None
 
     def __post_init__(self):
-        if self.api_base:
-            self.api_base = validate_and_normalize_api_base(self.api_base)
+        self.api_base = validate_and_normalize_api_base(self.api_base)
+        if (
+            type(self.max_spans) is not int or self.max_spans < 1
+            or type(self.max_requests) is not int or self.max_requests < 1
+            or type(self.max_retries) is not int or self.max_retries < 1
+            or self.max_elapsed_seconds <= 0 or self.timeout_seconds <= 0
+        ):
+            raise ValueError("LLM extraction limits must be positive")
 
 
 @dataclass
@@ -196,6 +225,7 @@ class ExtractionTelemetry:
     errors: list[str] = field(default_factory=list)
     rejected_count: int = 0
     failed_spans: list[dict[str, Any]] = field(default_factory=list)
+    skipped_spans: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -207,8 +237,13 @@ class LLMExtractionResult:
 
 
 def sanitize_untrusted_text(text: str) -> str:
-    """Neutralize closing fence tag injections within untrusted text."""
-    return text.replace(UNTRUSTED_CLOSE, "&lt;/untrusted_policy_text&gt;")
+    """Escape delimiter variants; this does not eliminate prompt-injection risk."""
+    return re.sub(
+        r"</\\s*untrusted_policy_text\\s*>",
+        lambda m: "&lt;" + m.group(0)[1:-1] + "&gt;",
+        text,
+        flags=re.IGNORECASE,
+    )
 
 
 def build_user_prompt(text: str) -> str:
@@ -242,12 +277,40 @@ def compute_cache_key(
     temperature: float = 0.0,
 ) -> str:
     system_prompt_hash = hashlib.sha256(system_prompt.encode("utf-8")).hexdigest()[:16]
-    norm_api_base = (api_base or "https://api.openai.com/v1").rstrip("/").lower()
+    parsed = urllib.parse.urlsplit(api_base or "https://api.openai.com/v1")
+    host = (parsed.hostname or "").lower()
+    netloc = f"[{host}]" if ":" in host else host
+    if parsed.port is not None:
+        netloc += f":{parsed.port}"
+    norm_api_base = urllib.parse.urlunsplit(
+        (parsed.scheme.lower(), netloc, parsed.path.rstrip("/"), "", "")
+    )
     seed = (
         f"{model}:{prompt_version}:{ruleset_version}:{norm_api_base}:"
         f"{system_prompt_hash}:{temperature}:{text}"
     ).encode("utf-8")
     return hashlib.sha256(seed).hexdigest()
+
+
+CACHE_FILE_PREFIX = "privacytrace-llm-v2-"
+
+
+@dataclass
+class _CallBudget:
+    started: float
+    max_requests: int
+    max_elapsed_seconds: float
+    requests: int = 0
+
+    def exhaustion_reason(self) -> str | None:
+        if time.monotonic() - self.started >= self.max_elapsed_seconds:
+            return "TIME_BUDGET_EXHAUSTED"
+        if self.requests >= self.max_requests:
+            return "REQUEST_BUDGET_EXHAUSTED"
+        return None
+
+    def remaining_seconds(self) -> float:
+        return max(0.001, self.max_elapsed_seconds - (time.monotonic() - self.started))
 
 
 class PolicyLLMExtractor:
@@ -263,6 +326,7 @@ class PolicyLLMExtractor:
         chunk_text: str,
         chunk_start: int = 0,
         full_text: str | None = None,
+        _budget: _CallBudget | None = None,
     ) -> LLMExtractionResult:
         """Extract candidates from a single chunk of policy text."""
         telemetry = ExtractionTelemetry(
@@ -280,6 +344,11 @@ class PolicyLLMExtractor:
             )
 
         start_time = time.monotonic()
+        budget = _budget or _CallBudget(
+            started=start_time,
+            max_requests=self.config.max_requests,
+            max_elapsed_seconds=self.config.max_elapsed_seconds,
+        )
         cache_key = compute_cache_key(
             model=self.config.model,
             prompt_version=self.config.prompt_version,
@@ -328,7 +397,14 @@ class PolicyLLMExtractor:
         tokens = {}
 
         for attempt in range(1, self.config.max_retries + 1):
+            reason = budget.exhaustion_reason()
+            if reason:
+                telemetry.errors.append(reason)
+                break
+            budget.requests += 1
             telemetry.attempts = attempt
+            if isinstance(client, UrllibLLMClient):
+                client.timeout = min(self.config.timeout_seconds, budget.remaining_seconds())
             try:
                 raw_text, call_tokens = client.call(SYSTEM_PROMPT, user_prompt)
                 telemetry.prompt_tokens += call_tokens.get("prompt_tokens", 0)
@@ -399,16 +475,33 @@ class PolicyLLMExtractor:
         start_time = time.monotonic()
         all_cached = True
         processed_spans = 0
+        budget = _CallBudget(
+            started=start_time,
+            max_requests=self.config.max_requests,
+            max_elapsed_seconds=self.config.max_elapsed_seconds,
+        )
 
         for span in spans:
             span_text = span["text"]
             # Skip empty or whitespace-only spans
             if not span_text.strip():
                 continue
+            reason = (
+                "SPAN_BUDGET_EXHAUSTED" if processed_spans >= self.config.max_spans
+                else budget.exhaustion_reason()
+            )
+            if reason:
+                overall_telemetry.skipped_spans.append(
+                    {"start": span["start"], "end": span["end"], "reason": reason}
+                )
+                all_cached = False
+                continue
             processed_spans += 1
             span_start = span["start"]
             try:
-                res = self.extract_from_chunk(span_text, chunk_start=span_start, full_text=text)
+                res = self.extract_from_chunk(
+                    span_text, chunk_start=span_start, full_text=text, _budget=budget
+                )
             except Exception as exc:
                 err_msg = f"Unexpected chunk extraction error: {exc}"
                 res = LLMExtractionResult(
@@ -444,7 +537,9 @@ class PolicyLLMExtractor:
         overall_telemetry.cached = all_cached if processed_spans > 0 else False
         overall_telemetry.rejected_count = len(all_rejected)
 
-        if processed_spans == 0:
+        if overall_telemetry.skipped_spans:
+            status = "PARTIAL"
+        elif processed_spans == 0:
             status = "SUCCESS"
         elif len(overall_telemetry.failed_spans) == processed_spans:
             status = "FAILED"
@@ -590,7 +685,11 @@ class PolicyLLMExtractor:
         if not self.config.cache_dir or not self.config.cache_dir.is_dir():
             return 0
         count = 0
-        for p in self.config.cache_dir.glob("*.json"):
+        for p in self.config.cache_dir.glob(f"{CACHE_FILE_PREFIX}*.json"):
+            if not re.fullmatch(rf"{CACHE_FILE_PREFIX}[0-9a-f]{{64}}\\.json", p.name):
+                continue
+            if p.is_symlink() or not p.is_file():
+                continue
             try:
                 p.unlink()
                 count += 1
@@ -601,8 +700,8 @@ class PolicyLLMExtractor:
     def _read_cache(self, cache_key: str) -> dict[str, Any] | None:
         if not self.config.cache_dir:
             return None
-        cache_file = self.config.cache_dir / f"{cache_key}.json"
-        if not cache_file.exists():
+        cache_file = self.config.cache_dir / f"{CACHE_FILE_PREFIX}{cache_key}.json"
+        if not cache_file.exists() or cache_file.is_symlink():
             return None
         try:
             return json.loads(cache_file.read_text(encoding="utf-8"))
@@ -614,8 +713,8 @@ class PolicyLLMExtractor:
             return
         try:
             self.config.cache_dir.mkdir(parents=True, exist_ok=True)
-            cache_file = self.config.cache_dir / f"{cache_key}.json"
-            tmp_file = self.config.cache_dir / f".{cache_key}.tmp"
+            cache_file = self.config.cache_dir / f"{CACHE_FILE_PREFIX}{cache_key}.json"
+            tmp_file = self.config.cache_dir / f".{CACHE_FILE_PREFIX}{cache_key}.tmp"
             tmp_file.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
             tmp_file.replace(cache_file)
         except (OSError, TypeError):

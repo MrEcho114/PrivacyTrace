@@ -10,6 +10,7 @@ import os
 import re
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -54,6 +55,21 @@ UNTRUSTED_OPEN = "<untrusted_policy_text>"
 UNTRUSTED_CLOSE = "</untrusted_policy_text>"
 
 
+def validate_and_normalize_api_base(url: str) -> str:
+    if not isinstance(url, str) or not url.strip():
+        raise ValueError("api_base must be a non-empty string")
+    parsed = urllib.parse.urlparse(url.strip())
+    if parsed.scheme not in {"http", "https"}:
+        raise ValueError(f"api_base scheme must be http or https, got {parsed.scheme!r}")
+    if not parsed.netloc:
+        raise ValueError(f"api_base must include a valid host, got {url!r}")
+    if parsed.username or parsed.password:
+        raise ValueError("api_base must not contain credentials")
+    if parsed.query or parsed.fragment:
+        raise ValueError("api_base must not contain query parameters or fragments")
+    return url.strip().rstrip("/")
+
+
 class LLMClientProtocol(Protocol):
     def call(self, system_prompt: str, user_prompt: str) -> tuple[str, dict[str, int]]:
         """Call the LLM and return (raw_text_response, token_usage_dict)."""
@@ -72,13 +88,14 @@ class UrllibLLMClient:
         temperature: float = 0.0,
     ):
         self.api_key = api_key or os.environ.get("PRIVACYTRACE_LLM_API_KEY", "")
-        self.api_base = api_base.rstrip("/")
+        raw_base = api_base or os.environ.get("PRIVACYTRACE_LLM_API_BASE", "https://api.openai.com/v1")
+        self.api_base = validate_and_normalize_api_base(raw_base)
         self.model = model
         self.timeout = timeout
         self.temperature = temperature
 
     def call(self, system_prompt: str, user_prompt: str) -> tuple[str, dict[str, int]]:
-        if not self.api_key:
+        if not self.api_key and not self.api_base.startswith("http://"):
             raise ValueError("LLM API key not configured in environment or client")
 
         url = f"{self.api_base}/chat/completions"
@@ -91,20 +108,30 @@ class UrllibLLMClient:
             ],
         }
         body = json.dumps(payload).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+
         req = urllib.request.Request(
             url,
             data=body,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.api_key}",
-            },
+            headers=headers,
             method="POST",
         )
 
         with urllib.request.urlopen(req, timeout=self.timeout) as resp:
             data = json.loads(resp.read().decode("utf-8"))
 
-        content = data["choices"][0]["message"]["content"]
+        choices = data.get("choices")
+        if not choices or not isinstance(choices, list):
+            err_msg = (
+                data.get("error", {}).get("message")
+                if isinstance(data.get("error"), dict)
+                else str(data)
+            )
+            raise ValueError(f"LLM API response missing choices: {err_msg}")
+
+        content = choices[0].get("message", {}).get("content") or ""
         usage = data.get("usage", {})
         tokens = {
             "prompt_tokens": usage.get("prompt_tokens", 0),
@@ -140,12 +167,19 @@ class MockLLMClient:
 class LLMExtractorConfig:
     enabled: bool = False
     model: str = "gpt-4o-mini"
+    api_base: str = "https://api.openai.com/v1"
+    api_key: str | None = None
+    temperature: float = 0.0
     prompt_version: str = PROMPT_VERSION
     ruleset_version: str = ACTIVE_RULESET_VERSION
     cache_dir: Path | None = None
     max_retries: int = 2
     timeout_seconds: float = 30.0
     client: LLMClientProtocol | None = None
+
+    def __post_init__(self):
+        if self.api_base:
+            self.api_base = validate_and_normalize_api_base(self.api_base)
 
 
 @dataclass
@@ -161,6 +195,7 @@ class ExtractionTelemetry:
     attempts: int = 0
     errors: list[str] = field(default_factory=list)
     rejected_count: int = 0
+    failed_spans: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -188,14 +223,30 @@ def build_user_prompt(text: str) -> str:
 def clean_json_response(raw: str) -> str:
     """Strip any markdown code fencing wrapping the JSON output."""
     raw = raw.strip()
+    match = re.search(r"```(?:json)?\s*(.*?)\s*```", raw, re.DOTALL)
+    if match:
+        return match.group(1).strip()
     if raw.startswith("```"):
         raw = re.sub(r"^```(?:json)?\s*", "", raw)
         raw = re.sub(r"\s*```$", "", raw)
     return raw.strip()
 
 
-def compute_cache_key(model: str, prompt_version: str, ruleset_version: str, text: str) -> str:
-    seed = f"{model}:{prompt_version}:{ruleset_version}:{text}".encode("utf-8")
+def compute_cache_key(
+    model: str,
+    prompt_version: str,
+    ruleset_version: str,
+    text: str,
+    api_base: str = "https://api.openai.com/v1",
+    system_prompt: str = SYSTEM_PROMPT,
+    temperature: float = 0.0,
+) -> str:
+    system_prompt_hash = hashlib.sha256(system_prompt.encode("utf-8")).hexdigest()[:16]
+    norm_api_base = (api_base or "https://api.openai.com/v1").rstrip("/").lower()
+    seed = (
+        f"{model}:{prompt_version}:{ruleset_version}:{norm_api_base}:"
+        f"{system_prompt_hash}:{temperature}:{text}"
+    ).encode("utf-8")
     return hashlib.sha256(seed).hexdigest()
 
 
@@ -230,10 +281,13 @@ class PolicyLLMExtractor:
 
         start_time = time.monotonic()
         cache_key = compute_cache_key(
-            self.config.model,
-            self.config.prompt_version,
-            self.config.ruleset_version,
-            chunk_text,
+            model=self.config.model,
+            prompt_version=self.config.prompt_version,
+            ruleset_version=self.config.ruleset_version,
+            text=chunk_text,
+            api_base=self.config.api_base,
+            system_prompt=SYSTEM_PROMPT,
+            temperature=self.config.temperature,
         )
 
         # 1. Check local cache
@@ -243,15 +297,15 @@ class PolicyLLMExtractor:
             telemetry.duration_ms = int((time.monotonic() - start_time) * 1000)
             telemetry.attempts = 1
             raw_items = cached_entry.get("raw_items", [])
-            tokens = cached_entry.get("tokens", {})
-            telemetry.prompt_tokens = tokens.get("prompt_tokens", 0)
-            telemetry.completion_tokens = tokens.get("completion_tokens", 0)
-            telemetry.total_tokens = tokens.get("total_tokens", 0)
+            # Cache hits consume 0 network API tokens for the current execution
+            telemetry.prompt_tokens = 0
+            telemetry.completion_tokens = 0
+            telemetry.total_tokens = 0
             valid, rejected = self._verify_and_resolve_candidates(
                 raw_items, chunk_text, chunk_start, full_text
             )
             telemetry.rejected_count = len(rejected)
-            status = "SUCCESS" if valid else ("PARTIAL" if rejected else "SUCCESS")
+            status = "PARTIAL" if rejected else "SUCCESS"
             return LLMExtractionResult(
                 status=status,
                 candidates=valid,
@@ -261,8 +315,11 @@ class PolicyLLMExtractor:
 
         # 2. Call LLM with retries
         client = self.config.client or UrllibLLMClient(
+            api_key=self.config.api_key,
+            api_base=self.config.api_base,
             model=self.config.model,
             timeout=self.config.timeout_seconds,
+            temperature=self.config.temperature,
         )
         user_prompt = build_user_prompt(chunk_text)
 
@@ -307,7 +364,7 @@ class PolicyLLMExtractor:
             raw_items, chunk_text, chunk_start, full_text
         )
         telemetry.rejected_count = len(rejected)
-        status = "SUCCESS" if (valid or not rejected) else "PARTIAL"
+        status = "PARTIAL" if rejected else "SUCCESS"
 
         return LLMExtractionResult(
             status=status,
@@ -341,15 +398,25 @@ class PolicyLLMExtractor:
 
         start_time = time.monotonic()
         all_cached = True
-        has_failure = False
+        processed_spans = 0
 
         for span in spans:
             span_text = span["text"]
             # Skip empty or whitespace-only spans
             if not span_text.strip():
                 continue
+            processed_spans += 1
             span_start = span["start"]
-            res = self.extract_from_chunk(span_text, chunk_start=span_start, full_text=text)
+            try:
+                res = self.extract_from_chunk(span_text, chunk_start=span_start, full_text=text)
+            except Exception as exc:
+                err_msg = f"Unexpected chunk extraction error: {exc}"
+                res = LLMExtractionResult(
+                    status="FAILED",
+                    candidates=[],
+                    rejected_candidates=[],
+                    telemetry=ExtractionTelemetry(errors=[err_msg]),
+                )
 
             all_candidates.extend(res.candidates)
             all_rejected.extend(res.rejected_candidates)
@@ -361,17 +428,27 @@ class PolicyLLMExtractor:
             if not res.telemetry.cached:
                 all_cached = False
             if res.status == "FAILED":
-                has_failure = True
+                errors = list(res.telemetry.errors) or [
+                    "Span extraction failed without explicit error"
+                ]
+                overall_telemetry.failed_spans.append(
+                    {
+                        "start": span_start,
+                        "end": span.get("end", span_start + len(span_text)),
+                        "text": span_text,
+                        "errors": errors,
+                    }
+                )
 
         overall_telemetry.duration_ms = int((time.monotonic() - start_time) * 1000)
-        overall_telemetry.cached = all_cached if spans else False
+        overall_telemetry.cached = all_cached if processed_spans > 0 else False
         overall_telemetry.rejected_count = len(all_rejected)
 
-        if has_failure and not all_candidates:
+        if processed_spans == 0:
+            status = "SUCCESS"
+        elif len(overall_telemetry.failed_spans) == processed_spans:
             status = "FAILED"
-        elif all_rejected and not all_candidates:
-            status = "FAILED"
-        elif all_rejected:
+        elif overall_telemetry.failed_spans or all_rejected:
             status = "PARTIAL"
         else:
             status = "SUCCESS"
@@ -393,86 +470,133 @@ class PolicyLLMExtractor:
         valid: list[dict[str, Any]] = []
         rejected: list[dict[str, Any]] = []
 
+        if not isinstance(raw_items, list):
+            return valid, [{"raw": raw_items, "reason": "RAW_ITEMS_NOT_LIST"}]
+
         for item in raw_items:
-            if not isinstance(item, dict):
-                rejected.append({"raw": item, "reason": "ITEM_NOT_DICT"})
-                continue
-
-            excerpt = item.get("excerpt")
-            if not isinstance(excerpt, str) or not excerpt.strip():
-                rejected.append({"raw": item, "reason": "EMPTY_OR_NON_STRING_EXCERPT"})
-                continue
-
-            # 1. Verbatim quote verification: Must be present in the chunk text
-            if excerpt not in chunk_text:
-                rejected.append({"raw": item, "reason": "EXCERPT_NOT_IN_SOURCE"})
-                continue
-
-            # 2. Data type taxonomy check
-            data_type = item.get("data_type")
-            if not isinstance(data_type, str) or data_type not in self.valid_data_types:
-                rejected.append({"raw": item, "reason": f"INVALID_DATA_TYPE: {data_type}"})
-                continue
-
-            # Calculate precise codepoint offsets
-            rel_offset = chunk_text.find(excerpt)
-            start_offset = chunk_start + rel_offset
-            end_offset = start_offset + len(excerpt)
-
-            # Extra check against full_text if provided
-            if full_text is not None:
-                if full_text[start_offset:end_offset] != excerpt:
-                    rejected.append({"raw": item, "reason": "SPAN_MISMATCH_WITH_FULL_TEXT"})
+            try:
+                if not isinstance(item, dict):
+                    rejected.append({"raw": item, "reason": "ITEM_NOT_DICT"})
                     continue
 
-            # Normalize standard fields
-            polarity = item.get("polarity")
-            if polarity not in {"AFFIRMATIVE", "NEGATIVE", "UNKNOWN"}:
-                polarity = "UNKNOWN"
+                excerpt = item.get("excerpt")
+                if not isinstance(excerpt, str) or not excerpt.strip():
+                    rejected.append({"raw": item, "reason": "EMPTY_OR_NON_STRING_EXCERPT"})
+                    continue
 
-            subject = item.get("subject")
-            if subject not in {"HOST_APP", "THIRD_PARTY", "UNKNOWN"}:
-                subject = "UNKNOWN"
+                # 1. Verbatim quote verification: Must be present in the chunk text
+                occurrence_count = chunk_text.count(excerpt)
+                if occurrence_count == 0:
+                    rejected.append({"raw": item, "reason": "EXCERPT_NOT_IN_SOURCE"})
+                    continue
+                if occurrence_count > 1:
+                    rejected.append({"raw": item, "reason": "AMBIGUOUS_EXCERPT_OCCURRENCE"})
+                    continue
 
-            action = item.get("action")
-            if action not in {"ACCESS", "UNKNOWN"}:
-                action = "ACCESS"
+                # 2. Data type taxonomy check
+                data_type = item.get("data_type")
+                if not isinstance(data_type, str) or data_type not in self.valid_data_types:
+                    rejected.append({"raw": item, "reason": f"INVALID_DATA_TYPE: {data_type}"})
+                    continue
 
-            condition = item.get("condition")
-            if not isinstance(condition, str) or not condition.strip():
-                condition = None
-            else:
-                condition = condition.strip()
+                # Calculate precise codepoint offsets
+                rel_offset = chunk_text.find(excerpt)
+                start_offset = chunk_start + rel_offset
+                end_offset = start_offset + len(excerpt)
 
-            declared_purpose = item.get("declared_purpose")
-            if not isinstance(declared_purpose, str) or not declared_purpose.strip():
-                declared_purpose = None
-            else:
-                declared_purpose = declared_purpose.strip()
+                # Extra check against full_text if provided
+                if full_text is not None:
+                    if full_text[start_offset:end_offset] != excerpt:
+                        rejected.append({"raw": item, "reason": "SPAN_MISMATCH_WITH_FULL_TEXT"})
+                        continue
 
-            declared_recipient = item.get("declared_recipient")
-            if not isinstance(declared_recipient, str) or not declared_recipient.strip():
-                declared_recipient = None
-            else:
-                declared_recipient = declared_recipient.strip()
+                # Normalize standard fields safely (defend against non-string / unhashable types)
+                raw_polarity = item.get("polarity")
+                if isinstance(raw_polarity, str) and raw_polarity in {
+                    "AFFIRMATIVE",
+                    "NEGATIVE",
+                    "UNKNOWN",
+                }:
+                    polarity = raw_polarity
+                else:
+                    polarity = "UNKNOWN"
 
-            candidate = {
-                "excerpt": excerpt,
-                "start_offset": start_offset,
-                "end_offset": end_offset,
-                "data_type": data_type,
-                "polarity": polarity,
-                "condition": condition,
-                "subject": subject,
-                "action": action,
-                "declared_purpose": declared_purpose,
-                "declared_recipient": declared_recipient,
-            }
-            # Remove None values for fields where policy_intake expects optional
-            cleaned_candidate = {k: v for k, v in candidate.items() if v is not None}
-            valid.append(cleaned_candidate)
+                raw_subject = item.get("subject")
+                if isinstance(raw_subject, str) and raw_subject in {
+                    "HOST_APP",
+                    "THIRD_PARTY",
+                    "UNKNOWN",
+                }:
+                    subject = raw_subject
+                else:
+                    subject = "UNKNOWN"
+
+                raw_action = item.get("action")
+                ambiguity_flags = []
+                if isinstance(raw_action, str) and raw_action in {"ACCESS", "UNKNOWN"}:
+                    action = raw_action
+                elif raw_action is None:
+                    action = "UNKNOWN"
+                else:
+                    # Distinguish illegal action value from omitted field by tagging UNCLEAR_ACTION
+                    action = "UNKNOWN"
+                    ambiguity_flags.append("UNCLEAR_ACTION")
+
+                condition = item.get("condition")
+                if not isinstance(condition, str) or not condition.strip():
+                    condition = None
+                else:
+                    condition = condition.strip()
+
+                declared_purpose = item.get("declared_purpose")
+                if not isinstance(declared_purpose, str) or not declared_purpose.strip():
+                    declared_purpose = None
+                else:
+                    declared_purpose = declared_purpose.strip()
+
+                declared_recipient = item.get("declared_recipient")
+                if not isinstance(declared_recipient, str) or not declared_recipient.strip():
+                    declared_recipient = None
+                else:
+                    declared_recipient = declared_recipient.strip()
+
+                candidate = {
+                    "excerpt": excerpt,
+                    "start_offset": start_offset,
+                    "end_offset": end_offset,
+                    "data_type": data_type,
+                    "polarity": polarity,
+                    "condition": condition,
+                    "subject": subject,
+                    "action": action,
+                    "declared_purpose": declared_purpose,
+                    "declared_recipient": declared_recipient,
+                }
+                if ambiguity_flags:
+                    candidate["ambiguity_flags"] = ambiguity_flags
+                # Remove None values for fields where policy_intake expects optional
+                cleaned_candidate = {k: v for k, v in candidate.items() if v is not None}
+                valid.append(cleaned_candidate)
+            except Exception as exc:
+                err_msg = f"{type(exc).__name__}: {exc}"
+                rejected.append(
+                    {"raw": item, "reason": f"UNEXPECTED_VALIDATION_ERROR: {err_msg}"}
+                )
 
         return valid, rejected
+
+    def clear_cache(self) -> int:
+        """Remove cached JSON files in configured cache_dir, returning removed count."""
+        if not self.config.cache_dir or not self.config.cache_dir.is_dir():
+            return 0
+        count = 0
+        for p in self.config.cache_dir.glob("*.json"):
+            try:
+                p.unlink()
+                count += 1
+            except OSError:
+                pass
+        return count
 
     def _read_cache(self, cache_key: str) -> dict[str, Any] | None:
         if not self.config.cache_dir:
@@ -494,5 +618,5 @@ class PolicyLLMExtractor:
             tmp_file = self.config.cache_dir / f".{cache_key}.tmp"
             tmp_file.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
             tmp_file.replace(cache_file)
-        except OSError:
+        except (OSError, TypeError):
             pass

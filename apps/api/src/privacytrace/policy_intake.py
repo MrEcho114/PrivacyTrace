@@ -18,6 +18,18 @@ MAX_BYTES = 800000
 MAX_JSON_BYTES = 32 * 1024 * 1024
 
 
+def parse_bool_env(env_var_name: str, default: bool = False) -> bool:
+    val = os.environ.get(env_var_name)
+    if val is None:
+        return default
+    val_clean = val.strip().lower()
+    if val_clean in {"1", "true", "yes", "on", "t"}:
+        return True
+    if val_clean in {"0", "false", "no", "off", "f", ""}:
+        return False
+    raise ValueError(f"Invalid boolean value for environment variable {env_var_name}: {val!r}")
+
+
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 
@@ -72,23 +84,32 @@ def capture(
         spans = split_spans(text)
         llm_res = llm_extractor.extract_from_spans(text, spans)
         candidates = list(candidates or [])
-        existing_keys = {
-            (c.get("excerpt"), c.get("start_offset"), c.get("end_offset"), c.get("data_type"))
-            for c in candidates
-        }
+        existing_keys = set()
+        for c in candidates:
+            if not isinstance(c, dict):
+                continue
+            existing_keys.add(
+                (c.get("excerpt"), c.get("start_offset"), c.get("end_offset"), c.get("data_type"))
+            )
+            if c.get("start_offset") is None and c.get("end_offset") is None:
+                existing_keys.add((c.get("excerpt"), c.get("data_type")))
+
         for cand in llm_res.candidates:
-            key = (
+            key_with_offsets = (
                 cand.get("excerpt"),
                 cand.get("start_offset"),
                 cand.get("end_offset"),
                 cand.get("data_type"),
             )
-            if key not in existing_keys:
-                existing_keys.add(key)
-                candidates.append(cand)
-        if actor == "Codex-assisted candidate" and llm_res.candidates:
-            actor = f"LLM-assisted candidate ({llm_extractor.config.model})"
-            reason = "LLM-assisted candidate extraction with verbatim verification"
+            key_by_excerpt = (cand.get("excerpt"), cand.get("data_type"))
+            if key_with_offsets not in existing_keys and key_by_excerpt not in existing_keys:
+                existing_keys.add(key_with_offsets)
+                cand_copy = dict(cand)
+                cand_copy["actor"] = f"LLM-assisted candidate ({llm_extractor.config.model})"
+                cand_copy["reason"] = (
+                    "LLM-assisted candidate extraction with verbatim verification"
+                )
+                candidates.append(cand_copy)
     now = datetime.now(timezone.utc).isoformat()
     document = PolicyDocument.model_validate(
         {
@@ -137,6 +158,9 @@ def capture(
             "action",
             "declared_purpose",
             "declared_recipient",
+            "actor",
+            "reason",
+            "ambiguity_flags",
         }
         if set(candidate) - allowed:
             raise ValueError("Unsupported candidate fields")
@@ -166,7 +190,9 @@ def capture(
             }
         )
         value = {
-            k: v for k, v in candidate.items() if k not in {"excerpt", "start_offset", "end_offset"}
+            k: v
+            for k, v in candidate.items()
+            if k not in {"excerpt", "start_offset", "end_offset", "actor", "reason"}
         }
         # Unknown is intentional: intake does not assert host/affirmative interpretation.
         value.setdefault("action", "UNKNOWN")
@@ -179,13 +205,19 @@ def capture(
             }
         ).model_dump(mode="json")
         claims.append(claim)
+        cand_actor = candidate.get("actor")
+        if not isinstance(cand_actor, str) or not cand_actor.strip():
+            cand_actor = actor
+        cand_reason = candidate.get("reason")
+        if not isinstance(cand_reason, str) or not cand_reason.strip():
+            cand_reason = reason
         audits.append(
             {
                 "claim_id": claim["id"],
                 "old": None,
                 "new": claim,
-                "actor": actor,
-                "reason": reason,
+                "actor": cand_actor,
+                "reason": cand_reason,
                 "timestamp": now,
                 "artifact_sha256": digest(raw),
                 "evidence_ids": [ref],
@@ -382,13 +414,32 @@ def main():
     parser.add_argument("--region", action="append", default=[])
     parser.add_argument(
         "--enable-llm",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
+        default=None,
         help="Enable optional LLM-assisted policy claim extraction plugin",
     )
-    parser.add_argument("--llm-model", default="gpt-4o-mini", help="LLM model name")
-    parser.add_argument("--llm-cache-dir", type=Path, help="Cache directory for LLM extraction")
     parser.add_argument(
-        "--llm-api-base", default="https://api.openai.com/v1", help="API base URL for LLM"
+        "--llm-model",
+        default=os.environ.get("PRIVACYTRACE_LLM_MODEL", "gpt-4o-mini"),
+        help="LLM model name",
+    )
+    parser.add_argument(
+        "--llm-cache-dir",
+        type=Path,
+        default=Path(os.environ["PRIVACYTRACE_LLM_CACHE_DIR"])
+        if "PRIVACYTRACE_LLM_CACHE_DIR" in os.environ
+        else None,
+        help="Cache directory for LLM extraction",
+    )
+    parser.add_argument(
+        "--llm-api-base",
+        default=os.environ.get("PRIVACYTRACE_LLM_API_BASE", "https://api.openai.com/v1"),
+        help="API base URL for LLM",
+    )
+    parser.add_argument(
+        "--llm-api-key",
+        default=os.environ.get("PRIVACYTRACE_LLM_API_KEY", None),
+        help="API key for LLM",
     )
     args = parser.parse_args()
     try:
@@ -398,11 +449,18 @@ def main():
         llm_summary = None
         actor = "Codex-assisted candidate"
         reason = "Initial offline candidate capture"
-        if args.enable_llm:
+        if args.enable_llm is not None:
+            llm_enabled = args.enable_llm
+        else:
+            llm_enabled = parse_bool_env("PRIVACYTRACE_LLM_ENABLED", default=False)
+        if llm_enabled:
             from .policy_llm_extractor import LLMExtractorConfig, PolicyLLMExtractor
+
             config = LLMExtractorConfig(
                 enabled=True,
                 model=args.llm_model,
+                api_base=args.llm_api_base,
+                api_key=args.llm_api_key,
                 cache_dir=args.llm_cache_dir,
             )
             llm_extractor = PolicyLLMExtractor(config)
@@ -414,27 +472,51 @@ def main():
                 "status": llm_res.status,
                 "extracted_claims": len(llm_res.candidates),
                 "rejected_claims": len(llm_res.rejected_candidates),
+                "failed_spans": len(llm_res.telemetry.failed_spans),
                 "duration_ms": llm_res.telemetry.duration_ms,
                 "cached": llm_res.telemetry.cached,
                 "total_tokens": llm_res.telemetry.total_tokens,
             }
-            existing_keys = {
-                (c.get("excerpt"), c.get("start_offset"), c.get("end_offset"), c.get("data_type"))
-                for c in candidates
-            }
+            if llm_res.telemetry.failed_spans:
+                llm_summary["failed_span_details"] = [
+                    {
+                        "start": s["start"],
+                        "end": s["end"],
+                        "errors": s["errors"],
+                    }
+                    for s in llm_res.telemetry.failed_spans
+                ]
+            existing_keys = set()
+            for c in candidates:
+                if not isinstance(c, dict):
+                    continue
+                existing_keys.add(
+                    (
+                        c.get("excerpt"),
+                        c.get("start_offset"),
+                        c.get("end_offset"),
+                        c.get("data_type"),
+                    )
+                )
+                if c.get("start_offset") is None and c.get("end_offset") is None:
+                    existing_keys.add((c.get("excerpt"), c.get("data_type")))
+
             for cand in llm_res.candidates:
-                key = (
+                key_with_offsets = (
                     cand.get("excerpt"),
                     cand.get("start_offset"),
                     cand.get("end_offset"),
                     cand.get("data_type"),
                 )
-                if key not in existing_keys:
-                    existing_keys.add(key)
-                    candidates.append(cand)
-            if llm_res.candidates:
-                actor = f"LLM-assisted candidate ({args.llm_model})"
-                reason = "LLM-assisted candidate extraction with verbatim verification"
+                key_by_excerpt = (cand.get("excerpt"), cand.get("data_type"))
+                if key_with_offsets not in existing_keys and key_by_excerpt not in existing_keys:
+                    existing_keys.add(key_with_offsets)
+                    cand_copy = dict(cand)
+                    cand_copy["actor"] = f"LLM-assisted candidate ({args.llm_model})"
+                    cand_copy["reason"] = (
+                        "LLM-assisted candidate extraction with verbatim verification"
+                    )
+                    candidates.append(cand_copy)
         result = capture(
             args.raw,
             args.source_url,
@@ -458,7 +540,7 @@ def main():
             out_summary["llm_extraction"] = llm_summary
         print(json.dumps(out_summary))
         return 0
-    except (ValueError, OSError, KeyError, TypeError):
+    except (ValueError, OSError, KeyError, TypeError, AttributeError):
         print(
             json.dumps(
                 {

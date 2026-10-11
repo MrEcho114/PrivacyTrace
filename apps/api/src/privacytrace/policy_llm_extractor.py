@@ -9,6 +9,8 @@ import ipaddress
 import json
 import os
 import re
+import stat
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -89,6 +91,14 @@ class LLMClientProtocol(Protocol):
         ...
 
 
+class LLMResponseTooLarge(ValueError):
+    """Untrusted model response exceeds the byte limit."""
+
+
+class LLMCandidateLimit(ValueError):
+    """Untrusted model response has too many candidates."""
+
+
 class UrllibLLMClient:
     """Standard-library HTTP client for OpenAI-compatible chat completion APIs."""
 
@@ -99,7 +109,11 @@ class UrllibLLMClient:
         model: str = "gpt-4o-mini",
         timeout: float = 30.0,
         temperature: float = 0.0,
+        max_output_tokens: int = 2048,
+        max_response_bytes: int = 2 * 1024 * 1024,
     ):
+        self.max_output_tokens = max_output_tokens
+        self.max_response_bytes = max_response_bytes
         self.api_key = api_key or os.environ.get("PRIVACYTRACE_LLM_API_KEY", "")
         raw_base = api_base or os.environ.get("PRIVACYTRACE_LLM_API_BASE", "https://api.openai.com/v1")
         self.api_base = validate_and_normalize_api_base(raw_base)
@@ -115,6 +129,7 @@ class UrllibLLMClient:
         payload = {
             "model": self.model,
             "temperature": self.temperature,
+            "max_tokens": self.max_output_tokens,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -140,7 +155,10 @@ class UrllibLLMClient:
                 )
 
         with urllib.request.build_opener(NoRedirect()).open(req, timeout=self.timeout) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
+            raw = resp.read(self.max_response_bytes + 1)
+            if len(raw) > self.max_response_bytes:
+                raise LLMResponseTooLarge("RESPONSE_TOO_LARGE")
+            data = json.loads(raw.decode("utf-8"))
 
         choices = data.get("choices")
         if not choices or not isinstance(choices, list):
@@ -198,6 +216,10 @@ class LLMExtractorConfig:
     max_spans: int = 64
     max_requests: int = 96
     max_elapsed_seconds: float = 120.0
+    max_output_tokens: int = 2048
+    max_response_bytes: int = 2 * 1024 * 1024
+    max_candidates_per_response: int = 100
+    max_document_candidates: int = 1999
     client: LLMClientProtocol | None = None
 
     def __post_init__(self):
@@ -206,6 +228,12 @@ class LLMExtractorConfig:
             type(self.max_spans) is not int or self.max_spans < 1
             or type(self.max_requests) is not int or self.max_requests < 1
             or type(self.max_retries) is not int or self.max_retries < 1
+            or type(self.max_output_tokens) is not int or self.max_output_tokens < 1
+            or type(self.max_response_bytes) is not int or self.max_response_bytes < 1
+            or type(self.max_candidates_per_response) is not int
+            or self.max_candidates_per_response < 1
+            or type(self.max_document_candidates) is not int
+            or self.max_document_candidates < 0
             or self.max_elapsed_seconds <= 0 or self.timeout_seconds <= 0
         ):
             raise ValueError("LLM extraction limits must be positive")
@@ -226,6 +254,9 @@ class ExtractionTelemetry:
     rejected_count: int = 0
     failed_spans: list[dict[str, Any]] = field(default_factory=list)
     skipped_spans: list[dict[str, Any]] = field(default_factory=list)
+    cached_spans: int = 0
+    processed_spans: int = 0
+    limited_candidates: int = 0
 
 
 @dataclass
@@ -389,6 +420,8 @@ class PolicyLLMExtractor:
             model=self.config.model,
             timeout=self.config.timeout_seconds,
             temperature=self.config.temperature,
+            max_output_tokens=self.config.max_output_tokens,
+            max_response_bytes=self.config.max_response_bytes,
         )
         user_prompt = build_user_prompt(chunk_text)
 
@@ -407,6 +440,10 @@ class PolicyLLMExtractor:
                 client.timeout = min(self.config.timeout_seconds, budget.remaining_seconds())
             try:
                 raw_text, call_tokens = client.call(SYSTEM_PROMPT, user_prompt)
+                if not isinstance(raw_text, str) or (
+                    len(raw_text.encode("utf-8")) > self.config.max_response_bytes
+                ):
+                    raise LLMResponseTooLarge("RESPONSE_TOO_LARGE")
                 telemetry.prompt_tokens += call_tokens.get("prompt_tokens", 0)
                 telemetry.completion_tokens += call_tokens.get("completion_tokens", 0)
                 telemetry.total_tokens += call_tokens.get("total_tokens", 0)
@@ -416,6 +453,8 @@ class PolicyLLMExtractor:
                 parsed = json.loads(cleaned)
                 if not isinstance(parsed, list):
                     raise ValueError(f"Expected JSON list, got {type(parsed).__name__}")
+                if len(parsed) > self.config.max_candidates_per_response:
+                    raise LLMCandidateLimit("CANDIDATE_RESPONSE_LIMIT")
                 raw_items = parsed
                 break
             except Exception as exc:
@@ -425,6 +464,8 @@ class PolicyLLMExtractor:
                 if secret:
                     last_error = last_error.replace(secret, "[REDACTED]")
                 telemetry.errors.append(f"Attempt {attempt}: {last_error}")
+                if isinstance(exc, (LLMResponseTooLarge, LLMCandidateLimit)):
+                    break
 
         telemetry.duration_ms = int((time.monotonic() - start_time) * 1000)
 
@@ -457,6 +498,7 @@ class PolicyLLMExtractor:
         self,
         text: str,
         spans: list[dict[str, Any]],
+        max_candidate_budget: int | None = None,
     ) -> LLMExtractionResult:
         """Extract candidates across all spans of a policy document."""
         overall_telemetry = ExtractionTelemetry(
@@ -479,6 +521,9 @@ class PolicyLLMExtractor:
         start_time = time.monotonic()
         all_cached = True
         processed_spans = 0
+        candidate_cap = self.config.max_document_candidates
+        if max_candidate_budget is not None:
+            candidate_cap = min(candidate_cap, max_candidate_budget)
         budget = _CallBudget(
             started=start_time,
             max_requests=self.config.max_requests,
@@ -491,7 +536,9 @@ class PolicyLLMExtractor:
             if not span_text.strip():
                 continue
             reason = (
-                "SPAN_BUDGET_EXHAUSTED" if processed_spans >= self.config.max_spans
+                "CANDIDATE_CAP_REACHED" if len(all_candidates) >= candidate_cap
+                else "SPAN_BUDGET_EXHAUSTED"
+                if processed_spans >= self.config.max_spans
                 else budget.exhaustion_reason()
             )
             # Network budgets do not prevent replaying a valid cached response.
@@ -528,12 +575,19 @@ class PolicyLLMExtractor:
                     telemetry=ExtractionTelemetry(errors=[err_msg]),
                 )
 
-            all_candidates.extend(res.candidates)
+            room = max(0, candidate_cap - len(all_candidates))
+            if len(res.candidates) > room:
+                overall_telemetry.limited_candidates += len(res.candidates) - room
+                all_candidates.extend(res.candidates[:room])
+            else:
+                all_candidates.extend(res.candidates)
             all_rejected.extend(res.rejected_candidates)
             overall_telemetry.prompt_tokens += res.telemetry.prompt_tokens
             overall_telemetry.completion_tokens += res.telemetry.completion_tokens
             overall_telemetry.total_tokens += res.telemetry.total_tokens
             overall_telemetry.attempts += res.telemetry.attempts
+            if res.telemetry.cached:
+                overall_telemetry.cached_spans += 1
             overall_telemetry.errors.extend(res.telemetry.errors)
             if not res.telemetry.cached:
                 all_cached = False
@@ -551,10 +605,11 @@ class PolicyLLMExtractor:
                 )
 
         overall_telemetry.duration_ms = int((time.monotonic() - start_time) * 1000)
+        overall_telemetry.processed_spans = processed_spans
         overall_telemetry.cached = all_cached if processed_spans > 0 else False
         overall_telemetry.rejected_count = len(all_rejected)
 
-        if overall_telemetry.skipped_spans:
+        if overall_telemetry.skipped_spans or overall_telemetry.limited_candidates:
             status = "PARTIAL"
         elif processed_spans == 0:
             status = "SUCCESS"

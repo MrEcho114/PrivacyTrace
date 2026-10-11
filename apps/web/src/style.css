@@ -25,6 +25,10 @@ p { line-height: 1.7; }
 .sample-card p { margin-bottom: 0; }
 .app-icon { flex-shrink: 0; width: 60px; height: 60px; display: grid; place-items: center; color: #fff; background: #3e6e52; border-radius: 14px; font-size: 21px; font-weight: 700; }
 .badge { margin-left: auto; color: #517762; border: 1px solid #cadfd1; background: #f1f8f3; border-radius: 6px; padding: 7px 11px; font-size: 12px; }
+.badge-stack { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.badge-stack .badge { margin-left: 0; }
+.badge-stack .badge.live_generated { color: #2f6b48; border-color: #a9d3b8; background: #e8f5ec; }
+.badge-stack .badge.persisted_replay { color: #6a5a2f; border-color: #ddd0a4; background: #faf5e4; }
 .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 20px 0 30px; }
 .metrics>div { background: white; border: 1px solid #dde5dd; border-radius: 10px; padding: 20px 24px; display: flex; align-items: center; gap: 18px; }
 .metrics strong { font-size: 32px; color: #234a35; }

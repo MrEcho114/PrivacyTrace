@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from privacytrace.models import EvaluationInput
@@ -21,6 +22,7 @@ def controlled_bundle():
         b for b in data["behaviors"] if not removed.intersection(b["evidence_ids"])
     ]
     data["job"]["input_mode"] = "APK"
+    data["job"]["source_origin"] = "CONTROLLED"
     return EvaluationInput.model_validate(data)
 
 
@@ -161,6 +163,96 @@ def test_corrupt_and_oversized_storage_rejects_without_exposing_payload(tmp_path
     assert "secret" not in response.text
     path.write_bytes(b"x" * (33 * 1024 * 1024))
     assert client.get(f"/api/v1/jobs/{report.job.id}").status_code == 409
+
+
+def test_legacy_record_without_source_origin_still_loads_as_unknown(tmp_path):
+    """A record written before source_origin existed must not brick the store.
+
+    Upgrading must not take historical scans, their reviews, or the whole job
+    list offline. The origin is absent from the stored bytes, so it is recorded
+    as UNKNOWN rather than guessed -- asserting REAL_SCAN would claim a real
+    scan that was never recorded. The migration is read-time only, so the
+    original bytes survive on disk for audit.
+    """
+    import json
+
+    from privacytrace.main import create_app
+
+    app = create_app(store_root=tmp_path)
+    report = seed(app.state.job_store)
+    path = tmp_path / f"{report.job.id}.json"
+
+    # Serialise the record exactly as the previous version did: the job is
+    # embedded twice and neither copy carried source_origin.
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["job"].pop("source_origin")
+    payload["bundle"]["job"].pop("source_origin")
+    legacy_bytes = json.dumps(payload, indent=2).encode("utf-8")
+    path.write_bytes(legacy_bytes)
+
+    client = TestClient(app)
+
+    listed = client.get("/api/v1/jobs")
+    assert listed.status_code == 200
+    assert [job["id"] for job in listed.json()["jobs"]] == [report.job.id]
+
+    loaded = client.get(f"/api/v1/jobs/{report.job.id}")
+    assert loaded.status_code == 200
+    assert loaded.json()["source_origin"] == "UNKNOWN"
+
+    # Read-time migration: the stored bytes are never rewritten by a read.
+    assert path.read_bytes() == legacy_bytes
+
+
+@pytest.mark.parametrize(
+    "malformed_bundle",
+    ["corrupted", [1, 2], 5, {"not": "an evaluation input"}],
+    ids=["string", "array", "number", "object-with-wrong-shape"],
+)
+def test_structurally_wrong_record_does_not_break_the_job_list(tmp_path, malformed_bundle):
+    """Valid JSON with the wrong shape must be rejected without breaking the list.
+
+    A record whose ``bundle`` is a string, array or number is valid JSON but not
+    a valid record. Reading the nested job from it must not raise
+    ``AttributeError`` -- that exception is outside the per-record handling in
+    ``JobStore.list()``, so a single such file would turn the whole
+    ``/api/v1/jobs`` response into a 500.
+    """
+    import json
+
+    from privacytrace.main import create_app
+
+    app = create_app(store_root=tmp_path)
+    report = seed(app.state.job_store)
+    (tmp_path / "malformed.json").write_text(
+        json.dumps({"job": {"id": "malformed"}, "bundle": malformed_bundle}), encoding="utf-8"
+    )
+
+    client = TestClient(app)
+
+    listed = client.get("/api/v1/jobs")
+    assert listed.status_code == 200
+    assert [job["id"] for job in listed.json()["jobs"]] == [report.job.id]
+
+    # The bad record is rejected on direct access rather than served.
+    assert client.get("/api/v1/jobs/malformed").status_code == 409
+
+
+def test_one_unreadable_record_does_not_break_the_job_list(tmp_path):
+    """A single damaged file must not take down every client of /api/v1/jobs."""
+    from privacytrace.main import create_app
+
+    app = create_app(store_root=tmp_path)
+    report = seed(app.state.job_store)
+    (tmp_path / "broken.json").write_text("{not json", encoding="utf-8")
+
+    client = TestClient(app)
+    listed = client.get("/api/v1/jobs")
+    assert listed.status_code == 200
+    assert [job["id"] for job in listed.json()["jobs"]] == [report.job.id]
+
+    # Fetching the damaged record directly still reports the failure.
+    assert client.get("/api/v1/jobs/broken").status_code == 409
 
 
 def test_storage_record_limit_and_cancelled_scan_cannot_publish(tmp_path):
@@ -497,6 +589,7 @@ def test_concurrent_job_creation_is_atomic(tmp_path):
             id=job_id,
             sample_id=f"sample-{idx}",
             input_mode="APK",
+            source_origin="REAL_SCAN",
             state="QUEUED",
             ruleset_version="0.3",
             created_at=datetime.now(timezone.utc),
@@ -667,7 +760,64 @@ def test_historical_report_uses_its_rules_after_active_taxonomy_advances(tmp_pat
     assert client.get(url).status_code == 200
     response = client.get(url + "/report")
     assert response.status_code == 200
-    assert response.json() == original
+    reloaded = response.json()
+    # save() returns a LIVE_GENERATED report; reloading it over HTTP is a
+    # PERSISTED_REPLAY of the same data. The origin and every evaluated field
+    # must be identical -- only the delivery path differs.
+    assert original["delivery_mode"] == "LIVE_GENERATED"
+    assert reloaded["delivery_mode"] == "PERSISTED_REPLAY"
+    assert reloaded["job"] == original["job"]
+    assert reloaded["result"] == original["result"]
+    assert reloaded["job"]["source_origin"] == original["job"]["source_origin"]
+    assert {
+        k: v for k, v in reloaded.items() if k != "delivery_mode"
+    } == {
+        k: v for k, v in original.items() if k != "delivery_mode"
+    }
+
+
+def test_reloaded_real_scan_keeps_origin_but_becomes_persisted_replay(tmp_path):
+    """A stored job keeps its origin across reloads; only its delivery mode changes.
+
+    This is the distinction the review asked for: `source_origin` is immutable
+    data provenance, while `delivery_mode` reports how the report was loaded
+    this time. Without it, a report reloaded after a restart would still claim
+    to be a freshly produced on-device scan.
+    """
+    from privacytrace.main import create_app
+
+    app = create_app(store_root=tmp_path)
+    fresh = seed(app.state.job_store)
+    original_origin = fresh.job.source_origin
+    assert fresh.delivery_mode == "LIVE_GENERATED"
+
+    # A brand-new client over the same store models a process restart.
+    client = TestClient(create_app(store_root=tmp_path))
+    reloaded = client.get(f"/api/v1/jobs/{fresh.job.id}/report").json()
+    assert reloaded["job"]["source_origin"] == original_origin, "Origin must not change on reload"
+    assert reloaded["delivery_mode"] == "PERSISTED_REPLAY", (
+        "A reloaded report is not a live generation"
+    )
+
+    # Reviewing a stored report is also a replay, not a fresh generation.
+    reviewed = client.post(
+        f"/api/v1/jobs/{fresh.job.id}/reviews",
+        headers={"X-PrivacyTrace-Local": "1"},
+        json={"actor": "local", "reason": "spot check"},
+    )
+    assert reviewed.status_code == 200
+    assert reviewed.json()["delivery_mode"] == "PERSISTED_REPLAY"
+    assert reviewed.json()["job"]["source_origin"] == original_origin
+
+
+def test_demo_report_is_a_live_generation():
+    """The demo envelope is assembled per response, never replayed from storage."""
+    from privacytrace.main import create_app
+
+    client = TestClient(create_app())
+    body = client.get("/api/v1/demo/report").json()
+    assert body["delivery_mode"] == "LIVE_GENERATED"
+    assert body["job"]["source_origin"] == "SYNTHETIC"
 
 
 def test_historical_report_rejects_unknown_ruleset_without_fallback(tmp_path):

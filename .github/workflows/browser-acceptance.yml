@@ -1,0 +1,105 @@
+name: Browser Acceptance
+
+# PT-808 的 R1–R5 浏览器验收（TC-01…TC-05）此前只能靠开发者手动跑，
+# 这也是脚本与页面/契约长期脱节却无人察觉的原因。本工作流把它变成 CI 门禁。
+#
+# 刻意与 check.yml 的治理门禁分开：它需要真实 Chromium 与两个本地服务，
+# 比主门禁慢得多，也不应该拖慢每个 PR 的治理检查。
+on:
+  pull_request:
+    branches: ["main"]
+    types: [opened, edited, reopened, synchronize]
+  push:
+    branches: ["main"]
+  schedule:
+    # 每天 19:10 UTC（约 03:10 CST）跑一次对抗套件。
+    - cron: "10 19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-acceptance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 核心浏览器验收：TC-01…TC-05，跑在隔离 store 上，仓库 data/ 全程只读。
+  browser-acceptance:
+    name: acceptance
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          # 收据要把自己锚定到真实提交；浅克隆无法解析 ref。
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24.17.0"
+
+      # 与 scripts/check.sh 相同的 uv 引导方式与版本，避免再引入一个第三方 action。
+      - name: Set up uv
+        run: |
+          set -euo pipefail
+          python3 -m venv .themasterplan/cache/browser-acceptance-tools
+          .themasterplan/cache/browser-acceptance-tools/bin/python -m pip install \
+            --disable-pip-version-check uv==0.11.23
+          echo "$PWD/.themasterplan/cache/browser-acceptance-tools/bin" >> "$GITHUB_PATH"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # fixtures/acceptance-jobs/ 已入库，这里不重新生成，避免 CI 改动工作区。
+      - name: Run browser acceptance
+        run: npm run acceptance:browser
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: browser-acceptance-evidence
+          path: |
+            evidence/browser-proof.json
+            evidence/screenshots/
+          if-no-files-found: warn
+
+  # 对抗压力套件：比核心验收更重，按日定时跑并支持手动触发，不进每个 PR 的门禁，
+  # 以免拖慢 PR 且让不稳定结果干扰合并判断。
+  challenger:
+    name: challenger
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24.17.0"
+
+      - name: Set up uv
+        run: |
+          set -euo pipefail
+          python3 -m venv .themasterplan/cache/challenger-tools
+          .themasterplan/cache/challenger-tools/bin/python -m pip install \
+            --disable-pip-version-check uv==0.11.23
+          echo "$PWD/.themasterplan/cache/challenger-tools/bin" >> "$GITHUB_PATH"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run challenger adversarial suite
+        run: node scripts/challenger-adversarial-suite.cjs

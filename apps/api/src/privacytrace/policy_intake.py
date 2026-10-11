@@ -186,6 +186,145 @@ def merge_llm_candidates(text, manual_candidates, llm_candidates, model,
     return candidates, sources, conflicts, dropped
 
 
+
+# Audit schema v1 belongs to the optional v2 capture bundle.
+_LLM_AUDIT_FIELDS = {
+    "schema_version", "status", "model", "prompt_version", "ruleset_version",
+    "prompt_sha256", "endpoint_identifier", "document_sha256", "duration_ms",
+    "attempts", "prompt_tokens", "completion_tokens", "total_tokens",
+    "cached_spans", "processed_spans", "failed_spans", "skipped_spans",
+    "rejected_count", "extracted_candidates", "limited_candidates",
+    "candidate_conflicts", "requires_human_review",
+}
+_LLM_FAILURE_CODES = {
+    "TIME_BUDGET_EXHAUSTED", "REQUEST_BUDGET_EXHAUSTED",
+    "SPAN_BUDGET_EXHAUSTED", "CANDIDATE_CAP_REACHED",
+    "RESPONSE_TOO_LARGE", "CANDIDATE_RESPONSE_LIMIT",
+    "LLM_TIMEOUT", "INVALID_LLM_RESPONSE", "LLM_REQUEST_FAILED",
+}
+
+
+def _error_code(errors):
+    # Never persist arbitrary server-supplied error strings in an audit.
+    message = " ".join(str(e) for e in errors)
+    for code in _LLM_FAILURE_CODES:
+        if code in message:
+            return code
+    if "timeout" in message.lower() or "timed out" in message.lower():
+        return "LLM_TIMEOUT"
+    if "JSON" in message or "Expecting value" in message:
+        return "INVALID_LLM_RESPONSE"
+    return "LLM_REQUEST_FAILED"
+
+
+def build_llm_execution(result, config, raw, conflicts):
+    from .policy_llm_extractor import SYSTEM_PROMPT
+
+    telemetry = result.telemetry
+    return {
+        "schema_version": 1,
+        "status": result.status,
+        "model": config.model,
+        "prompt_version": config.prompt_version,
+        "ruleset_version": config.ruleset_version,
+        "prompt_sha256": hashlib.sha256(SYSTEM_PROMPT.encode("utf-8")).hexdigest(),
+        "endpoint_identifier": hashlib.sha256(config.api_base.encode("utf-8")).hexdigest(),
+        "document_sha256": digest(raw),
+        "duration_ms": telemetry.duration_ms,
+        "attempts": telemetry.attempts,
+        "prompt_tokens": telemetry.prompt_tokens,
+        "completion_tokens": telemetry.completion_tokens,
+        "total_tokens": telemetry.total_tokens,
+        "cached_spans": telemetry.cached_spans,
+        "processed_spans": telemetry.processed_spans,
+        "failed_spans": [
+            {"start": span["start"], "end": span["end"],
+             "code": _error_code(span.get("errors", []))}
+            for span in telemetry.failed_spans
+        ],
+        "skipped_spans": [
+            {"start": span["start"], "end": span["end"],
+             "code": span["reason"] if span.get("reason") in _LLM_FAILURE_CODES
+             else "LLM_REQUEST_FAILED"}
+            for span in telemetry.skipped_spans
+        ],
+        "rejected_count": telemetry.rejected_count,
+        "extracted_candidates": len(result.candidates),
+        "limited_candidates": telemetry.limited_candidates,
+        "candidate_conflicts": conflicts,
+        "requires_human_review": True,
+    }
+
+
+def _validate_llm_execution(entry, document, claims):
+    if not isinstance(entry, dict) or set(entry) != _LLM_AUDIT_FIELDS:
+        raise ValueError("Invalid LLM execution audit fields")
+    if entry["schema_version"] != 1 or entry["status"] not in {
+        "SUCCESS", "PARTIAL", "FAILED", "DISABLED"
+    }:
+        raise ValueError("Invalid LLM execution audit version or status")
+    for name in ("model", "prompt_version", "ruleset_version"):
+        if not isinstance(entry[name], str) or not 0 < len(entry[name]) <= 256:
+            raise ValueError("Invalid LLM execution version identifier")
+    for name in ("prompt_sha256", "endpoint_identifier", "document_sha256"):
+        value = entry[name]
+        if not isinstance(value, str) or len(value) != 64 or any(
+            digit not in "0123456789abcdef" for digit in value
+        ):
+            raise ValueError("Invalid LLM audit digest")
+    if entry["document_sha256"] != document["artifact"]["sha256"]:
+        raise ValueError("LLM audit document digest mismatch")
+    for name in (
+        "duration_ms", "attempts", "prompt_tokens", "completion_tokens",
+        "total_tokens", "cached_spans", "processed_spans",
+        "rejected_count", "extracted_candidates", "limited_candidates",
+    ):
+        if type(entry[name]) is not int or entry[name] < 0:
+            raise ValueError("Invalid LLM audit numeric field")
+    if entry["total_tokens"] < max(entry["prompt_tokens"], entry["completion_tokens"]):
+        raise ValueError("Invalid LLM token counts")
+    if entry["cached_spans"] > entry["processed_spans"]:
+        raise ValueError("Invalid LLM cached span count")
+    if entry["requires_human_review"] is not True:
+        raise ValueError("LLM claims must remain unreviewed")
+    length = len(document["artifact"]["text"])
+    for field in ("failed_spans", "skipped_spans"):
+        spans = entry[field]
+        if not isinstance(spans, list) or len(spans) > length:
+            raise ValueError("Invalid LLM span list")
+        for span in spans:
+            if not isinstance(span, dict) or set(span) != {"start", "end", "code"}:
+                raise ValueError("Invalid LLM failure record")
+            if (
+                type(span["start"]) is not int or type(span["end"]) is not int
+                or not 0 <= span["start"] < span["end"] <= length
+                or span["code"] not in _LLM_FAILURE_CODES
+            ):
+                raise ValueError("Invalid LLM span or failure code")
+    if not isinstance(entry["candidate_conflicts"], list):
+        raise ValueError("Invalid LLM candidate conflicts")
+    for conflict in entry["candidate_conflicts"]:
+        if not isinstance(conflict, dict) or set(conflict) != {
+            "candidate_index", "other_candidate_index", "fields",
+            "existing_polarity", "llm_polarity", "requires_human_review",
+        }:
+            raise ValueError("Invalid candidate conflict fields")
+        if (
+            type(conflict["candidate_index"]) is not int
+            or type(conflict["other_candidate_index"]) is not int
+            or not 1 <= conflict["candidate_index"] <= len(claims)
+            or not 1 <= conflict["other_candidate_index"] <= len(claims)
+            or conflict["candidate_index"] == conflict["other_candidate_index"]
+            or conflict["requires_human_review"] is not True
+            or not isinstance(conflict["fields"], list)
+            or not conflict["fields"]
+            or any(field not in _SEMANTIC_FIELDS for field in conflict["fields"])
+            or conflict["existing_polarity"] not in {"AFFIRMATIVE", "NEGATIVE", "UNKNOWN"}
+            or conflict["llm_polarity"] not in {"AFFIRMATIVE", "NEGATIVE", "UNKNOWN"}
+        ):
+            raise ValueError("Invalid candidate conflict content")
+
+
 def capture(
     raw_path,
     source_url,
@@ -335,12 +474,28 @@ def capture(
         },
     }
     validate_bundle(record)
+    execution_bytes = None
+    if llm_result is not None:
+        execution = build_llm_execution(
+            llm_result, llm_config, raw, conflicts
+        )
+        _validate_llm_execution(execution, document, claims)
+        execution_bytes = json.dumps(
+            execution, ensure_ascii=False, indent=2
+        ).encode("utf-8")
+        record["schema_version"] = 2
+        record["files"]["llm_execution"] = {
+            "path": "policy.llm-execution.json",
+            "sha256": digest(execution_bytes),
+        }
     outputs = [
         ("policy.raw.txt", raw),
         ("policy.processed.txt", raw),
         ("policy.audits.json", audit_bytes),
         ("policy.capture.json", json.dumps(record, ensure_ascii=False, indent=2).encode("utf-8")),
     ]
+    if execution_bytes is not None:
+        outputs.append(("policy.llm-execution.json", execution_bytes))
     # Preflight the complete serialization before any output directory is created.
     for name, content in outputs:
         maximum = MAX_BYTES if name.endswith(".txt") else MAX_JSON_BYTES
@@ -429,14 +584,18 @@ def _load_policy(path):
             "human_review_gate",
             "files",
         }
-        or record["schema_version"] != 1
+        or type(record["schema_version"]) is not int
+        or record["schema_version"] not in {1, 2}
     ):
         raise ValueError("Unsupported policy capture schema")
     if record["human_review_gate"] not in {"PENDING_HUMAN_AB", TEAM_REVIEW_GATE}:
         raise ValueError("Offline capture cannot assert human review")
     blobs = {}
-    if set(record["files"]) != {"raw", "processed", "audits"}:
-        raise ValueError("Capture must retain raw, processed, and audit files")
+    allowed_files = {"raw", "processed", "audits"}
+    if record["schema_version"] == 2:
+        allowed_files.add("llm_execution")
+    if set(record["files"]) != allowed_files:
+        raise ValueError("Capture has invalid file manifest for schema version")
     for name, info in record["files"].items():
         relative = Path(info["path"])
         if relative.is_absolute() or ".." in relative.parts:
@@ -470,6 +629,10 @@ def _load_policy(path):
     if any(item["source"] != snapshot["source"] for item in record["evidence"]):
         raise ValueError("Initial capture evidence must use one source URL")
     validate_bundle(record)
+    if record["schema_version"] == 2:
+        _validate_llm_execution(
+            json.loads(blobs["llm_execution"]), doc, record["claims"]
+        )
     audits = json.loads(blobs["audits"])
     if len(audits) != len(record["claims"]):
         raise ValueError("Every initial claim requires an audit")

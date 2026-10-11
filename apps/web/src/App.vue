@@ -45,12 +45,10 @@ const label = (id: string) => taxonomy.value?.data_types.find(item => item.id ==
 const selectedEvidence = computed(() => report.value?.evidence.filter(item => selected.value?.evidence_ids.includes(item.id)) ?? [])
 const dataTypeCount = computed(() => new Set(report.value?.result.issues.map(i => i.data_type)).size)
 const realReport = computed(() => report.value && !report.value.demo ? report.value : null)
-<<<<<<< HEAD
 const controlledReport = computed(() => realReport.value?.job.input_mode === 'CONTROLLED_APK')
 const replayPage = typeof document !== 'undefined'
   && document.querySelector('meta[name="privacytrace-presentation"]')?.getAttribute('content') === 'offline'
 const offlineReplay = computed(() => replayPage || realReport.value?.tools.presentation_mode === 'OFFLINE_REPLAY')
-=======
 // SDK attribution is reference material with its own access path: no issue cites
 // it, so without this panel those evidence records would be counted but unopenable.
 const sdkEvidence = computed(() => getSdkEvidence(realReport.value?.evidence ?? []))
@@ -61,7 +59,6 @@ const pagedSdkEvidence = computed(() => sdkPageSlice(sdkEvidence.value, sdkPage.
 watch(report, () => {
   sdkPage.value = 0
 })
->>>>>>> origin/main
 // Candidate clauses are navigation aids, not evaluator-confirmed evidence or matches.
 // Candidate clauses pagination
 const CANDIDATE_PAGE_SIZE = 20

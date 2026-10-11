@@ -239,7 +239,7 @@ class LLMExtractionResult:
 def sanitize_untrusted_text(text: str) -> str:
     """Escape delimiter variants; this does not eliminate prompt-injection risk."""
     return re.sub(
-        r"</\\s*untrusted_policy_text\\s*>",
+        r"</\s*untrusted_policy_text\s*>",
         lambda m: "&lt;" + m.group(0)[1:-1] + "&gt;",
         text,
         flags=re.IGNORECASE,
@@ -490,6 +490,19 @@ class PolicyLLMExtractor:
                 "SPAN_BUDGET_EXHAUSTED" if processed_spans >= self.config.max_spans
                 else budget.exhaustion_reason()
             )
+            # Network budgets do not prevent replaying a valid cached response.
+            if reason == "REQUEST_BUDGET_EXHAUSTED":
+                key = compute_cache_key(
+                    model=self.config.model,
+                    prompt_version=self.config.prompt_version,
+                    ruleset_version=self.config.ruleset_version,
+                    text=span_text,
+                    api_base=self.config.api_base,
+                    system_prompt=SYSTEM_PROMPT,
+                    temperature=self.config.temperature,
+                )
+                if self._read_cache(key) is not None:
+                    reason = None
             if reason:
                 overall_telemetry.skipped_spans.append(
                     {"start": span["start"], "end": span["end"], "reason": reason}
@@ -686,7 +699,7 @@ class PolicyLLMExtractor:
             return 0
         count = 0
         for p in self.config.cache_dir.glob(f"{CACHE_FILE_PREFIX}*.json"):
-            if not re.fullmatch(rf"{CACHE_FILE_PREFIX}[0-9a-f]{{64}}\\.json", p.name):
+            if not re.fullmatch(rf"{CACHE_FILE_PREFIX}[0-9a-f]{{64}}\.json", p.name):
                 continue
             if p.is_symlink() or not p.is_file():
                 continue
@@ -704,7 +717,8 @@ class PolicyLLMExtractor:
         if not cache_file.exists() or cache_file.is_symlink():
             return None
         try:
-            return json.loads(cache_file.read_text(encoding="utf-8"))
+            value = json.loads(cache_file.read_text(encoding="utf-8"))
+            return value if isinstance(value, dict) and isinstance(value.get("raw_items"), list) else None
         except (OSError, json.JSONDecodeError):
             return None
 

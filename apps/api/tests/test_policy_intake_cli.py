@@ -1013,7 +1013,11 @@ def test_cli_rejects_forged_candidate_audit_identity(tmp_path):
 
 def test_preflight_invalid_destination_makes_no_llm_calls(tmp_path):
     from privacytrace.policy_intake import capture
-    from privacytrace.policy_llm_extractor import LLMExtractorConfig, MockLLMClient, PolicyLLMExtractor
+    from privacytrace.policy_llm_extractor import (
+        LLMExtractorConfig,
+        MockLLMClient,
+        PolicyLLMExtractor,
+    )
     raw = tmp_path / "policy.txt"
     raw.write_text("我们收集位置。", encoding="utf-8")
     output = tmp_path / "existing"
@@ -1026,7 +1030,11 @@ def test_preflight_invalid_destination_makes_no_llm_calls(tmp_path):
 
 
 def test_cli_budget_exhaustion_outputs_skipped_offsets(tmp_path):
-    from privacytrace.policy_llm_extractor import ACTIVE_RULESET_VERSION, PROMPT_VERSION, compute_cache_key
+    from privacytrace.policy_llm_extractor import (
+        ACTIVE_RULESET_VERSION,
+        PROMPT_VERSION,
+        compute_cache_key,
+    )
     text = "我们访问位置。第二句。第三句。"
     raw = tmp_path / "policy.txt"
     raw.write_text(text, encoding="utf-8")

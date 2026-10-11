@@ -427,7 +427,7 @@ uv run --project apps/api --locked --extra worker python -m privacytrace.pipelin
 ### 验收 3 · 01 扫描 0 命中
 
 - 01 表第三部分词表（41 组）全文扫描：**0 命中** ✓
-- 正对照 1（链路通）：「政策」39 次 ✓（以本记录填入后的最终全文为准）
+- 正对照 1（链路通）：「政策」41 次 ✓（以本记录填入后的最终全文为准）
 - 正对照 2（正则有效）：构造串 5 词全中 ✓
 - 结论：0 命中可信，非假阴性。
 
@@ -462,3 +462,4 @@ uv run --project apps/api --locked --extra worker python -m privacytrace.pipelin
 ### 修订记录
 
 - **2026-10-11 · 回应 PR #41 审查意见（OasisViridis）**：① 路径 A2 明确 `synthetic/…` 为虚拟路径（原表述会引导读者打开不存在的文件）；② §1「政策材料人工提供」表述修正（避免被读作已接入 AI）；③ 路径 B 补充首次准备命令（`npm ci` / `uv sync`）。对应审查项：P2、P2、P3。
+- **2026-10-11 · 回应第二轮复审（OasisViridis）**：自检统计按复审后复跑结果刷新——正对照计数更新为 41 次（原记 39 次，实测于本文件终稿）。

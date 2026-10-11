@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
@@ -429,8 +430,16 @@ def _load_policy(path):
     return record
 
 
+class _SafeArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        # argparse's default handler echoes rejected command-line values,
+        # which may contain secrets mistakenly passed as --llm-api-key.
+        self.print_usage(sys.stderr)
+        self.exit(2, "error: invalid command-line arguments\\n")
+
+
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = _SafeArgumentParser(description=__doc__)
     parser.add_argument("--raw", type=Path, required=True)
     parser.add_argument("--source-url", required=True)
     parser.add_argument("--version", required=True)

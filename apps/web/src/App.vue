@@ -338,7 +338,7 @@ async function review() {
     if (current !== requestId) return
     report.value = next
     selected.value = next.result.issues.find(item => item.id === selected.value?.id) ?? null
-    reviewMessage.value = '备注已保存，规则已重新计算。结论仍需团队核验，不代表合法性认定。'
+    reviewMessage.value = '备注已保存，规则已重新计算。'
   } catch (cause) { if (current === requestId) error.value = failure(cause) }
   finally { if (current === requestId) loading.value = false }
 }
@@ -364,10 +364,10 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         </select>
         <p class="subtle">真实任务由 APK 扫描 CLI 创建；示例仅用于演示，不是实际应用的检测结果。</p>
       </section>
-      <aside class="demo-note"><strong>{{ sourceInfo?.label ?? (source.kind === 'demo' ? 'SYNTHETIC 示例' : '真实 APK 静态报告') }}</strong>
+      <details class="demo-note"><summary>分析范围与来源</summary><strong>{{ sourceInfo?.label ?? (source.kind === 'demo' ? 'SYNTHETIC 示例' : '真实 APK 静态报告') }}</strong>
         {{ sourceInfo?.desc ?? (source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。报告不保证覆盖反射、动态加载、原生代码或运行时行为。') }}
         六种状态只对照 DATA_TYPE_DISCLOSURE；“具体类型已声明”不代表目的、接收方、传输或时间范围全部一致，更不是合法性判断。
-      </aside>
+      </details>
       <section v-if="activeJob" class="job-state" role="status">
         <strong>{{ jobLabels[activeJob.state] }}</strong> · {{ activeJob.id }} · {{ activeJob.state }}
         <button v-if="!terminal(activeJob)" :disabled="loading" @click="cancel">取消任务</button>
@@ -489,7 +489,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           </article>
         </details>
         <section v-if="realReport" class="review-panel">
-          <h2>人工复核备注</h2><p class="subtle">记录谁在何时、因为什么做了复核。这里只保存备注并由纯规则重算，不自动把政策标为已复核，不修改候选声明。填写的身份未认证，最终仍需团队核验。</p>
+          <h2>人工复核备注</h2><p class="subtle">这里只保存备注并由纯规则重算，不自动把政策标为已复核，不修改候选声明。填写的身份未认证。</p>
           <form @submit.prevent="review">
             <label>复核人<input v-model="actor" required maxlength="100" /></label>
             <label>原因<input v-model="reason" required maxlength="1000" /></label>

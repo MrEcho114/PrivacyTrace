@@ -172,7 +172,9 @@ function createIsolatedStore(projectRoot) {
 
 async function main() {
   const projectRoot = path.resolve(__dirname, '..');
-  const evidenceDir = path.join(projectRoot, 'evidence');
+  const evidenceDir = process.env.PRIVACYTRACE_EVIDENCE_DIR
+    ? path.resolve(process.env.PRIVACYTRACE_EVIDENCE_DIR)
+    : path.join(projectRoot, 'evidence');
   const screenshotDir = path.join(evidenceDir, 'screenshots');
   fs.mkdirSync(screenshotDir, { recursive: true });
 
@@ -329,7 +331,7 @@ async function main() {
       body: JSON.stringify(longReport),
     }));
 
-    await page.goto(WEB_ORIGIN);
+    await page.goto(WEB_ORIGIN + '/#reports');
     recordStep('TC-01', 'navigate', `Loaded main page at ${WEB_ORIGIN}`);
 
     await selectSource(page, 'job:gkd-s1-first');
@@ -611,7 +613,8 @@ async function main() {
     // The demo envelope is assembled per response, so it is a live generation.
     const demoDeliveryBadge = await page.locator('.badge-stack .badge').last().innerText();
     assert(demoDeliveryBadge.includes('本次生成') && demoDeliveryBadge.includes('LIVE'), `Demo delivery badge should show 本次生成 · LIVE, got: ${demoDeliveryBadge}`);
-    const demoNote = await page.locator('.demo-note').innerText();
+    if (!(await page.locator('details.demo-note').evaluate(element => element.open))) await page.locator('details.demo-note > summary').click();
+    const demoNote = await page.locator('details.demo-note').innerText();
     assert(demoNote.includes('SYNTHETIC · 人工构造示例'), 'Demo note should show SYNTHETIC label');
     recordStep('TC-04', 'verify_synthetic_badge', 'Confirmed SYNTHETIC demo origin badge and live delivery badge');
     const screenshotTc04Demo = path.join(screenshotDir, 'tc04-source-synthetic.png');
@@ -623,7 +626,8 @@ async function main() {
     await page.locator('.sample-card').waitFor();
     const controlledBadge = await page.locator('.badge-stack .badge').first().innerText();
     assert(controlledBadge.includes('受控评测') && controlledBadge.includes('CONTROLLED'), `Badge should show 受控评测 · CONTROLLED, got: ${controlledBadge}`);
-    const controlledNote = await page.locator('.demo-note').innerText();
+    if (!(await page.locator('details.demo-note').evaluate(element => element.open))) await page.locator('details.demo-note > summary').click();
+    const controlledNote = await page.locator('details.demo-note').innerText();
     assert(controlledNote.includes('CONTROLLED · 受控测试输入'), 'Note should show CONTROLLED label');
     recordStep('TC-04', 'verify_controlled_badge', 'Confirmed CONTROLLED fixture badge and label');
     const screenshotTc04Controlled = path.join(screenshotDir, 'tc04-source-controlled.png');
@@ -734,6 +738,13 @@ async function main() {
     const secondEventText = await secondEventDetails.innerText();
     assert(secondEventText.includes('本条目经字节码确认调用确实存在'), 'Must display entered note text');
     recordStep('TC-05', 'submit_with_note', 'Successfully submitted review with note text');
+
+    // The new settings panel tests the same actual local HTTP service.
+    await page.getByRole('button', { name: '项目设置', exact: true }).click();
+    await page.getByRole('button', { name: '测试连接', exact: true }).click();
+    await page.getByText('报告接口已连接', { exact: true }).waitFor();
+    await page.keyboard.press('Escape');
+    recordStep('TC-05', 'verify_settings_health', 'Settings panel connected to the actual isolated API health endpoint');
 
     // 3. Reload page and check persistence consistency
     await page.reload();

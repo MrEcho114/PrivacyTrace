@@ -9,7 +9,8 @@
     "typecheck": "npm run typecheck --workspace @privacytrace/web",
     "preview": "npm run preview --workspace @privacytrace/web",
     "fixtures:acceptance": "uv run --project apps/api python scripts/build_acceptance_fixtures.py",
-    "acceptance:browser": "node scripts/verify-browser-acceptance.cjs"
+    "acceptance:browser": "node scripts/verify-browser-acceptance.cjs",
+    "acceptance:frontend": "node scripts/verify-frontend-flow.cjs"
   },
   "devDependencies": {
     "playwright": "^1.64.0"

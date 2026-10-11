@@ -957,10 +957,11 @@ def test_policy_intake_cli_duplicate_candidate_distinct_polarity_preserves_manua
     ]
     process, body = invoke(*args)
     assert process.returncode == 0, process.stderr
-    assert body["claims"] == 1
+    assert body["claims"] == 2
 
     record = json.loads((out / "policy.capture.json").read_bytes())
     claim = record["claims"][0]
+    assert record["claims"][1]["polarity"] == "AFFIRMATIVE"
     # Manual candidate's attributes must be preserved over LLM's
     assert claim["data_type"] == "LOCATION"
     assert claim["polarity"] == "NEGATIVE"
@@ -974,7 +975,8 @@ def test_policy_intake_cli_duplicate_candidate_distinct_polarity_preserves_manua
     audits = json.loads((out / "policy.audits.json").read_bytes())
     assert len(audits) == 1
     assert audits[0]["actor"] == "Codex-assisted candidate"
-    assert "conflicting LLM polarity requires human review" in audits[0]["reason"]
+    assert "conflicting LLM candidate requires human review" in audits[0]["reason"]
+    assert audits[1]["actor"].startswith("LLM-assisted candidate")
 
 
 

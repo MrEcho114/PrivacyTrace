@@ -330,6 +330,7 @@ def compute_cache_key(
     api_base: str = "https://api.openai.com/v1",
     system_prompt: str = SYSTEM_PROMPT,
     temperature: float = 0.0,
+    max_output_tokens: int = 2048,
 ) -> str:
     system_prompt_hash = hashlib.sha256(system_prompt.encode("utf-8")).hexdigest()[:16]
     parsed = urllib.parse.urlsplit(api_base or "https://api.openai.com/v1")
@@ -342,7 +343,7 @@ def compute_cache_key(
     )
     seed = (
         f"{model}:{prompt_version}:{ruleset_version}:{norm_api_base}:"
-        f"{system_prompt_hash}:{temperature}:{text}"
+        f"{system_prompt_hash}:{temperature}:{max_output_tokens}:{text}"
     ).encode("utf-8")
     return hashlib.sha256(seed).hexdigest()
 
@@ -412,6 +413,7 @@ class PolicyLLMExtractor:
             api_base=self.config.api_base,
             system_prompt=SYSTEM_PROMPT,
             temperature=self.config.temperature,
+            max_output_tokens=self.config.max_output_tokens,
         )
 
         # 1. Check local cache
@@ -569,6 +571,7 @@ class PolicyLLMExtractor:
                     api_base=self.config.api_base,
                     system_prompt=SYSTEM_PROMPT,
                     temperature=self.config.temperature,
+                    max_output_tokens=self.config.max_output_tokens,
                 )
                 if self._read_cache(key) is not None:
                     reason = None
@@ -809,6 +812,8 @@ class PolicyLLMExtractor:
                 return None
             value = json.loads(cache_file.read_text(encoding="utf-8"))
             if isinstance(value, dict) and isinstance(value.get("raw_items"), list):
+                if len(value["raw_items"]) > self.config.max_candidates_per_response:
+                    return None
                 return value
             return None
         except (OSError, json.JSONDecodeError):

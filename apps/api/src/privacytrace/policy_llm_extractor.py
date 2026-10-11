@@ -420,6 +420,10 @@ class PolicyLLMExtractor:
                 break
             except Exception as exc:
                 last_error = str(exc)
+                # An untrusted API may echo request secrets in its error text.
+                secret = self.config.api_key or os.environ.get("PRIVACYTRACE_LLM_API_KEY", "")
+                if secret:
+                    last_error = last_error.replace(secret, "[REDACTED]")
                 telemetry.errors.append(f"Attempt {attempt}: {last_error}")
 
         telemetry.duration_ms = int((time.monotonic() - start_time) * 1000)

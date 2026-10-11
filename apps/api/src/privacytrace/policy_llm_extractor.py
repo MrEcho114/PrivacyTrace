@@ -722,7 +722,9 @@ class PolicyLLMExtractor:
             return None
         try:
             value = json.loads(cache_file.read_text(encoding="utf-8"))
-            return value if isinstance(value, dict) and isinstance(value.get("raw_items"), list) else None
+            if isinstance(value, dict) and isinstance(value.get("raw_items"), list):
+                return value
+            return None
         except (OSError, json.JSONDecodeError):
             return None
 

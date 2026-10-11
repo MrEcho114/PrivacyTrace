@@ -22,6 +22,7 @@ from typing import Any, Callable, Protocol
 from .resources import ACTIVE_RULESET_VERSION, taxonomy
 
 PROMPT_VERSION = "1.0.0"
+DEFAULT_API_BASE = "https://api.openai.com/v1"
 
 SYSTEM_PROMPT = """You are a specialized privacy policy extraction engine for PrivacyTrace.
 Analyze Chinese and English privacy policy excerpts and extract structured privacy
@@ -85,6 +86,15 @@ def validate_and_normalize_api_base(url: str) -> str:
     return url.strip().rstrip("/")
 
 
+def resolve_api_base(explicit: str | None) -> str:
+    """Resolve explicit > backend environment > secure default, once."""
+    value = (
+        os.environ.get("PRIVACYTRACE_LLM_API_BASE", DEFAULT_API_BASE)
+        if explicit is None else explicit
+    )
+    return validate_and_normalize_api_base(value)
+
+
 class LLMClientProtocol(Protocol):
     def call(self, system_prompt: str, user_prompt: str) -> tuple[str, dict[str, int]]:
         """Call the LLM and return (raw_text_response, token_usage_dict)."""
@@ -105,7 +115,7 @@ class UrllibLLMClient:
     def __init__(
         self,
         api_key: str | None = None,
-        api_base: str = "https://api.openai.com/v1",
+        api_base: str | None = None,
         model: str = "gpt-4o-mini",
         timeout: float = 30.0,
         temperature: float = 0.0,
@@ -115,8 +125,7 @@ class UrllibLLMClient:
         self.max_output_tokens = max_output_tokens
         self.max_response_bytes = max_response_bytes
         self.api_key = api_key or os.environ.get("PRIVACYTRACE_LLM_API_KEY", "")
-        raw_base = api_base or os.environ.get("PRIVACYTRACE_LLM_API_BASE", "https://api.openai.com/v1")
-        self.api_base = validate_and_normalize_api_base(raw_base)
+        self.api_base = resolve_api_base(api_base)
         self.model = model
         self.timeout = timeout
         self.temperature = temperature
@@ -205,7 +214,7 @@ class MockLLMClient:
 class LLMExtractorConfig:
     enabled: bool = False
     model: str = "gpt-4o-mini"
-    api_base: str = "https://api.openai.com/v1"
+    api_base: str | None = None
     api_key: str | None = None
     temperature: float = 0.0
     prompt_version: str = PROMPT_VERSION
@@ -223,7 +232,7 @@ class LLMExtractorConfig:
     client: LLMClientProtocol | None = None
 
     def __post_init__(self):
-        self.api_base = validate_and_normalize_api_base(self.api_base)
+        self.api_base = resolve_api_base(self.api_base)
         if (
             type(self.max_spans) is not int or self.max_spans < 1
             or type(self.max_requests) is not int or self.max_requests < 1

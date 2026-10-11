@@ -33,8 +33,9 @@ PR #27 与 #28 的增量已在独立分支整合，面向已合并 S0 的 `main`
 - 症状：工作流 0s 结束、`jobs: []`、`referenced_workflows: []`，报 `workflow was not found`。**不是测试断言失败。**
 - 证据（完美相关）：成功 run 的 `referenced_workflows` 显示新名 `OasisViridis/TheMasterplan/...`，失败 run 为空。按分支 `uses:` 字面量统计——`OasisSaber` 的 `fix/jobstore-lock-open-race`(#35)、`codex/pt-808-browser-acceptance` 失败；`OasisViridis` 的 `codex/issue-32-skills-workflow`(14:24)、`codex/pt-910-controlled-baseline`(10:12/10:15) 成功。
 - 同一分支同一 `check.yml` 在 12:54 成功、15:43 失败，改名发生在两者之间，与该时间线吻合。
-- 影响面：`main` 自身仍引用 `OasisSaber`，下次推送 `main` 也会失败；`doctor` 检查不到此类问题。
-- 处置：修复为把 `uses:` 的 owner 改为 `OasisViridis`（一行）。因属治理接线且影响所有分支，**未在本 PR 内改动**（review 亦建议不在 #35 改治理配置），留待独立提交/PR 处理；#35 的绿色门禁需在该分支同步该修复后重新触发。
+- 影响面：`main` 自身也引用 `OasisSaber`，下一次推送 `main` 同样会中断；`doctor` 检查不到此类问题。
+- 处置（经用户确认）：改 `uses:` 的 owner 为 `OasisViridis`，一行。已修复两处——`main`（`07ae08e`，同时解掉默认分支的潜在中断）与本 PR 分支（本条提交），使 #35 取得绿色门禁。
+- 范围说明：只改 `check.yml` 的 `uses:` owner。其余 `OasisSaber` 字面量（`.themasterplan/state.json`、`tmlib/source.py` 的 `DEFAULT_REPOSITORY`、`docs/release-channels.md` 示例、`test_governance_cli.py` 夹具）仍可经 REST API 重定向工作，且属采纳状态，未一并改动。
 
 ## 2026-10-05 历史进度与优先顺序
 

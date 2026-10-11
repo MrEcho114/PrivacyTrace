@@ -14,6 +14,8 @@
 
 可复跑证据保存在忽略的 `tmp/issue44-ui/`：`verification.json` 含提交、工作区状态、源码摘要、请求与页面错误；`screenshots/` 含页面和失败状态；`legacy-proof/browser-proof.json` 含原报告验收记录。最终提交后复跑并绑定交付 SHA，不覆盖已有 `evidence/` 历史材料。
 
+浏览器 CI 依次运行原报告验收与新增示例流程，上传两套记录与截图到同一个 `browser-acceptance-evidence` artifact，便于从 PR 对应 run 下载检查。
+
 ## Standards
 
 按 `code-review` 对 main 起点 `c06803b48cf6d29412b4f118e49272708e11c7ee` 到实现提交 `b759559dffde10752a7bc3066c0d7b3b86a60906` 进行独立规范审阅：未发现文档硬性违反，也未发现需要本次修复的代码异味。审阅涵盖证据边界、示例与真实接口隔离、持久化限制及组件边界。

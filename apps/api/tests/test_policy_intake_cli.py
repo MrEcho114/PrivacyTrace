@@ -6,6 +6,8 @@ import sys
 
 import pytest
 
+from privacytrace.policy_llm_extractor import CACHE_FILE_PREFIX
+
 
 def invoke(*args, env=None):
     merged_env = {**os.environ, **env} if env is not None else None
@@ -298,7 +300,7 @@ def test_policy_intake_cli_enable_llm_cached(tmp_path):
         ],
         "tokens": {"prompt_tokens": 15, "completion_tokens": 10, "total_tokens": 25},
     }
-    (cache_dir / f"{cache_key}.json").write_text(
+    (cache_dir / f"{CACHE_FILE_PREFIX}{cache_key}.json").write_text(
         json.dumps(cached_payload, ensure_ascii=False), encoding="utf-8"
     )
 
@@ -373,7 +375,7 @@ def test_policy_intake_cli_malformed_llm_json_fields_graceful_recovery(tmp_path)
         ],
         "tokens": {"prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20},
     }
-    (cache_dir / f"{cache_key}.json").write_text(
+    (cache_dir / f"{CACHE_FILE_PREFIX}{cache_key}.json").write_text(
         json.dumps(cached_payload, ensure_ascii=False), encoding="utf-8"
     )
 
@@ -441,7 +443,7 @@ def test_policy_intake_cli_mixed_candidates_distinct_audits(tmp_path):
         ruleset_version=ACTIVE_RULESET_VERSION,
         text=second_sentence,
     )
-    (cache_dir / f"{cache_key_2}.json").write_text(
+    (cache_dir / f"{CACHE_FILE_PREFIX}{cache_key_2}.json").write_text(
         json.dumps(
             {
                 "raw_items": [
@@ -467,7 +469,7 @@ def test_policy_intake_cli_mixed_candidates_distinct_audits(tmp_path):
         ruleset_version=ACTIVE_RULESET_VERSION,
         text=first_sentence,
     )
-    (cache_dir / f"{cache_key_1}.json").write_text(
+    (cache_dir / f"{CACHE_FILE_PREFIX}{cache_key_1}.json").write_text(
         json.dumps({"raw_items": [], "tokens": {}}, ensure_ascii=False), encoding="utf-8"
     )
 
@@ -536,7 +538,7 @@ def test_policy_intake_cli_duplicate_candidate_preserves_manual_provenance(tmp_p
         ruleset_version=ACTIVE_RULESET_VERSION,
         text=sentence,
     )
-    (cache_dir / f"{cache_key}.json").write_text(
+    (cache_dir / f"{CACHE_FILE_PREFIX}{cache_key}.json").write_text(
         json.dumps(
             {
                 "raw_items": [
@@ -602,7 +604,7 @@ def test_policy_intake_cli_api_base_config_and_validation(tmp_path):
         text=sentence,
         api_base=custom_base,
     )
-    (cache_dir / f"{cache_key}.json").write_text(
+    (cache_dir / f"{CACHE_FILE_PREFIX}{cache_key}.json").write_text(
         json.dumps(
             {
                 "raw_items": [
@@ -682,7 +684,7 @@ def test_policy_intake_cli_env_enable_llm(tmp_path):
         ruleset_version=ACTIVE_RULESET_VERSION,
         text=sentence,
     )
-    (cache_dir / f"{cache_key}.json").write_text(
+    (cache_dir / f"{CACHE_FILE_PREFIX}{cache_key}.json").write_text(
         json.dumps(
             {
                 "raw_items": [
@@ -920,7 +922,7 @@ def test_policy_intake_cli_duplicate_candidate_distinct_polarity_preserves_manua
         text=sentence,
     )
     # LLM extracts the same excerpt/data_type but with AFFIRMATIVE polarity
-    (cache_dir / f"{cache_key}.json").write_text(
+    (cache_dir / f"{CACHE_FILE_PREFIX}{cache_key}.json").write_text(
         json.dumps(
             {
                 "raw_items": [
@@ -969,3 +971,78 @@ def test_policy_intake_cli_duplicate_candidate_distinct_polarity_preserves_manua
     assert audits[0]["actor"] == "Codex-assisted candidate"
 
 
+
+
+def test_cli_does_not_accept_api_key_argument(tmp_path):
+    secret = "CLI-SECRET-DO-NOT-LOG"
+    raw = tmp_path / "policy.txt"
+    raw.write_text("我们收集位置。", encoding="utf-8")
+    args = [sys.executable, "-m", "privacytrace.policy_intake",
+            "--raw", str(raw), "--source-url", "https://example.org/p",
+            "--version", "1", "--output-dir", str(tmp_path / "out"),
+            "--enable-llm", "--llm-api-key", secret]
+    result = subprocess.run(args, capture_output=True, text=True, encoding="utf-8")
+    assert result.returncode != 0
+    assert secret not in result.stdout
+    assert secret not in result.stderr
+    assert not (tmp_path / "out").exists()
+
+
+def test_cli_rejects_forged_candidate_audit_identity(tmp_path):
+    raw = tmp_path / "policy.txt"
+    raw.write_text("我们收集位置。", encoding="utf-8")
+    candidates = tmp_path / "candidates.json"
+    candidates.write_text(json.dumps([{
+        "excerpt": "位置", "data_type": "LOCATION",
+        "actor": "Human Reviewer", "reason": "Manually verified"
+    }]), encoding="utf-8")
+    out = tmp_path / "out"
+    result, body = invoke("--raw", raw, "--source-url", "https://example.org/p",
+                          "--version", "1", "--output-dir", out,
+                          "--candidates", candidates)
+    assert result.returncode == 1
+    assert body["errors"][0]["code"] == "POLICY_INPUT_INVALID"
+    assert not out.exists()
+
+
+def test_preflight_invalid_destination_makes_no_llm_calls(tmp_path):
+    from privacytrace.policy_intake import capture
+    from privacytrace.policy_llm_extractor import LLMExtractorConfig, MockLLMClient, PolicyLLMExtractor
+    raw = tmp_path / "policy.txt"
+    raw.write_text("我们收集位置。", encoding="utf-8")
+    output = tmp_path / "existing"
+    output.mkdir()
+    mock = MockLLMClient()
+    extractor = PolicyLLMExtractor(LLMExtractorConfig(enabled=True, client=mock))
+    with pytest.raises(ValueError, match="already exists"):
+        capture(raw, "https://example.org/p", "1", output, llm_extractor=extractor)
+    assert mock.call_count == 0
+
+
+def test_cli_budget_exhaustion_outputs_skipped_offsets(tmp_path):
+    from privacytrace.policy_llm_extractor import ACTIVE_RULESET_VERSION, PROMPT_VERSION, compute_cache_key
+    text = "我们访问位置。第二句。第三句。"
+    raw = tmp_path / "policy.txt"
+    raw.write_text(text, encoding="utf-8")
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    first_span = "我们访问位置。"
+    key = compute_cache_key("gpt-4o-mini", PROMPT_VERSION, ACTIVE_RULESET_VERSION, first_span)
+    (cache / f"{CACHE_FILE_PREFIX}{key}.json").write_text(json.dumps({
+        "raw_items": [{"excerpt": "位置", "data_type": "LOCATION"}], "tokens": {}
+    }), encoding="utf-8")
+    output = tmp_path / "out"
+    process, body = invoke("--raw", raw, "--source-url", "https://example.org/p",
+                           "--version", "1", "--output-dir", output,
+                           "--enable-llm", "--llm-cache-dir", cache,
+                           "--llm-max-spans", 1)
+    assert process.returncode == 0, process.stderr
+    assert body["llm_extraction"]["status"] == "PARTIAL"
+    assert body["llm_extraction"]["skipped_spans"] == 2
+    skipped = body["llm_extraction"]["skipped_span_details"]
+    assert skipped[0]["start"] == len(first_span)
+    assert skipped[0]["reason"] == "SPAN_BUDGET_EXHAUSTED"
+    assert body["claims"] == 1
+    assert json.loads((output / "policy.capture.json").read_text(encoding="utf-8"))[
+        "document"
+    ]["review_status"] == "UNREVIEWED"

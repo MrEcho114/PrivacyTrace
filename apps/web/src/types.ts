@@ -14,6 +14,9 @@ export interface DemoReport {
     input_mode: 'SYNTHETIC'
   }
   job: AnalysisJob
+  // The demo envelope is assembled per response, so it is always a live
+  // generation rather than a replay from persisted storage.
+  delivery_mode: 'LIVE_GENERATED'
   result: EvaluationResult
   evidence: Evidence[]
   behaviors: PrivacyBehavior[]

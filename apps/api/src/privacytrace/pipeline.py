@@ -19,6 +19,7 @@ def run(apk, policy, name, job_id=None, timeout=120, store_dir=None, product_sco
         id=job_id or uuid4().hex,
         sample_id=name,
         input_mode="APK",
+        source_origin="REAL_SCAN",
         state="QUEUED",
         ruleset_version=taxonomy()["version"],
         created_at=datetime.now(timezone.utc),

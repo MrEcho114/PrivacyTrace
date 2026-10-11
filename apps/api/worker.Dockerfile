@@ -6,6 +6,7 @@ WORKDIR /app
 COPY apps/api/pyproject.toml apps/api/uv.lock /app/apps/api/
 COPY apps/api/src /app/apps/api/src
 COPY rules/taxonomy.v0.3.json /app/rules/taxonomy.v0.3.json
+COPY rules/sdk-signatures.v1.0.json /app/rules/sdk-signatures.v1.0.json
 RUN uv sync --project /app/apps/api --locked --extra worker --no-dev --no-cache
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 HOME=/tmp
 USER 65534:65534

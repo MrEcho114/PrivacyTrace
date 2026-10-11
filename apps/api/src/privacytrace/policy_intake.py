@@ -59,6 +59,59 @@ def split_spans(text):
     return spans
 
 
+# Untrusted candidate JSON must never specify provenance; internal callers use
+# a separate, trusted candidate_provenance mapping indexed by candidate position.
+CANDIDATE_FIELDS = {
+    "excerpt", "start_offset", "end_offset", "data_type", "polarity",
+    "condition", "subject", "action", "declared_purpose",
+    "declared_recipient", "ambiguity_flags",
+}
+
+
+def preflight_capture(raw_path, source_url, output_dir, candidates=None):
+    """Reject invalid work before any optional external LLM request."""
+    parsed = urlparse(source_url)
+    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+        raise ValueError("Policy source must be HTTPS without credentials")
+    raw = read_safe(raw_path, max_bytes=MAX_BYTES)
+    text = raw.decode("utf-8")
+    if not text or len(text) > 200000:
+        raise ValueError("Policy text must contain 1 to 200000 Unicode codepoints")
+    out = Path(output_dir).absolute()
+    if any(p.is_symlink() or getattr(p, "is_junction", lambda: False)()
+           for p in (out, *out.parents)):
+        raise ValueError("Symlink output directory is not allowed")
+    if out.exists():
+        raise ValueError("Capture output already exists; choose a new directory")
+    if candidates is not None:
+        if not isinstance(candidates, list):
+            raise ValueError("Candidates must be a JSON list")
+        for candidate in candidates:
+            if not isinstance(candidate, dict):
+                raise ValueError("Each candidate must be an object")
+            if set(candidate) - CANDIDATE_FIELDS:
+                raise ValueError("Unsupported candidate fields")
+            start, end = candidate.get("start_offset"), candidate.get("end_offset")
+            if start is None and end is None:
+                excerpt = candidate.get("excerpt", "")
+                if not isinstance(excerpt, str) or not excerpt or text.count(excerpt) != 1:
+                    raise ValueError("Candidate excerpt must occur exactly once, or supply offsets")
+                start = text.index(excerpt)
+                end = start + len(excerpt)
+            if type(start) is not int or type(end) is not int or not 0 <= start < end <= len(text):
+                raise ValueError("Invalid candidate codepoint span")
+            if candidate.get("excerpt", text[start:end]) != text[start:end]:
+                raise ValueError("Candidate excerpt does not match span")
+            PolicyClaim.model_validate({
+                **{k: v for k, v in candidate.items()
+                   if k not in {"excerpt", "start_offset", "end_offset"}},
+                "id": "preflight-claim",
+                "document_id": "policy-official",
+                "evidence_ids": ["preflight-evidence"],
+            })
+    return raw, text
+
+
 def capture(
     raw_path,
     source_url,
@@ -72,14 +125,10 @@ def capture(
     actor="Codex-assisted candidate",
     reason="Initial offline candidate capture",
     llm_extractor=None,
+    candidate_provenance=None,
 ):
-    parsed = urlparse(source_url)
-    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
-        raise ValueError("Policy source must be HTTPS without credentials")
-    raw = read_safe(raw_path, max_bytes=MAX_BYTES)
-    text = raw.decode("utf-8")  # No newline, BOM, or Unicode normalization.
-    if not text or len(text) > 200000:
-        raise ValueError("Policy text must contain 1 to 200000 Unicode codepoints")
+    raw, text = preflight_capture(raw_path, source_url, output_dir, candidates)
+    sources = dict(candidate_provenance or {})
     if llm_extractor is not None and getattr(llm_extractor.config, "enabled", False):
         spans = split_spans(text)
         llm_res = llm_extractor.extract_from_spans(text, spans)
@@ -104,12 +153,11 @@ def capture(
             key_by_excerpt = (cand.get("excerpt"), cand.get("data_type"))
             if key_with_offsets not in existing_keys and key_by_excerpt not in existing_keys:
                 existing_keys.add(key_with_offsets)
-                cand_copy = dict(cand)
-                cand_copy["actor"] = f"LLM-assisted candidate ({llm_extractor.config.model})"
-                cand_copy["reason"] = (
-                    "LLM-assisted candidate extraction with verbatim verification"
+                sources[len(candidates)] = (
+                    f"LLM-assisted candidate ({llm_extractor.config.model})",
+                    "LLM-assisted candidate extraction with verbatim verification",
                 )
-                candidates.append(cand_copy)
+                candidates.append(dict(cand))
     now = datetime.now(timezone.utc).isoformat()
     document = PolicyDocument.model_validate(
         {
@@ -147,22 +195,7 @@ def capture(
     for index, candidate in enumerate(candidates or [], 1):
         if not isinstance(candidate, dict):
             raise ValueError("Each candidate must be an object")
-        allowed = {
-            "excerpt",
-            "start_offset",
-            "end_offset",
-            "data_type",
-            "polarity",
-            "condition",
-            "subject",
-            "action",
-            "declared_purpose",
-            "declared_recipient",
-            "actor",
-            "reason",
-            "ambiguity_flags",
-        }
-        if set(candidate) - allowed:
+        if set(candidate) - CANDIDATE_FIELDS:
             raise ValueError("Unsupported candidate fields")
         start, end = candidate.get("start_offset"), candidate.get("end_offset")
         if start is None and end is None:
@@ -192,7 +225,7 @@ def capture(
         value = {
             k: v
             for k, v in candidate.items()
-            if k not in {"excerpt", "start_offset", "end_offset", "actor", "reason"}
+            if k not in {"excerpt", "start_offset", "end_offset"}
         }
         # Unknown is intentional: intake does not assert host/affirmative interpretation.
         value.setdefault("action", "UNKNOWN")
@@ -205,12 +238,7 @@ def capture(
             }
         ).model_dump(mode="json")
         claims.append(claim)
-        cand_actor = candidate.get("actor")
-        if not isinstance(cand_actor, str) or not cand_actor.strip():
-            cand_actor = actor
-        cand_reason = candidate.get("reason")
-        if not isinstance(cand_reason, str) or not cand_reason.strip():
-            cand_reason = reason
+        cand_actor, cand_reason = sources.get(index - 1, (actor, reason))
         audits.append(
             {
                 "claim_id": claim["id"],
@@ -436,17 +464,18 @@ def main():
         default=os.environ.get("PRIVACYTRACE_LLM_API_BASE", "https://api.openai.com/v1"),
         help="API base URL for LLM",
     )
-    parser.add_argument(
-        "--llm-api-key",
-        default=os.environ.get("PRIVACYTRACE_LLM_API_KEY", None),
-        help="API key for LLM",
-    )
+    parser.add_argument("--llm-max-spans", type=int, default=64)
+    parser.add_argument("--llm-max-requests", type=int, default=96)
+    parser.add_argument("--llm-max-elapsed-seconds", type=float, default=120.0)
     args = parser.parse_args()
     try:
         candidates = json.loads(read_safe(args.candidates)) if args.candidates else []
         if not isinstance(candidates, list):
             raise ValueError("Candidates must be a JSON list")
+        # Validate user input and publication destination before external calls.
+        preflight_capture(args.raw, args.source_url, args.output_dir, candidates)
         llm_summary = None
+        source_overrides = {}
         actor = "Codex-assisted candidate"
         reason = "Initial offline candidate capture"
         if args.enable_llm is not None:
@@ -460,8 +489,10 @@ def main():
                 enabled=True,
                 model=args.llm_model,
                 api_base=args.llm_api_base,
-                api_key=args.llm_api_key,
                 cache_dir=args.llm_cache_dir,
+                max_spans=args.llm_max_spans,
+                max_requests=args.llm_max_requests,
+                max_elapsed_seconds=args.llm_max_elapsed_seconds,
             )
             llm_extractor = PolicyLLMExtractor(config)
             raw = read_safe(args.raw, max_bytes=MAX_BYTES)
@@ -473,6 +504,7 @@ def main():
                 "extracted_claims": len(llm_res.candidates),
                 "rejected_claims": len(llm_res.rejected_candidates),
                 "failed_spans": len(llm_res.telemetry.failed_spans),
+                "skipped_spans": len(llm_res.telemetry.skipped_spans),
                 "duration_ms": llm_res.telemetry.duration_ms,
                 "cached": llm_res.telemetry.cached,
                 "total_tokens": llm_res.telemetry.total_tokens,
@@ -486,10 +518,10 @@ def main():
                     }
                     for s in llm_res.telemetry.failed_spans
                 ]
+            if llm_res.telemetry.skipped_spans:
+                llm_summary["skipped_span_details"] = list(llm_res.telemetry.skipped_spans)
             existing_keys = set()
             for c in candidates:
-                if not isinstance(c, dict):
-                    continue
                 existing_keys.add(
                     (
                         c.get("excerpt"),
@@ -511,12 +543,11 @@ def main():
                 key_by_excerpt = (cand.get("excerpt"), cand.get("data_type"))
                 if key_with_offsets not in existing_keys and key_by_excerpt not in existing_keys:
                     existing_keys.add(key_with_offsets)
-                    cand_copy = dict(cand)
-                    cand_copy["actor"] = f"LLM-assisted candidate ({args.llm_model})"
-                    cand_copy["reason"] = (
-                        "LLM-assisted candidate extraction with verbatim verification"
+                    source_overrides[len(candidates)] = (
+                        f"LLM-assisted candidate ({args.llm_model})",
+                        "LLM-assisted candidate extraction with verbatim verification",
                     )
-                    candidates.append(cand_copy)
+                    candidates.append(dict(cand))
         result = capture(
             args.raw,
             args.source_url,
@@ -529,6 +560,7 @@ def main():
             args.region,
             actor=actor,
             reason=reason,
+            candidate_provenance=source_overrides,
         )
         out_summary = {
             "status": "CAPTURED_UNREVIEWED",

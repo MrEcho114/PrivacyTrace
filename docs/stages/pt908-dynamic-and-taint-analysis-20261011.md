@@ -12,7 +12,7 @@
 
 本备忘录针对 PrivacyTrace 平台在后续演进中的高阶代码分析与动态行为监测需求，系统性开展了技术成熟度、工程可行性与合规安全边界调研。调研重点评估了基于 Android 虚拟化沙箱的动态行为监控（API 调用拦截、敏感权限追踪、网络流量监测）以及基于 FlowDroid（IFDS/IDE 框架）的深度静态污点分析在移动隐私合规场景下的适用性与局限性。
 
-技术调研与文献推导表明：全量动态沙箱与深度污点分析面临显著的资源开销增长（根据文献与工程估算，动态沙箱冷启动与遍历耗时远超静态分析，大型应用污点分析的 JVM 堆内存需求常需 12GB–32GB+ 且极易因状态爆炸触发 OOM）、代码覆盖度瓶颈（商业 APK 存在“隐私协议死锁”、登录墙、时延触发与反沙箱对抗，无人工介入的自动化遍历覆盖率受到严重制约）、以及四大核心技术边界（动态反射、JNI/Native 代码黑盒、加壳与动态类加载、异步生命周期/协程与 Binder IPC 截断）。此外，由于编译噪声、混淆漂移与全程序指针分析失效，在当前赛程和 CI 资源约束下，二进制 Delta 增量污点分析不推荐作为主线方案；不排除未来通过增量分析研究改善成本。
+技术调研与文献推导表明：全量动态沙箱与深度污点分析面临显著的资源开销增长（根据文献与工程估算，动态沙箱冷启动与遍历耗时远超静态分析，FlowDroid 的资源开销随应用规模、算法配置与运行环境波动，本项目尚无可比较的现代 APK 性能实测数据）、代码覆盖度瓶颈（商业 APK 存在“隐私协议死锁”、登录墙、时延触发与反沙箱对抗，无人工介入的自动化遍历覆盖率受到严重制约）、以及四大核心技术边界（动态反射、JNI/Native 代码黑盒、加壳与动态类加载、异步生命周期/协程与 Binder IPC 截断）。此外，由于编译噪声、混淆漂移与全程序指针分析失效，在当前赛程和 CI 资源约束下，二进制 Delta 增量污点分析不推荐作为主线方案；不排除未来通过增量分析研究改善成本。
 
 因此，本备忘录明确建议：**PrivacyTrace 在本届赛事中继续坚守“轻量化静态字节码证据 + 声明切片 + 规则引擎一致性比对”的主线架构；将动态沙箱与深度污点分析严格归类为赛后“未来规划（Future Work）”，定位于离线实验室异步验证工具**。同时，备忘录在全平台制度化固化了“禁止开发脱壳工具”、“禁止未授权动态发包”、以及“未解密与证书异常流量严格记录客观观测与 UNKNOWN 归因，禁止攻击性绕过”三大网络安全与合规红线。
 
@@ -47,12 +47,12 @@ PrivacyTrace 的核心设计目标是构建客观透明、在固定输入、依�
 
 | 方案 | 底层隔离机制 | 核心优势 | 缺陷与安全风险 | KVM 依赖 | PrivacyTrace 适配度评估 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **方案 A: Android Virtual Device (AVD / QEMU-KVM)** | 硬件辅助全系统虚拟化（Type-2 Hypervisor） | 官方 AOSP 系统镜像具备高兼容性（支持全 API 级别 API 21–35）；支持黄金快照（Snapshot）秒级回滚；硬件边界隔离最强 | 资源消耗沉重（单实例 3–4 GB RAM, 2–4 vCPU）；冷启动慢（45–90s）；依赖宿主机硬件虚拟化透传（`/dev/kvm`） | **强依赖**（无 KVM 则回退到 TCG 纯软件模拟，速度衰减 10x–20x，完全不可用） | **推荐（未来线下实验室方案）**：隔离安全性最高，不破坏宿主机内核基线 |
-| **方案 B: redroid (Remote Android in Docker)** | Linux 共享内核容器化（AOSP on Docker） | 启动相对轻量（15–25s）；单机并发密度高于 AVD；无需 QEMU 模拟层 | 必须 `--privileged` 提权；强依赖宿主内核 Binder/Ashmem 模块；ARM 翻译层（Houdini/NDK-Translation）崩溃率高；**彻底破坏当前非特权容器安全基线** | 不依赖 | **不推荐**：容器逃逸风险极大，违背项目非特权安全规范 |
+| **方案 A: Android Virtual Device (AVD / QEMU-KVM)** | 硬件辅助全系统虚拟化（Type-2 Hypervisor） | 具备多种官方 Android 系统镜像与快照能力，兼容性、恢复时间和隔离强度须结合具体工作负载验证 | 资源与冷启动开销取决于系统镜像、宿主负载和配置，尚无本项目测量；依赖宿主机硬件虚拟化透传（`/dev/kvm`） | **硬件加速优先**（无 KVM 时可能降级到软件模拟，性能影响需实测） | **推荐（未来线下实验室方案）**：隔离安全性最高，不破坏宿主机内核基线 |
+| **方案 B: redroid (Remote Android in Docker)** | Linux 共享内核容器化（AOSP on Docker） | 采用容器化架构；具体启动耗时待测；单机并发密度高于 AVD；无需 QEMU 模拟层 | 必须 `--privileged` 提权；强依赖宿主内核 Binder/Ashmem 模块；ARM 翻译层（Houdini/NDK-Translation）崩溃率高；**彻底破坏当前非特权容器安全基线** | 不依赖 | **不推荐**：容器逃逸风险极大，违背项目非特权安全规范 |
 | **方案 C: Anbox / Waydroid** | LXC 容器 + Wayland 桌面图形桥接 | 桌面端交互延迟低 | 深度绑定特定 Linux 桌面图形栈；缺乏无头（Headless）批处理编排机制；实例销毁与重置极其复杂 | 不依赖 | **不推荐**：面向个人桌面而非自动化合规测试沙箱 |
 | **方案 D: 开源沙箱套件 (Cuckoo-Droid / CAPEv2)** | 控制器 + AVD/物理机 Agent 集中编排 | 自带 API Hook 与 PCAP 流量抓取展示分析面板 | 框架长期缺乏对 Android 11+ 的维护；依赖注入 Agent 极易被对抗；系统依赖极重，难以微服务化拆分 | 视底层 Agent 节点而定 | **仅作架构参考**：不可直接作为工程依赖引入 |
 
-**结论**：在未来的离线深度评测中，仅有 **AVD (QEMU-KVM)** 方案能够在不破坏宿主机内核安全的前提下提供可信的执行环境。
+**结论**：对于未来的隔离实验室，优先评估 **AVD（QEMU-KVM）**，因为其与现有非特权容器主线易于隔离部署；此处是当前项目取舍，不表示其不存在虚拟化风险，也不表示其他方案绝对无法实现安全隔离。
 
 ### 2.2 运行时行为监控与 API 拦截技术权衡
 在 Android 运行时监控敏感行为（如读取设备号、获取定位、读取剪贴板），主要存在四种技术路线：
@@ -82,12 +82,12 @@ PrivacyTrace 的核心设计目标是构建客观透明、在固定输入、依�
    - *局限*：固件编译与适配工程极其庞大，升级跨版本 Android（如 Android 13 到 14）维护成本高昂。
 4. **内核级 eBPF 监控 (Extended Berkeley Packet Filter)**：
    - *机制*：在 Linux 内核层（Android 4.9+ 内核）挂载 kprobe/tracepoint，捕获 `sys_enter_openat`、`sys_enter_connect`、`sys_enter_ioctl` 等系统调用。
-   - *局限*：虽然具备零入侵、不可逃避的优势，但 **eBPF 处于 Linux 内核空间，完全丢失了 Android Java/ART 虚拟机的上层语义上下文**。内核只能看到进程 PID 打开了某个文件描述符，无法还原是哪一个 Java 类、哪个第三方 SDK 发起的调用，无法直接映射至 PrivacyTaxonomy 分类体系。
+   - *局限*：虽然能在内核事件层提供低应用侵入的观测，但 **eBPF 本身不直接携带完整的 Android Java/ART 类与对象语义上下文**。内核只能看到进程 PID 打开了某个文件描述符，无法还原是哪一个 Java 类、哪个第三方 SDK 发起的调用，无法直接映射至 PrivacyTaxonomy 分类体系。
 
 ### 2.3 网络流量监测与证书绑定 (SSL Pinning) 机制
 动态流量分析通过在沙箱出口部署透明代理（如 `mitmproxy`），利用 iptables 将虚拟机的 80/443 出口流量重定向至代理端口。
 
-- **Android 7.0+ 系统信任限制与受控 CA 配置**：自 Android 7.0 (API 24) 起，平台默认不再信任用户自行安装的 CA 证书（User CA）。第三方 App 仅信任预装在 `/system/etc/security/cacerts/` 中的系统根证书。在自建 App、受控测试样本或获得明确授权的环境中，允许配置专用测试 CA 证书写入系统受信任存储区，用于验证受控 TLS 流量监控链路；但测试 CA 的使用不代表允许绕过第三方应用的证书绑定机制。
+- **默认 CA 信任与受控 CA 配置**：依 Android 官方 Network Security Configuration [11]，在未进行显式覆盖时，`targetSdkVersion <= 23` 的应用默认信任系统 CA 与用户添加的 CA；`targetSdkVersion >= 24` 的应用默认仅信任系统 CA。应用还可通过 `base-config`、`domain-config`、调试覆盖或自定义网络栈影响证书信任行为；因此不能仅凭设备系统版本推断。在自建 App、受控样本或明确授权环境中，可按需配置专用测试 CA 来验证受控 TLS 观测链路；此举不代表获得绕过第三方应用证书绑定的许可。
 - **证书绑定 (SSL Pinning) 防护**：成熟的商业 App 与 SDK 普遍集成了证书公钥哈希绑定技术（如 OkHttp `CertificatePinner`、自定义 `X509TrustManager` 或在 BoringSSL 原生层硬编码公钥摘要）。当客户端检测到代理证书公钥与服务端不匹配时，将直接主动中断 TLS 握手（抛出 `SSLPeerUnverifiedException` 或发送 TCP RST）。代理无法读取载荷、TLS 握手失败或存在证书异常，单独都不足以确认 SSL Pinning。
 - **处理规范与定性**：详见第 5 章网络安全红线规范。系统明确区分受控测试与未授权第三方应用，严禁对未经授权的第三方生产应用实施中间人解密、证书绑定绕过或安全对抗操作。
 
@@ -198,27 +198,27 @@ FlowDroid 是静态分析领域的经典学术基准，基于 Soot 框架与 IFD
 | **清洗判定 (Sanitizer)** | 二元判定：输入是否经过过滤/编码校验（清洗后污点立即消除） | **多属性合规判定**：数据流向是否符合政策声明？**哈希/脱敏处理并不消除隐私属性**（例如对 IMEI 取 SHA-256 依然属于去标识化的个人设备追踪数据！） |
 | **规则维护成本** | 中等（更新已知漏洞利用模式） | **极高**：需持续跟踪 Android 年度大版本迭代，并对闭环商业 SDK 内部私有上报埋点与混淆数据流开展逆向工程适配 |
 
-### 3.3 资源消耗矩阵与可扩展性对比
-基于学术基准文献（如 DroidBench 相关研究）与公开技术报告，FlowDroid 在不同规模应用下的典型资源消耗估算与文献参考矩阵如下（注：大型商业 APK 数值主要来源于文献报道及工程估算，受具体分析剪枝策略与配置参数影响显著）：
+### 3.3 可核查性能证据与现代样本外推边界
 
-| 评估指标 | 数据等级 | 微型基准样本 (DroidBench / Toy Samples) | 中型开源应用 (F-Droid, 5–15 MB) | 大型商业 APK (常见商业应用, 50–150+ MB) |
-| :--- | :--- | :--- | :--- | :--- |
-| **DEX 数量与方法规模** | `ESTIMATED` | 单 DEX，20–100 个方法，< 50 个类 | 1–2 个 DEX，3,000–15,000 个方法，500–2,000 个类 | 多 DEX（3–8 个 DEX），80,000–250,000+ 个方法，15,000–45,000+ 个类 |
-| **Call Graph 构建耗时** | `LITERATURE` | **< 2 秒** (SPARK / CHA) | **15 – 60 秒** | **8 – 45 分钟**（SPARK 极频繁超时；CHA 生成超百万条边） |
-| **Call Graph 边数** | `LITERATURE` | $10^2$ – $10^3$ 条边 | $2 \times 10^4$ – $8 \times 10^4$ 条边 | $5 \times 10^5$ – $3 \times 10^6$ 条边 |
-| **JVM 堆内存峰值** | `LITERATURE` | **256 MB – 1 GB** | **2 GB – 4 GB** | **12 GB – 32 GB+**（文献与实践中极易发生 `OutOfMemoryError`） |
-| **全量污点分析端到端耗时** | `LITERATURE` | **5 – 30 秒** | **2 – 10 分钟** | **30 分钟 – 3+ 小时**（超时阈值通常设置为 3600 秒且频繁触发） |
-| **分析成功率 (完成无崩溃)** | `ESTIMATED` | 极高（基准套件多能稳定求解） | 较高（部分存在超时） | 待验证指标（大型商业应用极易超时或 OOM，缺乏统一基准） |
-| **状态爆炸主要诱因** | `LITERATURE` | 无 | 标准 UI 回调嵌套 | 复杂集合类的反向别名追踪；庞大的 Lambda 与 RxJava 链式调用 |
+本节只保留能够直接定位到公开原始资料的数值。**不得将 2014 年特定设备、应用集合与 FlowDroid 版本下的结果外推为 2026 年商业多 DEX APK 的通用性能区间**。
+
+| 评估项 | 证据等级 | 可直接核查的事实与出处 | 对 PrivacyTrace 的意义 |
+| :--- | :--- | :--- | :--- |
+| 真实应用分析时间 | `LITERATURE` | FlowDroid 原始论文 [1] §6.3：针对当时 Google Play 的约 500 个热门应用，大多数分析在 1 分钟内结束，最长样本约 4.5 分钟 | 证明特定历史样本可运行；不能证明现代大型 APK 均需数十分钟或数小时 |
+| 旧版恶意软件样本分析时间 | `LITERATURE` | 同一论文 [1] §6.3：约 1,000 个 VirusShare 样本，平均耗时约 16 秒；作者说明这些样本相对较小 | 不可直接比较本项目的 SDK 密集型商业 APK |
+| 现代多 DEX APK 的峰值 JVM 堆内存、调用图构建耗时与边数 | `UNKNOWN` | 当前引用文献未提供能够逐项支持本项目此前所列区间的同口径结果 | 不保留 12–32 GiB、8–45 分钟等无可追溯来源的推断区间 |
+| AVD 动态探索覆盖率及 FlowDroid 在本项目样本上的精度和成功率 | `UNKNOWN` | 尚无本项目针对同一组授权样本、统一分析配置的实验 | 纳入第 4.4 节未来 PoC；不作为已证实的主线取舍依据 |
+
+以上文献只对其原始实验条件负责。最新 Android Framework、混淆、多 DEX 与 SDK 布局可能改变分析开销，但是否产生显著增长及增长幅度，应由固定样本、设备、版本与配置的后续测试确定。
 
 ### 3.4 调用图算法权衡：SPARK vs. CHA
 - **SPARK (Soot Pointer Analysis Research Kit)**：
   - 基于包容关系（Subset-based / Andersen 风格）的指针分析算法，具有上下文不敏感、字段敏感特性。理论最坏复杂度为 $\mathcal{O}(N^3)$。
   - *优点*：精度高，利用点集关系解析虚方法调用目标，大幅消除虚假调用边。
-  - *缺陷*：在大型多 DEX 应用中，指针图构建通常占据总耗时的 80% 以上，并直接耗尽数十 GB 内存，导致分析在进入污点传播前即崩溃。
+  - *缺陷*：在部分复杂应用中可能有较高的 CPU 和内存成本；占比、峰值与失败概率须依赖目标样本和分析配置实测。
 - **CHA (Class Hierarchy Analysis)**：
   - 仅利用类继承层次结构解析虚调用，理论复杂度为 $\mathcal{O}(N)$ 线性。
-  - *优点*：构建极其迅速（大型应用亦可在 30 秒内完成）。
+  - *优点*：通常省去较昂贵的指针分析步骤，但构建时间受样本规模与环境影响，暂无本项目可比较的耗时基准。
   - *缺陷*：严重失真。在解析通用接口（如 `Runnable.run()`、`View.OnClickListener.onClick()`）时，会连接成百上千个不相关的实现类。这导致 ICFG 边数剧烈膨胀，将巨大的组合爆炸压力转嫁给下游 IFDS 求解器，导致污点前向扩散因伪路径爆炸而失败。
 
 ### 3.5 核心技术局限性与漏报/误报边界 (四大技术边界)
@@ -288,27 +288,29 @@ FlowDroid 是静态分析领域的经典学术基准，基于 Soot 框架与 IFD
 > 本章基于技术文档、公开研究和工程约束，对动态沙箱及深度污点分析的资源需求进行初步可行性评估。除明确注明为 PrivacyTrace 已有测试结果的数据外，其余数值仅作为文献参考或规划估算，不代表本项目已完成相应实验。
 
 ### 4.1 评估方法与证据等级
-为保证技术预研结论的客观性与严谨性，本备忘录建立统一的数据证据等级分类体系，明确区分实测数据、文献引用与工程推演：
 
-| 证据等级标识 | 等级名称 | 定义与适用场景 |
+为避免“文献标签即实测依据”的误用，本备忘录采用以下四类证据。凡未列出可复核位置（测试记录或明确的文献章节）的数值，**不得标成 `MEASURED` 或 `LITERATURE`**。
+
+| 标识 | 定义 | 必需的追溯信息 |
 | :--- | :--- | :--- |
-| `MEASURED` | 本项目实测 | 来源于 PrivacyTrace 当前主线已运行测试套件、基准环境或已有工程实现的实测数据 |
-| `LITERATURE` | 外部文献 | 来源于学术同行评议论文、公开安全研究报告或官方技术文档的实证数据与测试结论 |
-| `ESTIMATED` | 工程估算 | 基于系统架构、硬件规格、虚拟化开销模型及算法复杂度的理论推导与工程规划估算 |
-| `UNKNOWN` | 尚无可靠数据 | 当前缺乏可靠实验环境或公开可验证基准支撑的数据维度，作为后续待测指标 |
+| `MEASURED` | PrivacyTrace 已执行的性能测量 | 仓库测试记录或 CI 产物、样本标识、版本、机器配置、原始结果 |
+| `LITERATURE` | 原始论文或官方文档报告的指标 | 资料链接、章节/表格、作者的实验条件；不得跨样本泛化 |
+| `ESTIMATED` | 明确给出假设的工程估算 | 假设、计算方式、适用范围；不得写成已测事实 |
+| `UNKNOWN` | 暂无同口径可验证的数据 | 保留为 Future Work 待测指标 |
 
-### 4.2 资源需求与成本估算
-下表基于上述证据等级，对现有轻量静态分析架构与未来演进技术方案的资源配额与时延进行横向对比（注：动态沙箱与 FlowDroid 数值均为规划估算或文献参考，不作为普遍适用的既定技术定律）：
+### 4.2 当前与未来分析路线的资源边界
 
-| 指标维度 | 证据等级分类 | 现有静态 Worker (Baseline) | AVD 动态沙箱 (冷启动规划估算) | AVD 动态沙箱 (快照恢复规划估算) | FlowDroid JVM 污点引擎 (文献与估算) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **单样本启动/准备耗时** | 静态实测 / 其余估算 | **0.3 ~ 0.8 s** (`MEASURED`) | 预计 45 ~ 90 s (`ESTIMATED`) | 预计 8 ~ 15 s (`ESTIMATED`) | 约 15 ~ 60 s (Soot 初始化与 DEX 导入, `LITERATURE`) |
-| **环境重置/清理耗时** | 静态实测 / 其余估算 | **< 0.2 s** (容器即毁, `MEASURED`) | 预计 15 ~ 30 s (实例重建, `ESTIMATED`) | 预计 5 ~ 10 s (快照回滚, `ESTIMATED`) | < 1.0 s (JVM 内存释放, `ESTIMATED`) |
-| **CPU 占用配额** | 静态实测 / 其余估算 | **严格 1 vCPU** (受控配额, `MEASURED`) | 建议 2 ~ 4 vCPU (`ESTIMATED`) | 建议 2 ~ 4 vCPU (`ESTIMATED`) | 建议 2 ~ 8 vCPU (多线程图运算, `ESTIMATED`) |
-| **RAM 占用配额** | 静态实测 / 其余文献 | **严格 1.0 GiB** (受控配额, `MEASURED`) | 建议 3.5 ~ 6.0 GiB (`ESTIMATED`) | 建议 3.5 ~ 6.0 GiB (`ESTIMATED`) | 建议 **12.0 ~ 32.0 GiB+** (大型应用极易 OOM, `LITERATURE`) |
-| **单样本端到端分析耗时** | 静态实测 / 其余待测 | **3.5 ~ 15.0 s** (含解包, `MEASURED`) | 视探索时延待测 (`UNKNOWN`) | 视探索时延待测 (`UNKNOWN`) | 视多 DEX 规模差异显著 (`LITERATURE`) |
-| **存储开销 (每个 Worker)** | 静态实测 / 其余估算 | **0** (只读无状态挂载, `MEASURED`) | 预计 8 ~ 16 GiB (虚拟磁盘镜像, `ESTIMATED`) | 预计 8 ~ 16 GiB (含快照差分, `ESTIMATED`) | 预计 2 ~ 5 GiB (Jimple 临时缓存, `ESTIMATED`) |
-| **确定性与重放特性** | 静态实测 / 其余定性 | **固定配置下确定性重放** (`MEASURED`) | 易受网络时序波动影响 (`UNKNOWN`) | 易受时钟与状态漂移影响 (`UNKNOWN`) | 同一规则与配置下具备重放性 (`ESTIMATED`) |
+第 1.1 节记载的静态 Worker 资源限额属于**项目配置描述**，不是耗时或资源峰值实测记录。本 PR 没有提供可验证的性能原始日志，因此不再把先前的 0.3–0.8 秒启动、3.5–15 秒分析、0 存储开销等区间标为 `MEASURED`。
+
+| 关注维度 | 当前静态 Worker | AVD 动态沙箱（Future Work） | FlowDroid（Future Work） |
+| :--- | :--- | :--- | :--- |
+| 启动及环境恢复耗时 | `UNKNOWN`：需按输入 APK、容器生命周期、冷/热启动口径测量 | `UNKNOWN`：需区分冷启动、快照恢复和镜像准备 | `UNKNOWN`：需区分 JVM 启动、Soot 初始化和完整分析 |
+| CPU 与 RAM 需求 | 现有资源限制按主线配置管理；**限额不代表实际峰值** | `ESTIMATED`：需为 Android 系统、探索器和宿主预留资源，数值待测 | `UNKNOWN`：需对固定样本记录峰值 RSS、JVM Heap、超时/OOM |
+| 端到端单样本耗时 | `UNKNOWN`：需从输入到稳定报告完成进行重复测量 | `UNKNOWN`：包含安装、交互、网络观测、回滚和清理 | `LITERATURE`：仅能引用 [1] §6.3 的历史实验，现代样本为 `UNKNOWN` |
+| 存储占用 | `UNKNOWN`：需区分持久卷、临时文件、容器层与结果文件 | `UNKNOWN`：测量系统镜像和快照的磁盘增量 | `UNKNOWN`：测量输入、中间文件、输出及缓存 |
+| 确定性与覆盖度 | 可对固定输入、软件版本与环境验证重放；未提供跨环境 100% 保证 | 易受 UI 路径与运行时条件影响，实际覆盖待测 | 取决于 Source/Sink、建模和求解配置，结果须验证 |
+
+**方案判断**：当前缺乏支持跨方案精确性能倍数比较的数据，暂不以资源数字为充分论据。维持“竞赛主线保留轻量静态路线，动态与深度污点分析赛后验证”的决策，主要依据本项目 MVP 范围、实现/运维复杂度、受控样本与安全边界。未来基准的可重复测量方法见第 4.4 节。
 
 ### 4.3 覆盖率与技术限制
 动态行为分析的实际有效性高度依赖自动化 UI 探索工具能否遍历到触发敏感 API 的代码分支。在缺乏人工干预与特定业务输入的前提下，各类通用探索方案面临如下定性技术限制（固定覆盖率指标视目标应用差异显著，均作为后续待测指标）：
@@ -324,7 +326,7 @@ FlowDroid 是静态分析领域的经典学术基准，基于 Soot 框架与 IFD
    - *技术限制*：特定预设路径执行确定性高，但对未知第三方 APK 无法预先编写业务适配脚本，缺乏通用自动化扩展能力。
 
 此外，商业 APK 在动态运行中普遍存在四大结构性阻断屏障：
-1. **“隐私协议死锁”（The Privacy Agreement Paradox）**：根据国家标准（如 GB/T 35273）合规要求，现代 App 启动后必须强制弹出“隐私协议授权弹窗”。若自动化探索未点击“同意”，App 通常直接退出或挂起；若自动点击“同意”，则样本处于“已获得明示同意”状态，测试系统无法取证“在用户同意隐私政策之前，是否存在未经授权提前收集个人信息”这一核心违法违规事实。
+1. **隐私告知与同意流程对深层路径的限制**：GB/T 35273—2020 对首次打开产品时主动展示政策核心内容采用“宜”的推荐性表述；《App违法违规收集使用个人信息行为认定方法》[12] 将首次运行未以弹窗等明显方式提示阅读收集使用规则列为可认定的违规情形，但这不等于要求所有 App 必须使用阻断式“同意后才能启动”弹窗，也不等于展示政策即取得所有数据处理授权。若 App 阻断进一步操作，自动化遍历的**同意后业务路径**会受限；但仍可在启动前布设观测并记录未交互/未同意时发生的可见行为（Pre-consent），在独立且得到授权的后续阶段再遍历已同意路径（Post-consent）。未观测到行为不能证明行为不存在，同意后结果也不能反推同意前事实；两阶段证据必须分别标记。相关可行性已有同意前 Android 动态测量研究 [13] 佐证。
 2. **身份认证墙（Authentication / SMS Walls）**：多数敏感个人信息访问（如读取通讯录匹配好友、获取相册更换头像）均位于登录流程之后。自动化探索遇到手机验证码输入、微信/支付宝快捷登录或滑块验证码时即被硬性拦截，深层业务代码无法触达。
 3. **时延与条件异步触发机制（Delayed / Conditioned Triggers）**：商业 SDK 普遍设计有时延上报机制（如应用在后台静置数分钟后触发、仅在接入 Wi-Fi 且充电时批量上报、或传感器步数累积变化超过阈值时触发）。在常规测试时间窗口内，此类行为触发概率极低。
 4. **沙箱环境指纹对抗与反检测（Anti-Sandbox Evasion）**：商业 SDK 普遍内置运行环境指纹检测（如检查系统 `Build.FINGERPRINT`、QEMU 专属驱动、电池充放电状态、传感器读数缺乏物理真实噪声等）。一旦识别处于虚拟环境，SDK 立刻静默抑制一切敏感行为。
@@ -434,17 +436,25 @@ PrivacyTrace 的使命是提供客观、严谨、中立的合规证据比对与�
 
 为评估能否将动态沙箱或深度静态污点分析集成到自动化研发流水线（如 GitHub Actions）中，开展了算力约束测算与增量分析可行性评估。
 
-### 6.1 CI 资源与耗时约束 (GitHub Actions 物理瓶颈)
-1. **Runner 物理算力限制**：
-   - GitHub Actions 提供的标准 Linux Runner 规格为 2 vCPU、7 GB 内存以及约 14 GB 可用临时磁盘空间。
-   - 若在 Runner 中拉起 AVD 虚拟机，QEMU 单实例即需划拨至少 2 vCPU 与 4 GB 内存，导致宿主机在运行代码构建、测试套件时陷入严重的 CPU/内存饥饿，极易触发内核 OOM Killer 强杀任务。
-2. **KVM 嵌套虚拟化与软渲染瓶颈**：
-   - 虽然部分 Ubuntu Runner 暴露了 `/dev/kvm` 接口，但云端多租户争抢剧烈，且 Runner **无物理 GPU 硬件加速**。QEMU 只能依赖 SwiftShader 软渲染，导致虚拟机图形渲染将 CPU 长期打满至 100%，系统响应极度迟缓。
-3. **CI 超时预算与执行周期膨胀**：
-   - 主线 PR 代码审查的合理等待时间窗口通常为 5–10 分钟。当前 PrivacyTrace 完整的后端 448 个测试、前端 44 个测试、Ruff 检查以及契约校验在本地仅需不到 2 分钟。
-   - 根据工程估算（`ESTIMATED`），若单样本动态探索按 4–7 分钟预估，流水线中若包含 5 个回归样本，CI 总耗时预计将达 20–35 分钟以上，显著增加研发迭代等待时间。
-4. **确定性崩塌与不稳定测试 (Flaky Tests)**：
-   - 动态分析对系统时钟、异步动画渲染、ADB 守护进程通信超时极其敏感。偶发的 ADB 连接重置或动画掉帧会导致断言随机失败，**破坏 S1 阶段建立的确定性回归基线**。
+### 6.1 GitHub Actions 环境事实与 CI 工程取舍
+
+**核查日期：2026-10-11。** PrivacyTrace 当前为公开仓库；仓库的 `.github/workflows/browser-acceptance.yml` 使用 `runs-on: ubuntu-latest`。根据 GitHub 官方标准 Runner 规格 [9]（具体配置以运行时 Runner 型号和官方最新文档为准），公开仓库和私有仓库的默认资源不同：
+
+| 标准 Linux Runner 场景 | CPU | RAM | SSD | 证据 |
+| :--- | :--- | :--- | :--- | :--- |
+| 公开仓库 `ubuntu-latest` | 4 vCPU | 16 GB | 14 GB | GitHub 官方 Runner 规格 [9] |
+| 私有仓库 `ubuntu-latest` | 2 vCPU | 8 GB | 14 GB | GitHub 官方 Runner 规格 [9] |
+
+GitHub 于 2024 年宣布向 2-vCPU GitHub-hosted Linux Runner 提供 Android 硬件虚拟化加速 [10]；Linux Runner 可在适当的 KVM 权限配置下运行硬件加速 Android Emulator。**无独立物理 GPU 并不能推导出 KVM 不可用或 Android Emulator 无法在 CI 运行。** 实际可用性、启动时间、图形渲染与性能稳定性应针对目标 Runner、镜像和模拟器配置验证，不作“必然 CPU 100%”的无实测断言。
+
+**仍不建议将 AVD / FlowDroid 作为当前阻断式 PR CI 门禁，理由是工程策略而非硬件不可能性：**
+
+1. **多样本预算**：若未来假设单样本动态测试用时 4–7 分钟（仅为计算示例，`ESTIMATED`，未实测），五个样本串行测试部分约需 20–35 分钟；另须计算环境准备、下载、恢复及排队时间，不能据此宣称固定 CI 总耗时。
+2. **环境维护**：系统镜像、模拟器版本、KVM 授权、网络出站策略及实验样本重放配置需要额外维护；公开仓库的 Runner 资源并不自动消除这些成本。
+3. **结果稳定性**：异步 UI、设备状态、时钟与网络行为可能导致测试结果波动；应单独统计重试率和方差，不与当前确定性静态测试混作同一断言。
+4. **安全边界**：隔离 Mock 网络、被动观测、授权测试与证据保留要求必须先落实，不能为了满足 PR 耗时门槛而放宽安全限制。
+
+**决策**：当前将动态/深度污点分析留在 Future Work，优先规划可手动触发或独立的非阻断实验流水线；是否采用托管或自托管 Runner，应由第 4.4 节未来 PoC 的实测结果决定。
 
 ### 6.2 版本差异 (Delta) 分析在 APK/DEX 上的技术瓶颈
 版本差异分析旨在通过对比前后两版代码的增量（Delta），仅对变更部分进行局部污点分析，以期降低分析开销。然而，在编译后的 APK/DEX 二进制层面上，这一构想面临极高的工程与语义障碍：
@@ -497,8 +507,8 @@ V1 版本 APK (Release)                      V2 版本 APK (Release)
 ### 7.1 严谨的答辩辩护逻辑与定位支撑
 在赛事主线答辩与技术评审中，将本预研备忘录作为“未来规划（Future Work）”进行阐述，展现出团队深厚的系统工程素养与审慎的架构权衡能力：
 1. **坚持轻量化确定性主线是理性的工程抉择**：
-   - PrivacyTrace 当前主线采用“静态规范特征 + 政策切片哈希 + 确定性一致性比对”，轻量静态分析具有较低运行成本，在固定输入、依赖版本与执行配置条件下支持确定性重放，输出透明、可解释、可核验的技术审计证据，不独立作出法律合规裁决。
-   - 面对评委关于“为何不用动态沙箱/FlowDroid”的质询，团队可依托本备忘录梳理的理论模型、文献边界与资源约束进行专业回应：客观阐述动态沙箱在商业 APK 面临的资源开销、隐私协议死锁与环境维护成本，阐明 FlowDroid 的 $\mathcal{O}(E \cdot D^3)$ 复杂度、高内存开销风险以及在反射/Native/加壳面前的技术边界。**选择不将它们强行塞入主线，是基于清晰可行性边界与工程定位的审慎权衡，而非能力缺失**。
+   - PrivacyTrace 当前主线采用“静态规范特征 + 政策切片哈希 + 确定性一致性比对”，轻量静态分析在当前限定场景下具有较低的工程复杂度，在固定输入、依赖版本与执行配置条件下可检验确定性重放，输出透明、可解释、可核验的技术审计证据，不独立作出法律合规裁决。
+   - 面对评委关于“为何不用动态沙箱/FlowDroid”的质询，团队可依托本备忘录梳理的理论模型、文献边界与资源约束进行专业回应：客观阐述动态沙箱在商业 APK 面临的工作负载差异、同意流程对路径覆盖的影响与环境维护成本，阐明 IFDS 模型的 $\mathcal{O}(E \cdot D^3)$ 理论上界与 FlowDroid 在不同配置下的资源开销不确定性以及在反射/Native/加壳面前的技术边界。**选择不将它们强行塞入主线，是基于清晰可行性边界与工程定位的审慎权衡，而非能力缺失**。
 2. **技术储备完备，演进路线清晰**：
    - 证明团队不仅对现有主线实现有透彻把握，更对高阶动态与静态技术的前沿成熟度、边界盲区及合规风险完成了深度技术推演与预研，为主线的长远演进指明了可行路径。
 
@@ -546,7 +556,7 @@ V1 版本 APK (Release)                      V2 版本 APK (Release)
 
 ## 8. 参考文献与公开技术资料 (References)
 
-1. **FlowDroid**: Arzt, S., Rasthofer, S., Fritz, C., Bodden, E., Bartel, A., Klein, J., Le Traon, Y., Octeau, D., & McDaniel, P. (2014). *FlowDroid: Precise Context, Flow, Field, Object-sensitive and Lifecycle-aware Taint Analytics for Android Apps*. In Proceedings of the 35th ACM SIGPLAN Conference on Programming Language Design and Implementation (PLDI '14), pp. 259–269.
+1. **FlowDroid**: Arzt, S., Rasthofer, S., Fritz, C., Bodden, E., Bartel, A., Klein, J., Le Traon, Y., Octeau, D., & McDaniel, P. (2014). *FlowDroid: Precise Context, Flow, Field, Object-sensitive and Lifecycle-aware Taint Analytics for Android Apps*. PLDI '14, pp. 259–269. [原论文 PDF](https://jacquesklein2302.github.io/papers/2014-PLDI-flowdroid.pdf)，§6.3（真实应用性能数据）。
 2. **SuSi**: Rasthofer, S., Arzt, S., & Bodden, E. (2014). *A Machine-learning Approach for Classifying and Categorizing Android Sources and Sinks*. In Network and Distributed System Security Symposium (NDSS '14).
 3. **PScout**: Au, K. W. Y., Zhou, Y. F., Huang, Z., & Lie, D. (2012). *PScout: Analyzing the Android Permission Specification*. In Proceedings of the 2012 ACM Conference on Computer and Communications Security (CCS '12), pp. 217–228.
 4. **IccTA**: Li, L., Bartel, A., Bissyandé, T. F., Klein, J., Le Traon, Y., Arzt, S., & Bodden, E. (2015). *IccTA: Detecting Inter-Component Privacy Leaks in Android Apps*. In Proceedings of the 37th International Conference on Software Engineering (ICSE '15), pp. 280–291.
@@ -554,4 +564,9 @@ V1 版本 APK (Release)                      V2 版本 APK (Release)
 6. **Fastbot**: Bytedance. *Fastbot-Android: A Model-Based Testing Tool for Android Applications*. https://github.com/bytedance/Fastbot_Android
 7. **Android Network Security Configuration**: Google Android Developers. *Network security configuration & Certificate Pinning Documentation*. https://developer.android.com/privacy-and-security/security-config
 8. **GB/T 35273-2020**: 全国信息安全标准化技术委员会. *信息安全技术 个人信息安全规范*. 国家市场监督管理总局、国家标准化管理委员会.
+9. **GitHub-hosted Runner Specifications**: GitHub Docs, [Choosing the runner for a job](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job)，标准 Linux Runner 规格表（2026-10-11 查阅）。
+10. **Android Emulator Hardware Acceleration on Actions**: GitHub Changelog, 2024-04-02, [Hardware accelerated Android virtualization now available](https://github.blog/changelog/2024-04-02-github-actions-hardware-accelerated-android-virtualization-now-available/)。
+11. **Android CA 信任**: Google Android Developers, [Network Security Configuration](https://developer.android.com/privacy-and-security/security-config)，Default trust anchors / Custom trust anchors。
+12. **App 首次运行告知提示**: 中央网信办等四部门《[App违法违规收集使用个人信息行为认定方法](https://www.cac.gov.cn/2019-12/27/c_1578986455686625.htm)》（2019 年）第一部分第 2 项；GB/T 35273—2020 第 5.5 节注 3（“宜”）。
+13. **同意前行为的可观测性（研究示例）**: Liu et al. (2022), [Evaluating the Privacy Policy of Android Apps: A Privacy Policy Compliance Study for Popular Apps in China and Europe](https://onlinelibrary.wiley.com/doi/10.1155/2022/2508690)，§5.1（动态检测用户同意前数据获取与发送行为）。
 

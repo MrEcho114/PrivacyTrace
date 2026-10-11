@@ -311,3 +311,20 @@ source 文案中被点名**，把「来源可追溯」从声明变成断言。�
 累计净增 49 个用例全部通过，**新增失败为 0**。那 2 项始终是 `test_job_creation.py` 的
 既有 `job_store` 建锁竞争（`_queue.Empty` 与 `PermissionError errno 13 on .lock`），
 在基线 `49464a7` 上报错逐字一致，且二者单独运行必过（7 passed），本 PR 不修。
+
+### 远端 CI
+
+`themasterplan-check / check` 在 `2abb623` 上 **success**（run 38111557864，
+`workflow_dispatch` 触发，含 `Run project validation` 即 `scripts/check.sh`）。
+
+**途中修掉一个与本次改动无关、但会阻断交付的 CI 阻塞**：本分支的
+`.github/workflows/check.yml` 仍引用改名前的 owner
+（`OasisSaber/TheMasterplan/...`）。GitHub 账号已于 2026-10-10 改名 `OasisViridis`：
+REST API 会跟随改名 301 重定向，但 **GitHub Actions 的可复用工作流解析不会**，
+`users/OasisSaber` 直接 404，于是 `pull_request` 事件连运行都不创建
+（该 SHA 的 check-suites 恒为 0）。`main` 侧已由 `07ae08e` 修好，本分支直接
+cherry-pick 该提交（`2abb623`），只改 `uses:` 的 owner；
+其余 `OasisSaber` 字面量（`.themasterplan/state.json` 等）经 API 重定向仍可用，
+属采纳状态，未动。
+
+修复后 `workflow_dispatch` 立即能创建运行并解析成功，反向印证该引用就是阻塞点。

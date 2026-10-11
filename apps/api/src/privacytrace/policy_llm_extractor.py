@@ -7,6 +7,7 @@ and graceful offline fallback.
 import hashlib
 import ipaddress
 import json
+import math
 import os
 import re
 import stat
@@ -248,6 +249,14 @@ class LLMExtractorConfig:
 
     def __post_init__(self):
         self.api_base = resolve_api_base(self.api_base)
+        for name in ("max_elapsed_seconds", "timeout_seconds", "temperature"):
+            value = getattr(self, name)
+            try:
+                finite = type(value) in (int, float) and math.isfinite(value)
+            except (TypeError, ValueError, OverflowError):
+                finite = False
+            if not finite or (name != "temperature" and value <= 0):
+                raise ValueError("LLM floating-point limits must be finite and valid")
         if (
             type(self.max_spans) is not int or self.max_spans < 1
             or type(self.max_requests) is not int or self.max_requests < 1
@@ -258,7 +267,6 @@ class LLMExtractorConfig:
             or self.max_candidates_per_response < 1
             or type(self.max_document_candidates) is not int
             or self.max_document_candidates < 0
-            or self.max_elapsed_seconds <= 0 or self.timeout_seconds <= 0
         ):
             raise ValueError("LLM extraction limits must be positive")
 

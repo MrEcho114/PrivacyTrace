@@ -245,7 +245,7 @@ def _error_code(errors):
             return code
     if "timeout" in message.lower() or "timed out" in message.lower():
         return "LLM_TIMEOUT"
-    if "JSON" in message or "Expecting value" in message:
+    if "JSON" in message or "Expecting" in message or "Unterminated" in message:
         return "INVALID_LLM_RESPONSE"
     return "LLM_REQUEST_FAILED"
 

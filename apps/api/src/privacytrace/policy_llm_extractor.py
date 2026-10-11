@@ -752,9 +752,22 @@ class PolicyLLMExtractor:
 
         return valid, rejected
 
+    def _trusted_cache_dir(self) -> bool:
+        path = self.config.cache_dir
+        if path is None or not path.is_dir() or path.is_symlink():
+            return False
+        try:
+            if os.name == "posix":
+                info = path.stat()
+                if info.st_uid != os.getuid() or info.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
+                    return False
+            return True
+        except OSError:
+            return False
+
     def clear_cache(self) -> int:
         """Remove cached JSON files in configured cache_dir, returning removed count."""
-        if not self.config.cache_dir or not self.config.cache_dir.is_dir():
+        if not self._trusted_cache_dir():
             return 0
         count = 0
         for p in self.config.cache_dir.glob(f"{CACHE_FILE_PREFIX}*.json"):
@@ -770,12 +783,14 @@ class PolicyLLMExtractor:
         return count
 
     def _read_cache(self, cache_key: str) -> dict[str, Any] | None:
-        if not self.config.cache_dir:
+        if not self._trusted_cache_dir():
             return None
         cache_file = self.config.cache_dir / f"{CACHE_FILE_PREFIX}{cache_key}.json"
         if not cache_file.exists() or cache_file.is_symlink():
             return None
         try:
+            if cache_file.stat().st_size > self.config.max_response_bytes:
+                return None
             value = json.loads(cache_file.read_text(encoding="utf-8"))
             if isinstance(value, dict) and isinstance(value.get("raw_items"), list):
                 return value
@@ -786,11 +801,32 @@ class PolicyLLMExtractor:
     def _write_cache(self, cache_key: str, data: dict[str, Any]) -> None:
         if not self.config.cache_dir:
             return
+        tmp_name = None
         try:
-            self.config.cache_dir.mkdir(parents=True, exist_ok=True)
-            cache_file = self.config.cache_dir / f"{CACHE_FILE_PREFIX}{cache_key}.json"
-            tmp_file = self.config.cache_dir / f".{CACHE_FILE_PREFIX}{cache_key}.tmp"
-            tmp_file.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-            tmp_file.replace(cache_file)
-        except (OSError, TypeError):
+            self.config.cache_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+            if not self._trusted_cache_dir():
+                return
+            serialized = json.dumps(data, ensure_ascii=False)
+            if len(serialized.encode("utf-8")) > self.config.max_response_bytes:
+                return
+            with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8", dir=self.config.cache_dir,
+                prefix=f".{CACHE_FILE_PREFIX}", suffix=".tmp", delete=False,
+            ) as handle:
+                tmp_name = Path(handle.name)
+                handle.write(serialized)
+                handle.flush()
+                os.fsync(handle.fileno())
+            destination = self.config.cache_dir / f"{CACHE_FILE_PREFIX}{cache_key}.json"
+            if destination.is_symlink():
+                return
+            os.replace(tmp_name, destination)
+            tmp_name = None
+        except (OSError, TypeError, ValueError):
             pass
+        finally:
+            if tmp_name is not None:
+                try:
+                    tmp_name.unlink(missing_ok=True)
+                except OSError:
+                    pass

@@ -242,15 +242,18 @@ _LLM_FAILURE_CODES = {
 
 
 def _error_code(errors):
+    # A later budget failure must not overwrite the actual request failure.
     # Never persist arbitrary server-supplied error strings in an audit.
     message = " ".join(str(e) for e in errors)
-    for code in _LLM_FAILURE_CODES:
+    for code in (
+        "RESPONSE_TOO_LARGE", "CANDIDATE_RESPONSE_LIMIT", "LLM_TIMEOUT",
+        "INVALID_LLM_RESPONSE", "LLM_REQUEST_FAILED",
+    ):
         if code in message:
             return code
-    if "timeout" in message.lower() or "timed out" in message.lower():
-        return "LLM_TIMEOUT"
-    if "JSON" in message or "Expecting" in message or "Unterminated" in message:
-        return "INVALID_LLM_RESPONSE"
+    for code in sorted(_LLM_FAILURE_CODES):
+        if code in message:
+            return code
     return "LLM_REQUEST_FAILED"
 
 

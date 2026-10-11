@@ -422,7 +422,7 @@ def test_extractor_spans_four_coverage_scenarios():
     assert len(res.telemetry.failed_spans) == 1
     assert res.telemetry.failed_spans[0]["start"] == 8
     assert "text" not in res.telemetry.failed_spans[0]
-    assert any("LLM_TIMEOUT" in err for err in res.telemetry.failed_spans[0]["errors"])
+    assert any("LLM_REQUEST_FAILED" in err for err in res.telemetry.failed_spans[0]["errors"])
 
     # Scenario 2: Partial Timeout with 0 total candidates
     two_spans = [

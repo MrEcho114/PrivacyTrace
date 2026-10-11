@@ -5,6 +5,7 @@ const path = require('node:path')
 const { spawn, execFileSync } = require('node:child_process')
 const crypto = require('node:crypto')
 const { stopChildren, spawnOptions } = require('./lib/process-control.cjs')
+const { assertDesign, assertSurface, verifyGuardFailures } = require('./lib/frontend-guards.cjs')
 
 const output = path.resolve('tmp/issue44-ui')
 const screenshots = path.join(output, 'screenshots')
@@ -13,6 +14,10 @@ async function captureWidths(page, name) {
   for (const [width, height] of [[1440, 900], [1920, 1080], [1280, 720], [768, 1024], [390, 844]]) {
     await page.setViewportSize({ width, height }); await page.evaluate(() => document.fonts.ready)
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, `${name} overflow at ${width}`)
+    await assertDesign(page)
+    await assertSurface(page, name)
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await page.screenshot({ path: path.join(screenshots, `${name}-${width}-viewport.png`) })
     await page.screenshot({ path: path.join(screenshots, `${name}-${width}.png`), fullPage: true })
   }
   await page.setViewportSize({ width: 1440, height: 900 })
@@ -47,6 +52,9 @@ async function main() {
     page.on('request', request => { if (request.url().includes('/api/')) requests.push(request.url()) })
     await page.goto(origin)
     await page.getByRole('heading', { name: '导入分析材料', exact: true }).waitFor({ timeout: 5000 })
+    await page.evaluate(() => document.fonts.ready)
+    const guardRegressions = await verifyGuardFailures(page)
+    await page.evaluate(() => window.scrollTo(0, 0))
     const skipLink = page.getByRole('link', { name: '跳到内容', exact: true })
     assert.equal(await skipLink.evaluate(element => getComputedStyle(element).opacity), '0')
     await page.keyboard.press('Tab')
@@ -185,7 +193,7 @@ async function main() {
     const sourceFiles = fs.readdirSync(path.resolve('apps/web/src'), { recursive: true }).filter(file => fs.statSync(path.join('apps/web/src', file)).isFile()).sort()
     const sourceHash = crypto.createHash('sha256')
     for (const file of sourceFiles) sourceHash.update(file).update(fs.readFileSync(path.join('apps/web/src', file)))
-    fs.writeFileSync(path.join(output, 'verification.json'), JSON.stringify({ result: 'PASS', commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), dirty: !!execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim(), source_sha256: sourceHash.digest('hex'), scope: 'synthetic frontend interactions; health response mocked', viewports: [1440, 1920, 1280, 768, 390], errors, requests }, null, 2))
+    fs.writeFileSync(path.join(output, 'verification.json'), JSON.stringify({ result: 'PASS', commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), dirty: !!execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim(), source_sha256: sourceHash.digest('hex'), scope: 'synthetic frontend interactions; health response mocked', viewports: [1440, 1920, 1280, 768, 390], guard_regressions: guardRegressions, errors, requests }, null, 2))
     console.log('Frontend flow: import, quote validation, enum edits, add/delete, source switching, persistence isolation, cancellation/retry, report evidence, responsive layouts, focus and settings passed.')
   } finally { await browser?.close(); const survivors = await stopChildren(children); if (survivors.length) throw new Error('This test left a server process running') }
 }

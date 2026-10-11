@@ -64,6 +64,9 @@ jobs:
       - name: Run frontend walkthrough
         run: npm run acceptance:frontend
 
+      - name: Verify preview lifecycle
+        run: npm run acceptance:preview
+
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -74,6 +77,8 @@ jobs:
             evidence/screenshots/
             tmp/issue44-ui/verification.json
             tmp/issue44-ui/screenshots/
+            tmp/frontend-preview/verification.json
+            tmp/frontend-preview/preview.log
           if-no-files-found: warn
 
   # 对抗压力套件：比核心验收更重，按日定时跑并支持手动触发，不进每个 PR 的门禁，

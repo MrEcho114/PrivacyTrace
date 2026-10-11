@@ -16,7 +16,13 @@ function open(id: string, event: Event) {
   originButton.value = event.currentTarget as HTMLElement; props.state.evidenceId = id; fullText.value = false
   void nextTick(() => document.getElementById('example-evidence-title')?.focus())
 }
-function close() { props.state.evidenceId = ''; void nextTick(() => originButton.value?.focus()) }
+function close() {
+  props.state.evidenceId = ''
+  void nextTick(() => {
+    const target = originButton.value?.isConnected ? originButton.value : document.getElementById('page-title')
+    target?.focus()
+  })
+}
 </script>
 <template>
   <div>

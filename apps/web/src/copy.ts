@@ -61,4 +61,3 @@ export const copy = {
   "sampleOnly": "仅示例有效",
   "realInputHelp": "真实上传、网页抓取与候选生成接口尚未接入。"
 } as const
-

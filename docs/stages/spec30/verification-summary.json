@@ -1,5 +1,5 @@
 {
-  "verified_at": "2026-10-11T04:38:24.099056+00:00",
+  "verified_at": "2026-10-11T04:45:44.188137+00:00",
   "base_commit": "1d0be28b09ecfd15e81de943c7e6c18daa239dd2",
   "authority": {
     "command": "PRIVACYTRACE_DOCKER_TESTS=1 scripts/check.ps1",
@@ -37,7 +37,7 @@
   "artifact_sha256": {
     "browser-proof.json": "10fde469935c60f6fceba3eb817f1c49296f1afa62f1de942aeb6ffcd7e3d054",
     "build-receipt.json": "4755b9667c50a18b99713cf1fdf515b6bc5fae3491b907d290e153ad385104f7",
-    "comparison.json": "2d8d6aad38dddd53ccc966f68118c22dbd1ced8e7693295d8e3ba22155d40d8a",
-    "offline-proof.json": "016d5759cbe314c31de9cff0f4c2452419fe565884dcb01e3dcb8848ea08ba94"
+    "comparison.json": "b7c061ae6ce19855b223a75ca43454f469fad9fd9db015d4c442e66d70edc082",
+    "offline-proof.json": "c674dabfae455c961d1b6a1b4b08c220ae2b336200645764cbf63e05687a631e"
   }
 }

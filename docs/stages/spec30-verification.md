@@ -41,7 +41,9 @@
 
 [独立离线 proof](spec30/offline-proof.json) 在新容器 `--network=none` 内实际执行：仅 loopback、外网连接失败、六报告 HTTP 成功、真正渲染 Vue 并切换六来源、原分析时间保留、page_errors=[]。仅挂载包、验证脚本、预备浏览器依赖和输出，不挂载仓库、开发虚拟环境或模型密钥。测试依赖预备时联网，独立验收过程断网；交付 viewer 只需 Python 3.11+ 标准库。
 
-包 manifest SHA256：`3faed9ae102d9572a16ee16c7988c2ad53d558ad16a413e5d3d93b66681bbf3e`。proof 记录不可变测试镜像 ID、验证脚本/浏览器驱动哈希、Playwright 版本，以及实际挂载 Chromium 版本和可执行文件 SHA256。系统库没有冒充构建工具链锁。
+包 manifest SHA256：`c47a920abf410e0d912a65ee7d0ca244eb93e688a36ed518546d6913fbd7cfc4`。proof 记录不可变测试镜像 ID、验证脚本/浏览器驱动哈希、Playwright 版本，以及实际挂载 Chromium 版本和可执行文件 SHA256。系统库没有冒充构建工具链锁。
+
+最终交付前将执行目录的 API 文件换行字节与 Git 提交对象对齐，重新实际运行六场景、普通入口边界、浏览器和独立断网回放，结果不变。验证 JSON 保留原始字节；提交对象中所有实现/receipt 哈希逐一匹配记录，避免 Windows 换行转换破坏版本绑定。
 
 ## 真实案例、审查与交付边界
 

@@ -14,7 +14,8 @@
         "input_mode": {
           "enum": [
             "SYNTHETIC",
-            "APK"
+            "APK",
+            "CONTROLLED_APK"
           ],
           "title": "Input Mode",
           "type": "string"

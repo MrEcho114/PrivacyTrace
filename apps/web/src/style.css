@@ -52,7 +52,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .evidence-card strong { font-size: 14px; }
 .locator { font-size: 12px; color: #718073; overflow-wrap: anywhere; }
 pre { font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; padding: 14px; line-height: 1.8; background: #f5f7f4; border-radius: 6px; max-height: 280px; overflow-y: auto; }
-.provenance { margin: 28px 0; font-size: 12px; color: #6b7b6e; }
+.provenance { margin: 28px 0; font-size: 12px; color: #6b7b6e; overflow-wrap: anywhere; }
 .provenance summary { cursor: pointer; padding: 10px 0; }
 .provenance article { border-left: 2px solid #d3dfd2; padding: 8px 18px; margin: 10px 0; }
 .hash { overflow-wrap: anywhere; font-family: Consolas, monospace; }
@@ -88,3 +88,4 @@ select { width: 100%; }
 summary { cursor: pointer; }
 mark { background: #ffebb3; color: #423711; }
 .job-state button { margin-left: 15px; }
+.job-state { overflow-wrap: anywhere; }

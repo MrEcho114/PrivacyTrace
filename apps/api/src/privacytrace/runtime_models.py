@@ -79,7 +79,7 @@ class Report(Model):
 
     @model_validator(mode="after")
     def validate_real_mode(self):
-        if self.job.input_mode != "APK":
+        if self.job.input_mode not in {"APK", "CONTROLLED_APK"}:
             raise ValueError("Non-demo reports require an APK job")
         if self.job.source_origin == "SYNTHETIC":
             raise ValueError("Non-demo reports cannot claim a synthetic sample")
@@ -100,7 +100,7 @@ class StoredJob(Model):
 
     @model_validator(mode="after")
     def validate_record(self):
-        if self.job.input_mode != "APK":
+        if self.job.input_mode not in {"APK", "CONTROLLED_APK"}:
             raise ValueError("Local persisted jobs require APK input mode")
         if self.job.source_origin == "SYNTHETIC":
             raise ValueError("Persisted jobs cannot claim a synthetic sample")

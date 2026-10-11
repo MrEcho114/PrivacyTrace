@@ -14,7 +14,8 @@
         "input_mode": {
           "enum": [
             "SYNTHETIC",
-            "APK"
+            "APK",
+            "CONTROLLED_APK"
           ],
           "title": "Input Mode",
           "type": "string"
@@ -642,7 +643,8 @@
         "IN_APP_POLICY",
         "STORE_POLICY",
         "OFFICIAL_WEB_POLICY",
-        "SDK_POLICY"
+        "SDK_POLICY",
+        "CONTROLLED_POLICY"
       ],
       "title": "PolicySource",
       "type": "string"

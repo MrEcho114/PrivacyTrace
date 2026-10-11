@@ -17,6 +17,7 @@ class PolicySource(StrEnum):
     STORE_POLICY = "STORE_POLICY"
     OFFICIAL_WEB_POLICY = "OFFICIAL_WEB_POLICY"
     SDK_POLICY = "SDK_POLICY"
+    CONTROLLED_POLICY = "CONTROLLED_POLICY"
 
 
 class MatchStatus(StrEnum):
@@ -192,7 +193,7 @@ class DeliveryMode(StrEnum):
 class AnalysisJob(Model):
     id: str
     sample_id: str
-    input_mode: Literal["SYNTHETIC", "APK"]
+    input_mode: Literal["SYNTHETIC", "APK", "CONTROLLED_APK"]
     source_origin: SourceOrigin
     state: Literal[
         "QUEUED",
@@ -257,6 +258,11 @@ class EvaluationInput(Model):
                         "API descriptor, context or ruleset does not match a trusted rule"
                     )
         for doc in self.policy_documents:
+            if (
+                doc.source_type == PolicySource.CONTROLLED_POLICY
+                and self.job.input_mode != "CONTROLLED_APK"
+            ):
+                raise ValueError("Controlled policy facts require a controlled APK job")
             snapshot = evidence.get(doc.evidence_id)
             if not snapshot or snapshot.kind != "POLICY_DOCUMENT" or snapshot.document_id != doc.id:
                 raise ValueError("A document requires its own snapshot evidence")

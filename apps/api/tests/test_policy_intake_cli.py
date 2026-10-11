@@ -965,10 +965,16 @@ def test_policy_intake_cli_duplicate_candidate_distinct_polarity_preserves_manua
     assert claim["data_type"] == "LOCATION"
     assert claim["polarity"] == "NEGATIVE"
     assert claim["condition"] == "严格限制"
+    conflicts = body["llm_extraction"]["conflicting_candidates"]
+    assert len(conflicts) == 1
+    assert conflicts[0]["existing_polarity"] == "NEGATIVE"
+    assert conflicts[0]["llm_polarity"] == "AFFIRMATIVE"
+    assert conflicts[0]["requires_human_review"] is True
 
     audits = json.loads((out / "policy.audits.json").read_bytes())
     assert len(audits) == 1
     assert audits[0]["actor"] == "Codex-assisted candidate"
+    assert "conflicting LLM polarity requires human review" in audits[0]["reason"]
 
 
 

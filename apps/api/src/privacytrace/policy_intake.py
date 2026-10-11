@@ -113,6 +113,79 @@ def preflight_capture(raw_path, source_url, output_dir, candidates=None):
     return raw, text
 
 
+
+# Candidate deduplication requires *semantic* equality, not merely matching evidence.
+_SEMANTIC_FIELDS = (
+    "polarity", "subject", "action", "condition",
+    "declared_purpose", "declared_recipient", "ambiguity_flags",
+)
+_DEFAULT_SEMANTICS = {"polarity": "UNKNOWN", "subject": "UNKNOWN", "action": "UNKNOWN"}
+
+
+def _candidate_identity(candidate, text):
+    excerpt = candidate.get("excerpt")
+    start, end = candidate.get("start_offset"), candidate.get("end_offset")
+    if start is None and end is None:
+        start = text.index(excerpt)  # The preflight has established uniqueness.
+        end = start + len(excerpt)
+    evidence = (start, end, candidate["data_type"])
+    semantics = tuple(
+        tuple(sorted(candidate.get(name) or [])) if name == "ambiguity_flags"
+        else candidate.get(name, _DEFAULT_SEMANTICS.get(name))
+        for name in _SEMANTIC_FIELDS
+    )
+    return evidence, semantics
+
+
+def merge_llm_candidates(text, manual_candidates, llm_candidates, model,
+                         actor="Codex-assisted candidate",
+                         reason="Initial offline candidate capture",
+                         max_claims=1999):
+    """Keep distinct meanings and stable, trusted audit provenance."""
+    candidates = [dict(item) for item in manual_candidates]
+    sources = {}
+    conflicts = []
+    dropped = 0
+    known = {}
+    for index, candidate in enumerate(candidates):
+        evidence, semantics = _candidate_identity(candidate, text)
+        known.setdefault(evidence, []).append((semantics, index))
+    for cand in llm_candidates:
+        evidence, semantics = _candidate_identity(cand, text)
+        matching = known.get(evidence, [])
+        if any(previous == semantics for previous, _ in matching):
+            continue
+        if len(candidates) >= max_claims:
+            dropped += 1
+            continue
+        new_index = len(candidates)
+        candidates.append(dict(cand))
+        sources[new_index] = (
+            f"LLM-assisted candidate ({model})",
+            "LLM-assisted candidate extraction with verbatim verification",
+        )
+        for existing_semantics, existing_index in matching:
+            fields = [
+                name for name, before, after in zip(
+                    _SEMANTIC_FIELDS, existing_semantics, semantics, strict=True
+                ) if before != after
+            ]
+            conflicts.append({
+                "candidate_index": existing_index + 1,
+                "other_candidate_index": new_index + 1,
+                "fields": fields,
+                "existing_polarity": existing_semantics[0],
+                "llm_polarity": semantics[0],
+                "requires_human_review": True,
+            })
+            old_actor, old_reason = sources.get(existing_index, (actor, reason))
+            marker = "; conflicting LLM candidate requires human review"
+            if marker not in old_reason:
+                sources[existing_index] = (old_actor, old_reason + marker)
+        known.setdefault(evidence, []).append((semantics, new_index))
+    return candidates, sources, conflicts, dropped
+
+
 def capture(
     raw_path,
     source_url,
@@ -127,49 +200,25 @@ def capture(
     reason="Initial offline candidate capture",
     llm_extractor=None,
     candidate_provenance=None,
+    llm_result=None,
+    llm_config=None,
+    candidate_conflicts=None,
 ):
     raw, text = preflight_capture(raw_path, source_url, output_dir, candidates)
     sources = dict(candidate_provenance or {})
+    conflicts = list(candidate_conflicts or [])
+    dropped_candidates = 0
     if llm_extractor is not None and getattr(llm_extractor.config, "enabled", False):
-        spans = split_spans(text)
-        llm_res = llm_extractor.extract_from_spans(text, spans)
-        candidates = list(candidates or [])
-        existing_keys = set()
-        for c in candidates:
-            if not isinstance(c, dict):
-                continue
-            existing_keys.add(
-                (c.get("excerpt"), c.get("start_offset"), c.get("end_offset"), c.get("data_type"))
-            )
-            if c.get("start_offset") is None and c.get("end_offset") is None:
-                existing_keys.add((c.get("excerpt"), c.get("data_type")))
-
-        for cand in llm_res.candidates:
-            key_with_offsets = (
-                cand.get("excerpt"),
-                cand.get("start_offset"),
-                cand.get("end_offset"),
-                cand.get("data_type"),
-            )
-            key_by_excerpt = (cand.get("excerpt"), cand.get("data_type"))
-            if key_with_offsets in existing_keys or key_by_excerpt in existing_keys:
-                for position, existing in enumerate(candidates):
-                    if (existing.get("excerpt"), existing.get("data_type")) == key_by_excerpt:
-                        if existing.get("polarity", "UNKNOWN") != cand.get("polarity", "UNKNOWN"):
-                            old_actor, old_reason = sources.get(position, (actor, reason))
-                            sources[position] = (
-                                old_actor,
-                                old_reason + "; conflicting LLM polarity requires human review",
-                            )
-                        break
-                continue
-            if key_with_offsets not in existing_keys and key_by_excerpt not in existing_keys:
-                existing_keys.add(key_with_offsets)
-                sources[len(candidates)] = (
-                    f"LLM-assisted candidate ({llm_extractor.config.model})",
-                    "LLM-assisted candidate extraction with verbatim verification",
-                )
-                candidates.append(dict(cand))
+        llm_config = llm_extractor.config
+        llm_result = llm_extractor.extract_from_spans(text, split_spans(text))
+        candidates, sources, conflicts, dropped_candidates = merge_llm_candidates(
+            text, candidates or [], llm_result.candidates, llm_config.model, actor, reason
+        )
+    if llm_result is not None and llm_config is None:
+        raise ValueError("LLM execution result requires its configuration")
+    if dropped_candidates:
+        llm_result.telemetry.limited_candidates += dropped_candidates
+        llm_result.status = "PARTIAL"
     now = datetime.now(timezone.utc).isoformat()
     document = PolicyDocument.model_validate(
         {
@@ -540,57 +589,17 @@ def main():
                 ]
             if llm_res.telemetry.skipped_spans:
                 llm_summary["skipped_span_details"] = list(llm_res.telemetry.skipped_spans)
-            existing_keys = set()
-            for c in candidates:
-                existing_keys.add(
-                    (
-                        c.get("excerpt"),
-                        c.get("start_offset"),
-                        c.get("end_offset"),
-                        c.get("data_type"),
-                    )
+            # One shared semantic merge implementation for CLI and API entrypoints.
+            candidates, source_overrides, candidate_conflicts, dropped_candidates = (
+                merge_llm_candidates(
+                    text, candidates, llm_res.candidates, config.model, actor, reason
                 )
-                if c.get("start_offset") is None and c.get("end_offset") is None:
-                    existing_keys.add((c.get("excerpt"), c.get("data_type")))
-
-            llm_summary["conflicting_candidates"] = []
-            for cand in llm_res.candidates:
-                key_with_offsets = (
-                    cand.get("excerpt"),
-                    cand.get("start_offset"),
-                    cand.get("end_offset"),
-                    cand.get("data_type"),
-                )
-                key_by_excerpt = (cand.get("excerpt"), cand.get("data_type"))
-                if key_with_offsets in existing_keys or key_by_excerpt in existing_keys:
-                    for position, existing in enumerate(candidates):
-                        if (existing.get("excerpt"), existing.get("data_type")) == key_by_excerpt:
-                            old_polarity = existing.get("polarity", "UNKNOWN")
-                            new_polarity = cand.get("polarity", "UNKNOWN")
-                            if old_polarity != new_polarity:
-                                llm_summary["conflicting_candidates"].append({
-                                    "candidate_index": position + 1,
-                                    "data_type": cand.get("data_type"),
-                                    "existing_polarity": old_polarity,
-                                    "llm_polarity": new_polarity,
-                                    "requires_human_review": True,
-                                })
-                                old_actor, old_reason = source_overrides.get(
-                                    position, (actor, reason)
-                                )
-                                source_overrides[position] = (
-                                    old_actor,
-                                    old_reason + "; conflicting LLM polarity requires human review",
-                                )
-                            break
-                    continue
-                if key_with_offsets not in existing_keys and key_by_excerpt not in existing_keys:
-                    existing_keys.add(key_with_offsets)
-                    source_overrides[len(candidates)] = (
-                        f"LLM-assisted candidate ({args.llm_model})",
-                        "LLM-assisted candidate extraction with verbatim verification",
-                    )
-                    candidates.append(dict(cand))
+            )
+            if dropped_candidates:
+                llm_res.telemetry.limited_candidates += dropped_candidates
+                llm_res.status = "PARTIAL"
+            llm_summary["conflicting_candidates"] = candidate_conflicts
+            llm_summary["status"] = llm_res.status
         result = capture(
             args.raw,
             args.source_url,
@@ -604,6 +613,9 @@ def main():
             actor=actor,
             reason=reason,
             candidate_provenance=source_overrides,
+            llm_result=llm_res if llm_enabled else None,
+            llm_config=config if llm_enabled else None,
+            candidate_conflicts=candidate_conflicts if llm_enabled else None,
         )
         out_summary = {
             "status": "CAPTURED_UNREVIEWED",

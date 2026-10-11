@@ -973,7 +973,7 @@ def test_policy_intake_cli_duplicate_candidate_distinct_polarity_preserves_manua
     assert conflicts[0]["requires_human_review"] is True
 
     audits = json.loads((out / "policy.audits.json").read_bytes())
-    assert len(audits) == 1
+    assert len(audits) == 2
     assert audits[0]["actor"] == "Codex-assisted candidate"
     assert "conflicting LLM candidate requires human review" in audits[0]["reason"]
     assert audits[1]["actor"].startswith("LLM-assisted candidate")

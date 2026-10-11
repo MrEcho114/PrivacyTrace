@@ -13,7 +13,7 @@ from .controlled import SUITE, analyze
 from .isolated_scan import docker_prefix
 from .job_store import JobStore
 from .policy_intake import digest, read_safe
-from .resources import ROOT, taxonomy
+from .resources import ACTIVE_SDK_SIGNATURES_VERSION, ROOT, SDK_SIGNATURE_FILES, taxonomy
 
 SCHEMES = ("permission_keyword", "api_flat", "privacytrace")
 SCHEME_INPUTS = {
@@ -272,7 +272,8 @@ def run_benchmark(artifacts, output, timeout):
         )
     rows, summaries = score(records, truth)
     implementation_files = sorted((ROOT / "apps/api/src/privacytrace").glob("*.py")) + [
-        ROOT / "rules/taxonomy.v0.3.json"
+        ROOT / "rules/taxonomy.v0.3.json",
+        ROOT / SDK_SIGNATURE_FILES[ACTIVE_SDK_SIGNATURES_VERSION],
     ]
     result = {
         "implementation_hashes": {

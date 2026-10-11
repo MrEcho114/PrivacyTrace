@@ -59,6 +59,7 @@ def capture(
     regions=None,
     actor="Codex-assisted candidate",
     reason="Initial offline candidate capture",
+    llm_extractor=None,
 ):
     parsed = urlparse(source_url)
     if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
@@ -67,6 +68,27 @@ def capture(
     text = raw.decode("utf-8")  # No newline, BOM, or Unicode normalization.
     if not text or len(text) > 200000:
         raise ValueError("Policy text must contain 1 to 200000 Unicode codepoints")
+    if llm_extractor is not None and getattr(llm_extractor.config, "enabled", False):
+        spans = split_spans(text)
+        llm_res = llm_extractor.extract_from_spans(text, spans)
+        candidates = list(candidates or [])
+        existing_keys = {
+            (c.get("excerpt"), c.get("start_offset"), c.get("end_offset"), c.get("data_type"))
+            for c in candidates
+        }
+        for cand in llm_res.candidates:
+            key = (
+                cand.get("excerpt"),
+                cand.get("start_offset"),
+                cand.get("end_offset"),
+                cand.get("data_type"),
+            )
+            if key not in existing_keys:
+                existing_keys.add(key)
+                candidates.append(cand)
+        if actor == "Codex-assisted candidate" and llm_res.candidates:
+            actor = f"LLM-assisted candidate ({llm_extractor.config.model})"
+            reason = "LLM-assisted candidate extraction with verbatim verification"
     now = datetime.now(timezone.utc).isoformat()
     document = PolicyDocument.model_validate(
         {
@@ -358,11 +380,61 @@ def main():
     parser.add_argument("--version-code", type=int)
     parser.add_argument("--product-scope")
     parser.add_argument("--region", action="append", default=[])
+    parser.add_argument(
+        "--enable-llm",
+        action="store_true",
+        help="Enable optional LLM-assisted policy claim extraction plugin",
+    )
+    parser.add_argument("--llm-model", default="gpt-4o-mini", help="LLM model name")
+    parser.add_argument("--llm-cache-dir", type=Path, help="Cache directory for LLM extraction")
+    parser.add_argument(
+        "--llm-api-base", default="https://api.openai.com/v1", help="API base URL for LLM"
+    )
     args = parser.parse_args()
     try:
         candidates = json.loads(read_safe(args.candidates)) if args.candidates else []
         if not isinstance(candidates, list):
             raise ValueError("Candidates must be a JSON list")
+        llm_summary = None
+        actor = "Codex-assisted candidate"
+        reason = "Initial offline candidate capture"
+        if args.enable_llm:
+            from .policy_llm_extractor import LLMExtractorConfig, PolicyLLMExtractor
+            config = LLMExtractorConfig(
+                enabled=True,
+                model=args.llm_model,
+                cache_dir=args.llm_cache_dir,
+            )
+            llm_extractor = PolicyLLMExtractor(config)
+            raw = read_safe(args.raw, max_bytes=MAX_BYTES)
+            text = raw.decode("utf-8")
+            spans = split_spans(text)
+            llm_res = llm_extractor.extract_from_spans(text, spans)
+            llm_summary = {
+                "status": llm_res.status,
+                "extracted_claims": len(llm_res.candidates),
+                "rejected_claims": len(llm_res.rejected_candidates),
+                "duration_ms": llm_res.telemetry.duration_ms,
+                "cached": llm_res.telemetry.cached,
+                "total_tokens": llm_res.telemetry.total_tokens,
+            }
+            existing_keys = {
+                (c.get("excerpt"), c.get("start_offset"), c.get("end_offset"), c.get("data_type"))
+                for c in candidates
+            }
+            for cand in llm_res.candidates:
+                key = (
+                    cand.get("excerpt"),
+                    cand.get("start_offset"),
+                    cand.get("end_offset"),
+                    cand.get("data_type"),
+                )
+                if key not in existing_keys:
+                    existing_keys.add(key)
+                    candidates.append(cand)
+            if llm_res.candidates:
+                actor = f"LLM-assisted candidate ({args.llm_model})"
+                reason = "LLM-assisted candidate extraction with verbatim verification"
         result = capture(
             args.raw,
             args.source_url,
@@ -373,17 +445,18 @@ def main():
             args.version_code,
             args.product_scope,
             args.region,
+            actor=actor,
+            reason=reason,
         )
-        print(
-            json.dumps(
-                {
-                    "status": "CAPTURED_UNREVIEWED",
-                    "capture_path": str(result),
-                    "claims": len(candidates),
-                    "human_review_gate": TEAM_REVIEW_GATE,
-                }
-            )
-        )
+        out_summary = {
+            "status": "CAPTURED_UNREVIEWED",
+            "capture_path": str(result),
+            "claims": len(candidates),
+            "human_review_gate": TEAM_REVIEW_GATE,
+        }
+        if llm_summary is not None:
+            out_summary["llm_extraction"] = llm_summary
+        print(json.dumps(out_summary))
         return 0
     except (ValueError, OSError, KeyError, TypeError):
         print(

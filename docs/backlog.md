@@ -98,7 +98,7 @@ PR #27 与 #28 的增量已在独立分支整合，面向已合并 S0 的 `main`
 | PT-503 | Snapshot | 合成快照校验 |
 | PT-504 | Policy Hash | 快照哈希校验 |
 | PT-505 | 文本切分 | 待开发 |
-| PT-506 | LLM Structure Extraction | 待开发 |
+| PT-506 | LLM Structure Extraction | 可选插件：严格原句校验/提示词注入防护/本地缓存/无缝回退 |
 | PT-507 | DataType Normalization | 待开发 |
 | PT-508 | Purpose Extraction | 待开发 |
 | PT-509 | Recipient Extraction | 待开发 |

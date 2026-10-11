@@ -264,3 +264,76 @@ def test_existing_empty_directory_is_not_replaced(tmp_path):
     assert process.returncode == 1
     assert list(out.iterdir()) == []
     assert not list(tmp_path.glob(".policy-capture-*"))
+
+
+def test_policy_intake_cli_enable_llm_cached(tmp_path):
+    from privacytrace.policy_llm_extractor import (
+        ACTIVE_RULESET_VERSION,
+        PROMPT_VERSION,
+        compute_cache_key,
+    )
+
+    sentence = "我们仅在您开启定位权限后收集您的地理位置信息以提供导航服务。"
+    raw = tmp_path / "raw.txt"
+    raw.write_bytes(sentence.encode("utf-8"))
+
+    cache_dir = tmp_path / "llm_cache"
+    cache_dir.mkdir()
+    cache_key = compute_cache_key(
+        model="gpt-4o-mini",
+        prompt_version=PROMPT_VERSION,
+        ruleset_version=ACTIVE_RULESET_VERSION,
+        text=sentence,
+    )
+    cached_payload = {
+        "raw_items": [
+            {
+                "excerpt": "地理位置信息",
+                "data_type": "LOCATION",
+                "polarity": "AFFIRMATIVE",
+                "condition": "开启定位权限",
+                "declared_purpose": "提供导航服务",
+            }
+        ],
+        "tokens": {"prompt_tokens": 15, "completion_tokens": 10, "total_tokens": 25},
+    }
+    (cache_dir / f"{cache_key}.json").write_text(
+        json.dumps(cached_payload, ensure_ascii=False), encoding="utf-8"
+    )
+
+    out = tmp_path / "out"
+    args = [
+        "--raw",
+        raw,
+        "--source-url",
+        "https://example.org/p",
+        "--version",
+        "1",
+        "--output-dir",
+        out,
+        "--enable-llm",
+        "--llm-cache-dir",
+        cache_dir,
+    ]
+    process, body = invoke(*args)
+    assert process.returncode == 0, process.stderr
+    assert body["status"] == "CAPTURED_UNREVIEWED"
+    assert body["claims"] == 1
+    assert "llm_extraction" in body
+    assert body["llm_extraction"]["status"] == "SUCCESS"
+    assert body["llm_extraction"]["cached"] is True
+    assert body["llm_extraction"]["extracted_claims"] == 1
+
+    record = json.loads((out / "policy.capture.json").read_bytes())
+    assert len(record["claims"]) == 1
+    claim = record["claims"][0]
+    assert claim["data_type"] == "LOCATION"
+    assert claim["polarity"] == "AFFIRMATIVE"
+    assert claim["condition"] == "开启定位权限"
+    assert claim["declared_purpose"] == "提供导航服务"
+
+    audits = json.loads((out / "policy.audits.json").read_bytes())
+    assert len(audits) == 1
+    assert audits[0]["actor"] == "LLM-assisted candidate (gpt-4o-mini)"
+    assert audits[0]["authority"] == "UNAUTHENTICATED_INITIAL_CANDIDATE"
+

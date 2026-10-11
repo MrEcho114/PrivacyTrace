@@ -8,6 +8,8 @@
 
 新增测试经公共 CLI/HTTP 检查标签字段不能作为受控输入、缺失 APK 时 18 行/三组六分母仍保留、普通 APK 输入拒绝 CONTROLLED_POLICY。这些工程用例不计入六场景评测规模。
 
+远端原有浏览器套件发现生成来源说明复用 `.demo-note` 导致唯一选择器冲突，已改为独立 `.report-provenance` 并保留同样外观。修复后重跑 28 个 Web 测试、类型/生产构建、原有 TC-01～TC-05 实际浏览器套件，以及受控查看和独立断网包验证，均通过；原套件产生的临时截图保留本地，不改写主线历史 evidence。
+
 ## 源码构建与冻结输入
 
 三次实际 javac → D8 → AAPT2 构建的六个 APK 哈希全部相同，且与 `artifacts.lock.json` 一致。产物未签名、未安装或执行，仅供静态分析；[构建 receipt](spec30/build-receipt.json) 记录每份源码、APK、官方工具归档哈希及真实版本输出：Temurin 17.0.20.1+1、Android 35 rev2、Build Tools 35.0.0，D8 8.6.2-dev、AAPT2 2.19-11948202。
@@ -41,7 +43,7 @@
 
 [独立离线 proof](spec30/offline-proof.json) 在新容器 `--network=none` 内实际执行：仅 loopback、外网连接失败、六报告 HTTP 成功、真正渲染 Vue 并切换六来源、原分析时间保留、page_errors=[]。仅挂载包、验证脚本、预备浏览器依赖和输出，不挂载仓库、开发虚拟环境或模型密钥。测试依赖预备时联网，独立验收过程断网；交付 viewer 只需 Python 3.11+ 标准库。
 
-包 manifest SHA256：`c47a920abf410e0d912a65ee7d0ca244eb93e688a36ed518546d6913fbd7cfc4`。proof 记录不可变测试镜像 ID、验证脚本/浏览器驱动哈希、Playwright 版本，以及实际挂载 Chromium 版本和可执行文件 SHA256。系统库没有冒充构建工具链锁。
+包 manifest SHA256：`fc5091a9a353d4fa2b940c8f301782c761b1a883f0aca11922bb51cde68cb6db`。proof 记录不可变测试镜像 ID、验证脚本/浏览器驱动哈希、Playwright 版本，以及实际挂载 Chromium 版本和可执行文件 SHA256。系统库没有冒充构建工具链锁。
 
 最终交付前将执行目录的 API 文件换行字节与 Git 提交对象对齐，重新实际运行六场景、普通入口边界、浏览器和独立断网回放，结果不变。验证 JSON 保留原始字节；提交对象中所有实现/receipt 哈希逐一匹配记录，避免 Windows 换行转换破坏版本绑定。
 

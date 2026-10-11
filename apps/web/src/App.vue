@@ -366,7 +366,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         {{ sourceInfo?.desc ?? (source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。报告不保证覆盖反射、动态加载、原生代码或运行时行为。') }}
         六种状态只对照 DATA_TYPE_DISCLOSURE；“具体类型已声明”不代表目的、接收方、传输或时间范围全部一致，更不是合法性判断。
       </aside>
-      <section v-if="realReport" class="demo-note" aria-label="报告生成来源">
+      <section v-if="realReport" class="report-provenance" aria-label="报告生成来源">
         <strong>{{ offlineReplay ? 'OFFLINE REPLAY · 离线回放' : 'CLI 实际扫描生成 · 存档报告查看' }}</strong>
         <p>分析生成时点：{{ realReport.tools.analysis_generated_at || realReport.job.created_at }}。查看存档不代表重新扫描。</p>
         <p v-if="offlineReplay">回放包生成时点：{{ realReport.tools.offline_package_built_at }}。回放只读，不执行 APK 分析。</p>

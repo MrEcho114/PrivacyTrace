@@ -32,12 +32,19 @@
     ]
   },
   "candidate_count": 4,
+  "affected_ui_recheck": {
+    "web_passed": 28,
+    "legacy_browser_cases_passed": 5,
+    "typecheck_and_production_build": "PASSED",
+    "controlled_browser_and_independent_offline_replay": "PASSED",
+    "change": "Separate report-provenance styling from the unique source demo-note"
+  },
   "human_preparation_seconds": null,
   "browser_validation_script_sha256": "a530d3e107873eefe42c02285d4cd29fb41522885a0e53695e210be48ab830ac",
   "artifact_sha256": {
     "browser-proof.json": "10fde469935c60f6fceba3eb817f1c49296f1afa62f1de942aeb6ffcd7e3d054",
     "build-receipt.json": "4755b9667c50a18b99713cf1fdf515b6bc5fae3491b907d290e153ad385104f7",
     "comparison.json": "b7c061ae6ce19855b223a75ca43454f469fad9fd9db015d4c442e66d70edc082",
-    "offline-proof.json": "c674dabfae455c961d1b6a1b4b08c220ae2b336200645764cbf63e05687a631e"
+    "offline-proof.json": "8dbc75f37e10cc09dac709b8f1111449e5eeb7f98cc0fb9556974840504973d5"
   }
 }

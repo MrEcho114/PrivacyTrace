@@ -33,12 +33,19 @@ def migrate_record(payload: dict) -> dict:
 
     The job is embedded twice (top level and inside ``bundle``), and the record
     validator requires the two copies to agree, so both are patched together.
+    ``bundle`` is only read when it really is a JSON object: a record that is
+    valid JSON but structurally wrong (``"bundle": "corrupted"``, an array, or a
+    number) must fall through to normal schema validation and be rejected as a
+    bad record, not raise ``AttributeError`` here -- that would escape the store
+    listing's per-record handling and turn one bad file into a 500.
 
     The caller keeps the original file untouched, so the exact bytes written by
     the previous version remain available for audit and are never rewritten by
     a read.
     """
-    for job in (payload.get("job"), (payload.get("bundle") or {}).get("job")):
+    bundle = payload.get("bundle")
+    nested_job = bundle.get("job") if isinstance(bundle, dict) else None
+    for job in (payload.get("job"), nested_job):
         if isinstance(job, dict) and "source_origin" not in job:
             job["source_origin"] = SourceOrigin.UNKNOWN.value
     return payload

@@ -50,10 +50,17 @@ async function waitForServer(url, timeoutMs = 30000) {
 }
 
 function createIsolatedStore(projectRoot) {
+  // Created before seeding, and the caller only learns the path on success, so
+  // a failed copy must remove the directory here or it leaks un-cleanable.
   const storeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'privacytrace-challenger-'));
   const fixtureDir = path.join(projectRoot, 'fixtures', 'acceptance-jobs');
-  for (const name of fs.readdirSync(fixtureDir).filter(n => n.endsWith('.json'))) {
-    fs.copyFileSync(path.join(fixtureDir, name), path.join(storeDir, name));
+  try {
+    for (const name of fs.readdirSync(fixtureDir).filter(n => n.endsWith('.json'))) {
+      fs.copyFileSync(path.join(fixtureDir, name), path.join(storeDir, name));
+    }
+  } catch (err) {
+    fs.rmSync(storeDir, { recursive: true, force: true });
+    throw err;
   }
   return storeDir;
 }

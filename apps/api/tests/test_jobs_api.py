@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from privacytrace.models import EvaluationInput
@@ -201,6 +202,40 @@ def test_legacy_record_without_source_origin_still_loads_as_unknown(tmp_path):
 
     # Read-time migration: the stored bytes are never rewritten by a read.
     assert path.read_bytes() == legacy_bytes
+
+
+@pytest.mark.parametrize(
+    "malformed_bundle",
+    ["corrupted", [1, 2], 5, {"not": "an evaluation input"}],
+    ids=["string", "array", "number", "object-with-wrong-shape"],
+)
+def test_structurally_wrong_record_does_not_break_the_job_list(tmp_path, malformed_bundle):
+    """Valid JSON with the wrong shape must be rejected without breaking the list.
+
+    A record whose ``bundle`` is a string, array or number is valid JSON but not
+    a valid record. Reading the nested job from it must not raise
+    ``AttributeError`` -- that exception is outside the per-record handling in
+    ``JobStore.list()``, so a single such file would turn the whole
+    ``/api/v1/jobs`` response into a 500.
+    """
+    import json
+
+    from privacytrace.main import create_app
+
+    app = create_app(store_root=tmp_path)
+    report = seed(app.state.job_store)
+    (tmp_path / "malformed.json").write_text(
+        json.dumps({"job": {"id": "malformed"}, "bundle": malformed_bundle}), encoding="utf-8"
+    )
+
+    client = TestClient(app)
+
+    listed = client.get("/api/v1/jobs")
+    assert listed.status_code == 200
+    assert [job["id"] for job in listed.json()["jobs"]] == [report.job.id]
+
+    # The bad record is rejected on direct access rather than served.
+    assert client.get("/api/v1/jobs/malformed").status_code == 409
 
 
 def test_one_unreadable_record_does_not_break_the_job_list(tmp_path):

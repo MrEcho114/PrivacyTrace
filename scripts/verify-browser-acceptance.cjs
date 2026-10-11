@@ -150,12 +150,22 @@ function resolveGitCommit(startDir) {
 function createIsolatedStore(projectRoot) {
   // A fresh store per run: the checked-in fixtures are copied in, so the
   // repository's own data directory is never read from or written to.
+  //
+  // The directory is created before the fixtures are copied. If seeding fails,
+  // this function returns no path at all, so the caller's `storeDir` stays null
+  // and its cleanup can never see the directory. Removing it here before the
+  // error escapes is therefore the only chance to avoid leaking a temp dir.
   const storeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'privacytrace-acceptance-'));
   const fixtureDir = path.join(projectRoot, 'fixtures', 'acceptance-jobs');
-  const fixtures = fs.readdirSync(fixtureDir).filter(name => name.endsWith('.json'));
-  assert(fixtures.length > 0, `No acceptance fixtures found in ${fixtureDir}`);
-  for (const name of fixtures) {
-    fs.copyFileSync(path.join(fixtureDir, name), path.join(storeDir, name));
+  try {
+    const fixtures = fs.readdirSync(fixtureDir).filter(name => name.endsWith('.json'));
+    assert(fixtures.length > 0, `No acceptance fixtures found in ${fixtureDir}`);
+    for (const name of fixtures) {
+      fs.copyFileSync(path.join(fixtureDir, name), path.join(storeDir, name));
+    }
+  } catch (err) {
+    fs.rmSync(storeDir, { recursive: true, force: true });
+    throw err;
   }
   return storeDir;
 }

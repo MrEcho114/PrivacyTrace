@@ -77,12 +77,21 @@ npm run acceptance:browser
 | 3 | 前端类型检查与构建 | `npm run build --workspace @privacytrace/web`（`vue-tsc --noEmit` + Vite） | **通过，0 error** |
 | 4 | 契约导出验证 | `uv run --project apps/api python scripts/export-schema.py` + `git diff --exit-code` | **0 diff（幂等）** |
 | 5 | 前端单元测试 | `npm run test --workspace @privacytrace/web` | **28 / 28 pass, 0 fail** |
-| 6 | 浏览器端自动化验收 | `npm run acceptance:browser` | **TC-01…TC-05 全部 PASSED，EXIT=0**，收据 `git_commit_anchored: true` |
+| 6 | 浏览器端自动化验收 | `npm run acceptance:browser` | **TC-01…TC-05 全部 PASSED，EXIT=0**，收据 `git_commit_anchored: true`；已接入 CI（见门禁 #7） |
 | 7 | Challenger 对抗压力套件 | `node scripts/challenger-adversarial-suite.cjs` | **全部通过**，0 page error、0 XSS；资源清理完整（浏览器关闭、服务终止、临时 store 删除） |
 
-> 门禁 #7 此前**不在任何 CI 入口内**（`scripts/check.sh` 只跑 pytest / ruff / 契约 / 前端构建），
-> 这正是它与页面和契约脱节却长期无人察觉的原因。本矩阵如实记录其实际运行结果，
-> 但不声称它已被 CI 守护。
+### CI 覆盖（本轮新增）
+
+`scripts/check.sh` 仍然只跑 pytest / ruff / 契约导出 / 前端构建，**不含浏览器验收**。
+为消除这个盲区，本轮新增独立工作流 `.github/workflows/browser-acceptance.yml`：
+
+| Job | 触发 | 内容 |
+|---|---|---|
+| `acceptance` | PR / push main / 手动 | 真实 Chromium 上跑 **TC-01…TC-05**，失败时上传收据与截图 |
+| `challenger` | 每日定时 + 手动 | 对抗压力套件（较重，刻意不进 PR 门禁，避免拖慢并让不稳定结果干扰合并判断） |
+
+刻意与 `check.yml` 的治理门禁**分离**：浏览器验收需要真实 Chromium 与两个本地服务，
+比主门禁慢得多。另注：这是 POSIX 进程组修复首次在 Linux 上被真实执行。
 
 ### 关于门禁 #1 的失败（**非本次改动引入**）
 

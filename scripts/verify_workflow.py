@@ -351,6 +351,12 @@ def check_scenario_routing_table():
             f"expected skill '{skill}' in '{actual_skill}'"
         )
 
+    # Scenario 3 must name both skills: to-spec publishes the spec, to-tickets does
+    # the decomposition. Naming only to-spec drops the ticket-splitting step.
+    assert skill_matches('to-tickets', table_rows[2][2]), (
+        "Routing table row 3 must name 'to-tickets' alongside 'to-spec'"
+    )
+
     # Verify CONTRIBUTING.md contains matching entry points for all 9 scenarios
     with open(os.path.join(ROOT_DIR, 'CONTRIBUTING.md'), 'r', encoding='utf-8') as f:
         contrib_content = f.read()
@@ -543,6 +549,77 @@ def check_skills_version_baseline():
     return True
 
 
+def check_skills_install_instructions():
+    """Guard the skill install recipe and the invocation-type classification.
+
+    The pinned skill library organises skills in category directories that each
+    contain their own README.md, so a `skills/*/*` glob links several same-named
+    entries into one destination and exits non-zero. The install recipe must
+    select only real skill directories, skip `deprecated`, create the
+    destination first, and stay idempotent.
+    """
+    with open(
+        os.path.join(ROOT_DIR, 'docs', 'agents', 'skills-workflow.md'),
+        'r',
+        encoding='utf-8',
+    ) as f:
+        workflow_content = f.read()
+
+    # A `skills/*/*` glob is only acceptable as prose describing the anti-pattern;
+    # it must never appear inside an executable command block again.
+    for block in re.findall(r'```.*?```', workflow_content, flags=re.DOTALL):
+        assert 'skills/*/*' not in block, (
+            "Broken skill install glob 'skills/*/*' used inside an executable command block"
+        )
+
+    required_fragments = [
+        (
+            'find "$SKILLS_REPO" -name SKILL.md -not -path \'*/deprecated/*\''
+            " -not -path '*/in-progress/*' -print0"
+        ),
+        'mkdir -p "$DEST"',
+        'ln -sfn "$src" "$target"',
+        'Get-ChildItem -Path $repo -Recurse -Filter SKILL.md',
+        "Where-Object { $_.FullName -notmatch '\\\\(deprecated|in-progress)\\\\' }",
+        'New-Item -ItemType Directory -Force -Path $dest',
+        'New-Item -ItemType Junction -Path $target',
+    ]
+    for fragment in required_fragments:
+        assert fragment in workflow_content, (
+            f"Skill install recipe fragment missing in skills-workflow.md: {fragment}"
+        )
+
+    # diagnosing-bugs is model-invoked upstream (no disable-model-invocation), so it
+    # must not be documented as an explicit-call-only skill anywhere.
+    user_invoked_marker = '用户显式调用型技能（User-invoked）'
+    model_invoked_marker = '模型可调用型技能（Model-invoked）'
+    assert user_invoked_marker in workflow_content, (
+        "Missing user-invoked skill marker in skills-workflow.md"
+    )
+    assert model_invoked_marker in workflow_content, (
+        "Missing model-invoked skill marker in skills-workflow.md"
+    )
+    user_invoked_block = workflow_content[
+        workflow_content.index(user_invoked_marker):workflow_content.index(model_invoked_marker)
+    ]
+    assert 'diagnosing-bugs' not in user_invoked_block, (
+        "'diagnosing-bugs' must not be listed as a user-invoked (explicit-call-only) skill"
+    )
+    assert 'diagnosing-bugs' in workflow_content, (
+        "'diagnosing-bugs' must still be documented as a model-invoked skill"
+    )
+
+    for doc_name in ['AGENTS.md', 'CONTRIBUTING.md']:
+        with open(os.path.join(ROOT_DIR, doc_name), 'r', encoding='utf-8') as f:
+            content = f.read()
+        assert '显式调用 `diagnosing-bugs`' not in content, (
+            f"{doc_name} must not require explicit invocation of 'diagnosing-bugs'"
+        )
+
+    print("Skills install instructions: SELECTS REAL SKILL DIRS, IDEMPOTENT, INVOCATION TYPES ALIGNED")
+    return True
+
+
 if __name__ == '__main__':
     print("=" * 60)
     print("Running Comprehensive Workflow Verification Suite")
@@ -555,6 +632,7 @@ if __name__ == '__main__':
     check_skills_version_baseline()
     check_blockers_and_handoff_rules()
     check_evidence_boundaries()
+    check_skills_install_instructions()
     print("=" * 60)
     print("Workflow structure and link integrity verified (docs & templates)")
     print("=" * 60)

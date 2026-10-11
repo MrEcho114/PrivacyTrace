@@ -46,16 +46,16 @@ the final diff is reviewed — or until a genuine human decision boundary is rea
 
 团队技能协作流程与任务路由详见权威指南：[`docs/agents/skills-workflow.md`](docs/agents/skills-workflow.md)。
 
-- **显式调用原则**：用户调用型技能（如 `ask-matt`、`grill-with-docs`、`diagnosing-bugs`、`wayfinder` 等）需由开发者显式调用。Agent 仅承担流程导航、指针引导与规则提醒职责，不作自动触发保证。
+- **显式调用原则**：技能按调用方分两类。**用户显式调用型（user-invoked）**如 `ask-matt`、`grill-with-docs`、`triage`、`to-spec`、`to-tickets`、`implement`、`implement-spec`、`wayfinder`，需由开发者显式调用，Agent 不作自动触发保证；**模型可调用型（model-invoked）**如 `diagnosing-bugs`、`code-review`、`pr`、`tdd`，用户可显式调用，Agent 也可在任务语义匹配时主动使用。Agent 仅承担流程导航、指针引导与规则提醒职责。
 - **任务路由提醒**：
   - 遇到入口或下一步不确定时，提醒用户调用 `ask-matt` 获取适配建议；
   - 遇到新功能想法或模糊需求时，提醒用户调用 `grill-with-docs` 结合领域文档对齐边界；
-  - 遇到复杂棘手缺陷时，提醒用户调用 `diagnosing-bugs` 依根因循环与回归守卫排查；
-  - 遇到已明确范围的小任务或工单，直接进入 `implement` 实施，避免冗余规划；
+  - 遇到复杂棘手缺陷时，可用 `diagnosing-bugs`（model-invoked，Agent 可按任务语义主动触发，用户也可显式调用）依根因循环与回归守卫排查；
+  - 遇到已明确范围的小任务或工单，显式调用 `implement` 实施，避免冗余规划；
   - 遇到范围明确的小改动，直接执行最少必要步骤，无需过度设计；
-  - 跨会话需求推进提醒使用 `to-spec` 整理 spec 并拆分为带依赖的 child tickets；
-  - 遇到未分流的外部反馈或 Issues 时，提醒使用 `triage` 评估、补齐上下文并贴标签；
-  - 遇到需要整份 Spec 批量推进或编排时，提醒使用 `implement-spec` 统一调度。
+  - 跨会话需求推进按 `to-spec` → `to-tickets` 依次整理 spec 并拆分为带依赖的 child tickets（两步是不同技能，`to-spec` 不会自动完成拆分）；
+  - 遇到未分流的外部反馈或 Issues 时，提醒用户显式调用 `triage` 评估、补齐上下文并贴标签；
+  - 遇到需要整份 Spec 批量推进或编排时，提醒用户显式调用 `implement-spec` 统一调度。
 - **工单流转与交接约束**：
   - 任务创建与结构遵循模板 [`.github/ISSUE_TEMPLATE/task.yml`](.github/ISSUE_TEMPLATE/task.yml)；
   - 领取工单时明确 Assignee（`gh issue edit <n> --add-assignee @me`）并检查阻塞依赖（`Blockers`）；

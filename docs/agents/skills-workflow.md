@@ -32,29 +32,70 @@
 
 ### 1.2 各 Coding Agent 配置路径与挂载方式
 
-团队成员可根据个人使用的 Coding Agent / CLI 选择对应配置路径进行挂载或加载：
+团队成员可根据个人使用的 Coding Agent / CLI 选择对应配置路径进行挂载或加载。
 
-- **Claude Code**：
-  - 用户级技能路径：`~/.claude/skills/`
-  - 项目级技能路径：`.claude/skills/`
-  - 挂载方式：通过目录软链接或按配置载入。由于技能库按类别组织（`engineering`、`productivity` 等），软链接须指向具体技能目录（即 `skills/*/*`），例如：
-    ```bash
-    # Linux / macOS (或 Windows Git Bash)
-    ln -s ~/.skills-zh-CN/skills/*/* ~/.claude/skills/
-    ```
-    *在 Windows PowerShell 下可使用 `New-Item` 创建符号链接或目录联接：*
-    ```powershell
-    Get-ChildItem ~/.skills-zh-CN/skills/*/* | ForEach-Object { New-Item -ItemType SymbolicLink -Path ~/.claude/skills/ -Name $_.Name -Target $_.FullName }
-    ```
-- **Codex / OpenCode**：
-  - 技能配置路径：`~/.codex/skills/` 或 OpenCode 指定配置路径
-  - 挂载方式：将具体技能子目录软链接或复制至配置目录，按工具规范加载（如 `ln -s ~/.skills-zh-CN/skills/*/* ~/.codex/skills/`）。
-- **Google Antigravity / WorkBuddy**：
-  - 技能路径：`~/.gemini/config/skills/` 与 `~/.workbuddy/skills/`
-  - 挂载方式：使用技能同步管理工具（如 `cross-tool-skill-sync`、`find-skills`）同步，或建立软链接指向已检出的技能目录（如 `ln -s ~/.skills-zh-CN/skills/*/* ~/.workbuddy/skills/`）。
-- **Cursor / 其他开发环境**：
-  - 规则/提示词路径：`.cursor/rules/` 或系统提示词目录
-  - 挂载方式：按需将技能 Markdown 规则说明直接挂载或载入系统提示。
+**为什么不能直接用通配符批量链接**：技能库按类别组织（`engineering`、`productivity`、`misc`、`in-progress`、`deprecated`），而每个类别目录下都有一个同名 `README.md`。因此 `skills/*/*` 这类通配符是确定性错误的安装方式：
+
+- 5 个类别目录各含一个 `README.md`，通配符会展开出 5 个同名条目并试图全部写入同一目标目录，除第一个外全部报 `ln: failed to create symbolic link '.../README.md': File exists`，整条命令以非 0 退出（已在固定 SHA 上复现）；
+- 目标目录不存在时命令直接失败：`ln: target '.../skills/': No such file or directory`；
+- 会连带装入 `in-progress` 分类下的实验性技能；
+- 重复执行时已存在的链接会导致整条命令失败，不具备幂等性。
+
+正确做法是：**先创建目标目录，再只链接包含 `SKILL.md` 的真实技能目录**，排除 `deprecated`（废弃）与 `in-progress`（实验）两个分类，并对已存在的链接做幂等覆盖。下面两个版本沿用固定 SHA 内自带的 [`scripts/link-skills.sh`](https://github.com/vinvcn/mattpocock-skills-zh-CN/blob/bf98e53f92089fec9b4885f128a565d7eac0337f/scripts/link-skills.sh) 的做法（`find -name SKILL.md` + `mkdir -p` + 幂等覆盖），并在其基础上额外排除 `in-progress`；只需把 `DEST` 换成下表对应目录即可。
+
+**Linux / macOS / Windows Git Bash**：
+
+```bash
+SKILLS_REPO="$HOME/.skills-zh-CN/skills"
+DEST="$HOME/.claude/skills"        # 替换为下表对应目录
+
+mkdir -p "$DEST"
+find "$SKILLS_REPO" -name SKILL.md -not -path '*/deprecated/*' -not -path '*/in-progress/*' -print0 |
+while IFS= read -r -d '' skill_md; do
+  src="$(dirname "$skill_md")"
+  name="$(basename "$src")"
+  target="$DEST/$name"
+  if [ -e "$target" ] && [ ! -L "$target" ]; then rm -rf "$target"; fi
+  ln -sfn "$src" "$target"
+done
+```
+
+> Git Bash 的 `ln -s` 行为取决于 Windows 符号链接权限与 MSYS 链接仿真设置（开发者模式下默认可创建真符号链接）；若你的环境不支持，`ln -s` 会失败或退化成复制目录，请改用下面的 PowerShell 方案。
+
+**Windows PowerShell（目录联接 Junction，无需管理员）**：
+
+```powershell
+$repo = "$HOME/.skills-zh-CN/skills"
+$dest = "$HOME/.claude/skills"     # 替换为下表对应目录
+
+New-Item -ItemType Directory -Force -Path $dest | Out-Null
+Get-ChildItem -Path $repo -Recurse -Filter SKILL.md |
+  Where-Object { $_.FullName -notmatch '\\(deprecated|in-progress)\\' } |
+  ForEach-Object {
+    $target = Join-Path $dest $_.Directory.Name
+    if (Test-Path $target) { [System.IO.Directory]::Delete($target, $false) }
+    New-Item -ItemType Junction -Path $target -Target $_.Directory.FullName | Out-Null
+  }
+```
+
+> 清理旧链接请用 `[System.IO.Directory]::Delete($target, $false)`：它只删除联接本身，不会进入技能库。Windows PowerShell 5.1 下 `Remove-Item -Force`（不带 `-Recurse`）对目录联接会直接报错，无法作为替代写法。
+
+**各 Coding Agent 的目标目录**：
+
+| Coding Agent | 技能目录（`DEST`） | 说明 |
+| :--- | :--- | :--- |
+| Claude Code | 用户级 `~/.claude/skills/`；项目级 `.claude/skills/` | 也可直接运行技能库自带的 `bash ~/.skills-zh-CN/scripts/link-skills.sh`（默认链接到 `~/.claude/skills`） |
+| Codex / OpenCode | `~/.codex/skills/` 或 OpenCode 指定配置路径 | 将 `DEST` 换成该路径后执行上面的命令 |
+| Google Antigravity | `~/.gemini/config/skills/` | 同上 |
+| WorkBuddy | `~/.workbuddy/skills/` | 同上；也可配合 `cross-tool-skill-sync`、`find-skills` 等同步工具 |
+| Cursor / 其他开发环境 | `.cursor/rules/` 或系统提示词目录 | 按需将技能 Markdown 规则载入系统提示，无需逐目录链接 |
+
+**安装后核对**（两种平台一致）：链接条目数应等于技能库中经上述过滤后的技能数，且目标目录内不应出现 `README.md`。
+
+```bash
+find "$SKILLS_REPO" -name SKILL.md -not -path '*/deprecated/*' -not -path '*/in-progress/*' | wc -l   # 固定 SHA 下为 31
+ls "$DEST" | wc -l                                                                                    # 应与上一行一致
+```
 
 团队不强制统一单一 Coding Agent，但所有成员须基于相同固化 Commit SHA 遵循统一的任务路由与协作产出约束。
 
@@ -97,12 +138,12 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **1. 入口不确定** | 不确定当前任务类型、缺少明确下一步方向 | 显式调用 `ask-matt` | 开发者显式输入意图，获取最适合当前上下文的入口和流程建议 | 明确匹配到的工作流入口（如需求梳理、工单实施或诊断） |
 | **2. 新功能需求梳理** | 需求处于初步想法阶段，范围、边界或术语尚不明确 | 显式调用 `grill-with-docs` | 对照 `GLOSSARY.md` 与 ADR 对想法做持续追问，压力测试关键决策与范围 | 术语对齐现有领域模型，明确要做与不做，形成清晰设计共识 |
-| **3. 跨会话 Spec / Ticket 拆分** | 中大型需求需要跨会话推进，或由多位成员分别接手 | `to-spec` / spec 拆分 tickets | 将讨论结果整理为 Spec（如放入 `docs/specs/` 或对应 Issue），并拆分为带依赖的 child tickets 录入 GitHub Issues | 形成具备明确目标、输入输出、验收条件与依赖关系的 Issues（打上 `ready-for-agent` 等标签） |
-| **4. 已明确工单实施** | 已有明确 Issue，范围小且具备 PT 编号、输入输出与验收条件 | `implement`（直接实施） | 读取 Issue 字段，按测试驱动推进代码修改与对应验证 | 满足验收条件、通过本地测试/构建与 lint，无多余范围扩散 |
-| **5. 范围明确的小改动** | 微小修复、配置微调或文档补充，范围高度清晰 | `implement`（直接实施） | 跳过冗长拆分与规划，执行最少必要修改并运行对应回归测试 | 改动紧凑聚焦、通过本地验证并直接提交合规 PR，避免过度设计 |
-| **6. 外部反馈分流** | 收到外部用户提报的 Bug、功能请求或未经分流的 Issues | `triage`（维护者评估） | 复现确认、补齐必要信息、判定可实施性，分配对应 Triage 标签 | 转化为带清晰上下文的有效工单（如 `ready-for-agent`）或规范关闭（`wontfix`） |
-| **7. 棘手 Bug 排查** | 复杂故障、偶发性异常、性能回退或根因不明显的问题 | 显式调用 `diagnosing-bugs` | 严格执行结构化诊断循环：稳定复现、定位真实根因、编写回归守卫测试 | 根因确定、包含回归测试、修复代码最小化且通过既有测试集 |
-| **8. 整份 Spec 编排推进** | 负责人统筹整份 spec 的多个关联合并或批量 tickets | `implement-spec` | 统一编排并依次调度各子任务，跟踪每个 ticket 交付状态 | 所有子 tickets 验收通过，整体 spec 目标完整达成 |
+| **3. 跨会话 Spec / Ticket 拆分** | 中大型需求需要跨会话推进，或由多位成员分别接手 | 显式调用 `to-spec` → `to-tickets` | 先由 `to-spec` 把讨论结果整理为 Spec（如放入 `docs/specs/` 或对应 Issue），再由 `to-tickets` 拆分为带 blocking edges 的 tracer-bullet tickets 并录入 GitHub Issues；两步是不同技能，只跑 `to-spec` 不会自动完成拆分 | 形成具备明确目标、输入输出、验收条件与依赖关系的 Issues（打上 `ready-for-agent` 等标签） |
+| **4. 已明确工单实施** | 已有明确 Issue，范围小且具备 PT 编号、输入输出与验收条件 | 显式调用 `implement`（直接实施） | 读取 Issue 字段，按测试驱动推进代码修改与对应验证 | 满足验收条件、通过本地测试/构建与 lint，无多余范围扩散 |
+| **5. 范围明确的小改动** | 微小修复、配置微调或文档补充，范围高度清晰 | 显式调用 `implement`（直接实施） | 跳过冗长拆分与规划，执行最少必要修改并运行对应回归测试 | 改动紧凑聚焦、通过本地验证并直接提交合规 PR，避免过度设计 |
+| **6. 外部反馈分流** | 收到外部用户提报的 Bug、功能请求或未经分流的 Issues | 显式调用 `triage`（维护者评估） | 复现确认、补齐必要信息、判定可实施性，分配对应 Triage 标签 | 转化为带清晰上下文的有效工单（如 `ready-for-agent`）或规范关闭（`wontfix`） |
+| **7. 棘手 Bug 排查** | 复杂故障、偶发性异常、性能回退或根因不明显的问题 | `diagnosing-bugs`（model-invoked，用户也可显式调用） | 严格执行结构化诊断循环：稳定复现、定位真实根因、编写回归守卫测试 | 根因确定、包含回归测试、修复代码最小化且通过既有测试集 |
+| **8. 整份 Spec 编排推进** | 负责人统筹整份 spec 的多个关联合并或批量 tickets | 显式调用 `implement-spec` | 统一编排并依次调度各子任务，跟踪每个 ticket 交付状态 | 所有子 tickets 验收通过，整体 spec 目标完整达成 |
 | **9. 换人交接 / 跨会话接手** | 任务因人员变动、会话中断暂停，需他人无缝接手 | 工单关联材料 / Handoff | 从 Issue 的接手材料字段读取分支、已有进展、未完工作及剩余清单 | 接手者凭工单材料直接开工，不依赖私人聊天记录 |
 
 ### 尺度控制原则
@@ -113,10 +154,19 @@
 
 ## 5. 显式调用原则与 Agent 角色职责
 
-- **用户显式调用型技能**：
-  `ask-matt`、`grill-with-docs`、`diagnosing-bugs`、`wayfinder` 等技能属于**用户调用型技能**，必须由人类开发者在交互中显式触发。
+技能按**谁能调用它**分为两类，判定依据是技能自身的 `SKILL.md` frontmatter（`disable-model-invocation: true`）及其 `agents/openai.yaml`（`policy.allow_implicit_invocation: false`）。分组以上游 [`docs/invocation.md`](https://github.com/vinvcn/mattpocock-skills-zh-CN/blob/bf98e53f92089fec9b4885f128a565d7eac0337f/docs/invocation.md) 与 README「参考」小节为准。
+
+- **用户显式调用型技能（User-invoked）**：
+  只能由人类显式输入名称触达，其他技能也不能调用它。固定 SHA 下属于此类的技能为——
+  - 工程：`ask-matt`、`grill-with-docs`、`triage`、`improve-codebase-architecture`、`setup-matt-pocock-skills`、`to-spec`、`to-tickets`、`implement`、`implement-spec`、`wayfinder`、`retro`；
+  - 通用：`grill-me`、`handoff`、`teach`、`to-questionnaire`、`wait-what`。
+- **模型可调用型技能（Model-invoked）**：
+  人类可以显式调用，Agent 也可以在任务语义匹配时主动触发，例如 `diagnosing-bugs`、`code-review`、`pr`、`tdd`、`domain-modeling`、`codebase-design`、`prototype`、`research`、`wizard`、`grilling`、`writing-for-agents` 等。
+  **`diagnosing-bugs` 属于这一类**：它的 frontmatter 没有 `disable-model-invocation`，因此**不要求**人类先显式调用，不应被当作额外的人工操作步骤。
 - **Agent 职责边界**：
-  仓库中的 Agent 指令（如 `AGENTS.md`）仅承担**流程导航、指针引导与规则提醒**职责。Agent **不作自动触发上述技能的执行保证**，不可擅自静默替用户决定或跳过必要的人工决策环节。
+  仓库中的 Agent 指令（如 `AGENTS.md`）仅承担**流程导航、指针引导与规则提醒**职责。
+  - 对**用户显式调用型**技能，Agent 不作自动触发保证，只能提醒用户显式调用，不得擅自静默替用户决定或跳过必要的人工决策环节；
+  - 对**模型可调用型**技能，Agent 可在任务匹配时主动使用，但**不保证所有 Agent harness 都会自动触发**，用户仍可随时显式调用。
 
 ---
 

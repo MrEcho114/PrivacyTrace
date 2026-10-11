@@ -24,15 +24,15 @@
 根据任务规模和类型选择必要步骤（详细路由见 [权威流程指南](docs/agents/skills-workflow.md)）：
 - **入口不确定**：显式调用 `ask-matt` 获取下一步流程建议；
 - **新功能需求梳理**：显式调用 `grill-with-docs`，对照领域文档对齐术语与边界；
-- **跨会话中大型需求**：整理为 Spec 并拆分为带依赖的 child tickets；
-- **已明确工单**：直接进入 `implement` 实施，小改动无需冗余规划；
+- **跨会话中大型需求**：显式调用 `to-spec` 整理为 Spec，再用 `to-tickets` 拆分为带 blocking edges 的 child tickets（两步是不同技能，只跑 `to-spec` 不会自动完成拆分）；
+- **已明确工单**：显式调用 `implement` 实施，小改动无需冗余规划；
 - **范围明确的小改动**：跳过冗长规划直接实施，使用最少必要步骤；
-- **外部反馈**：使用 `triage` 分流、补齐信息与贴标签；
-- **棘手 Bug 排查**：显式调用 `diagnosing-bugs`，依根因循环和回归守卫排查；
-- **整份 Spec 编排推进**：使用 `implement-spec` 统一编排并依次调度各子任务；
+- **外部反馈**：显式调用 `triage` 分流、补齐信息与贴标签；
+- **棘手 Bug 排查**：使用 `diagnosing-bugs`（model-invoked，Agent 可按任务语义主动触发，用户也可显式调用），依根因循环和回归守卫排查；
+- **整份 Spec 编排推进**：显式调用 `implement-spec` 统一编排并依次调度各子任务；
 - **换人交接**：通过工单关联的 Handoff 材料识别进展与剩余工作接手。
 
-> **注意**：用户调用型技能须由开发者显式调用，Agent 仅承担导航提醒与流程指针职责，不保证自动触发。
+> **注意**：技能按调用方分两类。**用户显式调用型**（如 `ask-matt`、`grill-with-docs`、`to-spec`、`to-tickets`、`implement`、`triage`）须由开发者显式调用，Agent 仅承担导航提醒与流程指针职责，不保证自动触发；**模型可调用型**（如 `diagnosing-bugs`、`code-review`、`pr`、`tdd`）可由用户显式调用，也可由 Agent 在任务语义匹配时主动使用。
 
 ### 4. 工单创建、领取、依赖等待与交接
 - **创建任务**：统一使用开发工单模板 [`.github/ISSUE_TEMPLATE/task.yml`](.github/ISSUE_TEMPLATE/task.yml)，填写 PT 编号、目标、范围、范围外事项、关联 Spec/ADR、阻塞依赖、验收条件与接手材料。

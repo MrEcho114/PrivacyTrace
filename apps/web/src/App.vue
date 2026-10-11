@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { cancelJob, loadJob, loadJobReport, loadJobs, loadReport, loadTaxonomy, submitReview } from './api'
+import { clampSdkPage, getSdkEvidence, sdkPageCount, sdkPageSlice } from './sdkEvidence'
 import type { AnalysisJob, DemoReport, Evidence, MatchStatus, PrivacyIssue, Report, ReportSource, Taxonomy } from './types'
 import { parseSource, serializeSource } from './types'
 
@@ -43,6 +44,16 @@ const label = (id: string) => taxonomy.value?.data_types.find(item => item.id ==
 const selectedEvidence = computed(() => report.value?.evidence.filter(item => selected.value?.evidence_ids.includes(item.id)) ?? [])
 const dataTypeCount = computed(() => new Set(report.value?.result.issues.map(i => i.data_type)).size)
 const realReport = computed(() => report.value && !report.value.demo ? report.value : null)
+// SDK attribution is reference material with its own access path: no issue cites
+// it, so without this panel those evidence records would be counted but unopenable.
+const sdkEvidence = computed(() => getSdkEvidence(realReport.value?.evidence ?? []))
+const sdkPage = ref(0)
+const sdkPageTotal = computed(() => sdkPageCount(sdkEvidence.value.length))
+const pagedSdkEvidence = computed(() => sdkPageSlice(sdkEvidence.value, sdkPage.value))
+// Only a report switch resets the page; changing the selected issue must not move it.
+watch(report, () => {
+  sdkPage.value = 0
+})
 // Candidate clauses are navigation aids, not evaluator-confirmed evidence or matches.
 const CANDIDATE_PAGE_SIZE = 20
 const candidatePage = ref(0)
@@ -220,11 +231,6 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           <p><strong>行为识别：有限的规则静态分析（非穷尽）。</strong></p>
           <p class="subtle">不保证覆盖反射、动态加载、Native、加壳、第三方与混合运行时、复杂数据流或规则集未覆盖的行为。没有命中规则不代表没有隐私行为。</p>
           <ul><li v-for="limitation in realReport.coverage.behavior_limitations" :key="limitation">{{ limitation }}</li></ul>
-          <template v-if="realReport.coverage.sdk_attribution_limitations?.length">
-            <p><strong>第三方 SDK 归属：仅按公开包前缀作参考标记。</strong></p>
-            <p class="subtle">归属命中只表示类路径落在某个已公开的 SDK 包范围内，不代表该 SDK 实际收集或外发数据，也不能替代宿主 App 自身的声明。</p>
-            <ul><li v-for="limitation in realReport.coverage.sdk_attribution_limitations" :key="limitation">{{ limitation }}</li></ul>
-          </template>
           <p class="hash">输入 APK SHA-256：{{ realReport.sample.apk_sha256 }}</p>
           <p class="subtle">扫描完成只描述本轮处理范围，不等于发现了应用所有隐私行为。</p>
         </section>
@@ -275,6 +281,24 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
               <button v-if="candidate.document" @click="openPolicy(candidate.document.id)">候选来源全文与适用边界</button>
             </article></div>
           </section>
+        </section>
+        <section v-if="realReport" id="sdk-panel" class="report-section" aria-live="polite">
+          <div class="section-heading"><h2>第三方 SDK 归属</h2><span class="subtle">仅按公开包前缀提供静态归属参考，不代表实际收集或外传</span></div>
+          <p class="subtle">归属命中只表示类路径落在某个已公开的 SDK 包范围内；SDK 的静态存在不等于实际收集或外发，也不能替代宿主 App 自身的声明，归属结论不参与政策一致性判定。</p>
+          <template v-if="sdkEvidence.length">
+            <nav v-if="sdkPageTotal > 1" aria-label="SDK 归属分页">
+              <span>共 {{ sdkEvidence.length }} 条 · 第 {{ sdkPage + 1 }} / {{ sdkPageTotal }} 页</span>
+              <button :disabled="sdkPage === 0" @click="sdkPage = clampSdkPage(sdkPage - 1, sdkEvidence.length)">上一页</button>
+              <button :disabled="sdkPage + 1 >= sdkPageTotal" @click="sdkPage = clampSdkPage(sdkPage + 1, sdkEvidence.length)">下一页</button>
+            </nav>
+            <div class="evidence-grid"><article v-for="item in pagedSdkEvidence" :key="item.id" class="evidence-card">
+              <div class="section-heading"><strong>{{ kindLabels[item.kind] }}</strong><span class="subtle">{{ item.id }}</span></div>
+              <p class="locator">{{ item.source }} · {{ item.locator }}</p>
+              <pre v-if="item.excerpt">{{ item.excerpt }}</pre>
+            </article></div>
+          </template>
+          <p v-else class="subtle">本次未命中当前有限的签名规则集。没有命中不代表 APK 不含第三方 SDK。</p>
+          <ul v-if="realReport.coverage.sdk_attribution_limitations?.length"><li v-for="limitation in realReport.coverage.sdk_attribution_limitations" :key="limitation">{{ limitation }}</li></ul>
         </section>
         <details class="provenance" :open="provenanceOpen" @toggle="provenanceToggle($event)"><summary>报告版本、权限与全部政策快照</summary>
           <p>任务 {{ report.job.id }} · 输入 {{ report.job.input_mode }} · 规则版本 {{ report.job.ruleset_version }}</p>

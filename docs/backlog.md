@@ -22,6 +22,19 @@ PR #27 与 #28 的增量已在独立分支整合，面向已合并 S0 的 `main`
 - PR #35 review 续修（2026-10-10）：
   - **[P2]** 原并发用例只排除 `oserror`，把锁超时的 `ValueError` 归入 `contended` 而忽略，于是"4 个进程全部超时、无人进入事务"也会判为通过，无法支撑"40/40 全部成功"。已改为逐轮断言全部结果为 `ok`（实测旧断言在"4 个全被拒"与"3 超时+1 成功"两种输入下均漏报通过）。
   - **[P3]** 多进程用例依赖 Windows 真实触发共享冲突，Linux 上即使删掉 open 重试也可能通过。已补两条确定性注入测试：`test_lock_open_is_retried_until_the_contention_clears`（mock `os.open` 前两次抛 `EACCES`、第三次成功，断言失败尝试被替换而非叠加）、`test_lock_open_retry_gives_up_at_the_shared_deadline`（持续 `EACCES` 须在共享预算内抛 `ValueError("lock unavailable")`，不裸抛也不无限重试）。现有多进程用例保留为压力回归。
+- PR #35 review 二轮续修（2026-10-10/11）：
+  - **已修（测试可靠性）**：`touch_lock` 原先在 `with` 块内上报 `ok`，会在 `__exit__` 之前发布成功；若随后释放文件锁抛 `OSError`，同一进程会同时投递 `ok` 与 `oserror`，而父进程只按子进程数量读 N 条，多余的错误被静默丢弃。已把成功上报移到 `else` 分支（整个事务含锁释放正常退出后才算成功），并补 `test_lock_release_failure_is_not_reported_as_success` 锁定该行为（实测旧写法确定性产出 `['ok','oserror']`）。并发用例另补 `process.exitcode == 0` 断言与"每子进程恰一条结果"的泄漏检查。
+  - **记录为已知边界，不改生产代码（永久权限拒绝）**：当前会重试全部 `PermissionError`，包括永久性访问拒绝，故 ACL 配置错误这类本可立即返回的失败会等待约 5s。**实测该延迟无法在捕获层面消除**：用 `icacls` 构造永久拒绝，与 6 进程并发抢占采样对比，两者抛出的异常键完全相同（`PermissionError`、`errno 13`、`winerror None`），平台不提供进一步判别依据；并发 open 路径上只会出现 errno 13。因此"重试全部 `PermissionError`"是可区分性约束下的正确策略，"永久拒绝也等满预算"属平台约束而非实现缺陷。原始错误已通过 `from exc` 保留在 `__cause__`（新增 `test_lock_open_failure_keeps_the_original_error_as_its_cause` 断言 errno 仍可追溯），满足"优先保留实际错误原因"。若要快速失败只能引入平台特定探测（如预写探测），属独立改进项。
+
+### 2026-10-11 CI 门禁中断：账号改名导致可复用工作流解析失败（仓库级）
+
+`.github/workflows/check.yml` 引用外部可复用工作流 `OasisSaber/TheMasterplan/...@20eee37`。GitHub 账号 `OasisSaber` 于 2026-10-10 改名为 `OasisViridis`，**Actions 的可复用工作流解析不跟随改名**（REST API 会重定向，Actions 不会），于是引用字面量 `OasisSaber` 的分支解析失败。
+
+- 症状：工作流 0s 结束、`jobs: []`、`referenced_workflows: []`，报 `workflow was not found`。**不是测试断言失败。**
+- 证据（完美相关）：成功 run 的 `referenced_workflows` 显示新名 `OasisViridis/TheMasterplan/...`，失败 run 为空。按分支 `uses:` 字面量统计——`OasisSaber` 的 `fix/jobstore-lock-open-race`(#35)、`codex/pt-808-browser-acceptance` 失败；`OasisViridis` 的 `codex/issue-32-skills-workflow`(14:24)、`codex/pt-910-controlled-baseline`(10:12/10:15) 成功。
+- 同一分支同一 `check.yml` 在 12:54 成功、15:43 失败，改名发生在两者之间，与该时间线吻合。
+- 影响面：`main` 自身仍引用 `OasisSaber`，下次推送 `main` 也会失败；`doctor` 检查不到此类问题。
+- 处置：修复为把 `uses:` 的 owner 改为 `OasisViridis`（一行）。因属治理接线且影响所有分支，**未在本 PR 内改动**（review 亦建议不在 #35 改治理配置），留待独立提交/PR 处理；#35 的绿色门禁需在该分支同步该修复后重新触发。
 
 ## 2026-10-05 历史进度与优先顺序
 

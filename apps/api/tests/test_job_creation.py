@@ -37,20 +37,27 @@ def reserve(root, sample, ready, outcomes):
 def touch_lock(root, ready, outcomes):
     """Acquire the transaction lock and report the outcome of the attempt.
 
-    ``ok`` means the lock was actually held; ``oserror`` is a bare open/lock
-    failure that the retry path failed to absorb; ``contended`` is the bounded
-    ``ValueError`` raised when the shared deadline expires. Callers assert on
-    ``ok``, not merely on the absence of ``oserror``.
+    ``ok`` means the lock was acquired *and* the transaction exited cleanly;
+    ``oserror`` is a bare open/lock/release failure; ``contended`` is the
+    bounded ``ValueError`` raised when the shared deadline expires.
+
+    Success is reported from the ``else`` branch, not from inside the ``with``
+    body. Reporting inside the body would publish ``ok`` before ``__exit__``
+    runs, so a failure while releasing the lock would post ``ok`` *and*
+    ``oserror`` from the same process -- the parent reads one result per child
+    and would silently drop the error.
     """
     store = JobStore(root)
     ready.wait(timeout=20)
     try:
         with store._transaction():
-            outcomes.put(("ok", "", ""))
+            pass
     except OSError as exc:
         outcomes.put(("oserror", type(exc).__name__, str(exc)))
     except ValueError as exc:
         outcomes.put(("contended", type(exc).__name__, str(exc)))
+    else:
+        outcomes.put(("ok", "", ""))
 
 
 @pytest.mark.parametrize("rounds", [12])
@@ -71,6 +78,7 @@ def test_concurrent_first_lock_creation_never_fails_to_open(tmp_path, rounds):
         root.mkdir(parents=True)
     ctx = multiprocessing.get_context("spawn")
     unacquired = []
+    leaked = []
     for attempt, root in enumerate(roots):
         ready, outcomes = ctx.Barrier(4), ctx.Queue()
         processes = [ctx.Process(target=touch_lock, args=(root, ready, outcomes)) for _ in range(4)]
@@ -80,14 +88,24 @@ def test_concurrent_first_lock_creation_never_fails_to_open(tmp_path, rounds):
             results = [outcomes.get(timeout=30) for _ in processes]
             for process in processes:
                 process.join(timeout=10)
-            # The lock must be *acquired* by every process -- the holder waits
-            # out the other three, and all four succeed in turn. A bare OSError
-            # means the open was never retried; ValueError means the shared
-            # budget expired without anyone getting in. Either way the retry
-            # did not do its job, so both are failures.
+                # A child that dies before reporting would otherwise shrink the
+                # result set without anyone noticing.
+                assert process.exitcode == 0
+            # The lock must be *acquired* by every process. A bare OSError means
+            # the open was never retried; ValueError means the shared budget
+            # expired without anyone getting in. Either way the retry did not do
+            # its job, so both are failures.
             rejected = [result for result in results if result[0] != "ok"]
             if rejected:
                 unacquired.append((attempt, rejected))
+            # Exactly one outcome per child. A child that reports twice (e.g.
+            # "ok" before __exit__ then "oserror" while releasing) would leave a
+            # surplus entry the parent never reads, hiding the failure.
+            extra = []
+            while not outcomes.empty():
+                extra.append(outcomes.get_nowait())
+            if extra:
+                leaked.append((attempt, extra))
         finally:
             for process in processes:
                 if process.is_alive():
@@ -98,6 +116,10 @@ def test_concurrent_first_lock_creation_never_fails_to_open(tmp_path, rounds):
     assert not unacquired, (
         "lock was not acquired by all processes under contention: "
         f"{unacquired[:3]}"
+    )
+    assert not leaked, (
+        "a child reported more than one outcome; the parent reads one per child "
+        f"and would drop the surplus: {leaked[:3]}"
     )
 
 
@@ -150,13 +172,95 @@ def test_lock_open_retry_gives_up_at_the_shared_deadline(tmp_path, monkeypatch):
         return real_open(path, flags, mode)
 
     monkeypatch.setattr(job_store_module.os, "open", never_open)
+    # Shrink the shared budget so the loop stays fast; the behaviour under test
+    # is the bound, not the particular 5s value.
+    budget = 0.3
+    monkeypatch.setattr(JobStore, "LOCK_TIMEOUT_SECONDS", budget)
     started = time.monotonic()
     with pytest.raises(ValueError, match="lock unavailable"):
         with store._transaction():
             pass
     elapsed = time.monotonic() - started
     assert len(attempts) > 1, "persistent refusals were not retried at all"
-    assert elapsed < JobStore.LOCK_TIMEOUT_SECONDS + 1.0, f"retry overshot budget: {elapsed:.2f}s"
+    assert elapsed < budget + 1.0, f"retry overshot budget: {elapsed:.2f}s"
+
+
+def test_lock_open_failure_keeps_the_original_error_as_its_cause(tmp_path, monkeypatch):
+    """The bounded ``ValueError`` must not swallow why the open failed.
+
+    A permanent denial and transient contention are indistinguishable at the
+    catch site -- both arrive as ``PermissionError`` with ``errno 13``, and the
+    platform offers no further discriminator. Since the retry cannot tell them
+    apart, the original error has to stay reachable through ``__cause__`` so a
+    permanent denial is still diagnosable from the outside.
+    """
+    store = JobStore(tmp_path)
+    real_open = os.open
+
+    def deny(path, flags, mode=0o777):
+        if str(path).endswith(".lock"):
+            raise PermissionError(errno.EACCES, "Permission denied", str(path))
+        return real_open(path, flags, mode)
+
+    monkeypatch.setattr(job_store_module.os, "open", deny)
+    monkeypatch.setattr(JobStore, "LOCK_TIMEOUT_SECONDS", 0.2)
+    with pytest.raises(ValueError, match="lock unavailable") as raised:
+        with store._transaction():
+            pass
+    assert isinstance(raised.value.__cause__, PermissionError)
+    assert raised.value.__cause__.errno == errno.EACCES, (
+        "the original errno was flattened away; a permanent denial would be "
+        "indistinguishable from contention"
+    )
+
+
+def test_lock_release_failure_is_not_reported_as_success(tmp_path, monkeypatch):
+    """Releasing the lock can fail *after* the body ran; that must not read as ok.
+
+    Success is only real once the whole transaction -- release included -- has
+    exited. Reporting from inside the ``with`` body would publish ``ok`` first
+    and then ``oserror``, and the parent reads exactly one result per child, so
+    the error would be dropped on the floor.
+    """
+    if os.name == "nt":
+        import msvcrt
+
+        real_locking = msvcrt.locking
+
+        def flaky_locking(fd, mode, nbytes):
+            if mode == msvcrt.LK_UNLCK:
+                raise PermissionError(errno.EACCES, "Permission denied")
+            return real_locking(fd, mode, nbytes)
+
+        monkeypatch.setattr(msvcrt, "locking", flaky_locking)
+    else:
+        import fcntl
+
+        real_flock = fcntl.flock
+
+        def flaky_flock(fd, operation):
+            if operation == fcntl.LOCK_UN:
+                raise PermissionError(errno.EACCES, "Permission denied")
+            return real_flock(fd, operation)
+
+        monkeypatch.setattr(fcntl, "flock", flaky_flock)
+
+    class _Ready:
+        def wait(self, timeout=None):
+            return True
+
+    outcomes = []
+
+    class _Sink:
+        def put(self, item):
+            outcomes.append(item)
+
+    touch_lock(tmp_path, _Ready(), _Sink())
+    kinds = [item[0] for item in outcomes]
+    assert kinds == ["oserror"], (
+        f"a failed lock release was reported as {kinds}; it must not also "
+        "publish an earlier success"
+    )
 
 
 def test_one_reservation_wins_across_processes_and_survives_restart(tmp_path):

@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ExistingReports from './App.vue'
 import UiButton from './components/UiButton.vue'
 import StatusTag from './components/StatusTag.vue'
+import UiIcon from './components/UiIcon.vue'
 import ImportPage from './pages/ImportPage.vue'
 import CandidatePage from './pages/CandidatePage.vue'
 import ProgressPage from './pages/ProgressPage.vue'
@@ -73,16 +74,15 @@ watch(state, persist, { deep: true })
     <div class="workspace-layout">
       <aside class="workspace-sidebar">
         <nav aria-label="工作台">
-          <button class="nav-item" :class="{ active: view === 'workflow' }" @click="view = 'workflow'; go(state.step)"><span aria-hidden="true">＋</span>新建对照</button>
-          <button class="nav-item" :class="{ active: view === 'reports' }" @click="openReports"><span aria-hidden="true">≡</span>{{ copy.realReports }}</button>
+          <button class="nav-item" :class="{ active: view === 'workflow' }" @click="view = 'workflow'; go(state.step)"><UiIcon name="plus" />新建对照</button>
+          <button class="nav-item" :class="{ active: view === 'reports' }" @click="openReports"><UiIcon name="report" />{{ copy.realReports }}</button>
         </nav>
-        <div class="sidebar-example"><span class="small-label">示例体验</span><h2>纸舟地图</h2><p>{{ copy.demoHelp }}</p><UiButton variant="secondary" @click="startExample">{{ copy.tryDemo }}</UiButton></div>
         <div class="sidebar-foot"><span class="status-dot" aria-hidden="true"></span>本机工作台</div>
       </aside>
       <main id="workspace-content" class="workspace-content" tabindex="-1">
         <template v-if="view === 'workflow'">
-          <nav class="step-nav" aria-label="创建流程"><button v-for="(step, index) in steps" :key="step" :disabled="index > state.maxStep" :aria-current="state.step === step ? 'step' : undefined" @click="go(step)"><span :class="{ complete: index < stepNumber }">{{ index < stepNumber ? '✓' : index + 1 }}</span>{{ stepLabels[index] }}</button></nav>
-          <div class="flow-context"><StatusTag :tone="state.example ? 'info' : 'neutral'">{{ state.example ? '示例体验 · 固定材料' : '新建对照' }}</StatusTag><span v-if="state.example">纸舟地图 · 示例 1.0</span><UiButton v-if="state.example" variant="quiet" @click="newMaterials">新材料</UiButton></div>
+          <div class="workflow-toolbar"><nav class="step-nav" aria-label="创建流程"><button v-for="(step, index) in steps" :key="step" :disabled="index > state.maxStep" :aria-current="state.step === step ? 'step' : undefined" @click="go(step)"><span :class="{ complete: index < stepNumber }">{{ index < stepNumber ? '✓' : index + 1 }}</span>{{ stepLabels[index] }}</button></nav>
+          <div class="flow-context"><StatusTag :tone="state.example ? 'info' : 'neutral'">{{ state.example ? '示例体验 · 固定材料' : '新建对照' }}</StatusTag><UiButton v-if="state.example" variant="quiet" @click="newMaterials">新材料</UiButton></div></div>
           <p v-if="message" class="notice compact" role="status">{{ message }}</p>
           <p v-if="storageError" class="notice" role="status">浏览器暂存不可用，当前输入仍可继续使用。</p>
           <ImportPage v-if="state.step === 'import'" :key="state.example ? 'example' : 'new'" :state="state" @example="startExample" @next="next('candidates')" />

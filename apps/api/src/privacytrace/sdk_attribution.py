@@ -18,6 +18,8 @@ consumes a validated instance.
 
 from __future__ import annotations
 
+import hashlib
+import heapq
 from dataclasses import dataclass
 
 from .sdk_ruleset import SdkSignature, SdkSignatureRuleset
@@ -39,6 +41,174 @@ class SdkMatch:
     prefix: str
     class_name: str
     dex: str = ""
+
+    @property
+    def key(self) -> tuple[str, str]:
+        """Identity of one attribution: the label plus the class it was found on.
+
+        Deliberately excludes ``dex``: the same class appearing in more than one
+        DEX is one attribution, and a key that included the DEX would emit two
+        records sharing one evidence id.
+        """
+        return (self.signature.id, self.class_name)
+
+    @property
+    def evidence_id(self) -> str:
+        """Deterministic evidence id, derived from the label and the class path."""
+        digest = hashlib.sha256(
+            (self.signature.id + "\x00" + self.class_name).encode()
+        ).hexdigest()[:24]
+        return "ev-sdk-" + digest
+
+    @property
+    def order_key(self) -> tuple[str, str]:
+        """Stable selection key. Never depends on object identity or hash order."""
+        return self.key
+
+
+class SdkAttributionCollector:
+    """Bounded-memory collector for SDK attribution matches.
+
+    A DEX can reference far more classes than a report can list, and the number is
+    attacker-controlled. Collecting every match and truncating afterwards would let
+    a single APK drive unbounded memory; this keeps two bounded structures instead:
+
+    * **representatives** — the lowest-ordered match per signature, so the cap can
+      never drop a flagged SDK from the report entirely. Bounded by the number of
+      signatures in the ruleset, which the contract caps at 500.
+    * **candidates** — the ``capacity`` lowest-ordered matches overall, held in a
+      max-heap so the retained set is independent of traversal order and each
+      insert costs ``O(log capacity)``.
+
+    Memory is therefore ``O(signatures + capacity)`` regardless of how many classes
+    the APK contains. Neither structure is a full seen-set, so ``observed`` counts
+    match *events* (duplicates included) and must not be reported as a unique class
+    total; ``capped`` is the honest signal that the report is a subset.
+    """
+
+    def __init__(
+        self,
+        capacity: int,
+        min_representatives: int = 1,
+        max_representatives: int = 100,
+    ):
+        if capacity < 1:
+            raise ValueError("capacity must be at least 1")
+        self.capacity = capacity
+        self.min_representatives = min_representatives
+        self.max_representatives = max_representatives
+        self.observed = 0
+        self.capped = False
+        self._representatives: dict[str, SdkMatch] = {}
+        self._candidates: dict[tuple[str, str], SdkMatch] = {}
+        self._worst_first: list[_Reversed] = []
+
+    def add(self, match: SdkMatch) -> None:
+        """Record one match. Never grows past the bounds; discards or evicts instead."""
+        self.observed += 1
+        current = self._representatives.get(match.signature.id)
+        if current is None or match.order_key < current.order_key:
+            self._representatives[match.signature.id] = match
+        key = match.order_key
+        if key in self._candidates:
+            return
+        if len(self._candidates) >= self.capacity:
+            worst = self._peek_worst()
+            # Keeping the lowest-ordered candidates only works if a worse arrival
+            # is dropped rather than displacing a better one. Evicting blindly
+            # would make the retained set depend on insertion order.
+            if worst is None or key >= worst:
+                self.capped = True
+                return
+            self._drop_worst()
+        self._candidates[key] = match
+        heapq.heappush(self._worst_first, _Reversed(key))
+
+    def _peek_worst(self) -> tuple[str, str] | None:
+        """The largest retained order key, skipping entries already evicted."""
+        while self._worst_first:
+            key = self._worst_first[0].value
+            if key in self._candidates:
+                return key
+            heapq.heappop(self._worst_first)
+        return None
+
+    def _drop_worst(self) -> None:
+        """Evict the retained candidate with the largest order key."""
+        key = self._peek_worst()
+        if key is not None:
+            del self._candidates[key]
+            self.capped = True
+
+    @property
+    def signature_count(self) -> int:
+        return len(self._representatives)
+
+    @property
+    def retained(self) -> int:
+        """Class-level candidates currently held. Never exceeds ``capacity``."""
+        return len(self._candidates)
+
+    def per_sdk_floor_is_achievable(self) -> bool:
+        """Whether every flagged signature can keep a representative inside the cap."""
+        return self.signature_count * self.min_representatives <= self.capacity
+
+    def _quota(self) -> int:
+        """Slots each signature may take in the reserved pass, 0 when it cannot pay."""
+        if not self.signature_count:
+            return 0
+        share = self.capacity // self.signature_count
+        if share < self.min_representatives:
+            # More signatures than slots: the floor cannot be honoured, so don't
+            # hand out a share that pretends otherwise.
+            return 0
+        return min(self.max_representatives, share)
+
+    def selected(self) -> list[SdkMatch]:
+        """The report set: one representative per signature, then class detail.
+
+        Deterministic for any insertion order, so the report never drifts.
+        """
+        chosen: dict[tuple[str, str], SdkMatch] = {}
+        # 1. Every flagged signature keeps a representative, or as many as fit.
+        for signature_id in sorted(self._representatives):
+            if len(chosen) >= self.capacity:
+                break
+            match = self._representatives[signature_id]
+            chosen[match.order_key] = match
+        # 2. Each signature may add detail up to its share of the budget.
+        quota = self._quota()
+        if quota > 1 and len(chosen) < self.capacity:
+            by_signature: dict[str, list[SdkMatch]] = {}
+            for match in self._candidates.values():
+                by_signature.setdefault(match.signature.id, []).append(match)
+            for signature_id in sorted(by_signature):
+                for match in sorted(by_signature[signature_id], key=_by_order)[:quota]:
+                    if len(chosen) >= self.capacity:
+                        break
+                    chosen.setdefault(match.order_key, match)
+        # 3. Remaining budget goes to class-level detail in stable order.
+        for key in sorted(self._candidates):
+            if len(chosen) >= self.capacity:
+                break
+            chosen.setdefault(key, self._candidates[key])
+        return sorted(chosen.values(), key=_by_order)
+
+
+def _by_order(match: SdkMatch) -> tuple[str, str]:
+    return match.order_key
+
+
+class _Reversed:
+    """Wraps an order key so ``heapq`` (a min-heap) pops the *largest* first."""
+
+    __slots__ = ("value",)
+
+    def __init__(self, value: tuple[str, str]):
+        self.value = value
+
+    def __lt__(self, other: "_Reversed") -> bool:
+        return self.value > other.value
 
 
 def descriptor_to_class(descriptor: str) -> str | None:

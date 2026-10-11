@@ -316,29 +316,32 @@ def test_attribution_truncation_is_reported_under_sdk_limitations(tmp_path, monk
 def test_a_large_sdk_cannot_crowd_a_second_sdk_out_of_the_cap(tmp_path, monkeypatch):
     """P1: a representative per SDK is reserved before class-level detail.
 
-    Filling the cap in DEX order let a 500-class SDK read as the only vendor
-    present, so a second flagged SDK vanished from the report.
+    The budget must actually be exceeded for this to test anything. Sibling
+    classes are traversed in descriptor order, so ``cn.jpush.android`` is reached
+    before ``com.tencent.bugly``; with a 3-slot budget JPush's three classes alone
+    exhaust it. Sequential truncation would therefore drop Bugly entirely, while
+    reserving a representative per signature keeps it in the report.
     """
     from privacytrace import apk_worker
 
-    monkeypatch.setattr(apk_worker, "MAX_SDK_ATTRIBUTIONS", 4)
-    monkeypatch.setattr(apk_worker, "MAX_SDK_REPRESENTATIVES", 1)
-    # Bugly's classes come first and alone would exhaust a 4-slot budget.
+    monkeypatch.setattr(apk_worker, "MAX_SDK_ATTRIBUTIONS", 3)
     dex_bytes = minimal_dex(
+        "Lcn/jpush/android/api/A;",
+        "Lcn/jpush/android/api/B;",
+        "Lcn/jpush/android/api/C;",
         "Lcom/tencent/bugly/crashreport/CrashReport;",
-        "Lcom/umeng/analytics/MobclickAgent;",
-        "Lcn/jpush/android/api/JPushInterface;",
     )
     path = write_apk(tmp_path, "crowded.apk", dex_bytes)
     report = scan(path, RULES, sdk_rules=SDK_RULES)
-    labelled = [
-        item["locator"] for item in report["evidence"] if item["kind"] == "SDK"
-    ]
+    # A silent fixture overflow would make every assertion below vacuous.
+    assert report["coverage"]["failed_dex"] == []
+    labelled = [item["locator"] for item in report["evidence"] if item["kind"] == "SDK"]
     assert len(labelled) == 3
-    # Every flagged vendor survives, including the one reached last.
-    assert any("com.umeng.analytics" in locator for locator in labelled), report["evidence"]
-    assert any("cn.jpush.android" in locator for locator in labelled), report["evidence"]
+    # The SDK reached last must still be represented, not crowded out.
     assert any("com.tencent.bugly" in locator for locator in labelled), report["evidence"]
+    assert any("cn.jpush.android" in locator for locator in labelled), report["evidence"]
+    # And the gap is stated rather than hidden.
+    assert len(report["coverage"]["sdk_attribution_limitations"]) == 1
 
 
 def test_cap_below_the_sdk_count_does_not_claim_an_unpayable_guarantee(
@@ -372,8 +375,6 @@ def test_cap_below_the_sdk_count_does_not_claim_an_unpayable_guarantee(
     assert "3" in note[0]
     # 3 signatures x 1 slot > 2 slots, so no per-SDK guarantee may be advertised.
     assert "已保证" not in note[0]
-    assert not apk_worker._per_sdk_floor_is_achievable(3)
-    assert apk_worker._per_sdk_floor_is_achievable(2)
 
 
 def test_truncation_note_advertises_the_floor_only_when_the_budget_allows_it(

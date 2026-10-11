@@ -182,7 +182,7 @@ def scan(path, rules, inventory=False, sdk_rules=None):
     from androguard.core.dex import DEX, Operand
     from loguru import logger
 
-    from .sdk_attribution import SdkMatch, load_index
+    from .sdk_attribution import SdkAttributionCollector, load_index
 
     logger.remove()
     logger.add(sys.stderr, level="WARNING")
@@ -190,9 +190,16 @@ def scan(path, rules, inventory=False, sdk_rules=None):
     inventory_calls = []
     inventory_truncated = False
     sdk_index = load_index(sdk_rules) if sdk_rules else None
-    # Matches are collected first and emitted from a set of ids, so a scan never
-    # emits one class path twice and stays byte-identical across runs.
-    sdk_matches: dict[str, SdkMatch] = {}
+    # Matches go straight into a bounded collector rather than a growing dict: the
+    # number of matching classes is attacker-controlled, so holding them all would
+    # let one APK drive unbounded memory.
+    sdk_collector = (
+        SdkAttributionCollector(
+            MAX_SDK_ATTRIBUTIONS, MIN_SDK_REPRESENTATIVES, MAX_SDK_REPRESENTATIVES
+        )
+        if sdk_index is not None
+        else None
+    )
     result["tools"] = {
         "androguard": importlib.metadata.version("androguard"),
         "ruleset": rules["version"],
@@ -322,17 +329,13 @@ def scan(path, rules, inventory=False, sdk_rules=None):
                     # PT-401: attribute a class to a published vendor package range.
                     # This records a reference label only. It creates no behavior,
                     # because an SDK's static presence is not a collection event.
-                    # Emission is deferred to a representative-selection pass so
-                    # that one very large SDK cannot crowd another out of the cap.
-                    if sdk_index is not None:
-                        class_descriptor = cls.get_name()
-                        found = sdk_index.match_descriptor_with_prefix(class_descriptor)
+                    # The collector keeps memory bounded and preserves one
+                    # representative per SDK, so a large SDK cannot crowd out
+                    # another one from the capped report.
+                    if sdk_collector is not None:
+                        found = sdk_index.match_descriptor_with_prefix(cls.get_name())
                         if found is not None:
-                            key = "ev-sdk-" + hashlib.sha256(
-                                (found.signature.id + class_descriptor).encode()
-                            ).hexdigest()[:24]
-                            if key not in sdk_matches:
-                                sdk_matches[key] = replace(found, dex=name)
+                            sdk_collector.add(replace(found, dex=name))
                     for method in cls.get_methods():
                         caller = (
                             method.get_class_name()
@@ -510,13 +513,11 @@ def scan(path, rules, inventory=False, sdk_rules=None):
             "no subclass-owner/name-only classification"
         )
         result["tools"]["inventory_truncated"] = str(inventory_truncated).lower()
-    if sdk_index is not None:
-        for key in _select_sdk_attributions(sdk_matches):
-            found = sdk_matches[key]
-            class_name = found.class_name
+    if sdk_collector is not None:
+        for found in sdk_collector.selected():
             result["evidence"].append(
                 dict(
-                    id=key,
+                    id=found.evidence_id,
                     kind="SDK",
                     status="STATIC_POTENTIAL",
                     source=found.dex,
@@ -526,10 +527,10 @@ def scan(path, rules, inventory=False, sdk_rules=None):
                         + ";dex="
                         + found.dex
                         + ";class="
-                        + class_name
+                        + found.class_name
                     ),
                     excerpt=(
-                        class_name
+                        found.class_name
                         + " matches published package prefix "
                         + found.prefix
                         + " of "
@@ -541,15 +542,16 @@ def scan(path, rules, inventory=False, sdk_rules=None):
                     ),
                 )
             )
-        if len(sdk_matches) > MAX_SDK_ATTRIBUTIONS:
+        if sdk_collector.capped:
             # Attribution gaps are not behavior gaps; file them under the SDK
-            # coverage list, never behavior ones.
+            # coverage list, never behavior ones. `observed` counts match events
+            # (duplicates included), so it is not a unique class total.
             note = (
                 f"SDK 归属输出上限为 {MAX_SDK_ATTRIBUTIONS} 条类，"
-                f"本次命中 {len(sdk_matches)} 条，其余同类包路径未逐条列出；"
+                f"本次共观察到 {sdk_collector.observed} 次命中，"
+                f"超出上限的部分未逐条列出；"
             )
-            flagged = {found.signature.id for found in sdk_matches.values()}
-            if _per_sdk_floor_is_achievable(len(flagged)):
+            if sdk_collector.per_sdk_floor_is_achievable():
                 note += (
                     f"已保证每个命中的 SDK 至少保留 {MIN_SDK_REPRESENTATIVES} "
                     "条代表性类路径；"
@@ -557,46 +559,6 @@ def scan(path, rules, inventory=False, sdk_rules=None):
             note += "上限截断不代表没有更多 SDK。"
             result["coverage"]["sdk_attribution_limitations"].append(note)
     return result
-
-
-def _per_sdk_floor_is_achievable(signature_count: int) -> bool:
-    """Whether the cap can hold one representative for every flagged signature.
-
-    With more flagged signatures than cap slots the floor is mathematically
-    unreachable, and the coverage note must not claim a guarantee the budget
-    cannot pay for.
-    """
-    return signature_count * MIN_SDK_REPRESENTATIVES <= MAX_SDK_ATTRIBUTIONS
-
-
-def _select_sdk_attributions(sdk_matches):
-    """Choose which attributed classes to publish, guaranteeing per-SDK coverage.
-
-    Filling the cap in DEX traversal order lets one 500-class SDK consume the
-    whole budget, so a second flagged vendor can drop out of the report entirely
-    and read as "not detected". Instead every signature keeps a representative
-    first, and the remaining budget goes to additional classes in traversal order.
-    """
-    by_signature: dict[str, list[str]] = {}
-    for key in sorted(sdk_matches):
-        by_signature.setdefault(sdk_matches[key].signature.id, []).append(key)
-    reserved = max(
-        MIN_SDK_REPRESENTATIVES,
-        min(MAX_SDK_REPRESENTATIVES, MAX_SDK_ATTRIBUTIONS // max(len(by_signature), 1)),
-    )
-    selected: list[str] = []
-    for signature_id in sorted(by_signature):
-        selected.extend(by_signature[signature_id][:reserved])
-    selected = selected[:MAX_SDK_ATTRIBUTIONS]
-    chosen = set(selected)
-    for key in sorted(sdk_matches):
-        if len(selected) >= MAX_SDK_ATTRIBUTIONS:
-            break
-        if key not in chosen:
-            selected.append(key)
-            chosen.add(key)
-    # Sorted so the report stays byte-identical for identical inputs.
-    return sorted(selected, key=lambda key: (sdk_matches[key].dex, key))
 
 
 def main():

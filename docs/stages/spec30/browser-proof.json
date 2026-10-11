@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "browser": "152.0.7977.8",
+  "checks": [
+    "CLI actual APK -> persisted HTTP -> browser exact-match code/quote/full-policy drill-down",
+    "C06 cautious result, source switching resets drill-down, synthetic source distinct",
+    "UI fixture: 2000 candidates paginated, long policy lazy once, HTML rendered as text, 390px viewport",
+    "abnormal HTTP report rejected with visible retry",
+    "request cancellation, delayed old report cannot overwrite new source",
+    "separate UI fixtures: failed job visible without report, actual HTTP cancel persisted CANCELLED",
+    "offline six-source viewing, analysis/package timestamps, no writable controls, POST405, 18 comparison rows"
+  ],
+  "page_errors": [],
+  "ui_fixtures_are_not_evaluation_samples": true
+}

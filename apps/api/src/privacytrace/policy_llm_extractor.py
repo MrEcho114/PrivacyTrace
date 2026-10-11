@@ -109,6 +109,21 @@ class LLMCandidateLimit(ValueError):
     """Untrusted model response has too many candidates."""
 
 
+def safe_llm_error_code(exc: Exception) -> str:
+    """Classify untrusted failures without emitting exception text or response bodies."""
+    if isinstance(exc, LLMResponseTooLarge):
+        return "RESPONSE_TOO_LARGE"
+    if isinstance(exc, LLMCandidateLimit):
+        return "CANDIDATE_RESPONSE_LIMIT"
+    if isinstance(exc, TimeoutError):
+        return "LLM_TIMEOUT"
+    if isinstance(exc, urllib.error.URLError) and isinstance(exc.reason, TimeoutError):
+        return "LLM_TIMEOUT"
+    if isinstance(exc, (ValueError, TypeError, KeyError, IndexError, UnicodeError)):
+        return "INVALID_LLM_RESPONSE"
+    return "LLM_REQUEST_FAILED"
+
+
 class UrllibLLMClient:
     """Standard-library HTTP client for OpenAI-compatible chat completion APIs."""
 
@@ -434,7 +449,6 @@ class PolicyLLMExtractor:
         )
         user_prompt = build_user_prompt(chunk_text)
 
-        last_error = None
         raw_items = None
         tokens = {}
 
@@ -467,12 +481,7 @@ class PolicyLLMExtractor:
                 raw_items = parsed
                 break
             except Exception as exc:
-                last_error = str(exc)
-                # An untrusted API may echo request secrets in its error text.
-                secret = self.config.api_key or os.environ.get("PRIVACYTRACE_LLM_API_KEY", "")
-                if secret:
-                    last_error = last_error.replace(secret, "[REDACTED]")
-                telemetry.errors.append(f"Attempt {attempt}: {last_error}")
+                telemetry.errors.append(f"Attempt {attempt}: {safe_llm_error_code(exc)}")
                 if isinstance(exc, (LLMResponseTooLarge, LLMCandidateLimit)):
                     break
 
@@ -575,13 +584,12 @@ class PolicyLLMExtractor:
                 res = self.extract_from_chunk(
                     span_text, chunk_start=span_start, full_text=text, _budget=budget
                 )
-            except Exception as exc:
-                err_msg = f"Unexpected chunk extraction error: {exc}"
+            except Exception:
                 res = LLMExtractionResult(
                     status="FAILED",
                     candidates=[],
                     rejected_candidates=[],
-                    telemetry=ExtractionTelemetry(errors=[err_msg]),
+                    telemetry=ExtractionTelemetry(errors=["LLM_REQUEST_FAILED"]),
                 )
 
             room = max(0, candidate_cap - len(all_candidates))
@@ -608,7 +616,6 @@ class PolicyLLMExtractor:
                     {
                         "start": span_start,
                         "end": span.get("end", span_start + len(span_text)),
-                        "text": span_text,
                         "errors": errors,
                     }
                 )

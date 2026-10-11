@@ -3,7 +3,6 @@
 import hashlib
 import http.server
 import json
-import math
 import sys
 import threading
 

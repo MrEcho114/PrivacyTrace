@@ -15,6 +15,7 @@ from privacytrace.resources import taxonomy
 ROOT = Path(__file__).resolve().parents[1]
 SAFE_TOOLS = {
     "androguard",
+    "sdk_signatures",
     "worker_image",
     "jadx",
     "analysis_generated_at",

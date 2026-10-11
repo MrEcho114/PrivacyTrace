@@ -95,11 +95,15 @@ def preflight_capture(raw_path, source_url, output_dir, candidates=None, *,
             raise ValueError("Candidates must be a JSON list")
         if len(candidates) > 1999:
             raise ValueError("Policy capture cannot exceed 1999 candidates")
+        valid_data_types = {item["id"] for item in taxonomy()["data_types"]}
         for candidate in candidates:
             if not isinstance(candidate, dict):
                 raise ValueError("Each candidate must be an object")
             if set(candidate) - CANDIDATE_FIELDS:
                 raise ValueError("Unsupported candidate fields")
+            data_type = candidate.get("data_type")
+            if not isinstance(data_type, str) or data_type not in valid_data_types:
+                raise ValueError("Candidate data_type is not in the active taxonomy")
             start, end = candidate.get("start_offset"), candidate.get("end_offset")
             if start is None and end is None:
                 excerpt = candidate.get("excerpt", "")

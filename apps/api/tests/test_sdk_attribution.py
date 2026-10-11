@@ -176,6 +176,53 @@ def test_signature_data_types_resolve_in_the_taxonomy():
         assert set(signature["potential_data_types"]) <= known, signature["id"]
 
 
+def test_every_prefix_is_named_in_its_own_source():
+    """A prefix must not be wider than the citation backing it.
+
+    The ruleset claims prefixes come from vendor-published statements. That claim
+    only holds if the recorded source actually names the prefix, so a rule can
+    never quietly grow past its evidence.
+    """
+    for signature in RULES["signatures"]:
+        for prefix in signature["package_prefixes"]:
+            assert prefix in signature["source"], (
+                f"{signature['id']}: prefix {prefix!r} is not named in its source"
+            )
+
+
+@pytest.mark.parametrize(
+    "class_name,taxonomy_from",
+    [
+        # Tencent Maps: the vendor publishes com.tencent.tencentmap.mapsdk.maps.
+        # The bare .mapsdk parent namespace is not a documented package name.
+        ("com.tencent.tencentmap.mapsdk.AMap", "sdk-tencent-map"),
+        # TuringFD: the disclosed namespace is com.tencent.turingfd.sdk.
+        ("com.tencent.turingfd.TuringManager", "sdk-turingfd"),
+    ],
+)
+def test_a_narrowed_prefix_no_longer_matches_its_unsourced_parent(class_name, taxonomy_from):
+    """Narrowing must actually take effect, not just change the JSON text."""
+    assert INDEX.match(class_name) is None, (
+        f"{taxonomy_from}: {class_name} still matches a namespace with no source"
+    )
+
+
+@pytest.mark.parametrize(
+    "class_name,expected",
+    [
+        # The documented packages keep matching after the narrowing.
+        ("com.tencent.tencentmap.mapsdk.maps.TencentMap", "sdk-tencent-map"),
+        ("com.tencent.tencentmap.mapsdk.maps.MapView", "sdk-tencent-map"),
+        ("com.tencent.turingfd.sdk.ams.ga.QQCaptcha", "sdk-turingfd"),
+        ("com.tencent.turingfd.sdk.tbs.TuringManager", "sdk-turingfd"),
+    ],
+)
+def test_narrowed_prefixes_still_match_the_documented_packages(class_name, expected):
+    match = INDEX.match(class_name)
+    assert match is not None, class_name
+    assert match.id == expected
+
+
 def test_boundaries_state_the_limits_of_attribution():
     text = " ".join(RULES["boundaries"])
     assert "不等于实际收集" in text

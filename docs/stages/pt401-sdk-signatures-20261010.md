@@ -73,3 +73,22 @@
 - 不把“检测到某 SDK”判定为隐私违规。
 - 不自动推测第三方服务器地址或数据用途。
 - 不引入版本号级匹配（当前只匹配包路径；SDK 版本识别属后续工作）。
+
+---
+
+## 后续修订：包前缀按来源收窄（2026-10-11）
+
+上表为**当时**状态，按项目规范不倒改。此处记录其后基于厂商公开资料所做的收窄，
+完整核实与测试见 `docs/stages/pt401-code-review-20261010.md` 末节。
+
+| 签名 | 原前缀 | 收窄后 | 依据 |
+| :--- | :--- | :--- | :--- |
+| `sdk-tencent-map` | `com.tencent.tencentmap.mapsdk` | `com.tencent.tencentmap.mapsdk.maps` | 腾讯位置服务 Android SDK 参考手册，公开类均在 `...mapsdk.maps` 之下；腾讯隐私政策第三方 SDK 目录载明该包名 |
+| `sdk-turingfd` | `com.tencent.turingfd` | `com.tencent.turingfd.sdk` | 多份 SDK 披露清单载明 `com.tencent.turingfd.sdk`；**腾讯官方合规指南未公布包名，本条依据弱于「以厂商发布说明为准」的标准，仍待补齐** |
+
+`sdk-umeng-analytics` 与 `sdk-mob` 的前缀未变，但来源文案原先未点名所收录的包前缀，
+已补正为逐条点名（友盟：`com.umeng.commonsdk`、`com.umeng.analytics.game`；
+Mob：`cn.sharesdk`、`com.mob`）。
+
+新增 `test_every_prefix_is_named_in_its_own_source` 锁死这条不变量：**任何前缀都必须
+在其来源文案中被点名**，规则不得比它的依据更宽。并新增收窄生效的正负例断言。

@@ -58,8 +58,8 @@
         "OAID",
         "IMEI"
       ],
-      "source": "友盟+开发者中心初始化文档与合规告知（使用 SDK 名称：友盟 SDK；收集设备信息 IMEI/MAC/Android ID/IDFA/OpenUDID/GUID/SIM 卡 IMSI 等）",
-      "source_url": "https://developer.umeng.com/docs/67966/detail/254826",
+      "source": "友盟+开发者中心 SDK 下载页：移动统计 SDK 包名 com.umeng.commonsdk；游戏统计 SDK 包名 com.umeng.analytics.game（同属 com.umeng.analytics 命名空间）。同一页面另载明消息推送 com.umeng.message、应用性能监控 com.umeng.umcrash、社会化分享 com.umeng.socialize，均未超出本签名收录的两个前缀。",
+      "source_url": "https://devs.umeng.com/",
       "license": "Proprietary vendor SDK; package name and collection list published by vendor for disclosure compliance.",
       "verified_at": "2026-10-10",
       "note": "Vendor-published disclosure text names these identifier categories; this rule does not assert which code path is used."
@@ -123,14 +123,14 @@
       "name": "腾讯地图 / 定位 SDK",
       "vendor": "深圳市腾讯计算机系统有限公司",
       "package_prefixes": [
-        "com.tencent.tencentmap.mapsdk"
+        "com.tencent.tencentmap.mapsdk.maps"
       ],
       "potential_data_types": [
         "LOCATION",
         "OAID"
       ],
-      "source": "第三方 SDK 清单公示（SDK 名称：腾讯地图 SDK；代码包名 com.tencent.tencentmap.mapsdk.maps）",
-      "source_url": "https://privacy.qq.com/document/preview/a10a8634f237464da9a95f4f07e73e40",
+      "source": "腾讯位置服务 Android SDK 参考手册（公开类均位于 com.tencent.tencentmap.mapsdk.maps 之下，如 MapView、TencentMap、MapFragment）；腾讯隐私政策第三方 SDK 目录亦载明包名 com.tencent.tencentmap.mapsdk.maps。此前记录的 com.tencent.tencentmap.mapsdk 上层命名空间未见于厂商发布的包名说明，故收窄。",
+      "source_url": "https://lbs.qq.com/AndroidDocs/doc_3d/com/tencent/tencentmap/mapsdk/maps/MapView.html",
       "license": "Proprietary vendor SDK; package name published by vendor in its privacy documentation.",
       "verified_at": "2026-10-10",
       "note": "Map/LBS SDK package namespace."
@@ -165,8 +165,8 @@
         "IMEI",
         "LOCATION"
       ],
-      "source": "腾讯隐私政策第三方 SDK 目录（代码包名 com.mob；收集信息：系统运行信息、IMEI、OAID、IMSI、IDFA、网络状态信息、基站信息、地理位置信息、应用列表信息）",
-      "source_url": "https://www.mob.com/about/policy",
+      "source": "MobTech 官方 ShareSDK 集成文档：混淆规则要求保留 cn.sharesdk.** 与 com.mob.**，即该 SDK 的类命名空间为 cn.sharesdk 与 com.mob；下载中心另载明 ShareSDK 包名 cn.sharesdk、MobPush 包名 com.mob.pushsdk（下载中心仅提供 http，故此处引用 https 文档页）。",
+      "source_url": "https://www.mob.com/wiki/detailed?wiki=3&id=14",
       "license": "Proprietary vendor SDK; package name published by vendor and in host-app disclosure tables.",
       "verified_at": "2026-10-10",
       "note": "Broad share/analytics SDK; vendor discloses a wide identifier and location list."
@@ -176,14 +176,14 @@
       "name": "腾讯 TuringFD",
       "vendor": "深圳市腾讯计算机系统有限公司",
       "package_prefixes": [
-        "com.tencent.turingfd"
+        "com.tencent.turingfd.sdk"
       ],
       "potential_data_types": [
         "DEVICE_IDENTIFIER",
         "ANDROID_ID"
       ],
-      "source": "腾讯隐私政策第三方 SDK 目录（第三方 SDK 名称：腾讯 Tbs；代码包名含 com.tencent.turingfd.sdk.tbs；使用目的：优化移动端 webview 体验）",
-      "source_url": "https://cftweb.3g.qq.com/privacy/privacyPolicy?content_id=a2b4d7b13129002c4af9ed7b9bdc6cbd",
+      "source": "多份应用第三方 SDK 披露清单载明「腾讯图灵盾风险识别 SDK（包含 com.tencent.turingfd.sdk）」，收窄至 com.tencent.turingfd.sdk。注意：腾讯官方《图灵盾风险识别旗舰版 SDK 合规使用指南》只描述初始化接口，未公布包名，因此本条依据弱于本规则集「以厂商发布说明为准」的标准，待厂商来源补齐后再确认。",
+      "source_url": "https://privacy.qq.com/document/preview/60b3183312ee429c9322f1a08a1fa42a",
       "license": "Proprietary vendor SDK; package name published by vendor in its privacy policy.",
       "verified_at": "2026-10-10",
       "note": "Vendor publishes this namespace as part of the TBS family; attribution only."

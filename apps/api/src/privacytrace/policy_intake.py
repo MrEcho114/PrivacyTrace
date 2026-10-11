@@ -435,7 +435,7 @@ class _SafeArgumentParser(argparse.ArgumentParser):
         # argparse's default handler echoes rejected command-line values,
         # which may contain secrets mistakenly passed as --llm-api-key.
         self.print_usage(sys.stderr)
-        self.exit(2, "error: invalid command-line arguments\\n")
+        self.exit(2, "error: invalid command-line arguments\n")
 
 
 def main():

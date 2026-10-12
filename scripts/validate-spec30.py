@@ -85,22 +85,40 @@ def main():
         built = stage("build-a", python("build-controlled-apks.py", *common, "--output", build_a))
         rebuilt = built and stage("build-b", python("build-controlled-apks.py", "--cache",
                                                    args.cache, "--cached", "--output", build_b))
+        rebuild_error = None
         if rebuilt:
-            first = json.loads((build_a / "build-receipt.json").read_bytes())
-            second = json.loads((build_b / "build-receipt.json").read_bytes())
-            frozen = json.loads((ROOT / "benchmarks/controlled/artifacts.lock.json").read_bytes())
-            if not (first["apks"] == second["apks"] == frozen["apks"]
-                    and first["source_hashes"] == second["source_hashes"] == frozen["source_hashes"]):
-                raise ValueError("Rebuild differs from frozen artifacts; stop without changing inputs")
-            stages.append({"stage": "rebuild-hashes", "exit_code": 0})
-        if built:
+            try:
+                first = json.loads((build_a / "build-receipt.json").read_bytes())
+                second = json.loads((build_b / "build-receipt.json").read_bytes())
+                frozen = json.loads(
+                    (ROOT / "benchmarks/controlled/artifacts.lock.json").read_bytes()
+                )
+                if not (
+                    first["apks"] == second["apks"] == frozen["apks"]
+                    and first["source_hashes"] == second["source_hashes"]
+                    == frozen["source_hashes"]
+                ):
+                    rebuild_error = "BUILD_ARTIFACT_HASH_MISMATCH"
+            except (OSError, ValueError, KeyError, TypeError):
+                rebuild_error = "BUILD_ARTIFACT_RECEIPT_INVALID"
+            stages.append({
+                "stage": "rebuild-hashes",
+                "exit_code": 1 if rebuild_error else 0,
+                **({"error_code": rebuild_error} if rebuild_error else {}),
+            })
+        # An untrusted build must never enter the actual worker/prediction path.
+        if built and rebuild_error is None:
             stage("worker-build", [*docker_prefix(), "build", "-f",
                                    daemon_path(ROOT / "apps/api/worker.Dockerfile"),
                                    "-t", "privacytrace-worker:s1", daemon_path(ROOT)])
-        # Always run scoring after a build failure. It retains all 18 failed/partial rows.
-        compared = stage("six-scenarios", [sys.executable, "-m", "privacytrace.benchmark", "run",
-                                          "--artifacts", str(build_a), "--output",
-                                          str(output / "evaluation")])
+        # Retain 18 result rows on failure; a mismatched build is never scanned.
+        comparison_command = [
+            sys.executable, "-m", "privacytrace.benchmark", "run",
+            "--artifacts", str(build_a), "--output", str(output / "evaluation"),
+        ]
+        if rebuild_error is not None:
+            comparison_command.extend(["--blocked-error", rebuild_error])
+        compared = stage("six-scenarios", comparison_command)
         if not (built and rebuilt and compared) or any(item["exit_code"] for item in stages):
             return 1
         env = {**os.environ, "PRIVACYTRACE_CONTROLLED_ARTIFACTS": str(build_a)}

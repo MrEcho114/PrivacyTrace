@@ -55,6 +55,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: spec30-integration-${{ github.event.pull_request.head.sha || github.sha }}
+          # Include only the existing controlled export, never the job store or APKs.
           path: |
             tmp/spec30-ci/integration-receipt.json
             tmp/spec30-ci/build-a/build-receipt.json
@@ -62,5 +63,6 @@ jobs:
             tmp/spec30-ci/evaluation/comparison.json
             tmp/spec30-ci/browser-proof/
             tmp/spec30-ci/offline-proof/
+            tmp/spec30-ci/offline/
           if-no-files-found: error
           retention-days: 14

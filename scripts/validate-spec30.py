@@ -85,7 +85,9 @@ def main():
         built = stage("build-a", python("build-controlled-apks.py", *common, "--output", build_a))
         rebuilt = built and stage("build-b", python("build-controlled-apks.py", "--cache",
                                                    args.cache, "--cached", "--output", build_b))
-        rebuild_error = None
+        rebuild_error = "BUILD_A_FAILED" if not built else ("BUILD_B_FAILED" if not rebuilt else None)
+        if rebuild_error:
+            stages[-1]["error_code"] = rebuild_error
         if rebuilt:
             try:
                 first = json.loads((build_a / "build-receipt.json").read_bytes())
@@ -107,10 +109,11 @@ def main():
                 **({"error_code": rebuild_error} if rebuild_error else {}),
             })
         # An untrusted build must never enter the actual worker/prediction path.
-        if built and rebuild_error is None:
-            stage("worker-build", [*docker_prefix(), "build", "-f",
-                                   daemon_path(ROOT / "apps/api/worker.Dockerfile"),
-                                   "-t", "privacytrace-worker:s1", daemon_path(ROOT)])
+        if rebuild_error is None and not stage("worker-build", [*docker_prefix(), "build", "-f",
+                                                             daemon_path(ROOT / "apps/api/worker.Dockerfile"),
+                                                             "-t", "privacytrace-worker:s1", daemon_path(ROOT)]):
+            rebuild_error = "WORKER_BUILD_FAILED"
+            stages[-1]["error_code"] = rebuild_error
         # Retain 18 result rows on failure; a mismatched build is never scanned.
         comparison_command = [
             sys.executable, "-m", "privacytrace.benchmark", "run",

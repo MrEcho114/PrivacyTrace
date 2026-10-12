@@ -109,3 +109,76 @@ def test_rebuild_mismatch_preserves_18_failures_without_scanning(tmp_path, monke
     assert stages["rebuild-hashes"]["error_code"] == expected_error
     assert stages["six-scenarios"]["exit_code"] == 1
     assert "evaluation/comparison.json" in receipt["evidence_sha256"]
+
+
+
+@pytest.mark.parametrize(
+    ("failed_stage", "error_code", "expected_calls"),
+    (
+        ("build-a", "BUILD_A_FAILED", ["build-a", "six-scenarios"]),
+        ("build-b", "BUILD_B_FAILED", ["build-a", "build-b", "six-scenarios"]),
+        ("worker-build", "WORKER_BUILD_FAILED",
+         ["build-a", "build-b", "worker-build", "six-scenarios"]),
+    ),
+)
+def test_prerequisite_failure_blocks_real_prediction(
+    tmp_path, monkeypatch, failed_stage, error_code, expected_calls
+):
+    """Failures after either build, including worker-build, cannot launch predictions."""
+    import importlib.util
+    from pathlib import Path
+
+    validator_file = ROOT / "scripts/validate-spec30.py"
+    spec = importlib.util.spec_from_file_location("spec30_prerequisite_test", validator_file)
+    validator = importlib.util.module_from_spec(spec)
+    monkeypatch.syspath_prepend(str(ROOT / "scripts"))
+    spec.loader.exec_module(validator)
+    frozen = json.loads((ROOT / "benchmarks/controlled/artifacts.lock.json").read_bytes())
+    real_run = subprocess.run
+    calls = []
+
+    def fake_run(command, *args, **kwargs):
+        argv = list(map(str, command))
+        if argv[0] == "git":
+            return real_run(command, *args, **kwargs)
+        if len(argv) > 1 and Path(argv[1]).name == "build-controlled-apks.py":
+            label = Path(argv[argv.index("--output") + 1]).name
+            calls.append(label)
+            if label == failed_stage:
+                return subprocess.CompletedProcess(command, 1)
+            out = Path(argv[argv.index("--output") + 1])
+            out.mkdir(parents=True)
+            (out / "build-receipt.json").write_text(
+                json.dumps({"apks": frozen["apks"], "source_hashes": frozen["source_hashes"]}),
+                encoding="utf-8",
+            )
+            return subprocess.CompletedProcess(command, 0)
+        if "build" in argv and "privacytrace-worker:s1" in argv:
+            calls.append("worker-build")
+            assert failed_stage == "worker-build"
+            return subprocess.CompletedProcess(command, 1)
+        if argv[1:3] == ["-m", "privacytrace.benchmark"]:
+            assert argv[3] == "run" and "--blocked-error" in argv
+            assert argv[argv.index("--blocked-error") + 1] == error_code
+            calls.append("six-scenarios")
+            return real_run(command, *args, **kwargs)
+        raise AssertionError("Unexpected prediction or Docker invocation: " + repr(argv))
+
+    monkeypatch.setattr(validator.subprocess, "run", fake_run)
+    output = tmp_path / "prerequisite-failed"
+    monkeypatch.setattr(validator.sys, "argv", [str(validator_file), "--output", str(output)])
+    assert validator.main() == 1
+    assert calls == expected_calls
+    receipt = json.loads((output / "integration-receipt.json").read_bytes())
+    assert receipt["passed"] is False
+    stages = {item["stage"]: item for item in receipt["stages"]}
+    assert stages[failed_stage]["error_code"] == error_code
+    assert "evaluation/comparison.json" in receipt["evidence_sha256"]
+    comparison = json.loads((output / "evaluation/comparison.json").read_bytes())
+    assert len(comparison["rows"]) == 18
+    assert all(row["actual"] is None and row["errors"] == [{"code": error_code}]
+               for row in comparison["rows"])
+    assert all(item["total"] == item["failures"] == 6
+               and item["predicted"] == item["abstentions"] == 0
+               for item in comparison["summaries"].values())
+    assert not (output / "evaluation/jobs").exists()

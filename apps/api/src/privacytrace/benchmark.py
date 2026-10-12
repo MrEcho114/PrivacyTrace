@@ -334,7 +334,8 @@ def main():
     runner.add_argument("--output", type=Path, required=True)
     runner.add_argument(
         "--blocked-error",
-        choices=("BUILD_ARTIFACT_HASH_MISMATCH", "BUILD_ARTIFACT_RECEIPT_INVALID"),
+        choices=("BUILD_A_FAILED", "BUILD_B_FAILED", "WORKER_BUILD_FAILED",
+                 "BUILD_ARTIFACT_HASH_MISMATCH", "BUILD_ARTIFACT_RECEIPT_INVALID"),
         help="Record all scenarios as failed without scanning untrusted artifacts",
     )
     for child in (predictor, runner):

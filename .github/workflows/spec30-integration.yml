@@ -64,5 +64,6 @@ jobs:
             tmp/spec30-ci/browser-proof/
             tmp/spec30-ci/offline-proof/
             tmp/spec30-ci/offline/
+            tmp/spec30-ci/independent-offline.log
           if-no-files-found: error
           retention-days: 14

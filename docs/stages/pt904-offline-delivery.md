@@ -15,14 +15,14 @@
 1. 选择目标交付 SHA 的成功 `Spec30 Integration` 运行，核对 `head_sha`、`integration-receipt.json.commit_sha` 和工程/浏览器 CI 的实际版本；记录 artifact ID、GitHub 元数据中的 ZIP SHA-256 与有效期。下载 artifact 后实算 ZIP SHA-256，与元数据比较。ZIP 包含证据目录和 `offline/`；`offline/` 才是运行包。
 2. 在联网准备阶段预装 Python 3.11+ 和本地浏览器，再把完整 `offline/` 目录复制到独立环境。查看下面的许可边界及包内 `DISTRIBUTION.txt`。不需要安装 Node、npm、API 服务、Docker、Playwright、模型 SDK 或模型密钥来回放。
 3. 真正断网后在 `offline/` 内执行 `python -B viewer.py --port 8765`，浏览器打开 `http://127.0.0.1:8765`。服务启动前校验文件集合和 SHA-256；新增、遗漏或篡改文件会拒绝启动。证明文件放在 `offline/` 外，不向运行包添加临时文件或缓存。
-4. 经 HTTP 查看 `/api/v1/health`、`/api/v1/jobs` 和六份报告；在浏览器切换六个来源并查看代码位置、政策原文、生成时点和 `OFFLINE REPLAY` 标识。三方案表在 `/comparison.html`，原始数据在 `offline/comparison.json`。写操作返回 405，未知报告返回 404。
+4. 经 HTTP 查看 `/api/v1/health`、`/api/v1/jobs` 和六份报告；在浏览器切换六个来源并查看代码位置、政策原文、生成时点和 `OFFLINE REPLAY` 标识。三方案表在 `/comparison.html`，原始数据在 `offline/comparison.json`。POST 返回 405，未知报告返回 404。
 5. 留存所用包/manifest 哈希、运行环境、断网方式、启动日志、HTTP/浏览器结果及所有失败。开发机启动和锁文件存在不替代独立断网验收。
 
 交付只有既有受控报告回放。实时扫描任意 APK、源码编译、安装 Android SDK 或调用外部模型不包含在这份包中。报告原生成时点在 `tools.analysis_generated_at`，包生成时点在 `tools.offline_package_built_at` 及 manifest，原 APK/特征/政策摘要保留在报告和 comparison 中；离线查看不改写这些来源。
 
 ## 包、证明与交付 SHA 的绑定
 
-`integration-receipt.json` 记录实际 checkout SHA、dirty 状态、每阶段退出码和证据摘要；其中的 `offline-proof/offline-proof.json` 摘要绑定断网证明。证明中的 `package_manifest_sha256` 绑定运行包的 manifest；manifest 的文件清单逐个绑定 `offline/` 中其余文件。artifact ZIP 的 GitHub 摘要绑定整个下载归档，不能把 ZIP 哈希与 manifest 哈希混用。
+`integration-receipt.json` 记录实际 checkout SHA、dirty 状态、每阶段退出码和证据摘要；其中的 `offline-proof/offline-proof.json` 摘要绑定断网证明。证明中的 `package_manifest_sha256` 绑定运行包的 manifest；manifest 的文件清单逐个绑定 `offline/` 中其余文件。artifact ZIP 的 GitHub 摘要绑定整个下载归档，包括同次运行的 `independent-offline.log`，不能把 ZIP 哈希与 manifest 哈希混用。
 
 在 artifact 解压根目录执行以下标准库核对，命令末尾参数替换为实际交付 SHA。此核对只验证已留存证据的关联与文件完整性，实际断网结论仍来自同 SHA 的独立环境运行及其日志。
 
@@ -57,7 +57,7 @@ print('Package, proof and delivery SHA matched:', sys.argv[1])
 PY
 ```
 
-CI 复用 `scripts/validate-spec30.py` 的现有 11 阶段，在新容器中 `--network=none`、只读挂载包/验证脚本/浏览器及模块，没有仓库挂载或模型密钥。`scripts/verify-offline-container.py` 实测仅 `lo`、外部连接失败、六份 HTTP 报告及真实 Vue 浏览器来源切换；输出 DOM、浏览器版本/可执行文件摘要、测试镜像 ID、验证脚本和驱动摘要。浏览器依赖在断网前准备，不称无预装条件。
+CI 复用 `scripts/validate-spec30.py` 的现有 11 阶段，在新容器中 `--network=none`、只读挂载包/验证脚本/浏览器及模块，没有仓库挂载或模型密钥。`scripts/verify-offline-container.py` 实测仅 `lo`、外部连接失败、六份 HTTP 报告及真实 Vue 浏览器来源切换；输出 DOM、浏览器版本/可执行文件摘要、测试镜像 ID、验证脚本和驱动摘要。`independent-offline.log` 保留该阶段的 stdout/stderr，包括 viewer 启动、HTTP 请求记录、证明输出及失败信息；其不存在时该阶段尚未执行，不能补造成功日志。浏览器依赖在断网前准备，不称无预装条件。
 
 `if: always()` 继续保留失败运行的已产生文件。包存在或 artifact 上传成功不表示验收通过；任一阶段失败、proof 缺失、SHA/hash 不一致或 dirty checkout 都保留为失败/未完成。14 天保存期届满前应把经过哈希核对的归档保存在批准的内部交付位置；不以过期下载链接充当长久交付。
 
@@ -75,7 +75,7 @@ CI 复用 `scripts/validate-spec30.py` 的现有 11 阶段，在新容器中 `--
 
 最终归档取得后逐项复核许可文件、manifest、报告来源及前端资产。未来 #46 若引入字体/素材或依赖版本变化，必须重新清点许可并重验包，不能继承这里的当前清单。项目许可和公开分发授权待团队决定，不在本任务擅自选择许可证。
 
-exporter 只接受六个成功的自建受控场景，检查 APK/政策/特征与冻结摘要及三方案 18 行对应；不接纳真实 App 报告。输出去除本地用户备注，只保留工具字段白名单。CI 留存路径仅为现有受控 `offline/` 和已批准证据路径，不扩大到 evaluation jobs、APK、数据库、政策抓取或原始日志。拿到完整归档后仍须核对没有密钥、用户私人路径、数据库或未经授权材料；静态 allowlist 审查不冒充已完成归档检查。
+exporter 只接受六个成功的自建受控场景，检查 APK/政策/特征与冻结摘要及三方案 18 行对应；不接纳真实 App 报告。输出去除本地用户备注，只保留工具字段白名单。CI 新增留存仅为现有受控 `offline/` 和独立断网阶段的 `independent-offline.log`，其他证据路径沿用；不扩大到 evaluation jobs、APK、数据库、政策抓取或扫描原始日志。拿到完整归档后仍须核对没有密钥、用户私人路径、数据库或未经授权材料；静态 allowlist 审查不冒充已完成归档检查。
 
 ## 尚待当前交付版本完成的验收
 

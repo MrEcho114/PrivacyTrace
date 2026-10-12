@@ -44,6 +44,8 @@ def test_rebuild_mismatch_preserves_18_failures_without_scanning(tmp_path, monke
     validator_file = ROOT / "scripts/validate-spec30.py"
     spec = importlib.util.spec_from_file_location("spec30_runner_under_test", validator_file)
     validator = importlib.util.module_from_spec(spec)
+    # Direct spec loading does not add the scripts directory to sys.path.
+    monkeypatch.syspath_prepend(str(ROOT / "scripts"))
     spec.loader.exec_module(validator)
 
     frozen = json.loads((ROOT / "benchmarks/controlled/artifacts.lock.json").read_bytes())

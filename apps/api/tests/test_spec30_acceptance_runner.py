@@ -4,6 +4,8 @@ import json
 import subprocess
 import sys
 
+import pytest
+
 from privacytrace.resources import ROOT
 
 
@@ -31,3 +33,77 @@ def test_failed_build_preserves_comparison_and_unique_runs(tmp_path):
         receipts.append((receipt, (output / "integration-receipt.json").read_bytes()))
     assert receipts[0][0]["run_id"] != receipts[1][0]["run_id"]
     assert (tmp_path / "first/integration-receipt.json").read_bytes() == receipts[0][1]
+
+
+@pytest.mark.parametrize("mismatch", ("apks", "source_hashes", "invalid-receipt"))
+def test_rebuild_mismatch_preserves_18_failures_without_scanning(tmp_path, monkeypatch, mismatch):
+    """Exercise the real acceptance runner without Docker or a real APK scan."""
+    import importlib.util
+    from pathlib import Path
+
+    validator_file = ROOT / "scripts/validate-spec30.py"
+    spec = importlib.util.spec_from_file_location("spec30_runner_under_test", validator_file)
+    validator = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(validator)
+
+    frozen = json.loads((ROOT / "benchmarks/controlled/artifacts.lock.json").read_bytes())
+    real_run = subprocess.run
+    calls = []
+    expected_error = (
+        "BUILD_ARTIFACT_RECEIPT_INVALID"
+        if mismatch == "invalid-receipt"
+        else "BUILD_ARTIFACT_HASH_MISMATCH"
+    )
+
+    def fake_run(command, *args, **kwargs):
+        argv = list(map(str, command))
+        if argv[0] == "git":
+            return real_run(command, *args, **kwargs)
+        if len(argv) > 1 and argv[1].endswith("/build-controlled-apks.py"):
+            output = Path(argv[argv.index("--output") + 1])
+            output.mkdir(parents=True, exist_ok=False)
+            receipt = {
+                "apks": dict(frozen["apks"]),
+                "source_hashes": dict(frozen["source_hashes"]),
+            }
+            if output.name == "build-b":
+                if mismatch == "invalid-receipt":
+                    (output / "build-receipt.json").write_text("{", encoding="utf-8")
+                else:
+                    key = next(iter(receipt[mismatch]))
+                    receipt[mismatch][key] = "0" * 64
+                    (output / "build-receipt.json").write_text(json.dumps(receipt))
+            else:
+                (output / "build-receipt.json").write_text(json.dumps(receipt))
+            calls.append(output.name)
+            return subprocess.CompletedProcess(command, 0)
+        if argv[1:3] == ["-m", "privacytrace.benchmark"]:
+            assert argv[3] == "run"
+            assert argv[argv.index("--blocked-error") + 1] == expected_error
+            calls.append("six-scenarios")
+            return real_run(command, *args, **kwargs)
+        raise AssertionError("Unexpected prediction or Docker invocation: " + repr(argv))
+
+    monkeypatch.setattr(validator.subprocess, "run", fake_run)
+    output = tmp_path / "validation"
+    monkeypatch.setattr(validator.sys, "argv", [str(validator_file), "--output", str(output)])
+    assert validator.main() == 1
+    assert calls == ["build-a", "build-b", "six-scenarios"]
+    comparison = json.loads((output / "evaluation/comparison.json").read_bytes())
+    assert len(comparison["rows"]) == 18
+    assert {row["scenario_id"] for row in comparison["rows"]} == {
+        "C01", "C02", "C03", "C04", "C05", "C06"
+    }
+    assert all(row["actual"] is None and not row["agreement"] for row in comparison["rows"])
+    assert all(row["errors"] == [{"code": expected_error}] for row in comparison["rows"])
+    assert all(item["total"] == item["failures"] == 6
+               and item["predicted"] == item["abstentions"] == 0
+               for item in comparison["summaries"].values())
+    assert not (output / "evaluation/jobs").exists()
+    receipt = json.loads((output / "integration-receipt.json").read_bytes())
+    assert receipt["passed"] is False
+    stages = {step["stage"]: step for step in receipt["stages"]}
+    assert stages["rebuild-hashes"]["exit_code"] == 1
+    assert stages["rebuild-hashes"]["error_code"] == expected_error
+    assert stages["six-scenarios"]["exit_code"] == 1
+    assert "evaluation/comparison.json" in receipt["evidence_sha256"]

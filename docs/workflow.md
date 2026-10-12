@@ -21,7 +21,7 @@
 
 S1 双人门槛已撤销，见 [接受决定](stages/s1-acceptance-20261009.md)。产品的本地备注可选，既不是账号认证，也不是政策已复核证明；不要求用户填写。
 
-`.github/workflows/check.yml` 是唯一交付 CI，通过 v5.0.0 对应的完整 SHA 调用中央检查，使用 `scripts/check.sh` 执行全部 API/web 回归及 CI 的 Docker 分支。自动检查由代理维护，不新增人类表单。
+`.github/workflows/check.yml` 负责中央交付检查，通过 v5.0.0 对应的完整 SHA 调用中央检查，使用 `scripts/check.sh` 执行全部 API/web 回归及 CI 的 Docker 分支。`browser-acceptance.yml` 负责原 TC-01～TC-05 浏览器回归；`spec30-integration.yml` 另负责实际六场景源码重复构建、隔离扫描、三方案/18 行、CLI/HTTP、浏览器和独立断网回放。三项 CI 均核对交付 SHA，各类结果分别报告；工程回归不能替代受控场景和离线验收。自动检查由代理维护，不新增人类表单。整合取舍与证据路径见 [Issue #39 整合记录](stages/issue39-integration.md)。
 
 缓存、事务记录、私人样本不提交。升级不自动进行；日常实现不预加载发布/升级资料。采纳工具可运行 `.themasterplan/bin/themasterplan.py verify/doctor/check-update`。
 

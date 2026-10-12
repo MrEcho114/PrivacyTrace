@@ -104,6 +104,11 @@ def create_app(store_root: Path | None = None):
 
     @app.post("/api/v1/consistency/evaluate", response_model=EvaluationResult)
     def evaluate_evidence(bundle: EvaluationInput):
+        if bundle.job.input_mode == "CONTROLLED_APK":
+            raise HTTPException(
+                status_code=422,
+                detail="Controlled facts require the hash-verified controlled CLI",
+            )
         return evaluate(bundle)
 
     @app.get("/api/v1/jobs", response_model=JobsResponse)

@@ -78,7 +78,7 @@ def test_rebuild_mismatch_preserves_18_failures_without_scanning(tmp_path, monke
         argv = list(map(str, command))
         if argv[0] == "git":
             return real_run(command, *args, **kwargs)
-        if len(argv) > 1 and argv[1].endswith("/build-controlled-apks.py"):
+        if len(argv) > 1 and Path(argv[1]).name == "build-controlled-apks.py":
             output = Path(argv[argv.index("--output") + 1])
             output.mkdir(parents=True, exist_ok=False)
             receipt = {
@@ -279,3 +279,12 @@ def test_rebuild_validator_rejects_invalid_receipts_and_artifacts(tmp_path, monk
     if problem not in ("malformed-receipt",):
         receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
     assert validator.verify_build_artifacts(build_a, build_b, contract=contract) == expected
+
+
+
+def test_build_script_name_is_platform_aware():
+    """Host-native paths handle Windows during Windows CI without POSIX splitting."""
+    from pathlib import Path, PureWindowsPath
+    assert Path("scripts/build-controlled-apks.py").name == "build-controlled-apks.py"
+    assert PureWindowsPath(r"C:\\repo\\scripts\\build-controlled-apks.py").name == "build-controlled-apks.py"
+    assert PureWindowsPath(r"C:\\repo\\scripts\\another-script.py").name != "build-controlled-apks.py"

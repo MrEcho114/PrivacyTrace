@@ -35,8 +35,10 @@
 > **注意**：技能按调用方分两类。**用户显式调用型**（如 `ask-matt`、`grill-with-docs`、`to-spec`、`to-tickets`、`implement`、`triage`）须由开发者显式调用，Agent 仅承担导航提醒与流程指针职责，不保证自动触发；**模型可调用型**（如 `diagnosing-bugs`、`code-review`、`pr`、`tdd`）可由用户显式调用，也可由 Agent 在任务语义匹配时主动使用。
 
 ### 4. 工单创建、领取、依赖等待与交接
+开始、恢复、分派和 PR 更新前，执行 [协作检查清单](docs/agents/skills-workflow.md#6-工单流转阻塞依赖与交接规范)；唯一执行会话、共享文件归属及当前记录的细节只在该指南维护，Agent 填写记录。
+
 - **创建任务**：统一使用开发工单模板 [`.github/ISSUE_TEMPLATE/task.yml`](.github/ISSUE_TEMPLATE/task.yml)，填写 PT 编号、目标、范围、范围外事项、关联 Spec/ADR、阻塞依赖、验收条件与接手材料。
-- **领取任务**：在 GitHub Issue 上指定 Assignee（`gh issue edit <n> --add-assignee @me`）。
+- **领取任务**：先回读当前执行记录，由负责人指定唯一执行会话，再在 GitHub Issue 确认单一 Assignee。
 - **依赖等待**：检查工单中的阻塞依赖（`Blockers`），**若存在未关闭的 blocker，必须原地等待，严禁在阻塞未解除前提前启动开发**。
 - **任务交接**：暂停或换人时，须在 Issue 的接手材料字段或最新 Comment 留下分支名、最新 Commit、已有进展与剩余工作清单。
 - **提交 PR 与代码审查**：遵循 [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md) 提交 Pull Request，对照关联 Issue 验收条件逐项确认完成情况，完成 Agent self-review 五项自审，并如实标注未验证项与证据边界。

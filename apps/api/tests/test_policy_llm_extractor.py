@@ -586,7 +586,11 @@ def test_extractor_clear_cache_removes_json_files(tmp_path: Path):
     assert (cache_dir / "other.txt").exists()
 
 
-def test_extractor_real_local_mock_http_server(tmp_path: Path):
+@pytest.mark.parametrize("usage", [
+    {"prompt_tokens": 12, "completion_tokens": 6, "total_tokens": 18},
+    {"prompt_tokens": 12, "completion_tokens": 6},
+])
+def test_extractor_real_local_mock_http_server(tmp_path: Path, usage):
     import http.server
     import threading
 
@@ -622,7 +626,7 @@ def test_extractor_real_local_mock_http_server(tmp_path: Path):
                         }
                     }
                 ],
-                "usage": {"prompt_tokens": 12, "completion_tokens": 6, "total_tokens": 18},
+                "usage": usage,
             }
             self.send_response(200)
             self.send_header("Content-Type", "application/json")

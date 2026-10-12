@@ -20,6 +20,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Protocol
 
+from pydantic import ValidationError
+
+from .models import PolicyClaim
 from .resources import ACTIVE_RULESET_VERSION, taxonomy
 
 PROMPT_VERSION = "1.0.0"
@@ -125,6 +128,20 @@ def safe_llm_error_code(exc: Exception) -> str:
     return "LLM_REQUEST_FAILED"
 
 
+def normalize_token_usage(usage: Any) -> dict[str, int]:
+    """Validate all counters before any telemetry mutation or audit publication."""
+    if not isinstance(usage, dict):
+        raise ValueError("Invalid LLM token usage")
+    tokens = {name: usage.get(name, 0) for name in ("prompt_tokens", "completion_tokens")}
+    if any(type(value) is not int or value < 0 for value in tokens.values()):
+        raise ValueError("Invalid LLM token usage")
+    subtotal = sum(tokens.values())
+    total = usage.get("total_tokens", subtotal)
+    if type(total) is not int or total < subtotal:
+        raise ValueError("Invalid LLM token usage")
+    return {**tokens, "total_tokens": total}
+
+
 class UrllibLLMClient:
     """Standard-library HTTP client for OpenAI-compatible chat completion APIs."""
 
@@ -195,12 +212,7 @@ class UrllibLLMClient:
             raise ValueError(f"LLM API response missing choices: {err_msg}")
 
         content = choices[0].get("message", {}).get("content") or ""
-        usage = data.get("usage", {})
-        tokens = {
-            "prompt_tokens": usage.get("prompt_tokens", 0),
-            "completion_tokens": usage.get("completion_tokens", 0),
-            "total_tokens": usage.get("total_tokens", 0),
-        }
+        tokens = normalize_token_usage(data.get("usage", {}))
         return content, tokens
 
 
@@ -477,6 +489,8 @@ class PolicyLLMExtractor:
                     len(raw_text.encode("utf-8")) > self.config.max_response_bytes
                 ):
                     raise LLMResponseTooLarge("RESPONSE_TOO_LARGE")
+                # Custom clients have the same untrusted metadata boundary as HTTP.
+                call_tokens = normalize_token_usage(call_tokens)
                 telemetry.prompt_tokens += call_tokens.get("prompt_tokens", 0)
                 telemetry.completion_tokens += call_tokens.get("completion_tokens", 0)
                 telemetry.total_tokens += call_tokens.get("total_tokens", 0)
@@ -779,6 +793,16 @@ class PolicyLLMExtractor:
                     candidate["ambiguity_flags"] = ambiguity_flags
                 # Remove None values for fields where policy_intake expects optional
                 cleaned_candidate = {k: v for k, v in candidate.items() if v is not None}
+                try:
+                    PolicyClaim.model_validate({
+                        **{k: v for k, v in cleaned_candidate.items()
+                           if k not in {"excerpt", "start_offset", "end_offset"}},
+                        "id": "llm-candidate", "document_id": "policy-official",
+                        "evidence_ids": ["llm-candidate-evidence"],
+                    })
+                except ValidationError:
+                    rejected.append({"raw": item, "reason": "INVALID_CANDIDATE_SCHEMA"})
+                    continue
                 valid.append(cleaned_candidate)
             except Exception as exc:
                 err_msg = f"{type(exc).__name__}: {exc}"

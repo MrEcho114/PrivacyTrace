@@ -13,6 +13,85 @@ from privacytrace.policy_intake import digest, read_safe
 from privacytrace.resources import taxonomy
 
 ROOT = Path(__file__).resolve().parents[1]
+
+SCENARIOS = {f"C0{i}" for i in range(1, 7)}
+SCHEMES = {"permission_keyword", "api_flat", "privacytrace"}
+
+
+def _material_digest(report):
+    """Reproduce the benchmark's input-only material fingerprint, not its expected labels."""
+    material = {
+        "bundle": {
+            key: report[key]
+            for key in ("job", "evidence", "behaviors", "policy_documents", "policy_claims")
+        },
+        "permissions": report["sample"]["permissions"],
+    }
+    return digest(json.dumps(material, ensure_ascii=True, sort_keys=True).encode())
+
+
+def validate_replay_set(comparison, reports, truth_digest, build_digest):
+    """Refuse partial/duplicated or unrelated reports before constructing a package."""
+    if (
+        not isinstance(comparison, dict)
+        or comparison.get("truth_sha256") != truth_digest
+        or not isinstance(comparison.get("protocol"), dict)
+        or not isinstance(comparison["protocol"].get("scenarios"), dict)
+        or set(comparison["protocol"]["scenarios"]) != SCENARIOS
+        or not isinstance(comparison.get("rows"), list)
+        or len(comparison["rows"]) != len(SCENARIOS) * len(SCHEMES)
+        or len(reports) != len(SCENARIOS)
+    ):
+        raise ValueError("Incomplete or invalid controlled replay comparison")
+
+    scenario_reports = {}
+    for job_id, report in reports.items():
+        if not isinstance(report, dict):
+            raise ValueError("Malformed controlled replay report")
+        job = report.get("job")
+        tools = report.get("tools")
+        if not isinstance(job, dict) or not isinstance(tools, dict):
+            raise ValueError("Controlled replay report is missing identity")
+        scenario = tools.get("controlled_scenario")
+        if (
+            scenario not in SCENARIOS
+            or scenario in scenario_reports
+            or job.get("id") != job_id
+            or job.get("sample_id") != scenario
+            or job.get("state") != "SUCCEEDED"
+            or job.get("input_mode") != "CONTROLLED_APK"
+            or job.get("source_origin") != "CONTROLLED"
+            or tools.get("controlled_build_sha256") != build_digest
+        ):
+            raise ValueError("Duplicated or untrusted controlled replay scenario")
+        scenario_reports[scenario] = report
+    if set(scenario_reports) != SCENARIOS:
+        raise ValueError("Controlled replay requires one report per scenario")
+
+    material_hashes = {
+        scenario: _material_digest(report)
+        for scenario, report in scenario_reports.items()
+    }
+    pairs = set()
+    for row in comparison["rows"]:
+        if not isinstance(row, dict):
+            raise ValueError("Malformed comparison row")
+        scenario, scheme = row.get("scenario_id"), row.get("scheme")
+        key = (scenario, scheme)
+        if (
+            scenario not in SCENARIOS
+            or scheme not in SCHEMES
+            or key in pairs
+            or row.get("expected")
+            != comparison["protocol"]["scenarios"][scenario].get("expected")
+            or row.get("material_sha256") != material_hashes[scenario]
+        ):
+            raise ValueError("Duplicate, missing, or inconsistent comparison row")
+        pairs.add(key)
+    if pairs != {(scenario, scheme) for scenario in SCENARIOS for scheme in SCHEMES}:
+        raise ValueError("Controlled replay comparison is incomplete")
+
+
 SAFE_TOOLS = {
     "androguard",
     "sdk_signatures",
@@ -33,6 +112,9 @@ def main():
     args = parser.parse_args()
     comparison = json.loads(read_safe(args.run / "comparison.json"))
     generated = datetime.now(timezone.utc).isoformat()
+    build_receipt = read_safe(args.run.parent / "build-a" / "build-receipt.json")
+    truth_digest = digest(read_safe(SUITE / "ground-truth.json"))
+    build_digest = digest(build_receipt)
     reports = {}
     store = JobStore(args.run / "jobs")
     inputs = json.loads(read_safe(SUITE / "inputs.lock.json"))
@@ -44,13 +126,17 @@ def main():
             continue  # Failures stay in the comparison artifact, never removed from denominator.
         report = store.report(job.id).model_dump(mode="json")
         scenario = report["tools"].get("controlled_scenario")
-        if scenario not in inputs["features"]:
+        if scenario not in inputs["features"] or job.sample_id != scenario:
             raise ValueError("Export requires a known authored controlled scenario")
         feature = Features.model_validate_json(
             read_safe(SUITE / "features" / (scenario + ".json"))
         )
         if (
-            report["sample"]["apk_sha256"] != artifacts["apks"][scenario]
+            report["job"]["id"] != job.id
+            or report["job"]["sample_id"] != scenario
+            or report["job"]["input_mode"] != "CONTROLLED_APK"
+            or report["job"]["source_origin"] != "CONTROLLED"
+            or report["sample"]["apk_sha256"] != artifacts["apks"][scenario]
             or report["sample"]["package_name"] != feature.package_name
             or report["tools"].get("controlled_features_sha256")
             != inputs["features"][scenario]
@@ -74,6 +160,9 @@ def main():
             "reviews"
         ] = []  # Local user names/notes never belong in this authored package.
         reports[job.id] = report
+    # The comparison and six successful trusted reports must form one exact replay.
+    # This check happens before any output directory or manifest is created.
+    validate_replay_set(comparison, reports, truth_digest, build_digest)
     args.output.mkdir(parents=True, exist_ok=False)
     shutil.copytree(ROOT / "apps/web/dist", args.output / "web")
     index = args.output / "web/index.html"

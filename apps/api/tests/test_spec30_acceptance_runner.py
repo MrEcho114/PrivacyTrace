@@ -49,9 +49,6 @@ def test_rebuild_mismatch_preserves_18_failures_without_scanning(tmp_path, monke
     spec.loader.exec_module(validator)
 
     frozen = json.loads((ROOT / "benchmarks/controlled/artifacts.lock.json").read_bytes())
-    if failed_stage == "worker-build":
-        # Prerequisite tests isolate the state transition, not byte verification.
-        monkeypatch.setattr(validator, "verify_build_artifacts", lambda a, b: None)
     real_run = subprocess.run
     calls = []
     expected_error = (
@@ -151,6 +148,9 @@ def test_prerequisite_failure_blocks_real_prediction(
     monkeypatch.syspath_prepend(str(ROOT / "scripts"))
     spec.loader.exec_module(validator)
     frozen = json.loads((ROOT / "benchmarks/controlled/artifacts.lock.json").read_bytes())
+    if failed_stage == "worker-build":
+        # This test isolates worker-build transition; byte verification is separately tested.
+        monkeypatch.setattr(validator, "verify_build_artifacts", lambda a, b: None)
     real_run = subprocess.run
     calls = []
 

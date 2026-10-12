@@ -18,6 +18,84 @@ from privacytrace.isolated_scan import docker_prefix
 ROOT = Path(__file__).resolve().parents[1]
 
 
+SCENARIOS = tuple(f"C0{i}" for i in range(1, 7))
+RECEIPT_INVALID = "BUILD_ARTIFACT_RECEIPT_INVALID"
+HASH_MISMATCH = "BUILD_ARTIFACT_HASH_MISMATCH"
+
+
+def _frozen_build_contract():
+    suite = ROOT / "benchmarks/controlled"
+    return (
+        json.loads((suite / "artifacts.lock.json").read_bytes()),
+        json.loads((suite / "inputs.lock.json").read_bytes()),
+        json.loads((suite / "toolchain.lock.json").read_bytes()),
+    )
+
+
+def verify_build_artifacts(build_a, build_b, *, contract=None):
+    """Hash all twelve actual APK files; never authorize scanning by receipts alone."""
+    try:
+        frozen, inputs, toolchain = _frozen_build_contract() if contract is None else contract
+        if (
+            not isinstance(frozen, dict) or not isinstance(inputs, dict)
+            or not isinstance(toolchain, dict)
+            or frozen.get("schema_version") != 1
+            or inputs.get("schema_version") != 1
+        ):
+            return RECEIPT_INVALID
+        expected_apks = frozen.get("apks")
+        expected_sources = frozen.get("source_hashes")
+        sources = inputs.get("sources")
+        if (
+            not isinstance(expected_apks, dict)
+            or set(expected_apks) != set(SCENARIOS)
+            or not isinstance(expected_sources, dict)
+            or not isinstance(sources, dict)
+            or set(expected_sources) != set(sources)
+        ):
+            return RECEIPT_INVALID
+        if expected_sources != sources:
+            return HASH_MISMATCH
+
+        for directory in (build_a, build_b):
+            receipt = json.loads((directory / "build-receipt.json").read_bytes())
+            if (
+                not isinstance(receipt, dict)
+                or receipt.get("schema_version") != 1
+                or receipt.get("artifact_use") != "UNSIGNED_STATIC_ANALYSIS_ONLY"
+                or receipt.get("toolchain") != toolchain
+                or not isinstance(receipt.get("apks"), dict)
+                or not isinstance(receipt.get("source_hashes"), dict)
+                or set(receipt["apks"]) != set(SCENARIOS)
+                or set(receipt["source_hashes"]) != set(expected_sources)
+                or {file.name for file in directory.glob("*.apk")}
+                != {scenario + ".apk" for scenario in SCENARIOS}
+            ):
+                return RECEIPT_INVALID
+            for mapping in (receipt["apks"], receipt["source_hashes"], expected_apks, expected_sources):
+                if any(
+                    not isinstance(value, str) or len(value) != 64
+                    or any(char not in "0123456789abcdef" for char in value)
+                    for value in mapping.values()
+                ):
+                    return RECEIPT_INVALID
+            if receipt["apks"] != expected_apks or receipt["source_hashes"] != expected_sources:
+                return HASH_MISMATCH
+            for scenario in SCENARIOS:
+                apk = directory / (scenario + ".apk")
+                if apk.is_symlink() or not apk.is_file():
+                    return RECEIPT_INVALID
+                digest = hashlib.sha256()
+                with apk.open("rb") as stream:
+                    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                        digest.update(chunk)
+                if digest.hexdigest() != receipt["apks"][scenario]:
+                    return HASH_MISMATCH
+    except (OSError, ValueError, TypeError, KeyError, AttributeError):
+        return RECEIPT_INVALID
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path)
@@ -89,20 +167,7 @@ def main():
         if rebuild_error:
             stages[-1]["error_code"] = rebuild_error
         if rebuilt:
-            try:
-                first = json.loads((build_a / "build-receipt.json").read_bytes())
-                second = json.loads((build_b / "build-receipt.json").read_bytes())
-                frozen = json.loads(
-                    (ROOT / "benchmarks/controlled/artifacts.lock.json").read_bytes()
-                )
-                if not (
-                    first["apks"] == second["apks"] == frozen["apks"]
-                    and first["source_hashes"] == second["source_hashes"]
-                    == frozen["source_hashes"]
-                ):
-                    rebuild_error = "BUILD_ARTIFACT_HASH_MISMATCH"
-            except (OSError, ValueError, KeyError, TypeError):
-                rebuild_error = "BUILD_ARTIFACT_RECEIPT_INVALID"
+            rebuild_error = verify_build_artifacts(build_a, build_b)
             stages.append({
                 "stage": "rebuild-hashes",
                 "exit_code": 1 if rebuild_error else 0,

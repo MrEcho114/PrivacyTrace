@@ -49,6 +49,9 @@ def test_rebuild_mismatch_preserves_18_failures_without_scanning(tmp_path, monke
     spec.loader.exec_module(validator)
 
     frozen = json.loads((ROOT / "benchmarks/controlled/artifacts.lock.json").read_bytes())
+    if failed_stage == "worker-build":
+        # Prerequisite tests isolate the state transition, not byte verification.
+        monkeypatch.setattr(validator, "verify_build_artifacts", lambda a, b: None)
     real_run = subprocess.run
     calls = []
     expected_error = (
@@ -56,6 +59,20 @@ def test_rebuild_mismatch_preserves_18_failures_without_scanning(tmp_path, monke
         if mismatch == "invalid-receipt"
         else "BUILD_ARTIFACT_HASH_MISMATCH"
     )
+
+    # This pre-existing test covers runner propagation; byte-level checks
+    # are exercised separately with real synthetic bytes below.
+    def receipt_only_check(a, b):
+        try:
+            first = json.loads((a / "build-receipt.json").read_bytes())
+            second = json.loads((b / "build-receipt.json").read_bytes())
+            return (None if first["apks"] == second["apks"] == frozen["apks"]
+                    and first["source_hashes"] == second["source_hashes"] == frozen["source_hashes"]
+                    else "BUILD_ARTIFACT_HASH_MISMATCH")
+        except (OSError, ValueError, KeyError, TypeError):
+            return "BUILD_ARTIFACT_RECEIPT_INVALID"
+
+    monkeypatch.setattr(validator, "verify_build_artifacts", receipt_only_check)
 
     def fake_run(command, *args, **kwargs):
         argv = list(map(str, command))
@@ -182,3 +199,83 @@ def test_prerequisite_failure_blocks_real_prediction(
                and item["predicted"] == item["abstentions"] == 0
                for item in comparison["summaries"].values())
     assert not (output / "evaluation/jobs").exists()
+
+
+
+def _synthetic_apk_builds(tmp_path):
+    """Build fake byte streams outside the repository and frozen artifact lock."""
+    import hashlib
+    scenarios = [f"C0{i}" for i in range(1, 7)]
+    values = {name: ("fixture-" + name).encode() for name in scenarios}
+    apks = {name: hashlib.sha256(data).hexdigest() for name, data in values.items()}
+    sources = {"android/C01/MainActivity.java": "1" * 64}
+    frozen = {"schema_version": 1, "apks": apks, "source_hashes": sources}
+    inputs = {"schema_version": 1, "sources": sources}
+    toolchain = {"schema_version": 1, "test_fixture": True}
+    for name in ("build-a", "build-b"):
+        directory = tmp_path / name
+        directory.mkdir()
+        for scenario, data in values.items():
+            (directory / (scenario + ".apk")).write_bytes(data)
+        (directory / "build-receipt.json").write_text(
+            json.dumps({
+                "schema_version": 1,
+                "apks": apks,
+                "source_hashes": sources,
+                "toolchain": toolchain,
+                "artifact_use": "UNSIGNED_STATIC_ANALYSIS_ONLY",
+            }), encoding="utf-8"
+        )
+    return (tmp_path / "build-a", tmp_path / "build-b"), (frozen, inputs, toolchain)
+
+
+@pytest.mark.parametrize("modified", ["build-a", "build-b"])
+def test_rebuild_validator_hashes_both_actual_apk_byte_streams(tmp_path, modified, monkeypatch):
+    import importlib.util
+    validator_file = ROOT / "scripts/validate-spec30.py"
+    spec = importlib.util.spec_from_file_location("spec30_real_bytes", validator_file)
+    validator = importlib.util.module_from_spec(spec)
+    monkeypatch.syspath_prepend(str(ROOT / "scripts"))
+    spec.loader.exec_module(validator)
+    (build_a, build_b), contract = _synthetic_apk_builds(tmp_path)
+    assert validator.verify_build_artifacts(build_a, build_b, contract=contract) is None
+    (tmp_path / modified / "C02.apk").write_bytes(b"tampered actual apk bytes")
+    assert validator.verify_build_artifacts(
+        build_a, build_b, contract=contract
+    ) == "BUILD_ARTIFACT_HASH_MISMATCH"
+
+
+@pytest.mark.parametrize("problem", [
+    "missing-apk", "missing-hash", "malformed-receipt", "wrong-type",
+    "extra-apk", "source-mismatch", "receipt-hash-mismatch"
+])
+def test_rebuild_validator_rejects_invalid_receipts_and_artifacts(tmp_path, monkeypatch, problem):
+    import importlib.util
+    validator_file = ROOT / "scripts/validate-spec30.py"
+    spec = importlib.util.spec_from_file_location("spec30_invalid_bytes", validator_file)
+    validator = importlib.util.module_from_spec(spec)
+    monkeypatch.syspath_prepend(str(ROOT / "scripts"))
+    spec.loader.exec_module(validator)
+    (build_a, build_b), contract = _synthetic_apk_builds(tmp_path)
+    receipt_path = build_b / "build-receipt.json"
+    receipt = json.loads(receipt_path.read_bytes())
+    expected = "BUILD_ARTIFACT_RECEIPT_INVALID"
+    if problem == "missing-apk":
+        (build_a / "C04.apk").unlink()
+    elif problem == "missing-hash":
+        del receipt["apks"]["C01"]
+    elif problem == "malformed-receipt":
+        receipt_path.write_text("{", encoding="utf-8")
+    elif problem == "wrong-type":
+        receipt["apks"] = ["C01"]
+    elif problem == "extra-apk":
+        (build_b / "extra.apk").write_bytes(b"extra")
+    elif problem == "source-mismatch":
+        receipt["source_hashes"]["android/C01/MainActivity.java"] = "0" * 64
+        expected = "BUILD_ARTIFACT_HASH_MISMATCH"
+    elif problem == "receipt-hash-mismatch":
+        receipt["apks"]["C03"] = "0" * 64
+        expected = "BUILD_ARTIFACT_HASH_MISMATCH"
+    if problem not in ("malformed-receipt",):
+        receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+    assert validator.verify_build_artifacts(build_a, build_b, contract=contract) == expected

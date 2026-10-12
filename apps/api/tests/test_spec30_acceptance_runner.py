@@ -286,8 +286,14 @@ def test_build_script_name_is_platform_aware():
     """Host-native paths handle Windows during Windows CI without POSIX splitting."""
     from pathlib import Path, PureWindowsPath
     assert Path("scripts/build-controlled-apks.py").name == "build-controlled-apks.py"
-    assert PureWindowsPath(r"C:\\repo\\scripts\\build-controlled-apks.py").name == "build-controlled-apks.py"
-    assert PureWindowsPath(r"C:\\repo\\scripts\\another-script.py").name != "build-controlled-apks.py"
+    assert (
+        PureWindowsPath(r"C:\\repo\\scripts\\build-controlled-apks.py").name
+        == "build-controlled-apks.py"
+    )
+    assert (
+        PureWindowsPath(r"C:\\repo\\scripts\\another-script.py").name
+        != "build-controlled-apks.py"
+    )
 
 
 @pytest.mark.parametrize("corrupted_build", ["build-a", "build-b"])

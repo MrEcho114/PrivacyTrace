@@ -1,5 +1,5 @@
 name: PT development task
-description: A scoped task linked to the PrivacyTrace brief
+description: 说明目标即可；执行会话、查重与交接记录由 Agent 补齐。
 title: '[PT-xxx] '
 body:
   - type: input
@@ -37,10 +37,16 @@ body:
       description: 关联的需求 Spec、ADR 或架构决策文档路径与链接
       placeholder: 如 docs/adr/0001-...md 或 #32
   - type: textarea
+    id: execution
+    attributes:
+      label: 当前执行记录（Agent 维护）
+      description: 开始前按 docs/agents/skills-workflow.md 第 6 节查重并回读；负责人指定唯一执行会话，记录授权范围、分支/main 基线/最新 SHA、唯一 PR、共享 owner 和依赖产物。未开始可留空，由 Agent 补齐。
+      placeholder: 当前记录指针 / 负责人、执行会话、确认时点、写入与排除范围、已有交付及剩余项
+  - type: textarea
     id: blockers
     attributes:
       label: 阻塞依赖 (Blockers)
-      description: 需等待解决的依赖前置任务或 Issue 编号；若无填无。有未解阻塞时需等待解除方可启动
+      description: 需等待解决的依赖任务及产物/验收版本；若无填无。未解阻塞必须等待，解除后按协作清单核对产物可用；预备草稿注明独立范围。
       placeholder: 无 / 依赖 #...
   - type: textarea
     id: acceptance
@@ -58,5 +64,5 @@ body:
     id: handoff
     attributes:
       label: 接手材料与交接信息 (Handoff)
-      description: 跨会话或换人接手所需的分支、最新提交、已有进展与剩余工作清单
-      placeholder: 分支名、最新 commit、已有进展、剩余工作清单
+      description: 原会话停止写入后，由负责人明确移交执行权；记录分支、最新提交、已有进展、剩余工作清单及共享文件状态。细节可链接唯一当前执行记录。
+      placeholder: 原会话、新会话、指定依据、分支名、最新 commit、已有进展、剩余工作清单

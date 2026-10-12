@@ -5,7 +5,7 @@ import pytest
 from privacytrace.resources import ROOT
 
 spec = importlib.util.spec_from_file_location(
-    "metrics_user_study", ROOT / "scripts/metrics_user_study.py"
+    "metrics_user_study", ROOT / "scripts/metrics-user-study.py"
 )
 metrics_mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(metrics_mod)

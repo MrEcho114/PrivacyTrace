@@ -1,0 +1,1049 @@
+{
+  "schema_version": 1,
+  "report_date": "2026-10-12",
+  "issue": 25,
+  "evaluation_sha": "323780c9a77d7de2bb1857b1b67b4f05fd94a525",
+  "original_generated_at": "2026-10-12T07:08:57.020529+00:00",
+  "origin": {
+    "run_url": "https://github.com/MrEcho114/PrivacyTrace/actions/runs/38215788997",
+    "artifact_id": 11731418196,
+    "artifact_zip_sha256": "cd68b9802b8d0d9fe500991d62cda64cc0179533621836ce9e4a7cd0e820b480",
+    "artifact_expires_at": "2026-10-26T07:09:32Z",
+    "comparison_sha256": "630b3af1feddf1014f3b738d89c5ee5c2e3810464bffe5389ae67dd101adf8d1",
+    "integration_receipt_sha256": "62f8f60fad12467370f09c67bc088aad49221231a735619f2318882a57c652e6",
+    "evidence_sha256": {
+      "build-a/build-receipt.json": "4755b9667c50a18b99713cf1fdf515b6bc5fae3491b907d290e153ad385104f7",
+      "build-b/build-receipt.json": "4755b9667c50a18b99713cf1fdf515b6bc5fae3491b907d290e153ad385104f7",
+      "evaluation/comparison.json": "630b3af1feddf1014f3b738d89c5ee5c2e3810464bffe5389ae67dd101adf8d1",
+      "browser-proof/browser-proof.json": "71a458574f1b72b3f5601fb4abc1b0dee126ec2c796052fbdfee47568c674368",
+      "offline-proof/offline-proof.json": "c90225f0746a7032ce93e039e2b1a12002faf6c5b3b292a9c90cd8dbdd5e47e8"
+    },
+    "new_scan_or_build_performed_for_this_report": false,
+    "original_prediction_records_retained_in_artifact": false,
+    "original_prediction_record_hashes": null,
+    "row_digest_encoding": "UTF-8 JSON; ensure_ascii=False, sort_keys=True, separators=(',',':')",
+    "row_digest_kind": "Derived in this report; not a hash of original predictor stdout"
+  },
+  "frozen_protocol": {
+    "schema_version": 1,
+    "frozen_at": "2026-10-10T00:39:16.422477+08:00",
+    "origin": "Spec30 scenario definitions and authored source/policy, before first execution",
+    "inputs_lock_sha256": "32f7a4bbd9a73d261f2d0e2100f31a0b6b38f51ace363841ac06415336295c87",
+    "counting_unit": "One target outcome per scenario, including CAPABILITY in C01; all six scenarios remain denominator",
+    "metrics": [
+      "status_agreement",
+      "abstentions",
+      "failures",
+      "coverage",
+      "elapsed_seconds"
+    ],
+    "pr_f1": "NOT_REPORTED: no binary collection/legality target",
+    "human_preparation_seconds": null,
+    "preparation_actor": "Codex-assisted manual fixture annotation; no independent human sign-off claimed",
+    "scenarios": {
+      "C01": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "CAPABILITY",
+        "expected": "INSUFFICIENT_EVIDENCE",
+        "api_count": 0,
+        "target_descriptor": null,
+        "source_reference": "android/C01/MainActivity.java",
+        "policy_reference": "policies/C01.txt"
+      },
+      "C02": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "EXACT_MATCH",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C02/MainActivity.java",
+        "policy_reference": "policies/C02.txt"
+      },
+      "C03": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "CATEGORY_MATCH",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C03/MainActivity.java",
+        "policy_reference": "policies/C03.txt"
+      },
+      "C04": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "NOT_DECLARED",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C04/MainActivity.java",
+        "policy_reference": "policies/C04.txt"
+      },
+      "C05": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "AMBIGUOUS_DISCLOSURE",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C05/MainActivity.java",
+        "policy_reference": "policies/C05.txt"
+      },
+      "C06": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "INSUFFICIENT_EVIDENCE",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C06/MainActivity.java",
+        "policy_reference": "policies/C06.txt"
+      }
+    }
+  },
+  "scheme_inputs": {
+    "permission_keyword": "Same APK/permissions/policy/evidence/claims available; uses permission mappings and exact data-type phrases in complete provided text. No hierarchy, polarity or completeness gate; nominal baseline only.",
+    "api_flat": "Same API invoke evidence, trusted full descriptors and context; exact flat data-type phrases in same policy text. No hierarchy, polarity or scope gate. Missing invoke abstains. No descriptor weakening.",
+    "privacytrace": "Same materials; existing deterministic engine and controlled known facts. No expected labels. Reviews are optional local annotations, not signatures."
+  },
+  "implementation_hashes": {
+    "apps/api/src/privacytrace/__init__.py": "6231d67b0395491dfb70fa788a18688ed72e0fd56c0493e0b17e8183e96a1364",
+    "apps/api/src/privacytrace/apk_worker.py": "44101e2ee2cc5e7e00fdbdc466a4db2f366daf2d1fbb4d9dde119ae003cf50a1",
+    "apps/api/src/privacytrace/benchmark.py": "843f424582e09448a2ddfeac6f7cda8d32d8bd297978daeedd5139a5be0ab09d",
+    "apps/api/src/privacytrace/benchmark_algorithms.py": "8c01dfa6518917db89223aedadfd4dd8a82a42b52f015a539bd9e1667985de49",
+    "apps/api/src/privacytrace/consistency.py": "2a127258e45676d4304641f9cbc95169d3796ce13d95fb2464c46b596f705db3",
+    "apps/api/src/privacytrace/controlled.py": "9a189fd7845e0cc981c4c1a0f79693c75579f816785708c9ec29b75c1fe06f58",
+    "apps/api/src/privacytrace/coverage_scope.py": "12ad40684a14bad50b252b326cb5b71441c79c44965aa068e523c66641595fd5",
+    "apps/api/src/privacytrace/isolated_scan.py": "a5d19f6c44bf68e74450327694f25ef30da255b80a7a456795b722662d879166",
+    "apps/api/src/privacytrace/job_store.py": "460c5c1e204c39a6c21b31f1e93a54f1e72a777199bf73ddd21e8fea3a534fde",
+    "apps/api/src/privacytrace/main.py": "a597eccb2ebef3cd233261536374ede75d4d2cfbcd936d04409e21f6aba30c4e",
+    "apps/api/src/privacytrace/models.py": "0b8751ffd8ff98cbcef1a251a7c6b98922ab9460de28a0f7e436b6005117587f",
+    "apps/api/src/privacytrace/pipeline.py": "b0aee4aaa629c0d9bd74ffe60e8c4c255b6059819e1a231bb7a04ee94e764d12",
+    "apps/api/src/privacytrace/policy_intake.py": "912828553239402931b285adab8b1d97cf4a2076d1647ffd900aab4777b494b1",
+    "apps/api/src/privacytrace/resources.py": "1dc83700c41fd5be4474f6d3d9bbc32690ece6ba537e1f7556988109109a25f9",
+    "apps/api/src/privacytrace/runtime_models.py": "dba4764add258d0ec6575c8bf14c29cb3d80bf44a5f72585a93398577bd74080",
+    "apps/api/src/privacytrace/scan_workspace.py": "1897a41b6180fb637edf6d53c389243cdf196400f05ea847e6c73be38b642ce0",
+    "apps/api/src/privacytrace/sdk_attribution.py": "4f67c147da209b02cbeb0ef66266f2ad23c361b26536cd0f78e09d9f93dfbf7e",
+    "apps/api/src/privacytrace/sdk_ruleset.py": "9b4d929a5f55e78104408eb66d1cd1cc2cee9aa873b6294b94e30f5fdd28923c",
+    "rules/taxonomy.v0.3.json": "e63297c70dcb3ec67b797e315fdfe469d617296b7bd51084a5ed8e950f513951",
+    "rules/sdk-signatures.v1.0.json": "f4987d328ac7b6697cd3fd92c4f6327cfdeea84566ad6e9934c8aa5bc14150e4"
+  },
+  "source_hashes": {
+    "android/C01/MainActivity.java": "cf205115a43ea4556b0984b63f696de3ee869709a771d71baa1d04e752188d9e",
+    "android/C01/AndroidManifest.xml": "9ca9f04fa2a3dcd242a4422623cc50864f42336821048892f4581e9e84461c45",
+    "android/C02/MainActivity.java": "8a9c1c56504da903ae6cb183d09b93b25048b492f26b199fba07843a1af59673",
+    "android/C02/AndroidManifest.xml": "7fcfe665f5a7456e83577370d32868f2c28d308d284fc770a2f1e9d4822b2336",
+    "android/C03/MainActivity.java": "8a659bf240e86b9e27b0ff20c20da800690ac6907cf18aa8bc71b908dd986bec",
+    "android/C03/AndroidManifest.xml": "e7bb0eed213e7f552b7cecc488f657b242c7fb40f0f1b19c19b2a977781fa00b",
+    "android/C04/MainActivity.java": "e22c4e91d7cb7234543827d773fc3be542e03a82a79aded9564aad024f955f8a",
+    "android/C04/AndroidManifest.xml": "b4f58d0948340ca27ff82d951f079978afb8cd4e9f2bfd3d13e519dda1b75d1f",
+    "android/C05/MainActivity.java": "b22d2e2178b28105d09e17d33f3ef158cef9670fbd739a70abf5c6a280517d81",
+    "android/C05/AndroidManifest.xml": "de0660ae6f1e17de71a1ad3d66c62513613084022538024c56e3686e4688733e",
+    "android/C06/MainActivity.java": "ba253cf4383ffa087720fc43402b0b6ec0fc2bbd4a5758c1150865232a0cb5f7",
+    "android/C06/AndroidManifest.xml": "71e3d5b50b5d32c13ebd2c310288f870b282dd8af22706c5140117fc967debfb"
+  },
+  "cases": {
+    "C01": {
+      "frozen_target": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "CAPABILITY",
+        "expected": "INSUFFICIENT_EVIDENCE",
+        "api_count": 0,
+        "target_descriptor": null,
+        "source_reference": "android/C01/MainActivity.java",
+        "policy_reference": "policies/C01.txt"
+      },
+      "apk_sha256_from_verified_build_receipts": "121ea9e78200ed3361fc6d2fd0f5598e6bded34fd17e7128619d96f914a58753",
+      "feature_sha256": "fd7cd0b99373f2186fdf288b5f21a1db2bea0eb15ab1209e9ff74a50ba7bedf1",
+      "policy_sha256": "1be4bc0b826f7adba437d8e9fdae21cc017e492bcb6269521df29a0db6c3f122",
+      "material_sha256_from_prediction_worker": "47fc05f302e682b31d331980f94b4a00d21c8d9b416ab4b446d195cdea561ac3",
+      "scope_known": true,
+      "policy_complete": true,
+      "candidate_spans_codepoints_half_open": [
+        {
+          "excerpt": "我们访问精确位置。",
+          "data_type": "PRECISE_LOCATION",
+          "polarity": "AFFIRMATIVE",
+          "subject": "HOST_APP",
+          "action": "ACCESS",
+          "start": 25,
+          "end": 34
+        }
+      ],
+      "shared_elapsed_seconds": 1.7341754679999895,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true
+    },
+    "C02": {
+      "frozen_target": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "EXACT_MATCH",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C02/MainActivity.java",
+        "policy_reference": "policies/C02.txt"
+      },
+      "apk_sha256_from_verified_build_receipts": "a487e72b9ff97661b0d3853e14f112ed35a6c08c06bfb77e818918594798acf5",
+      "feature_sha256": "80bd3aaed516cb01c260e683b1f44c3228747abcfff50f5669fb3049cdca3d72",
+      "policy_sha256": "e00c9039757eb8300f858c2a507555ae366ed3efa61c5dace073d5849f56b10c",
+      "material_sha256_from_prediction_worker": "1440b22bf62fbd875149a40cc0adeb7336c78386cafdb0069e5dc7696a45425d",
+      "scope_known": true,
+      "policy_complete": true,
+      "candidate_spans_codepoints_half_open": [
+        {
+          "excerpt": "我们访问精确位置。",
+          "data_type": "PRECISE_LOCATION",
+          "polarity": "AFFIRMATIVE",
+          "subject": "HOST_APP",
+          "action": "ACCESS",
+          "start": 23,
+          "end": 32
+        }
+      ],
+      "shared_elapsed_seconds": 1.7400385299999925,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true
+    },
+    "C03": {
+      "frozen_target": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "CATEGORY_MATCH",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C03/MainActivity.java",
+        "policy_reference": "policies/C03.txt"
+      },
+      "apk_sha256_from_verified_build_receipts": "c76f5c5004f65609810ef6f68b05ce8857ba4e5b202d96b81b5c94e6771ffffd",
+      "feature_sha256": "ea2ef9277139487fa9b46b0457290814eb4ac14b36cb520fe8bb172b285bf6fb",
+      "policy_sha256": "05a3dc4f1ac8e80c8b78df2277544c6ef0888168f5da6dee8adb4a41b1f0b7fb",
+      "material_sha256_from_prediction_worker": "9dc08887b60f406f9c6bdc8c15a7c7037d49a6fd87b437032887caa1a7eed6d5",
+      "scope_known": true,
+      "policy_complete": true,
+      "candidate_spans_codepoints_half_open": [
+        {
+          "excerpt": "本自建测试应用访问位置信息，用于静态规则测试。",
+          "data_type": "LOCATION",
+          "polarity": "AFFIRMATIVE",
+          "subject": "HOST_APP",
+          "action": "ACCESS",
+          "start": 0,
+          "end": 23
+        }
+      ],
+      "shared_elapsed_seconds": 1.639982879999991,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true
+    },
+    "C04": {
+      "frozen_target": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "NOT_DECLARED",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C04/MainActivity.java",
+        "policy_reference": "policies/C04.txt"
+      },
+      "apk_sha256_from_verified_build_receipts": "cad0924ef7ed698e4518379d4c1270e9f1dd91ba593f0ce7004bfdb86d3e87a7",
+      "feature_sha256": "abd412bd6c5812177ed79f71d4ce0bb01f79f8f14204dd79f55a222d4ce06298",
+      "policy_sha256": "46bc5480f3096692f42f876f1d6ee1484ea46d7a26c6d090881d8567b3def9dd",
+      "material_sha256_from_prediction_worker": "50064e7cdd45445c850156580847573e68fd3858bf2855b29a0ee29acf4fa66a",
+      "scope_known": true,
+      "policy_complete": true,
+      "candidate_spans_codepoints_half_open": [],
+      "shared_elapsed_seconds": 1.6322493000000122,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true
+    },
+    "C05": {
+      "frozen_target": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "AMBIGUOUS_DISCLOSURE",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C05/MainActivity.java",
+        "policy_reference": "policies/C05.txt"
+      },
+      "apk_sha256_from_verified_build_receipts": "d11c648c78d8d90b44bf5f225eedb6a83a176c1ac829bdd0ca960e9ce2c30091",
+      "feature_sha256": "8b03c5f701e72d84b1d11a1397fbae5eb4feeebfd8dae463c338a759c80e71e2",
+      "policy_sha256": "8a9d37700740ed324808949b5628de93c8ddfe4ab84b8a12c3db25476d3f3e5f",
+      "material_sha256_from_prediction_worker": "ac875af6e1fbb061233a7c4fb77394421a4587c83d0a4259a25c60ed451291b0",
+      "scope_known": true,
+      "policy_complete": true,
+      "candidate_spans_codepoints_half_open": [
+        {
+          "excerpt": "本自建测试应用不访问精确位置。",
+          "data_type": "PRECISE_LOCATION",
+          "polarity": "NEGATIVE",
+          "subject": "HOST_APP",
+          "action": "ACCESS",
+          "start": 0,
+          "end": 15
+        }
+      ],
+      "shared_elapsed_seconds": 1.6173796109999898,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true
+    },
+    "C06": {
+      "frozen_target": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "INSUFFICIENT_EVIDENCE",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C06/MainActivity.java",
+        "policy_reference": "policies/C06.txt"
+      },
+      "apk_sha256_from_verified_build_receipts": "88e72442b13d3043ef14e2c097a90550613b831600cd5f92d6a077bb6cd29913",
+      "feature_sha256": "02e602b3c087af85591afd15c6b832c414742424e8f8becdd9000d2e623bc1d6",
+      "policy_sha256": "34a5df761c0fde989f127d92a4ef12348ca0c3ff590cc791576bbbac2691a7b0",
+      "material_sha256_from_prediction_worker": "abddadce10dc444b6f500caff7742aad1d0286e744fc0aee8793ec2440d083cf",
+      "scope_known": false,
+      "policy_complete": false,
+      "candidate_spans_codepoints_half_open": [],
+      "shared_elapsed_seconds": 1.751266304000012,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true
+    }
+  },
+  "row_references": [
+    {
+      "original_row_index_zero_based": 0,
+      "scenario_id": "C01",
+      "scheme": "permission_keyword",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": "EXACT_MATCH",
+      "errors": [],
+      "evidence_ids": [
+        "ev-ffefeda2a688a1c0c6194317"
+      ],
+      "derived_row_sha256": "0137bdc48bf525d6754277ce28f20eef6a137136f506c3fa7497a5f0863029fe"
+    },
+    {
+      "original_row_index_zero_based": 1,
+      "scenario_id": "C01",
+      "scheme": "api_flat",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": "INSUFFICIENT_EVIDENCE",
+      "errors": [],
+      "evidence_ids": [
+        "ev-ffefeda2a688a1c0c6194317"
+      ],
+      "derived_row_sha256": "99fc093e1e691f72c710f1796af1f0e63ccaa34f3c8b5d5ed5005e7923e1ba1c"
+    },
+    {
+      "original_row_index_zero_based": 2,
+      "scenario_id": "C01",
+      "scheme": "privacytrace",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": "INSUFFICIENT_EVIDENCE",
+      "errors": [],
+      "evidence_ids": [
+        "ev-ffefeda2a688a1c0c6194317"
+      ],
+      "derived_row_sha256": "767f72023eef92967679110044b0c5305aa22641b7e4b47e2aa8ee3c4d3bd5c2"
+    },
+    {
+      "original_row_index_zero_based": 3,
+      "scenario_id": "C02",
+      "scheme": "permission_keyword",
+      "expected": "EXACT_MATCH",
+      "actual": "EXACT_MATCH",
+      "errors": [],
+      "evidence_ids": [
+        "ev-b958386a932fcfc767b86335"
+      ],
+      "derived_row_sha256": "7e50fa12f9ce8558ae3aa5736cfd5181ed7575dd311dcfc64d9a664aebd96470"
+    },
+    {
+      "original_row_index_zero_based": 4,
+      "scenario_id": "C02",
+      "scheme": "api_flat",
+      "expected": "EXACT_MATCH",
+      "actual": "EXACT_MATCH",
+      "errors": [],
+      "evidence_ids": [
+        "ev-ba08efa814f6ece2c21c8e79"
+      ],
+      "derived_row_sha256": "6b2137c8118dca1bb099bdcfa7dad7058f11ae15b6dda59926f6c2c06a8b34f6"
+    },
+    {
+      "original_row_index_zero_based": 5,
+      "scenario_id": "C02",
+      "scheme": "privacytrace",
+      "expected": "EXACT_MATCH",
+      "actual": "EXACT_MATCH",
+      "errors": [],
+      "evidence_ids": [
+        "ev-ba08efa814f6ece2c21c8e79",
+        "policy-sentence-1",
+        "policy-snapshot"
+      ],
+      "derived_row_sha256": "e2990784458fc6617e66278a275555f41f4313358405e4e9e8c6d8ed5b910422"
+    },
+    {
+      "original_row_index_zero_based": 6,
+      "scenario_id": "C03",
+      "scheme": "permission_keyword",
+      "expected": "CATEGORY_MATCH",
+      "actual": "NOT_DECLARED",
+      "errors": [],
+      "evidence_ids": [
+        "ev-bb9b50fedb413e7e00e0ac86"
+      ],
+      "derived_row_sha256": "8985180fa199cff78e82c91c8681019b432fc9fe84959dcc38de08c31b6e56d2"
+    },
+    {
+      "original_row_index_zero_based": 7,
+      "scenario_id": "C03",
+      "scheme": "api_flat",
+      "expected": "CATEGORY_MATCH",
+      "actual": "NOT_DECLARED",
+      "errors": [],
+      "evidence_ids": [
+        "ev-19107dc6c2230a04507aa846"
+      ],
+      "derived_row_sha256": "af1182e30f154ef29e0a77d8024f4f6a514864497bc457bf433399889adb6701"
+    },
+    {
+      "original_row_index_zero_based": 8,
+      "scenario_id": "C03",
+      "scheme": "privacytrace",
+      "expected": "CATEGORY_MATCH",
+      "actual": "CATEGORY_MATCH",
+      "errors": [],
+      "evidence_ids": [
+        "ev-19107dc6c2230a04507aa846",
+        "policy-sentence-1",
+        "policy-snapshot"
+      ],
+      "derived_row_sha256": "e83ac80037d9904a1dd33a039390322906d0121be14bce03a52037ad07c147ae"
+    },
+    {
+      "original_row_index_zero_based": 9,
+      "scenario_id": "C04",
+      "scheme": "permission_keyword",
+      "expected": "NOT_DECLARED",
+      "actual": "NOT_DECLARED",
+      "errors": [],
+      "evidence_ids": [
+        "ev-d3eaf0019e2bea935919de65"
+      ],
+      "derived_row_sha256": "61d9d32a55091d83f4b34176c4a3c6297eb6937e0dd0bc0a1fa585f6dc471afd"
+    },
+    {
+      "original_row_index_zero_based": 10,
+      "scenario_id": "C04",
+      "scheme": "api_flat",
+      "expected": "NOT_DECLARED",
+      "actual": "NOT_DECLARED",
+      "errors": [],
+      "evidence_ids": [
+        "ev-2675f4276c50cdabcc4a72e1"
+      ],
+      "derived_row_sha256": "4f85d3d4b6f1dda8fd7e89456ac360f8ddc114e43b25178bbfb6819dc269a422"
+    },
+    {
+      "original_row_index_zero_based": 11,
+      "scenario_id": "C04",
+      "scheme": "privacytrace",
+      "expected": "NOT_DECLARED",
+      "actual": "NOT_DECLARED",
+      "errors": [],
+      "evidence_ids": [
+        "ev-2675f4276c50cdabcc4a72e1",
+        "policy-snapshot"
+      ],
+      "derived_row_sha256": "82756d3b948ddbc336ccbf8c98de4fa81e0172b8ecbb9d2771e14b80acfb6d92"
+    },
+    {
+      "original_row_index_zero_based": 12,
+      "scenario_id": "C05",
+      "scheme": "permission_keyword",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": "EXACT_MATCH",
+      "errors": [],
+      "evidence_ids": [
+        "ev-491b521c228360ca34bbae17"
+      ],
+      "derived_row_sha256": "0bab4f8eb4126a7a24990bfe2d316a4db5dd2d248cbbdd12ae2ffedfec6a2a63"
+    },
+    {
+      "original_row_index_zero_based": 13,
+      "scenario_id": "C05",
+      "scheme": "api_flat",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": "EXACT_MATCH",
+      "errors": [],
+      "evidence_ids": [
+        "ev-59b679c9b2cc2015058a10b2"
+      ],
+      "derived_row_sha256": "2a35a9dbc7589e39f277a857d39417180a1b7e1c4a055eca9ab6ac1420fb02db"
+    },
+    {
+      "original_row_index_zero_based": 14,
+      "scenario_id": "C05",
+      "scheme": "privacytrace",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": "AMBIGUOUS_DISCLOSURE",
+      "errors": [],
+      "evidence_ids": [
+        "ev-59b679c9b2cc2015058a10b2",
+        "policy-sentence-1",
+        "policy-snapshot"
+      ],
+      "derived_row_sha256": "78465b7184fe4b2ee8365c2ca67a874af60152cab2d1ec3eaac69356cbb475b2"
+    },
+    {
+      "original_row_index_zero_based": 15,
+      "scenario_id": "C06",
+      "scheme": "permission_keyword",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": "NOT_DECLARED",
+      "errors": [],
+      "evidence_ids": [
+        "ev-5d761db9713999d2d0e6e3d9"
+      ],
+      "derived_row_sha256": "f07d952690173a49fb74981f03724a828f44097790c2c927b21352d13e85018d"
+    },
+    {
+      "original_row_index_zero_based": 16,
+      "scenario_id": "C06",
+      "scheme": "api_flat",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": "NOT_DECLARED",
+      "errors": [],
+      "evidence_ids": [
+        "ev-faa6d9815339d01ba87896ed"
+      ],
+      "derived_row_sha256": "8f1a1453cefd60a012157600f63046959edba64ffba0794562099d3f5a3e2691"
+    },
+    {
+      "original_row_index_zero_based": 17,
+      "scenario_id": "C06",
+      "scheme": "privacytrace",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": "INSUFFICIENT_EVIDENCE",
+      "errors": [],
+      "evidence_ids": [
+        "ev-faa6d9815339d01ba87896ed",
+        "policy-snapshot"
+      ],
+      "derived_row_sha256": "958d03f5b990e436b7f2452ec5ad5e1c3ca41c35350847283f0d732fd310dd2a"
+    }
+  ],
+  "summaries": {
+    "permission_keyword": {
+      "total": 6,
+      "status_agreement": 2,
+      "failures": 0,
+      "abstentions": 0,
+      "predicted": 6,
+      "state_mismatches": 4,
+      "decisions_excluding_abstention": 6,
+      "agreement_denominator": 6,
+      "coverage_status_counts": {
+        "COMPLETE": 6
+      },
+      "confusion_expected_rows_actual_columns": {
+        "EXACT_MATCH": {
+          "EXACT_MATCH": 1,
+          "CATEGORY_MATCH": 0,
+          "NOT_DECLARED": 0,
+          "AMBIGUOUS_DISCLOSURE": 0,
+          "INSUFFICIENT_EVIDENCE": 0,
+          "FAILED_OR_NO_STATUS": 0
+        },
+        "CATEGORY_MATCH": {
+          "EXACT_MATCH": 0,
+          "CATEGORY_MATCH": 0,
+          "NOT_DECLARED": 1,
+          "AMBIGUOUS_DISCLOSURE": 0,
+          "INSUFFICIENT_EVIDENCE": 0,
+          "FAILED_OR_NO_STATUS": 0
+        },
+        "NOT_DECLARED": {
+          "EXACT_MATCH": 0,
+          "CATEGORY_MATCH": 0,
+          "NOT_DECLARED": 1,
+          "AMBIGUOUS_DISCLOSURE": 0,
+          "INSUFFICIENT_EVIDENCE": 0,
+          "FAILED_OR_NO_STATUS": 0
+        },
+        "AMBIGUOUS_DISCLOSURE": {
+          "EXACT_MATCH": 1,
+          "CATEGORY_MATCH": 0,
+          "NOT_DECLARED": 0,
+          "AMBIGUOUS_DISCLOSURE": 0,
+          "INSUFFICIENT_EVIDENCE": 0,
+          "FAILED_OR_NO_STATUS": 0
+        },
+        "INSUFFICIENT_EVIDENCE": {
+          "EXACT_MATCH": 1,
+          "CATEGORY_MATCH": 0,
+          "NOT_DECLARED": 1,
+          "AMBIGUOUS_DISCLOSURE": 0,
+          "INSUFFICIENT_EVIDENCE": 0,
+          "FAILED_OR_NO_STATUS": 0
+        }
+      },
+      "scheme_elapsed_seconds_sum": 4.975400008788711e-05
+    },
+    "api_flat": {
+      "total": 6,
+      "status_agreement": 3,
+      "failures": 0,
+      "abstentions": 1,
+      "predicted": 6,
+      "state_mismatches": 3,
+      "decisions_excluding_abstention": 5,
+      "agreement_denominator": 6,
+      "coverage_status_counts": {
+        "COMPLETE": 6
+      },
+      "confusion_expected_rows_actual_columns": {
+        "EXACT_MATCH": {
+          "EXACT_MATCH": 1,
+          "CATEGORY_MATCH": 0,
+          "NOT_DECLARED": 0,
+          "AMBIGUOUS_DISCLOSURE": 0,
+          "INSUFFICIENT_EVIDENCE": 0,
+          "FAILED_OR_NO_STATUS": 0
+        },
+        "CATEGORY_MATCH": {
+          "EXACT_MATCH": 0,
+          "CATEGORY_MATCH": 0,
+          "NOT_DECLARED": 1,
+          "AMBIGUOUS_DISCLOSURE": 0,
+          "INSUFFICIENT_EVIDENCE": 0,
+          "FAILED_OR_NO_STATUS": 0
+        },
+        "NOT_DECLARED": {
+          "EXACT_MATCH": 0,
+          "CATEGORY_MATCH": 0,
+          "NOT_DECLARED": 1,
+          "AMBIGUOUS_DISCLOSURE": 0,
+          "INSUFFICIENT_EVIDENCE": 0,
+          "FAILED_OR_NO_STATUS": 0
+        },
+        "AMBIGUOUS_DISCLOSURE": {
+          "EXACT_MATCH": 1,
+          "CATEGORY_MATCH": 0,
+          "NOT_DECLARED": 0,
+          "AMBIGUOUS_DISCLOSURE": 0,
+          "INSUFFICIENT_EVIDENCE": 0,
+          "FAILED_OR_NO_STATUS": 0
+        },
+        "INSUFFICIENT_EVIDENCE": {
+          "EXACT_MATCH": 0,
+          "CATEGORY_MATCH": 0,
+          "NOT_DECLARED": 1,
+          "AMBIGUOUS_DISCLOSURE": 0,
+          "INSUFFICIENT_EVIDENCE": 1,
+          "FAILED_OR_NO_STATUS": 0
+        }
+      },
+      "scheme_elapsed_seconds_sum": 3.714999996873303e-05
+    },
+    "privacytrace": {
+      "total": 6,
+      "status_agreement": 6,
+      "failures": 0,
+      "abstentions": 2,
+      "predicted": 6,
+      "state_mismatches": 0,
+      "decisions_excluding_abstention": 4,
+      "agreement_denominator": 6,
+      "coverage_status_counts": {
+        "COMPLETE": 6
+      },
+      "confusion_expected_rows_actual_columns": {
+        "EXACT_MATCH": {
+          "EXACT_MATCH": 1,
+          "CATEGORY_MATCH": 0,
+          "NOT_DECLARED": 0,
+          "AMBIGUOUS_DISCLOSURE": 0,
+          "INSUFFICIENT_EVIDENCE": 0,
+          "FAILED_OR_NO_STATUS": 0
+        },
+        "CATEGORY_MATCH": {
+          "EXACT_MATCH": 0,
+          "CATEGORY_MATCH": 1,
+          "NOT_DECLARED": 0,
+          "AMBIGUOUS_DISCLOSURE": 0,
+          "INSUFFICIENT_EVIDENCE": 0,
+          "FAILED_OR_NO_STATUS": 0
+        },
+        "NOT_DECLARED": {
+          "EXACT_MATCH": 0,
+          "CATEGORY_MATCH": 0,
+          "NOT_DECLARED": 1,
+          "AMBIGUOUS_DISCLOSURE": 0,
+          "INSUFFICIENT_EVIDENCE": 0,
+          "FAILED_OR_NO_STATUS": 0
+        },
+        "AMBIGUOUS_DISCLOSURE": {
+          "EXACT_MATCH": 0,
+          "CATEGORY_MATCH": 0,
+          "NOT_DECLARED": 0,
+          "AMBIGUOUS_DISCLOSURE": 1,
+          "INSUFFICIENT_EVIDENCE": 0,
+          "FAILED_OR_NO_STATUS": 0
+        },
+        "INSUFFICIENT_EVIDENCE": {
+          "EXACT_MATCH": 0,
+          "CATEGORY_MATCH": 0,
+          "NOT_DECLARED": 0,
+          "AMBIGUOUS_DISCLOSURE": 0,
+          "INSUFFICIENT_EVIDENCE": 2,
+          "FAILED_OR_NO_STATUS": 0
+        }
+      },
+      "scheme_elapsed_seconds_sum": 0.001262923000012961
+    }
+  },
+  "timing": {
+    "measurement_method": "Existing runner/worker time.perf_counter() wall intervals",
+    "shared_scenario_elapsed_seconds_sum_once": 10.115092092999987,
+    "runner_stage_elapsed_seconds": 11.541916017999995,
+    "integration_stages": [
+      {
+        "stage": "build-a",
+        "exit_code": 0,
+        "elapsed_seconds": 27.951330124000037
+      },
+      {
+        "stage": "build-b",
+        "exit_code": 0,
+        "elapsed_seconds": 10.798145563000048
+      },
+      {
+        "stage": "rebuild-hashes",
+        "exit_code": 0
+      },
+      {
+        "stage": "worker-build",
+        "exit_code": 0,
+        "elapsed_seconds": 7.735544899999979
+      },
+      {
+        "stage": "six-scenarios",
+        "exit_code": 0,
+        "elapsed_seconds": 11.541916017999995
+      },
+      {
+        "stage": "source-cli-regressions",
+        "exit_code": 0,
+        "elapsed_seconds": 6.880118643000003
+      },
+      {
+        "stage": "web-build",
+        "exit_code": 0,
+        "elapsed_seconds": 2.9773615739999855
+      },
+      {
+        "stage": "export-offline",
+        "exit_code": 0,
+        "elapsed_seconds": 0.21447715599998673
+      },
+      {
+        "stage": "browser-fixtures",
+        "exit_code": 0,
+        "elapsed_seconds": 0.2145651609999959
+      },
+      {
+        "stage": "controlled-browser",
+        "exit_code": 0,
+        "elapsed_seconds": 6.537827158000027
+      },
+      {
+        "stage": "independent-offline",
+        "exit_code": 0,
+        "elapsed_seconds": 16.801275387000032
+      }
+    ],
+    "repeats_for_performance": null,
+    "confidence_interval": null,
+    "cpu_seconds": null,
+    "peak_rss_bytes": null,
+    "io_bytes": null,
+    "resource_observation_method": "NOT_MEASURED: no stats/profiler resource samples retained",
+    "prediction_container_memory_limit": "256m (configuration, not consumption)",
+    "human_preparation_seconds": null,
+    "preparation_actor": "Codex-assisted manual fixture annotation; no independent human sign-off claimed"
+  },
+  "pr_f1": {
+    "status": "NOT_APPLICABLE_TO_FROZEN_TARGET",
+    "TP": null,
+    "FP": null,
+    "FN": null,
+    "precision": null,
+    "recall": null,
+    "f1": null,
+    "reason": "NOT_REPORTED: no binary collection/legality target",
+    "formula_if_applicable": "P=TP/(TP+FP); R=TP/(TP+FN); F1=2PR/(P+R); zero denominator=N/A"
+  },
+  "environment": {
+    "build_receipt": {
+      "schema_version": 1,
+      "source_hashes": {
+        "android/C01/MainActivity.java": "cf205115a43ea4556b0984b63f696de3ee869709a771d71baa1d04e752188d9e",
+        "android/C01/AndroidManifest.xml": "9ca9f04fa2a3dcd242a4422623cc50864f42336821048892f4581e9e84461c45",
+        "android/C02/MainActivity.java": "8a9c1c56504da903ae6cb183d09b93b25048b492f26b199fba07843a1af59673",
+        "android/C02/AndroidManifest.xml": "7fcfe665f5a7456e83577370d32868f2c28d308d284fc770a2f1e9d4822b2336",
+        "android/C03/MainActivity.java": "8a659bf240e86b9e27b0ff20c20da800690ac6907cf18aa8bc71b908dd986bec",
+        "android/C03/AndroidManifest.xml": "e7bb0eed213e7f552b7cecc488f657b242c7fb40f0f1b19c19b2a977781fa00b",
+        "android/C04/MainActivity.java": "e22c4e91d7cb7234543827d773fc3be542e03a82a79aded9564aad024f955f8a",
+        "android/C04/AndroidManifest.xml": "b4f58d0948340ca27ff82d951f079978afb8cd4e9f2bfd3d13e519dda1b75d1f",
+        "android/C05/MainActivity.java": "b22d2e2178b28105d09e17d33f3ef158cef9670fbd739a70abf5c6a280517d81",
+        "android/C05/AndroidManifest.xml": "de0660ae6f1e17de71a1ad3d66c62513613084022538024c56e3686e4688733e",
+        "android/C06/MainActivity.java": "ba253cf4383ffa087720fc43402b0b6ec0fc2bbd4a5758c1150865232a0cb5f7",
+        "android/C06/AndroidManifest.xml": "71e3d5b50b5d32c13ebd2c310288f870b282dd8af22706c5140117fc967debfb"
+      },
+      "apks": {
+        "C01": "121ea9e78200ed3361fc6d2fd0f5598e6bded34fd17e7128619d96f914a58753",
+        "C02": "a487e72b9ff97661b0d3853e14f112ed35a6c08c06bfb77e818918594798acf5",
+        "C03": "c76f5c5004f65609810ef6f68b05ce8857ba4e5b202d96b81b5c94e6771ffffd",
+        "C04": "cad0924ef7ed698e4518379d4c1270e9f1dd91ba593f0ce7004bfdb86d3e87a7",
+        "C05": "d11c648c78d8d90b44bf5f225eedb6a83a176c1ac829bdd0ca960e9ce2c30091",
+        "C06": "88e72442b13d3043ef14e2c097a90550613b831600cd5f92d6a077bb6cd29913"
+      },
+      "toolchain": {
+        "schema_version": 1,
+        "jdk": "Temurin 17.0.20.1+1",
+        "build_tools": "35.0.0",
+        "platform": "Android 35 revision 2",
+        "archives": {
+          "build-tools.zip": {
+            "url": "https://dl.google.com/android/repository/build-tools_r35_linux.zip",
+            "sha256": "bd3a4966912eb8b30ed0d00b0cda6b6543b949d5ffe00bea54c04c81e1561d88"
+          },
+          "platform.zip": {
+            "url": "https://dl.google.com/android/repository/platform-35_r02.zip",
+            "sha256": "0988cacad01b38a18a47bac14a0695f246bc76c1b06c0eeb8eb0dc825ab0c8e0"
+          },
+          "jdk.tar.gz": {
+            "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_x64_linux_hotspot_17.0.20.1_1.tar.gz",
+            "sha256": "3808d1d15e3ec6bd5b84057fb5d84c33d8a1536a258146bcea2e603fc726e08e"
+          }
+        }
+      },
+      "artifact_use": "UNSIGNED_STATIC_ANALYSIS_ONLY",
+      "javac": "javac 17.0.20.1",
+      "d8": "D8 8.6.2-dev (build abaab469b5ebd4dd2bb91ba0ed6f45277faae4ca from go/r8bot (luci-r8-custom-ci-archive-0-77gl))",
+      "aapt2": "Android Asset Packaging Tool (aapt) 2.19-11948202"
+    },
+    "androguard": "4.1.3",
+    "taxonomy": "0.3.0",
+    "sdk_rules": "1.0.0",
+    "ci_runner_selector": "ubuntu-latest",
+    "ci_host_os_version": null,
+    "browser_proof": {
+      "passed": true,
+      "browser": "151.0.7922.34",
+      "checks": [
+        "CLI actual APK -> persisted HTTP -> browser exact-match code/quote/full-policy drill-down",
+        "UI-only merged SDK panel: independent static attribution, pagination, report-switch reset",
+        "C06 cautious result, source switching resets drill-down, synthetic source distinct",
+        "UI fixture: 2000 candidates paginated, long policy lazy once, HTML rendered as text, 390px viewport",
+        "abnormal HTTP report rejected with visible retry",
+        "request cancellation, delayed old report cannot overwrite new source",
+        "separate UI fixtures: failed job visible without report, actual HTTP cancel persisted CANCELLED",
+        "offline six-source viewing, analysis/package timestamps, no writable controls, POST405, 18 comparison rows"
+      ],
+      "page_errors": [],
+      "ui_fixtures_are_not_evaluation_samples": true
+    },
+    "offline_proof": {
+      "passed": true,
+      "external_network_blocked": true,
+      "interfaces": [
+        "lo"
+      ],
+      "six_reports_http": true,
+      "real_browser_vue_loaded": true,
+      "runtime": "Fresh Python 3.12.13-slim container with prepared browser runtime libraries; stdlib-only viewer; Chromium mounted read-only, no repository",
+      "browser": "151.0.7922.34",
+      "six_sources": true,
+      "page_errors": [],
+      "browser_executable_version": "Google Chrome for Testing 151.0.7922.34",
+      "browser_executable_sha256": "0b20b130e7edd9dd51873be867761295fe0cfad490c2b9a64f95bd3cfc08fa71",
+      "dom_sha256": "239d9aa7b09eabffd4bdf68e752e1f4782682df6b1be25f070019b883ad30190",
+      "package_manifest_sha256": "18732d38cb5243ae794f8861c21603a5a002f6949705ac326b6d2f2a87112266",
+      "test_image": "sha256:35e16a80475f3ffae1dbd9006fdd44c6eaf7dff8074a8c497e9361f3f79c7053",
+      "validation_script_sha256": "2e9ac89cb6a3297cb5f9f72620fb508c337e13a385acb80d27ff80ef9fee4eb9",
+      "browser_driver_sha256": "6e8caeca5f773ba59817937fe4e2acae7c371f95d7d13d02a36cd0aa31e95796",
+      "playwright_version": "1.62.1"
+    }
+  },
+  "unmeasured": {
+    "global_behavior_recall": null,
+    "runtime_collection": null,
+    "automatic_policy_extraction_accuracy": null,
+    "held_out_generalization": null,
+    "report_truncation_per_full_job": null,
+    "C07_conflict": null,
+    "C08_multidex": null,
+    "independent_human_semantic_signoff": null,
+    "complete_offline_package_retained_in_source_artifact": false
+  },
+  "historical_real_case": {
+    "name": "GKD 1.12.1 / versionCode 92",
+    "date": "2026-10-09",
+    "implementation_sha": "bb342843b50dc45aec3df111a51537998c81a632",
+    "apk_sha256": "edcc03be24bc54d44c04746b46e2e33244120638e2199450b4407195447466a6",
+    "semantic_report_sha256": "19e550c636ddbf805fb1c3f67c7567e1858e8398f384b25d5f0ecda8ef3c2157",
+    "counts": {
+      "evidence": 6,
+      "behaviors": 3,
+      "claims": 2,
+      "issues": 3
+    },
+    "statuses": [
+      "INSUFFICIENT_EVIDENCE",
+      "INSUFFICIENT_EVIDENCE",
+      "INSUFFICIENT_EVIDENCE"
+    ],
+    "policy": {
+      "version": "1.0",
+      "captured_at": "2026-10-03T12:47:10.664110Z",
+      "sha256": "bf5917c5c4e9fa2e0700f25db7c17fc0672de0c48de04f6e84e01053871374ea",
+      "raw_processed_hashes_verified": true,
+      "lossless_chunks_verified": 60,
+      "initial_audit_sha256": "5310a74bba87ec0d7d036f5254e9abea4d0123ce0423eeecb20bc8e6b8537961",
+      "completeness": "COMPLETE",
+      "extraction_status": "PARTIAL",
+      "review_status": "UNREVIEWED",
+      "attachments_status": "NOT_CHECKED",
+      "region": "UNKNOWN"
+    },
+    "rerun_for_this_report": false,
+    "included_in_controlled_denominator": false
+  }
+}

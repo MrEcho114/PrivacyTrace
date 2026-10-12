@@ -1,9 +1,7 @@
 """Offline packages require six unique trusted reports and exactly 18 comparisons."""
 
-import hashlib
 import importlib.util
 import json
-from pathlib import Path
 
 import pytest
 

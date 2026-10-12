@@ -288,3 +288,73 @@ def test_build_script_name_is_platform_aware():
     assert Path("scripts/build-controlled-apks.py").name == "build-controlled-apks.py"
     assert PureWindowsPath(r"C:\\repo\\scripts\\build-controlled-apks.py").name == "build-controlled-apks.py"
     assert PureWindowsPath(r"C:\\repo\\scripts\\another-script.py").name != "build-controlled-apks.py"
+
+
+@pytest.mark.parametrize("corrupted_build", ["build-a", "build-b"])
+def test_actual_apk_corruption_blocks_runner_and_retains_all_rows(
+    tmp_path, monkeypatch, corrupted_build
+):
+    """Exercise real byte validation through the runner while forbidding Docker/scan."""
+    import hashlib
+    import importlib.util
+    from pathlib import Path
+
+    validator_file = ROOT / "scripts/validate-spec30.py"
+    spec = importlib.util.spec_from_file_location("spec30_corrupt_runner", validator_file)
+    validator = importlib.util.module_from_spec(spec)
+    monkeypatch.syspath_prepend(str(ROOT / "scripts"))
+    spec.loader.exec_module(validator)
+
+    fake_bytes = {f"C0{i}": f"fake-apk-{i}".encode() for i in range(1, 7)}
+    apks = {name: hashlib.sha256(data).hexdigest() for name, data in fake_bytes.items()}
+    sources = {"android/C01/MainActivity.java": "a" * 64}
+    toolchain = {"schema_version": 1, "synthetic_test": True}
+    frozen = {"schema_version": 1, "apks": apks, "source_hashes": sources}
+    inputs = {"schema_version": 1, "sources": sources}
+    monkeypatch.setattr(validator, "_frozen_build_contract",
+                        lambda: (frozen, inputs, toolchain))
+    real_run = subprocess.run
+    calls = []
+
+    def fake_run(command, *args, **kwargs):
+        argv = list(map(str, command))
+        if argv[0] == "git":
+            return real_run(command, *args, **kwargs)
+        if len(argv) > 1 and Path(argv[1]).name == "build-controlled-apks.py":
+            build_dir = Path(argv[argv.index("--output") + 1])
+            build_dir.mkdir()
+            calls.append(build_dir.name)
+            for scenario, data in fake_bytes.items():
+                (build_dir / (scenario + ".apk")).write_bytes(data)
+            (build_dir / "build-receipt.json").write_text(
+                json.dumps({
+                    "schema_version": 1, "artifact_use": "UNSIGNED_STATIC_ANALYSIS_ONLY",
+                    "apks": apks, "source_hashes": sources, "toolchain": toolchain,
+                }), encoding="utf-8"
+            )
+            if build_dir.name == corrupted_build:
+                (build_dir / "C03.apk").write_bytes(b"actual-byte-corruption")
+            return subprocess.CompletedProcess(command, 0)
+        if argv[1:3] == ["-m", "privacytrace.benchmark"]:
+            assert argv[3] == "run"
+            assert argv[argv.index("--blocked-error") + 1] == "BUILD_ARTIFACT_HASH_MISMATCH"
+            calls.append("six-scenarios")
+            return real_run(command, *args, **kwargs)
+        raise AssertionError("Real worker or prediction must not run: " + repr(argv))
+
+    monkeypatch.setattr(validator.subprocess, "run", fake_run)
+    output = tmp_path / "blocked-validation"
+    monkeypatch.setattr(validator.sys, "argv", [str(validator_file), "--output", str(output)])
+    assert validator.main() == 1
+    assert calls == ["build-a", "build-b", "six-scenarios"]
+    receipt = json.loads((output / "integration-receipt.json").read_bytes())
+    stages = {item["stage"]: item for item in receipt["stages"]}
+    assert receipt["passed"] is False
+    assert stages["rebuild-hashes"]["error_code"] == "BUILD_ARTIFACT_HASH_MISMATCH"
+    assert "evaluation/comparison.json" in receipt["evidence_sha256"]
+    comparison = json.loads((output / "evaluation/comparison.json").read_bytes())
+    assert len(comparison["rows"]) == 18
+    assert all(row["actual"] is None and row["errors"] == [
+        {"code": "BUILD_ARTIFACT_HASH_MISMATCH"}
+    ] for row in comparison["rows"])
+    assert not (output / "evaluation/jobs").exists()

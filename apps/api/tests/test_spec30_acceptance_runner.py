@@ -127,16 +127,24 @@ def test_rebuild_mismatch_preserves_18_failures_without_scanning(tmp_path, monke
 
 
 @pytest.mark.parametrize(
-    ("failed_stage", "error_code", "expected_calls"),
+    ("failed_stage", "error_code", "expected_calls", "preparation_error"),
     (
-        ("build-a", "BUILD_A_FAILED", ["build-a", "six-scenarios"]),
-        ("build-b", "BUILD_B_FAILED", ["build-a", "build-b", "six-scenarios"]),
+        ("build-a", "BUILD_A_FAILED", ["build-a", "six-scenarios"], None),
+        ("build-b", "BUILD_B_FAILED", ["build-a", "build-b", "six-scenarios"], None),
         ("worker-build", "WORKER_BUILD_FAILED",
-         ["build-a", "build-b", "worker-build", "six-scenarios"]),
+         ["build-a", "build-b", "worker-build", "six-scenarios"], None),
+        ("worker-build", "WORKER_BUILD_FAILED", ["build-a", "build-b", "six-scenarios"],
+         ("path", OSError("Local daemon path conversion unavailable"))),
+        ("worker-build", "WORKER_BUILD_FAILED", ["build-a", "build-b", "six-scenarios"],
+         ("path", subprocess.CalledProcessError(1, ["wsl.exe", "wslpath"]))),
+        ("worker-build", "WORKER_BUILD_FAILED", ["build-a", "build-b", "six-scenarios"],
+         ("path", UnicodeDecodeError("utf-8", b"\xff", 0, 1, "Invalid WSL output"))),
+        ("worker-build", "WORKER_BUILD_FAILED", ["build-a", "build-b", "six-scenarios"],
+         ("prefix", OSError("Local Docker command prefix unavailable"))),
     ),
 )
 def test_prerequisite_failure_blocks_real_prediction(
-    tmp_path, monkeypatch, failed_stage, error_code, expected_calls
+    tmp_path, monkeypatch, failed_stage, error_code, expected_calls, preparation_error
 ):
     """Failures after either build, including worker-build, cannot launch predictions."""
     import importlib.util
@@ -151,6 +159,20 @@ def test_prerequisite_failure_blocks_real_prediction(
     if failed_stage == "worker-build":
         # This test isolates worker-build transition; byte verification is separately tested.
         monkeypatch.setattr(validator, "verify_build_artifacts", lambda a, b: None)
+    # These adapters belong to the host's Docker/WSL boundary, not to the comparison.
+    # Keep this fault test independent of the developer's installed runtime.
+    def command_prefix():
+        if preparation_error is not None and preparation_error[0] == "prefix":
+            raise preparation_error[1]
+        return ["docker"]
+
+    def local_daemon_path(path):
+        if preparation_error is not None and preparation_error[0] == "path":
+            raise preparation_error[1]
+        return str(path)
+
+    monkeypatch.setattr(validator, "docker_prefix", command_prefix)
+    monkeypatch.setattr(validator, "daemon_path", local_daemon_path)
     real_run = subprocess.run
     calls = []
 
@@ -190,6 +212,8 @@ def test_prerequisite_failure_blocks_real_prediction(
     assert receipt["passed"] is False
     stages = {item["stage"]: item for item in receipt["stages"]}
     assert stages[failed_stage]["error_code"] == error_code
+    if preparation_error is not None:
+        assert stages[failed_stage]["error_type"] == type(preparation_error[1]).__name__
     assert "evaluation/comparison.json" in receipt["evidence_sha256"]
     comparison = json.loads((output / "evaluation/comparison.json").read_bytes())
     assert len(comparison["rows"]) == 18

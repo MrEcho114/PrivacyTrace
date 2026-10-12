@@ -80,6 +80,12 @@ uv run --project apps/api --locked --extra worker python scripts/validate-spec30
 
 专项 artifact 中包括两次 build-receipt、18 行 comparison、浏览器 proof/截图、断网 proof/DOM，以及统一收据。没有 APK、job store、原政策 capture、工具归档、原始日志或凭证。既有 GKD 1.12.1 真实案例保持版本绑定的历史记录，不称本次重新扫描；工程测试、六场景专项与真实案例分别报告，不相加。
 
+## 2026-10-12 复审后的 worker 前置失败修复
+
+复审 `2f81168549c4052d33f6d50b5e873f6622254dc0` 时发现：Windows 的 worker 失败回归未隔离 WSL 路径转换，且 runner 在阶段记录外准备 Docker 参数，路径转换异常会越过 18 行比较留存。修复将命令前缀和路径转换延迟到 `worker-build` 阶段的异常边界内；路径不可用、WSL 非零退出或解码异常均以 `WORKER_BUILD_FAILED` 和异常类型写入失败收据，再由原 benchmark 输出 18 行失败记录，不启动预测。
+
+对应故障回归隔离宿主 Docker/WSL 适配器，继续实际执行 benchmark 的失败比较 CLI，核对各方案六场景分母、`actual=null`、失败码、收据摘要以及未创建扫描 jobs。新增路径不可用、WSL 非零退出、输出解码失败与命令前缀不可用四种分支。当前修复的执行结果以最终 PR 的新提交 CI 和 artifact 为准；保留此前提交和历史收据的原始状态。
+
 ## 风险与停止条件
 
 受控 CLI 只接受冻结的自建材料。HTTP evaluate 不接受自报 CONTROLLED_APK；读取已持久化受控报告继续使用现有 HTTP 路径。回放标注来源和分析/打包时点，SDK 静态归属不参与政策判定。APK 哈希、冻结输入或工具链不一致时停止该路径，不静默改锁或真值。

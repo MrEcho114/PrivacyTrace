@@ -116,15 +116,19 @@ def main():
     def stage(name, command, env=None, timeout=900):
         started = time.monotonic()
         print("Running " + name, flush=True)
+        failure = {}
         with (output / (name + ".log")).open("wb") as log:
             try:
-                result = subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
+                # Prepare host-dependent arguments inside the same failure boundary.
+                argv = command() if callable(command) else command
+                result = subprocess.run(argv, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
                                         env=env, timeout=timeout, check=False)
                 code = result.returncode
-            except (OSError, subprocess.TimeoutExpired):
+            except (OSError, ValueError, subprocess.SubprocessError) as error:
                 code = -1
+                failure["error_type"] = type(error).__name__
         stages.append({"stage": name, "exit_code": code,
-                       "elapsed_seconds": time.monotonic() - started})
+                       "elapsed_seconds": time.monotonic() - started, **failure})
         print(f"{name}: exit {code}", flush=True)
         if code:
             print((output / (name + ".log")).read_text(encoding="utf-8", errors="replace")[-4000:],
@@ -174,9 +178,12 @@ def main():
                 **({"error_code": rebuild_error} if rebuild_error else {}),
             })
         # An untrusted build must never enter the actual worker/prediction path.
-        if rebuild_error is None and not stage("worker-build", [*docker_prefix(), "build", "-f",
-                                                             daemon_path(ROOT / "apps/api/worker.Dockerfile"),
-                                                             "-t", "privacytrace-worker:s1", daemon_path(ROOT)]):
+        if rebuild_error is None and not stage(
+            "worker-build",
+            lambda: [*docker_prefix(), "build", "-f",
+                     daemon_path(ROOT / "apps/api/worker.Dockerfile"),
+                     "-t", "privacytrace-worker:s1", daemon_path(ROOT)],
+        ):
             rebuild_error = "WORKER_BUILD_FAILED"
             stages[-1]["error_code"] = rebuild_error
         # Retain 18 result rows on failure; a mismatched build is never scanned.

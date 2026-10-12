@@ -13,13 +13,23 @@ from .policy_intake import TEAM_REVIEW_GATE, load_policy
 from .resources import taxonomy
 
 
-def run(apk, policy, name, job_id=None, timeout=120, store_dir=None, product_scope=None):
+def run(
+    apk,
+    policy,
+    name,
+    job_id=None,
+    timeout=120,
+    store_dir=None,
+    product_scope=None,
+    *,
+    controlled=None,
+):
     store = JobStore(store_dir or ROOT / "data" / "jobs")
     job = AnalysisJob(
         id=job_id or uuid4().hex,
         sample_id=name,
-        input_mode="APK",
-        source_origin="REAL_SCAN",
+        input_mode="CONTROLLED_APK" if controlled else "APK",
+        source_origin="CONTROLLED" if controlled else "REAL_SCAN",
         state="QUEUED",
         ruleset_version=taxonomy()["version"],
         created_at=datetime.now(timezone.utc),
@@ -44,15 +54,25 @@ def run(apk, policy, name, job_id=None, timeout=120, store_dir=None, product_sco
         validate_input(apk)
         try:
             captured = load_policy(policy)
+            if controlled:
+                from .controlled import adapt_policy
+
+                captured = adapt_policy(captured, controlled)
         except (ValueError, OSError, KeyError, TypeError) as exc:
             raise ScanError("POLICY_INPUT_INVALID", "Policy capture failed validation") from exc
         transition("STATIC_ANALYSIS")
         scanned = scan_isolated(apk, timeout=timeout, cancelled=cancelled)
+        if controlled and (
+            scanned["apk_sha256"] != controlled["apk_sha256"]
+            or scanned["package_name"] != controlled["package_name"]
+            or scanned["version_code"] != 1
+        ):
+            raise ScanError("CONTROLLED_IDENTITY_MISMATCH", "Controlled build identity differs")
         transition("POLICY_PARSING")
         job.package_name = scanned["package_name"]
         job.version_code = scanned["version_code"]
         # An unconfirmed policy region must not become an asserted APK location.
-        job.region = None
+        job.region = "CONTROLLED_TEST" if controlled and controlled["scope_known"] else None
         transition("EVALUATING")
         bundle = EvaluationInput.model_validate(
             {
@@ -79,6 +99,7 @@ def run(apk, policy, name, job_id=None, timeout=120, store_dir=None, product_sco
         coverage = {**scanned["coverage"]}
         coverage["status"] = coverage.pop("completeness")
         tools = {
+            "analysis_generated_at": datetime.now(timezone.utc).isoformat(),
             **scanned["tools"],
             "policy_capture_path": str(Path(policy).absolute()),
             "policy_initial_audit_sha256": captured["files"]["audits"]["sha256"],
@@ -88,6 +109,15 @@ def run(apk, policy, name, job_id=None, timeout=120, store_dir=None, product_sco
             "human_review_gate": TEAM_REVIEW_GATE,
             "scan_errors": json.dumps(scanned.get("errors", []), ensure_ascii=True),
         }
+        if controlled:
+            tools.update(
+                {
+                    "controlled_scenario": controlled["scenario_id"],
+                    "controlled_features_sha256": controlled["features_sha256"],
+                    "controlled_build_sha256": controlled["build_sha256"],
+                    "policy_preparation": "AUTHORED_CONTROLLED_FIXTURE_AGENT_ASSISTED",
+                }
+            )
         if cancelled():
             raise ScanError("CANCELLED", "Job cancelled before report publication")
         job.state = "SUCCEEDED"

@@ -4,7 +4,7 @@
 export type AnalysisJob = {
   "id": string;
   "sample_id": string;
-  "input_mode": "SYNTHETIC" | "APK";
+  "input_mode": "SYNTHETIC" | "APK" | "CONTROLLED_APK";
   "source_origin": SourceOrigin;
   "state": "QUEUED" | "INTAKE" | "STATIC_ANALYSIS" | "POLICY_PARSING" | "EVALUATING" | "REPORTING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
   "ruleset_version": string;
@@ -108,7 +108,7 @@ export type PolicyDocument = {
   "evidence_id": string;
 };
 
-export type PolicySource = "IN_APP_POLICY" | "STORE_POLICY" | "OFFICIAL_WEB_POLICY" | "SDK_POLICY";
+export type PolicySource = "IN_APP_POLICY" | "STORE_POLICY" | "OFFICIAL_WEB_POLICY" | "SDK_POLICY" | "CONTROLLED_POLICY";
 
 export type PrivacyBehavior = {
   "id": string;

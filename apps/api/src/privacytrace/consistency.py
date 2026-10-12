@@ -17,6 +17,7 @@ SOURCE_LABELS = {
     PolicySource.STORE_POLICY: "应用商店声明",
     PolicySource.OFFICIAL_WEB_POLICY: "官网政策",
     PolicySource.SDK_POLICY: "SDK 自有政策",
+    PolicySource.CONTROLLED_POLICY: "自建受控配对政策",
 }
 
 

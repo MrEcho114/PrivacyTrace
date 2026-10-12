@@ -6,6 +6,8 @@
 
 ## 约定
 
+开始、恢复、分派及交接使用 [协作检查清单](skills-workflow.md#6-工单流转阻塞依赖与交接规范)。当前执行记录先读取、再由负责人指定唯一写入会话；正文只放一个当前记录指针，Agent 回写最新交付/剩余项。每次领取核对当前 main 和关联 PR，未读取成功时保持只读。
+
 以下命令在此仓库 clone 内执行，`gh` 从 origin 识别仓库。在其他目录执行时，显式加 `--repo MrEcho114/PrivacyTrace`。
 
 - **Create an issue**：`gh issue create --title "..." --body-file <body.md>`。多行正文先保存为 UTF-8 文件，再使用 `--body-file`。
@@ -45,6 +47,6 @@ GitHub 的 issues 和 PRs 共享编号；裸 `#42` 可能属于任意一种。�
 - **Child ticket**：通过 GitHub sub-issues endpoint（`gh api`）链接到 map。未启用 sub-issues 时，在 map body 的 task list 中添加 child，并在 child body 顶部写 `Part of #<map>`。Labels：`wayfinder:<type>`（`research` / `prototype` / `grilling` / `task`）。Claim 后 assign 给 driving dev。
 - **Blocking**：使用 GitHub native issue dependencies 表达依赖。用 `gh api --method POST repos/MrEcho114/PrivacyTrace/issues/<child>/dependencies/blocked_by -F issue_id=<blocker-db-id>` 添加 edge；database id 来自 `gh api repos/MrEcho114/PrivacyTrace/issues/<n> --jq .id`，不是 issue number 或 node_id。GitHub 的 `issue_dependencies_summary.blocked_by` 只计 open blockers。依赖功能不可用时，在 child body 顶部记录 `Blocked by: #<n>, #<n>`；所有 blockers 关闭后才视为 unblocked。
 - **Frontier query**：读取 map 的 open children（sub-issues 或 task list），排除存在 open blocker 或 assignee 的 ticket；按 map 顺序选择第一个。
-- **Claim**：`gh issue edit <n> --add-assignee @me`，是该工作 session 的第一次 tracker 写入。
+- **Claim**：先读当前执行记录并确认负责人指定的唯一会话及无竞争，再以 `gh issue edit <n> --add-assignee @me` 确认归属并登记会话；已有 Assignee 时由其协调，命令不提供原子抢占锁。规划 ticket 的 frontier 与业务执行就绪条件分别判断，按协作检查清单处理。
 - **Resolve**：使用 `gh issue comment <n> --body-file <answer.md>` 记录结论，再 `gh issue close <n>`；随后向 map 的 Decisions-so-far 追加 context pointer（gist + link）。
 - **技能协作体系**：团队完整技能协作规范与任务路由参见权威指南：[`docs/agents/skills-workflow.md`](skills-workflow.md)。

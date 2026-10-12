@@ -221,7 +221,7 @@ def score(records, truth):
     return rows, summaries
 
 
-def run_benchmark(artifacts, output, timeout):
+def run_benchmark(artifacts, output, timeout, blocked_error=None):
     # Verify the freeze before execution; prediction subprocesses never receive truth paths/labels.
     truth_raw = read_safe(SUITE / "ground-truth.json")
     if digest(truth_raw) != (SUITE / "ground-truth.sha256").read_text().strip():
@@ -235,37 +235,47 @@ def run_benchmark(artifacts, output, timeout):
     records = []
     for scenario in ("C02", "C06", "C01", "C03", "C04", "C05"):
         started = time.perf_counter()
-        try:
-            process = subprocess.run(
-                [
-                    sys.executable,
-                    "-m",
-                    "privacytrace.benchmark",
-                    "predict",
-                    "--features",
-                    str(SUITE / "features" / (scenario + ".json")),
-                    "--artifacts",
-                    str(artifacts),
-                    "--store-dir",
-                    str(output / "jobs"),
-                    "--timeout",
-                    str(timeout),
-                ],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                timeout=timeout + 60,
-            )
-            record = json.loads(process.stdout)
-            if record["scenario_id"] != scenario:
-                raise ValueError("Prediction scenario identity mismatch")
-        except (ValueError, OSError, subprocess.SubprocessError, KeyError):
+        if blocked_error is not None:
+            # A broken freeze is an execution failure, not a model abstention.
+            # Do not inspect the supplied APK or start prediction subprocesses.
             record = {
                 "scenario_id": scenario,
-                "analysis": {"status": "FAILED", "errors": [{"code": "PREDICTOR_FAILED"}]},
+                "analysis": {"status": "FAILED", "errors": [{"code": blocked_error}]},
                 "predictions": None,
-                "elapsed_seconds": time.perf_counter() - started,
+                "elapsed_seconds": None,
             }
+        else:
+            try:
+                process = subprocess.run(
+                    [
+                        sys.executable,
+                        "-m",
+                        "privacytrace.benchmark",
+                        "predict",
+                        "--features",
+                        str(SUITE / "features" / (scenario + ".json")),
+                        "--artifacts",
+                        str(artifacts),
+                        "--store-dir",
+                        str(output / "jobs"),
+                        "--timeout",
+                        str(timeout),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    timeout=timeout + 60,
+                )
+                record = json.loads(process.stdout)
+                if record["scenario_id"] != scenario:
+                    raise ValueError("Prediction scenario identity mismatch")
+            except (ValueError, OSError, subprocess.SubprocessError, KeyError):
+                record = {
+                    "scenario_id": scenario,
+                    "analysis": {"status": "FAILED", "errors": [{"code": "PREDICTOR_FAILED"}]},
+                    "predictions": None,
+                    "elapsed_seconds": time.perf_counter() - started,
+                }
         records.append(record)
         (output / (scenario + ".prediction.json")).write_text(
             json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -322,6 +332,11 @@ def main():
     predictor.add_argument("--store-dir", type=Path, required=True)
     runner = sub.add_parser("run")
     runner.add_argument("--output", type=Path, required=True)
+    runner.add_argument(
+        "--blocked-error",
+        choices=("BUILD_ARTIFACT_HASH_MISMATCH", "BUILD_ARTIFACT_RECEIPT_INVALID"),
+        help="Record all scenarios as failed without scanning untrusted artifacts",
+    )
     for child in (predictor, runner):
         child.add_argument("--artifacts", type=Path, required=True)
         child.add_argument("--timeout", type=int, default=120)
@@ -330,7 +345,7 @@ def main():
         output = (
             predict(args.features, args.artifacts, args.store_dir, args.timeout)
             if args.mode == "predict"
-            else run_benchmark(args.artifacts, args.output, args.timeout)
+            else run_benchmark(args.artifacts, args.output, args.timeout, args.blocked_error)
         )
     except (ValueError, OSError, KeyError, TypeError):
         output = {

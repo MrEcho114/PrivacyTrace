@@ -6,6 +6,8 @@
 
 2026-10-12，#17/#25 已 completed，#18 原生 open blocker 为 0。用户授权按 review 结论继续依赖链；MrEcho114 的唯一执行会话为 `01a12f34-0e5a-7aa3-86ca-960ae7005ec1`，当前记录见 [#18 执行记录](https://github.com/MrEcho114/PrivacyTrace/issues/18#issuecomment-6125972199)。任务基线为 `686f2a2f186d75b2f07758a919af95e15e1b6b2c`，分支 `codex/pt-904-offline-delivery-20261012`。
 
+2026-10-13 恢复时，#53/#42 已合入，main 为 `8c5262bd1c27a3143893376044205c03b02d6754`。本任务串行吸收新 main，保留原本地 commit `a8c6f94efed6b1ee4817e2b3798d6a50c4ed6b8d`，后续审查以该新 main 为固定点；新组合须重验，不复用合入前的本地检查。新增留存范围仍只有现有受控包，没有启用模型抽取或改变评测。
+
 本文件记录交付方式与验收缺口，不是离线验收完成结论。新交付提交的 CI、完整包、artifact/manifest 哈希及独立断网证据必须取得后写入该工单唯一当前记录；不得借用旧 SHA 的成功结果。旧 main 的 [Spec30 运行](https://github.com/MrEcho114/PrivacyTrace/actions/runs/38259246772)虽通过断网验证，其 artifact 不含完整包，不能用于本次完整交付。#19 的 PR #41、#46 前端和 #53 共享指南/模板仍归各自负责人。
 
 ## 下载、断网与启动

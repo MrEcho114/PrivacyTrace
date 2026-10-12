@@ -1,0 +1,828 @@
+{
+  "implementation_hashes": {
+    "apps/api/src/privacytrace/__init__.py": "6231d67b0395491dfb70fa788a18688ed72e0fd56c0493e0b17e8183e96a1364",
+    "apps/api/src/privacytrace/apk_worker.py": "44101e2ee2cc5e7e00fdbdc466a4db2f366daf2d1fbb4d9dde119ae003cf50a1",
+    "apps/api/src/privacytrace/benchmark.py": "843f424582e09448a2ddfeac6f7cda8d32d8bd297978daeedd5139a5be0ab09d",
+    "apps/api/src/privacytrace/benchmark_algorithms.py": "8c01dfa6518917db89223aedadfd4dd8a82a42b52f015a539bd9e1667985de49",
+    "apps/api/src/privacytrace/consistency.py": "2a127258e45676d4304641f9cbc95169d3796ce13d95fb2464c46b596f705db3",
+    "apps/api/src/privacytrace/controlled.py": "9a189fd7845e0cc981c4c1a0f79693c75579f816785708c9ec29b75c1fe06f58",
+    "apps/api/src/privacytrace/coverage_scope.py": "12ad40684a14bad50b252b326cb5b71441c79c44965aa068e523c66641595fd5",
+    "apps/api/src/privacytrace/isolated_scan.py": "a5d19f6c44bf68e74450327694f25ef30da255b80a7a456795b722662d879166",
+    "apps/api/src/privacytrace/job_store.py": "460c5c1e204c39a6c21b31f1e93a54f1e72a777199bf73ddd21e8fea3a534fde",
+    "apps/api/src/privacytrace/main.py": "a597eccb2ebef3cd233261536374ede75d4d2cfbcd936d04409e21f6aba30c4e",
+    "apps/api/src/privacytrace/models.py": "0b8751ffd8ff98cbcef1a251a7c6b98922ab9460de28a0f7e436b6005117587f",
+    "apps/api/src/privacytrace/pipeline.py": "b0aee4aaa629c0d9bd74ffe60e8c4c255b6059819e1a231bb7a04ee94e764d12",
+    "apps/api/src/privacytrace/policy_intake.py": "912828553239402931b285adab8b1d97cf4a2076d1647ffd900aab4777b494b1",
+    "apps/api/src/privacytrace/resources.py": "1dc83700c41fd5be4474f6d3d9bbc32690ece6ba537e1f7556988109109a25f9",
+    "apps/api/src/privacytrace/runtime_models.py": "dba4764add258d0ec6575c8bf14c29cb3d80bf44a5f72585a93398577bd74080",
+    "apps/api/src/privacytrace/scan_workspace.py": "1897a41b6180fb637edf6d53c389243cdf196400f05ea847e6c73be38b642ce0",
+    "apps/api/src/privacytrace/sdk_attribution.py": "4f67c147da209b02cbeb0ef66266f2ad23c361b26536cd0f78e09d9f93dfbf7e",
+    "apps/api/src/privacytrace/sdk_ruleset.py": "9b4d929a5f55e78104408eb66d1cd1cc2cee9aa873b6294b94e30f5fdd28923c",
+    "rules/taxonomy.v0.3.json": "e63297c70dcb3ec67b797e315fdfe469d617296b7bd51084a5ed8e950f513951",
+    "rules/sdk-signatures.v1.0.json": "f4987d328ac7b6697cd3fd92c4f6327cfdeea84566ad6e9934c8aa5bc14150e4"
+  },
+  "schema_version": 1,
+  "generated_at": "2026-10-12T07:08:57.020529+00:00",
+  "truth_sha256": "9a0a10392d2d052f95e78c69231c27556120c0eff131a403f05d6f5c8cc10c40",
+  "protocol": {
+    "schema_version": 1,
+    "frozen_at": "2026-10-10T00:39:16.422477+08:00",
+    "origin": "Spec30 scenario definitions and authored source/policy, before first execution",
+    "inputs_lock_sha256": "32f7a4bbd9a73d261f2d0e2100f31a0b6b38f51ace363841ac06415336295c87",
+    "counting_unit": "One target outcome per scenario, including CAPABILITY in C01; all six scenarios remain denominator",
+    "metrics": [
+      "status_agreement",
+      "abstentions",
+      "failures",
+      "coverage",
+      "elapsed_seconds"
+    ],
+    "pr_f1": "NOT_REPORTED: no binary collection/legality target",
+    "human_preparation_seconds": null,
+    "preparation_actor": "Codex-assisted manual fixture annotation; no independent human sign-off claimed",
+    "scenarios": {
+      "C01": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "CAPABILITY",
+        "expected": "INSUFFICIENT_EVIDENCE",
+        "api_count": 0,
+        "target_descriptor": null,
+        "source_reference": "android/C01/MainActivity.java",
+        "policy_reference": "policies/C01.txt"
+      },
+      "C02": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "EXACT_MATCH",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C02/MainActivity.java",
+        "policy_reference": "policies/C02.txt"
+      },
+      "C03": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "CATEGORY_MATCH",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C03/MainActivity.java",
+        "policy_reference": "policies/C03.txt"
+      },
+      "C04": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "NOT_DECLARED",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C04/MainActivity.java",
+        "policy_reference": "policies/C04.txt"
+      },
+      "C05": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "AMBIGUOUS_DISCLOSURE",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C05/MainActivity.java",
+        "policy_reference": "policies/C05.txt"
+      },
+      "C06": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "INSUFFICIENT_EVIDENCE",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C06/MainActivity.java",
+        "policy_reference": "policies/C06.txt"
+      }
+    }
+  },
+  "scheme_inputs": {
+    "permission_keyword": "Same APK/permissions/policy/evidence/claims available; uses permission mappings and exact data-type phrases in complete provided text. No hierarchy, polarity or completeness gate; nominal baseline only.",
+    "api_flat": "Same API invoke evidence, trusted full descriptors and context; exact flat data-type phrases in same policy text. No hierarchy, polarity or scope gate. Missing invoke abstains. No descriptor weakening.",
+    "privacytrace": "Same materials; existing deterministic engine and controlled known facts. No expected labels. Reviews are optional local annotations, not signatures."
+  },
+  "rows": [
+    {
+      "scenario_id": "C01",
+      "scheme": "permission_keyword",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": "EXACT_MATCH",
+      "agreement": false,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.7341754679999895,
+      "scheme_elapsed_seconds": 9.26699999581615e-06,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "47fc05f302e682b31d331980f94b4a00d21c8d9b416ab4b446d195cdea561ac3",
+      "evidence_ids": [
+        "ev-ffefeda2a688a1c0c6194317"
+      ],
+      "errors": []
+    },
+    {
+      "scenario_id": "C01",
+      "scheme": "api_flat",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": "INSUFFICIENT_EVIDENCE",
+      "agreement": true,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.7341754679999895,
+      "scheme_elapsed_seconds": 2.7259999910711485e-06,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "47fc05f302e682b31d331980f94b4a00d21c8d9b416ab4b446d195cdea561ac3",
+      "evidence_ids": [
+        "ev-ffefeda2a688a1c0c6194317"
+      ],
+      "errors": []
+    },
+    {
+      "scenario_id": "C01",
+      "scheme": "privacytrace",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": "INSUFFICIENT_EVIDENCE",
+      "agreement": true,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.7341754679999895,
+      "scheme_elapsed_seconds": 0.000174995999998373,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "47fc05f302e682b31d331980f94b4a00d21c8d9b416ab4b446d195cdea561ac3",
+      "evidence_ids": [
+        "ev-ffefeda2a688a1c0c6194317"
+      ],
+      "errors": []
+    },
+    {
+      "scenario_id": "C02",
+      "scheme": "permission_keyword",
+      "expected": "EXACT_MATCH",
+      "actual": "EXACT_MATCH",
+      "agreement": true,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.7400385299999925,
+      "scheme_elapsed_seconds": 9.508000005098438e-06,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "1440b22bf62fbd875149a40cc0adeb7336c78386cafdb0069e5dc7696a45425d",
+      "evidence_ids": [
+        "ev-b958386a932fcfc767b86335"
+      ],
+      "errors": []
+    },
+    {
+      "scenario_id": "C02",
+      "scheme": "api_flat",
+      "expected": "EXACT_MATCH",
+      "actual": "EXACT_MATCH",
+      "agreement": true,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.7400385299999925,
+      "scheme_elapsed_seconds": 6.221999967692682e-06,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "1440b22bf62fbd875149a40cc0adeb7336c78386cafdb0069e5dc7696a45425d",
+      "evidence_ids": [
+        "ev-ba08efa814f6ece2c21c8e79"
+      ],
+      "errors": []
+    },
+    {
+      "scenario_id": "C02",
+      "scheme": "privacytrace",
+      "expected": "EXACT_MATCH",
+      "actual": "EXACT_MATCH",
+      "agreement": true,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.7400385299999925,
+      "scheme_elapsed_seconds": 0.00020958099997869795,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "1440b22bf62fbd875149a40cc0adeb7336c78386cafdb0069e5dc7696a45425d",
+      "evidence_ids": [
+        "ev-ba08efa814f6ece2c21c8e79",
+        "policy-sentence-1",
+        "policy-snapshot"
+      ],
+      "errors": []
+    },
+    {
+      "scenario_id": "C03",
+      "scheme": "permission_keyword",
+      "expected": "CATEGORY_MATCH",
+      "actual": "NOT_DECLARED",
+      "agreement": false,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.639982879999991,
+      "scheme_elapsed_seconds": 7.4040000299646636e-06,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "9dc08887b60f406f9c6bdc8c15a7c7037d49a6fd87b437032887caa1a7eed6d5",
+      "evidence_ids": [
+        "ev-bb9b50fedb413e7e00e0ac86"
+      ],
+      "errors": []
+    },
+    {
+      "scenario_id": "C03",
+      "scheme": "api_flat",
+      "expected": "CATEGORY_MATCH",
+      "actual": "NOT_DECLARED",
+      "agreement": false,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.639982879999991,
+      "scheme_elapsed_seconds": 7.353999990300508e-06,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "9dc08887b60f406f9c6bdc8c15a7c7037d49a6fd87b437032887caa1a7eed6d5",
+      "evidence_ids": [
+        "ev-19107dc6c2230a04507aa846"
+      ],
+      "errors": []
+    },
+    {
+      "scenario_id": "C03",
+      "scheme": "privacytrace",
+      "expected": "CATEGORY_MATCH",
+      "actual": "CATEGORY_MATCH",
+      "agreement": true,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.639982879999991,
+      "scheme_elapsed_seconds": 0.00020744599999034108,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "9dc08887b60f406f9c6bdc8c15a7c7037d49a6fd87b437032887caa1a7eed6d5",
+      "evidence_ids": [
+        "ev-19107dc6c2230a04507aa846",
+        "policy-sentence-1",
+        "policy-snapshot"
+      ],
+      "errors": []
+    },
+    {
+      "scenario_id": "C04",
+      "scheme": "permission_keyword",
+      "expected": "NOT_DECLARED",
+      "actual": "NOT_DECLARED",
+      "agreement": true,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.6322493000000122,
+      "scheme_elapsed_seconds": 7.124000035219069e-06,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "50064e7cdd45445c850156580847573e68fd3858bf2855b29a0ee29acf4fa66a",
+      "evidence_ids": [
+        "ev-d3eaf0019e2bea935919de65"
+      ],
+      "errors": []
+    },
+    {
+      "scenario_id": "C04",
+      "scheme": "api_flat",
+      "expected": "NOT_DECLARED",
+      "actual": "NOT_DECLARED",
+      "agreement": true,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.6322493000000122,
+      "scheme_elapsed_seconds": 7.11299998101822e-06,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "50064e7cdd45445c850156580847573e68fd3858bf2855b29a0ee29acf4fa66a",
+      "evidence_ids": [
+        "ev-2675f4276c50cdabcc4a72e1"
+      ],
+      "errors": []
+    },
+    {
+      "scenario_id": "C04",
+      "scheme": "privacytrace",
+      "expected": "NOT_DECLARED",
+      "actual": "NOT_DECLARED",
+      "agreement": true,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.6322493000000122,
+      "scheme_elapsed_seconds": 0.0002483229999938885,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "50064e7cdd45445c850156580847573e68fd3858bf2855b29a0ee29acf4fa66a",
+      "evidence_ids": [
+        "ev-2675f4276c50cdabcc4a72e1",
+        "policy-snapshot"
+      ],
+      "errors": []
+    },
+    {
+      "scenario_id": "C05",
+      "scheme": "permission_keyword",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": "EXACT_MATCH",
+      "agreement": false,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.6173796109999898,
+      "scheme_elapsed_seconds": 9.11700004735394e-06,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "ac875af6e1fbb061233a7c4fb77394421a4587c83d0a4259a25c60ed451291b0",
+      "evidence_ids": [
+        "ev-491b521c228360ca34bbae17"
+      ],
+      "errors": []
+    },
+    {
+      "scenario_id": "C05",
+      "scheme": "api_flat",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": "EXACT_MATCH",
+      "agreement": false,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.6173796109999898,
+      "scheme_elapsed_seconds": 6.2910000337979e-06,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "ac875af6e1fbb061233a7c4fb77394421a4587c83d0a4259a25c60ed451291b0",
+      "evidence_ids": [
+        "ev-59b679c9b2cc2015058a10b2"
+      ],
+      "errors": []
+    },
+    {
+      "scenario_id": "C05",
+      "scheme": "privacytrace",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": "AMBIGUOUS_DISCLOSURE",
+      "agreement": true,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.6173796109999898,
+      "scheme_elapsed_seconds": 0.0002088190000222312,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "ac875af6e1fbb061233a7c4fb77394421a4587c83d0a4259a25c60ed451291b0",
+      "evidence_ids": [
+        "ev-59b679c9b2cc2015058a10b2",
+        "policy-sentence-1",
+        "policy-snapshot"
+      ],
+      "errors": []
+    },
+    {
+      "scenario_id": "C06",
+      "scheme": "permission_keyword",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": "NOT_DECLARED",
+      "agreement": false,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.751266304000012,
+      "scheme_elapsed_seconds": 7.333999974434846e-06,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "abddadce10dc444b6f500caff7742aad1d0286e744fc0aee8793ec2440d083cf",
+      "evidence_ids": [
+        "ev-5d761db9713999d2d0e6e3d9"
+      ],
+      "errors": []
+    },
+    {
+      "scenario_id": "C06",
+      "scheme": "api_flat",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": "NOT_DECLARED",
+      "agreement": false,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.751266304000012,
+      "scheme_elapsed_seconds": 7.444000004852569e-06,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "abddadce10dc444b6f500caff7742aad1d0286e744fc0aee8793ec2440d083cf",
+      "evidence_ids": [
+        "ev-faa6d9815339d01ba87896ed"
+      ],
+      "errors": []
+    },
+    {
+      "scenario_id": "C06",
+      "scheme": "privacytrace",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": "INSUFFICIENT_EVIDENCE",
+      "agreement": true,
+      "api_mapping_and_locator_checked": true,
+      "policy_spans_validated": true,
+      "elapsed_seconds": 1.751266304000012,
+      "scheme_elapsed_seconds": 0.00021375800002942924,
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "truth_files_absent": true,
+      "material_sha256": "abddadce10dc444b6f500caff7742aad1d0286e744fc0aee8793ec2440d083cf",
+      "evidence_ids": [
+        "ev-faa6d9815339d01ba87896ed",
+        "policy-snapshot"
+      ],
+      "errors": []
+    }
+  ],
+  "summaries": {
+    "permission_keyword": {
+      "total": 6,
+      "status_agreement": 2,
+      "failures": 0,
+      "abstentions": 0,
+      "predicted": 6
+    },
+    "api_flat": {
+      "total": 6,
+      "status_agreement": 3,
+      "failures": 0,
+      "abstentions": 1,
+      "predicted": 6
+    },
+    "privacytrace": {
+      "total": 6,
+      "status_agreement": 6,
+      "failures": 0,
+      "abstentions": 2,
+      "predicted": 6
+    }
+  },
+  "limitations": [
+    "Six authored fixtures; no held-out generalization claim.",
+    "Manual agent-assisted candidates; no automatic extraction accuracy claim.",
+    "Static invoke never proves execution, collection, safety or illegality.",
+    "Baseline status names are nominal experimental predictions, not user findings."
+  ]
+}

@@ -3,7 +3,7 @@ import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import UiButton from '../components/UiButton.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { copy } from '../copy'
-defineProps<{ storageError: boolean }>()
+defineProps<{ storageError: boolean; example: boolean }>()
 const emit = defineEmits<{ close: []; clear: [] }>()
 const dialog = ref<HTMLDialogElement | null>(null)
 const connection = ref<'unknown' | 'checking' | 'connected' | 'failed'>('unknown')
@@ -28,8 +28,8 @@ onBeforeUnmount(() => { controller?.abort(); dialog.value?.close() })
 </script>
 <template>
   <dialog ref="dialog" class="settings-dialog" aria-labelledby="settings-title" @keydown="keepFocus" @cancel.prevent="emit('close')"><div class="panel-heading"><h2 id="settings-title">{{ copy.settingsTitle }}</h2><UiButton id="settings-close" variant="quiet" @click="emit('close')">{{ copy.close }}</UiButton></div><p class="field-help">{{ copy.settingsDescription }}</p>
-    <section class="settings-section"><h3>分析服务</h3><StatusTag :tone="connection === 'connected' ? 'success' : connection === 'failed' ? 'error' : 'neutral'">{{ connection === 'connected' ? '报告接口已连接' : connection === 'failed' ? copy.notConnected : connection === 'checking' ? '正在检查' : '尚未测试' }}</StatusTag><p>{{ copy.connectionHelp }}</p><UiButton :busy="connection === 'checking'" @click="check">{{ copy.refreshConnection }}</UiButton></section>
+    <section class="settings-section"><h3>分析服务</h3><div role="status" aria-live="polite"><StatusTag :tone="connection === 'connected' ? 'success' : connection === 'failed' ? 'error' : 'neutral'">{{ connection === 'connected' ? '分析服务有响应' : connection === 'failed' ? copy.notConnected : connection === 'checking' ? '正在检查…' : '尚未测试' }}</StatusTag></div><p>{{ copy.connectionHelp }}</p><UiButton :busy="connection === 'checking'" @click="check">{{ copy.refreshConnection }}</UiButton></section>
     <section class="settings-section"><h3>模型连接</h3><StatusTag tone="wait">待接入</StatusTag><p>{{ copy.modelHelp }}</p><p class="field-help">此页面不接收密钥。</p></section>
-    <section class="settings-section"><h3>浏览器草稿</h3><p>{{ copy.storageHelp }}</p><p v-if="storageError" class="error-text">暂存不可用</p><UiButton @click="emit('clear')">{{ copy.clearDraft }}</UiButton></section>
+    <section class="settings-section"><h3>浏览器草稿</h3><p>{{ copy.storageHelp }}</p><p v-if="example" class="field-help">清除后会重置当前示例，自填文本也会丢失。</p><p v-if="storageError" class="error-text">暂存不可用</p><UiButton @click="emit('clear')">{{ copy.clearDraft }}</UiButton></section>
   </dialog>
 </template>

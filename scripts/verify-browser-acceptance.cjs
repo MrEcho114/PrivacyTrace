@@ -742,7 +742,7 @@ async function main() {
     // The new settings panel tests the same actual local HTTP service.
     await page.getByRole('button', { name: '项目设置', exact: true }).click();
     await page.getByRole('button', { name: '测试连接', exact: true }).click();
-    await page.getByText('报告接口已连接', { exact: true }).waitFor();
+    await page.getByText('分析服务有响应', { exact: true }).waitFor();
     await page.keyboard.press('Escape');
     recordStep('TC-05', 'verify_settings_health', 'Settings panel connected to the actual isolated API health endpoint');
 
@@ -762,6 +762,24 @@ async function main() {
     await page.screenshot({ path: screenshotTc05, fullPage: true });
 
     testResults.push({ id: 'TC-05', name: 'R5 Optional local note & re-evaluation persistence', status: 'PASSED' });
+
+    // Entry regression only: reuse fixture HTTP data with the exporter's HTML marker.
+    // Complete offline-package integrity and six-source replay are covered by Spec30.
+    const replay = await browser.newPage();
+    replay.on('pageerror', error => pageErrors.push(error.message));
+    await replay.route(WEB_ORIGIN + '/', async route => {
+      const response = await route.fetch();
+      const html = (await response.text()).replace('<head>', '<head><meta name="privacytrace-presentation" content="offline">');
+      await route.fulfill({ response, body: html });
+    });
+    await replay.goto(WEB_ORIGIN + '/');
+    await selectSource(replay, 'job:gkd-s1-first');
+    await replay.getByText('OFFLINE REPLAY · 离线回放', { exact: true }).waitFor();
+    assert.equal(await replay.locator('.workbench').count(), 0, 'offline root must bypass the editable workflow');
+    assert.equal(await replay.locator('.review-panel').count(), 0);
+    assert.equal(await replay.locator('option[value="demo:synthetic"]').count(), 0);
+    await replay.close();
+    testResults.push({ id: 'TC-06', name: 'Offline HTML marker opens read-only report browser at root', status: 'PASSED' });
 
     // ------------------------------------------------------------------------
     // Generate proof artifact evidence/browser-proof.json

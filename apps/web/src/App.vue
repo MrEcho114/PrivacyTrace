@@ -38,6 +38,7 @@ const jobLabels: Record<AnalysisJob['state'], string> = {
 }
 const sourceLabels: Record<string, string> = {
   IN_APP_POLICY: 'App 内政策', STORE_POLICY: '应用商店', OFFICIAL_WEB_POLICY: '官网政策', SDK_POLICY: 'SDK 自有政策',
+  CONTROLLED_POLICY: '自建受控配对政策',
 }
 const kindLabels = { MANIFEST: '权限配置', API: 'API 字节码', SDK: 'SDK 特征', POLICY_DOCUMENT: '政策快照引用', POLICY_SENTENCE: '政策原句' }
 const label = (id: string) => taxonomy.value?.data_types.find(item => item.id === id)?.label ?? id
@@ -54,6 +55,10 @@ const pagedSdkEvidence = computed(() => sdkPageSlice(sdkEvidence.value, sdkPage.
 watch(report, () => {
   sdkPage.value = 0
 })
+const controlledReport = computed(() => (realReport.value?.job ?? activeJob.value)?.input_mode === 'CONTROLLED_APK')
+const replayPage = typeof document !== 'undefined'
+  && document.querySelector('meta[name="privacytrace-presentation"]')?.getAttribute('content') === 'offline'
+const offlineReplay = computed(() => replayPage || realReport.value?.tools.presentation_mode === 'OFFLINE_REPLAY')
 // Candidate clauses are navigation aids, not evaluator-confirmed evidence or matches.
 // Candidate clauses pagination
 const CANDIDATE_PAGE_SIZE = 20
@@ -187,8 +192,12 @@ const sourceOptionPrefix = (origin?: string) => {
 }
 
 const sourceInfo = computed(() => {
-  if (!report.value) return null
-  const origin = report.value.demo ? 'SYNTHETIC' : report.value.job?.source_origin
+  if (!report.value && !activeJob.value) return null
+  const origin = report.value?.demo ? 'SYNTHETIC' : (report.value?.job ?? activeJob.value)?.source_origin
+  if (origin === 'CONTROLLED' && controlledReport.value) return {
+    type: origin, badge: '受控评测 · CONTROLLED', label: 'CONTROLLED_APK · 自建受控场景',
+    desc: '源码构建的测试 APK；政策事实仅适用于此受控场景，不代表真实应用政策已核验。候选由代理辅助整理。',
+  }
   if (!origin) {
     return { type: 'UNKNOWN', badge: '来源未标注', label: '来源未标注', desc: '报告缺少来源标注，无法判断该报告的真实性级别。' }
   }
@@ -357,7 +366,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
       <section class="source-picker">
         <label for="report-source">报告来源</label>
         <select id="report-source" v-model="selectedSourceKey" @change="reload()">
-          <option value="demo:synthetic">SYNTHETIC · 人工构造示例</option>
+          <option v-if="!offlineReplay" value="demo:synthetic">SYNTHETIC · 人工构造示例</option>
           <option v-for="job in jobs" :key="job.id" :value="`job:${job.id}`">
             {{ sourceOptionPrefix(job.source_origin) }}{{ job.package_name || job.sample_id }} · {{ job.id }} · {{ jobLabels[job.state] }}
           </option>
@@ -368,6 +377,13 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         {{ sourceInfo?.desc ?? (source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。报告不保证覆盖反射、动态加载、原生代码或运行时行为。') }}
         六种状态只对照 DATA_TYPE_DISCLOSURE；“具体类型已声明”不代表目的、接收方、传输或时间范围全部一致，更不是合法性判断。
       </details>
+      <section v-if="realReport" class="report-provenance" aria-label="报告生成来源">
+        <strong>{{ offlineReplay ? 'OFFLINE REPLAY · 离线回放' : '存档报告查看 · PERSISTED REPLAY' }}</strong>
+        <p v-if="realReport.tools.analysis_generated_at">分析生成时点：{{ realReport.tools.analysis_generated_at }}。查看存档不代表重新扫描。</p>
+        <p v-else>记录创建时点：{{ realReport.job.created_at }}。未留存分析生成时点；来源以报告来源标识为准。</p>
+        <p v-if="offlineReplay">回放包生成时点：{{ realReport.tools.offline_package_built_at }}。回放只读，不执行 APK 分析。</p>
+        <p v-if="offlineReplay"><a href="/comparison.html" target="_blank" rel="noopener">查看六场景三方案比较与失败记录</a></p>
+      </section>
       <section v-if="activeJob" class="job-state" role="status">
         <strong>{{ jobLabels[activeJob.state] }}</strong> · {{ activeJob.id }} · {{ activeJob.state }}
         <button v-if="!terminal(activeJob)" :disabled="loading" @click="cancel">取消任务</button>
@@ -488,7 +504,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
             </details>
           </article>
         </details>
-        <section v-if="realReport" class="review-panel">
+        <section v-if="realReport && !offlineReplay" class="review-panel">
           <h2>人工复核备注</h2><p class="subtle">这里只保存备注并由纯规则重算，不自动把政策标为已复核，不修改候选声明。填写的身份未认证。</p>
           <form @submit.prevent="review">
             <label>复核人<input v-model="actor" required maxlength="100" /></label>

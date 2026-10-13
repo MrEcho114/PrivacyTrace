@@ -58,8 +58,9 @@ the final diff is reviewed — or until a genuine human decision boundary is rea
   - 遇到未分流的外部反馈或 Issues 时，提醒用户显式调用 `triage` 评估、补齐上下文并贴标签；
   - 遇到需要整份 Spec 批量推进或编排时，提醒用户显式调用 `implement-spec` 统一调度。
 - **工单流转与交接约束**：
+  - **开始、恢复、分派、扩大范围或更新 PR 前**，必须读取 [协作检查清单](docs/agents/skills-workflow.md#6-工单流转阻塞依赖与交接规范)，完成任务查重、唯一执行会话和共享归属确认；同账号的另一 Agent 不凭 Assignee 再次开工。
   - 任务创建与结构遵循模板 [`.github/ISSUE_TEMPLATE/task.yml`](.github/ISSUE_TEMPLATE/task.yml)；
-  - 领取工单时明确 Assignee（`gh issue edit <n> --add-assignee @me`）并检查阻塞依赖（`Blockers`）；
+  - 领取工单时先回读当前执行记录，由负责人指定唯一执行会话，再确认 Assignee 与阻塞依赖（`Blockers`）；
   - **若存在未解除的 open blocker 必须原地等待，严禁在阻塞未解除前提前启动开发**；
   - 任务交接或跨会话暂停时，必须在对应 Issue 留下接手材料（包含分支名、最新提交、已有进展与剩余工作清单）；
   - 提交 PR 审查遵循模板 [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md)。

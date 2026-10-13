@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "features": {
+    "C01": "fd7cd0b99373f2186fdf288b5f21a1db2bea0eb15ab1209e9ff74a50ba7bedf1",
+    "C02": "80bd3aaed516cb01c260e683b1f44c3228747abcfff50f5669fb3049cdca3d72",
+    "C03": "ea2ef9277139487fa9b46b0457290814eb4ac14b36cb520fe8bb172b285bf6fb",
+    "C04": "abd412bd6c5812177ed79f71d4ce0bb01f79f8f14204dd79f55a222d4ce06298",
+    "C05": "8b03c5f701e72d84b1d11a1397fbae5eb4feeebfd8dae463c338a759c80e71e2",
+    "C06": "02e602b3c087af85591afd15c6b832c414742424e8f8becdd9000d2e623bc1d6"
+  },
+  "sources": {
+    "android/C01/MainActivity.java": "cf205115a43ea4556b0984b63f696de3ee869709a771d71baa1d04e752188d9e",
+    "android/C01/AndroidManifest.xml": "9ca9f04fa2a3dcd242a4422623cc50864f42336821048892f4581e9e84461c45",
+    "android/C02/MainActivity.java": "8a9c1c56504da903ae6cb183d09b93b25048b492f26b199fba07843a1af59673",
+    "android/C02/AndroidManifest.xml": "7fcfe665f5a7456e83577370d32868f2c28d308d284fc770a2f1e9d4822b2336",
+    "android/C03/MainActivity.java": "8a659bf240e86b9e27b0ff20c20da800690ac6907cf18aa8bc71b908dd986bec",
+    "android/C03/AndroidManifest.xml": "e7bb0eed213e7f552b7cecc488f657b242c7fb40f0f1b19c19b2a977781fa00b",
+    "android/C04/MainActivity.java": "e22c4e91d7cb7234543827d773fc3be542e03a82a79aded9564aad024f955f8a",
+    "android/C04/AndroidManifest.xml": "b4f58d0948340ca27ff82d951f079978afb8cd4e9f2bfd3d13e519dda1b75d1f",
+    "android/C05/MainActivity.java": "b22d2e2178b28105d09e17d33f3ef158cef9670fbd739a70abf5c6a280517d81",
+    "android/C05/AndroidManifest.xml": "de0660ae6f1e17de71a1ad3d66c62513613084022538024c56e3686e4688733e",
+    "android/C06/MainActivity.java": "ba253cf4383ffa087720fc43402b0b6ec0fc2bbd4a5758c1150865232a0cb5f7",
+    "android/C06/AndroidManifest.xml": "71e3d5b50b5d32c13ebd2c310288f870b282dd8af22706c5140117fc967debfb"
+  }
+}

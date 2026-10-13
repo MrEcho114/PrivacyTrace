@@ -8,6 +8,10 @@
 
 2026-10-13 恢复时，#53/#42 已合入，main 为 `8c5262bd1c27a3143893376044205c03b02d6754`。本任务串行吸收新 main，保留原本地 commit `a8c6f94efed6b1ee4817e2b3798d6a50c4ed6b8d`，后续审查以该新 main 为固定点；新组合须重验，不复用合入前的本地检查。新增留存范围仍只有现有受控包，没有启用模型抽取或改变评测。
 
+2026-10-13 08:22:12（香港时间），[#55](https://github.com/MrEcho114/PrivacyTrace/pull/55)已合并为 main `2e74276690a43e38c3b4b4ba44a0ba090e161e7a`；[Check #38326898243](https://github.com/MrEcho114/PrivacyTrace/actions/runs/38326898243)、[Browser #38326897525](https://github.com/MrEcho114/PrivacyTrace/actions/runs/38326897525)、[Spec30 #38326897496](https://github.com/MrEcho114/PrivacyTrace/actions/runs/38326897496)均 success。本次仅核对这些运行元数据，未重新下载/复算该 main 的包，不把旧版 ZIP 摘要挪给它。#18 仍开放。
+
+本次补充验证从上述 main 建立 `codex/pt-904-offline-evidence-20261013`，重放旧本地 `1b34a25` 的 driver/指南差异，并保留已合入的状态追踪。原分支和提交不重写。新实际候选 SHA、检查及后续补充 PR 指针在 #18 唯一当前记录维护；新的断网 CI、展开 proof/截图和完整归档尚未取得。
+
 本文件区分**已验证的固定候选 SHA**与**后续待交付 SHA**，不把 CI success 等同于 #18 验收完成。以下 CI、归档与哈希事实以 2026-10-13 的 GitHub 运行元数据和 [#18 唯一当前执行记录](https://github.com/MrEcho114/PrivacyTrace/issues/18#issuecomment-6125972199)为依据；本文档同步不代表重新下载归档或重做独立断网测试。旧 main 的 [Spec30 运行](https://github.com/MrEcho114/PrivacyTrace/actions/runs/38259246772)其 artifact 不含完整包，不能用于本次完整交付。#19 的 PR #41、#46 前端和 #53 共享指南/模板仍归各自负责人。
 
 ### 已验证基准：`fb401cc24234d60ff94de772e0a40dd694d9e275`（历史固定候选）
@@ -21,9 +25,9 @@
 | 下载后复核（#18 执行记录） | 原 ZIP 已在本地保存并复算，23 个归档文件；manifest SHA-256：`f31c4139f55744091d63931a3d3efed4b7471a572d2c131e3942b115394d6a5f`；六报告及来源摘要、文件/许可和受控内容排除项已核对 |
 | 离线证明（#18 执行记录） | CI proof 支持 fresh `--network=none`、仅 `lo`、外联失败、六份 HTTP 报告、真实 Vue 六来源与零 page errors；`independent-offline.log` 同次留存 |
 
-**剩余缺口：** #18 的独立 Spec 复查明确指出，当前断网浏览器 driver **尚未实测展开代码证据、政策引用句及政策全文**，不能用 HTTP 报告存在或联网浏览器通过代替。原始 ZIP 已本地留存不等于取得批准的长期内部归档位置；项目许可及正式分发授权仍待定，#18 保持开放。
+**剩余缺口：** #18 的独立 Spec 复查明确指出，历史 `fb401cc` 及 #55 已合入版本的断网浏览器 driver **尚未实测展开代码证据、政策引用句及政策全文**，不能用 HTTP 报告存在或联网浏览器通过代替。本补充候选虽增加了这些检查，仍须取得其实际 SHA 的独立断网结果。原始 ZIP 已本地留存不等于取得批准的长期内部归档位置；项目许可及正式分发授权仍待定，#18 保持开放。
 
-**后续 SHA 边界：** #18 当前记录提及本地未推送的 `1b34a2530919afab7019477a485e283281e9534d` driver/指南修订。它**不是**上述成功 CI 的实际 checkout，也不是已验收交付；未来 PR head 变化（包括文档修复提交）后，应记录新的实际 SHA、重新取对应 CI 与包摘要，重验受影响的断网浏览器证明和归档。不得把 `fb401cc` 的绿灯、ZIP 或 manifest 直接迁移到新 SHA。
+**后续 SHA 边界：** 本地未推送的 `1b34a2530919afab7019477a485e283281e9534d` 是此次重放的来源，原提交继续保留。它**不是**上述成功 CI 的实际 checkout，也不是已验收交付；从新 main 重放后需使用新的实际候选 SHA。未来 PR head 变化（包括文档修复提交）后，应重新取对应 CI 与包摘要，重验受影响的断网浏览器证明和归档。不得把 `fb401cc` 或 main `2e742766` 的绿灯、ZIP、manifest 直接迁移到补充候选。
 
 ## 下载、断网与启动
 
@@ -63,6 +67,8 @@ proof = load('offline-proof/offline-proof.json')
 assert proof['passed'] and proof['interfaces'] == ['lo']
 assert proof['external_network_blocked'] and proof['six_reports_http']
 assert proof['real_browser_vue_loaded'] and proof['six_sources']
+assert proof['code_evidence_expanded'] and proof['policy_quote_expanded']
+assert proof['full_policy_expanded'] and proof['evidence_drilldown_scenario'] == 'C02'
 assert proof['page_errors'] == []
 assert sha('offline-proof/offline-dom.html') == proof['dom_sha256']
 assert sha('offline/manifest.json') == proof['package_manifest_sha256']
@@ -72,7 +78,9 @@ print('Package, proof and delivery SHA matched:', sys.argv[1])
 PY
 ```
 
-CI 复用 `scripts/validate-spec30.py` 的现有 11 阶段，在新容器中 `--network=none`、只读挂载包/验证脚本/浏览器及模块，没有仓库挂载或模型密钥。`scripts/verify-offline-container.py` 实测仅 `lo`、外部连接失败、六份 HTTP 报告及真实 Vue 浏览器来源切换；输出 DOM、浏览器版本/可执行文件摘要、测试镜像 ID、验证脚本和驱动摘要。`independent-offline.log` 保留该阶段的 stdout/stderr，包括 viewer 启动、HTTP 请求记录、证明输出及失败信息；其不存在时该阶段尚未执行，不能补造成功日志。浏览器依赖在断网前准备，不称无预装条件。
+CI 复用 `scripts/validate-spec30.py` 的现有 11 阶段，在新容器中 `--network=none`、只读挂载包/验证脚本/浏览器及模块，没有仓库挂载或模型密钥。`scripts/verify-offline-container.py` 检查仅 `lo`、外部连接失败、六份 HTTP 报告及真实 Vue 浏览器来源切换；driver 还在 C02 展开实际代码证据，核对完整 locator/descriptor、引用句的 Unicode 位置与高亮、政策全文与原报告文本，并保存 `offline-evidence-c02.png`。证明须包含上述三个展开字段和 C02 标识；旧 driver 仅来源切换的成功记录不能替代这些观察。
+
+输出保留 DOM、浏览器版本/可执行文件摘要、测试镜像 ID、验证脚本和驱动摘要。`independent-offline.log` 保留该阶段的 stdout/stderr，包括断网前镜像/apt 准备及随后断网容器的 viewer 启动、HTTP 请求、证明和失败信息；准备过程不称断网。日志不存在时该阶段尚未执行，不能补造成功记录。浏览器依赖在断网前准备，不称无预装条件；这些新增展开检查仍须以实际交付 SHA 的 CI 结果验收。
 
 `if: always()` 继续保留失败运行的已产生文件。包存在或 artifact 上传成功不表示验收通过；任一阶段失败、proof 缺失、SHA/hash 不一致或 dirty checkout 都保留为失败/未完成。14 天保存期届满前应把经过哈希核对的归档保存在批准的内部交付位置；不以过期下载链接充当长久交付。
 
@@ -99,9 +107,9 @@ exporter 只接受六个成功的自建受控场景，检查 APK/政策/特征�
 - [x] `fb401cc` 的 Check / Browser Acceptance / Spec30 Integration 三项 GitHub CI success，记录运行 ID 与实际 SHA。
 - [x] 该 SHA 的 artifact 已取得；#18 执行记录记载 ZIP 与 manifest 摘要复算、收据/证明绑定、六份受控报告、许可和归档排除项核对。此处转录结果，并非本次修复重新运行。
 - [x] 该 SHA 的离线容器 proof 与阶段日志已有留存（断网预置前阶段不应算作断网执行）。
-- [ ] **补齐独立断网浏览器的代码证据、引用句高亮与政策全文展开实测及对应 proof/截图**；现有验证未覆盖该交互。
+- [ ] **补齐独立断网浏览器的代码证据、引用句高亮与政策全文展开实测及对应 proof/截图**；已取得的历史断网 proof 未覆盖该交互，补充实现仍待其实际 SHA 的独立结果。
 - [ ] 若 driver、指南、PR head 或打包产物发生变化：用新 SHA 重新执行适用 CI，下载新的 artifact，复算 ZIP / manifest / receipt / proof 哈希并核验许可和排除项；旧 SHA 成功不能替代新版本验收。
 - [ ] 将经校验的版本绑定归档保存在批准的内部长期位置；14 天 GitHub artifact 链接和本地暂存不能替代该交付记录。
-- [ ] 记录项目许可与公开分发授权决定。完成相关验收并经负责人确认前，#18 保持开放，PR 继续按 Draft 管理，不合并或关闭。
+- [ ] 记录项目许可与公开分发授权决定。完成相关验收并经负责人确认前，#18 保持开放；#55 已合并为部分交付，补充验证候选需单独审阅，不由旧 PR 的合并推出工单完成，也不提前合并或关闭后续候选。
 
 #25 报告仍沿用原评测 SHA `323780c9a77d7de2bb1857b1b67b4f05fd94a525` 的 18 行。新 CI 的 comparison 是当前包来源验证，不替换原正式实验或填补其缺失原文件摘要。GKD 历史案例不打包，不称本轮重扫。这里不验收 #19 材料/演示或 #30 整体交付，也不授权合并、发布、部署。

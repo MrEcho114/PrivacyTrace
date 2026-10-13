@@ -42,7 +42,7 @@ export const copy = {
   "viewEvidence": "查看线索详情",
   "settingsTitle": "服务与存储设置",
   "settingsDescription": "检查分析服务是否有响应，或清除浏览器中的示例草稿。",
-  "modelHelp": "目前可手动整理候选，还不能调用模型提取。",
+  "modelHelp": "示例中可手动整理候选，暂不能调用模型提取。",
   "storageHelp": "自动保存示例选项和阅读进度。自填文本只在本次打开期间保留，刷新后会丢失。",
   "clearDraft": "清除示例草稿",
   "draftCleared": "已清除示例草稿。",

@@ -336,6 +336,7 @@ async function main() {
 
     await selectSource(page, 'job:gkd-s1-first');
     recordStep('TC-01', 'select_job', 'Selected job:gkd-s1-first');
+    assert.equal(await page.locator('details.demo-note > summary > strong').isVisible(), true, 'source identity must remain visible when scope details are collapsed');
 
     // Expand evidence panel
     await page.getByRole('button', { name: /查看 \d+ 条证据/ }).first().click();
@@ -775,6 +776,7 @@ async function main() {
     await replay.goto(WEB_ORIGIN + '/');
     await selectSource(replay, 'job:gkd-s1-first');
     await replay.getByText('OFFLINE REPLAY · 离线回放', { exact: true }).waitFor();
+    assert.equal(await replay.locator('details.demo-note > summary > strong').isVisible(), true);
     assert.equal(await replay.locator('.workbench').count(), 0, 'offline root must bypass the editable workflow');
     assert.equal(await replay.locator('.review-panel').count(), 0);
     assert.equal(await replay.locator('option[value="demo:synthetic"]').count(), 0);

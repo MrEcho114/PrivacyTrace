@@ -37,11 +37,23 @@ function openReports() { view.value = 'reports'; location.hash = 'reports'; focu
 function newMaterials() { state.value = freshWorkflow(); go('import'); message.value = '' }
 function persist() {
   const raw = saveDraft(state.value)
-  if (!raw) return
-  try { localStorage.setItem(draftKey, raw); storageError.value = false } catch { storageError.value = true }
+  try {
+    if (raw) localStorage.setItem(draftKey, raw)
+    else localStorage.removeItem(draftKey)
+    storageError.value = false
+  } catch { storageError.value = true }
 }
 function clearDraft() {
-  try { localStorage.removeItem(draftKey); storageError.value = false; state.value = freshWorkflow(); message.value = copy.clearDraft; view.value = 'workflow'; location.hash = 'import' }
+  try {
+    localStorage.removeItem(draftKey)
+    storageError.value = false
+    if (state.value.example) {
+      state.value = freshWorkflow()
+      view.value = 'workflow'
+      location.hash = 'import'
+    }
+    message.value = copy.draftCleared
+  }
   catch { storageError.value = true }
 }
 function openSettings(event: Event) { settingsTrigger = event.currentTarget as HTMLElement; settings.value = true }
@@ -93,6 +105,6 @@ watch(state, persist, { deep: true })
         <template v-else><div class="report-page-title"><h1 id="page-title" tabindex="-1">{{ copy.realReports }}</h1><p>{{ copy.reportDescription }}</p></div><ExistingReports /></template>
       </main>
     </div>
-    <SettingsPanel v-if="settings" :storage-error="storageError" @close="closeSettings" @clear="clearDraft" />
+    <SettingsPanel v-if="settings" :storage-error="storageError" :example="state.example" @close="closeSettings" @clear="clearDraft" />
   </div>
 </template>

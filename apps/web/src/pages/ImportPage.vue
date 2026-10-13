@@ -55,6 +55,7 @@ async function readText(event: Event, id: string) {
   finally { if (textReads.get(id) === request) textReads.delete(id) }
 }
 function useText(id: string) {
+  textReads.delete(id)
   const source = props.state.sources.find(item => item.id === id)
   if (!source) return
   if (!source.text.trim()) { textErrors.value[id] = copy.missingText; return }

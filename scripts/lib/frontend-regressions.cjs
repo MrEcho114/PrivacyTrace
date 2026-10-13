@@ -34,6 +34,11 @@ async function verifyInputRecovery(browser, origin) {
     await page.evaluate(() => window.pendingTextReads.get('delayed-edit.txt')())
     assert.equal(await body.inputValue(), '读取期间手动输入的正文', 'file read must not overwrite a later manual edit')
 
+    await upload.setInputFiles(file('delayed-confirm.txt', '稍后完成的旧文件'))
+    await page.getByRole('button', { name: '使用这份正文', exact: true }).click()
+    await page.evaluate(() => window.pendingTextReads.get('delayed-confirm.txt')())
+    assert.equal(await body.inputValue(), '读取期间手动输入的正文', 'confirming current text must supersede a pending file read')
+
     await page.getByRole('button', { name: '项目设置', exact: true }).click()
     await page.getByRole('button', { name: '清除示例草稿', exact: true }).click()
     await page.keyboard.press('Escape')
@@ -46,7 +51,7 @@ async function verifyInputRecovery(browser, origin) {
     assert.equal(await page.getByRole('button', { name: '新材料', exact: true }).count(), 0)
     assert.equal(await page.locator('.source-editor').count(), 1)
     assert.equal(await page.evaluate(() => localStorage.getItem('privacytrace.example.v1')), null, 'new materials must not restore a stale example')
-    return ['latest text selection wins', 'manual edits survive pending reads', 'clear example preserves new materials', 'new materials survives refresh']
+    return ['latest text selection wins', 'manual edits survive pending reads', 'confirmed text survives pending reads', 'clear example preserves new materials', 'new materials survives refresh']
   } finally { await context.close() }
 }
 

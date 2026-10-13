@@ -2,10 +2,12 @@
 
 用户只说要做什么，不再填写双人核验表。复杂任务用 Issue，简单任务直接引用会话授权；代理负责执行和记录。
 
-1. 主交付责任人确认范围、工作区和已有改动；按 AGENTS.md 只读相关规则。
+1. 主交付责任人确认范围、工作区和已有改动；开始、恢复、分派或更新 PR 前按 [协作检查清单](agents/skills-workflow.md#6-工单流转阻塞依赖与交接规范)查重，确认唯一执行会话、依赖及共享归属，回读当前执行记录。
 2. 在任务分支实现并运行 `bash scripts/check.sh`，修复本次引入的失败，阅读完整 diff。前端页面、样式与组件任务读取 [前端交付](agents/frontend-delivery.md)，按需提前审阅代表页面；保留受管预览时可用 `npm run check` 委托同一权威入口。
-3. 代理填写 PR 模板、自审和验证结果。已有 PR 先更新准备好的正文，再推送交付提交；新 PR 在推送后使用已准备的正文创建。等待最终 SHA 的 CI 通过，有问题继续修，不把工作转回用户填表。
+3. 代理填写 PR 模板、自审和验证结果，回写唯一交付与验收覆盖/剩余项。已有 PR 先更新准备好的正文，再推送交付提交；新 PR 在推送后使用已准备的正文创建。等待中央 CI 绑定最新交付 SHA 通过，有问题继续修，不把工作转回用户填表。
 4. 用户决定是否合并。验收、merge、release、部署各按授权边界，不自动串联。
+
+协作规则由该检查清单单一维护；现存交付的整合入口、共享顺序及剩余验收见 [协作落地记录](stages/workflow-coordination-20261012.md)。记录是版本快照，领取时重读 GitHub 当前状态。
 
 ## 采纳信息
 
@@ -19,7 +21,7 @@
 
 S1 双人门槛已撤销，见 [接受决定](stages/s1-acceptance-20261009.md)。产品的本地备注可选，既不是账号认证，也不是政策已复核证明；不要求用户填写。
 
-`.github/workflows/check.yml` 是唯一交付 CI，通过 v5.0.0 对应的完整 SHA 调用中央检查，使用 `scripts/check.sh` 执行全部 API/web 回归及 CI 的 Docker 分支。自动检查由代理维护，不新增人类表单。
+`.github/workflows/check.yml` 负责中央交付检查，通过 v5.0.0 对应的完整 SHA 调用中央检查，使用 `scripts/check.sh` 执行全部 API/web 回归及 CI 的 Docker 分支。`browser-acceptance.yml` 负责原 TC-01～TC-05 浏览器回归；`spec30-integration.yml` 另负责实际六场景源码重复构建、隔离扫描、三方案/18 行、CLI/HTTP、浏览器和独立断网回放。三项 CI 均核对交付 SHA，各类结果分别报告；工程回归不能替代受控场景和离线验收。自动检查由代理维护，不新增人类表单。整合取舍与证据路径见 [Issue #39 整合记录](stages/issue39-integration.md)。
 
 缓存、事务记录、私人样本不提交。升级不自动进行；日常实现不预加载发布/升级资料。采纳工具可运行 `.themasterplan/bin/themasterplan.py verify/doctor/check-update`。
 

@@ -2,13 +2,22 @@
 
 来源：简报第 20–22 页。下方 Epic 表保留建仓时的任务分解；当前排期以 [GitHub 总计划 #1](https://github.com/MrEcho114/PrivacyTrace/issues/1) 与阶段计划为准，部分后续工单编号含义已有调整，不按编号强行合并。“已实现”不等于真实样本最终验收通过。
 
-## 2026-10-11 当前交付索引
+## 2026-10-12 协作与领取入口
+
+开始/恢复先执行 [协作检查清单](agents/skills-workflow.md#6-工单流转阻塞依赖与交接规范)，读取 GitHub 的唯一当前执行记录；阶段索引和总规格不作为新的实现入口。现存交付的覆盖、未核验项与剩余工作见 [协作落地记录](stages/workflow-coordination-20261012.md)，按其快照日期和 SHA 使用，领取时刷新。
+
+受控功能沿 [主线整合交付](https://github.com/MrEcho114/PrivacyTrace/pull/47) 核对已有覆盖；两条来源交付保留追溯，是否已合入及剩余验收以最新 main 和当前执行记录为准。前端、插件、材料分别复用已有候选，只执行明确授权的真实缺口。待审不等于已合入，原任务状态/负责人和历史收据不由本索引替代。
+
+## 2026-10-11 当前交付索引（历史快照）
+
+- [Spec30 / #30](https://github.com/MrEcho114/PrivacyTrace/issues/30)：六个源码受控 APK、冻结真值、三方案同材料对照、实际浏览器与独立断网回放均完成本地验证，见 [验证记录](stages/spec30-verification.md) 和 [复现说明](../benchmarks/controlled/README.md)。交付 SHA/远端 CI 由 PR 绑定；不自动关闭旧工单或将六场景升级为商业应用基准。
+- 真实案例继续引用版本绑定的 GKD 历史核验；工程回归、受控评测和真实案例分别计数。六场景覆盖五类状态，C07/C08 未纳入本次保底。
 
 - PT-908（Issue [#24](https://github.com/MrEcho114/PrivacyTrace/issues/24)）动态分析与高阶代码分析后续演进技术预研备忘录已完成，见 [技术预研备忘录](stages/pt908-dynamic-and-taint-analysis-20261011.md)。
 - 阶段定位：**赛后演进 / 未来规划（Future Work，本届赛事不落地实施）**，为主线答辩提供理论与工程依据。
 - 制度化固化三大网络安全红线：不开发脱壳工具、不实施未授权动态发包、未解密与证书异常流量严格记录客观观测与 UNKNOWN 归因，禁止攻击性绕过。
 
-## 2026-10-09 当前交付索引
+## 2026-10-09 历史交付索引
 
 PR #27 与 #28 的增量已在独立分支整合，面向已合并 S0 的 `main`；两条来源 PR 保持原状态，未自动关闭或合并。最新代码/冲突取舍与验证见 [整合报告](stages/s1-integration-report-20261009.md)，下方 10/05 排期表是历史快照，不覆盖本节。
 
@@ -121,7 +130,7 @@ PR #27 与 #28 的增量已在独立分支整合，面向已合并 S0 的 `main`
 | PT-503 | Snapshot | 合成快照校验 |
 | PT-504 | Policy Hash | 快照哈希校验 |
 | PT-505 | 文本切分 | 待开发 |
-| PT-506 | LLM Structure Extraction | 待开发 |
+| PT-506 | LLM Structure Extraction | 可选插件：严格原句校验/提示词注入防护/本地缓存/无缝回退 |
 | PT-507 | DataType Normalization | 待开发 |
 | PT-508 | Purpose Extraction | 待开发 |
 | PT-509 | Recipient Extraction | 待开发 |

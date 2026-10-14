@@ -158,7 +158,9 @@ class UrllibLLMClient:
     ):
         self.max_output_tokens = max_output_tokens
         self.max_response_bytes = max_response_bytes
-        self.api_key = os.environ.get("PRIVACYTRACE_LLM_API_KEY", "") if api_key is None else api_key
+        self.api_key = (
+            os.environ.get("PRIVACYTRACE_LLM_API_KEY", "") if api_key is None else api_key
+        )
         self.api_base = resolve_api_base(api_base)
         self.model = model
         self.timeout = timeout

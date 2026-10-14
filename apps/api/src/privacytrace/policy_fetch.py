@@ -124,13 +124,17 @@ def public_target(url, timeout=15):
         raise FetchError("PUBLIC_URL_REQUIRED") from exc
     if port not in {80, 443}:
         raise FetchError("PUBLIC_URL_REQUIRED")
-    addresses = resolve_addresses(parts.hostname, port, min(5, deadline - time.monotonic()))
+    addresses = resolve_addresses(
+        parts.hostname, port, min(5, timeout, deadline - time.monotonic())
+    )
     ips = [ipaddress.ip_address(a[4][0]) for a in addresses]
     if ips and all(ip.version == 4 and ip in FAKE_IP_RANGE for ip in ips):
         try:
             ipaddress.ip_address(parts.hostname)
         except ValueError:
-            addresses = public_dns(parts.hostname, port, min(5, deadline - time.monotonic()))
+            addresses = public_dns(
+                parts.hostname, port, min(5, timeout, deadline - time.monotonic())
+            )
             ips = [ipaddress.ip_address(a[4][0]) for a in addresses]
     if not ips or any(not ip.is_global or ip.is_multicast or ip.is_reserved for ip in ips):
         raise FetchError("PUBLIC_URL_REQUIRED")

@@ -1,0 +1,320 @@
+{
+  "version": "1.1",
+  "duration_seconds": 180,
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "narration": false,
+  "source_main_sha": "6d781fde97fe69169db916ab473224a24ed5ce93",
+  "shots": [
+    {
+      "id": "opening",
+      "start": 0,
+      "end": 12,
+      "kind": "identity",
+      "title": "当代码线索遇到政策文本",
+      "copy": "APK 中能找到敏感权限与调用线索，而政策是一份文本；两者之间能否建立清晰的对照？"
+    },
+    {
+      "id": "import",
+      "start": 12,
+      "end": 20,
+      "kind": "product",
+      "image": "assets/stills/import.png",
+      "title": "载入测试安装包与两份短政策",
+      "copy": "上传构造的位置测试 APK 与人工编写的测试政策；APK 静态解析在受限 Docker 容器中进行。"
+    },
+    {
+      "id": "sources",
+      "start": 20,
+      "end": 28,
+      "kind": "product",
+      "image": "assets/stills/import.png",
+      "crop": [
+        140,
+        185,
+        1130,
+        590
+      ],
+      "focus": true,
+      "title": "按主体分别保存政策内容",
+      "copy": "系统将宿主政策与第三方声明分开展现与存储，保持各自的文本来源，不合并混淆。"
+    },
+    {
+      "id": "failure",
+      "start": 28,
+      "end": 35,
+      "kind": "product",
+      "image": "assets/stills/candidates.png",
+      "title": "安全规则拒绝私网网址",
+      "copy": "第三份输入的私网地址被安全规则拦截并保留失败记录；失败源于地址受限，不等于没有政策。"
+    },
+    {
+      "id": "candidates",
+      "start": 35,
+      "end": 44,
+      "kind": "product",
+      "image": "assets/stills/candidates.png",
+      "title": "模型读取纯文本并给出三项候选",
+      "copy": "大模型只读取政策短文，经两次请求提取出三项候选：宿主位置、宿主联系人否定声明与第三方位置。"
+    },
+    {
+      "id": "quote",
+      "start": 44,
+      "end": 53,
+      "kind": "product",
+      "image": "assets/stills/quote.png",
+      "crop": [
+        15,
+        15,
+        565,
+        440
+      ],
+      "badge": "人工宿主政策 · 实录回放",
+      "note": {
+        "title": "出处原句比对",
+        "lines": [
+          "原句：当您使用位置查询时，我们会访问精确位置，用于显示当前位置。",
+          "引用经逐字定位校验，checked为操作保存状态，不代表语义或全文已完成人工复核。"
+        ]
+      },
+      "focus": true,
+      "title": "逐字比对出处原句",
+      "copy": "系统比对模型提取的引用是否在宿主政策中逐字出现；确认引用存在，但不代表语义已经人工审核。"
+    },
+    {
+      "id": "edit",
+      "start": 53,
+      "end": 62,
+      "kind": "product",
+      "image": "assets/stills/edit.png",
+      "crop": [
+        590,
+        315,
+        565,
+        660
+      ],
+      "note": {
+        "title": "保存适用条件",
+        "lines": [
+          "提取条件文本：使用位置查询时",
+          "保存修整后的条件短语，保留原句出处供随时核对。"
+        ]
+      },
+      "focus": true,
+      "title": "修整条件并保存生效记录",
+      "copy": "将原句中的触发条件精简为“使用位置查询时”并存入系统，作为后续比对的条件文本。"
+    },
+    {
+      "id": "third",
+      "start": 62,
+      "end": 70,
+      "kind": "product",
+      "image": "assets/stills/third-party.png",
+      "crop": [
+        15,
+        15,
+        565,
+        440
+      ],
+      "badge": "人工第三方政策 · 实录回放",
+      "note": {
+        "title": "第三方声明条目",
+        "lines": [
+          "原句：第三方位置服务可能处理位置信息，具体范围和条件未说明。",
+          "第三方声明与宿主分开记录，不依据文本推断法律责任由谁承担。"
+        ]
+      },
+      "focus": true,
+      "title": "第三方声明单独建档保存",
+      "copy": "第三方政策作为独立条目保存，记录其模糊范围，不与宿主政策混合，也不推断责任归属。"
+    },
+    {
+      "id": "progress",
+      "start": 70,
+      "end": 78,
+      "kind": "product",
+      "image": "assets/stills/progress.png",
+      "title": "静态分析与对照阶段回放",
+      "copy": "后台真实静态扫描约 3.7 秒，画面以 15 秒编辑节奏回放 APK 解析与规则匹配的关键过程。"
+    },
+    {
+      "id": "complete",
+      "start": 78,
+      "end": 85,
+      "kind": "product",
+      "image": "assets/stills/complete.png",
+      "title": "分析完成并生成固定报告",
+      "copy": "本次对照结果已保存为本地报告文件，支持随时重新载入；重新调用模型不保证得到完全相同的结果。"
+    },
+    {
+      "id": "report",
+      "start": 85,
+      "end": 96,
+      "kind": "product",
+      "image": "assets/stills/report.png",
+      "title": "主任务位置线索对照总览",
+      "copy": "报告集中呈现两条精确位置静态线索的对照情况，并列展示代码调用点与关联的政策候选。"
+    },
+    {
+      "id": "caution",
+      "start": 96,
+      "end": 106,
+      "kind": "product",
+      "image": "assets/stills/evidence.png",
+      "crop": [
+        15,
+        0,
+        1135,
+        660
+      ],
+      "focus": true,
+      "title": "主任务两条结果均证据不足",
+      "copy": "两条位置线索均标记为证据不足；政策状态为未复核，附件处于未检查状态，未知项如实保留。"
+    },
+    {
+      "id": "granularity",
+      "start": 106,
+      "end": 118,
+      "kind": "summary",
+      "mode": "granularity",
+      "title": "历史受控案例：精确与类别匹配",
+      "copy": "回看 2026-10-11 历史案例：声明访问精确位置判定为精确匹配；声明访问位置信息判定为类别对应。"
+    },
+    {
+      "id": "uncertainty",
+      "start": 118,
+      "end": 130,
+      "kind": "summary",
+      "mode": "uncertainty",
+      "title": "历史受控案例：歧义与证据不足",
+      "copy": "历史案例中，代码有调用但声明“不访问”判定为表述歧义；后续正文未提供则判定为证据不足。"
+    },
+    {
+      "id": "code",
+      "start": 130,
+      "end": 140,
+      "kind": "product",
+      "image": "assets/stills/evidence.png",
+      "crop": [
+        15,
+        135,
+        560,
+        500
+      ],
+      "note": {
+        "title": "代码定位详情",
+        "lines": [
+          "位置：classes.dex · run()V · 偏移 6 字节",
+          "调用方法：getLastKnownLocation；静态线索不代表运行时必然执行。"
+        ]
+      },
+      "focus": true,
+      "title": "查看字节码中的具体调用点",
+      "copy": "展开报告中的代码详情，查看 DEX 文件内的方法调用与字节偏移，了解静态线索的来源。"
+    },
+    {
+      "id": "policy",
+      "start": 140,
+      "end": 150,
+      "kind": "product",
+      "image": "assets/stills/source.png",
+      "focus": true,
+      "title": "回查政策快照与采集哈希",
+      "copy": "报告记录了政策快照文本、采集时间与文件哈希，可用于溯源对照时所依赖的文本输入。"
+    },
+    {
+      "id": "trace",
+      "start": 150,
+      "end": 160,
+      "kind": "product",
+      "image": "assets/stills/evidence.png",
+      "crop": [
+        15,
+        645,
+        1135,
+        565
+      ],
+      "focus": true,
+      "title": "双向并列查看分析依据",
+      "copy": "同一份报告中，一侧可查看代码调用的具体位置，另一侧可查看对应的政策原句，便于人工比对。"
+    },
+    {
+      "id": "metrics",
+      "start": 160,
+      "end": 167,
+      "kind": "metrics",
+      "title": "历史受控场景比对结果展示",
+      "copy": "2026-10-11 六个冻结场景下，展示不同方案的名义状态一致数；画面同步保留弃判与失败统计。"
+    },
+    {
+      "id": "limits",
+      "start": 167,
+      "end": 174,
+      "kind": "limits",
+      "title": "GKD 历史静态核验边界说明",
+      "copy": "GKD 1.12.1 历史记录中，三条结果均因证据不足维持原样；记录未复核与附件未检查的客观状态。"
+    },
+    {
+      "id": "closing",
+      "start": 174,
+      "end": 180,
+      "kind": "identity",
+      "title": "呈现静态线索，保留客观未知",
+      "copy": "PrivacyTrace 呈现代码线索与政策文本的对照关系，不代替实际行为检测，让未知保持未知。"
+    }
+  ],
+  "copy": {
+    "film_title": "PrivacyTrace：代码潜在线索与政策声明对照",
+    "identity": {
+      "opening_question": "静态代码里的敏感线索，如何在政策文本中找到对应？",
+      "opening_support": "代码展示可能调用的线索，政策给出声明文字，两者并列对照。",
+      "code_label": "静态代码线索",
+      "policy_label": "政策条款声明",
+      "boundary": "按类型、主体、条件与范围对照线索与声明，不判定实际采集、执行、违法或安全。",
+      "closing_main": "对照静态线索与声明文本，让未证实的信息保持未知。",
+      "closing_support": "静态分析呈现代码可能，文本提取对应声明内容，未知状态明确保留留档备查。"
+    },
+    "badges": {
+      "product": "构造输入 · 人工政策 · 实录回放",
+      "host": "人工宿主政策 · 实录回放",
+      "third": "人工第三方政策 · 实录回放",
+      "opening": "核心问题",
+      "closing": "方法边界"
+    },
+    "summary": {
+      "title": "2026-10-11 历史受控案例对照表现",
+      "exact_label": "精确匹配",
+      "category_label": "类别对应",
+      "ambiguous_label": "表述歧义",
+      "insufficient_label": "证据不足",
+      "badge": "2026-10-11 历史受控案例"
+    },
+    "metrics": {
+      "title": "2026-10-11 六个自建受控场景测试记录",
+      "subtitle": "冻结人工输入下的名义状态一致数（非通用准确率）",
+      "columns": [
+        "比对方案",
+        "名义状态一致数",
+        "弃判数",
+        "失败数"
+      ],
+      "badge": "受控基准（2/6 · 3/6 · 6/6 · 弃判 0/1/2 · 失败 0/0/0）"
+    },
+    "limits": {
+      "title": "GKD 1.12.1 历史静态核验记录",
+      "context": "历史快照静态核验记录，不代表当前政策或运行时行为",
+      "scan_prefix": "核验基准日期",
+      "snapshot_prefix": "政策快照日期",
+      "rows_labels": [
+        "静态线索对照结论",
+        "条款自动提取状态",
+        "人工全文复核状态",
+        "附加文档核验状态"
+      ],
+      "right_first": "静态扫描展示潜在调用，不证明运行时真实发生调用",
+      "right_second": "附件未检查为客观记录，不代表附件内容存在缺失",
+      "badge": "历史核验边界"
+    }
+  }
+}

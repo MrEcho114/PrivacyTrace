@@ -1,0 +1,24 @@
+{
+  "writer": "Gemini",
+  "requested_model": "gemini-3.8-flash-medium",
+  "completed": true,
+  "primary_revision": 4,
+  "factual_amendment_revision": 5,
+  "adopted_at": "2026-10-14T12:47:13.584Z",
+  "primary_copy_sha256": "39373d7d87df6da9b38515dbd9058021e6c0df244e4d515ae11fa4740be74f0c",
+  "amendment_sha256": "2a815dab8fb6fad88c082ef5dd2e658f41e7f3c79ab6b2a2fc2ee20870a0e7b2",
+  "adopted_copy_sha256": "06a0a3cc66aad3404f40b9ea7eb4253bc6f841e3b3ac6805c8bf9066ec25d5d0",
+  "main_agent_role": "Data mapping and layout only; all narrative wording from Gemini, factual errors returned to Gemini",
+  "preserved_evidence": [
+    "original policy quotations",
+    "API and byte offset",
+    "dates and source versions",
+    "result enums",
+    "benchmark counts, abstentions and failures"
+  ],
+  "limits": [
+    "No human aesthetic or listening sign-off",
+    "Gemini writing is separate from DeepSeek policy extraction",
+    "Raw tool logs and personal account metadata excluded"
+  ]
+}

@@ -1,0 +1,10 @@
+# Preserve the visual inputs used by the byte-bound source fingerprint.
+index.html -text
+film.mjs -text
+storyboard.json -text
+copy-provenance.json -text
+audio-provenance.json -text whitespace=cr-at-eol
+capture-provenance.json -text whitespace=cr-at-eol
+*.m4a binary
+delivery/*.mp4 binary
+delivery/*.zip binary

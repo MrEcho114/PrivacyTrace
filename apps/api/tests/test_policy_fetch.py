@@ -122,6 +122,8 @@ def test_capture_rejects_unsupported_or_unbounded_material(http_fixture, path, c
 
 def test_system_dns_and_public_dns_have_process_timeouts(monkeypatch):
     limits = []
+    # A fixed clock exposes deadline addition rounding above the requested budget.
+    monkeypatch.setattr(policy_fetch.time, "monotonic", lambda: 4096.0)
 
     def timeout(args, **kwargs):
         limits.append(kwargs["timeout"])

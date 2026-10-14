@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "status": "PRODUCED_LOCAL_VERIFICATION_GEMINI_COPY",
+  "issue": 45,
+  "duration_seconds": 180,
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "narration": false,
+  "product_footage_gate": "Satisfied by Issue 44 and merged PR 57; all product shots remain explicitly identified recorded replay of authored inputs",
+  "source_main_sha": "6d781fde97fe69169db916ab473224a24ed5ce93",
+  "segments": [
+    {
+      "id": "question",
+      "start": 0,
+      "end": 12,
+      "title": "当代码线索遇到政策文本",
+      "material": "original identity animation",
+      "footage_status": "PRODUCED_ORIGINAL_ANIMATION",
+      "key_reading_times": [
+        6,
+        10
+      ]
+    },
+    {
+      "id": "inputs",
+      "start": 12,
+      "end": 35,
+      "title": "载入测试安装包与两份短政策",
+      "material": "same task APK and two independently captured policy sources",
+      "footage_status": "CAPTURED_ACTUAL_FLOW_REPLAY",
+      "key_reading_times": [
+        18,
+        28,
+        33
+      ]
+    },
+    {
+      "id": "candidates",
+      "start": 35,
+      "end": 70,
+      "title": "模型读取纯文本并给出三项候选",
+      "material": "same task actual candidate request, passage validation and user correction",
+      "footage_status": "CAPTURED_ACTUAL_FLOW_REPLAY",
+      "key_reading_times": [
+        42,
+        52,
+        64
+      ]
+    },
+    {
+      "id": "analysis",
+      "start": 70,
+      "end": 85,
+      "title": "静态分析与对照阶段回放",
+      "material": "same task actual job events recorded replay; editorial shot duration is not elapsed job time",
+      "footage_status": "CAPTURED_ACTUAL_FLOW_REPLAY",
+      "key_reading_times": [
+        77,
+        82
+      ]
+    },
+    {
+      "id": "results",
+      "start": 85,
+      "end": 130,
+      "title": "主任务位置线索对照总览",
+      "material": "same task report, with separately identified controlled examples where needed",
+      "footage_status": "CAPTURED_ACTUAL_FLOW_REPLAY",
+      "key_reading_times": [
+        94,
+        106,
+        118,
+        126
+      ]
+    },
+    {
+      "id": "evidence",
+      "start": 130,
+      "end": 160,
+      "title": "查看字节码中的具体调用点",
+      "material": "same report code reference, passage, source and snapshot version",
+      "footage_status": "CAPTURED_ACTUAL_FLOW_REPLAY",
+      "key_reading_times": [
+        139,
+        150,
+        157
+      ]
+    },
+    {
+      "id": "limits",
+      "start": 160,
+      "end": 174,
+      "title": "历史受控场景比对结果展示",
+      "material": "dated Spec30 comparison and dated GKD 1.12.1 evidence limits",
+      "footage_status": "PRODUCED_DATED_HISTORICAL_SUMMARY",
+      "key_reading_times": [
+        165,
+        171
+      ]
+    },
+    {
+      "id": "closing",
+      "start": 174,
+      "end": 180,
+      "title": "呈现静态线索，保留客观未知",
+      "material": "original identity animation",
+      "footage_status": "PRODUCED_ORIGINAL_ANIMATION",
+      "key_reading_times": [
+        177,
+        179
+      ]
+    }
+  ],
+  "copy_source": "../../showcase/privacytrace/copy-provenance.json"
+}

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PrivacyTrace：代码潜在线索与政策声明对照</title>
+  <style>
+    @font-face{font-family:FilmSans;src:url('./assets/fonts/NotoSansSC-Variable.woff2')}@font-face{font-family:FilmSerif;src:url('./assets/fonts/NotoSerifSC-Variable.woff2')}
+    *{box-sizing:border-box}body{margin:0;background:#101921;color:#f7f3e9;font-family:FilmSans,sans-serif;min-height:100vh;display:grid;place-items:center}main{width:100%;max-width:1920px}canvas{display:block;width:100%;aspect-ratio:16/9;max-height:calc(100vh - 100px);object-fit:contain}nav{display:flex;gap:12px;align-items:center;padding:16px 24px;background:#17232c}button{font:inherit;background:#263741;color:#f7f3e9;border:1px solid #738b95;border-radius:6px;padding:9px 16px;cursor:pointer}button:disabled{opacity:.55;cursor:wait}button:focus-visible,input:focus-visible{outline:3px solid #b7d9cb;outline-offset:3px}input{flex:1;min-width:60px;accent-color:#7bae9c}output{font-variant-numeric:tabular-nums;white-space:nowrap}#error{padding:12px;color:#ffc5b9}.export nav,.export #error{display:none}.export main{width:1920px}.export canvas{width:1920px;height:1080px;max-height:none;object-fit:fill}@media(max-width:640px){nav{flex-wrap:wrap;padding:12px;gap:8px}input{order:2;flex-basis:100%}button{padding:8px 10px;font-size:14px}output{margin-left:auto;font-size:14px}}
+  </style>
+</head>
+<body>
+  <main aria-label="PrivacyTrace 180 秒展示影片">
+    <canvas id="film" width="1920" height="1080" role="img" aria-label="影片正在准备"></canvas>
+    <nav aria-label="影片播放控制">
+      <button id="play" disabled>播放</button><button id="restart" disabled>重播</button>
+      <input id="timeline" type="range" min="0" max="180" step="0.0333333333" value="0" aria-label="影片时间轴">
+      <output id="time" for="timeline">0:00 / 3:00</output><button id="fullscreen">全屏</button>
+    </nav>
+    <p id="error" role="alert">正在加载本地字体、素材与配乐…</p>
+    <audio id="music" preload="auto" src="./assets/soundtrack.m4a"></audio>
+  </main>
+  <script src="./data.js" defer></script>
+  <script src="./film.mjs" defer></script>
+</body>
+</html>

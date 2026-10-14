@@ -169,6 +169,82 @@ def test_failed_source_retained_and_manual_fallback(tmp_path):
     )
 
 
+def test_new_endpoint_cannot_reuse_retained_model_credential(tmp_path):
+    client = TestClient(create_app(tmp_path))
+    original = {"enabled": True, "api_base": "https://model.example/v1",
+                "model": "test", "api_key": "PRIVATE_CONFIGURED_KEY"}
+    assert client.post("/api/v1/web/settings", headers=HEADERS, json=original).status_code == 200
+    changed = {**original, "api_base": "https://another.example/v1"}
+    del changed["api_key"]
+    assert client.post("/api/v1/web/settings", headers=HEADERS, json=changed).status_code == 409
+    changed["enabled"] = False
+    response = client.post("/api/v1/web/settings", headers=HEADERS, json=changed)
+    assert response.status_code == 200 and response.json()["key_configured"] is False
+    assert "PRIVATE_CONFIGURED_KEY" not in response.text
+
+
+def test_reextraction_retains_checked_candidates_within_quota(tmp_path, monkeypatch):
+    from privacytrace import web_intake
+    from privacytrace.policy_llm_extractor import MockLLMClient
+
+    suggestions = [{"excerpt": "我们不会读取联系人。", "data_type": "CONTACTS"},
+                   {"excerpt": "我们不会读取联系人。", "data_type": "LOCATION"}]
+    monkeypatch.setattr(web_intake, "UrllibLLMClient", lambda **kw: MockLLMClient(
+        lambda *a: json.dumps(suggestions, ensure_ascii=False)))
+    app = create_app(tmp_path)
+    client = TestClient(app)
+    client.post("/api/v1/web/settings", headers=HEADERS, json={
+        "enabled": True, "api_base": "http://127.0.0.1:9001/v1", "model": "test"})
+    draft = new_draft(client)
+    endpoint = f"/api/v1/web/drafts/{draft['id']}"
+    payload = candidates(draft)
+    payload["candidates"] = [{**payload["candidates"][0], "id": f"checked-{i}"}
+                             for i in range(799)]
+    draft = client.post(endpoint + "/candidates", headers=HEADERS, json=payload).json()
+    response = client.post(endpoint + "/sources/a/extract", headers=HEADERS,
+                           json={"revision": draft["revision"]})
+    assert response.status_code == 200
+    draft = response.json()
+    assert len(draft["candidates"]) == 800
+    assert sum(c["checked"] for c in draft["candidates"]) == 799
+    assert draft["sources"][0]["model_audit"]["status"] == "PARTIAL"
+    assert draft["sources"][0]["model_audit"]["limited_candidates"] == 1
+    saved = client.post(endpoint + "/candidates", headers=HEADERS,
+                        json={"revision": draft["revision"], "candidates": draft["candidates"]})
+    assert saved.status_code == 200
+
+
+def test_model_error_cannot_echo_secret_into_draft_or_audit(tmp_path, monkeypatch):
+    from privacytrace import web_intake
+    from privacytrace.policy_llm_extractor import MockLLMClient
+
+    marker = "PRIVATE_SERVER_ECHO_CREDENTIAL"
+
+    def failure(*args):
+        raise ValueError(marker)
+
+    monkeypatch.setattr(web_intake, "UrllibLLMClient",
+                        lambda **kw: MockLLMClient(failure))
+    client = TestClient(create_app(tmp_path))
+    client.post("/api/v1/web/settings", headers=HEADERS, json={
+        "enabled": True, "api_base": "https://model.example/v1", "model": "test",
+        "api_key": marker})
+    draft = new_draft(client)
+    endpoint = f"/api/v1/web/drafts/{draft['id']}"
+    response = client.post(endpoint + "/sources/a/extract", headers=HEADERS,
+                           json={"revision": draft["revision"]})
+    assert response.status_code == 200
+    assert response.json()["sources"][0]["model_audit"]["status"] == "FAILED"
+    assert marker not in response.text and marker not in client.get(endpoint).text
+
+
+def test_unsafe_environment_endpoint_cannot_echo_credentials(tmp_path, monkeypatch):
+    monkeypatch.setenv("PRIVACYTRACE_LLM_API_BASE", "https://user:PRIVATE@model.example/v1?key=SECRET")
+    response = TestClient(create_app(tmp_path)).get("/api/v1/web/settings")
+    assert response.status_code == 200 and response.json()["api_base"] == ""
+    assert "PRIVATE" not in response.text and "SECRET" not in response.text
+
+
 def test_stream_upload_duplicate_start_cancel_retry_and_refresh(tmp_path, monkeypatch):
     entered = threading.Event()
     release = threading.Event()

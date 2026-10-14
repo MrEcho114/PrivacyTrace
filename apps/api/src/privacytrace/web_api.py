@@ -20,11 +20,8 @@ def web_operation(action):
     except KeyError as exc:
         raise HTTPException(404, detail="DRAFT_NOT_FOUND") from exc
     except (ValueError, OSError) as exc:
-        code = (
-            "MODEL_NOT_CONFIGURED"
-            if str(exc) == "MODEL_NOT_CONFIGURED"
-            else "INPUT_OR_VERSION_REJECTED"
-        )
+        allowed = {"MODEL_NOT_CONFIGURED", "MODEL_CONFIGURATION_INCOMPLETE"}
+        code = str(exc) if str(exc) in allowed else "INPUT_OR_VERSION_REJECTED"
         raise HTTPException(409, detail=code) from exc
 
 

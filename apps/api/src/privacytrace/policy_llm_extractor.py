@@ -207,15 +207,12 @@ class UrllibLLMClient:
             if len(raw) > self.max_response_bytes:
                 raise LLMResponseTooLarge("RESPONSE_TOO_LARGE")
             data = json.loads(raw.decode("utf-8"))
+            if self.api_key and self.api_key in json.dumps(data, ensure_ascii=False):
+                raise ValueError("LLM response contains credential")
 
         choices = data.get("choices")
         if not choices or not isinstance(choices, list):
-            err_msg = (
-                data.get("error", {}).get("message")
-                if isinstance(data.get("error"), dict)
-                else str(data)
-            )
-            raise ValueError(f"LLM API response missing choices: {err_msg}")
+            raise ValueError("LLM API response missing choices")
 
         content = choices[0].get("message", {}).get("content") or ""
         tokens = normalize_token_usage(data.get("usage", {}))

@@ -20,6 +20,7 @@ export type LiveDraft = {
 }
 const messages: Record<string, string> = {
   MODEL_NOT_CONFIGURED: '模型尚未配置。请打开项目设置，或手动添加候选。',
+  MODEL_CONFIGURATION_INCOMPLETE: '请填写模型服务地址、模型名和凭证。更换服务地址时需重新填写凭证。',
   INPUT_OR_VERSION_REJECTED: '输入未通过检查、版本已变化或本机存储已满。请重新读取材料，检查候选原句后重试。',
   UPLOAD_REJECTED: '上传未完成。请选择非空、150 MiB 以内的 APK；更换文件请新建材料。',
   UPLOAD_TOO_LARGE: 'APK 超过 150 MiB，请选择更小的文件。',

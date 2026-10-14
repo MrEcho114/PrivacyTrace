@@ -13,7 +13,7 @@ from . import pipeline
 from .isolated_scan import MAX_INPUT
 from .job_store import JobStore
 from .models import AnalysisJob, EvaluationInput, PolicyClaim, PolicyDocument
-from .policy_fetch import FetchError, fetch_policy
+from .policy_fetch import FetchError, display_url, fetch_policy
 from .policy_intake import build_llm_execution, read_safe
 from .policy_llm_extractor import (
     LLMExtractorConfig,
@@ -344,7 +344,7 @@ class WebIntake:
                 }
             )
             documents.append(document)
-            source_locator = (
+            source_locator = display_url(
                 source.get("final_url") or source["url"] or "Manually supplied local policy text"
             )
             evidence.append(
@@ -555,6 +555,11 @@ class WebIntake:
             }
             for s in draft["sources"]
         ]
+        for receipt in source_receipts:
+            for field in ("url", "final_url"):
+                if receipt[field]:
+                    receipt[field + "_sha256"] = hashlib.sha256(receipt[field].encode()).hexdigest()
+                    receipt[field] = display_url(receipt[field])
         try:
             pipeline.run(
                 self.directory(draft["id"]) / "input.apk",

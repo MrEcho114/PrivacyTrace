@@ -2,6 +2,17 @@ import type { AnalysisJob } from './types'
 import type { WebCandidate, WebSource, DraftInput, CandidateInput, StartInput, ModelSettings } from './contracts.generated'
 
 export type ModelStatus = Omit<ModelSettings, 'api_key'> & { key_configured: boolean; max_apk_bytes: number }
+export function displaySourceUrl(value: string | null | undefined): string {
+  if (!value) return ''
+  try {
+    const url = new URL(value)
+    url.username = ''; url.password = ''; url.hash = ''
+    const keys: string[] = []
+    url.searchParams.forEach((_, key) => keys.push(key))
+    for (const key of keys) url.searchParams.set(key, 'REDACTED')
+    return url.toString()
+  } catch { return '网址格式无效' }
+}
 export type LiveDraft = {
   id: string; revision: number; name: string; uploaded: boolean; apk_sha256: string | null
   sources: WebSource[]; candidates: WebCandidate[]

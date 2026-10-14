@@ -4,6 +4,7 @@ import json
 import socket
 import subprocess
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
@@ -47,6 +48,8 @@ def http_fixture(monkeypatch):
             self.send_response(200)
             self.send_header("Content-Type", content_type)
             self.end_headers()
+            if self.path == "/slow":
+                time.sleep(0.5)
             try:
                 self.wfile.write(body)
             except (BrokenPipeError, ConnectionResetError):
@@ -137,3 +140,45 @@ def test_optional_non_thinking_payload_preserves_legacy_client(http_fixture, mon
     monkeypatch.setenv("PRIVACYTRACE_LLM_API_KEY", "test-environment-only")
     UrllibLLMClient(api_base=base, api_key="").call("system", "policy")
     assert bodies[-1]["has_authorization"] is False
+
+
+def test_network_body_is_bounded_by_total_budget(http_fixture):
+    started = time.monotonic()
+    with pytest.raises(policy_fetch.FetchError, match="FETCH_TIMEOUT"):
+        policy_fetch.fetch_policy("http://public.privacytrace.test/slow", budget_seconds=0.1)
+    assert time.monotonic() - started < 1
+
+
+def test_html_parsing_cannot_return_success_after_budget(http_fixture, monkeypatch):
+    original = policy_fetch.HTMLText.feed
+    parsed = []
+
+    def slow_parse(parser, data):
+        parsed.append(True)
+        time.sleep(0.25)
+        original(parser, data)
+
+    monkeypatch.setattr(policy_fetch.HTMLText, "feed", slow_parse)
+    with pytest.raises(policy_fetch.FetchError, match="FETCH_TIMEOUT"):
+        policy_fetch.fetch_policy("http://public.privacytrace.test/ok", budget_seconds=0.2)
+    assert parsed
+
+
+def test_query_values_are_redacted_without_losing_origin_path_or_keys():
+    result = policy_fetch.display_url("https://public.example/policy?token=PRIVATE&version=7")
+    assert result == "https://public.example/policy?token=REDACTED&version=REDACTED"
+
+
+def test_manual_source_url_cannot_publish_userinfo_or_invalid_authority():
+    assert policy_fetch.display_url("https://user:PRIVATE@public.example/policy?key=SECRET") == (
+        "https://public.example/policy?key=REDACTED"
+    )
+    assert policy_fetch.display_url("https://user:PRIVATE@[invalid/policy") == "Unparseable source URL"
+
+
+def test_resolver_json_roundtrip_preserves_socket_address_tuple(monkeypatch):
+    addresses = [[socket.AF_INET, socket.SOCK_STREAM, 6, "", ["8.8.8.8", 443]]]
+    monkeypatch.setattr(
+        subprocess, "run", lambda *a, **kw: subprocess.CompletedProcess(a, 0, json.dumps(addresses).encode())
+    )
+    assert policy_fetch.resolve_addresses("public.example", 443)[0][4] == ("8.8.8.8", 443)

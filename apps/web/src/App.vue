@@ -4,6 +4,7 @@ import { cancelJob, loadJob, loadJobReport, loadJobs, loadReport, loadTaxonomy, 
 import { clampSdkPage, getSdkEvidence, sdkPageCount, sdkPageSlice } from './sdkEvidence'
 import type { AnalysisJob, DemoReport, Evidence, MatchStatus, PrivacyIssue, Report, ReportSource, Taxonomy } from './types'
 import { parseSource, serializeSource } from './types'
+const props = defineProps<{ initialJobId?: string }>()
 
 const report = ref<DemoReport | Report | null>(null)
 const taxonomy = ref<Taxonomy | null>(null)
@@ -45,6 +46,12 @@ const label = (id: string) => taxonomy.value?.data_types.find(item => item.id ==
 const selectedEvidence = computed(() => report.value?.evidence.filter(item => selected.value?.evidence_ids.includes(item.id)) ?? [])
 const dataTypeCount = computed(() => new Set(report.value?.result.issues.map(i => i.data_type)).size)
 const realReport = computed(() => report.value && !report.value.demo ? report.value : null)
+const webSources = computed(() => {
+  try {
+    const value = JSON.parse(realReport.value?.tools.web_policy_sources ?? '[]')
+    return Array.isArray(value) ? value.filter(item => item && typeof item.title === 'string' && typeof item.status === 'string') as { title: string; status: string; error_code?: string; captured_at?: string; sha256?: string }[] : []
+  } catch { return [] }
+})
 // SDK attribution is reference material with its own access path: no issue cites
 // it, so without this panel those evidence records would be counted but unopenable.
 const sdkEvidence = computed(() => getSdkEvidence(realReport.value?.evidence ?? []))
@@ -272,7 +279,8 @@ async function reload(initial = false) {
     if (current !== requestId) return
     jobs.value = nextJobs.jobs
     taxonomy.value = nextTaxonomy
-    if (initial && jobs.value.length) source.value = { kind: 'job', id: jobs.value[0]!.id }
+    if (initial && props.initialJobId) source.value = { kind: 'job', id: props.initialJobId }
+    else if (initial && jobs.value.length) source.value = { kind: 'job', id: jobs.value[0]!.id }
     if (source.value.kind === 'demo') {
       const nextReport = await loadReport(signal)
       if (current === requestId) report.value = nextReport
@@ -377,7 +385,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         {{ sourceInfo?.desc ?? (source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。报告不保证覆盖反射、动态加载、原生代码或运行时行为。') }}
         六种状态只对照 DATA_TYPE_DISCLOSURE；“具体类型已声明”不代表目的、接收方、传输或时间范围全部一致，更不是合法性判断。
       </details>
-      <section v-if="realReport" class="report-provenance" aria-label="报告生成来源">
+      <section v-if="webSources.length" class="coverage-card"><h2>输入来源状态</h2><p>失败来源保留；正文完整度未知、全文未复核、附件未检查。</p><ul><li v-for="item in webSources" :key="item.title"><strong>{{ item.title }}</strong> · {{ item.status === 'failed' ? '来源获取失败' : item.status === 'empty' ? '无正文' : item.status === 'manual' ? '手动补入' : '已获取正文' }}<span v-if="item.error_code"> · {{ item.error_code }}</span></li></ul></section><section v-if="realReport" class="report-provenance" aria-label="报告生成来源">
         <strong>{{ offlineReplay ? 'OFFLINE REPLAY · 离线回放' : '存档报告查看 · PERSISTED REPLAY' }}</strong>
         <p v-if="realReport.tools.analysis_generated_at">分析生成时点：{{ realReport.tools.analysis_generated_at }}。查看存档不代表重新扫描。</p>
         <p v-else>记录创建时点：{{ realReport.job.created_at }}。未留存分析生成时点；来源以报告来源标识为准。</p>
@@ -488,7 +496,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         <details class="provenance" :open="provenanceOpen" @toggle="provenanceToggle($event)"><summary>报告版本、权限与全部政策快照</summary>
           <p>任务 {{ report.job.id }} · 输入 {{ report.job.input_mode }} · 规则版本 {{ report.job.ruleset_version }} · 原生成时间：{{ formatTimestamp(report.job.created_at) || report.job.created_at }}</p>
           <template v-if="realReport">
-            <p v-for="(version, tool) in realReport.tools" :key="tool">{{ tool }}：{{ version }}</p>
+            <p v-for="(version, tool) in Object.fromEntries(Object.entries(realReport.tools).filter(([key]) => key !== 'web_policy_sources'))" :key="tool">{{ tool }}：{{ version }}</p>
             <p class="hash">DEX {{ (realReport.sample.dex_entries ?? []).join('、') || '无' }}</p>
             <details><summary>Android 权限（权限不等于已访问）</summary><ul><li v-for="permission in (realReport.sample.permissions ?? [])" :key="permission">{{ permission }}</li></ul></details>
           </template>

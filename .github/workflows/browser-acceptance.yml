@@ -68,6 +68,14 @@ jobs:
       - name: Verify preview lifecycle
         run: npm run acceptance:preview
 
+      - name: Build restricted worker for web intake
+        run: |
+          uv sync --project apps/api --locked --extra worker
+          docker build --file apps/api/worker.Dockerfile --tag privacytrace-worker:s1 .
+
+      - name: Verify new HTTP intake and actual isolated scan
+        run: npm run acceptance:live
+
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -80,6 +88,8 @@ jobs:
             tmp/issue44-ui/screenshots/
             tmp/frontend-preview/verification.json
             tmp/frontend-preview/preview.log
+            tmp/issue44-live-proof/fixtures/verification.json
+            tmp/issue44-live-proof/fixtures/*.png
           if-no-files-found: warn
 
   # 对抗压力套件：比核心验收更重，按日定时跑并支持手动触发，不进每个 PR 的门禁，

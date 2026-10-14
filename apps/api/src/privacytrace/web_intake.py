@@ -191,9 +191,15 @@ class WebIntake:
         )
         if private:
             return config
+        public_base = config["api_base"]
+        if public_base:
+            try:
+                public_base = validate_and_normalize_api_base(public_base)
+            except ValueError:
+                public_base = ""
         return {
             "enabled": config["enabled"],
-            "api_base": config["api_base"],
+            "api_base": public_base,
             "model": config["model"],
             "key_configured": bool(config.get("api_key")),
             "max_apk_bytes": MAX_INPUT,
@@ -211,12 +217,17 @@ class WebIntake:
                 config["api_key"] = previous.get("api_key", "")
             if config["api_base"]:
                 config["api_base"] = validate_and_normalize_api_base(config["api_base"])
+            previous_base = previous.get("api_base", "").strip().rstrip("/")
+            if payload.api_key is None and config["api_base"] != previous_base:
+                # A credential is bound to its configured endpoint. Do not silently
+                # forward a retained credential after the destination changes.
+                config["api_key"] = ""
             if config["enabled"] and (
                 not config["api_base"]
                 or not config["model"]
                 or (not config["api_key"] and not config["api_base"].startswith("http://"))
             ):
-                raise ValueError("Model connection incomplete")
+                raise ValueError("MODEL_CONFIGURATION_INCOMPLETE")
             write_private(self._safe(self.root / "model.json"), config)
             return self._settings()
 
@@ -296,7 +307,14 @@ class WebIntake:
             current["candidates"] = [
                 c for c in current["candidates"] if c["source_id"] != source_id or c["checked"]
             ]
-            for candidate in result.candidates:
+            available = max(0, 800 - len(current["candidates"]))
+            accepted = result.candidates[:available]
+            if len(accepted) < len(result.candidates):
+                audit["status"] = "PARTIAL"
+                audit["limited_candidates"] = (
+                    int(audit.get("limited_candidates", 0)) + len(result.candidates) - len(accepted)
+                )
+            for candidate in accepted:
                 current["candidates"].append(
                     WebCandidate.model_validate(
                         {

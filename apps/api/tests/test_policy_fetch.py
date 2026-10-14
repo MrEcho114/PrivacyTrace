@@ -59,7 +59,12 @@ def http_fixture(monkeypatch):
             body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
             bodies.append(body)
             body["has_authorization"] = bool(self.headers.get("Authorization"))
-            raw = json.dumps({"choices": [{"message": {"content": "[]"}}], "usage": {}}).encode()
+            content = (
+                self.headers.get("Authorization", "").removeprefix("Bearer ")
+                if body["model"] == "echo-key"
+                else "[]"
+            )
+            raw = json.dumps({"choices": [{"message": {"content": content}}], "usage": {}}).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
@@ -147,6 +152,16 @@ def test_network_body_is_bounded_by_total_budget(http_fixture):
     with pytest.raises(policy_fetch.FetchError, match="FETCH_TIMEOUT"):
         policy_fetch.fetch_policy("http://public.privacytrace.test/slow", budget_seconds=0.1)
     assert time.monotonic() - started < 1
+
+
+def test_even_successful_model_response_cannot_reflect_credential(http_fixture):
+    _, _, port = http_fixture
+    key = "PRIVATE_RESPONSE_CANARY"
+    client = UrllibLLMClient(api_base=f"http://127.0.0.1:{port}/v1", api_key=key,
+                            model="echo-key")
+    with pytest.raises(ValueError) as failure:
+        client.call("system", "policy")
+    assert key not in str(failure.value)
 
 
 def test_html_parsing_cannot_return_success_after_budget(http_fixture, monkeypatch):

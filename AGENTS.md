@@ -39,6 +39,7 @@ the final diff is reviewed — or until a genuine human decision boundary is rea
 - 权限是能力，invoke 是静态潜在线索；事实、声明、推断分开，未知保留 UNKNOWN。
 - 政策 UNREVIEWED/PARTIAL/附件未检查仍为数据事实；取消团队流程不把政策标为已复核，不降低引擎缺证据条件。
 - 任务索引：`docs/backlog.md`；当前交付流程：`docs/workflow.md`；旧报告/receipts 保留原 SHA 和当时状态，不倒改历史。
+- 前端页面、样式或组件任务：读取 `docs/agents/frontend-delivery.md`，按需提前视觉审阅，并复用预览与规范检查入口。
 
 ## Agent skills
 

@@ -23,9 +23,13 @@ def run(
     product_scope=None,
     *,
     controlled=None,
+    captured_policies=None,
+    existing_job=None,
+    on_stage=None,
+    extra_tools=None,
 ):
     store = JobStore(store_dir or ROOT / "data" / "jobs")
-    job = AnalysisJob(
+    job = existing_job or AnalysisJob(
         id=job_id or uuid4().hex,
         sample_id=name,
         input_mode="CONTROLLED_APK" if controlled else "APK",
@@ -35,7 +39,8 @@ def run(
         created_at=datetime.now(timezone.utc),
         product_scope=product_scope,
     )
-    store.create_if_absent(job)
+    if existing_job is None:
+        store.create_if_absent(job)
 
     def cancelled():
         return store.get_job(job.id).state == "CANCELLED"
@@ -46,6 +51,8 @@ def run(
         job.state = state
         if store.save_job(job).state == "CANCELLED":
             raise ScanError("CANCELLED", "Job cancelled")
+        if on_stage:
+            on_stage(state)
 
     try:
         transition("INTAKE")
@@ -53,11 +60,15 @@ def run(
             raise ScanError("INVALID_ARGUMENT", "Name or timeout outside allowed range")
         validate_input(apk)
         try:
-            captured = load_policy(policy)
+            captures = captured_policies if captured_policies is not None else [load_policy(policy)]
+            if not captures:
+                raise ValueError("At least one captured policy is required")
+            if controlled and captured_policies is not None:
+                raise ValueError("Web captures cannot supply controlled facts")
             if controlled:
                 from .controlled import adapt_policy
 
-                captured = adapt_policy(captured, controlled)
+                captures = [adapt_policy(captures[0], controlled)]
         except (ValueError, OSError, KeyError, TypeError) as exc:
             raise ScanError("POLICY_INPUT_INVALID", "Policy capture failed validation") from exc
         transition("STATIC_ANALYSIS")
@@ -77,10 +88,10 @@ def run(
         bundle = EvaluationInput.model_validate(
             {
                 "job": job,
-                "evidence": scanned["evidence"] + captured["evidence"],
+                "evidence": scanned["evidence"] + [e for c in captures for e in c["evidence"]],
                 "behaviors": scanned["behaviors"],
-                "policy_documents": [captured["document"]],
-                "policy_claims": captured["claims"],
+                "policy_documents": [c["document"] for c in captures],
+                "policy_claims": [claim for c in captures for claim in c["claims"]],
             }
         )
         transition("REPORTING")
@@ -101,14 +112,18 @@ def run(
         tools = {
             "analysis_generated_at": datetime.now(timezone.utc).isoformat(),
             **scanned["tools"],
-            "policy_capture_path": str(Path(policy).absolute()),
-            "policy_initial_audit_sha256": captured["files"]["audits"]["sha256"],
-            "policy_initial_audit_path": str(
-                Path(policy).absolute().parent / captured["files"]["audits"]["path"]
-            ),
             "human_review_gate": TEAM_REVIEW_GATE,
             "scan_errors": json.dumps(scanned.get("errors", []), ensure_ascii=True),
         }
+        if captured_policies is None:
+            tools.update({
+                "policy_capture_path": str(Path(policy).absolute()),
+                "policy_initial_audit_sha256": captures[0]["files"]["audits"]["sha256"],
+                "policy_initial_audit_path": str(
+                    Path(policy).absolute().parent / captures[0]["files"]["audits"]["path"]
+                ),
+            })
+        tools.update(extra_tools or {})
         if controlled:
             tools.update(
                 {

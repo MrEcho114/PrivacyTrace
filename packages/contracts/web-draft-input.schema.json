@@ -1,0 +1,186 @@
+{
+  "$defs": {
+    "WebSource": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-zA-Z0-9_-]{1,60}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "url": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Url",
+          "type": "string"
+        },
+        "source_type": {
+          "default": "OFFICIAL_WEB_POLICY",
+          "enum": [
+            "OFFICIAL_WEB_POLICY",
+            "SDK_POLICY",
+            "STORE_POLICY",
+            "IN_APP_POLICY"
+          ],
+          "title": "Source Type",
+          "type": "string"
+        },
+        "text": {
+          "default": "",
+          "maxLength": 200000,
+          "title": "Text",
+          "type": "string"
+        },
+        "version": {
+          "default": "UNKNOWN",
+          "maxLength": 100,
+          "title": "Version",
+          "type": "string"
+        },
+        "region": {
+          "default": "",
+          "maxLength": 100,
+          "title": "Region",
+          "type": "string"
+        },
+        "product": {
+          "default": "",
+          "maxLength": 100,
+          "title": "Product",
+          "type": "string"
+        },
+        "package_name": {
+          "default": "",
+          "maxLength": 200,
+          "title": "Package Name",
+          "type": "string"
+        },
+        "version_code": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version Code"
+        },
+        "status": {
+          "default": "empty",
+          "enum": [
+            "ready",
+            "manual",
+            "empty",
+            "failed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "captured_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Captured At"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        },
+        "final_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Final Url"
+        },
+        "model_audit": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "title": "Model Audit",
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "title": "WebSource",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/WebSource"
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "title": "Sources",
+      "type": "array"
+    }
+  },
+  "required": [
+    "name",
+    "sources"
+  ],
+  "title": "DraftInput",
+  "type": "object"
+}

@@ -1,0 +1,21 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "request_id": {
+      "pattern": "^[a-f0-9]{32}$",
+      "title": "Request Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "revision",
+    "request_id"
+  ],
+  "title": "StartInput",
+  "type": "object"
+}

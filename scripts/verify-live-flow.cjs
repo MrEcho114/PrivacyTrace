@@ -60,6 +60,7 @@ async function main() {
     await page.getByRole('button', { name: '添加政策来源', exact: true }).click()
     await page.getByLabel('来源名称', { exact: true }).nth(2).fill('失败来源保留')
     await page.getByLabel('政策网址', { exact: true }).nth(2).fill('http://127.0.0.1/private')
+    await page.screenshot({ path: path.join(output, 'import-1440.png'), fullPage: true })
     await page.getByRole('button', { name: '获取政策并检查候选', exact: true }).click()
     await page.getByRole('heading', { name: '检查政策候选', exact: true }).waitFor({ timeout: 90000 })
     await page.getByRole('button', { name: '保存候选并开始分析', exact: true }).waitFor({ state: 'visible' })
@@ -120,6 +121,7 @@ async function main() {
     await page.getByRole('button', { name: '保存候选并开始分析', exact: true }).click()
     await page.getByRole('heading', { name: '分析进度', exact: true }).waitFor()
     await page.reload(); await page.getByRole('heading', { name: '分析进度', exact: true }).waitFor()
+    await page.screenshot({ path: path.join(output, 'progress-1440.png'), fullPage: true })
     if (!publicMode) {
       await page.getByRole('button', { name: '取消分析', exact: true }).click()
       await page.getByRole('button', { name: '重新创建分析', exact: true }).waitFor()

@@ -9,6 +9,7 @@ import type { Candidate, Workflow } from '../workflow'
 const props = defineProps<{ state: Workflow; busy?: boolean; typeLabels?: Record<string, string> }>()
 const emit = defineEmits<{ back: []; next: []; retrySource: [string]; retryModel: [string]; persistCandidates: [] }>()
 const editorTypes = computed(() => props.state.example ? dataTypes : props.typeLabels ?? {})
+const candidateLimit = computed(() => props.state.example ? 100 : 800)
 const chosenId = ref('')
 const chosen = computed(() => props.state.candidates.find(item => item.id === chosenId.value))
 const source = computed(() => props.state.sources.find(item => item.id === props.state.sourceId))
@@ -35,7 +36,7 @@ function select(candidate: Candidate) {
 }
 function locateQuote() { void nextTick(() => document.getElementById('candidate-quote-mark')?.focus()) }
 function add() {
-  if (!source.value || props.state.candidates.length >= 100) return
+  if (!source.value || props.state.candidates.length >= candidateLimit.value) return
   const candidate: Candidate = { id: crypto.randomUUID(), sourceId: source.value.id, quote: '', dataType: props.state.example ? 'location' : 'LOCATION', polarity: 'UNKNOWN', subject: 'UNKNOWN', condition: '', checked: false, action: 'UNKNOWN' }
   props.state.candidates.push(candidate); chosenId.value = candidate.id
   void nextTick(() => document.getElementById('candidate-quote')?.focus())
@@ -65,7 +66,7 @@ function editQuote() { if (chosen.value) chosen.value.startOffset = undefined; e
         <div v-else class="policy-reading" tabindex="0" aria-label="政策原文阅读区"><span>{{ parts.before }}</span><mark v-if="parts.quote" id="candidate-quote-mark" tabindex="-1">{{ parts.quote }}</mark><span>{{ parts.after }}</span><p v-if="!source.text">{{ copy.missingText }}</p></div>
         <div class="source-notes"><span>正文节选</span><span>{{ copy.attachmentsUnknown }}</span><span>{{ copy.sourceScopeUnknown }}</span></div>
       </section>
-      <section class="material-panel candidates-panel"><div class="panel-heading"><h2>候选声明 <span class="count">{{ candidates.length }}</span></h2><UiButton id="add-candidate" :disabled="source.status === 'failed' || state.candidates.length >= 100" @click="add">{{ copy.addCandidate }}</UiButton></div>
+      <section class="material-panel candidates-panel"><div class="panel-heading"><h2>候选声明 <span class="count">{{ candidates.length }}</span></h2><UiButton id="add-candidate" :disabled="source.status === 'failed' || state.candidates.length >= candidateLimit" @click="add">{{ copy.addCandidate }}</UiButton></div>
         <p class="candidate-summary" role="status">已检查 {{ checkedCount }} / {{ candidates.length }} 条<span>选择一条查看和修改</span></p>
         <div class="candidate-list" aria-label="候选列表"><button v-for="candidate in candidates" :key="candidate.id" class="candidate-item" :class="{ selected: chosenId === candidate.id }" :aria-pressed="chosenId === candidate.id" @click="select(candidate)"><span class="candidate-item-heading"><strong>{{ editorTypes[candidate.dataType] || candidate.dataType }}</strong><StatusTag :tone="candidate.checked && quoteExists(candidate, state.sources) ? 'success' : 'wait'">{{ candidate.checked && quoteExists(candidate, state.sources) ? '已检查' : '待检查' }}</StatusTag></span><span class="candidate-quote-preview">{{ candidate.quote || copy.quoteMissing }}</span></button><p v-if="!candidates.length" class="field-help">{{ copy.emptyCandidates }}</p></div>
         <form v-if="chosen" class="candidate-editor" @submit.prevent="save">

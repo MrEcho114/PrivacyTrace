@@ -154,14 +154,18 @@ class UrllibLLMClient:
         temperature: float = 0.0,
         max_output_tokens: int = 2048,
         max_response_bytes: int = 2 * 1024 * 1024,
+        thinking_mode: bool | None = None,
     ):
         self.max_output_tokens = max_output_tokens
         self.max_response_bytes = max_response_bytes
-        self.api_key = api_key or os.environ.get("PRIVACYTRACE_LLM_API_KEY", "")
+        self.api_key = (
+            os.environ.get("PRIVACYTRACE_LLM_API_KEY", "") if api_key is None else api_key
+        )
         self.api_base = resolve_api_base(api_base)
         self.model = model
         self.timeout = timeout
         self.temperature = temperature
+        self.thinking_mode = thinking_mode
 
     def call(self, system_prompt: str, user_prompt: str) -> tuple[str, dict[str, int]]:
         if not self.api_key and not self.api_base.startswith("http://"):
@@ -177,6 +181,8 @@ class UrllibLLMClient:
                 {"role": "user", "content": user_prompt},
             ],
         }
+        if self.thinking_mode is not None:
+            payload["thinking"] = {"type": "enabled" if self.thinking_mode else "disabled"}
         body = json.dumps(payload).encode("utf-8")
         headers = {"Content-Type": "application/json"}
         if self.api_key:
@@ -201,15 +207,12 @@ class UrllibLLMClient:
             if len(raw) > self.max_response_bytes:
                 raise LLMResponseTooLarge("RESPONSE_TOO_LARGE")
             data = json.loads(raw.decode("utf-8"))
+            if self.api_key and self.api_key in json.dumps(data, ensure_ascii=False):
+                raise ValueError("LLM response contains credential")
 
         choices = data.get("choices")
         if not choices or not isinstance(choices, list):
-            err_msg = (
-                data.get("error", {}).get("message")
-                if isinstance(data.get("error"), dict)
-                else str(data)
-            )
-            raise ValueError(f"LLM API response missing choices: {err_msg}")
+            raise ValueError("LLM API response missing choices")
 
         content = choices[0].get("message", {}).get("content") or ""
         tokens = normalize_token_usage(data.get("usage", {}))

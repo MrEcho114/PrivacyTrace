@@ -1,15 +1,20 @@
-// This module contains only synthetic interaction data. It never calls the API.
+// Shared editor state and explicit synthetic interaction data. API calls live in liveApi.ts.
 export type Step = 'import' | 'candidates' | 'progress' | 'report'
 export type SourceType = 'OFFICIAL_WEB_POLICY' | 'SDK_POLICY' | 'STORE_POLICY' | 'IN_APP_POLICY'
 export type Candidate = {
   id: string; sourceId: string; quote: string; dataType: string
   polarity: 'AFFIRMED' | 'NEGATED' | 'UNKNOWN'; subject: 'APP' | 'THIRD_PARTY' | 'UNKNOWN'
   condition: string; checked: boolean
+  action?: 'ACCESS' | 'UNKNOWN'; purpose?: string; recipient?: string
+  startOffset?: number; ambiguityFlags?: ('CATCH_ALL' | 'UNCLEAR_ACTION')[]
 }
 export type PolicySource = {
   id: string; title: string; url: string; type: SourceType; text: string
   status: 'ready' | 'failed' | 'manual' | 'empty'; version: string; region: string
   product: string; complete: boolean
+  packageName?: string; versionCode?: number | null
+  capturedAt?: string | null; sha256?: string | null; errorCode?: string | null
+  modelAudit?: Record<string, unknown>
 }
 export type Workflow = {
   example: boolean; step: Step; maxStep: number; sourceId: string

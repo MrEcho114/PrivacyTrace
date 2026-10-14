@@ -1,0 +1,160 @@
+{
+  "$defs": {
+    "WebCandidate": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "source_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "excerpt": {
+          "maxLength": 5000,
+          "minLength": 1,
+          "title": "Excerpt",
+          "type": "string"
+        },
+        "data_type": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Data Type",
+          "type": "string"
+        },
+        "polarity": {
+          "default": "UNKNOWN",
+          "enum": [
+            "AFFIRMATIVE",
+            "NEGATIVE",
+            "UNKNOWN"
+          ],
+          "title": "Polarity",
+          "type": "string"
+        },
+        "subject": {
+          "default": "UNKNOWN",
+          "enum": [
+            "HOST_APP",
+            "THIRD_PARTY",
+            "UNKNOWN"
+          ],
+          "title": "Subject",
+          "type": "string"
+        },
+        "action": {
+          "default": "UNKNOWN",
+          "enum": [
+            "ACCESS",
+            "UNKNOWN"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Condition"
+        },
+        "declared_purpose": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Declared Purpose"
+        },
+        "declared_recipient": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Declared Recipient"
+        },
+        "ambiguity_flags": {
+          "items": {
+            "enum": [
+              "CATCH_ALL",
+              "UNCLEAR_ACTION"
+            ],
+            "type": "string"
+          },
+          "title": "Ambiguity Flags",
+          "type": "array"
+        },
+        "start_offset": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Start Offset"
+        },
+        "checked": {
+          "default": false,
+          "title": "Checked",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "source_id",
+        "excerpt",
+        "data_type"
+      ],
+      "title": "WebCandidate",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "candidates": {
+      "items": {
+        "$ref": "#/$defs/WebCandidate"
+      },
+      "maxItems": 800,
+      "title": "Candidates",
+      "type": "array"
+    }
+  },
+  "required": [
+    "revision",
+    "candidates"
+  ],
+  "title": "CandidateInput",
+  "type": "object"
+}

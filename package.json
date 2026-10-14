@@ -15,6 +15,7 @@
     "fixtures:acceptance": "uv run --project apps/api python scripts/build_acceptance_fixtures.py",
     "acceptance:browser": "node scripts/verify-browser-acceptance.cjs",
     "acceptance:frontend": "node scripts/verify-frontend-flow.cjs",
+    "acceptance:live": "node scripts/verify-live-flow.cjs",
     "acceptance:preview": "node scripts/verify-frontend-preview.cjs"
   },
   "devDependencies": {

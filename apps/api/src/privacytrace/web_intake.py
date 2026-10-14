@@ -111,6 +111,7 @@ class WebIntake:
             value = source.model_dump()
             # Capture/audit fields are owned by the backend, never trusted from the browser.
             value["model_audit"] = {}
+            value["final_url"] = None
             value["captured_at"] = now() if source.text.strip() else None
             value["sha256"] = (
                 hashlib.sha256(source.text.encode()).hexdigest() if source.text else None

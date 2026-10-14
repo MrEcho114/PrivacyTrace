@@ -7,6 +7,8 @@ import json
 import re
 import socket
 import ssl
+import subprocess
+import sys
 import time
 import urllib.request
 from datetime import datetime, timezone
@@ -24,7 +26,7 @@ class FetchError(ValueError):
         super().__init__(code)
 
 
-def public_dns(host, port):
+def _public_dns_direct(host, port, timeout):
     """Resolve only benchmark-range DNS answers through a fixed authenticated resolver.
 
     Proxy fake-IP answers cannot be connected to by this public-fetch seam. Only
@@ -35,7 +37,7 @@ def public_dns(host, port):
             "https://dns.google/resolve?name=" + quote(host, safe="") + "&type=A",
             headers={"Accept": "application/dns-json"},
         )
-        with urllib.request.urlopen(request, timeout=5) as response:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
             raw = response.read(65537)
         if len(raw) > 65536:
             raise ValueError
@@ -52,8 +54,45 @@ def public_dns(host, port):
         raise FetchError("FETCH_DNS_FAILED") from exc
 
 
-def public_target(url):
-    parts = urlsplit(url)
+def resolve_addresses(host, port, timeout=5, mode="system"):
+    # A socket timeout does not bound getaddrinfo. An owned short-lived resolver
+    # process bounds both system DNS and DNS-over-HTTPS, including their DNS step.
+    if timeout <= 0:
+        raise FetchError("FETCH_TIMEOUT")
+    try:
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "privacytrace.policy_fetch",
+                mode,
+                host,
+                str(port),
+                str(timeout),
+            ],
+            capture_output=True,
+            timeout=timeout,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+        if result.returncode or len(result.stdout) > 65536:
+            raise ValueError
+        return json.loads(result.stdout)
+    except subprocess.TimeoutExpired as exc:
+        raise FetchError("FETCH_TIMEOUT") from exc
+    except (OSError, ValueError) as exc:
+        raise FetchError("FETCH_DNS_FAILED") from exc
+
+
+def public_dns(host, port, timeout=5):
+    return resolve_addresses(host, port, timeout, mode="public")
+
+
+def public_target(url, timeout=15):
+    deadline = time.monotonic() + timeout
+    try:
+        parts = urlsplit(url)
+    except ValueError as exc:
+        raise FetchError("PUBLIC_URL_REQUIRED") from exc
     if (
         parts.scheme not in {"http", "https"}
         or not parts.hostname
@@ -68,16 +107,13 @@ def public_target(url):
         raise FetchError("PUBLIC_URL_REQUIRED") from exc
     if port not in {80, 443}:
         raise FetchError("PUBLIC_URL_REQUIRED")
-    try:
-        addresses = socket.getaddrinfo(parts.hostname, port, type=socket.SOCK_STREAM)
-    except OSError as exc:
-        raise FetchError("FETCH_DNS_FAILED") from exc
+    addresses = resolve_addresses(parts.hostname, port, min(5, deadline - time.monotonic()))
     ips = [ipaddress.ip_address(a[4][0]) for a in addresses]
     if ips and all(ip.version == 4 and ip in FAKE_IP_RANGE for ip in ips):
         try:
             ipaddress.ip_address(parts.hostname)
         except ValueError:
-            addresses = public_dns(parts.hostname, port)
+            addresses = public_dns(parts.hostname, port, min(5, deadline - time.monotonic()))
             ips = [ipaddress.ip_address(a[4][0]) for a in addresses]
     if not ips or any(not ip.is_global or ip.is_multicast or ip.is_reserved for ip in ips):
         raise FetchError("PUBLIC_URL_REQUIRED")
@@ -110,7 +146,7 @@ class HTMLText(HTMLParser):
 def fetch_policy(url):
     deadline = time.monotonic() + 15
     for redirect in range(4):
-        parts, port, address = public_target(url)
+        parts, port, address = public_target(url, timeout=deadline - time.monotonic())
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise FetchError("FETCH_TIMEOUT")
@@ -192,3 +228,16 @@ def fetch_policy(url):
         finally:
             connection.close()
     raise FetchError("FETCH_REDIRECT_LIMIT")
+
+
+if __name__ == "__main__":
+    try:
+        mode, host, port, timeout = sys.argv[1:]
+        addresses = (
+            _public_dns_direct(host, int(port), float(timeout))
+            if mode == "public"
+            else socket.getaddrinfo(host, int(port), type=socket.SOCK_STREAM)
+        )
+        print(json.dumps(addresses))
+    except Exception:
+        raise SystemExit(2) from None

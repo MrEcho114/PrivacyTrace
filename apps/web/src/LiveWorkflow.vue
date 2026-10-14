@@ -54,11 +54,19 @@ async function perform(action: () => Promise<void>) {
 function sourceInput(): WebSource[] {
   return props.state.sources.map((s, i) => ({ id: s.id, title: s.title.trim() || `政策来源 ${i + 1}`, source_type: s.type,
     url: s.url, text: s.text, status: s.text.trim() ? 'manual' : 'empty', version: s.version || 'UNKNOWN',
-    region: s.region, product: s.product, package_name: s.packageName || '', version_code: s.versionCode ?? null }))
+    region: s.region, product: s.product, package_name: s.packageName || '', version_code: typeof s.versionCode === 'number' ? s.versionCode : null }))
 }
 async function prepare() {
   await perform(async () => {
     const selected = file.value
+    if (!selected && draft.value?.uploaded) {
+      const fields = ['id', 'title', 'source_type', 'url', 'text', 'version', 'region', 'product', 'package_name', 'version_code'] as const
+      const inputs = sourceInput()
+      if (inputs.length === draft.value.sources.length && inputs.every(s => {
+        const original = draft.value!.sources.find(item => item.id === s.id)
+        return original && fields.every(k => (s[k] ?? null) === (original[k] ?? null))
+      })) { go('candidates'); return }
+    }
     if (!selected) throw new Error('请重新选择 APK 文件。原任务和报告保持在本机存档中。')
     // Each material edit produces another input record; earlier reports retain their snapshots.
     const previous = draft.value
@@ -150,7 +158,7 @@ onBeforeUnmount(() => { generation++; controller.abort(); clearTimeout(timer) })
     <div v-if="draft" class="source-actions"><span class="field-help">材料版本 {{ draft.revision }} · <span class="hash">{{ draft.id }}</span></span><UiButton :disabled="busy" variant="quiet" @click="newInput">新建材料版本</UiButton></div>
     <p v-if="busy" class="notice compact" role="status">正在处理当前请求，请稍候；已获得的来源仍保留。</p>
     <p v-if="error" class="error-text" role="alert">{{ error }}</p><p v-if="notice" class="notice compact" role="status">{{ notice }}</p>
-    <ImportPage v-if="state.step === 'import'" :state="state" :busy="busy" :uploaded-name="draft?.uploaded ? draft.name : undefined" @file="file = $event" @example="emit('example')" @next="prepare" />
+    <ImportPage v-if="state.step === 'import'" :state="state" :busy="busy" :uploaded-name="draft?.uploaded ? draft.name : undefined" @file="file = $event" @dirty="state.maxStep = 0" @example="emit('example')" @next="prepare" />
     <CandidatePage v-else-if="state.step === 'candidates'" :state="state" :busy="busy || !!draft?.jobs.length" :type-labels="labels" @back="go('import')" @next="begin" @retry-source="retrySource" @retry-model="retryModel" @persist-candidates="persistCandidates" />
     <div v-else-if="state.step === 'progress'" class="material-panel progress-panel">
       <div class="page-heading"><h1 id="page-title" tabindex="-1">分析进度</h1><p>显示服务实际记录的离散阶段。静态线索不证明实际采集。</p></div>
@@ -160,6 +168,6 @@ onBeforeUnmount(() => { generation++; controller.abort(); clearTimeout(timer) })
       <div class="source-actions"><UiButton v-if="!terminal" :disabled="busy" @click="cancel">取消分析</UiButton><UiButton v-if="terminal && job?.state !== 'SUCCEEDED'" :disabled="busy" @click="retry">重新创建分析</UiButton><UiButton v-if="job?.state === 'SUCCEEDED'" variant="primary" @click="go('report')">查看报告</UiButton><UiButton variant="quiet" @click="poll">重新读取进度</UiButton></div>
     </div>
     <div v-else><div class="page-heading"><h1 id="page-title" tabindex="-1">对照报告</h1><p>本机存档 · 输入版本 {{ draft?.revision }} · 查看存档不会重新扫描。</p></div><ExistingReports :initial-job-id="job?.id" /></div>
-    <section v-if="draft && state.step !== 'import'" class="material-panel"><h2>来源与核验范围</h2><article v-for="source in draft.sources" :key="source.id" class="source-editor"><strong>{{ source.title }}</strong><p>{{ source.status === 'failed' ? '来源获取失败' : source.status === 'empty' ? '尚无正文' : source.status === 'manual' ? '手动补入正文' : '已获取网页正文' }} · 正文完整度未知 · 未复核 · 附件未检查</p><p v-if="source.error_code" class="error-text">{{ source.error_code }} · 返回材料页粘贴正文，或重试网址。</p><p v-if="source.captured_at" class="field-help">获取时点 {{ source.captured_at }} · SHA-256 {{ source.sha256 }}</p><p v-if="source.model_audit?.status" class="field-help">{{ source.model_audit.status === 'FAILED' ? '模型提取未完成，可手动添加或重新提取' : source.model_audit.status === 'PARTIAL' ? '模型仅提取部分候选' : '模型候选已返回' }} · 原句逐字校验 · 拒绝 {{ source.model_audit.rejected_count ?? 0 }} 条 · 仍需检查语义</p></article></section>
+    <section v-if="draft && state.step !== 'import'" class="material-panel"><h2>来源与核验范围</h2><article v-for="source in draft.sources" :key="source.id" class="source-editor"><strong>{{ source.title }}</strong><p>{{ source.status === 'failed' ? '来源获取失败' : source.status === 'empty' ? '尚无正文' : source.status === 'manual' ? '手动补入正文' : '已获取网页正文' }} · 正文完整度未知 · 未复核 · 附件未检查</p><p v-if="source.error_code" class="error-text">{{ source.error_code }} · 返回材料页粘贴正文，或重试网址。</p><p class="field-help">请求网址 {{ source.url || '手动输入' }} · 最终网址 {{ source.final_url || '未获取／手动输入' }}</p><p v-if="source.captured_at" class="field-help">获取时点 {{ source.captured_at }} · SHA-256 {{ source.sha256 }}</p><p v-if="source.model_audit?.status" class="field-help">{{ source.model_audit.status === 'FAILED' ? '模型提取未完成，可手动添加或重新提取' : source.model_audit.status === 'PARTIAL' ? '模型仅提取部分候选' : '模型候选已返回' }} · 原句逐字校验 · 拒绝 {{ source.model_audit.rejected_count ?? 0 }} 条 · 仍需检查语义</p></article></section>
   </div>
 </template>

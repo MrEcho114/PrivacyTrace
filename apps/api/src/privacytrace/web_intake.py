@@ -6,6 +6,7 @@ import os
 import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 from . import pipeline
@@ -17,6 +18,7 @@ from .policy_intake import build_llm_execution, read_safe
 from .policy_llm_extractor import (
     LLMExtractorConfig,
     PolicyLLMExtractor,
+    UrllibLLMClient,
     validate_and_normalize_api_base,
 )
 from .resources import taxonomy
@@ -263,6 +265,16 @@ class WebIntake:
             timeout_seconds=60,
             max_output_tokens=4096,
             max_document_candidates=100,
+            client=UrllibLLMClient(
+                api_key=config["api_key"],
+                api_base=config["api_base"],
+                model=config["model"],
+                timeout=60,
+                max_output_tokens=4096,
+                thinking_mode=False
+                if urlsplit(config["api_base"]).hostname == "api.deepseek.com"
+                else None,
+            ),
         )
         text = source["text"]
         # A chunk contains context across adjacent sentences; the plugin verifies every quote.
@@ -332,7 +344,9 @@ class WebIntake:
                 }
             )
             documents.append(document)
-            source_locator = source["url"] or "Manually supplied local policy text"
+            source_locator = (
+                source.get("final_url") or source["url"] or "Manually supplied local policy text"
+            )
             evidence.append(
                 {
                     "id": ref,
@@ -527,6 +541,7 @@ class WebIntake:
                     "id",
                     "title",
                     "url",
+                    "final_url",
                     "source_type",
                     "status",
                     "error_code",

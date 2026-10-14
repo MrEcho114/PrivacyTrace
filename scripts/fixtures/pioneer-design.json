@@ -1,0 +1,14 @@
+{
+  "source": "docs/design/issue-44-provenance.md",
+  "roles": {
+    "canvas": "#f6f5f1", "surface": "#fdfcfa", "surface-muted": "#eeedea",
+    "ink": "#2c3547", "muted": "#64696f", "navy": "#333c50", "border": "#d9d7d2",
+    "control": "#858d92", "mint": "#dce9df", "success": "#35644b", "slate": "#dde2e9",
+    "notice": "#ede4d6", "rose": "#ebdada", "error": "#934342"
+  },
+  "body": { "fontFamily": "Noto Sans SC", "fontSize": "14px" },
+  "heading": { "fontFamily": "Noto Serif SC", "fontSize": "28px", "lineHeight": "40px" },
+  "mobileHeading": { "fontSize": "24px", "lineHeight": "34px" },
+  "button": { "fontFamily": "Noto Sans SC", "fontSize": "14px", "borderRadius": "8px", "minHeight": "36px" },
+  "field": { "fontFamily": "Noto Sans SC", "fontSize": "14px", "borderRadius": "8px", "minHeight": "40px" }
+}

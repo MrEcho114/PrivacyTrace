@@ -172,7 +172,9 @@ function createIsolatedStore(projectRoot) {
 
 async function main() {
   const projectRoot = path.resolve(__dirname, '..');
-  const evidenceDir = path.join(projectRoot, 'evidence');
+  const evidenceDir = process.env.PRIVACYTRACE_EVIDENCE_DIR
+    ? path.resolve(process.env.PRIVACYTRACE_EVIDENCE_DIR)
+    : path.join(projectRoot, 'evidence');
   const screenshotDir = path.join(evidenceDir, 'screenshots');
   fs.mkdirSync(screenshotDir, { recursive: true });
 
@@ -329,11 +331,12 @@ async function main() {
       body: JSON.stringify(longReport),
     }));
 
-    await page.goto(WEB_ORIGIN);
+    await page.goto(WEB_ORIGIN + '/#reports');
     recordStep('TC-01', 'navigate', `Loaded main page at ${WEB_ORIGIN}`);
 
     await selectSource(page, 'job:gkd-s1-first');
     recordStep('TC-01', 'select_job', 'Selected job:gkd-s1-first');
+    assert.equal(await page.locator('details.demo-note > summary > strong').isVisible(), true, 'source identity must remain visible when scope details are collapsed');
 
     // Expand evidence panel
     await page.getByRole('button', { name: /查看 \d+ 条证据/ }).first().click();
@@ -611,7 +614,8 @@ async function main() {
     // The demo envelope is assembled per response, so it is a live generation.
     const demoDeliveryBadge = await page.locator('.badge-stack .badge').last().innerText();
     assert(demoDeliveryBadge.includes('本次生成') && demoDeliveryBadge.includes('LIVE'), `Demo delivery badge should show 本次生成 · LIVE, got: ${demoDeliveryBadge}`);
-    const demoNote = await page.locator('.demo-note').innerText();
+    if (!(await page.locator('details.demo-note').evaluate(element => element.open))) await page.locator('details.demo-note > summary').click();
+    const demoNote = await page.locator('details.demo-note').innerText();
     assert(demoNote.includes('SYNTHETIC · 人工构造示例'), 'Demo note should show SYNTHETIC label');
     recordStep('TC-04', 'verify_synthetic_badge', 'Confirmed SYNTHETIC demo origin badge and live delivery badge');
     const screenshotTc04Demo = path.join(screenshotDir, 'tc04-source-synthetic.png');
@@ -623,7 +627,8 @@ async function main() {
     await page.locator('.sample-card').waitFor();
     const controlledBadge = await page.locator('.badge-stack .badge').first().innerText();
     assert(controlledBadge.includes('受控评测') && controlledBadge.includes('CONTROLLED'), `Badge should show 受控评测 · CONTROLLED, got: ${controlledBadge}`);
-    const controlledNote = await page.locator('.demo-note').innerText();
+    if (!(await page.locator('details.demo-note').evaluate(element => element.open))) await page.locator('details.demo-note > summary').click();
+    const controlledNote = await page.locator('details.demo-note').innerText();
     assert(controlledNote.includes('CONTROLLED · 受控测试输入'), 'Note should show CONTROLLED label');
     recordStep('TC-04', 'verify_controlled_badge', 'Confirmed CONTROLLED fixture badge and label');
     const screenshotTc04Controlled = path.join(screenshotDir, 'tc04-source-controlled.png');
@@ -735,6 +740,13 @@ async function main() {
     assert(secondEventText.includes('本条目经字节码确认调用确实存在'), 'Must display entered note text');
     recordStep('TC-05', 'submit_with_note', 'Successfully submitted review with note text');
 
+    // The new settings panel tests the same actual local HTTP service.
+    await page.getByRole('button', { name: '项目设置', exact: true }).click();
+    await page.getByRole('button', { name: '测试连接', exact: true }).click();
+    await page.getByText('分析服务有响应', { exact: true }).waitFor();
+    await page.keyboard.press('Escape');
+    recordStep('TC-05', 'verify_settings_health', 'Settings panel connected to the actual isolated API health endpoint');
+
     // 3. Reload page and check persistence consistency
     await page.reload();
     await page.locator('#report-source').waitFor();
@@ -751,6 +763,25 @@ async function main() {
     await page.screenshot({ path: screenshotTc05, fullPage: true });
 
     testResults.push({ id: 'TC-05', name: 'R5 Optional local note & re-evaluation persistence', status: 'PASSED' });
+
+    // Entry regression only: reuse fixture HTTP data with the exporter's HTML marker.
+    // Complete offline-package integrity and six-source replay are covered by Spec30.
+    const replay = await browser.newPage();
+    replay.on('pageerror', error => pageErrors.push(error.message));
+    await replay.route(WEB_ORIGIN + '/', async route => {
+      const response = await route.fetch();
+      const html = (await response.text()).replace('<head>', '<head><meta name="privacytrace-presentation" content="offline">');
+      await route.fulfill({ response, body: html });
+    });
+    await replay.goto(WEB_ORIGIN + '/');
+    await selectSource(replay, 'job:gkd-s1-first');
+    await replay.getByText('OFFLINE REPLAY · 离线回放', { exact: true }).waitFor();
+    assert.equal(await replay.locator('details.demo-note > summary > strong').isVisible(), true);
+    assert.equal(await replay.locator('.workbench').count(), 0, 'offline root must bypass the editable workflow');
+    assert.equal(await replay.locator('.review-panel').count(), 0);
+    assert.equal(await replay.locator('option[value="demo:synthetic"]').count(), 0);
+    await replay.close();
+    testResults.push({ id: 'TC-06', name: 'Offline HTML marker opens read-only report browser at root', status: 'PASSED' });
 
     // ------------------------------------------------------------------------
     // Generate proof artifact evidence/browser-proof.json

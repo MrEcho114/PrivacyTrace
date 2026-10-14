@@ -22,7 +22,7 @@ async function main() {
   const report = await (await fetch(`http://127.0.0.1:8000/api/v1/jobs/${c02.id}/report`)).json();
   const reportUrl = `**/api/v1/jobs/${c02.id}/report`;
   try {
-    await page.goto('http://127.0.0.1:5173');
+    await page.goto('http://127.0.0.1:5173/#reports');
     await page.locator(`option[value="job:${c02.id}"]`).waitFor({ state: 'attached' });
     await page.locator('#report-source').selectOption(`job:${c02.id}`);
     await page.getByText('CONTROLLED_APK · 自建受控场景', { exact: true }).waitFor();
@@ -62,7 +62,8 @@ async function main() {
     await page.unroute(reportUrl);
     checks.push('UI-only merged SDK panel: independent static attribution, pagination, report-switch reset');
     await page.locator('#report-source').selectOption('demo:synthetic');
-    await page.getByRole('complementary').getByText('SYNTHETIC · 人工构造示例', { exact: true }).waitFor();
+    await page.locator('details.demo-note > summary').click();
+    await page.locator('details.demo-note').getByText('SYNTHETIC · 人工构造示例', { exact: true }).waitFor();
     checks.push('C06 cautious result, source switching resets drill-down, synthetic source distinct');
 
     const long = structuredClone(report);

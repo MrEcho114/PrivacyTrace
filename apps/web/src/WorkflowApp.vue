@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ExistingReports from './App.vue'
+import LiveWorkflow from './LiveWorkflow.vue'
 import UiButton from './components/UiButton.vue'
 import StatusTag from './components/StatusTag.vue'
 import UiIcon from './components/UiIcon.vue'
@@ -97,7 +98,8 @@ watch(state, persist, { deep: true })
           <div class="flow-context"><StatusTag :tone="state.example ? 'info' : 'neutral'">{{ state.example ? '示例体验 · 固定材料' : '新建对照' }}</StatusTag><UiButton v-if="state.example" variant="quiet" @click="newMaterials">新材料</UiButton></div></div>
           <p v-if="message" class="notice compact" role="status">{{ message }}</p>
           <p v-if="storageError" class="notice" role="status">浏览器暂存不可用，当前输入仍可继续使用。</p>
-          <ImportPage v-if="state.step === 'import'" :key="state.example ? 'example' : 'new'" :state="state" @example="startExample" @next="next('candidates')" />
+          <LiveWorkflow v-if="!state.example" :state="state" @example="startExample" />
+          <ImportPage v-else-if="state.step === 'import'" :key="state.example ? 'example' : 'new'" :state="state" @example="startExample" @next="next('candidates')" />
           <CandidatePage v-else-if="state.step === 'candidates'" :state="state" @back="go('import')" @next="next('progress')" />
           <ProgressPage v-else-if="state.step === 'progress'" :state="state" @back="go('candidates')" @report="next('report')" />
           <ExampleReport v-else :state="state" @edit="go('candidates')" />

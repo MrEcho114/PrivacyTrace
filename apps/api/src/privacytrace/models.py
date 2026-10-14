@@ -17,6 +17,7 @@ class PolicySource(StrEnum):
     STORE_POLICY = "STORE_POLICY"
     OFFICIAL_WEB_POLICY = "OFFICIAL_WEB_POLICY"
     SDK_POLICY = "SDK_POLICY"
+    CONTROLLED_POLICY = "CONTROLLED_POLICY"
 
 
 class MatchStatus(StrEnum):
@@ -154,10 +155,46 @@ class PolicyClaim(Model):
     evidence_ids: list[str] = Field(min_length=1)
 
 
+class SourceOrigin(StrEnum):
+    """Immutable provenance of the underlying data, recorded instead of inferred.
+
+    This field answers "where did the data come from". It never changes once a
+    job is created. It does NOT describe how a report is being served right now
+    -- a job created by a real scan keeps REAL_SCAN even when its report is later
+    replayed from persisted storage. Use `delivery_mode` for the loading path.
+
+    CONTROLLED and SYNTHETIC never describe a real user application.
+
+    UNKNOWN is reserved for records written before this field existed: their
+    origin cannot be recovered from the stored data, so it is recorded as
+    unknown rather than guessed. It is never produced by a live scan and must
+    not be read as evidence that the data came from a real application.
+    """
+
+    SYNTHETIC = "SYNTHETIC"
+    CONTROLLED = "CONTROLLED"
+    REAL_SCAN = "REAL_SCAN"
+    UNKNOWN = "UNKNOWN"
+
+
+class DeliveryMode(StrEnum):
+    """How a report reached the client in this response. Repeated per request.
+
+    This field answers "how was it loaded", which is mutable: the same
+    persisted job can be delivered as LIVE_GENERATED in the run that produced
+    it and as PERSISTED_REPLAY on any later load. It is never persisted on the
+    job, because it depends on the serving path rather than on the data.
+    """
+
+    LIVE_GENERATED = "LIVE_GENERATED"
+    PERSISTED_REPLAY = "PERSISTED_REPLAY"
+
+
 class AnalysisJob(Model):
     id: str
     sample_id: str
-    input_mode: Literal["SYNTHETIC", "APK"]
+    input_mode: Literal["SYNTHETIC", "APK", "CONTROLLED_APK"]
+    source_origin: SourceOrigin
     state: Literal[
         "QUEUED",
         "INTAKE",
@@ -176,6 +213,12 @@ class AnalysisJob(Model):
     region: str | None = Field(default=None, min_length=1)
     product_scope: str | None = Field(default=None, min_length=1)
     error: str | None = None
+
+    @model_validator(mode="after")
+    def validate_controlled_origin(self):
+        if self.input_mode == "CONTROLLED_APK" and self.source_origin != SourceOrigin.CONTROLLED:
+            raise ValueError("Controlled APK jobs require controlled provenance")
+        return self
 
 
 class EvaluationInput(Model):
@@ -221,6 +264,11 @@ class EvaluationInput(Model):
                         "API descriptor, context or ruleset does not match a trusted rule"
                     )
         for doc in self.policy_documents:
+            if (
+                doc.source_type == PolicySource.CONTROLLED_POLICY
+                and self.job.input_mode != "CONTROLLED_APK"
+            ):
+                raise ValueError("Controlled policy facts require a controlled APK job")
             snapshot = evidence.get(doc.evidence_id)
             if not snapshot or snapshot.kind != "POLICY_DOCUMENT" or snapshot.document_id != doc.id:
                 raise ValueError("A document requires its own snapshot evidence")

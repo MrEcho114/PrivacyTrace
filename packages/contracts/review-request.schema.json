@@ -133,6 +133,7 @@
       "type": "string"
     },
     "note": {
+      "default": "",
       "maxLength": 10000,
       "title": "Note",
       "type": "string"
@@ -151,8 +152,7 @@
   },
   "required": [
     "actor",
-    "reason",
-    "note"
+    "reason"
   ],
   "title": "ReviewRequest",
   "type": "object"

@@ -21,6 +21,15 @@ const typesCode = ts.transpileModule(fs.readFileSync(path.join(__dirname, '../sr
 const typesExports = {}
 vm.runInNewContext(typesCode, { exports: typesExports })
 
+// Compile the real selector module rather than stubbing it, so the mounted
+// component is exercised against the same paging logic the browser runs.
+const sdkEvidenceCode = ts.transpileModule(
+  fs.readFileSync(path.join(__dirname, '../src/sdkEvidence.ts'), 'utf8'),
+  { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } },
+).outputText
+const sdkEvidenceExports = {}
+vm.runInNewContext(sdkEvidenceCode, { exports: sdkEvidenceExports })
+
 function mount(jobs = [], fixture = null) {
   const requests = []
   const report = id => fixture ?? ({ demo: false, job: { id }, result: { issues: [] } })
@@ -39,6 +48,7 @@ function mount(jobs = [], fixture = null) {
     require: name => {
       if (name === './api') return api
       if (name === './types') return typesExports
+      if (name === './sdkEvidence') return sdkEvidenceExports
       if (name === 'vue') return { ...vue, onMounted() {}, onBeforeUnmount(fn) { unmount = fn } }
       throw new Error(`Unexpected import: ${name}`)
     },
@@ -149,4 +159,135 @@ test('candidate navigation is paginated and full artifacts are rendered once on 
   output = await html(state)
   assert.match(output, /claim-20/)
   assert.doesNotMatch(output, /claim-0 ·/)
+})
+
+function sdkFixture(evidence, limitations = []) {
+  return {
+    demo: false,
+    job: { id: 'sdk-job', input_mode: 'APK', ruleset_version: '0.3.0' },
+    sample: {
+      name: 'SDK fixture', package_name: 'example.sdk', apk_sha256: 'c'.repeat(64),
+      version_code: 1, permissions: [], dex_entries: ['classes.dex'],
+    },
+    coverage: {
+      status: 'COMPLETE', scanned_dex: ['classes.dex'], failed_dex: [],
+      limitations: [], behavior_limitations: [],
+      sdk_attribution_limitations: limitations,
+    },
+    tools: {}, reviews: [], behaviors: [], policy_documents: [], policy_claims: [],
+    // No issues: nothing cites this evidence, which is exactly the reported gap.
+    result: { issues: [] },
+    evidence,
+  }
+}
+
+function sdkEvidenceRecord(index) {
+  return {
+    id: 'ev-sdk-' + index, kind: 'SDK', status: 'STATIC_POTENTIAL',
+    source: 'classes.dex',
+    locator: 'apk_sha256=' + 'c'.repeat(64) + ';dex=classes.dex;class=com.example.C' + index,
+    excerpt: 'com.example.C' + index + ' matches published package prefix com.example of Example SDK (Example Ltd); attribution only, not evidence of collection or transfer.',
+  }
+}
+
+test('SDK evidence is rendered even when no issue cites it', async () => {
+  // The reported P1: selectedEvidence only shows issue-cited records, so SDK
+  // evidence had no way into the page at all.
+  const fixture = sdkFixture([sdkEvidenceRecord(1), sdkEvidenceRecord(2)])
+  const { state } = mount([{ id: 'sdk-job', state: 'SUCCEEDED' }], fixture)
+  await state.reload(true)
+  assert.equal(state.selected.value, null)
+  const output = await html(state)
+  assert.match(output, /第三方 SDK 归属/)
+  assert.equal((output.match(/class="evidence-card"/g) ?? []).length, 2)
+  assert.match(output, /com\.example\.C1/)
+  assert.match(output, /com\.example\.C2/)
+})
+
+test('only SDK records reach the SDK panel', async () => {
+  const fixture = sdkFixture([
+    sdkEvidenceRecord(1),
+    { id: 'ev-manifest-1', kind: 'MANIFEST', status: 'STATIC_POTENTIAL',
+      source: 'AndroidManifest.xml', locator: 'MANIFEST_SENTINEL', excerpt: 'MANIFEST_SENTINEL' },
+  ])
+  const { state } = mount([{ id: 'sdk-job', state: 'SUCCEEDED' }], fixture)
+  await state.reload(true)
+  assert.deepEqual(state.sdkEvidence.value.map((item) => item.id), ['ev-sdk-1'])
+  const output = await html(state)
+  assert.doesNotMatch(output, /MANIFEST_SENTINEL/)
+})
+
+test('zero SDK hits states the limit instead of implying the APK is clean', async () => {
+  const fixture = sdkFixture([])
+  const { state } = mount([{ id: 'sdk-job', state: 'SUCCEEDED' }], fixture)
+  await state.reload(true)
+  const output = await html(state)
+  assert.match(output, /第三方 SDK 归属/)
+  assert.match(output, /未命中当前有限的签名规则集/)
+  assert.match(output, /没有命中不代表 APK 不含第三方 SDK/)
+  assert.equal((output.match(/class="evidence-card"/g) ?? []).length, 0)
+})
+
+test('a large SDK result is paginated without losing or repeating entries', async () => {
+  const total = 30
+  const fixture = sdkFixture(Array.from({ length: total }, (_, i) => sdkEvidenceRecord(i)))
+  const { state } = mount([{ id: 'sdk-job', state: 'SUCCEEDED' }], fixture)
+  await state.reload(true)
+  assert.equal(state.sdkPageTotal.value, 2)
+
+  let output = await html(state)
+  assert.equal((output.match(/class="evidence-card"/g) ?? []).length, 25)
+  assert.match(output, /共 30 条 · 第 1 \/ 2 页/)
+  assert.match(output, /com\.example\.C0/)
+  assert.doesNotMatch(output, /com\.example\.C29/)
+
+  state.sdkPage.value = 1
+  output = await html(state)
+  assert.equal((output.match(/class="evidence-card"/g) ?? []).length, 5)
+  assert.match(output, /com\.example\.C29/)
+  assert.doesNotMatch(output, /com\.example\.C0\b/)
+})
+
+test('switching the report resets the SDK page but changing the issue does not', async () => {
+  const fixture = sdkFixture(Array.from({ length: 30 }, (_, i) => sdkEvidenceRecord(i)))
+  const { state } = mount([{ id: 'sdk-job', state: 'SUCCEEDED' }], fixture)
+  await state.reload(true)
+  state.sdkPage.value = 1
+  state.selected.value = { id: 'issue-x', data_type: 'CAMERA', evidence_ids: [] }
+  assert.equal(state.sdkPage.value, 1, 'issue selection must not move the page')
+  await state.reload(true)
+  assert.equal(state.sdkPage.value, 0, 'a new report starts on page 1')
+})
+
+test('the panel stays visible when nothing was truncated', async () => {
+  // A capped run adds a limitation note; an uncapped run must still show the panel.
+  const fixture = sdkFixture([sdkEvidenceRecord(1)])
+  const { state } = mount([{ id: 'sdk-job', state: 'SUCCEEDED' }], fixture)
+  await state.reload(true)
+  assert.deepEqual(state.realReport.value.coverage.sdk_attribution_limitations, [])
+  const output = await html(state)
+  assert.match(output, /第三方 SDK 归属/)
+  assert.match(output, /不参与政策一致性判定/)
+})
+
+test('failed controlled source APK keeps its provenance without a report', async () => {
+  const { state } = mount([{ id: 'failed-controlled', state: 'FAILED',
+    input_mode: 'CONTROLLED_APK', source_origin: 'CONTROLLED' }])
+  await state.reload(true)
+  assert.equal(state.report.value, null)
+  assert.equal(state.sourceInfo.value.label, 'CONTROLLED_APK · 自建受控场景')
+})
+
+test('historical unknown and UI fixture reports do not claim an actual CLI scan', async () => {
+  for (const origin of ['UNKNOWN', 'CONTROLLED']) {
+    const fixture = sdkFixture([])
+    fixture.job.source_origin = origin
+    fixture.job.created_at = '2026-10-09T00:00:00Z'
+    const { state } = mount([{ id: 'sdk-job', state: 'SUCCEEDED' }], fixture)
+    await state.reload(true)
+    const output = await html(state)
+    assert.match(output, /记录创建时点/)
+    assert.match(output, /未留存分析生成时点/)
+    assert.doesNotMatch(output, /CLI 实际扫描生成/)
+  }
 })

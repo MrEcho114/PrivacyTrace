@@ -1,5 +1,6 @@
 """Private single-host JSON job storage with validate-before-atomic-replace writes."""
 
+import json
 import os
 import re
 import stat
@@ -11,7 +12,7 @@ from threading import RLock
 from uuid import uuid4
 
 from .consistency import evaluate
-from .models import AnalysisJob, EvaluationInput
+from .models import AnalysisJob, DeliveryMode, EvaluationInput, SourceOrigin
 from .runtime_models import (
     Report,
     ReviewEvent,
@@ -20,6 +21,34 @@ from .runtime_models import (
     ScanCoverage,
     StoredJob,
 )
+
+
+def migrate_record(payload: dict) -> dict:
+    """Bring a stored record forward to the current schema, in memory only.
+
+    Records written before ``AnalysisJob.source_origin`` existed carry no
+    provenance at all. That origin cannot be recovered from the stored bytes,
+    so it is recorded as UNKNOWN rather than guessed -- labelling such a record
+    REAL_SCAN would assert a real user scan that was never recorded.
+
+    The job is embedded twice (top level and inside ``bundle``), and the record
+    validator requires the two copies to agree, so both are patched together.
+    ``bundle`` is only read when it really is a JSON object: a record that is
+    valid JSON but structurally wrong (``"bundle": "corrupted"``, an array, or a
+    number) must fall through to normal schema validation and be rejected as a
+    bad record, not raise ``AttributeError`` here -- that would escape the store
+    listing's per-record handling and turn one bad file into a 500.
+
+    The caller keeps the original file untouched, so the exact bytes written by
+    the previous version remain available for audit and are never rewritten by
+    a read.
+    """
+    bundle = payload.get("bundle")
+    nested_job = bundle.get("job") if isinstance(bundle, dict) else None
+    for job in (payload.get("job"), nested_job):
+        if isinstance(job, dict) and "source_origin" not in job:
+            job["source_origin"] = SourceOrigin.UNKNOWN.value
+    return payload
 
 
 class JobStore:
@@ -47,7 +76,21 @@ class JobStore:
             if path.is_symlink() or getattr(path, "is_junction", lambda: False)():
                 raise ValueError("Linked storage lock is not allowed")
             flags = os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
-            fd = os.open(path, flags, 0o600)
+            deadline = time.monotonic() + self.LOCK_TIMEOUT_SECONDS
+            # Opening for create is itself contended: concurrent first-touch of
+            # the same path raises a transient sharing violation (EACCES) on
+            # Windows. Retry that on the same budget as acquisition, so contention
+            # becomes a bounded wait instead of a bare PermissionError. Other
+            # errors stay fatal -- a missing directory should fail fast, not
+            # stall for the whole timeout.
+            while True:
+                try:
+                    fd = os.open(path, flags, 0o600)
+                    break
+                except PermissionError as exc:
+                    if time.monotonic() >= deadline:
+                        raise ValueError("Local job transaction lock unavailable") from exc
+                    time.sleep(0.02)
             acquired = False
             try:
                 info = os.fstat(fd)
@@ -58,7 +101,6 @@ class JobStore:
                     or (info.st_dev, info.st_ino) != (current.st_dev, current.st_ino)
                 ):
                     raise ValueError("Unsafe storage lock")
-                deadline = time.monotonic() + self.LOCK_TIMEOUT_SECONDS
                 while True:
                     try:
                         os.lseek(fd, 0, os.SEEK_SET)
@@ -114,7 +156,14 @@ class JobStore:
             raise KeyError(job_id)
         if path.stat().st_size > self.MAX_FILE_BYTES:
             raise ValueError("Job record exceeds storage size limit")
-        record = StoredJob.model_validate_json(path.read_bytes())
+        try:
+            payload = json.loads(path.read_bytes())
+        except json.JSONDecodeError as exc:
+            raise ValueError("Job record is not valid JSON") from exc
+        if not isinstance(payload, dict):
+            raise ValueError("Job record must be a JSON object")
+        # Read-time migration only; the file on disk keeps its original bytes.
+        record = StoredJob.model_validate(migrate_record(payload))
         if record.job.id != job_id or (record.bundle and record.bundle.job != record.job):
             raise ValueError("Stored job identity mismatch")
         return record
@@ -137,13 +186,14 @@ class JobStore:
         finally:
             temp.unlink(missing_ok=True)
 
-    def _report(self, record):
+    def _report(self, record, delivery_mode: DeliveryMode = DeliveryMode.PERSISTED_REPLAY):
         if record.bundle is None or record.sample is None or record.coverage is None:
             raise ValueError("Job report is not available")
         bundle = record.bundle
         return Report(
             sample=record.sample,
             job=record.job,
+            delivery_mode=delivery_mode,
             result=evaluate(bundle),
             evidence=bundle.evidence,
             behaviors=bundle.behaviors,
@@ -172,7 +222,7 @@ class JobStore:
                 coverage=ScanCoverage.model_validate(coverage),
                 tools=tools,
             )
-            report = self._report(record)
+            report = self._report(record, DeliveryMode.LIVE_GENERATED)
             self._write(record)
             return report
 
@@ -207,14 +257,25 @@ class JobStore:
             return self._report(self._load(job_id))
 
     def list(self) -> list[AnalysisJob]:
+        """List every readable job, newest first.
+
+        One unreadable record must not take down the whole listing: an old or
+        damaged file would otherwise break every client that calls
+        ``/api/v1/jobs``. Such records are skipped rather than reported here --
+        callers that need the reason fetch the job by id, which still raises.
+        """
         with self._transaction():
             self._safe_root()
             paths = list(self.root.glob("*.json"))
             if len(paths) > self.MAX_RECORDS:
                 raise ValueError("Local job record limit exceeded")
-            return sorted(
-                (self._load(p.stem).job for p in paths), key=lambda j: j.created_at, reverse=True
-            )
+            jobs = []
+            for path in paths:
+                try:
+                    jobs.append(self._load(path.stem).job)
+                except (ValueError, KeyError, OSError):
+                    continue
+            return sorted(jobs, key=lambda j: j.created_at, reverse=True)
 
     def review(self, job_id: str, request: ReviewRequest) -> Report:
         with self._transaction():
@@ -252,7 +313,9 @@ class JobStore:
             )
             record.bundle = bundle
             record.reviews.append(event)
-            report = self._report(record)
+            # A review re-evaluates a report loaded from storage; it is not a
+            # freshly produced scan, so it is delivered as a persisted replay.
+            report = self._report(record, DeliveryMode.PERSISTED_REPLAY)
             self._write(record)
             return report
 

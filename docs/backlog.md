@@ -2,7 +2,22 @@
 
 来源：简报第 20–22 页。下方 Epic 表保留建仓时的任务分解；当前排期以 [GitHub 总计划 #1](https://github.com/MrEcho114/PrivacyTrace/issues/1) 与阶段计划为准，部分后续工单编号含义已有调整，不按编号强行合并。“已实现”不等于真实样本最终验收通过。
 
-## 2026-10-09 当前交付索引
+## 2026-10-12 协作与领取入口
+
+开始/恢复先执行 [协作检查清单](agents/skills-workflow.md#6-工单流转阻塞依赖与交接规范)，读取 GitHub 的唯一当前执行记录；阶段索引和总规格不作为新的实现入口。现存交付的覆盖、未核验项与剩余工作见 [协作落地记录](stages/workflow-coordination-20261012.md)，按其快照日期和 SHA 使用，领取时刷新。
+
+受控功能沿 [主线整合交付](https://github.com/MrEcho114/PrivacyTrace/pull/47) 核对已有覆盖；两条来源交付保留追溯，是否已合入及剩余验收以最新 main 和当前执行记录为准。前端、插件、材料分别复用已有候选，只执行明确授权的真实缺口。待审不等于已合入，原任务状态/负责人和历史收据不由本索引替代。
+
+## 2026-10-11 当前交付索引（历史快照）
+
+- [Spec30 / #30](https://github.com/MrEcho114/PrivacyTrace/issues/30)：六个源码受控 APK、冻结真值、三方案同材料对照、实际浏览器与独立断网回放均完成本地验证，见 [验证记录](stages/spec30-verification.md) 和 [复现说明](../benchmarks/controlled/README.md)。交付 SHA/远端 CI 由 PR 绑定；不自动关闭旧工单或将六场景升级为商业应用基准。
+- 真实案例继续引用版本绑定的 GKD 历史核验；工程回归、受控评测和真实案例分别计数。六场景覆盖五类状态，C07/C08 未纳入本次保底。
+
+- PT-908（Issue [#24](https://github.com/MrEcho114/PrivacyTrace/issues/24)）动态分析与高阶代码分析后续演进技术预研备忘录已完成，见 [技术预研备忘录](stages/pt908-dynamic-and-taint-analysis-20261011.md)。
+- 阶段定位：**赛后演进 / 未来规划（Future Work，本届赛事不落地实施）**，为主线答辩提供理论与工程依据。
+- 制度化固化三大网络安全红线：不开发脱壳工具、不实施未授权动态发包、未解密与证书异常流量严格记录客观观测与 UNKNOWN 归因，禁止攻击性绕过。
+
+## 2026-10-09 历史交付索引
 
 PR #27 与 #28 的增量已在独立分支整合，面向已合并 S0 的 `main`；两条来源 PR 保持原状态，未自动关闭或合并。最新代码/冲突取舍与验证见 [整合报告](stages/s1-integration-report-20261009.md)，下方 10/05 排期表是历史快照，不覆盖本节。
 
@@ -10,6 +25,32 @@ PR #27 与 #28 的增量已在独立分支整合，面向已合并 S0 的 `main`
 - 保留 APK 默认退出删除、1 GiB 累计配额、主/清理错误链及 DEX/有限行为识别边界；补齐 versionCode 范围与同名双权限 SDK 条件证据。
 - S2 待办保留 #17 的异常浏览器矩阵，并加入来源值严格校验/新来源类型的契约测试、进程强制退出后的陈旧非终态作业识别与恢复测试。这两项是 #28 的非阻塞建议，本轮不设计完整调度器。
 - 当前优先：新工作流的自动验证与 PR 交付 → S2 受控场景和公平基准。不要再要求 A/B 填表；历史预约日期不代表后续任务已完成。
+
+### 2026-10-10 已修缺陷（PT-401 修复期间发现，非 PT-401 引入）
+
+`job_store.JobStore._transaction()` 在 Windows 上存在多进程竞争缺陷：`os.open(path, O_CREAT | O_RDWR)` 本身没有重试，只有其后的加锁步骤有。多个进程同时首次创建 `.lock` 时，Windows 会对并发 `CreateFile` 返回瞬态共享冲突，表现为 `PermissionError: [Errno 13]`。
+
+- 复现：4 个 `spawn` 进程经 `Barrier` 同步后同时 `os.open` 同一 `.lock`，无重试时 10 轮 x4 进程共 30 次 `PermissionError`、每轮仅 1 个成功。
+- 表现：`test_job_creation.py::test_one_reservation_wins_across_processes_and_survives_restart` 在全量套件下偶发失败、单独运行必过；属负载/时序敏感。
+- **已修**：把打开动作纳入与加锁同一套重试与超时预算（`deadline` 上提到两个循环之外）；只捕获 `PermissionError`（实测并发 open 唯一失败即 errno 13，缺失目录应立刻报错而非空等）。修复后 40/40 全部成功。
+- 回归测试：`test_concurrent_first_lock_creation_never_fails_to_open`（已确认在未修复代码上确定性失败）、`test_missing_lock_directory_still_fails_fast`、`test_lock_file_is_reused_across_transactions`。
+- PR #35 review 续修（2026-10-10）：
+  - **[P2]** 原并发用例只排除 `oserror`，把锁超时的 `ValueError` 归入 `contended` 而忽略，于是"4 个进程全部超时、无人进入事务"也会判为通过，无法支撑"40/40 全部成功"。已改为逐轮断言全部结果为 `ok`（实测旧断言在"4 个全被拒"与"3 超时+1 成功"两种输入下均漏报通过）。
+  - **[P3]** 多进程用例依赖 Windows 真实触发共享冲突，Linux 上即使删掉 open 重试也可能通过。已补两条确定性注入测试：`test_lock_open_is_retried_until_the_contention_clears`（mock `os.open` 前两次抛 `EACCES`、第三次成功，断言失败尝试被替换而非叠加）、`test_lock_open_retry_gives_up_at_the_shared_deadline`（持续 `EACCES` 须在共享预算内抛 `ValueError("lock unavailable")`，不裸抛也不无限重试）。现有多进程用例保留为压力回归。
+- PR #35 review 二轮续修（2026-10-10/11）：
+  - **已修（测试可靠性）**：`touch_lock` 原先在 `with` 块内上报 `ok`，会在 `__exit__` 之前发布成功；若随后释放文件锁抛 `OSError`，同一进程会同时投递 `ok` 与 `oserror`，而父进程只按子进程数量读 N 条，多余的错误被静默丢弃。已把成功上报移到 `else` 分支（整个事务含锁释放正常退出后才算成功），并补 `test_lock_release_failure_is_not_reported_as_success` 锁定该行为（实测旧写法确定性产出 `['ok','oserror']`）。并发用例另补 `process.exitcode == 0` 断言与"每子进程恰一条结果"的泄漏检查。
+  - **记录为已知边界，不改生产代码（永久权限拒绝）**：当前会重试全部 `PermissionError`，包括永久性访问拒绝，故 ACL 配置错误这类本可立即返回的失败会等待约 5s。**实测该延迟无法在捕获层面消除**：用 `icacls` 构造永久拒绝，与 6 进程并发抢占采样对比，两者抛出的异常键完全相同（`PermissionError`、`errno 13`、`winerror None`），平台不提供进一步判别依据；并发 open 路径上只会出现 errno 13。因此"重试全部 `PermissionError`"是可区分性约束下的正确策略，"永久拒绝也等满预算"属平台约束而非实现缺陷。原始错误已通过 `from exc` 保留在 `__cause__`（新增 `test_lock_open_failure_keeps_the_original_error_as_its_cause` 断言 errno 仍可追溯），满足"优先保留实际错误原因"。若要快速失败只能引入平台特定探测（如预写探测），属独立改进项。
+
+### 2026-10-11 CI 门禁中断：账号改名导致可复用工作流解析失败（仓库级）
+
+`.github/workflows/check.yml` 引用外部可复用工作流 `OasisSaber/TheMasterplan/...@20eee37`。GitHub 账号 `OasisSaber` 于 2026-10-10 改名为 `OasisViridis`，**Actions 的可复用工作流解析不跟随改名**（REST API 会重定向，Actions 不会），于是引用字面量 `OasisSaber` 的分支解析失败。
+
+- 症状：工作流 0s 结束、`jobs: []`、`referenced_workflows: []`，报 `workflow was not found`。**不是测试断言失败。**
+- 证据（完美相关）：成功 run 的 `referenced_workflows` 显示新名 `OasisViridis/TheMasterplan/...`，失败 run 为空。按分支 `uses:` 字面量统计——`OasisSaber` 的 `fix/jobstore-lock-open-race`(#35)、`codex/pt-808-browser-acceptance` 失败；`OasisViridis` 的 `codex/issue-32-skills-workflow`(14:24)、`codex/pt-910-controlled-baseline`(10:12/10:15) 成功。
+- 同一分支同一 `check.yml` 在 12:54 成功、15:43 失败，改名发生在两者之间，与该时间线吻合。
+- 影响面：`main` 自身也引用 `OasisSaber`，下一次推送 `main` 同样会中断；`doctor` 检查不到此类问题。
+- 处置（经用户确认）：改 `uses:` 的 owner 为 `OasisViridis`，一行。已修复两处——`main`（`07ae08e`，同时解掉默认分支的潜在中断）与本 PR 分支（本条提交），使 #35 取得绿色门禁。
+- 范围说明：只改 `check.yml` 的 `uses:` owner。其余 `OasisSaber` 字面量（`.themasterplan/state.json`、`tmlib/source.py` 的 `DEFAULT_REPOSITORY`、`docs/release-channels.md` 示例、`test_governance_cli.py` 夹具）仍可经 REST API 重定向工作，且属采纳状态，未一并改动。
 
 ## 2026-10-05 历史进度与优先顺序
 
@@ -73,7 +114,7 @@ PR #27 与 #28 的增量已在独立分支整合，面向已合并 S0 的 `main`
 
 | 编号 | 任务 | 建仓状态 |
 |---|---|---|
-| PT-401 | SDK Signature Schema | 合成 signature seed |
+| PT-401 | SDK Signature Schema | 有据签名 v1.0.0；来源/许可/版本逐条记录 |
 | PT-402 | 常见 SDK Signature | 待开发 |
 | PT-403 | SDK Detection | 待开发 |
 | PT-404 | SDK → Vendor | 待开发 |
@@ -89,7 +130,7 @@ PR #27 与 #28 的增量已在独立分支整合，面向已合并 S0 的 `main`
 | PT-503 | Snapshot | 合成快照校验 |
 | PT-504 | Policy Hash | 快照哈希校验 |
 | PT-505 | 文本切分 | 待开发 |
-| PT-506 | LLM Structure Extraction | 待开发 |
+| PT-506 | LLM Structure Extraction | 可选插件：严格原句校验/提示词注入防护/本地缓存/无缝回退 |
 | PT-507 | DataType Normalization | 待开发 |
 | PT-508 | Purpose Extraction | 待开发 |
 | PT-509 | Recipient Extraction | 待开发 |
@@ -180,6 +221,7 @@ PR #27 与 #28 的增量已在独立分支整合，面向已合并 S0 的 `main`
 
 | 编号 | 任务 | 状态 |
 |---|---|---|
+| PT-908 | 动态分析与高阶污点分析演进预研备忘录 | 调研备忘录完成；属于未来演进路线（Future Work），本届赛事不落地实施 |
 | PT-D01 | 标准 Android 模拟器 | 暂缓；静态真实闭环完成后再评估 |
 | PT-D02 | Sensitive API Hook | 暂缓；静态真实闭环完成后再评估 |
 | PT-D03 | Network Capture | 暂缓；静态真实闭环完成后再评估 |

@@ -1,0 +1,53 @@
+{
+  "verified_at": "2026-10-11T05:00:09.855797+00:00",
+  "base_commit": "4b066fecfef7b96b93a3866bef850d9dad7722d0",
+  "authority": {
+    "command": "PRIVACYTRACE_DOCKER_TESTS=1 scripts/check.ps1",
+    "api_passed": 469,
+    "web_passed": 44,
+    "skipped": 0,
+    "warnings": [
+      "Existing Starlette httpx deprecation warning"
+    ]
+  },
+  "rebuilds": {
+    "actual_source_builds": 3,
+    "all_six_apk_hashes_equal": true
+  },
+  "prediction_images": [
+    "sha256:0352564f0691a122ee852e7aafb39214074b6ad47ead1790dccb52a622af3d72"
+  ],
+  "ordinary_input_boundary": {
+    "material": "Same authored C02 APK and ordinary policy capture; not a second real app",
+    "input_mode": "APK",
+    "source_origin": "REAL_SCAN",
+    "region": null,
+    "document_completeness": "COMPLETE",
+    "extraction_status": "PARTIAL",
+    "review_status": "UNREVIEWED",
+    "attachments_status": "NOT_CHECKED",
+    "statuses": [
+      "INSUFFICIENT_EVIDENCE",
+      "INSUFFICIENT_EVIDENCE"
+    ]
+  },
+  "candidate_count": 4,
+  "human_preparation_seconds": null,
+  "browser_validation_script_sha256": "a530d3e107873eefe42c02285d4cd29fb41522885a0e53695e210be48ab830ac",
+  "artifact_sha256": {
+    "browser-proof.json": "10fde469935c60f6fceba3eb817f1c49296f1afa62f1de942aeb6ffcd7e3d054",
+    "build-receipt.json": "4755b9667c50a18b99713cf1fdf515b6bc5fae3491b907d290e153ad385104f7",
+    "comparison.json": "18077d8f013d0d565dd3ebaede65c84932faab089b42c92ed16528f293daa39f",
+    "offline-proof.json": "1f01e2f52fd62fd56a7b24d9e2051fde94c8fd47bde2d90e5b83096581efcb29"
+  },
+  "offline_sdk_signatures_versions": [
+    "1.0.0"
+  ],
+  "affected_ui_recheck": {
+    "web_passed": 44,
+    "legacy_browser_cases_passed": 5,
+    "typecheck_and_production_build": "PASSED",
+    "controlled_browser_and_independent_offline_replay": "PASSED",
+    "preserved_main_sdk_pagination": true
+  }
+}

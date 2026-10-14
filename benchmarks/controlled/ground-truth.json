@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "frozen_at": "2026-10-10T00:39:16.422477+08:00",
+  "origin": "Spec30 scenario definitions and authored source/policy, before first execution",
+  "inputs_lock_sha256": "32f7a4bbd9a73d261f2d0e2100f31a0b6b38f51ace363841ac06415336295c87",
+  "counting_unit": "One target outcome per scenario, including CAPABILITY in C01; all six scenarios remain denominator",
+  "metrics": [
+    "status_agreement",
+    "abstentions",
+    "failures",
+    "coverage",
+    "elapsed_seconds"
+  ],
+  "pr_f1": "NOT_REPORTED: no binary collection/legality target",
+  "human_preparation_seconds": null,
+  "preparation_actor": "Codex-assisted manual fixture annotation; no independent human sign-off claimed",
+  "scenarios": {
+    "C01": {
+      "data_type": "PRECISE_LOCATION",
+      "action": "CAPABILITY",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "api_count": 0,
+      "target_descriptor": null,
+      "source_reference": "android/C01/MainActivity.java",
+      "policy_reference": "policies/C01.txt"
+    },
+    "C02": {
+      "data_type": "PRECISE_LOCATION",
+      "action": "ACCESS",
+      "expected": "EXACT_MATCH",
+      "api_count": 1,
+      "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "source_reference": "android/C02/MainActivity.java",
+      "policy_reference": "policies/C02.txt"
+    },
+    "C03": {
+      "data_type": "PRECISE_LOCATION",
+      "action": "ACCESS",
+      "expected": "CATEGORY_MATCH",
+      "api_count": 1,
+      "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "source_reference": "android/C03/MainActivity.java",
+      "policy_reference": "policies/C03.txt"
+    },
+    "C04": {
+      "data_type": "PRECISE_LOCATION",
+      "action": "ACCESS",
+      "expected": "NOT_DECLARED",
+      "api_count": 1,
+      "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "source_reference": "android/C04/MainActivity.java",
+      "policy_reference": "policies/C04.txt"
+    },
+    "C05": {
+      "data_type": "PRECISE_LOCATION",
+      "action": "ACCESS",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "api_count": 1,
+      "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "source_reference": "android/C05/MainActivity.java",
+      "policy_reference": "policies/C05.txt"
+    },
+    "C06": {
+      "data_type": "PRECISE_LOCATION",
+      "action": "ACCESS",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "api_count": 1,
+      "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "source_reference": "android/C06/MainActivity.java",
+      "policy_reference": "policies/C06.txt"
+    }
+  }
+}

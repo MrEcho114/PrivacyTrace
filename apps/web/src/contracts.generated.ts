@@ -4,7 +4,8 @@
 export type AnalysisJob = {
   "id": string;
   "sample_id": string;
-  "input_mode": "SYNTHETIC" | "APK";
+  "input_mode": "SYNTHETIC" | "APK" | "CONTROLLED_APK";
+  "source_origin": SourceOrigin;
   "state": "QUEUED" | "INTAKE" | "STATIC_ANALYSIS" | "POLICY_PARSING" | "EVALUATING" | "REPORTING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
   "ruleset_version": string;
   "created_at": string;
@@ -27,6 +28,8 @@ export type ContextualHint = {
   "basis"?: "CONTEXTUAL_PURPOSE_HINT";
   "evidence_ids": Array<string>;
 };
+
+export type DeliveryMode = "LIVE_GENERATED" | "PERSISTED_REPLAY";
 
 export type EvaluationInput = {
   "job": AnalysisJob;
@@ -105,7 +108,7 @@ export type PolicyDocument = {
   "evidence_id": string;
 };
 
-export type PolicySource = "IN_APP_POLICY" | "STORE_POLICY" | "OFFICIAL_WEB_POLICY" | "SDK_POLICY";
+export type PolicySource = "IN_APP_POLICY" | "STORE_POLICY" | "OFFICIAL_WEB_POLICY" | "SDK_POLICY" | "CONTROLLED_POLICY";
 
 export type PrivacyBehavior = {
   "id": string;
@@ -136,6 +139,7 @@ export type Report = {
   "demo"?: false;
   "sample": SampleMetadata;
   "job": AnalysisJob;
+  "delivery_mode"?: DeliveryMode;
   "result": EvaluationResult;
   "evidence": Array<Evidence>;
   "behaviors": Array<PrivacyBehavior>;
@@ -161,7 +165,7 @@ export type ReviewEvent = {
 export type ReviewRequest = {
   "actor": string;
   "reason": string;
-  "note": string;
+  "note"?: string;
   "claim"?: PolicyClaim | null;
 };
 
@@ -180,7 +184,34 @@ export type ScanCoverage = {
   "scope"?: "DEX_ENTRIES";
   "behavior_detection"?: "LIMITED_RULE_BASED_STATIC";
   "behavior_limitations"?: Array<string>;
+  "sdk_attribution_limitations"?: Array<string>;
   "limitations": Array<string>;
   "scanned_dex": Array<string>;
   "failed_dex": Array<string>;
 };
+
+export type SdkSignature = {
+  "id": string;
+  "name": string;
+  "vendor": string;
+  "package_prefixes": Array<string>;
+  "potential_data_types": Array<string>;
+  "source": string;
+  "source_url": string;
+  "license": string;
+  "verified_at": string;
+  "note": string;
+};
+
+export type SdkSignatureRuleset = {
+  "version": string;
+  "status": "SYNTHETIC_SEED_ONLY" | "LIMITED_SOURCED_SEED";
+  "scope_note": string;
+  "boundaries": Array<string>;
+  "evidence_kind": "VENDOR_PUBLISHED_PACKAGE_NAME";
+  "signatures": Array<SdkSignature>;
+  "excluded_namespaces": Array<string>;
+  "exclusion_note": string;
+};
+
+export type SourceOrigin = "SYNTHETIC" | "CONTROLLED" | "REAL_SCAN" | "UNKNOWN";

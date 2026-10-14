@@ -15,6 +15,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+from dataclasses import replace
 from pathlib import Path, PurePosixPath
 from zipfile import BadZipFile, ZipFile
 
@@ -24,6 +25,17 @@ MAX_APK = 150 * 1024 * 1024
 MAX_EXPANDED = 512 * 1024 * 1024
 MAX_ENTRY = 128 * 1024 * 1024
 MAX_ENTRIES = 20000
+
+# Cap on how many SDK attribution *classes* one scan emits. A Dex can reference
+# far more classes than a report can sensibly list; truncation is reported in
+# `coverage.sdk_attribution_limitations`, never silently dropped.
+MAX_SDK_ATTRIBUTIONS = 500
+
+# Guard rails on the SDK evidence budget. At most one guaranteed representative
+# per signature, so a hostile APK cannot inflate the floor past the cap; at least
+# one guaranteed representative per signature, so the cap can never empty it.
+MAX_SDK_REPRESENTATIVES = min(MAX_SDK_ATTRIBUTIONS, 100)
+MIN_SDK_REPRESENTATIVES = 1
 
 FRAMEWORK_STATIC_URIS = {
     (
@@ -119,6 +131,7 @@ def empty_result():
             scope="DEX_ENTRIES",
             behavior_detection="LIMITED_RULE_BASED_STATIC",
             behavior_limitations=behavior_limitations(),
+            sdk_attribution_limitations=[],
             scanned_dex=[],
             failed_dex=[],
             limitations=[],
@@ -164,20 +177,35 @@ def isolation_probe(path):
     return result
 
 
-def scan(path, rules, inventory=False):
+def scan(path, rules, inventory=False, sdk_rules=None):
     from androguard.core.apk import APK
     from androguard.core.dex import DEX, Operand
     from loguru import logger
+
+    from .sdk_attribution import SdkAttributionCollector, load_index
 
     logger.remove()
     logger.add(sys.stderr, level="WARNING")
     result = empty_result()
     inventory_calls = []
     inventory_truncated = False
+    sdk_index = load_index(sdk_rules) if sdk_rules else None
+    # Matches go straight into a bounded collector rather than a growing dict: the
+    # number of matching classes is attacker-controlled, so holding them all would
+    # let one APK drive unbounded memory.
+    sdk_collector = (
+        SdkAttributionCollector(
+            MAX_SDK_ATTRIBUTIONS, MIN_SDK_REPRESENTATIVES, MAX_SDK_REPRESENTATIVES
+        )
+        if sdk_index is not None
+        else None
+    )
     result["tools"] = {
         "androguard": importlib.metadata.version("androguard"),
         "ruleset": rules["version"],
     }
+    if sdk_index is not None:
+        result["tools"]["sdk_signatures"] = sdk_index.version
     with checked_entries(path) as archive:
         result["apk_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
         if "AndroidManifest.xml" not in archive.namelist():
@@ -298,6 +326,16 @@ def scan(path, rules, inventory=False):
             try:
                 vm = DEX(archive.read(name))
                 for cls in vm.get_classes():
+                    # PT-401: attribute a class to a published vendor package range.
+                    # This records a reference label only. It creates no behavior,
+                    # because an SDK's static presence is not a collection event.
+                    # The collector keeps memory bounded and preserves one
+                    # representative per SDK, so a large SDK cannot crowd out
+                    # another one from the capped report.
+                    if sdk_collector is not None:
+                        found = sdk_index.match_descriptor_with_prefix(cls.get_name())
+                        if found is not None:
+                            sdk_collector.add(replace(found, dex=name))
                     for method in cls.get_methods():
                         caller = (
                             method.get_class_name()
@@ -455,7 +493,10 @@ def scan(path, rules, inventory=False):
             except Exception as exc:
                 result["coverage"]["failed_dex"].append(name)
                 result["errors"].append(
-                    dict(code="DEX_PARSE_FAILED", message=name + ": " + type(exc).__name__)
+                    dict(
+                        code="DEX_PARSE_FAILED",
+                        message=name + ": " + type(exc).__name__ + ": " + str(exc)[:200],
+                    )
                 )
         if (
             "classes.dex" in names
@@ -472,6 +513,51 @@ def scan(path, rules, inventory=False):
             "no subclass-owner/name-only classification"
         )
         result["tools"]["inventory_truncated"] = str(inventory_truncated).lower()
+    if sdk_collector is not None:
+        for found in sdk_collector.selected():
+            result["evidence"].append(
+                dict(
+                    id=found.evidence_id,
+                    kind="SDK",
+                    status="STATIC_POTENTIAL",
+                    source=found.dex,
+                    locator=(
+                        "apk_sha256="
+                        + result["apk_sha256"]
+                        + ";dex="
+                        + found.dex
+                        + ";class="
+                        + found.class_name
+                    ),
+                    excerpt=(
+                        found.class_name
+                        + " matches published package prefix "
+                        + found.prefix
+                        + " of "
+                        + found.signature.name
+                        + " ("
+                        + found.signature.vendor
+                        + "); attribution only, not evidence "
+                        + "of collection or transfer."
+                    ),
+                )
+            )
+        if sdk_collector.capped:
+            # Attribution gaps are not behavior gaps; file them under the SDK
+            # coverage list, never behavior ones. `observed` counts match events
+            # (duplicates included), so it is not a unique class total.
+            note = (
+                f"SDK 归属输出上限为 {MAX_SDK_ATTRIBUTIONS} 条类，"
+                f"本次共观察到 {sdk_collector.observed} 次命中，"
+                f"超出上限的部分未逐条列出；"
+            )
+            if sdk_collector.per_sdk_floor_is_achievable():
+                note += (
+                    f"已保证每个命中的 SDK 至少保留 {MIN_SDK_REPRESENTATIVES} "
+                    "条代表性类路径；"
+                )
+            note += "上限截断不代表没有更多 SDK。"
+            result["coverage"]["sdk_attribution_limitations"].append(note)
     return result
 
 
@@ -490,6 +576,20 @@ def main():
         default=Path(__file__).resolve().parents[4] / "rules/taxonomy.v0.3.json",
     )
     parser.add_argument(
+        "--sdk-rules",
+        type=Path,
+        default=Path(__file__).resolve().parents[4] / "rules/sdk-signatures.v1.0.json",
+        help="Sourced third-party package prefixes (default: the shipped ruleset)",
+    )
+    parser.add_argument(
+        "--no-sdk-attribution",
+        action="store_true",
+        help=(
+            "Disable SDK attribution entirely; wins over --sdk-rules and needs no "
+            "empty value for it"
+        ),
+    )
+    parser.add_argument(
         "--jadx", nargs="?", const="jadx", help="Optional reference decompiler binary"
     )
     args = parser.parse_args()
@@ -502,6 +602,11 @@ def main():
                     args.apk,
                     json.loads(args.rules.read_text(encoding="utf-8")),
                     inventory=args.inventory,
+                    sdk_rules=(
+                        json.loads(args.sdk_rules.read_text(encoding="utf-8"))
+                        if args.sdk_rules is not None and not args.no_sdk_attribution
+                        else None
+                    ),
                 )
             )
         if args.jadx:

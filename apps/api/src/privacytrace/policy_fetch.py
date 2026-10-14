@@ -269,7 +269,9 @@ def fetch_policy(url, budget_seconds=15):
                 "error_code": None,
             }
         except (OSError, http.client.HTTPException, UnicodeError) as exc:
-            timed_out = expired.is_set() or isinstance(exc, TimeoutError) or time.monotonic() >= deadline
+            timed_out = (
+                expired.is_set() or isinstance(exc, TimeoutError) or time.monotonic() >= deadline
+            )
             raise FetchError("FETCH_TIMEOUT" if timed_out else "FETCH_FAILED") from exc
         finally:
             if watchdog:

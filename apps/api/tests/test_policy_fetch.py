@@ -173,12 +173,16 @@ def test_manual_source_url_cannot_publish_userinfo_or_invalid_authority():
     assert policy_fetch.display_url("https://user:PRIVATE@public.example/policy?key=SECRET") == (
         "https://public.example/policy?key=REDACTED"
     )
-    assert policy_fetch.display_url("https://user:PRIVATE@[invalid/policy") == "Unparseable source URL"
+    assert policy_fetch.display_url("https://user:PRIVATE@[invalid/policy") == (
+        "Unparseable source URL"
+    )
 
 
 def test_resolver_json_roundtrip_preserves_socket_address_tuple(monkeypatch):
     addresses = [[socket.AF_INET, socket.SOCK_STREAM, 6, "", ["8.8.8.8", 443]]]
     monkeypatch.setattr(
-        subprocess, "run", lambda *a, **kw: subprocess.CompletedProcess(a, 0, json.dumps(addresses).encode())
+        subprocess,
+        "run",
+        lambda *a, **kw: subprocess.CompletedProcess(a, 0, json.dumps(addresses).encode()),
     )
     assert policy_fetch.resolve_addresses("public.example", 443)[0][4] == ("8.8.8.8", 443)

@@ -94,6 +94,20 @@ def test_local_write_auth_secret_redaction_and_body_limits(tmp_path):
     )
 
 
+def test_manual_url_uses_supplied_source_and_redacts_credentials(tmp_path):
+    app = create_app(tmp_path)
+    draft = app.state.web_intake.create(DraftInput(name="manual", sources=[{
+        "id": "manual", "title": "Manual text", "text": "我们不会读取联系人。",
+        "url": "https://user:PRIVATE@public.example/policy?key=SECRET",
+        "final_url": "https://unfetched.example/fabricated",
+        "captured_at": "2000-01-01T00:00:00Z", "sha256": "fabricated",
+    }]))
+    assert draft["sources"][0]["final_url"] is None
+    assert draft["sources"][0]["sha256"] != "fabricated"
+    evidence = app.state.web_intake.captures(draft)[0]["evidence"][0]
+    assert evidence.source == "https://public.example/policy?key=REDACTED"
+
+
 def test_quote_scope_and_revision_are_validated_before_scanning(tmp_path):
     app = create_app(tmp_path)
     client = TestClient(app)

@@ -1,6 +1,7 @@
 """HTTP seam for local private intake; no browser-supplied scanner facts."""
 
 from fastapi import HTTPException, Request
+from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import Field
@@ -33,6 +34,8 @@ def install_web_api(app, local_write):
     @app.exception_handler(RequestValidationError)
     async def input_error(request, exc):
         # Pydantic error inputs can contain keys or full private policy text.
+        if not request.url.path.startswith("/api/v1/web/"):
+            return await request_validation_exception_handler(request, exc)
         return JSONResponse(status_code=422, content={"detail": "INPUT_VALIDATION_FAILED"})
 
     @app.get("/api/v1/web/settings")

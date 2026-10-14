@@ -270,8 +270,8 @@ def test_mixed_public_private_dns_rejected(monkeypatch):
     import socket
 
     monkeypatch.setattr(
-        socket,
-        "getaddrinfo",
+        policy_fetch,
+        "resolve_addresses",
         lambda *a, **kw: [
             (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("8.8.8.8", 443)),
             (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.0.0.1", 443)),
@@ -285,8 +285,8 @@ def test_fake_ip_fallback_still_requires_global_dns(monkeypatch):
     import socket
 
     monkeypatch.setattr(
-        socket,
-        "getaddrinfo",
+        policy_fetch,
+        "resolve_addresses",
         lambda *a, **kw: [
             (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("198.18.0.67", 443)),
         ],

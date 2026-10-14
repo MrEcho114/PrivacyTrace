@@ -8,7 +8,7 @@ import { copy } from '../copy'
 import { emptySource, sourceTypes } from '../workflow'
 import type { Workflow } from '../workflow'
 const props = defineProps<{ state: Workflow; busy?: boolean; uploadedName?: string }>()
-const emit = defineEmits<{ example: []; next: []; file: [File] }>()
+const emit = defineEmits<{ example: []; next: []; file: [File]; dirty: [] }>()
 const file = ref<File | null>(null)
 const fileError = ref('')
 const dropActive = ref(false)
@@ -29,8 +29,10 @@ function addSource() {
   if (props.state.sources.length >= 8) return
   const id = 'source-' + crypto.randomUUID()
   props.state.sources.push(emptySource(id)); props.state.sourceId = id
+  if (!props.state.example) emit('dirty')
 }
 function removeSource(id: string) {
+  if (!props.state.example) emit('dirty')
   textReads.delete(id)
   delete textErrors.value[id]
   props.state.sources = props.state.sources.filter(item => item.id !== id)
@@ -65,7 +67,7 @@ function useText(id: string) {
 <template>
   <div>
     <div class="page-heading"><h1 id="page-title" tabindex="-1">{{ copy.importTitle }}</h1><p>{{ copy.importDescription }}</p></div>
-    <div class="import-grid" :inert="busy || undefined">
+    <div class="import-grid" :inert="busy || undefined" @input="!state.example && emit('dirty')" @change="!state.example && emit('dirty')">
       <section class="material-panel apk-panel"><div class="panel-heading"><h2>APK 文件</h2><StatusTag>本机</StatusTag></div>
         <div class="file-drop" :class="{ 'drag-active': dropActive }" @dragover.prevent="dropActive = true" @dragleave="dropActive = false" @drop.prevent="drop">
           <span class="file-glyph" aria-hidden="true"><UiIcon name="file" /><span>APK</span></span>

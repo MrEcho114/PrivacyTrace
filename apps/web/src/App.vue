@@ -49,7 +49,7 @@ const realReport = computed(() => report.value && !report.value.demo ? report.va
 const webSources = computed(() => {
   try {
     const value = JSON.parse(realReport.value?.tools.web_policy_sources ?? '[]')
-    return Array.isArray(value) ? value.filter(item => item && typeof item.title === 'string' && typeof item.status === 'string') as { title: string; status: string; error_code?: string; captured_at?: string; sha256?: string }[] : []
+    return Array.isArray(value) ? value.filter(item => item && typeof item.title === 'string' && typeof item.status === 'string') as { title: string; status: string; error_code?: string; captured_at?: string; sha256?: string; url?: string; final_url?: string }[] : []
   } catch { return [] }
 })
 // SDK attribution is reference material with its own access path: no issue cites
@@ -385,7 +385,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         {{ sourceInfo?.desc ?? (source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。报告不保证覆盖反射、动态加载、原生代码或运行时行为。') }}
         六种状态只对照 DATA_TYPE_DISCLOSURE；“具体类型已声明”不代表目的、接收方、传输或时间范围全部一致，更不是合法性判断。
       </details>
-      <section v-if="webSources.length" class="coverage-card"><h2>输入来源状态</h2><p>失败来源保留；正文完整度未知、全文未复核、附件未检查。</p><ul><li v-for="item in webSources" :key="item.title"><strong>{{ item.title }}</strong> · {{ item.status === 'failed' ? '来源获取失败' : item.status === 'empty' ? '无正文' : item.status === 'manual' ? '手动补入' : '已获取正文' }}<span v-if="item.error_code"> · {{ item.error_code }}</span></li></ul></section><section v-if="realReport" class="report-provenance" aria-label="报告生成来源">
+      <section v-if="webSources.length" class="coverage-card"><h2>输入来源状态</h2><p>失败来源保留；正文完整度未知、全文未复核、附件未检查。</p><ul><li v-for="(item, index) in webSources" :key="index"><strong>{{ item.title }}</strong> · {{ item.status === 'failed' ? '来源获取失败' : item.status === 'empty' ? '无正文' : item.status === 'manual' ? '手动补入' : '已获取正文' }}<span v-if="item.error_code"> · {{ item.error_code }}</span><p class="subtle">请求网址 {{ item.url || '手动输入' }} · 最终网址 {{ item.final_url || '未获取／手动输入' }}</p></li></ul></section><section v-if="realReport" class="report-provenance" aria-label="报告生成来源">
         <strong>{{ offlineReplay ? 'OFFLINE REPLAY · 离线回放' : '存档报告查看 · PERSISTED REPLAY' }}</strong>
         <p v-if="realReport.tools.analysis_generated_at">分析生成时点：{{ realReport.tools.analysis_generated_at }}。查看存档不代表重新扫描。</p>
         <p v-else>记录创建时点：{{ realReport.job.created_at }}。未留存分析生成时点；来源以报告来源标识为准。</p>

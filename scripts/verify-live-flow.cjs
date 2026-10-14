@@ -86,6 +86,24 @@ async function main() {
     await page.setViewportSize({ width: 1440, height: 900 })
     const count = draft.candidates.length
     assert(count > 0, 'at least one verified model candidate must reach the editor')
+    if (!publicMode) {
+      await page.locator('.source-tabs button').first().click()
+      await page.locator('.candidate-item').first().click()
+      await page.getByLabel('条件', { exact: true }).fill('用户主动拍照并授权')
+      await page.getByRole('button', { name: '保存候选', exact: true }).click()
+      await page.waitForFunction(() => !document.querySelector('.candidate-grid')?.hasAttribute('inert'))
+      await page.getByRole('button', { name: '添加候选', exact: true }).click()
+      await page.getByLabel('政策原句', { exact: true }).fill('我们不会读取联系人。')
+      await page.getByLabel('数据类型', { exact: true }).selectOption('CONTACTS')
+      await page.getByLabel('声明方式', { exact: true }).selectOption('NEGATED')
+      await page.getByLabel('声明主体', { exact: true }).selectOption('APP')
+      await page.getByRole('button', { name: '保存候选', exact: true }).click()
+      await page.waitForFunction(() => !document.querySelector('.candidate-grid')?.hasAttribute('inert'))
+      assert.equal((await read()).candidates.length, count + 1)
+      await page.getByRole('button', { name: '删除候选', exact: true }).click()
+      await page.waitForFunction(() => !document.querySelector('.candidate-grid')?.hasAttribute('inert'))
+      assert.equal((await read()).candidates.length, count)
+    }
     for (const source of draft.sources.slice(0, 2)) {
       await page.locator('.source-tabs button').filter({ hasText: source.title }).click()
       const items = page.locator('.candidate-item')
@@ -102,6 +120,15 @@ async function main() {
     await page.getByRole('button', { name: '保存候选并开始分析', exact: true }).click()
     await page.getByRole('heading', { name: '分析进度', exact: true }).waitFor()
     await page.reload(); await page.getByRole('heading', { name: '分析进度', exact: true }).waitFor()
+    if (!publicMode) {
+      await page.getByRole('button', { name: '取消分析', exact: true }).click()
+      await page.getByRole('button', { name: '重新创建分析', exact: true }).waitFor()
+      const cancelledDraft = await read()
+      const cancelledJob = await fetch(api + '/api/v1/jobs/' + cancelledDraft.jobs[0].job_id).then(r => r.json())
+      assert.equal(cancelledJob.state, 'CANCELLED')
+      assert.equal(cancelledDraft.jobs.length, 1)
+      await page.getByRole('button', { name: '重新创建分析', exact: true }).click()
+    }
     await page.getByRole('button', { name: '查看报告', exact: true }).waitFor({ timeout: 180000 })
     draft = await read(); const run = draft.jobs.at(-1); const job = await fetch(api + '/api/v1/jobs/' + run.job_id).then(r => r.json())
     assert.equal(job.state, 'SUCCEEDED', job.error)
@@ -112,17 +139,49 @@ async function main() {
     assert.equal(JSON.parse(report.tools.web_policy_sources)[2].status, 'failed')
     assert(report.policy_claims.length > 0)
     assert.equal(report.delivery_mode, 'PERSISTED_REPLAY')
-    assert.equal(draft.jobs.length, 1, 'refresh must not submit another scan')
+    assert.equal(draft.jobs.length, publicMode ? 1 : 2, 'refresh must not submit another scan')
+    if (!publicMode) {
+      const negative = report.policy_claims.find(c => c.data_type === 'CONTACTS')
+      assert.equal(negative.polarity, 'NEGATIVE'); assert.equal(negative.subject, 'HOST_APP')
+      const conditional = report.policy_claims.find(c => c.data_type === 'CAMERA')
+      assert.equal(conditional.condition, '用户主动拍照并授权')
+      const third = report.policy_claims.find(c => c.data_type === 'DEVICE_IDENTIFIER')
+      assert.equal(third.subject, 'THIRD_PARTY'); assert.equal(third.document_id, 'web-' + draft.sources[1].id)
+      for (const claim of report.policy_claims) {
+        const doc = report.policy_documents.find(d => d.id === claim.document_id)
+        for (const id of claim.evidence_ids) { const evidence = report.evidence.find(e => e.id === id); assert.equal(evidence.excerpt, [...doc.artifact.text].slice(evidence.start_offset, evidence.end_offset).join('')) }
+      }
+    }
     const isolation = JSON.parse(fs.readFileSync(report.tools.isolation_receipt, 'utf8'))
     assert(isolation.container_created && isolation.input_removed && isolation.cleanup_verified)
     await page.getByRole('button', { name: '查看报告', exact: true }).click()
-    await page.locator('.coverage-card').waitFor()
+    await page.getByRole('heading', { name: /^DEX 处理范围/ }).waitFor()
     const evidenceButton = page.locator('.evidence-button').first()
     await evidenceButton.click()
     await page.locator('#evidence-panel').waitFor()
     for (const [width, height] of widths) { await page.setViewportSize({ width, height }); assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)); await page.screenshot({ path: path.join(output, `report-${width}.png`), fullPage: true }) }
     assert.equal(errors.length, 0)
-    proof = { ...proof, passed: true, draft_revision: draft.revision, job_id: job.id, sources: draft.sources.map(s => ({ title: s.title, status: s.status, hash: s.sha256, captured_at: s.captured_at, model_audit: s.model_audit })), candidates: count, events: run.events, isolation: { container_created: isolation.container_created, input_removed: isolation.input_removed, cleanup_verified: isolation.cleanup_verified }, page_errors: errors, viewports: widths.map(w => w[0]) }
+    if (!publicMode) {
+      await page.setViewportSize({ width: 1440, height: 900 })
+      await page.getByRole('button', { name: '新建材料版本', exact: true }).click()
+      await page.locator('input[accept=".apk"]').setInputFiles(apk)
+      const failedSource = page.locator('.source-editor').filter({ hasText: '失败来源保留' }).first()
+      await failedSource.locator('summary').first().click()
+      await failedSource.getByLabel('政策正文', { exact: true }).fill('手动补入：我们不会读取联系人。<script>window.privacytraceAttack=1</script>')
+      await failedSource.getByRole('button', { name: '使用这份正文', exact: true }).click()
+      await page.getByRole('button', { name: '获取政策并检查候选', exact: true }).click()
+      await page.getByRole('heading', { name: '检查政策候选', exact: true }).waitFor()
+      await page.waitForFunction(() => !document.querySelector('.candidate-grid')?.hasAttribute('inert'))
+      const fallbackId = await page.evaluate(() => localStorage.getItem('privacytrace.live.draft.v1'))
+      const fallback = await fetch(api + '/api/v1/web/drafts/' + fallbackId).then(r => r.json())
+      assert.equal(fallback.sources[2].status, 'manual')
+      assert.equal(await page.evaluate(() => window.privacytraceAttack), undefined)
+      await page.getByRole('button', { name: '修改材料', exact: true }).click()
+      await page.getByLabel('政策正文', { exact: true }).first().fill('修改后的政策正文')
+      assert.equal(await page.getByRole('button', { name: '2 检查候选', exact: true }).isDisabled(), true)
+      proof.browser_recovery = ['candidate edit/add/delete persisted', 'cancel then new retry job', 'manual text replaces failed source', 'material edits invalidate later steps', 'policy HTML rendered as text']
+    }
+    proof = { ...proof, passed: true, draft_revision: draft.revision, job_id: job.id, sources: draft.sources.map(s => ({ title: s.title, status: s.status, requested_url: s.url, final_url: s.final_url, hash: s.sha256, captured_at: s.captured_at, model_audit: s.model_audit })), candidates: count, events: run.events, isolation: { container_created: isolation.container_created, input_removed: isolation.input_removed, cleanup_verified: isolation.cleanup_verified }, page_errors: errors, viewports: widths.map(w => w[0]) }
     console.log(`Live flow passed (${proof.policy_model_mode}): ${count} candidates, two captured policies, retained failure, actual Docker, refreshed job and stored report.`)
   } finally {
     fs.writeFileSync(path.join(output, 'verification.json'), JSON.stringify(proof, null, 2))

@@ -35,7 +35,7 @@ function startExample() {
   state.value = freshWorkflow(true); message.value = ''; view.value = 'workflow'; location.hash = 'import'; focusPage()
 }
 function openReports() { view.value = 'reports'; location.hash = 'reports'; focusPage() }
-function newMaterials() { state.value = freshWorkflow(); go('import'); message.value = '' }
+function newMaterials() { try { localStorage.removeItem('privacytrace.live.draft.v1') } catch { storageError.value = true }; state.value = freshWorkflow(); go('import'); message.value = '' }
 function persist() {
   const raw = saveDraft(state.value)
   try {

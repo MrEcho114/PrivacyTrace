@@ -22,7 +22,9 @@ const quoteError = computed(() => {
 const checkedCount = computed(() => candidates.value.filter(item => item.checked && quoteExists(item, props.state.sources)).length)
 const parts = computed(() => {
   const text = source.value?.text ?? ''; const quote = chosen.value?.quote ?? ''
-  const offset = quoteValid.value ? text.indexOf(quote) : -1
+  const specified = chosen.value?.startOffset
+  const codepointOffset = specified == null ? -1 : [...text].slice(0, specified).join('').length
+  const offset = quoteValid.value ? codepointOffset >= 0 && text.slice(codepointOffset, codepointOffset + quote.length) === quote ? codepointOffset : text.indexOf(quote) : -1
   return offset < 0 ? { before: text, quote: '', after: '' } : { before: text.slice(0, offset), quote, after: text.slice(offset + quote.length) }
 })
 const notice = ref('')
@@ -51,6 +53,7 @@ function remove() {
   void nextTick(() => document.getElementById('add-candidate')?.focus())
 }
 function edit() { if (chosen.value) chosen.value.checked = false; notice.value = '' }
+function editQuote() { if (chosen.value) chosen.value.startOffset = undefined; edit() }
 </script>
 <template>
   <div>
@@ -67,7 +70,7 @@ function edit() { if (chosen.value) chosen.value.checked = false; notice.value =
         <div class="candidate-list" aria-label="候选列表"><button v-for="candidate in candidates" :key="candidate.id" class="candidate-item" :class="{ selected: chosenId === candidate.id }" :aria-pressed="chosenId === candidate.id" @click="select(candidate)"><span class="candidate-item-heading"><strong>{{ editorTypes[candidate.dataType] || candidate.dataType }}</strong><StatusTag :tone="candidate.checked && quoteExists(candidate, state.sources) ? 'success' : 'wait'">{{ candidate.checked && quoteExists(candidate, state.sources) ? '已检查' : '待检查' }}</StatusTag></span><span class="candidate-quote-preview">{{ candidate.quote || copy.quoteMissing }}</span></button><p v-if="!candidates.length" class="field-help">{{ copy.emptyCandidates }}</p></div>
         <form v-if="chosen" class="candidate-editor" @submit.prevent="save">
           <div class="candidate-editor-heading"><h3>编辑候选<span>{{ editorTypes[chosen.dataType] || chosen.dataType }}</span></h3><UiButton variant="quiet" :disabled="!quoteValid" @click="locateQuote">定位原句</UiButton></div>
-          <UiField label="政策原句" id="candidate-quote" :help="quoteValid ? copy.quoteMatched : ''" :error="quoteError" v-slot="{ describedby }"><textarea id="candidate-quote" v-model="chosen.quote" maxlength="5000" rows="3" :aria-describedby="describedby" :aria-invalid="!quoteValid" @input="edit" /></UiField>
+          <UiField label="政策原句" id="candidate-quote" :help="quoteValid ? copy.quoteMatched : ''" :error="quoteError" v-slot="{ describedby }"><textarea id="candidate-quote" v-model="chosen.quote" maxlength="5000" rows="3" :aria-describedby="describedby" :aria-invalid="!quoteValid" @input="editQuote" /></UiField>
           <div class="field-pair"><UiField label="数据类型" id="candidate-type"><select id="candidate-type" v-model="chosen.dataType" @change="edit"><option v-for="(text, id) in editorTypes" :key="id" :value="id">{{ text }}</option></select></UiField><UiField label="声明方式" id="candidate-polarity"><select id="candidate-polarity" v-model="chosen.polarity" @change="edit"><option value="AFFIRMED">肯定</option><option value="NEGATED">否定</option><option value="UNKNOWN">未知</option></select></UiField></div>
           <div class="field-pair"><UiField label="声明主体" id="candidate-subject"><select id="candidate-subject" v-model="chosen.subject" @change="edit"><option value="APP">应用自身</option><option value="THIRD_PARTY">第三方</option><option value="UNKNOWN">未知</option></select></UiField>
           <UiField label="条件" id="candidate-condition"><input id="candidate-condition" v-model="chosen.condition" maxlength="1000" placeholder="未知或不适用" @input="edit" /></UiField></div>

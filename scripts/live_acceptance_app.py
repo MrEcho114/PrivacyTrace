@@ -7,11 +7,12 @@ fixtures. Scan execution still uses the unchanged restricted Docker worker.
 import json
 import os
 import socket
+import time
 from urllib.parse import urlsplit
 
 from fastapi import Request
 from fastapi.responses import HTMLResponse, JSONResponse
-from privacytrace import policy_fetch
+from privacytrace import pipeline, policy_fetch
 from privacytrace.main import create_app
 
 app = create_app()
@@ -20,7 +21,7 @@ SDK_TEXT = "第三方统计服务会处理设备标识，用于统计应用使�
 original_target = policy_fetch.public_target
 
 
-def fixture_target(url):
+def fixture_target(url, timeout=15):
     if urlsplit(url).hostname == "policy.privacytrace.test":
         port = int(os.environ["PRIVACYTRACE_LIVE_API_PORT"])
         return (
@@ -28,10 +29,20 @@ def fixture_target(url):
             port,
             (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", port)),
         )
-    return original_target(url)
+    return original_target(url, timeout=timeout)
 
 
 policy_fetch.public_target = fixture_target
+original_scan = pipeline.scan_isolated
+
+
+def delayed_scan(*args, **kwargs):
+    # Hold the actual OS/scanner seam briefly so browser cancellation is deterministic.
+    time.sleep(4)
+    return original_scan(*args, **kwargs)
+
+
+pipeline.scan_isolated = delayed_scan
 
 
 @app.get("/policy/host", response_class=HTMLResponse)

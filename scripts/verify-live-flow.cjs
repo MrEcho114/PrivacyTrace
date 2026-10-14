@@ -89,7 +89,7 @@ async function main() {
     if (!publicMode) {
       await page.locator('.source-tabs button').first().click()
       await page.locator('.candidate-item').first().click()
-      await page.getByLabel('条件', { exact: true }).fill('用户主动拍照并授权')
+      await page.getByLabel('条件', { exact: true }).fill('拍照时')
       await page.getByRole('button', { name: '保存候选', exact: true }).click()
       await page.waitForFunction(() => !document.querySelector('.candidate-grid')?.hasAttribute('inert'))
       await page.getByRole('button', { name: '添加候选', exact: true }).click()
@@ -144,7 +144,7 @@ async function main() {
       const negative = report.policy_claims.find(c => c.data_type === 'CONTACTS')
       assert.equal(negative.polarity, 'NEGATIVE'); assert.equal(negative.subject, 'HOST_APP')
       const conditional = report.policy_claims.find(c => c.data_type === 'CAMERA')
-      assert.equal(conditional.condition, '用户主动拍照并授权')
+      assert.equal(conditional.condition, '拍照时')
       const third = report.policy_claims.find(c => c.data_type === 'DEVICE_IDENTIFIER')
       assert.equal(third.subject, 'THIRD_PARTY'); assert.equal(third.document_id, 'web-' + draft.sources[1].id)
       for (const claim of report.policy_claims) {

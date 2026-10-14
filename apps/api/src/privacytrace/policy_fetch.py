@@ -9,15 +9,30 @@ import socket
 import ssl
 import subprocess
 import sys
+import threading
 import time
 import urllib.request
 from datetime import datetime, timezone
 from html.parser import HTMLParser
-from urllib.parse import quote, urljoin, urlsplit
+from urllib.parse import parse_qsl, quote, urlencode, urljoin, urlsplit, urlunsplit
 
 MAX_HTML_BYTES = 2 * 1024 * 1024
 MAX_TEXT_CHARS = 200000
 FAKE_IP_RANGE = ipaddress.ip_network("198.18.0.0/15")
+
+
+def display_url(url):
+    """Keep origin/path and query keys, never publish potentially signed query values."""
+    if not url:
+        return url
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        return "Unparseable source URL"
+    query = urlencode(
+        [(key, "REDACTED") for key, _ in parse_qsl(parts.query, keep_blank_values=True)]
+    )
+    return urlunsplit((parts.scheme, parts.netloc.rsplit("@", 1)[-1], parts.path, query, ""))
 
 
 class FetchError(ValueError):
@@ -34,7 +49,7 @@ def _public_dns_direct(host, port, timeout):
     """
     try:
         request = urllib.request.Request(
-            "https://dns.google/resolve?name=" + quote(host, safe="") + "&type=A",
+            "https://dns.alidns.com/resolve?name=" + quote(host, safe="") + "&type=1",
             headers={"Accept": "application/dns-json"},
         )
         with urllib.request.urlopen(request, timeout=timeout) as response:
@@ -76,7 +91,8 @@ def resolve_addresses(host, port, timeout=5, mode="system"):
         )
         if result.returncode or len(result.stdout) > 65536:
             raise ValueError
-        return json.loads(result.stdout)
+        values = json.loads(result.stdout)
+        return [(a[0], a[1], a[2], a[3], tuple(a[4])) for a in values]
     except subprocess.TimeoutExpired as exc:
         raise FetchError("FETCH_TIMEOUT") from exc
     except (OSError, ValueError) as exc:
@@ -143,25 +159,47 @@ class HTMLText(HTMLParser):
             self.parts.append(data)
 
 
-def fetch_policy(url):
-    deadline = time.monotonic() + 15
+def fetch_policy(url, budget_seconds=15):
+    deadline = time.monotonic() + budget_seconds
     for redirect in range(4):
         parts, port, address = public_target(url, timeout=deadline - time.monotonic())
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise FetchError("FETCH_TIMEOUT")
         connection = http.client.HTTPConnection(parts.hostname, port, timeout=remaining)
+        watchdog = None
+        expired = threading.Event()
         try:
             # Connect to the exact validated address; do not resolve the host a second time.
             family, socktype, proto, _, sockaddr = address
             sock = socket.socket(family, socktype, proto)
             connection.sock = sock
             sock.settimeout(remaining)
+
+            def end_budget(owned_socket):
+                expired.set()
+                try:
+                    owned_socket.shutdown(socket.SHUT_RDWR)
+                except OSError:
+                    pass
+
+            watchdog = threading.Timer(remaining, end_budget, args=(sock,))
+            watchdog.daemon = True
+            watchdog.start()
             sock.connect(sockaddr)
             if parts.scheme == "https":
                 connection.sock = ssl.create_default_context().wrap_socket(
-                    sock, server_hostname=parts.hostname
+                    sock, server_hostname=parts.hostname, do_handshake_on_connect=False
                 )
+                # TLS takes ownership of the raw descriptor, so replace the watchdog's target.
+                watchdog.cancel()
+                watchdog = threading.Timer(
+                    max(0, deadline - time.monotonic()), end_budget, args=(connection.sock,)
+                )
+                watchdog.daemon = True
+                watchdog.start()
+                connection.sock.settimeout(max(0.001, deadline - time.monotonic()))
+                connection.sock.do_handshake()
             active_socket = connection.sock
             path = parts.path or "/"
             if parts.query:
@@ -177,6 +215,8 @@ def fetch_policy(url):
                 },
             )
             response = connection.getresponse()
+            if expired.is_set() or time.monotonic() >= deadline:
+                raise FetchError("FETCH_TIMEOUT")
             if response.status in {301, 302, 303, 307, 308}:
                 location = response.getheader("Location")
                 if not location or redirect == 3:
@@ -205,6 +245,8 @@ def fetch_policy(url):
                 if len(raw) > MAX_HTML_BYTES:
                     raise FetchError("FETCH_TOO_LARGE")
             charset = re.search(r"charset\s*=\s*[\"']?([\w-]+)", content_type, re.I)
+            if expired.is_set() or time.monotonic() >= deadline:
+                raise FetchError("FETCH_TIMEOUT")
             encoding = charset[1].lower() if charset else "utf-8"
             if encoding not in {"utf-8", "utf8", "gbk", "gb2312", "gb18030", "iso-8859-1"}:
                 raise FetchError("FETCH_ENCODING_UNSUPPORTED")
@@ -215,6 +257,8 @@ def fetch_policy(url):
                 raise FetchError("FETCH_TEXT_MISSING")
             if len(text) > MAX_TEXT_CHARS:
                 raise FetchError("FETCH_TOO_LARGE")
+            if time.monotonic() >= deadline:
+                raise FetchError("FETCH_TIMEOUT")
             return {
                 "text": text,
                 "final_url": url,
@@ -224,8 +268,11 @@ def fetch_policy(url):
                 "error_code": None,
             }
         except (OSError, http.client.HTTPException, UnicodeError) as exc:
-            raise FetchError("FETCH_FAILED") from exc
+            timed_out = expired.is_set() or isinstance(exc, TimeoutError) or time.monotonic() >= deadline
+            raise FetchError("FETCH_TIMEOUT" if timed_out else "FETCH_FAILED") from exc
         finally:
+            if watchdog:
+                watchdog.cancel()
             connection.close()
     raise FetchError("FETCH_REDIRECT_LIMIT")
 

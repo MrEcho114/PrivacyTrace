@@ -482,3 +482,46 @@ def test_mapped_output_is_bounded_without_losing_the_report(tmp_path, count):
     assert report["coverage"]["scanned_dex"] == ["classes.dex"]
     truncated = " ".join(report["coverage"]["behavior_limitations"])
     assert ("output truncated at 500" in truncated) == (count > 500)
+
+
+def test_cli_enables_sdk_attribution_by_default_and_can_turn_it_off(tmp_path):
+    """P3: the default is on, and there is a real way to switch it off.
+
+    The old help text said "omit to disable", but the option carried a non-empty
+    default, so omitting it enabled attribution and no empty value turned it off.
+    """
+    path = apk(tmp_path / "sdk.apk", invoke=False)
+    result, default = scan(path)
+    assert result.returncode == 0
+    assert "sdk_signatures" in default["tools"]
+
+    result, off = scan(path, "--no-sdk-attribution")
+    assert result.returncode == 0
+    assert "sdk_signatures" not in off["tools"]
+    assert [e for e in off["evidence"] if e["kind"] == "SDK"] == []
+
+
+def test_cli_no_sdk_attribution_wins_over_an_explicit_ruleset(tmp_path):
+    """The off switch must not be silently defeated by --sdk-rules."""
+    from privacytrace.resources import ROOT
+
+    path = apk(tmp_path / "sdk.apk", invoke=False)
+    result, report = scan(
+        path, "--no-sdk-attribution", "--sdk-rules", str(ROOT / "rules/sdk-signatures.v1.0.json")
+    )
+    assert result.returncode == 0
+    assert "sdk_signatures" not in report["tools"]
+
+
+def test_cli_sdk_attribution_help_documents_the_real_switch(tmp_path):
+    result = subprocess.run(
+        [sys.executable, "-m", "privacytrace.apk_worker", "--help"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=30,
+    )
+    assert result.returncode == 0
+    assert "--no-sdk-attribution" in result.stdout
+    # The misleading "omit to disable" claim must be gone.
+    assert "omit to disable" not in result.stdout

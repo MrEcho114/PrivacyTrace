@@ -14,10 +14,14 @@
         "input_mode": {
           "enum": [
             "SYNTHETIC",
-            "APK"
+            "APK",
+            "CONTROLLED_APK"
           ],
           "title": "Input Mode",
           "type": "string"
+        },
+        "source_origin": {
+          "$ref": "#/$defs/SourceOrigin"
         },
         "state": {
           "enum": [
@@ -112,6 +116,7 @@
         "id",
         "sample_id",
         "input_mode",
+        "source_origin",
         "state",
         "ruleset_version",
         "created_at"
@@ -184,6 +189,15 @@
       ],
       "title": "ContextualHint",
       "type": "object"
+    },
+    "DeliveryMode": {
+      "description": "How a report reached the client in this response. Repeated per request.\n\nThis field answers \"how was it loaded\", which is mutable: the same\npersisted job can be delivered as LIVE_GENERATED in the run that produced\nit and as PERSISTED_REPLAY on any later load. It is never persisted on the\njob, because it depends on the serving path rather than on the data.",
+      "enum": [
+        "LIVE_GENERATED",
+        "PERSISTED_REPLAY"
+      ],
+      "title": "DeliveryMode",
+      "type": "string"
     },
     "EvaluationResult": {
       "additionalProperties": false,
@@ -629,7 +643,8 @@
         "IN_APP_POLICY",
         "STORE_POLICY",
         "OFFICIAL_WEB_POLICY",
-        "SDK_POLICY"
+        "SDK_POLICY",
+        "CONTROLLED_POLICY"
       ],
       "title": "PolicySource",
       "type": "string"
@@ -933,6 +948,14 @@
           "title": "Behavior Limitations",
           "type": "array"
         },
+        "sdk_attribution_limitations": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 1000,
+          "title": "Sdk Attribution Limitations",
+          "type": "array"
+        },
         "limitations": {
           "items": {
             "type": "string"
@@ -966,6 +989,17 @@
       ],
       "title": "ScanCoverage",
       "type": "object"
+    },
+    "SourceOrigin": {
+      "description": "Immutable provenance of the underlying data, recorded instead of inferred.\n\nThis field answers \"where did the data come from\". It never changes once a\njob is created. It does NOT describe how a report is being served right now\n-- a job created by a real scan keeps REAL_SCAN even when its report is later\nreplayed from persisted storage. Use `delivery_mode` for the loading path.\n\nCONTROLLED and SYNTHETIC never describe a real user application.\n\nUNKNOWN is reserved for records written before this field existed: their\norigin cannot be recovered from the stored data, so it is recorded as\nunknown rather than guessed. It is never produced by a live scan and must\nnot be read as evidence that the data came from a real application.",
+      "enum": [
+        "SYNTHETIC",
+        "CONTROLLED",
+        "REAL_SCAN",
+        "UNKNOWN"
+      ],
+      "title": "SourceOrigin",
+      "type": "string"
     }
   },
   "additionalProperties": false,
@@ -981,6 +1015,10 @@
     },
     "job": {
       "$ref": "#/$defs/AnalysisJob"
+    },
+    "delivery_mode": {
+      "$ref": "#/$defs/DeliveryMode",
+      "default": "PERSISTED_REPLAY"
     },
     "result": {
       "$ref": "#/$defs/EvaluationResult"

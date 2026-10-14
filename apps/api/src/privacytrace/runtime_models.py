@@ -8,6 +8,7 @@ from pydantic import Field, model_validator
 from .coverage_scope import behavior_limitations
 from .models import (
     AnalysisJob,
+    DeliveryMode,
     EvaluationInput,
     EvaluationResult,
     Evidence,
@@ -35,6 +36,7 @@ class ScanCoverage(Model):
     scope: Literal["DEX_ENTRIES"] = "DEX_ENTRIES"
     behavior_detection: Literal["LIMITED_RULE_BASED_STATIC"] = "LIMITED_RULE_BASED_STATIC"
     behavior_limitations: list[str] = Field(default_factory=behavior_limitations, max_length=1000)
+    sdk_attribution_limitations: list[str] = Field(default_factory=list, max_length=1000)
     limitations: list[str] = Field(max_length=1000)
     scanned_dex: list[str] = Field(max_length=1000)
     failed_dex: list[str] = Field(max_length=1000)
@@ -43,7 +45,7 @@ class ScanCoverage(Model):
 class ReviewRequest(Model):
     actor: str = Field(min_length=1, max_length=100)
     reason: str = Field(min_length=1, max_length=1000)
-    note: str = Field(max_length=10000)
+    note: str = Field(default="", max_length=10000)
     claim: PolicyClaim | None = None
 
 
@@ -63,6 +65,10 @@ class Report(Model):
     demo: Literal[False] = False
     sample: SampleMetadata
     job: AnalysisJob
+    # How this report was loaded, as opposed to where its data came from
+    # (`job.source_origin`, immutable). A real scan is LIVE_GENERATED in the run
+    # that produced it and PERSISTED_REPLAY on every later load.
+    delivery_mode: DeliveryMode = DeliveryMode.PERSISTED_REPLAY
     result: EvaluationResult
     evidence: list[Evidence]
     behaviors: list[PrivacyBehavior]
@@ -74,8 +80,10 @@ class Report(Model):
 
     @model_validator(mode="after")
     def validate_real_mode(self):
-        if self.job.input_mode != "APK":
+        if self.job.input_mode not in {"APK", "CONTROLLED_APK"}:
             raise ValueError("Non-demo reports require an APK job")
+        if self.job.source_origin == "SYNTHETIC":
+            raise ValueError("Non-demo reports cannot claim a synthetic sample")
         return self
 
 
@@ -93,8 +101,10 @@ class StoredJob(Model):
 
     @model_validator(mode="after")
     def validate_record(self):
-        if self.job.input_mode != "APK":
+        if self.job.input_mode not in {"APK", "CONTROLLED_APK"}:
             raise ValueError("Local persisted jobs require APK input mode")
+        if self.job.source_origin == "SYNTHETIC":
+            raise ValueError("Persisted jobs cannot claim a synthetic sample")
         if self.job.created_at.tzinfo is None:
             raise ValueError("Job created_at requires a timezone")
         if self.bundle:

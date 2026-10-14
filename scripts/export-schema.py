@@ -11,6 +11,7 @@ from pathlib import Path
 
 from privacytrace.models import EvaluationInput, EvaluationResult
 from privacytrace.runtime_models import JobsResponse, Report, ReviewRequest
+from privacytrace.sdk_ruleset import SdkSignatureRuleset
 
 ROOT = Path(__file__).resolve().parents[1]
 MODELS = {
@@ -19,6 +20,7 @@ MODELS = {
     "report": Report,
     "review-request": ReviewRequest,
     "jobs-response": JobsResponse,
+    "sdk-signatures": SdkSignatureRuleset,
 }
 ANNOTATIONS = {
     "title",

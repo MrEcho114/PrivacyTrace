@@ -1,0 +1,162 @@
+{
+  "$defs": {
+    "SdkSignature": {
+      "additionalProperties": false,
+      "description": "One vendor attribution, bounded to package ranges the vendor published.",
+      "properties": {
+        "id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "vendor": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Vendor",
+          "type": "string"
+        },
+        "package_prefixes": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 50,
+          "minItems": 1,
+          "title": "Package Prefixes",
+          "type": "array"
+        },
+        "potential_data_types": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 50,
+          "minItems": 1,
+          "title": "Potential Data Types",
+          "type": "array"
+        },
+        "source": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "source_url": {
+          "maxLength": 1000,
+          "pattern": "^https://",
+          "title": "Source Url",
+          "type": "string"
+        },
+        "license": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "License",
+          "type": "string"
+        },
+        "verified_at": {
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "title": "Verified At",
+          "type": "string"
+        },
+        "note": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "vendor",
+        "package_prefixes",
+        "potential_data_types",
+        "source",
+        "source_url",
+        "license",
+        "verified_at",
+        "note"
+      ],
+      "title": "SdkSignature",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The whole ``rules/sdk-signatures.*.json`` document.",
+  "properties": {
+    "version": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "title": "Version",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "SYNTHETIC_SEED_ONLY",
+        "LIMITED_SOURCED_SEED"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "scope_note": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Scope Note",
+      "type": "string"
+    },
+    "boundaries": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 20,
+      "minItems": 1,
+      "title": "Boundaries",
+      "type": "array"
+    },
+    "evidence_kind": {
+      "const": "VENDOR_PUBLISHED_PACKAGE_NAME",
+      "title": "Evidence Kind",
+      "type": "string"
+    },
+    "signatures": {
+      "items": {
+        "$ref": "#/$defs/SdkSignature"
+      },
+      "maxItems": 500,
+      "minItems": 1,
+      "title": "Signatures",
+      "type": "array"
+    },
+    "excluded_namespaces": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "title": "Excluded Namespaces",
+      "type": "array"
+    },
+    "exclusion_note": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Exclusion Note",
+      "type": "string"
+    }
+  },
+  "required": [
+    "version",
+    "status",
+    "scope_note",
+    "boundaries",
+    "evidence_kind",
+    "signatures",
+    "excluded_namespaces",
+    "exclusion_note"
+  ],
+  "title": "SdkSignatureRuleset",
+  "type": "object"
+}

@@ -52,7 +52,8 @@ def _public_dns_direct(host, port, timeout):
             "https://dns.alidns.com/resolve?name=" + quote(host, safe="") + "&type=1",
             headers={"Accept": "application/dns-json"},
         )
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open(request, timeout=timeout) as response:
             raw = response.read(65537)
         if len(raw) > 65536:
             raise ValueError

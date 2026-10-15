@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "issue": 45,
+  "capture_source_commit": "6d781fde97fe69169db916ab473224a24ed5ce93",
+  "visual_source_sha256": "1f44b21d1fe37acee280d613ebff4d6f70a236fa9d1881f51db6349fafcc5f81",
+  "duration_seconds": 120.0,
+  "fps": "30/1",
+  "resolution": [
+    1920,
+    1080
+  ],
+  "artifacts": [
+    {
+      "file": "PrivacyTrace-1080p.mp4",
+      "bytes": 15207468,
+      "sha256": "8c61fd272be4dfa4ea450db7c37458777f22283970f671e22789e9b60fe1bcf4"
+    },
+    {
+      "file": "PrivacyTrace-Source.zip",
+      "bytes": 25264645,
+      "sha256": "62111a4ec2aa14b0573afef29d998a4e885ef364a2ea6f253efa2e3411b53df2"
+    }
+  ],
+  "source_package_file_count": 50,
+  "verification": {
+    "actual_offline_html": true,
+    "keyframes": 18,
+    "boundary_checks": 36,
+    "html_continuous": true,
+    "mp4_continuous": true,
+    "full_decode": true,
+    "server": true
+  },
+  "source_directory": "source-jgdinsll",
+  "limits": [
+    "Authored policy HTTP/DNS fixture, real model requests and actual restricted scan",
+    "Product shots are recorded replay; shot duration is editorial rather than elapsed job time",
+    "Historical benchmarks are separate from this new input",
+    "No human aesthetic or listening sign-off claimed",
+    "No merge, public hosting or competition submission"
+  ]
+}

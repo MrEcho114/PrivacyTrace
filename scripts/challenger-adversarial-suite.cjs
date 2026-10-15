@@ -179,7 +179,8 @@ async function runChallengerSuite() {
       body: JSON.stringify(xssReport),
     }));
 
-    await page.goto(WEB_ORIGIN);
+    // The workbench home does not mount the existing-report browser.
+    await page.goto(WEB_ORIGIN + '/#reports');
     await selectSource(page, 'job:gkd-s1-first');
 
     // Expand review section to render injected review
@@ -513,7 +514,8 @@ async function runChallengerSuite() {
       body: JSON.stringify(realDemoReport.job),
     }));
 
-    await page.goto(WEB_ORIGIN);
+    // Reload to fetch the new mocked job list; same-hash navigation would reuse it.
+    await page.reload();
     await selectSource(page, 'job:demo');
     await page.locator('.sample-card').waitFor();
 

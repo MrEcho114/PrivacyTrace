@@ -1,0 +1,30 @@
+{
+  "output": "PrivacyTrace-1080p.mp4",
+  "sha256": "8c61fd272be4dfa4ea450db7c37458777f22283970f671e22789e9b60fe1bcf4",
+  "bytes": 15207468,
+  "source_sha256": "1f44b21d1fe37acee280d613ebff4d6f70a236fa9d1881f51db6349fafcc5f81",
+  "render_transport": "LOOPBACK_HTTP_EXTERNAL_NETWORK_DENIED",
+  "frames": 3600,
+  "shot_frame_counts": {
+    "opening": 270,
+    "overview": 210,
+    "import": 210,
+    "candidates": 210,
+    "quote": 270,
+    "edit": 180,
+    "third": 180,
+    "progress": 120,
+    "complete": 120,
+    "report": 210,
+    "code": 240,
+    "bridge": 270,
+    "policy": 180,
+    "granularity": 120,
+    "uncertainty": 120,
+    "metrics": 240,
+    "limits": 240,
+    "closing": 210
+  },
+  "errors": [],
+  "elapsed_seconds": 239.472
+}

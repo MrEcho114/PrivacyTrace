@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "status": "ADOPTED_USER_SUPPLIED_GEMINI4_DIRECTOR_PACKAGE",
+  "status": "USER_AUTHORIZED_PLAIN_LANGUAGE_REWRITE",
   "issue": 45,
   "duration_seconds": 180,
   "fps": 30,
@@ -12,7 +12,7 @@
   "source_archive_sha256": "e35abb2ba02f686ee2ac73b551f905fb8900dc13a548290c95f25db5b252a475",
   "segments": [
     {
-      "chapter": "序章 · 产品定位",
+      "chapter": "开场",
       "start": 0,
       "end": 11,
       "shots": [
@@ -36,7 +36,7 @@
       ]
     },
     {
-      "chapter": "02 · 确认政策候选",
+      "chapter": "02 · 核对政策",
       "start": 27,
       "end": 70,
       "shots": [
@@ -55,7 +55,7 @@
       ]
     },
     {
-      "chapter": "03 · 分析与报告",
+      "chapter": "03 · 查看报告",
       "start": 70,
       "end": 102,
       "shots": [
@@ -72,7 +72,7 @@
       ]
     },
     {
-      "chapter": "04 · 回查依据",
+      "chapter": "04 · 回查原文与代码",
       "start": 102,
       "end": 132,
       "shots": [
@@ -87,7 +87,7 @@
       ]
     },
     {
-      "chapter": "05 · 历史受控基准与样本边界",
+      "chapter": "05 · 看测试与历史样本",
       "start": 132,
       "end": 173,
       "shots": [
@@ -104,7 +104,7 @@
       ]
     },
     {
-      "chapter": "终章 · 方法收束",
+      "chapter": "结束",
       "start": 173,
       "end": 180,
       "shots": [
@@ -115,5 +115,6 @@
       ]
     }
   ],
-  "copy_source": "../../showcase/privacytrace/copy-provenance.json"
+  "copy_source": "../../showcase/privacytrace/copy-provenance.json",
+  "copy_author": "Codex; Gemini4 visual/timing source retained"
 }

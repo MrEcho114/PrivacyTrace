@@ -1,7 +1,6 @@
 {
-  "writer": "Gemini",
-  "delivery_channel": "USER_SUPPLIED_GEMINI4_PACKAGE",
-  "model_designation": "Gemini4 (user designation; no provider model identifier asserted)",
+  "writer": "Codex",
+  "delivery_channel": "USER_AUTHORIZED_COPY_REWRITE",
   "completed": true,
   "source_archive_sha256": "e35abb2ba02f686ee2ac73b551f905fb8900dc13a548290c95f25db5b252a475",
   "source_files": [
@@ -23,22 +22,32 @@
     }
   ],
   "adopted_date": "2026-10-15",
-  "adopted_narrative_sha256": "80a5f5ca8ef01e480575e096d073167c69a5ee281de156e147ae60e319729dc8",
-  "main_agent_role": "Integration, layout compatibility and independent verification; no editorial rewrite",
+  "adopted_narrative_sha256": "54045250c2ddc30092710418dafebdffe4dd726cb49d1a5bfac5c434a15b375f",
+  "main_agent_role": "Copy rewrite, integration and independent verification under the latest direct user instruction",
   "narrative_fields_equal_to_supplied_storyboard": false,
   "original_pngs_identical": true,
   "technical_amendments": [
     "Classic deferred local scripts preserve offline file playback; mobile controls wrap",
     "Fit long node labels and annotation titles within their existing boxes without changing words",
     "Sequence outgoing and incoming annotation fades so two note texts never paint together",
-    "Arrange original procedural music around the supplied 11/102/132/173-second chapter boundaries"
+    "Arrange original procedural music around the supplied 11/102/132/173-second chapter boundaries",
+    "Remove duplicated identity captions; simplify note headings and translate historical sample status labels to Chinese"
   ],
   "limits": [
     "Author statements about complete viewing are self-reports, not independently established",
     "Supplied crop verification does not replace browser, media and factual verification",
     "No human aesthetic acceptance inferred from receiving the archive"
   ],
-  "authorized_factual_amendments": [
+  "visual_and_timing_source": "User-supplied Gemini4 director package; original PNGs, crops and shot timing preserved",
+  "authorization": "2026-10-15 user rejected the Gemini copy as jargon and disclaimers, and requested Codex find skills and polish it; supersedes the earlier single-phrase-only constraint",
+  "skills_applied": [
+    "humanizer-zh",
+    "writing-clearly-and-concisely",
+    "ux-writing"
+  ],
+  "previous_candidate": "8cc6a5d38e4541bb0db93a1492a160491247adab",
+  "review": "Independent read-only plain-language/frame review and factual comparison; no factual strengthening found",
+  "prior_candidate_authorized_factual_amendments": [
     {
       "shot": "quote",
       "field": "copy",

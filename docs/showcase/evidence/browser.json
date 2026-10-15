@@ -1,6 +1,6 @@
 {
   "passed": true,
-  "source_sha256": "d30e2328a32d47b2f01882ba587a37ec00a3aca7865dd46bc7337b42b261dd48",
+  "source_sha256": "9e417d5eadb15a43a8418903a72cf3b8699d18985bd8ea1b66c280ce0b45b2ee",
   "offline_from_navigation": true,
   "controls": [
     "play advances decoded local audio and timeline",
@@ -15,102 +15,102 @@
     {
       "time": 5.5,
       "shot": "opening",
-      "direct_and_revisited_sha256": "46e5dc35a86b2537b7bada588cf17c09b41726d62bd6b97edd88518235dae8ae"
+      "direct_and_revisited_sha256": "b215bf8c6a0b5f48d79a4230f4c7dfe5e1f75e8afab151375adba527b0000c1e"
     },
     {
       "time": 15,
       "shot": "import",
-      "direct_and_revisited_sha256": "5677e10edad40847eb73e7d616169c591c4bab6982b496c730a1b0c62c7278b2"
+      "direct_and_revisited_sha256": "5338a8ad6694694c74c8990ff0035b1994215f09ae2ae9fb57983a3b385a0de9"
     },
     {
       "time": 23,
       "shot": "failure",
-      "direct_and_revisited_sha256": "af724e71a9955fd4acea6cdd3f301a47bdf14299dd2c232d50431b6d15c41d5b"
+      "direct_and_revisited_sha256": "74e5a1f5caeea265da9d67f1c72adc945a3fbdcf6033cad4b1272a7b8dcef809"
     },
     {
       "time": 31,
       "shot": "sources",
-      "direct_and_revisited_sha256": "ecaaee5a5b786be7f6ae2dfb356d40640d04d735c62a7721a8ef1aae8aca3c01"
+      "direct_and_revisited_sha256": "33cd6fad78c61bc54f883c1536a55d4e77e148cb0cdef942598c2303b249f206"
     },
     {
       "time": 39.5,
       "shot": "candidates",
-      "direct_and_revisited_sha256": "084ff42662a4ec52744f3bd902a70cb133c774bb2dab1012cfef012b0bb02671"
+      "direct_and_revisited_sha256": "7642baaac0826332f33e0edf4cf268d7d23971729b0116d490efd87b6495c48d"
     },
     {
       "time": 48.5,
       "shot": "quote",
-      "direct_and_revisited_sha256": "49d643ecf195170ae402ea54e5c5b5e41fc8b20a4bae84aabaade97c4731b0a0"
+      "direct_and_revisited_sha256": "449f73ee2428411dafc512df20055b824f23ed41de0b225c710d30052dd79856"
     },
     {
       "time": 57.5,
       "shot": "edit",
-      "direct_and_revisited_sha256": "264baa70490ae115c2e41157c5c1cd8ad2daa0a5753dcc2177c8591eaff458ba"
+      "direct_and_revisited_sha256": "100cfcad2819458c0e194f15faab0ae1d8197db308521553f0d1a9c3e20351c4"
     },
     {
       "time": 66,
       "shot": "third",
-      "direct_and_revisited_sha256": "72179ce5d5cede9732a80b39a3b1b8125be94e96bc00e27afa61cf9e9bdb62a2"
+      "direct_and_revisited_sha256": "08ad79d9b30928085a76192976bb3ad4ef553c48881683c6edd8472721e435ec"
     },
     {
       "time": 74,
       "shot": "progress",
-      "direct_and_revisited_sha256": "98e3b8c60fcc71d7d935cd8b176fce87c7ceb0b1ebf50c984ffeebd567986dd1"
+      "direct_and_revisited_sha256": "c22137e838a41514f9ebc69c804817a80abd8b005f28f43e2e25cccf988f7c29"
     },
     {
       "time": 81.5,
       "shot": "complete",
-      "direct_and_revisited_sha256": "830c489f4436613faba30ebfa087b274dee8e314b6c1ebca160f0f43675d3fae"
+      "direct_and_revisited_sha256": "d351f550deadd937625dc351fa0bc156b7f1859b7d7774b424d7bffa5e92d586"
     },
     {
       "time": 89,
       "shot": "report",
-      "direct_and_revisited_sha256": "5f8ed7e63df209c4f0daf508c5e90ed4362638f6331a5be81acf835524c4f055"
+      "direct_and_revisited_sha256": "49e57e3e4ee9603cb8bd8f419f9483adc4d788f2ff036600ed50af07c180b47c"
     },
     {
       "time": 97.5,
       "shot": "caution",
-      "direct_and_revisited_sha256": "2776f004c0f73f2733d32480c03cf76d585e922775f0c2e10bc062a677d0bfb4"
+      "direct_and_revisited_sha256": "237cac3705e200b736b4d80a3ee53ca027d22980ab7047d9189ad4d167a0b176"
     },
     {
       "time": 107,
       "shot": "code",
-      "direct_and_revisited_sha256": "875add8e63d3a11f9d78b4fa8dd3ff42bdb6d6b6744b47a385192eb129427ce6"
+      "direct_and_revisited_sha256": "a35756a195d401349fc07ef3601be1ec1b573a2216a804548067e5014fbef523"
     },
     {
       "time": 117,
       "shot": "trace",
-      "direct_and_revisited_sha256": "9743d43edcb405d60c77f1c79237850a431e3e50ea0ccd060c399ad2e014ebbd"
+      "direct_and_revisited_sha256": "c3b8603e93ec49b3524a4ced64f3ac8b6358611169b2c84a1536e26479a5b449"
     },
     {
       "time": 127,
       "shot": "policy",
-      "direct_and_revisited_sha256": "985e12f7bcd2e1efd147ac79b4c9cf3bd61b78d97a89aafd1120ac22d98f2efe"
+      "direct_and_revisited_sha256": "4652a0e12cb13bc4984b6767170eb93dbb1c5a9041c4955d660857587d00b9c9"
     },
     {
       "time": 137.5,
       "shot": "granularity",
-      "direct_and_revisited_sha256": "baf3679d56b2c5d5f1c26d2298350bb0a949bc05ab8d1e38aee48d38656e442b"
+      "direct_and_revisited_sha256": "7f95b9bee924ae16ec96ea7c55d820be11e5c4ca833bfb98012443fd7f520d63"
     },
     {
       "time": 148.5,
       "shot": "uncertainty",
-      "direct_and_revisited_sha256": "392e3d6bc598c69ed52107d961231831fbf5e7edb04a0b5221d0b5d22bc54b04"
+      "direct_and_revisited_sha256": "aa874fd7e00298aed92d7bb483d4f00fe78c57cdab205711b4655c896fefab3f"
     },
     {
       "time": 158.5,
       "shot": "metrics",
-      "direct_and_revisited_sha256": "8eb68dfcdada6aa579ec9caa4eb5324c0e2ae7d25a96ace4d669dc7cee1d1c91"
+      "direct_and_revisited_sha256": "a168afafa9411d5e4ba20e3c0f79a67048141a2e349dbc223c350da2eba80cea"
     },
     {
       "time": 168,
       "shot": "limits",
-      "direct_and_revisited_sha256": "c662a343367fc1f3ae09db7ad6fbcde6cfb8e0523dc1f517a99a66ee919094fc"
+      "direct_and_revisited_sha256": "d2aff9e992166a295f87b02eeea1233fc0d6d6b7f9c15dddd5097d6dc042eeca"
     },
     {
       "time": 176.5,
       "shot": "closing",
-      "direct_and_revisited_sha256": "45fa1ab6b2c9ab10980d405f1726dee7e8c1e6d2ead66ce751f9da45f88ab1d1"
+      "direct_and_revisited_sha256": "8f66f9b4ec908a299c718f243312e34fbb8a854358dc997a7467b9e9610995af"
     }
   ],
   "errors": [],
@@ -120,7 +120,7 @@
     {
       "time": 53.18,
       "painted_note_titles": [
-        "宿主政策两条候选原句定位"
+        "两句话，分别核对"
       ]
     },
     {
@@ -130,13 +130,13 @@
     {
       "time": 53.54,
       "painted_note_titles": [
-        "修整适用条件并保存 checked 状态"
+        "把条件整理清楚"
       ]
     },
     {
       "time": 62.16,
       "painted_note_titles": [
-        "修整适用条件并保存 checked 状态"
+        "把条件整理清楚"
       ]
     },
     {
@@ -146,13 +146,13 @@
     {
       "time": 62.48,
       "painted_note_titles": [
-        "第三方位置声明独立建档"
+        "这句说的是第三方"
       ]
     },
     {
       "time": 112.2,
       "painted_note_titles": [
-        "DEX 字节码静态线索定位"
+        "找到具体调用点"
       ]
     },
     {
@@ -162,7 +162,7 @@
     {
       "time": 112.6,
       "painted_note_titles": [
-        "同数据类型候选条款与码点定位"
+        "找到对应原句"
       ]
     }
   ]

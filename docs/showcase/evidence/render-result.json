@@ -1,8 +1,8 @@
 {
   "output": "PrivacyTrace-1080p.mp4",
-  "sha256": "9210570a59585ebdd25325bb720e95716d0de4af5480318f2c6b174c28ff95a5",
-  "bytes": 18239722,
-  "source_sha256": "d30e2328a32d47b2f01882ba587a37ec00a3aca7865dd46bc7337b42b261dd48",
+  "sha256": "b0c0228a6b9d8d7350a282663f9c6dbadf3ca9d3f77ccbda9630e151c68dfc59",
+  "bytes": 16035608,
+  "source_sha256": "9e417d5eadb15a43a8418903a72cf3b8699d18985bd8ea1b66c280ce0b45b2ee",
   "render_transport": "LOOPBACK_HTTP_EXTERNAL_NETWORK_DENIED",
   "frames": 5400,
   "shot_frame_counts": {
@@ -28,5 +28,5 @@
     "closing": 210
   },
   "errors": [],
-  "elapsed_seconds": 495.385
+  "elapsed_seconds": 308.31
 }

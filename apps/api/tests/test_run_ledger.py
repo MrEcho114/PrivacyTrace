@@ -112,3 +112,22 @@ def test_verify_rejects_timestamp_without_timezone(tmp_path):
     write_ledger(ledger, {**base_row(), "scanned_at": "2026-10-10T01:00:00"})
     with pytest.raises(ValueError, match="timezone"):
         ledger_mod.verify(ledger, manifest)
+
+
+def test_verify_rejects_success_without_report_hash(tmp_path):
+    manifest = tmp_path / "manifest.csv"
+    write_manifest(manifest)
+    ledger = tmp_path / "runs.csv"
+    write_ledger(ledger, {**base_row(), "outcome": "success", "report_sha256": ""})
+    with pytest.raises(ValueError, match="must carry report_sha256"):
+        ledger_mod.verify(ledger, manifest)
+
+
+def test_verify_allows_failed_run_without_report_hash(tmp_path):
+    manifest = tmp_path / "manifest.csv"
+    write_manifest(manifest)
+    ledger = tmp_path / "runs.csv"
+    write_ledger(ledger, {**base_row(), "outcome": "failed", "report_sha256": ""})
+    rows = ledger_mod.verify(ledger, manifest)
+    assert rows[0]["outcome"] == "failed"
+    assert rows[0]["report_sha256"] == ""

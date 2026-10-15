@@ -5,18 +5,24 @@ run ledger), ``evidence`` and ``conclusions`` (both normalized from trace
 lines). Private material such as APK bytes, full policy text and decompiled
 sources never enters the dataset; only location summaries do.
 
-Trace input is validated against the contract in ``scripts/validate-trace.py``
-(single definition, loaded from the sibling file) and closed over the ledger:
-every line must belong to a run that exists in the ledger, every
-``evidence_ref`` may only appear on an ``event=evidence`` line and may not
-repeat inside one run, and no line is dropped silently. Each line is normalized
-into ``evidence`` or ``conclusions``, or counted as a lifecycle event in
-``trace_events``; the builder asserts that the counts add up to the number of
-lines read, so an unhandled event fails the build instead of vanishing.
+The ledger is read through the sibling ``scripts/verify-run-ledger.py``
+validator, so the build consumes exactly the rows that validator accepts:
+unknown samples, unknown outcomes and malformed report hashes fail the build
+even when no trace file exists. Trace input is validated against the contract in
+``scripts/validate-trace.py`` (single definition, loaded from the sibling file)
+and closed over the verified ledger: every line must belong to a run that exists
+in the ledger, every ``evidence_ref`` may only appear on an ``event=evidence``
+line and may not repeat inside one run, and no line is dropped silently. Each
+line is normalized into ``evidence`` or ``conclusions``, or counted as a
+lifecycle event in ``trace_events``; the builder asserts that the counts add up
+to the number of lines read, so an unhandled event fails the build instead of
+vanishing.
 
-The ``dataset_sha256`` is computed over ``schema_version``, ``trace_events`` and
-the four dimensions, so the same inputs always produce the same hash (the
-``generated_at`` timestamp is deliberately excluded from the hash).
+Every evidence record keeps the trace line's ``status`` and ``detail``, so a
+failed or partially extracted clue never collapses into the same dataset as a
+successful one. The ``dataset_sha256`` is computed over ``schema_version``,
+``trace_events`` and the four dimensions, so the same inputs always produce the
+same hash (the ``generated_at`` timestamp is deliberately excluded).
 """
 
 from __future__ import annotations
@@ -30,8 +36,9 @@ from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
 
-SCHEMA_VERSION = "0.2.0"
+SCHEMA_VERSION = "0.3.0"
 TRACE_CONTRACT = Path(__file__).with_name("validate-trace.py")
+LEDGER_CONTRACT = Path(__file__).with_name("verify-run-ledger.py")
 LIFECYCLE_EVENTS = {"start", "error", "done"}
 
 
@@ -43,6 +50,16 @@ def _trace_contract():
     """Load the sibling trace validator so trace rules have one definition."""
     spec = importlib.util.spec_from_file_location(
         "pt907_trace_contract", TRACE_CONTRACT
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _ledger_contract():
+    """Load the sibling ledger validator so ledger rules have one definition."""
+    spec = importlib.util.spec_from_file_location(
+        "pt907_ledger_contract", LEDGER_CONTRACT
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -64,24 +81,9 @@ def load_manifest(path: Path) -> list[dict]:
         ]
 
 
-def load_ledger(path: Path) -> list[dict]:
-    with path.open(encoding="utf-8", newline="") as handle:
-        reader = csv.DictReader(handle)
-        return [
-            {
-                "run_id": row["run_id"].strip(),
-                "sample_id": row["sample_id"].strip(),
-                "job_id": row["job_id"].strip(),
-                "report_sha256": row.get("report_sha256", "").strip(),
-                "outcome": row["outcome"].strip(),
-                "limitations": [
-                    part.strip()
-                    for part in row.get("limitations", "").split(";")
-                    if part.strip()
-                ],
-            }
-            for row in reader
-        ]
+def load_runs(path: Path, manifest: Path | None = None) -> list[dict]:
+    """Read the ledger through the sibling validator instead of ad hoc parsing."""
+    return _ledger_contract().verify(path, manifest)
 
 
 def load_traces(directory: Path) -> list[dict]:
@@ -135,6 +137,8 @@ def normalize_traces(traces: list[dict], known_samples: set[str], runs: list[dic
                     "data_type": line.get("data_type", ""),
                     "location": line.get("location", ""),
                     "stage": line["stage"],
+                    "status": line["status"],
+                    "detail": line.get("detail", ""),
                 }
             )
         elif event == "conclusion":
@@ -169,14 +173,14 @@ def normalize_traces(traces: list[dict], known_samples: set[str], runs: list[dic
 
 
 def build(manifest: Path | None, ledger: Path, trace_dir: Path) -> dict:
+    runs = sorted(load_runs(ledger, manifest), key=lambda r: r["run_id"])
     if manifest is not None:
         samples = sorted(load_manifest(manifest), key=lambda s: s["sample_id"])
     else:
         samples = [
             {"sample_id": sample_id}
-            for sample_id in sorted({r["sample_id"] for r in load_ledger(ledger)})
+            for sample_id in sorted({run["sample_id"] for run in runs})
         ]
-    runs = sorted(load_ledger(ledger), key=lambda r: r["run_id"])
     evidence, conclusions, trace_events = normalize_traces(
         load_traces(trace_dir), {sample["sample_id"] for sample in samples}, runs
     )

@@ -323,6 +323,7 @@ def write_user_study(root: Path) -> Path:
         "participant_id",
         "background",
         "condition",
+        "material",
         "sample_id",
         "ground_truth_version",
         "question_id",
@@ -347,6 +348,11 @@ def write_user_study(root: Path) -> Path:
             "baseline_first" if participant_index <= 3 else "report_first"
         )
         for question_index in range(1, 13):
+            material = (
+                "baseline"
+                if (condition == "baseline_first") == (question_index <= 6)
+                else "privacyTrace"
+            )
             is_correct = (participant_index + question_index) % 6 != 0
             misconception = ""
             if question_index == 3 and participant_index % 2 == 0:
@@ -360,6 +366,7 @@ def write_user_study(root: Path) -> Path:
                     participant_id,
                     "ordinary-user",
                     condition,
+                    material,
                     sample_cycle[(participant_index + question_index) % len(sample_cycle)],
                     "synthetic-0.1.0",
                     f"q{question_index:02d}",
@@ -418,6 +425,13 @@ The CSV files in this directory are generated rehearsal fixtures for
 `scripts/metrics-user-study.py` and the dataset builder. Participant IDs are
 anonymous synthetic identifiers; all answers, durations, misconceptions, and
 timestamps are fictional.
+
+`condition` records the reading order (`baseline_first` / `report_first`);
+`material` records which material that answer was given against (`baseline` /
+`privacyTrace`). Each synthetic participant answers the first six questions
+against the first material and the last six against the second one. The fixture
+is deliberately not tuned to produce a material effect: it exercises the
+grouping, the effect logic is covered by unit tests.
 
 This is not real evidence. It must not be cited, merged into `evidence/` as a
 completed study, or used to close Issue #23. Regenerate with

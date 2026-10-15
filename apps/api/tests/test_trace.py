@@ -48,6 +48,42 @@ def test_validate_rejects_unknown_status(tmp_path):
         trace_mod.validate([line])
 
 
+def test_validate_rejects_unknown_event():
+    line = valid_line()
+    line["event"] = "wired"
+    with pytest.raises(ValueError, match="unknown event"):
+        trace_mod.validate([line])
+
+
+def test_validate_requires_evidence_ref_on_evidence_event():
+    line = valid_line()
+    del line["evidence_ref"]
+    with pytest.raises(ValueError, match="requires evidence_ref"):
+        trace_mod.validate([line])
+
+
+def test_validate_rejects_evidence_ref_on_non_evidence_event():
+    line = valid_line()
+    line["event"] = "conclusion"
+    with pytest.raises(ValueError, match="only allowed on event=evidence"):
+        trace_mod.validate([line])
+
+
+def test_validate_rejects_empty_optional_string():
+    line = valid_line()
+    line["location"] = "   "
+    with pytest.raises(ValueError, match="location must be non-empty"):
+        trace_mod.validate([line])
+
+
+@pytest.mark.parametrize("event", ["start", "error", "done"])
+def test_validate_accepts_lifecycle_events(event):
+    line = valid_line()
+    del line["evidence_ref"]
+    line["event"] = event
+    assert trace_mod.validate([line]) == [line]
+
+
 def test_validate_rejects_timestamp_without_timezone(tmp_path):
     line = valid_line()
     line["ts"] = "2026-10-10T01:00:00"

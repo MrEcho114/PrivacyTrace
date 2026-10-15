@@ -10,9 +10,9 @@
 | `sample_id` | 是 | 样本编号，对应 `samples/real-world/manifest.csv` | 字母数字 `_.-` |
 | `job_id` | 是 | 本次作业 ID | 非空字符串 |
 | `stage` | 是 | 阶段 | 建议：`intake`/`manifest`/`dex`/`sdk`/`policy`/`consistency`/`report` |
-| `event` | 是 | 事件类型 | 建议：`start`/`evidence`/`conclusion`/`error`/`done` |
+| `event` | 是 | 事件类型 | 只能取：`start`/`evidence`/`conclusion`/`error`/`done`（校验强制） |
 | `status` | 是 | 状态 | `ok` / `partial` / `failed` / `skipped` |
-| `evidence_ref` | 否 | 证据编号（`event=evidence` 时给） | 非空字符串 |
+| `evidence_ref` | 条件必填 | 证据编号 | `event=evidence` 时必须给；其他事件不得出现；同一 `sample_id`+`job_id` 内不得重复 |
 | `data_type` | 否 | 数据类型 | 非空字符串 |
 | `location` | 否 | 代码位置或政策切片摘要（不含全文） | 非空字符串 |
 | `duration_ms` | 否 | 该步耗时 | 非负整数 |
@@ -28,7 +28,10 @@
 ## 规则
 
 - 每行一个 JSON 对象，不跨行；空行忽略。
-- 校验用 `scripts/validate-trace.py`；数据集归一化用 `scripts/build-dataset.py`。
+- 校验用 `scripts/validate-trace.py`；数据集归一化用 `scripts/build-dataset.py`，构建时直接按同一份校验契约读取 trace（单一来源），未通过校验的行不会进入数据集。
+- **引用必须闭合**：每行的 `sample_id` 必须出现在样本清单里，`(sample_id, job_id)` 必须出现在 run 账本里；对不上直接构建失败，不静默丢弃。`evidence_ref` 只允许出现在 `event=evidence` 行，同一作业内不得重复。
+- **行数收敛**：每条 trace 行都会被归一成 `evidence`、`conclusion`，或计入 `trace_events.lifecycle`（`start`/`error`/`done`）；数据集里 `trace_events.total` 必须等于这三类计数之和，对不上就构建失败——不存在"读了却没进数据集"的行。
+- 数据集 `schema_version` 为 `0.2.0`：`evidence`/`conclusions` 每条带 `event` 字段，新增 `trace_events` 计数，且参与 `dataset_sha256` 计算。
 - **不写入** APK 字节、完整政策原文、反编译全文或任何凭据；`location` 只写定位摘要。
 
 ## 采集边界（当前状态）

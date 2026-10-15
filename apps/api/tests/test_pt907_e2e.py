@@ -96,6 +96,7 @@ def write_answers(path):
         "participant_id",
         "background",
         "condition",
+        "material",
         "sample_id",
         "ground_truth_version",
         "question_id",
@@ -112,19 +113,19 @@ def write_answers(path):
     ]
     rows = [
         [
-            "p1", "", "baseline_first", "example-app", "0.1.0", "q1", "",
+            "p1", "", "baseline_first", "baseline", "example-app", "0.1.0", "q1", "",
             "true", "12", "权限=调用", "", "", "", "", "", "",
         ],
         [
-            "p1", "", "baseline_first", "example-app", "0.1.0", "q2", "",
+            "p1", "", "baseline_first", "privacyTrace", "example-app", "0.1.0", "q2", "",
             "false", "30", "", "", "", "", "", "", "",
         ],
         [
-            "p2", "", "report_first", "example-app", "0.1.0", "q1", "",
+            "p2", "", "report_first", "privacyTrace", "example-app", "0.1.0", "q1", "",
             "true", "8", "权限=调用;法律判定", "", "", "", "", "", "",
         ],
         [
-            "p2", "", "report_first", "example-app", "0.1.0", "q2", "",
+            "p2", "", "report_first", "baseline", "example-app", "0.1.0", "q2", "",
             "true", "", "", "", "", "", "", "", "",
         ],
     ]
@@ -154,13 +155,23 @@ def test_pt907_pipeline_runs_end_to_end(tmp_path):
     assert len(lines) == 2
 
     dataset = dataset_mod.build(manifest, ledger, trace_dir)
-    assert dataset["schema_version"] == "0.1.0"
+    assert dataset["schema_version"] == "0.2.0"
     assert len(dataset["samples"]) == 1
     assert len(dataset["evidence"]) == 1
     assert len(dataset["conclusions"]) == 1
+    assert dataset["evidence"][0]["event"] == "evidence"
+    assert dataset["trace_events"] == {
+        "total": 2,
+        "evidence": 1,
+        "conclusions": 1,
+        "lifecycle": {},
+    }
     assert len(dataset["dataset_sha256"]) == 64
 
     metrics = metrics_mod.compute_metrics(metrics_mod.load_records(answers))
     assert metrics["accuracy"]["correct"] == 3
+    assert metrics["accuracy"]["answered"] == 4
+    assert metrics["accuracy"]["missing"] == 0
     assert metrics["accuracy"]["rate"] == 0.75
+    assert set(metrics["accuracy"]["by_material"]) == {"baseline", "privacyTrace"}
     assert metrics["misconceptions"]["total_count"] == 3

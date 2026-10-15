@@ -54,10 +54,17 @@ def test_synthetic_pt907_pack_rehearses_full_pipeline(tmp_path):
         assert len(lines) == 4
 
     dataset = dataset_mod.build(manifest, runs_path, trace_dir)
+    assert dataset["schema_version"] == "0.2.0"
     assert len(dataset["samples"]) == 4
     assert len(dataset["runs"]) == 4
     assert len(dataset["evidence"]) == 4
     assert len(dataset["conclusions"]) == 4
+    assert dataset["trace_events"] == {
+        "total": 16,
+        "evidence": 4,
+        "conclusions": 4,
+        "lifecycle": {"done": 4, "start": 4},
+    }
     assert len(dataset["dataset_sha256"]) == 64
     assert (
         dataset["dataset_sha256"]
@@ -71,6 +78,15 @@ def test_synthetic_pt907_pack_rehearses_full_pipeline(tmp_path):
         "baseline_first",
         "report_first",
     }
+    assert set(metrics["accuracy"]["by_material"]) == {"baseline", "privacyTrace"}
+    assert set(metrics["accuracy"]["by_material_and_condition"]) == {
+        "baseline|baseline_first",
+        "baseline|report_first",
+        "privacyTrace|baseline_first",
+        "privacyTrace|report_first",
+    }
+    assert metrics["accuracy"]["answered"] == 72
+    assert metrics["accuracy"]["missing"] == 0
     assert metrics["misconceptions"]["total_count"] > 0
 
     manifest_text = manifest.read_text(encoding="utf-8")
@@ -90,5 +106,6 @@ def test_synthetic_pt907_pack_rehearses_full_pipeline(tmp_path):
     assert "not real evidence" in evidence_readme_text.lower()
 
     answer_text = answers.read_text(encoding="utf-8")
+    assert answer_text.splitlines()[0].split(",")[3] == "material"
     assert "SYNTHETIC_REHEARSAL" in answer_text
     assert "synthetic-pt907-v1" in answer_text

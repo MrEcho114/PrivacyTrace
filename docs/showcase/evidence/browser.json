@@ -1,6 +1,6 @@
 {
   "passed": true,
-  "source_sha256": "9e417d5eadb15a43a8418903a72cf3b8699d18985bd8ea1b66c280ce0b45b2ee",
+  "source_sha256": "1f44b21d1fe37acee280d613ebff4d6f70a236fa9d1881f51db6349fafcc5f81",
   "offline_from_navigation": true,
   "controls": [
     "play advances decoded local audio and timeline",
@@ -13,156 +13,236 @@
   ],
   "seek_checks": [
     {
-      "time": 5.5,
+      "time": 4.5,
       "shot": "opening",
-      "direct_and_revisited_sha256": "b215bf8c6a0b5f48d79a4230f4c7dfe5e1f75e8afab151375adba527b0000c1e"
+      "direct_and_revisited_sha256": "74aa44953f7ade6aa7c8a59e0e891d2c8428b8027916c96ad67267b87e56adda"
     },
     {
-      "time": 15,
+      "time": 12.5,
+      "shot": "overview",
+      "direct_and_revisited_sha256": "5655047ea13ec629ddf4522de4a13fc6f307cc6b547a490bd99a2c59c98b88ef"
+    },
+    {
+      "time": 19.5,
       "shot": "import",
-      "direct_and_revisited_sha256": "5338a8ad6694694c74c8990ff0035b1994215f09ae2ae9fb57983a3b385a0de9"
+      "direct_and_revisited_sha256": "4c56d9f729f5fc76f1f2562d2a52a7abb420b6a70385aa54599b0bfb3b503ff6"
     },
     {
-      "time": 23,
-      "shot": "failure",
-      "direct_and_revisited_sha256": "74e5a1f5caeea265da9d67f1c72adc945a3fbdcf6033cad4b1272a7b8dcef809"
-    },
-    {
-      "time": 31,
-      "shot": "sources",
-      "direct_and_revisited_sha256": "33cd6fad78c61bc54f883c1536a55d4e77e148cb0cdef942598c2303b249f206"
-    },
-    {
-      "time": 39.5,
+      "time": 26.5,
       "shot": "candidates",
-      "direct_and_revisited_sha256": "7642baaac0826332f33e0edf4cf268d7d23971729b0116d490efd87b6495c48d"
+      "direct_and_revisited_sha256": "82456d4de693675cc138b8d9e335d1a62f91aaf05bb2c93654534a27bafb44e2"
     },
     {
-      "time": 48.5,
+      "time": 34.5,
       "shot": "quote",
-      "direct_and_revisited_sha256": "449f73ee2428411dafc512df20055b824f23ed41de0b225c710d30052dd79856"
+      "direct_and_revisited_sha256": "03be678de6c5e90f1c76990107da22ecdd9315b728bdeee4c56522ee2d972b95"
     },
     {
-      "time": 57.5,
+      "time": 42,
       "shot": "edit",
-      "direct_and_revisited_sha256": "100cfcad2819458c0e194f15faab0ae1d8197db308521553f0d1a9c3e20351c4"
+      "direct_and_revisited_sha256": "827afcbd5361df1d6d2a1382822b834dbffed04474f540c2cd5456f719ced7b2"
     },
     {
-      "time": 66,
+      "time": 48,
       "shot": "third",
-      "direct_and_revisited_sha256": "08ad79d9b30928085a76192976bb3ad4ef553c48881683c6edd8472721e435ec"
+      "direct_and_revisited_sha256": "d1f58279cf43a0f2eb9974ad42d05ecf598292047f30d50202117ed35ac5ae8f"
     },
     {
-      "time": 74,
+      "time": 53,
       "shot": "progress",
-      "direct_and_revisited_sha256": "c22137e838a41514f9ebc69c804817a80abd8b005f28f43e2e25cccf988f7c29"
+      "direct_and_revisited_sha256": "d1e2d5b2ecbe90f92cf29db28e3955e528b7fd73cbef3b5b75cdb7e28df43731"
     },
     {
-      "time": 81.5,
+      "time": 57,
       "shot": "complete",
-      "direct_and_revisited_sha256": "d351f550deadd937625dc351fa0bc156b7f1859b7d7774b424d7bffa5e92d586"
+      "direct_and_revisited_sha256": "04b357fb389c7533ccf98c61fd78ec2263600a120133d04f2c49965d9d70a763"
     },
     {
-      "time": 89,
+      "time": 62.5,
       "shot": "report",
-      "direct_and_revisited_sha256": "49e57e3e4ee9603cb8bd8f419f9483adc4d788f2ff036600ed50af07c180b47c"
+      "direct_and_revisited_sha256": "a30bf10fc750db859971dc6c6c00cb04181f80c9c7661bfe9680f2c3d7553cf2"
     },
     {
-      "time": 97.5,
-      "shot": "caution",
-      "direct_and_revisited_sha256": "237cac3705e200b736b4d80a3ee53ca027d22980ab7047d9189ad4d167a0b176"
-    },
-    {
-      "time": 107,
+      "time": 70,
       "shot": "code",
-      "direct_and_revisited_sha256": "a35756a195d401349fc07ef3601be1ec1b573a2216a804548067e5014fbef523"
+      "direct_and_revisited_sha256": "a9844eb8ffd18fa9136bb73a9fbb56fb28528d86874961fad1c579f47879f0d8"
     },
     {
-      "time": 117,
-      "shot": "trace",
-      "direct_and_revisited_sha256": "c3b8603e93ec49b3524a4ced64f3ac8b6358611169b2c84a1536e26479a5b449"
+      "time": 78.5,
+      "shot": "bridge",
+      "direct_and_revisited_sha256": "d11fbefd4f529ec54214bd45a049816b7b904ceddbbe535bf0cad0ff80c76133"
     },
     {
-      "time": 127,
+      "time": 86,
       "shot": "policy",
-      "direct_and_revisited_sha256": "4652a0e12cb13bc4984b6767170eb93dbb1c5a9041c4955d660857587d00b9c9"
+      "direct_and_revisited_sha256": "d4d9ea879b84ffde4470f3bbd9b5b71c714ae09e469ac71578a8bc21e4f7df98"
     },
     {
-      "time": 137.5,
+      "time": 91,
       "shot": "granularity",
-      "direct_and_revisited_sha256": "7f95b9bee924ae16ec96ea7c55d820be11e5c4ca833bfb98012443fd7f520d63"
+      "direct_and_revisited_sha256": "6c0e24d079377e0d9478707e682a2950c72a271f9b458c270b71898a2f53f014"
     },
     {
-      "time": 148.5,
+      "time": 95,
       "shot": "uncertainty",
-      "direct_and_revisited_sha256": "aa874fd7e00298aed92d7bb483d4f00fe78c57cdab205711b4655c896fefab3f"
+      "direct_and_revisited_sha256": "e98c053ba88464ce5717edfc3d4a3e519d34d5a48531fea0cd603e4f2d805480"
     },
     {
-      "time": 158.5,
+      "time": 101,
       "shot": "metrics",
       "direct_and_revisited_sha256": "a168afafa9411d5e4ba20e3c0f79a67048141a2e349dbc223c350da2eba80cea"
     },
     {
-      "time": 168,
+      "time": 109,
       "shot": "limits",
       "direct_and_revisited_sha256": "d2aff9e992166a295f87b02eeea1233fc0d6d6b7f9c15dddd5097d6dc042eeca"
     },
     {
-      "time": 176.5,
+      "time": 116.5,
       "shot": "closing",
-      "direct_and_revisited_sha256": "8f66f9b4ec908a299c718f243312e34fbb8a854358dc997a7467b9e9610995af"
+      "direct_and_revisited_sha256": "b2eab181d3b5d1641de121133d7a470f355b25ba3ac9494e0a26a9cae6557a53"
     }
   ],
   "errors": [],
   "external_requests": [],
-  "boundary_checks": 40,
+  "camera_checks": [
+    {
+      "shot": "opening",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    },
+    {
+      "shot": "overview",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    },
+    {
+      "shot": "import",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    },
+    {
+      "shot": "candidates",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    },
+    {
+      "shot": "quote",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    },
+    {
+      "shot": "edit",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    },
+    {
+      "shot": "third",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    },
+    {
+      "shot": "progress",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    },
+    {
+      "shot": "complete",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    },
+    {
+      "shot": "report",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    },
+    {
+      "shot": "code",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    },
+    {
+      "shot": "bridge",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    },
+    {
+      "shot": "policy",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    },
+    {
+      "shot": "granularity",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    },
+    {
+      "shot": "uncertainty",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    },
+    {
+      "shot": "metrics",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    },
+    {
+      "shot": "limits",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    },
+    {
+      "shot": "closing",
+      "entrance_changes": true,
+      "reading_hold_exact": true,
+      "exit_changes": true
+    }
+  ],
+  "boundary_checks": 36,
   "annotation_transitions": [
     {
-      "time": 53.18,
-      "painted_note_titles": [
-        "两句话，分别核对"
-      ]
-    },
-    {
-      "time": 53.36,
+      "time": 39.315,
       "painted_note_titles": []
     },
     {
-      "time": 53.54,
+      "time": 39.63,
+      "painted_note_titles": []
+    },
+    {
+      "time": 39.945,
       "painted_note_titles": [
         "把条件整理清楚"
       ]
     },
     {
-      "time": 62.16,
-      "painted_note_titles": [
-        "把条件整理清楚"
-      ]
-    },
-    {
-      "time": 62.32,
+      "time": 45.315,
       "painted_note_titles": []
     },
     {
-      "time": 62.48,
+      "time": 45.63,
+      "painted_note_titles": []
+    },
+    {
+      "time": 45.945,
       "painted_note_titles": [
         "这句说的是第三方"
-      ]
-    },
-    {
-      "time": 112.2,
-      "painted_note_titles": [
-        "找到具体调用点"
-      ]
-    },
-    {
-      "time": 112.4,
-      "painted_note_titles": []
-    },
-    {
-      "time": 112.6,
-      "painted_note_titles": [
-        "找到对应原句"
       ]
     }
   ]

@@ -1,3 +1,5 @@
+> 历史候选：本稿对应 `9e225977` 的 180 秒／20 镜。现行 120 秒编排见 [两分钟镜头与文字稿](issue-45-cinematic-120.md)。
+
 # PrivacyTrace 屏幕文案
 
 用户于 2026-10-15 授权 Codex 重写，取代此前逐字保留 Gemini 的要求。采用 humanizer-zh、writing-clearly-and-concisely 和 ux-writing：每镜说清操作或发现，合并重复边界说明；原始引句和结果不变。深黑视觉、20 镜顺序、秒数、裁切和原始 PNG 沿用 Gemini4 导演方案。

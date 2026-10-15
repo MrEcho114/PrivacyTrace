@@ -1,40 +1,34 @@
-# Issue #45 展示影片验收
+# Issue #45 两分钟展示影片验收
 
-状态：按用户最新要求，由 Codex 使用写作 skill 重写的影片通过本轮八项工程验收。核验日期 2026-10-15；用户审美认可另行决定。当前范围、唯一会话与最终 PR/head 见 [执行记录](https://github.com/MrEcho114/PrivacyTrace/issues/45#issuecomment-6164068934)。d160a39 和 8cc6a5d 是历史候选，其影片与收据随原提交保留，不充当本轮验收。本次没有合并、发布、部署或正式提交。
+2026-10-15：按用户“学习 Pioneer、加入好看的镜头、控制两分钟、发挥创造力”的最新授权，完成 120 秒／18 镜原创编排并通过下列工程验收。当前范围、唯一会话与交付 SHA 见[执行记录](https://github.com/MrEcho114/PrivacyTrace/issues/45#issuecomment-6164068934)。`9e225977` 的 180 秒影片及更早候选保留在原提交，不作为本轮证据。本次没有合并、发布、部署或正式提交。
 
 ## 交付与绑定
 
-- [H.264 MP4](../../showcase/privacytrace/delivery/PrivacyTrace-1080p.mp4)：180 秒，1920×1080，30 fps，5400 帧，16,035,608 字节；字幕烧录，原创器乐配乐，无旁白。
-- [可搬迁源码 ZIP](../../showcase/privacytrace/delivery/PrivacyTrace-Source.zip)：26,478,307 字节，解压后直接打开 `index.html` 离线播放。包含完整本地字体、音乐、原始截图、可编辑时间表、绘制代码与验证附件；播放无需安装制作工具。
-- [manifest.json](../../showcase/privacytrace/delivery/manifest.json) 绑定 MP4 `b0c0228a6b9d8d7350a282663f9c6dbadf3ca9d3f77ccbda9630e151c68dfc59`、ZIP `00219e190439ee0ab2717a8dfa3e8a53d12b08c87c27bcbeefa4c241c06f2f85`、视觉源码 `9e417d5eadb15a43a8418903a72cf3b8699d18985bd8ea1b66c280ce0b45b2ee` 与原捕获版本。
-- 播放与重做见 [README](../../showcase/privacytrace/README.md)，来源与许可见 [ASSETS](../../showcase/privacytrace/ASSETS.md)。制作缓存、APK、store、依赖与日志保留在忽略目录。
+- [H.264 MP4](../../showcase/privacytrace/delivery/PrivacyTrace-1080p.mp4)：120 秒、1920×1080、30 fps、3600 帧，15,207,468 字节；字幕烧录，原创器乐，无旁白。
+- [离线源码 ZIP](../../showcase/privacytrace/delivery/PrivacyTrace-Source.zip)：25,264,645 字节，解压打开 `index.html` 即可播放。包含本地字体、截图、配乐、分镜、透视相机代码与验证附件。
+- [manifest.json](../../showcase/privacytrace/delivery/manifest.json)：MP4 `8c61fd272be4dfa4ea450db7c37458777f22283970f671e22789e9b60fe1bcf4`；ZIP `62111a4ec2aa14b0573afef29d998a4e885ef364a2ea6f253efa2e3411b53df2`；视觉源码 `1f44b21d1fe37acee280d613ebff4d6f70a236fa9d1881f51db6349fafcc5f81`。
+- [两分钟镜头与文字稿](issue-45-cinematic-120.md)、[播放与重做](../../showcase/privacytrace/README.md)、[来源与许可](../../showcase/privacytrace/ASSETS.md)。
 
 ## 对照八项 Acceptance Criteria
 
 | 验收项 | 本轮实际结果 |
 | --- | --- |
-| 本地离线 HTML 与控制 | 导航前 `offline=true`，从 `file://` 加载；7 项播放／暂停、重播、滑块、全屏和键盘检查通过；1440、768、390 宽度无水平溢出。HTML 实际连续播放至 180 秒；新目录解压后离线播放／暂停和 8 点 seek 通过 |
-| 实际 MP4 规格、字幕与音乐 | H.264／yuv420p、1080p、30/1、5400 帧、180 秒；AAC 48kHz 双声道覆盖 180 秒。12 个实际解码帧与 HTML 画布比较，最大平均 RGB 误差 1.8301；字幕在像素中，配乐为原创程序器乐 |
-| 连贯用户路径 | 20 镜连续覆盖 0–180 秒，沿用七段时序并简化章节名称；主任务从导入持续走至报告、API、条款和政策快照，历史场景在 132 秒后另列 |
-| 素材身份与回放标识 | 保留构造 APK、人工政策、实录回放及历史日期／编号。约 3.7 秒来自原后台事件，镜头停留为剪辑时长；没有现场执行或全文复核声明 |
-| 数据与技术事实 | 新取材绑定 main `6d781fde…`，历史六场景单独绑定；保留 2/6、3/6、6/6、弃判 0/1/2 和失败 0/0/0。权限是能力，API 是潜在线索；主任务两条结果均为证据不足，未知状态未升级 |
-| 关键帧、切换、解码及音频 | 20 中点、40 边界按打乱顺序 seek 后像素哈希一致。批注相接切换的 9 个实际 Canvas 绘制样本未同时绘出两个标题；正文受同一透明度控制。全片严格解码、0 黑帧、阅读静止段检查通过；结尾镜头没有意外冻结。HTML／MP4 各实际连续播放至 180 秒，12 点 MP4 seek 通过 |
-| 来源、许可及私有数据 | 10 张原始 PNG 与返回包逐字节一致；Noto 字体保留 OFL，音乐无第三方采样或语音。搬迁包 48 个文件哈希通过，另有 `files.json`；实际可用凭证字节和文本私有路径扫描均为 0 匹配，包不含 APK、数据库或依赖 |
-| 源码、说明、预览、成片与记录 | 同一确定性时间函数驱动 HTML 与导帧；提供可编辑源码 ZIP、MP4、制作方案、导演原稿、逐项记录及 6 份本轮收据。正式材料格式核对保留其核对日期和适用边界 |
+| 本地离线 HTML 与控制 | 导航前设置 offline，file URL 实际播放；7 项控制通过，1440／768／390 宽度无水平溢出。HTML 完整到 120 秒。搬迁源码包再做离线播放、暂停及 18 点 seek |
+| 实际 MP4 规格与音轨 | H.264／yuv420p、1080p、30/1、3600 帧、120 秒；AAC 48kHz 双声道、120 秒。18 个解码帧与 HTML 导出比较，最大平均 RGB 误差 1.8406 |
+| 连贯用户路径与镜头 | 18 镜覆盖 0–120 秒；开场拆开安装包，9 秒空间长廊，16–74 秒同一任务导入／候选／报告／代码，74 秒双页对照，83 秒来源，89 秒后单列历史测试，113 秒收成报告 |
+| 身份与回放标识 | 构造 APK、人工政策、实录回放与历史日期／案例编号保留；原创空间段标为镜头／流程／摘录示意。约 3.7 秒来自原扫描事件，镜头停留是编辑时间 |
+| 数据与技术事实 | 原 PNG、引句、偏移、版本与未知状态不变；主报告两条均为证据不足；历史 2/6、3/6、6/6 是六场景状态一致数，弃判 0/1/2、失败 0/0/0，不称准确率 |
+| 完整播放、跳转、运动与解码 | 18 中点、36 边界与移动中打乱 seek 像素一致；18 镜各检进入变化、阅读像素完全静止、退出变化；原始导帧另有 54 对相机核验。6 个实际批注绘制样本无两标题重叠。HTML／MP4 各完整播放到 120 秒；18 点编码 seek、全片严格解码、无检测到的异常黑段、冻结与音频检查通过 |
+| 许可与私有内容 | 10 张截图字节不变；Noto 字体 OFL 随包，原创音乐无采样。搬迁包核验 49 个文件哈希，另有 files.json；实际可用凭证字节、文本私有路径 0 匹配；包无 APK、数据库、依赖或帧缓存 |
+| 源码、说明与证据 | 同一分镜时长驱动控制、相机、导出、音乐及媒体验收；HTML／MP4 绑定同一视觉源码；源码 ZIP、制作说明与六份本轮收据齐备 |
 
-## 文案重写
+## 创作与独立复核
 
-用户再次否定 Gemini4 文案中的术语与重复免责声明，明确要求 Codex 自行找 skill 打磨，取代此前只允许改 quote 一句的限制。主代理按 humanizer-zh、writing-clearly-and-concisely 和 ux-writing 重写标题、字幕、批注与标签，见 [逐镜文字稿](issue-45-copy-rewrite.md)。原始引句和数据保留，字幕围绕操作和发现展开，必要边界留在具体场景。
+直接观看 Pioneer v8 实际成片的取样帧并读其分镜，提炼物理面板厚度、景深、正面阅读和首尾呼应，自行实现分层安装包、三屏长廊、代码／政策对照和报告收拢。没有复制 Pioneer 素材、角色、文案或音乐。`cinema.js` 的解析透视与纹理网格按绝对时间求值，运动段有短暂对焦，产品阅读段直接绘制清晰原图。
 
-Gemini4 仍是深黑 #080909 画布、暖白字、三色细线、深色案例卡和 20 镜顺序的来源；原始包 SHA256 `e35abb2ba02f686ee2ac73b551f905fb8900dc13a548290c95f25db5b252a475`。与 8cc6a5d 逐项比较确认原 PNG、裁切、时间、镜头类型与顺序不变。历史导演稿保存在 [交接稿](gemini4-director-review.md)，现行文案归属与哈希见 [copy-provenance.json](../../showcase/privacytrace/copy-provenance.json)。作者观看／verified 自述没有被当成本轮独立实测。
+独立只读复核查看 17 张入场／阅读／收尾帧，未发现接缝、正文裁切、主文遮挡或结果升级；根据建议增加片头卡组与标题的间距。主代理另查看关键帧。固定帧仅证明采样状态，连续时间通过真实播放及运动／静止检查补充；不据此推断用户认可审美。
 
-片头片尾各保留一组主副标题，删除底部重复字幕；批注直接进入内容。GKD 的 PARTIAL／UNREVIEWED／NOT_CHECKED 显示为“部分提取／尚未复核／尚未检查”，统计列改为“与预设状态一致／不作判断／运行失败”，与原指标一一对应。没有把结果写成准确率，代码调用仍处于静态上下文。
-
-本地经典脚本、手机控制、节点字框适配和批注先退后入的修复保留。批注守卫继续检查实际绘制；原创音乐与镜头时间不变，未使用 Pioneer 音轨。
-
-片头相机仍在第 7 秒进入阅读停留，原始帧 207→209、209→210 的变化像素为 5812、11430，210→300 为 0。全片冻结守卫保留，缓动末尾的编码噪声容差为 0.1 秒加一帧。
-
-独立代表帧审阅未发现影片字幕或批注越界。code、caution、sources 的原应用截图底缘仍有非焦点下节内容被视口截断；API 卡、当前候选等焦点信息完整，后续 trace／edit 特写分别展示相应条款和编辑内容。本片没有声称每张截图包含全部页面内容，保留导演裁切与原 PNG。
+片头在 5.2 秒后停稳，其他进入／退出时长来自分镜。冻结检查仅接受声明的阅读段；编码缓动尾部容差 0.4 秒，原始帧进出变化与静止检查仍严格。最后退出相机实际移动，未用尾帧冻结填时。
 
 ## 取材与事实范围
 
@@ -53,29 +47,26 @@ HTTP 政策和 DNS 是本地取材夹具；没有把这次操作称作真正厂�
 
 ## 验证命令与证据
 
-| 实际执行 | 结果／收据 |
+| 实际执行 | 本轮结果 |
 | --- | --- |
-| `pwsh -NoProfile -File scripts/check.ps1` | 617 API passed、20 skipped、46 前端 passed；Ruff、治理、契约、类型和构建通过。既有 Starlette warning 保留。跳过项未声称通过；取材受限 Docker 收据仍绑定原捕获 |
-| `node showcase/privacytrace/verify.cjs` | 离线导航、7 控制、20 镜、40 边界和批注切换通过；[browser.json](evidence/browser.json) |
-| `node showcase/privacytrace/render.cjs` | 实际 Chromium 导出 5400 帧，外网请求阻断；[render-result.json](evidence/render-result.json) |
-| `python showcase/privacytrace/verify-media.py` | 全片严格解码、黑帧、冻结、音轨和 12 个编码帧对应通过；响度 -18.88 LUFS，true peak -4.13 dBTP，无中段静音；[media.json](evidence/media.json) |
-| `node showcase/privacytrace/verify.cjs --video --full` | 最终 HTML／MP4 各实际连续播放至 180 秒，12 点 MP4 seek，无脚本／媒体错误或外网请求；[browser-and-video.json](evidence/browser-and-video.json) |
-| `node showcase/privacytrace/verify-server.cjs` | 11 项服务／链接边界检查通过；[server.json](evidence/server.json) |
-| `python showcase/privacytrace/package.py`、`node showcase/privacytrace/verify-package.cjs` | 最终交付哈希、48 文件哈希、实际搬迁离线播放和私有内容扫描通过；[package.json](evidence/package.json) |
-| Python Ruff、JS 语法、完整 diff 与独立审阅 | 通过；语言、事实与实际代表帧分别复核，镜头素材／裁切／时序等非文案字段逐项比较不变 |
+| `pwsh -NoProfile -File scripts/check.ps1` | 617 API passed、20 skipped、46 前端 passed；Ruff、治理、契约、类型、构建通过。既有 Starlette warning 保留；跳过不称通过 |
+| `node showcase/privacytrace/verify.cjs` | 7 控制、18 中点、36 边界、18 相机阶段检查；[browser.json](evidence/browser.json) |
+| `node showcase/privacytrace/render.cjs` | 实际生成 3600 帧、外网请求阻断；[render-result.json](evidence/render-result.json) |
+| `python showcase/privacytrace/verify-media.py` | 全片严格解码、无检测到的异常黑段、阅读段与 54 对相机帧、18 个编码帧通过；响度 -18.90 LUFS、峰值 -3.63 dBTP，无中段静音；[media.json](evidence/media.json) |
+| `node showcase/privacytrace/verify.cjs --video --full` | HTML／MP4 各到 ended／120 秒，无脚本／媒体错误和外网请求；[browser-and-video.json](evidence/browser-and-video.json) |
+| `node showcase/privacytrace/verify-server.cjs` | 11 项通过；[server.json](evidence/server.json) |
+| `python showcase/privacytrace/package.py`、`node showcase/privacytrace/verify-package.cjs` | 文件绑定、搬迁后离线播放、18 点 seek 与私有内容扫描通过；[package.json](evidence/package.json) |
 
-上一候选 d160a39 中的 DNS 剩余预算最小修复及其稳定回归保持原提交；本轮没有新增后端、接口、规则或基准改动。CRLF 视觉输入以 Git `-text` 保留核验字节，`cr-at-eol` 仅使差异检查识别合法行尾，不忽略其它行尾空格。
-
-远端工程 CI 以当前执行记录及 PR 的最终交付 SHA 为准；CI 没有代替本机影片解码、播放或人类审美验收。
+上一候选的 DNS 剩余预算最小修复保留原提交；本轮仅改影片与说明，没有新后端、接口、规则或基准修改。完整最终 diff 与独立源码审阅完成后推送；远端 CI 绑定最终 SHA，以当前执行记录与 PR 为准，不代替本机影片验收。
 
 ## 正式材料格式差异
 
 2026-10-14 核对 [2026 官方电脑版作品提交流程](https://www.cmit.cn/html/liucheng/show-277-45689-1.html)：作品／答辩视频至少 1 个、最多 2 个，每个不超过 1G；视频与答辩 PPT 至少提交一种，PPT 不超过 200MB；参赛打包文件支持 ZIP／RAR／7Z，不超过 10GB。此页面没有规定视频时长、分辨率、帧率或容器。
 
-本片约 16.0MB，源码 ZIP 约 26.5MB，低于对应大小上限；180 秒、1080p、30 fps、H.264 MP4 是用户选择，并非官方要求。源码 ZIP 是影片维护包，未充当完整赛事资料包。赛道／分类及另行说明可能改变适用要求，正式提交仍按 [Issue #43](https://github.com/MrEcho114/PrivacyTrace/issues/43) 的最后确认；本次没有代填、上传或提交，也没有修改 #19／#43。
+本片约 15.2MB，源码 ZIP 约 25.3MB，低于对应大小上限；120 秒、1080p、30 fps、H.264 MP4 是用户选择，并非官方要求。源码 ZIP 是影片维护包，未充当完整赛事资料包。赛道／分类及另行说明可能改变适用要求，正式提交仍按 [Issue #43](https://github.com/MrEcho114/PrivacyTrace/issues/43) 的最后确认；本次没有代填、上传或提交，也没有修改 #19／#43。
 
 ## 已知边界
 
-实际音频播放、整轨解码、响度与峰值测量已通过；没有人类听感或审美签字。项目整体公开分发许可、正式资质和材料由团队决定，本任务只交付影片候选。
+没有人类听感或审美签字。原截图只代表捕获区域，部分底缘有下一节内容截断；当前焦点另有完整特写。参考三屏长廊是概览，阅读使用后续大图。
 
-双页面同时播放的无头浏览器最后一个定期样本在 167.34 秒记录 21 个 dropped frames（计数包含之前 12 次 seek）。媒体最终到达 ended／180 秒，文件自身 5400 帧独立完整解码；没有声称浏览器零丢帧。
+双页面同时播放的无头浏览器最后定期样本在 106.91 秒记录 8 个 dropped frames，计数包含之前 18 次 seek；最终到 ended／120 秒，文件本身 3600 帧独立完整解码。没有声称浏览器零丢帧。

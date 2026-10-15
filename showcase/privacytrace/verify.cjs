@@ -15,7 +15,7 @@ const video = process.argv.includes('--video') ? path.join(work, 'PrivacyTrace-1
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 async function fullPlay(page, getTime, label) {
   const begun = Date.now(); const samples = [];
-  for (let i = 0; i < 220; i++) {
+  for (let i = 0; i < story.duration_seconds + 40; i++) {
     await page.waitForTimeout(1000);
     const state = await getTime();
     if (i % 15 === 0) { samples.push(state); console.log(JSON.stringify({ playback: label, media_seconds: state.time, wall_seconds: (Date.now() - begun) / 1000 })); }
@@ -40,20 +40,42 @@ async function main() {
     await page.waitForFunction(() => window.__ready, null, { timeout: 60000 });
     let end = 0;
     for (const shot of story.shots) { assert.equal(shot.start, end); assert(shot.end > shot.start); end = shot.end; }
-    assert.equal(end, 180);
+    assert.equal(end, story.duration_seconds);
     // Exact image equality after out-of-order seeks checks history independence.
     for (const shot of story.shots) {
       const t = (shot.start + shot.end) / 2;
       await page.evaluate(t => window.__seek(t), t);
       const first = await page.screenshot({ path: path.join(output, shot.id + '.png') });
-      await page.evaluate(() => window.__seek(179));
+      await page.evaluate(t => window.__seek(t), story.duration_seconds - 1);
       await page.evaluate(t => window.__seek(t), t);
       assert.equal(digest(await page.screenshot()), digest(first), 'history-dependent frame: ' + shot.id);
       const state = await page.evaluate(() => window.__inspect()); assert.equal(state.shot, shot.id);
       proof.seek_checks.push({ time: t, shot: shot.id, direct_and_revisited_sha256: digest(first) });
     }
+    // Camera motion and square reading holds are verified from rendered pixels,
+    // including reverse seeks. A stalled camera cannot pass as a reading hold.
+    proof.camera_checks = [];
+    for (const shot of story.shots) {
+      const d = shot.end - shot.start, m = shot.motion;
+      assert(m.enter > 0 && m.exit > 0 && m.hold_end > m.hold_start);
+      const frame = async local => { await page.evaluate(t => window.__seek(t), shot.start + local); return digest(await page.locator('#film').screenshot()); };
+      const entry = [await frame(m.enter * .2), await frame(m.enter * .75)];
+      const hold = [await frame(m.hold_start + .1), await frame(m.hold_end - .1)];
+      const exit = [await frame(d - m.exit * .8), await frame(d - m.exit * .2)];
+      assert.notEqual(...entry, 'Camera entrance stalled: ' + shot.id);
+      assert.equal(...hold, 'Reading hold moves: ' + shot.id);
+      assert.notEqual(...exit, 'Camera exit stalled: ' + shot.id);
+      proof.camera_checks.push({shot:shot.id, entrance_changes:true, reading_hold_exact:true, exit_changes:true});
+      for (const fraction of [.2, .75]) {
+        const t = shot.start + m.enter * fraction;
+        await page.evaluate(t => window.__seek(t), t); const first = digest(await page.screenshot());
+        await page.evaluate(t => window.__seek(t), story.duration_seconds - .1);
+        await page.evaluate(t => window.__seek(t), t);
+        assert.equal(digest(await page.screenshot()), first, 'Moving camera depends on seek history');
+      }
+    }
     // Walk every boundary sequentially, then compare direct seeks in reverse.
-    const sampleTimes = [...new Set(story.shots.flatMap(s => [s.start, Math.min(179.999, s.end - 1 / 30)]))];
+    const sampleTimes = [...new Set(story.shots.flatMap(s => [s.start, Math.min(story.duration_seconds - .001, s.end - 1 / story.fps)]))];
     const samples = new Map();
     for (const t of sampleTimes) { await page.evaluate(t => window.__seek(t), t); samples.set(t, digest(await page.screenshot())); }
     for (const t of [...sampleTimes].reverse()) { await page.evaluate(t => window.__seek(t), t); assert.equal(digest(await page.screenshot()), samples.get(t)); }
@@ -69,7 +91,7 @@ async function main() {
         shots.forEach((shot, i) => {
           if (!i || shot.kind !== 'product' || shots[i - 1].kind !== 'product' || !shot.note || !shots[i - 1].note) return;
           for (const fraction of [.25, .5, .75]) {
-            const time = shot.start + (shot.end - shot.start) * .08 * fraction;
+            const time = shot.start + shot.motion.enter * fraction * 1.4;
             seen = new Set(); window.__seek(time); samples.push({ time, painted_note_titles: [...seen] });
           }
         });
@@ -120,8 +142,8 @@ async function main() {
       await videoPage.evaluate(src => { document.getElementById('v').src = src; }, pathToFileURL(video).href);
       await videoPage.waitForFunction(() => document.getElementById('v').readyState >= 2);
       const metadata = await videoPage.evaluate(() => { const v = document.getElementById('v'); return { duration: v.duration, width: v.videoWidth, height: v.videoHeight }; });
-      assert(Math.abs(metadata.duration - 180) < .1); assert.equal(metadata.width, 1920); assert.equal(metadata.height, 1080);
-      const encodedSeeks = [5, 15, 48, 57, 74, 89, 107, 117, 137, 158, 168, 176];
+      assert(Math.abs(metadata.duration - story.duration_seconds) < .1); assert.equal(metadata.width, 1920); assert.equal(metadata.height, 1080);
+      const encodedSeeks = story.verification.sample_seconds;
       for (const t of encodedSeeks) {
         await videoPage.evaluate(t => new Promise(resolve => { const v = document.getElementById('v'); v.addEventListener('seeked', resolve, { once: true }); v.currentTime = t; }), t);
         await videoPage.screenshot({ path: path.join(output, `encoded-${t}.png`) });

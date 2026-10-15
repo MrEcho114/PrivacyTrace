@@ -11,7 +11,7 @@ const frames = path.join(work, 'frames');
 const output = path.join(work, 'PrivacyTrace-1080p.mp4');
 function sourceHash() {
   assertAssetTree(path.join(root, 'assets'));
-  const files = ['index.html', 'film.mjs', 'storyboard.json', 'data.js', 'copy-provenance.json', 'capture-provenance.json', 'audio-provenance.json'];
+  const files = ['index.html', 'film.mjs', 'cinema.js', 'storyboard.json', 'data.js', 'copy-provenance.json', 'capture-provenance.json', 'audio-provenance.json'];
   const walk = dir => { for (const name of fs.readdirSync(path.join(root, dir))) { const relative = dir + '/' + name; if (fs.statSync(path.join(root, relative)).isDirectory()) walk(relative); else files.push(relative); } };
   walk('assets'); files.sort(); const h = crypto.createHash('sha256');
   for (const name of files) { h.update(name + '\0'); h.update(fs.readFileSync(path.join(root, name))); }
@@ -46,7 +46,7 @@ async function main() {
       const state = captured.state;
       counts[state.shot] = (counts[state.shot] || 0) + 1;
       if (captured.png) fs.writeFileSync(file, Buffer.from(captured.png, 'base64'));
-      if (i === 180 && captured.png) {
+      if (i === Math.round(story.verification.reference_seconds * story.fps) && captured.png) {
         // The direct browser canvas export must match the browser's screenshot.
         await page.screenshot({ path: path.join(work, 'canvas-export-reference.png') });
       }

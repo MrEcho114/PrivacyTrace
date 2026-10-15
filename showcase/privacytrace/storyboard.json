@@ -1,6 +1,6 @@
 {
-  "version": "3.0",
-  "duration_seconds": 180,
+  "version": "4.0",
+  "duration_seconds": 120,
   "fps": 30,
   "width": 1920,
   "height": 1080,
@@ -11,16 +11,40 @@
       "id": "opening",
       "chapter": "开场",
       "start": 0,
-      "end": 11,
+      "end": 9,
       "kind": "identity",
-      "title": "代码里有位置调用，政策怎么说？",
-      "copy": "把安装包和政策放在一起，沿着一条位置线索核对。"
+      "title": "核对应用权限与隐私政策",
+      "copy": "集中查看权限、政策说明和分析结果，随时查阅对应依据。",
+      "motion": {
+        "enter": 5.2,
+        "exit": 0.65,
+        "hold_start": 5.2,
+        "hold_end": 8.35,
+        "direction": -1
+      }
+    },
+    {
+      "kind": "overview",
+      "chapter": "一条线索的旅程",
+      "title": "导入、核对，再沿报告回查",
+      "copy": "真实操作截图，串起这次位置线索的核对过程。",
+      "badge": "实录截图 · 流程示意",
+      "id": "overview",
+      "start": 9,
+      "end": 16,
+      "motion": {
+        "enter": 2.3,
+        "exit": 0.65,
+        "hold_start": 2.3,
+        "hold_end": 6.35,
+        "direction": 1
+      }
     },
     {
       "id": "import",
       "chapter": "01 · 导入材料",
-      "start": 11,
-      "end": 19,
+      "start": 16,
+      "end": 23,
       "kind": "product",
       "image": "assets/stills/import.png",
       "crop": [
@@ -32,56 +56,20 @@
       "focus": false,
       "badge": "构造 APK／人工政策 · 操作回放",
       "title": "先把安装包和政策放进来",
-      "copy": "选好测试安装包，再填入应用和第三方的政策来源。"
-    },
-    {
-      "id": "failure",
-      "chapter": "01 · 导入材料",
-      "start": 19,
-      "end": 27,
-      "kind": "product",
-      "image": "assets/stills/import.png",
-      "crop": [
-        545,
-        355,
-        865,
-        520
-      ],
-      "focus": true,
-      "badge": "构造 APK／人工政策 · 操作回放",
-      "note": {
-        "title": "这个地址为什么取不到？",
-        "lines": [
-          "http://127.0.0.1/private 指向本机，系统拒绝访问。",
-          "失败原因：PUBLIC_URL_REQUIRED。来源仍保留，可以手动补录正文。"
-        ]
-      },
-      "title": "私网地址被拦下，失败记录仍保留",
-      "copy": "第三个地址指向本机，系统拒绝访问。这个来源仍留在列表里，可以补录政策正文。"
-    },
-    {
-      "id": "sources",
-      "chapter": "02 · 核对政策",
-      "start": 27,
-      "end": 35,
-      "kind": "product",
-      "image": "assets/stills/candidates.png",
-      "crop": [
-        195,
-        55,
-        1215,
-        650
-      ],
-      "focus": false,
-      "badge": "构造 APK／人工政策 · 操作回放",
-      "title": "两份政策，分开看",
-      "copy": "应用自身和第三方各占一个标签。分别查看，声明主体就不会混在一起。"
+      "copy": "选好测试安装包，再填入应用和第三方的政策来源。",
+      "motion": {
+        "enter": 0.9,
+        "exit": 0.65,
+        "hold_start": 0.9,
+        "hold_end": 6.35,
+        "direction": -1
+      }
     },
     {
       "id": "candidates",
       "chapter": "02 · 核对政策",
-      "start": 35,
-      "end": 44,
+      "start": 23,
+      "end": 30,
       "kind": "product",
       "image": "assets/stills/candidates.png",
       "crop": [
@@ -93,13 +81,20 @@
       "focus": true,
       "badge": "构造 APK／人工政策 · 操作回放",
       "title": "模型先找出三条待核对的声明",
-      "copy": "位置访问、不会读取联系人，还有第三方的位置说明。接下来，回到原文逐条核对。"
+      "copy": "模型找出三条待核对声明。应用自身与第三方分开看；私网来源被拒绝的记录也保留。",
+      "motion": {
+        "enter": 0.9,
+        "exit": 0.65,
+        "hold_start": 0.9,
+        "hold_end": 6.35,
+        "direction": 1
+      }
     },
     {
       "id": "quote",
       "chapter": "02 · 核对政策",
-      "start": 44,
-      "end": 53,
+      "start": 30,
+      "end": 39,
       "kind": "product",
       "image": "assets/stills/quote.png",
       "crop": [
@@ -118,13 +113,20 @@
         ]
       },
       "title": "先看原文到底怎么写",
-      "copy": "宿主政策写明了访问位置的条件，也写了不会读取联系人。两句话都能在左侧原文中找到。"
+      "copy": "宿主政策写明了访问位置的条件，也写了不会读取联系人。两句话都能在左侧原文中找到。",
+      "motion": {
+        "enter": 0.9,
+        "exit": 0.65,
+        "hold_start": 0.9,
+        "hold_end": 8.35,
+        "direction": -1
+      }
     },
     {
       "id": "edit",
       "chapter": "02 · 核对政策",
-      "start": 53,
-      "end": 62,
+      "start": 39,
+      "end": 45,
       "kind": "product",
       "image": "assets/stills/edit.png",
       "crop": [
@@ -143,13 +145,20 @@
         ]
       },
       "title": "整理触发条件，再保存候选",
-      "copy": "把条件缩短为“使用位置查询时”，保留声明主体和数据类型，然后保存。"
+      "copy": "把条件缩短为“使用位置查询时”，保留声明主体和数据类型，然后保存。",
+      "motion": {
+        "enter": 0.9,
+        "exit": 0.65,
+        "hold_start": 0.9,
+        "hold_end": 5.35,
+        "direction": 1
+      }
     },
     {
       "id": "third",
       "chapter": "02 · 核对政策",
-      "start": 62,
-      "end": 70,
+      "start": 45,
+      "end": 51,
       "kind": "product",
       "image": "assets/stills/third-party.png",
       "crop": [
@@ -168,13 +177,20 @@
         ]
       },
       "title": "第三方的声明，单独核对",
-      "copy": "这份政策只说第三方“可能处理位置信息”。处理范围和条件还没写清，先按原文记录。"
+      "copy": "这份政策只说第三方“可能处理位置信息”。处理范围和条件还没写清，先按原文记录。",
+      "motion": {
+        "enter": 0.9,
+        "exit": 0.65,
+        "hold_start": 0.9,
+        "hold_end": 5.35,
+        "direction": -1
+      }
     },
     {
       "id": "progress",
       "chapter": "03 · 查看报告",
-      "start": 70,
-      "end": 78,
+      "start": 51,
+      "end": 55,
       "kind": "product",
       "image": "assets/stills/progress.png",
       "crop": [
@@ -186,13 +202,20 @@
       "focus": false,
       "badge": "构造 APK／人工政策 · 操作回放",
       "title": "提交分析，保留每份材料的来源",
-      "copy": "任务进入队列。两份政策的采集时间和内容哈希随任务保存，第三份来源的失败原因也一并留下。"
+      "copy": "任务进入队列，政策来源和采集记录随任务保存。",
+      "motion": {
+        "enter": 0.9,
+        "exit": 0.65,
+        "hold_start": 0.9,
+        "hold_end": 3.35,
+        "direction": 1
+      }
     },
     {
       "id": "complete",
       "chapter": "03 · 查看报告",
-      "start": 78,
-      "end": 85,
+      "start": 55,
+      "end": 59,
       "kind": "product",
       "image": "assets/stills/complete.png",
       "crop": [
@@ -204,13 +227,20 @@
       "focus": true,
       "badge": "构造 APK／人工政策 · 操作回放",
       "title": "扫描完成，打开报告",
-      "copy": "这次静态扫描约用 3.7 秒，结果已经保存到本机。"
+      "copy": "本次静态扫描约用 3.7 秒，结果已保存。",
+      "motion": {
+        "enter": 0.9,
+        "exit": 0.65,
+        "hold_start": 0.9,
+        "hold_end": 3.35,
+        "direction": -1
+      }
     },
     {
       "id": "report",
       "chapter": "03 · 查看报告",
-      "start": 85,
-      "end": 93,
+      "start": 59,
+      "end": 66,
       "kind": "product",
       "image": "assets/stills/report.png",
       "crop": [
@@ -221,32 +251,21 @@
       ],
       "focus": false,
       "badge": "构造 APK／人工政策 · 操作回放",
-      "title": "两条位置线索，都在这份报告里",
-      "copy": "报告列出位置权限和一处 API 调用，也保留了政策材料。先读结果，再逐项查看依据。"
-    },
-    {
-      "id": "caution",
-      "chapter": "03 · 查看报告",
-      "start": 93,
-      "end": 102,
-      "kind": "product",
-      "image": "assets/stills/evidence.png",
-      "crop": [
-        0,
-        0,
-        1168,
-        640
-      ],
-      "focus": true,
-      "badge": "构造 APK／人工政策 · 操作回放",
-      "title": "为什么还不能确定？",
-      "copy": "代码里找到了位置线索，但政策适用范围还没确认。两条结果都保留为“证据不足”。"
+      "title": "两条位置线索，结果都是“证据不足”",
+      "copy": "报告列出位置权限和 API 调用。政策适用范围尚未确认，可以继续回查依据。",
+      "motion": {
+        "enter": 0.9,
+        "exit": 0.65,
+        "hold_start": 0.9,
+        "hold_end": 6.35,
+        "direction": 1
+      }
     },
     {
       "id": "code",
       "chapter": "04 · 回查原文与代码",
-      "start": 102,
-      "end": 112,
+      "start": 66,
+      "end": 74,
       "kind": "product",
       "image": "assets/stills/evidence.png",
       "crop": [
@@ -265,38 +284,37 @@
         ]
       },
       "title": "这条调用，具体写在哪里？",
-      "copy": "在 classes.dex 的 run()V 方法中，偏移 6 字节处能找到 getLastKnownLocation 调用。"
+      "copy": "在 classes.dex 的 run()V 方法中，偏移 6 字节处能找到 getLastKnownLocation 调用。",
+      "motion": {
+        "enter": 0.9,
+        "exit": 0.65,
+        "hold_start": 0.9,
+        "hold_end": 7.35,
+        "direction": -1
+      }
     },
     {
-      "id": "trace",
+      "kind": "bridge",
       "chapter": "04 · 回查原文与代码",
-      "start": 112,
-      "end": 122,
-      "kind": "product",
-      "image": "assets/stills/evidence.png",
-      "crop": [
-        10,
-        640,
-        570,
-        565
-      ],
-      "focus": true,
-      "badge": "构造 APK／人工政策 · 操作回放",
-      "note": {
-        "title": "找到对应原句",
-        "lines": [
-          "位置声明来自应用自身；触发条件是“使用位置查询时”。",
-          "报告保留了原句位置，回查时还能找到对应段落。"
-        ]
-      },
-      "title": "回到这条线索旁的政策原句",
-      "copy": "报告把同类位置声明和原文位置一起列出，可以逐句对照代码里的线索。"
+      "title": "放在一起看，还差哪一块？",
+      "copy": "代码有调用，政策有原句；适用范围还没确认，这次结果保留“证据不足”。",
+      "badge": "本次报告 · 摘录示意",
+      "id": "bridge",
+      "start": 74,
+      "end": 83,
+      "motion": {
+        "enter": 2.3,
+        "exit": 0.65,
+        "hold_start": 2.3,
+        "hold_end": 8.35,
+        "direction": 1
+      }
     },
     {
       "id": "policy",
       "chapter": "04 · 回查原文与代码",
-      "start": 122,
-      "end": 132,
+      "start": 83,
+      "end": 89,
       "kind": "product",
       "image": "assets/stills/source.png",
       "crop": [
@@ -308,76 +326,118 @@
       "focus": true,
       "badge": "构造 APK／人工政策 · 操作回放",
       "title": "这份政策，来自哪个版本？",
-      "copy": "报告保留了政策原文、采集时间和 SHA-256，回看时还能确认当时用的是哪份材料。"
+      "copy": "报告保留了政策原文、采集时间和 SHA-256，回看时还能确认当时用的是哪份材料。",
+      "motion": {
+        "enter": 0.9,
+        "exit": 0.65,
+        "hold_start": 0.9,
+        "hold_end": 5.35,
+        "direction": -1
+      }
     },
     {
       "id": "granularity",
       "chapter": "05 · 看测试与历史样本",
-      "start": 132,
-      "end": 143,
+      "start": 89,
+      "end": 93,
       "kind": "summary",
       "mode": "granularity",
       "badge": "自建测试 · 2026-10-11",
-      "title": "同样提到位置，写法也有区别",
-      "copy": "换看两个自建案例：“精确位置”对应精确匹配；只写“位置信息”，对应更宽的类别。"
+      "title": "“精确位置”和“位置信息”，粒度不同",
+      "copy": "C02 对应精确匹配；C03 对应更宽的位置类别。",
+      "motion": {
+        "enter": 0.6,
+        "exit": 0.65,
+        "hold_start": 0.6,
+        "hold_end": 3.35,
+        "direction": 1
+      }
     },
     {
       "id": "uncertainty",
       "chapter": "05 · 看测试与历史样本",
-      "start": 143,
-      "end": 154,
+      "start": 93,
+      "end": 97,
       "kind": "summary",
       "mode": "uncertainty",
       "badge": "自建测试 · 2026-10-11",
-      "title": "有些结果，需要继续查",
-      "copy": "C05 的否定声明与代码线索并存，标为“表述歧义”；C06 缺少正文和范围，保留“证据不足”。"
+      "title": "否定声明、缺少正文，分开记录",
+      "copy": "C05 保留“表述歧义”；C06 保留“证据不足”。",
+      "motion": {
+        "enter": 0.6,
+        "exit": 0.65,
+        "hold_start": 0.6,
+        "hold_end": 3.35,
+        "direction": -1
+      }
     },
     {
       "id": "metrics",
       "chapter": "05 · 看测试与历史样本",
-      "start": 154,
-      "end": 163,
+      "start": 97,
+      "end": 105,
       "kind": "metrics",
       "badge": "自建测试 · 2026-10-11",
       "title": "六个测试场景，三种方法",
-      "copy": "对比结果与预设状态是否一致，同时记录不作判断和运行失败的次数。"
+      "copy": "对比结果与预设状态是否一致，同时记录不作判断和运行失败的次数。",
+      "motion": {
+        "enter": 0.6,
+        "exit": 0.65,
+        "hold_start": 0.6,
+        "hold_end": 7.35,
+        "direction": 1
+      }
     },
     {
       "id": "limits",
       "chapter": "05 · 看测试与历史样本",
-      "start": 163,
-      "end": 173,
+      "start": 105,
+      "end": 113,
       "kind": "limits",
       "badge": "历史样本 · 2026-10-09",
       "title": "真实应用里，还有哪些没核清？",
-      "copy": "2026-10-09 的 GKD 1.12.1 记录中，三条线索都保留“证据不足”。政策与附件的检查状态列在旁边。"
+      "copy": "2026-10-09 的 GKD 1.12.1 记录中，三条线索都保留“证据不足”。政策与附件的检查状态列在旁边。",
+      "motion": {
+        "enter": 0.6,
+        "exit": 0.65,
+        "hold_start": 0.6,
+        "hold_end": 7.35,
+        "direction": -1
+      }
     },
     {
       "id": "closing",
       "chapter": "结束",
-      "start": 173,
-      "end": 180,
+      "start": 113,
+      "end": 120,
       "kind": "identity",
-      "title": "从报告回到代码，再回到政策原文",
-      "copy": "PrivacyTrace 把代码位置、政策引用和来源留在一份可回查的报告里。"
+      "title": "每一条结果，都能回头查。",
+      "copy": "代码位置、政策引用、材料来源。留在同一份报告里。",
+      "motion": {
+        "enter": 2.3,
+        "exit": 0.65,
+        "hold_start": 2.3,
+        "hold_end": 6.35,
+        "direction": 1
+      }
     }
   ],
   "copy": {
     "film_title": "PrivacyTrace：从代码查到隐私政策",
     "identity": {
-      "opening_question": "代码里有位置调用，政策怎么说？",
-      "opening_support": "把安装包和政策放在一起，沿着一条位置线索核对。",
+      "opening_question": "核对应用权限与隐私政策",
+      "opening_support": "集中查看权限、政策说明和分析结果，随时查阅对应依据。",
       "code_label": "代码里的位置线索",
       "policy_label": "政策里怎么写",
       "boundary": "本片使用自建测试安装包和人工编写的政策。",
-      "closing_main": "从报告回到代码，再回到政策原文",
-      "closing_support": "PrivacyTrace 把代码位置、政策引用和来源留在一份可回查的报告里。"
+      "closing_main": "每一条结果，都能回头查。",
+      "closing_support": "代码位置、政策引用、材料来源。留在同一份报告里。"
     },
     "badges": {
       "product": "构造 APK／人工政策 · 操作回放",
       "host": "人工宿主政策 · 操作回放",
       "third": "人工第三方政策 · 操作回放",
-      "opening": "产品演示 · 3 分钟",
+      "opening": "产品演示 · 2 分钟",
       "closing": "PrivacyTrace"
     },
     "summary": {
@@ -420,5 +480,36 @@
       "right_second": "尚未检查附件，就先记为未知。附件是否存在、写了什么，这份记录都没有给出结论。",
       "badge": "历史样本 · 2026-10-09"
     }
+  },
+  "verification": {
+    "reference_seconds": 6.5,
+    "sample_seconds": [
+      4.5,
+      12.5,
+      19.5,
+      26.5,
+      34.5,
+      42.0,
+      48.0,
+      53.0,
+      57.0,
+      62.5,
+      70.0,
+      78.5,
+      86.0,
+      91.0,
+      95.0,
+      101.0,
+      109.0,
+      116.5
+    ]
+  },
+  "music": {
+    "intro_until": 9,
+    "reduced_density_reading": [
+      66,
+      89
+    ],
+    "outro_from": 113
   }
 }

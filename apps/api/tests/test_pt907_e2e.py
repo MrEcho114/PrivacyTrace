@@ -155,7 +155,7 @@ def test_pt907_pipeline_runs_end_to_end(tmp_path):
     assert len(lines) == 2
 
     dataset = dataset_mod.build(manifest, ledger, trace_dir)
-    assert dataset["schema_version"] == "0.2.0"
+    assert dataset["schema_version"] == "0.3.0"
     assert len(dataset["samples"]) == 1
     assert len(dataset["evidence"]) == 1
     assert len(dataset["conclusions"]) == 1

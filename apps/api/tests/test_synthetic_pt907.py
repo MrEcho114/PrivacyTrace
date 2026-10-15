@@ -54,7 +54,7 @@ def test_synthetic_pt907_pack_rehearses_full_pipeline(tmp_path):
         assert len(lines) == 4
 
     dataset = dataset_mod.build(manifest, runs_path, trace_dir)
-    assert dataset["schema_version"] == "0.2.0"
+    assert dataset["schema_version"] == "0.3.0"
     assert len(dataset["samples"]) == 4
     assert len(dataset["runs"]) == 4
     assert len(dataset["evidence"]) == 4

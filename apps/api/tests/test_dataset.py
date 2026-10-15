@@ -22,13 +22,25 @@ def write_manifest(path):
         writer.writerow(["app-1", "com.example.app", "1.0", "1", "a" * 64])
 
 
-def write_ledger(path):
+def write_ledger(path, **overrides):
+    row = {
+        "run_id": "run-1",
+        "sample_id": "app-1",
+        "job_id": "job-1",
+        "report_sha256": "b" * 64,
+        "outcome": "partial",
+        "limitations": "加固",
+        "scanned_at": "2026-10-10T01:00:00Z",
+        "evidence_count": "1",
+        "behavior_count": "",
+        "claim_count": "",
+        "notes": "",
+    }
+    row.update(overrides)
     with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.writer(handle)
-        writer.writerow(
-            ["run_id", "sample_id", "job_id", "report_sha256", "outcome", "limitations"]
-        )
-        writer.writerow(["run-1", "app-1", "job-1", "b" * 64, "partial", "加固"])
+        writer = csv.DictWriter(handle, fieldnames=list(row))
+        writer.writeheader()
+        writer.writerow(row)
 
 
 def trace_line(**overrides):
@@ -95,7 +107,7 @@ def test_build_dataset_normalizes_dimensions(tmp_path):
     write_ledger(ledger)
     write_traces(tmp_path / "trace")
     dataset = dataset_mod.build(manifest, ledger, tmp_path / "trace")
-    assert dataset["schema_version"] == "0.2.0"
+    assert dataset["schema_version"] == "0.3.0"
     assert len(dataset["samples"]) == 1
     assert dataset["samples"][0]["package_name"] == "com.example.app"
     assert len(dataset["evidence"]) == 1
@@ -108,6 +120,7 @@ def test_build_dataset_normalizes_dimensions(tmp_path):
         "conclusions": 1,
         "lifecycle": {},
     }
+    assert dataset["runs"][0]["scanned_at"] == "2026-10-10T01:00:00+00:00"
     assert len(dataset["dataset_sha256"]) == 64
 
 
@@ -174,3 +187,37 @@ def test_build_dataset_rejects_evidence_event_without_ref(tmp_path):
     del evidence["evidence_ref"]
     with pytest.raises(ValueError, match="requires evidence_ref"):
         build_with_trace(tmp_path, [evidence])
+
+
+def test_build_dataset_keeps_evidence_status_and_detail(tmp_path):
+    ok = build_with_trace(tmp_path, [trace_line(status="ok", detail="normal")])
+    failed = build_with_trace(
+        tmp_path, [trace_line(status="failed", detail="extraction failure")]
+    )
+    assert ok["evidence"][0]["status"] == "ok"
+    assert ok["evidence"][0]["detail"] == "normal"
+    assert failed["evidence"][0]["status"] == "failed"
+    assert failed["evidence"][0]["detail"] == "extraction failure"
+    assert ok["dataset_sha256"] != failed["dataset_sha256"]
+
+
+@pytest.mark.parametrize(
+    ("overrides", "match"),
+    [
+        ({"sample_id": "missing-app"}, "Unknown sample_id"),
+        ({"outcome": "nonsense"}, "Unknown outcome"),
+        ({"report_sha256": "not-a-hash"}, "lowercase SHA-256"),
+        ({"outcome": "success", "report_sha256": ""}, "must carry report_sha256"),
+    ],
+)
+def test_build_dataset_rejects_illegal_ledger_without_traces(
+    tmp_path, overrides, match
+):
+    manifest = tmp_path / "manifest.csv"
+    ledger = tmp_path / "runs.csv"
+    trace_dir = tmp_path / "trace"
+    trace_dir.mkdir()
+    write_manifest(manifest)
+    write_ledger(ledger, **overrides)
+    with pytest.raises(ValueError, match=match):
+        dataset_mod.build(manifest, ledger, trace_dir)

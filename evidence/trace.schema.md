@@ -31,8 +31,15 @@
 - 校验用 `scripts/validate-trace.py`；数据集归一化用 `scripts/build-dataset.py`，构建时直接按同一份校验契约读取 trace（单一来源），未通过校验的行不会进入数据集。
 - **引用必须闭合**：每行的 `sample_id` 必须出现在样本清单里，`(sample_id, job_id)` 必须出现在 run 账本里；对不上直接构建失败，不静默丢弃。`evidence_ref` 只允许出现在 `event=evidence` 行，同一作业内不得重复。
 - **行数收敛**：每条 trace 行都会被归一成 `evidence`、`conclusion`，或计入 `trace_events.lifecycle`（`start`/`error`/`done`）；数据集里 `trace_events.total` 必须等于这三类计数之和，对不上就构建失败——不存在"读了却没进数据集"的行。
-- 数据集 `schema_version` 为 `0.2.0`：`evidence`/`conclusions` 每条带 `event` 字段，新增 `trace_events` 计数，且参与 `dataset_sha256` 计算。
+- **账本先校验**：构建时先用 `scripts/verify-run-ledger.py` 校验 run 账本（未知样本、未知 outcome、非法 `report_sha256`、成功运行缺报告哈希都会被拒），再拿这些已校验记录去做 trace 引用闭合。因此即使 trace 目录为空，坏账本也无法产出 `dataset_sha256`。
+- 数据集 `schema_version` 为 `0.3.0`：`evidence`/`conclusions` 每条带 `event` 字段，`evidence` 另外保留原始 trace 行的 `status` 与 `detail`（`ok` 的成功线索与 `failed`/受限线索不会归一化成同一份内容），`runs` 直接取自已校验的账本记录（含 `scanned_at`、`evidence_count`/`behavior_count`/`claim_count`）；以上连同 `trace_events` 全部参与 `dataset_sha256` 计算。
 - **不写入** APK 字节、完整政策原文、反编译全文或任何凭据；`location` 只写定位摘要。
+
+## 哈希边界（`dataset_sha256` 能证明什么）
+
+- `dataset_sha256` 只覆盖**归一化数据集**：`schema_version`、`trace_events`、`samples`、`runs`、`evidence`、`conclusions`；相同输入必然得到相同哈希（`generated_at` 不入哈希）。
+- 它**不证明原始 trace 日志文件逐字节相同**：生命周期事件（`start`/`error`/`done`）只按类型计数，其 `ts`、`status`、`detail` 不进数据集；源 trace 文件本身的哈希目前也不记录。需要原始日志的完整性证明时，应另外记录每个 trace 文件的 SHA-256（本 PR 未实现，属后续工作）。
+- 结论：把 `dataset_sha256` 当作采集链路的**归一化结果指纹**使用，不要当作原始日志的完整性证明。
 
 ## 采集边界（当前状态）
 

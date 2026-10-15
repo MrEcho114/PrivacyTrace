@@ -2,7 +2,9 @@
 
 One row per analysis run links a sample to its job and report hash, and records
 the outcome and limitations honestly (partial or failed runs stay in the
-ledger). Run against ``samples/real-world/runs.csv``.
+ledger). A successful run must carry the SHA-256 of the report it points at;
+a failed run that produced no report may leave the hash empty. Run against
+``samples/real-world/runs.csv``.
 """
 
 from __future__ import annotations
@@ -70,12 +72,15 @@ def verify(ledger: Path, manifest: Path | None = None) -> list[dict]:
             raise ValueError(f"Unknown sample_id for {run_id}: {sample_id}")
         if not row["job_id"].strip():
             raise ValueError(f"Missing job_id for {run_id}")
-        report_hash = row["report_sha256"].strip()
-        if report_hash and not HASH_PATTERN.fullmatch(report_hash):
-            raise ValueError(f"report_sha256 must be lowercase SHA-256: {run_id}")
         outcome = row["outcome"].strip()
         if outcome not in OUTCOMES:
             raise ValueError(f"Unknown outcome for {run_id}: {outcome}")
+        report_hash = row["report_sha256"].strip()
+        if report_hash:
+            if not HASH_PATTERN.fullmatch(report_hash):
+                raise ValueError(f"report_sha256 must be lowercase SHA-256: {run_id}")
+        elif outcome == "success":
+            raise ValueError(f"Successful run must carry report_sha256: {run_id}")
         scanned = parse_iso(row["scanned_at"])
         if scanned.tzinfo is None:
             raise ValueError(f"scanned_at must include timezone: {run_id}")

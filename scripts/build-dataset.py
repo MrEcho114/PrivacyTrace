@@ -5,25 +5,48 @@ run ledger), ``evidence`` and ``conclusions`` (both normalized from trace
 lines). Private material such as APK bytes, full policy text and decompiled
 sources never enters the dataset; only location summaries do.
 
-The ``dataset_sha256`` is computed over ``schema_version`` plus the four
-dimensions, so the same inputs always produce the same hash (the ``generated_at``
-timestamp is deliberately excluded from the hash).
+Trace input is validated against the contract in ``scripts/validate-trace.py``
+(single definition, loaded from the sibling file) and closed over the ledger:
+every line must belong to a run that exists in the ledger, every
+``evidence_ref`` may only appear on an ``event=evidence`` line and may not
+repeat inside one run, and no line is dropped silently. Each line is normalized
+into ``evidence`` or ``conclusions``, or counted as a lifecycle event in
+``trace_events``; the builder asserts that the counts add up to the number of
+lines read, so an unhandled event fails the build instead of vanishing.
+
+The ``dataset_sha256`` is computed over ``schema_version``, ``trace_events`` and
+the four dimensions, so the same inputs always produce the same hash (the
+``generated_at`` timestamp is deliberately excluded from the hash).
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import importlib.util
 import json
+from collections import Counter
 from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
 
-SCHEMA_VERSION = "0.1.0"
+SCHEMA_VERSION = "0.2.0"
+TRACE_CONTRACT = Path(__file__).with_name("validate-trace.py")
+LIFECYCLE_EVENTS = {"start", "error", "done"}
 
 
 def _canonical(value) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def _trace_contract():
+    """Load the sibling trace validator so trace rules have one definition."""
+    spec = importlib.util.spec_from_file_location(
+        "pt907_trace_contract", TRACE_CONTRACT
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def load_manifest(path: Path) -> list[dict]:
@@ -62,12 +85,87 @@ def load_ledger(path: Path) -> list[dict]:
 
 
 def load_traces(directory: Path) -> list[dict]:
+    """Read every JSONL trace file, validated, with per-line provenance."""
+    contract = _trace_contract()
     traces = []
     for path in sorted(directory.glob("*.jsonl")):
-        for raw in path.read_text(encoding="utf-8").splitlines():
-            if raw.strip():
-                traces.append(json.loads(raw))
+        lines = contract.validate(contract.load_lines(path))
+        for number, line in enumerate(lines, start=1):
+            traces.append({"source": f"{path.name}#{number}", "line": line})
     return traces
+
+
+def normalize_traces(traces: list[dict], known_samples: set[str], runs: list[dict]):
+    """Normalize validated trace lines into evidence, conclusions and counts."""
+    run_index = {(run["sample_id"], run["job_id"]) for run in runs}
+    if len(run_index) != len(runs):
+        raise ValueError("run ledger has duplicate (sample_id, job_id) rows")
+    evidence: list[dict] = []
+    conclusions: list[dict] = []
+    seen_refs: set[tuple[str, str, str]] = set()
+    lifecycle: Counter[str] = Counter()
+    for entry in traces:
+        source = entry["source"]
+        line = entry["line"]
+        sample_id = line["sample_id"]
+        job_id = line["job_id"]
+        if sample_id not in known_samples:
+            raise ValueError(f"trace {source} references unknown sample: {sample_id!r}")
+        if (sample_id, job_id) not in run_index:
+            raise ValueError(
+                f"trace {source} references a run missing from the ledger: "
+                f"sample_id={sample_id!r} job_id={job_id!r}"
+            )
+        event = line["event"]
+        reference = line.get("evidence_ref")
+        if event == "evidence":
+            key = (sample_id, job_id, reference)
+            if key in seen_refs:
+                raise ValueError(
+                    f"trace {source} repeats evidence_ref {reference!r} "
+                    f"inside run {job_id!r}"
+                )
+            seen_refs.add(key)
+            evidence.append(
+                {
+                    "event": event,
+                    "sample_id": sample_id,
+                    "job_id": job_id,
+                    "evidence_ref": reference,
+                    "data_type": line.get("data_type", ""),
+                    "location": line.get("location", ""),
+                    "stage": line["stage"],
+                }
+            )
+        elif event == "conclusion":
+            conclusions.append(
+                {
+                    "event": event,
+                    "sample_id": sample_id,
+                    "job_id": job_id,
+                    "status": line["status"],
+                    "detail": line.get("detail", ""),
+                }
+            )
+        elif event in LIFECYCLE_EVENTS:
+            lifecycle[event] += 1
+        else:
+            raise ValueError(f"trace {source} has unhandled event {event!r}")
+    evidence.sort(key=lambda e: (e["sample_id"], e["job_id"], e["evidence_ref"]))
+    conclusions.sort(key=lambda c: (c["sample_id"], c["job_id"], c["status"]))
+    trace_events = {
+        "total": len(traces),
+        "evidence": len(evidence),
+        "conclusions": len(conclusions),
+        "lifecycle": dict(sorted(lifecycle.items())),
+    }
+    accounted = len(evidence) + len(conclusions) + sum(lifecycle.values())
+    if accounted != trace_events["total"]:
+        raise ValueError(
+            f"trace convergence failed: read {trace_events['total']} lines but "
+            f"accounted for {accounted}"
+        )
+    return evidence, conclusions, trace_events
 
 
 def build(manifest: Path | None, ledger: Path, trace_dir: Path) -> dict:
@@ -79,34 +177,12 @@ def build(manifest: Path | None, ledger: Path, trace_dir: Path) -> dict:
             for sample_id in sorted({r["sample_id"] for r in load_ledger(ledger)})
         ]
     runs = sorted(load_ledger(ledger), key=lambda r: r["run_id"])
-    evidence: list[dict] = []
-    conclusions: list[dict] = []
-    for line in load_traces(trace_dir):
-        reference = line.get("evidence_ref")
-        if reference:
-            evidence.append(
-                {
-                    "sample_id": line["sample_id"],
-                    "job_id": line["job_id"],
-                    "evidence_ref": reference,
-                    "data_type": line.get("data_type", ""),
-                    "location": line.get("location", ""),
-                    "stage": line["stage"],
-                }
-            )
-        if line.get("event") == "conclusion":
-            conclusions.append(
-                {
-                    "sample_id": line["sample_id"],
-                    "job_id": line["job_id"],
-                    "status": line["status"],
-                    "detail": line.get("detail", ""),
-                }
-            )
-    evidence.sort(key=lambda e: (e["sample_id"], e["job_id"], e["evidence_ref"]))
-    conclusions.sort(key=lambda c: (c["sample_id"], c["job_id"], c["status"]))
+    evidence, conclusions, trace_events = normalize_traces(
+        load_traces(trace_dir), {sample["sample_id"] for sample in samples}, runs
+    )
     content = {
         "schema_version": SCHEMA_VERSION,
+        "trace_events": trace_events,
         "samples": samples,
         "runs": runs,
         "evidence": evidence,
@@ -117,6 +193,7 @@ def build(manifest: Path | None, ledger: Path, trace_dir: Path) -> dict:
         "schema_version": SCHEMA_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "dataset_sha256": digest,
+        "trace_events": trace_events,
         "samples": samples,
         "runs": runs,
         "evidence": evidence,

@@ -44,6 +44,7 @@
 ## 4. 交叉顺序安排（防学习偏差）
 
 - 一半参与者**先 A 后 B**，一半**先 B 后 A**；分配后把顺序写进记录表的 `condition` 字段（建议值：`baseline_first` / `report_first`）。
+- **顺序和材料是两件事，必须分别记**：`condition` 只说明先后，说明不了这道题用的是哪份材料；每份记录还要在 `material` 字段写本题实际使用的材料（`baseline` = 材料 A，`privacyTrace` = 材料 B）。指标脚本按 `material` 出材料效果、按 `condition` 出顺序效果，并给出两者交叉表；缺 `material` 时只能看到顺序效果，无法说明报告相对基线的效果。
 - 若用"等价案例"替代同人重复测：A、B 用不同但难度等价的 App/题目，避免同一人两次看到同一题。
 
 ## 5. 记录字段说明（对应 `evidence/user-study.template.csv`）
@@ -52,11 +53,12 @@
 |---|---|
 | participant_id | 匿名编号（不写真名） |
 | condition | 阅读顺序：`baseline_first` 或 `report_first` |
+| material | 本题实际使用的材料：`baseline`（材料 A）或 `privacyTrace`（材料 B） |
 | question_id | 题号（A/B 组同号同题） |
-| is_correct | 判断是否正确：`true` / `false` |
-| evidence_loc_seconds | 定位证据耗时（秒），没要求定位就留空 |
+| is_correct | 判断是否正确：`true` / `false`；**没判分就留空**（计为缺失，不进准确率分母，也不影响其他记录） |
+| evidence_loc_seconds | 定位证据耗时（秒），没要求定位就留空；必须是有限非负数（不接受 `nan` / `inf`） |
 | misconception | 观察到的概念误解；多个用 `;` 分隔；没有就留空 |
 | start_time / end_time | 该题起止时间 |
 | notes | 客观备注，不写主观定性 |
 
-指标由 `scripts/metrics_user_study.py` 复算，禁止手填汇总数字。
+指标由 `scripts/metrics-user-study.py` 复算，禁止手填汇总数字。准确率同时按 `material`（材料效果）、`condition`（顺序效果）和两者交叉给出，并单列未判（`is_correct` 留空）的条数。

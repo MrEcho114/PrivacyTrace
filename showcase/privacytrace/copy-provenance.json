@@ -1,6 +1,6 @@
 {
   "writer": "Codex",
-  "delivery_channel": "USER_AUTHORIZED_COPY_REWRITE",
+  "delivery_channel": "USER_AUTHORIZED_120_SECOND_CINEMATIC_REDESIGN",
   "completed": true,
   "source_archive_sha256": "e35abb2ba02f686ee2ac73b551f905fb8900dc13a548290c95f25db5b252a475",
   "source_files": [
@@ -22,31 +22,31 @@
     }
   ],
   "adopted_date": "2026-10-15",
-  "adopted_narrative_sha256": "54045250c2ddc30092710418dafebdffe4dd726cb49d1a5bfac5c434a15b375f",
-  "main_agent_role": "Copy rewrite, integration and independent verification under the latest direct user instruction",
+  "adopted_narrative_sha256": "c50f8b16088756c986dfc23fcbb47efb71b4d7dbce86147939735207a0b84c36",
+  "main_agent_role": "Original camera design, plain-language edit, integration and independent delivery verification",
   "narrative_fields_equal_to_supplied_storyboard": false,
   "original_pngs_identical": true,
   "technical_amendments": [
-    "Classic deferred local scripts preserve offline file playback; mobile controls wrap",
-    "Fit long node labels and annotation titles within their existing boxes without changing words",
-    "Sequence outgoing and incoming annotation fades so two note texts never paint together",
-    "Arrange original procedural music around the supplied 11/102/132/173-second chapter boundaries",
-    "Remove duplicated identity captions; simplify note headings and translate historical sample status labels to Chinese"
+    "New analytic perspective camera, physical panel thickness and focus rack; exact square reading holds",
+    "Original exploded package opening, three-plane process gallery, code/policy evidence desk and report-reassembly closing",
+    "Timeline metadata drives playback, export, music, camera guards, media checks and portable package duration",
+    "Original procedural cue recomposed to 120 seconds; no Pioneer footage, artwork, music or mascot reused"
   ],
   "limits": [
     "Author statements about complete viewing are self-reports, not independently established",
     "Supplied crop verification does not replace browser, media and factual verification",
     "No human aesthetic acceptance inferred from receiving the archive"
   ],
-  "visual_and_timing_source": "User-supplied Gemini4 director package; original PNGs, crops and shot timing preserved",
-  "authorization": "2026-10-15 user rejected the Gemini copy as jargon and disclaimers, and requested Codex find skills and polish it; supersedes the earlier single-phrase-only constraint",
+  "visual_and_timing_source": "Codex original 120-second / 18-shot design, informed by actual Pioneer v8 film and its camera/reading rhythm; original PrivacyTrace captures retained",
+  "authorization": "2026-10-15 direct user request: learn Pioneer, add beautiful shots, control duration to two minutes and be creative; supersedes the 180-second timing/20-shot preservation constraint and earlier Gemini wording restriction; latest user steering replaces the opening question and vague metaphor with direct statements of the product function, without API-style wording",
   "skills_applied": [
     "humanizer-zh",
     "writing-clearly-and-concisely",
-    "ux-writing"
+    "ux-writing",
+    "frontend-design"
   ],
-  "previous_candidate": "8cc6a5d38e4541bb0db93a1492a160491247adab",
-  "review": "Independent read-only plain-language/frame review and factual comparison; no factual strengthening found",
+  "previous_candidate": "9e225977bc4e8ede24643f3510c39f19a18cc3e9",
+  "review": "Independent read-only camera/source review plus actual browser, raw-frame, encoded-media and offline-package verification; no human aesthetic acceptance inferred",
   "prior_candidate_authorized_factual_amendments": [
     {
       "shot": "quote",

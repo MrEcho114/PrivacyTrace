@@ -177,92 +177,9 @@ function badge(str, accent = PALETTE.sage) {
   ctx.restore();
 }
 
-function identity(t, closing = false) {
-  const local = closing ? (t - 173) / 7 : t / 11;
-  const camScale = closing ? 1 - 0.03 * ease(local) : 1.04 - 0.04 * ease(t / 7);
-  ctx.save();
-  ctx.translate(960, 500);
-  ctx.scale(camScale, camScale);
-  ctx.translate(-960, -500);
+const cinema = window.PrivacyTraceCinema.create({ ctx, palette: PALETTE, images, type, wrap, line });
 
-  // Subtle architectural precision rings & grid (inspired by Pioneer's technical instrumentation, distinct geometry)
-  ctx.save();
-  ctx.strokeStyle = 'rgba(182, 179, 168, 0.06)';
-  ctx.lineWidth = 1;
-  for (const r of [220, 360, 520, 700]) {
-    ctx.beginPath();
-    ctx.arc(960, 420, r, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  ctx.beginPath();
-  ctx.moveTo(140, 420);
-  ctx.lineTo(1780, 420);
-  ctx.stroke();
-  ctx.restore();
-
-  const p = closing ? 1 : ease((t - 0.15) / 3.8);
-
-  // Left evidence track: APK Static Clues (#db8a55)
-  line([[170, 460], [520, 460], [670, 350], [960, 350]], PALETTE.amber, 5.5, p);
-  // Right evidence track: Policy Disclosures (#82b3a4)
-  line([[1750, 460], [1400, 460], [1250, 350], [960, 350]], PALETTE.sage, 5.5, p);
-  // Center verification bridge highlight (#c9ad64)
-  if (p > 0.65) {
-    const bp = ease((p - 0.65) / 0.35);
-    line([[760, 350], [1160, 350]], PALETTE.gold, 6, bp);
-  }
-
-  // Endpoint nodes
-  for (const [x, col] of [[170, PALETTE.amber], [1750, PALETTE.sage]]) {
-    ctx.fillStyle = col;
-    ctx.beginPath();
-    ctx.arc(x, 460, 8, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  if (p > 0.85) {
-    ctx.fillStyle = PALETTE.gold;
-    ctx.beginPath();
-    ctx.arc(960, 350, 9, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Left & Right Node Cards
-  const cardAlpha = closing ? 1 : ease((t - 1.0) / 1.4);
-  ctx.globalAlpha = cardAlpha;
-  drawRoundedRect(130, 495, 360, 86, 10, '#121519', '#2b3038', 1);
-  ctx.fillStyle = PALETTE.amber;
-  ctx.fillRect(130, 495, 5, 86);
-  type(text.identity.code_label, 154, 533, 24, PALETTE.textMain, false, 600, false, 312);
-  type('权限 · API · 代码位置', 154, 563, 17, PALETTE.textMuted, false, 400, false, 312);
-
-  drawRoundedRect(1430, 495, 360, 86, 10, '#121519', '#2b3038', 1);
-  ctx.fillStyle = PALETTE.sage;
-  ctx.fillRect(1430, 495, 5, 86);
-  type(text.identity.policy_label, 1454, 533, 24, PALETTE.textMain, false, 600, false, 312);
-  type('政策原文 · 适用条件 · 来源', 1454, 563, 17, PALETTE.textMuted, false, 400, false, 312);
-
-  // Center Hero Title
-  ctx.textAlign = 'center';
-  type('PrivacyTrace', 960, 225, closing ? 86 : 92, PALETTE.textMain, false, 700, true);
-  type('Android 安装包 × 隐私政策', 960, 276, 21, PALETTE.gold, false, 550);
-  ctx.textAlign = 'left';
-
-  // Pioneer-style bottom- anchored editorial block with left vertical accent line
-  drawRoundedRect(130, 638, 1660, 250, 12, 'rgba(14, 17, 20, 0.88)', '#252a30', 1);
-  drawTriStripe(130, 638, 180, 4);
-  ctx.fillStyle = PALETTE.sage;
-  ctx.fillRect(162, 676, 3.5, 174);
-
-  type(closing ? text.identity.closing_main : text.identity.opening_question, 192, 718, 40, PALETTE.textMain, false, 650, true);
-  type(closing ? text.identity.closing_support : text.identity.opening_support, 192, 776, 25, PALETTE.textSub, false, 450);
-  if (!closing) type(text.identity.boundary, 192, 836, 21, PALETTE.textMuted, false, 400);
-
-  ctx.globalAlpha = 1;
-  ctx.restore();
-  badge(closing ? text.badges.closing : text.badges.opening, closing ? PALETTE.gold : PALETTE.sage);
-}
-
-function product(imageName, crop, p, focus = false, note, alpha = 1, noteAlpha = alpha) {
+function product(imageName, crop, p, focus = false, note, alpha = 1, noteAlpha = alpha, local = 0, shot) {
   const image = images.get(imageName);
   if (!image) throw Error('Missing decoded film image: ' + imageName);
   const hasNote = Boolean(note);
@@ -274,32 +191,14 @@ function product(imageName, crop, p, focus = false, note, alpha = 1, noteAlpha =
   const scale = Math.min(box.w / c[2], box.h / c[3]);
   const w = c[2] * scale, h = c[3] * scale;
 
-  // Pioneer-inspired smooth entrance (<=14px travel, subtle perspective settle, square reading hold)
-  const entry = easeOut(p / 0.08);
-  const liftY = (1 - entry) * 14;
-  const sc = 0.982 + entry * 0.018;
-
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.translate(box.x + box.w / 2, box.y + box.h / 2 + liftY);
-  ctx.scale(sc, sc);
-
-  // Deep studio shadow on #080909 background
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.82)';
-  ctx.shadowBlur = 42;
-  ctx.shadowOffsetY = 18;
-  drawRoundedRect(-w / 2 - 4, -h / 2 - 4, w + 8, h + 8, 10, '#f6f5f1', '#2f3337', 1);
-  ctx.shadowColor = 'transparent';
-
-  ctx.beginPath();
-  ctx.roundRect(-w / 2, -h / 2, w, h, 7);
-  ctx.clip();
-  ctx.drawImage(image, ...c, -w / 2, -h / 2, w, h);
+  cinema.product(image, c, {x: box.x + (box.w-w)/2, y: box.y + (box.h-h)/2, w, h}, local, shot);
   ctx.restore();
 
   if (hasNote && noteAlpha > 0) {
     ctx.save();
-    ctx.globalAlpha = noteAlpha * easeOut((p - 0.02) / 0.08);
+    ctx.globalAlpha = noteAlpha * easeOut((local - shot.motion.enter + .25) / .25);
     const nx = 1210, ny = 148, nw = 620, nh = 656;
     drawRoundedRect(nx, ny, nw, nh, 12, PALETTE.cardBg, PALETTE.cardBorder, 1.5);
     drawTriStripe(nx, ny, 140, 4);
@@ -362,7 +261,7 @@ function evidenceSummary(t, mode, shot) {
     },
   ];
 
-  type(text.summary.title, 90, 168, 40, PALETTE.textMain, false, 650);
+  type('换一种政策写法', 90, 168, 40, PALETTE.textMain, false, 650);
   type(text.summary.subtitle, 90, 214, 23, PALETTE.gold, false, 500);
 
   pair.forEach((v, i) => {
@@ -391,7 +290,7 @@ function evidenceSummary(t, mode, shot) {
     wrap('“' + v.quote + '”', x + 60, y + 324, w - 120, 30, PALETTE.textMain, 44, 550);
 
     // Explanation footer
-    wrap(v.explain, x + 36, y + 458, w - 72, 22, PALETTE.textSub, 34, 400);
+    // Interpretation is already in the fixed caption; reserve this space for reading.
   });
 
   badge(shot.badge || text.summary.badge, PALETTE.gold);
@@ -515,36 +414,28 @@ function seek(value) {
   ctx.globalAlpha = 1;
   background(seconds, shot);
 
+  const local = seconds - shot.start;
   if (shot.kind === 'identity') {
-    identity(seconds, shot.id === 'closing');
-  } else if (shot.kind === 'summary') {
-    evidenceSummary(seconds, shot.mode, shot);
-    caption(shot);
-  } else if (shot.kind === 'metrics') {
-    metrics(shot);
-    caption(shot);
-  } else if (shot.kind === 'limits') {
-    limits(shot);
-    caption(shot);
+    cinema.identity(local, shot);
+    badge(shot.id === 'closing' ? text.badges.closing : text.badges.opening, PALETTE.gold);
+  } else if (shot.kind === 'overview' || shot.kind === 'bridge') {
+    cinema[shot.kind](local, shot); badge(shot.badge, PALETTE.gold); caption(shot);
+  } else if (shot.kind === 'summary' || shot.kind === 'metrics' || shot.kind === 'limits') {
+    // Short push-in, exact reading hold, then a small retreat before the cut.
+    const {entry, exit} = cinema.phase(local, shot);
+    ctx.save(); ctx.translate(960, 450); const scale = 1 - entry * .025 - exit * .012;
+    ctx.scale(scale, scale); ctx.translate(-960, -450);
+    if (shot.kind === 'summary') evidenceSummary(seconds, shot.mode, shot);
+    else if (shot.kind === 'metrics') metrics(shot);
+    else limits(shot);
+    ctx.restore(); caption(shot);
   } else {
-    const index = story.shots.indexOf(shot), previous = story.shots[index - 1];
-    const transition = ease(p / 0.08);
-    if (previous?.kind === 'product' && transition < 1) {
-      // Crossfade images; retire the old reading card before revealing the new.
-      const oldNote = 1 - ease(transition * 2);
-      const newNote = ease(transition * 2 - 1);
-      product(previous.image, previous.crop, 1, true, previous.note, 1 - transition, oldNote);
-      product(shot.image, shot.crop, p, shot.focus, shot.note, transition, newNote);
-    } else {
-      product(shot.image, shot.crop, p, shot.focus, shot.note, 1);
-    }
-    ctx.globalAlpha = 1;
-    badge(shot.badge || text.badges.product);
-    caption(shot);
+    product(shot.image, shot.crop, p, shot.focus, shot.note, 1, 1, local, shot);
+    badge(shot.badge || text.badges.product); caption(shot);
   }
 
   $('timeline').value = String(seconds);
-  $('time').textContent = `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')} / 3:00`;
+  $('time').textContent = `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')} / ${Math.floor(story.duration_seconds / 60)}:${String(story.duration_seconds % 60).padStart(2, '0')}`;
   canvas.setAttribute('aria-label', `${shot.title}。${shot.copy || ''}`);
   window.__state = { time: seconds, shot: shot.id, title: shot.title, playing };
   return window.__state;
@@ -575,13 +466,15 @@ window.__seek = seek; window.__inspect = () => window.__state; window.__pause = 
 window.__ready = false; window.__meta = story;
 if (exporting) document.body.classList.add('export');
 try {
-  if (!text) throw Error('Gemini narrative copy is missing');
+  if (!text) throw Error('Film narrative copy is missing');
   document.title = text.film_title;
+  $('timeline').max = story.duration_seconds;
+  $('timeline').step = 1 / story.fps;
   await Promise.all([document.fonts.load('650 38px FilmSans'), document.fonts.load('400 24px FilmSans'), document.fonts.load('550 42px FilmSerif'),
     ...[...new Set(story.shots.filter(s => s.image).map(s => s.image))].map(async name => { const i = new Image(); i.src = (window.__assetPrefix ?? './privacytrace-') + name; await i.decode(); images.set(name, i); }),
     exporting ? Promise.resolve() : new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(Error('Local soundtrack metadata timeout')), 30000);
-      const done = () => { clearTimeout(timer); Math.abs(audio.duration - 180) < .1 ? resolve() : reject(Error('Soundtrack duration mismatch')); };
+      const done = () => { clearTimeout(timer); Math.abs(audio.duration - story.duration_seconds) < .1 ? resolve() : reject(Error('Soundtrack duration mismatch')); };
       if (audio.readyState >= 1) done(); else { audio.addEventListener('loadedmetadata', done, { once: true }); audio.addEventListener('error', () => { clearTimeout(timer); reject(Error('Local soundtrack failed to load')); }, { once: true }); audio.load(); }
     })]);
   if (!sources.passed) throw Error('Capture provenance does not confirm successful actual flow');

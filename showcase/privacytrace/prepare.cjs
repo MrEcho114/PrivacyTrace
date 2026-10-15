@@ -10,7 +10,7 @@ function prepare(destination = root) {
   const story = JSON.parse(fs.readFileSync(path.join(root, 'storyboard.json')));
   const sources = JSON.parse(fs.readFileSync(path.join(root, 'capture-provenance.json')));
   if (destination !== root) {
-    for (const name of ['index.html', 'film.mjs', 'storyboard.json', 'copy-provenance.json', 'capture-provenance.json', 'audio-provenance.json', 'README.md', 'ASSETS.md', 'asset-inputs.cjs', 'server.cjs', 'paths.cjs', 'package.json', 'prepare.cjs', 'package.py', 'render.cjs', 'verify.cjs', 'verify-package.cjs', 'verify-server.cjs', 'verify-media.py', 'soundtrack.py', 'capture.cjs', 'capture_app.py'])
+    for (const name of ['index.html', 'film.mjs', 'cinema.js', 'storyboard.json', 'copy-provenance.json', 'capture-provenance.json', 'audio-provenance.json', 'README.md', 'ASSETS.md', 'asset-inputs.cjs', 'server.cjs', 'paths.cjs', 'package.json', 'prepare.cjs', 'package.py', 'render.cjs', 'verify.cjs', 'verify-package.cjs', 'verify-server.cjs', 'verify-media.py', 'soundtrack.py', 'capture.cjs', 'capture_app.py'])
       if (fs.existsSync(path.join(root, name))) fs.copyFileSync(path.join(root, name), path.join(destination, name));
     fs.cpSync(path.join(root, 'assets'), path.join(destination, 'assets'), { recursive: true });
   }

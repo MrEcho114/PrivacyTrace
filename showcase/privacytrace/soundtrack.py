@@ -16,7 +16,9 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent
 repository = ROOT.parents[1]
 WORK = Path(os.environ["FILM_OUTPUT_DIR"]).resolve() / "audio" if os.environ.get("FILM_OUTPUT_DIR") else repository / "tmp/issue45-audio" if (repository / "apps/web/package.json").exists() else ROOT / "output/audio"
-RATE, DURATION, BPM = 48000, 180, 96
+STORY = json.loads((ROOT / "storyboard.json").read_text(encoding="utf-8"))
+CUES = STORY["music"]
+RATE, DURATION, BPM = 48000, STORY["duration_seconds"], 96
 WORK.mkdir(parents=True, exist_ok=True)
 mix = np.zeros((RATE * DURATION, 2), dtype=np.float32)
 rng = np.random.default_rng(451014)
@@ -57,10 +59,10 @@ hat = np.diff(hat_noise, prepend=0) * np.exp(-hat_t * 90)
 for bar in range(int(np.ceil(DURATION / (4 * beat)))):
     start = bar * 4 * beat
     chord = chords[(bar // 2) % 4]
-    level = .050 if start < 11 or start >= 173 else .036 if 102 <= start < 132 else .046
+    level = .050 if start < CUES["intro_until"] or start >= CUES["outro_from"] else .036 if CUES["reduced_density_reading"][0] <= start < CUES["reduced_density_reading"][1] else .046
     for i, midi in enumerate(chord):
         add(note(midi, 4 * beat + .8, "pad"), start, level, (i - 1.5) * .22)
-    if 11 <= start < 173:
+    if CUES["intro_until"] <= start < CUES["outro_from"]:
         for step in range(4):
             when = start + step * beat
             add(note(roots[(bar // 2) % 4], .48, "bass"), when, .13)
@@ -68,7 +70,7 @@ for bar in range(int(np.ceil(DURATION / (4 * beat)))):
                 add(kick.astype(np.float32), when, .17)
             add(hat.astype(np.float32), when + beat / 2, .013, .32)
     # Sparse three-note figure; reading shots receive only pad and low pulse.
-    if bar % 2 == 0 and not 102 <= start < 132:
+    if bar % 2 == 0 and not CUES["reduced_density_reading"][0] <= start < CUES["reduced_density_reading"][1]:
         for i, index in enumerate((0, 3, 1)):
             add(note(chord[index] + 12, 1.3, "pluck"), start + (i + .5) * beat, .047, (-.35, .35, 0)[i])
 time = np.arange(len(mix)) / RATE
@@ -83,6 +85,6 @@ with wave.open(str(wav), "wb") as file:
 asset = ROOT / "assets" / "soundtrack.m4a"
 asset.parent.mkdir(parents=True, exist_ok=True)
 subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(wav), "-af", "loudnorm=I=-19:TP=-1.5:LRA=8", "-ar", str(RATE), "-c:a", "aac", "-b:a", "192k", str(asset)], check=True)
-meta = {"origin": "Original procedural instrumental, no samples or voice", "seed": 451014, "bpm": BPM, "duration_seconds": DURATION, "sample_rate": RATE, "channels": 2, "arrangement": {"intro_until": 11, "reduced_density_reading": [102, 132], "outro_from": 173, "timing": "Arrangement decisions applied on existing 2.5-second musical bars"}, "sha256": hashlib.sha256(asset.read_bytes()).hexdigest()}
+meta = {"origin": "Original procedural instrumental, no samples or voice", "seed": 451014, "bpm": BPM, "duration_seconds": DURATION, "sample_rate": RATE, "channels": 2, "arrangement": {**CUES, "timing": "Arrangement decisions applied on existing 2.5-second musical bars"}, "sha256": hashlib.sha256(asset.read_bytes()).hexdigest()}
 (ROOT / "audio-provenance.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
 print(json.dumps(meta))

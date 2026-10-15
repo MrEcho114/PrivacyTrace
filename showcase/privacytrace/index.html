@@ -10,17 +10,18 @@
   </style>
 </head>
 <body>
-  <main aria-label="PrivacyTrace 180 秒展示影片">
+  <main aria-label="PrivacyTrace 120 秒展示影片">
     <canvas id="film" width="1920" height="1080" role="img" aria-label="影片正在准备"></canvas>
     <nav aria-label="影片播放控制">
       <button id="play" disabled>播放</button><button id="restart" disabled>重播</button>
-      <input id="timeline" type="range" min="0" max="180" step="0.0333333333" value="0" aria-label="影片时间轴">
-      <output id="time" for="timeline">0:00 / 3:00</output><button id="fullscreen">全屏</button>
+      <input id="timeline" type="range" min="0" max="120" step="0.0333333333" value="0" aria-label="影片时间轴">
+      <output id="time" for="timeline">0:00 / 2:00</output><button id="fullscreen">全屏</button>
     </nav>
     <p id="error" role="alert">正在加载本地字体、素材与配乐…</p>
     <audio id="music" preload="auto" src="./assets/soundtrack.m4a"></audio>
   </main>
   <script src="./data.js" defer></script>
+  <script src="./cinema.js" defer></script>
   <script src="./film.mjs" defer></script>
 </body>
 </html>

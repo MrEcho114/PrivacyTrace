@@ -32,7 +32,8 @@ def main():
     assert browser["html_continuous"]["passed"] and browser["encoded_continuous"]["passed"]
     assert render["sha256"] == media["file_sha256"] == browser["encoded_browser"]["file_sha256"] == digest(video)
     assert render["source_sha256"] == browser["source_sha256"]
-    assert media["decoded_frames"] == 5400 and media["duration_seconds"] == 180
+    story = json.loads((ROOT / "storyboard.json").read_text(encoding="utf-8"))
+    assert media["decoded_frames"] == story["duration_seconds"] * story["fps"] and media["duration_seconds"] == story["duration_seconds"]
     assert not render["errors"] and not browser["errors"] and not browser["external_requests"]
     capture = json.loads((ROOT / "capture-provenance.json").read_text(encoding="utf-8"))
     assert capture["passed"]

@@ -1,114 +1,117 @@
 {
-  "schema_version": 1,
-  "status": "PRODUCED_LOCAL_VERIFICATION_GEMINI_COPY",
+  "schema_version": 2,
+  "status": "ADOPTED_USER_SUPPLIED_GEMINI4_DIRECTOR_PACKAGE",
   "issue": 45,
   "duration_seconds": 180,
   "fps": 30,
   "width": 1920,
   "height": 1080,
   "narration": false,
-  "product_footage_gate": "Satisfied by Issue 44 and merged PR 57; all product shots remain explicitly identified recorded replay of authored inputs",
   "source_main_sha": "6d781fde97fe69169db916ab473224a24ed5ce93",
+  "product_footage_gate": "Issue 44 complete and PR 57 merged; authored-input recorded replay remains identified",
+  "source_archive_sha256": "e35abb2ba02f686ee2ac73b551f905fb8900dc13a548290c95f25db5b252a475",
   "segments": [
     {
-      "id": "question",
+      "chapter": "序章 · 产品定位",
       "start": 0,
-      "end": 12,
-      "title": "当代码线索遇到政策文本",
-      "material": "original identity animation",
-      "footage_status": "PRODUCED_ORIGINAL_ANIMATION",
+      "end": 11,
+      "shots": [
+        "opening"
+      ],
       "key_reading_times": [
-        6,
-        10
+        5.5
       ]
     },
     {
-      "id": "inputs",
-      "start": 12,
-      "end": 35,
-      "title": "载入测试安装包与两份短政策",
-      "material": "same task APK and two independently captured policy sources",
-      "footage_status": "CAPTURED_ACTUAL_FLOW_REPLAY",
+      "chapter": "01 · 导入材料",
+      "start": 11,
+      "end": 27,
+      "shots": [
+        "import",
+        "failure"
+      ],
       "key_reading_times": [
-        18,
-        28,
-        33
+        15.0,
+        23.0
       ]
     },
     {
-      "id": "candidates",
-      "start": 35,
+      "chapter": "02 · 确认政策候选",
+      "start": 27,
       "end": 70,
-      "title": "模型读取纯文本并给出三项候选",
-      "material": "same task actual candidate request, passage validation and user correction",
-      "footage_status": "CAPTURED_ACTUAL_FLOW_REPLAY",
+      "shots": [
+        "sources",
+        "candidates",
+        "quote",
+        "edit",
+        "third"
+      ],
       "key_reading_times": [
-        42,
-        52,
-        64
+        31.0,
+        39.5,
+        48.5,
+        57.5,
+        66.0
       ]
     },
     {
-      "id": "analysis",
+      "chapter": "03 · 分析与报告",
       "start": 70,
-      "end": 85,
-      "title": "静态分析与对照阶段回放",
-      "material": "same task actual job events recorded replay; editorial shot duration is not elapsed job time",
-      "footage_status": "CAPTURED_ACTUAL_FLOW_REPLAY",
+      "end": 102,
+      "shots": [
+        "progress",
+        "complete",
+        "report",
+        "caution"
+      ],
       "key_reading_times": [
-        77,
-        82
+        74.0,
+        81.5,
+        89.0,
+        97.5
       ]
     },
     {
-      "id": "results",
-      "start": 85,
-      "end": 130,
-      "title": "主任务位置线索对照总览",
-      "material": "same task report, with separately identified controlled examples where needed",
-      "footage_status": "CAPTURED_ACTUAL_FLOW_REPLAY",
+      "chapter": "04 · 回查依据",
+      "start": 102,
+      "end": 132,
+      "shots": [
+        "code",
+        "trace",
+        "policy"
+      ],
       "key_reading_times": [
-        94,
-        106,
-        118,
-        126
+        107.0,
+        117.0,
+        127.0
       ]
     },
     {
-      "id": "evidence",
-      "start": 130,
-      "end": 160,
-      "title": "查看字节码中的具体调用点",
-      "material": "same report code reference, passage, source and snapshot version",
-      "footage_status": "CAPTURED_ACTUAL_FLOW_REPLAY",
+      "chapter": "05 · 历史受控基准与样本边界",
+      "start": 132,
+      "end": 173,
+      "shots": [
+        "granularity",
+        "uncertainty",
+        "metrics",
+        "limits"
+      ],
       "key_reading_times": [
-        139,
-        150,
-        157
+        137.5,
+        148.5,
+        158.5,
+        168.0
       ]
     },
     {
-      "id": "limits",
-      "start": 160,
-      "end": 174,
-      "title": "历史受控场景比对结果展示",
-      "material": "dated Spec30 comparison and dated GKD 1.12.1 evidence limits",
-      "footage_status": "PRODUCED_DATED_HISTORICAL_SUMMARY",
-      "key_reading_times": [
-        165,
-        171
-      ]
-    },
-    {
-      "id": "closing",
-      "start": 174,
+      "chapter": "终章 · 方法收束",
+      "start": 173,
       "end": 180,
-      "title": "呈现静态线索，保留客观未知",
-      "material": "original identity animation",
-      "footage_status": "PRODUCED_ORIGINAL_ANIMATION",
+      "shots": [
+        "closing"
+      ],
       "key_reading_times": [
-        177,
-        179
+        176.5
       ]
     }
   ],

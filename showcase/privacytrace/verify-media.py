@@ -45,6 +45,14 @@ black = re.findall(r"black_start:([\d.]+) black_end:([\d.]+) black_duration:([\d
 assert not black, f"Unexpected black span: {black}"
 _, freeze_log = run(["ffmpeg", "-hide_banner", "-i", str(VIDEO), "-vf", "freezedetect=n=0.0001:d=1", "-an", "-f", "null", "-"])
 story = json.loads((ROOT / "storyboard.json").read_text(encoding="utf-8"))
+# The encoded near-still detector can cross its noise threshold just before
+# eased camera motion ends. Check the uncompressed tail and reading hold too.
+opening_motion_checks = []
+for first_frame, second_frame, should_change in [(207, 209, True), (209, 210, True), (210, 300, False)]:
+    first, second = [np.asarray(Image.open(WORK / "frames" / f"{i:05d}.png").convert("RGB")) for i in [first_frame, second_frame]]
+    changed = int(np.any(first != second, axis=2).sum())
+    assert bool(changed) == should_change, "Opening camera does not reach its declared 7-second reading hold"
+    opening_motion_checks.append({"frames": [first_frame, second_frame], "changed_pixels": changed})
 freeze_events = re.findall(r"lavfi\.freezedetect\.(freeze_start|freeze_end|freeze_duration): ([\d.]+)", freeze_log)
 reading_holds = []
 pending_start = None
@@ -56,7 +64,7 @@ for kind, value in freeze_events:
         shot = next((s for s in story["shots"] if s["start"] - .1 <= pending_start < s["end"]), None)
         assert shot is not None and shot["id"] != "closing", "Unexpected frozen closing camera"
         assert end_time <= shot["end"] + .15, "Freeze spans a shot transition"
-        assert shot["id"] != "opening" or pending_start >= 7.5, "Opening camera froze during its reveal"
+        assert shot["id"] != "opening" or pending_start >= 7 - .1 - 1 / story["fps"], "Opening camera froze during its reveal"
         reading_holds.append({"start": pending_start, "end": end_time, "shot": shot["id"], "intentional_reading_hold": True})
         pending_start = None
 assert pending_start is None, "Video ended on an unexpected frozen frame"
@@ -67,7 +75,7 @@ _, silence_log = run(["ffmpeg", "-hide_banner", "-i", str(VIDEO), "-vn", "-af", 
 silence_start = [float(t) for t in re.findall(r"silence_start: ([\d.]+)", silence_log)]
 assert not any(2 < t < 177 for t in silence_start), f"Unexpected middle silence: {silence_start}"
 frame_checks = []
-for seconds in [6, 18, 48, 58, 74, 90, 112, 139, 165, 171, 177]:
+for seconds in [5, 15, 48, 57, 74, 89, 107, 117, 137, 158, 168, 176]:
     number = seconds * 30
     decoded = QA / f"decoded-{seconds}.png"
     run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-ss", str(seconds), "-i", str(VIDEO), "-frames:v", "1", "-update", "1", str(decoded)])
@@ -83,6 +91,7 @@ result = {"passed": True, "file_sha256": hashlib.sha256(VIDEO.read_bytes()).hexd
           "audio_sample_rate": int(a["sample_rate"]), "audio_channels": int(a["channels"]), "audio_duration_seconds": float(a["duration"]),
           "whole_file_decode": True, "blackdetect_threshold": {"duration": .1, "picture": .985, "pixel": .05}, "black_spans": black,
           "freezedetect_threshold": {"noise": .0001, "duration": 1}, "intentional_reading_holds": reading_holds,
+          "opening_motion_checks": opening_motion_checks,
           "audio_loudness": loudness, "silence_starts": silence_start, "html_export_vs_encoded_frames": frame_checks}
 (QA / "media.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 print(json.dumps({"passed": True, "duration": result["duration_seconds"], "decoded_frames": 5400, "integrated_loudness": loudness["input_i"], "true_peak": loudness["input_tp"]}))

@@ -1,7 +1,7 @@
 {
   "passed": true,
-  "source_zip_sha256": "7eb64595b72fba4eec3fab2394729aa36138afe143b50f384c58569066149f76",
-  "visual_source_sha256": "ccadcba67f19c9c5fafbd6382d635685b72542293a63c5f94e8e291b667a4e5b",
+  "source_zip_sha256": "7a3d64cb87a14b5e2d1d74cbf483f9316bbb004c7f80214aa125844b9ce60104",
+  "visual_source_sha256": "d30e2328a32d47b2f01882ba587a37ec00a3aca7865dd46bc7337b42b261dd48",
   "file_hashes_checked": 48,
   "actual_offline_relocated_preview": true,
   "credential_values_checked": 1,

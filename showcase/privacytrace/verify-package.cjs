@@ -36,7 +36,7 @@ async function main() {
     await page.goto(pathToFileURL(path.join(unpacked, 'index.html')).href); await page.waitForFunction(() => window.__ready, null, { timeout: 60000 });
     await page.getByRole('button', { name: '播放', exact: true }).click(); await page.waitForFunction(() => window.__inspect().time > .3, null, { timeout: 10000 });
     await page.getByRole('button', { name: '暂停', exact: true }).click();
-    for (const t of [6, 48, 66, 74, 139, 165, 177]) { await page.evaluate(t => window.__seek(t), t); assert.equal(await page.evaluate(() => window.__inspect().time), t); }
+    for (const t of [5, 48, 66, 74, 107, 158, 168, 176]) { await page.evaluate(t => window.__seek(t), t); assert.equal(await page.evaluate(() => window.__inspect().time), t); }
     assert.equal(errors.length, 0); assert.equal(external.length, 0);
     await page.screenshot({ path: path.join(work, 'qa/unpacked-preview.png') });
   } finally { await browser.close(); }

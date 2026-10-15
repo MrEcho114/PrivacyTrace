@@ -3,7 +3,7 @@
 | 内容 | 来源／许可与使用方式 |
 | --- | --- |
 | 产品截图 `assets/stills/*.png` | 本任务通过实际 Chromium 捕获 PrivacyTrace main `6d781fde97fe69169db916ab473224a24ed5ce93`。构造 APK 和人工短政策来自项目已有二进制构造器及本任务 `capture_app.py`。原始 PNG 没有涂改；镜头运行时裁切／放大，旁注另行标为摘录。每张 PNG 的 SHA256、时间、视口与捕获区域在 `capture-provenance.json` |
-| 片头、线条、镜头、字幕与统计摘要 | 采用用户返回的 Gemini4 完整导演包：20 镜编排、Canvas 图形、深黑视觉和文案。主代理作播放兼容、排版与批注转场修复；用户仅批准 quote 镜“左侧高亮定位”改为“左侧原文列出”，来源见 `copy-provenance.json`。原始引句／结果／数字保留。Pioneer Cinematic v8 为节奏／局部聚焦／时间轴参考，没有复制其角色、图像、文案、音乐或成片画面 |
+| 片头、线条、镜头、字幕与统计摘要 | Gemini4 用户交接包提供深黑视觉、20 镜顺序与裁切；用户随后明确要求 Codex 自行使用写作 skill 重写文案。现行标题、字幕和批注由 Codex 编辑，保留原始引句、结果、数字与事实边界，来源见 `copy-provenance.json`。Pioneer Cinematic v8 为节奏／局部聚焦／时间轴参考，没有复制其角色、图像、文案、音乐或成片画面 |
 | `assets/soundtrack.m4a` | 本任务 `soundtrack.py` 以固定参数、正弦振荡器、程序噪声与原创编排生成；无第三方录音、采样或语音。原 WAV 留在忽略的制作目录，不进源码包。音频参数和 SHA256 在 `audio-provenance.json` |
 | Noto Sans SC、Noto Serif SC 字体 | 复用项目 `apps/web/public/fonts`，字体以 SIL Open Font License 1.1 提供。可搬迁源码包包含原 WOFF2 和各自 `assets/fonts/licenses/*-OFL.txt`，未修改字库 |
 | 历史六场景摘要 | `benchmarks/controlled/` 冻结人工输入、`docs/stages/spec30/comparison.json` 及验证记录，日期 2026-10-11。只呈现状态、定义与数字；没有改真值或把新模型候选混进历史评测 |

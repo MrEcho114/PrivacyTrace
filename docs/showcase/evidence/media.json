@@ -1,7 +1,7 @@
 {
   "passed": true,
-  "file_sha256": "9210570a59585ebdd25325bb720e95716d0de4af5480318f2c6b174c28ff95a5",
-  "bytes": 18239722,
+  "file_sha256": "b0c0228a6b9d8d7350a282663f9c6dbadf3ca9d3f77ccbda9630e151c68dfc59",
+  "bytes": 16035608,
   "duration_seconds": 180.0,
   "width": 1920,
   "height": 1080,
@@ -26,7 +26,7 @@
   },
   "intentional_reading_holds": [
     {
-      "start": 6.9,
+      "start": 6.966667,
       "end": 8.333333,
       "shot": "opening",
       "intentional_reading_hold": true
@@ -93,7 +93,7 @@
     },
     {
       "start": 78.533333,
-      "end": 84.933333,
+      "end": 85.0,
       "shot": "complete",
       "intentional_reading_hold": true
     },
@@ -188,14 +188,14 @@
         207,
         209
       ],
-      "changed_pixels": 5231
+      "changed_pixels": 5812
     },
     {
       "frames": [
         209,
         210
       ],
-      "changed_pixels": 9694
+      "changed_pixels": 11430
     },
     {
       "frames": [
@@ -222,62 +222,62 @@
     {
       "seconds": 5,
       "frame": 150,
-      "mean_rgb_error": 1.9151
+      "mean_rgb_error": 1.5117
     },
     {
       "seconds": 15,
       "frame": 450,
-      "mean_rgb_error": 1.7133
+      "mean_rgb_error": 1.6495
     },
     {
       "seconds": 48,
       "frame": 1440,
-      "mean_rgb_error": 1.8631
+      "mean_rgb_error": 1.7324
     },
     {
       "seconds": 57,
       "frame": 1710,
-      "mean_rgb_error": 1.8666
+      "mean_rgb_error": 1.6734
     },
     {
       "seconds": 74,
       "frame": 2220,
-      "mean_rgb_error": 1.7939
+      "mean_rgb_error": 1.7651
     },
     {
       "seconds": 89,
       "frame": 2670,
-      "mean_rgb_error": 1.729
+      "mean_rgb_error": 1.6705
     },
     {
       "seconds": 107,
       "frame": 3210,
-      "mean_rgb_error": 1.9568
+      "mean_rgb_error": 1.8301
     },
     {
       "seconds": 117,
       "frame": 3510,
-      "mean_rgb_error": 1.9477
+      "mean_rgb_error": 1.7562
     },
     {
       "seconds": 137,
       "frame": 4110,
-      "mean_rgb_error": 1.9809
+      "mean_rgb_error": 1.7684
     },
     {
       "seconds": 158,
       "frame": 4740,
-      "mean_rgb_error": 1.7662
+      "mean_rgb_error": 1.5435
     },
     {
       "seconds": 168,
       "frame": 5040,
-      "mean_rgb_error": 2.0965
+      "mean_rgb_error": 1.8238
     },
     {
       "seconds": 176,
       "frame": 5280,
-      "mean_rgb_error": 1.8795
+      "mean_rgb_error": 1.492
     }
   ]
 }

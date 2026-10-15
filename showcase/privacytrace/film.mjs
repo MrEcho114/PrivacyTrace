@@ -233,18 +233,18 @@ function identity(t, closing = false) {
   ctx.fillStyle = PALETTE.amber;
   ctx.fillRect(130, 495, 5, 86);
   type(text.identity.code_label, 154, 533, 24, PALETTE.textMain, false, 600, false, 312);
-  type('AndroidManifest · classes.dex · 偏移定位', 154, 563, 17, PALETTE.textMuted, false, 400, false, 312);
+  type('权限 · API · 代码位置', 154, 563, 17, PALETTE.textMuted, false, 400, false, 312);
 
   drawRoundedRect(1430, 495, 360, 86, 10, '#121519', '#2b3038', 1);
   ctx.fillStyle = PALETTE.sage;
   ctx.fillRect(1430, 495, 5, 86);
   type(text.identity.policy_label, 1454, 533, 24, PALETTE.textMain, false, 600, false, 312);
-  type('原句逐字校验 · 适用条件 · 快照哈希', 1454, 563, 17, PALETTE.textMuted, false, 400, false, 312);
+  type('政策原文 · 适用条件 · 来源', 1454, 563, 17, PALETTE.textMuted, false, 400, false, 312);
 
   // Center Hero Title
   ctx.textAlign = 'center';
   type('PrivacyTrace', 960, 225, closing ? 86 : 92, PALETTE.textMain, false, 700, true);
-  type('ANDROID 静态证据与隐私政策声明对照工作台', 960, 276, 21, PALETTE.gold, false, 550);
+  type('Android 安装包 × 隐私政策', 960, 276, 21, PALETTE.gold, false, 550);
   ctx.textAlign = 'left';
 
   // Pioneer-style bottom- anchored editorial block with left vertical accent line
@@ -255,7 +255,7 @@ function identity(t, closing = false) {
 
   type(closing ? text.identity.closing_main : text.identity.opening_question, 192, 718, 40, PALETTE.textMain, false, 650, true);
   type(closing ? text.identity.closing_support : text.identity.opening_support, 192, 776, 25, PALETTE.textSub, false, 450);
-  type(text.identity.boundary, 192, 836, 21, PALETTE.textMuted, false, 400);
+  if (!closing) type(text.identity.boundary, 192, 836, 21, PALETTE.textMuted, false, 400);
 
   ctx.globalAlpha = 1;
   ctx.restore();
@@ -305,11 +305,10 @@ function product(imageName, crop, p, focus = false, note, alpha = 1, noteAlpha =
     drawTriStripe(nx, ny, 140, 4);
 
     // Header inside side-note card
-    type('核验要点与材料边界', nx + 34, ny + 52, 18, PALETTE.gold, false, 600);
-    type(note.title, nx + 34, ny + 96, 30, PALETTE.textMain, false, 650, false, nw - 68);
-    line([[nx + 34, ny + 122], [nx + nw - 34, ny + 122]], '#262b31', 1);
+    type(note.title, nx + 34, ny + 72, 30, PALETTE.textMain, false, 650, false, nw - 68);
+    line([[nx + 34, ny + 98], [nx + nw - 34, ny + 98]], '#262b31', 1);
 
-    let y = ny + 174;
+    let y = ny + 148;
     note.lines.forEach((paragraph, idx) => {
       const barCol = idx === 0 ? PALETTE.sage : PALETTE.amber;
       ctx.fillStyle = barCol;
@@ -326,7 +325,7 @@ function evidenceSummary(t, mode, shot) {
   const pair = mode === 'granularity' ? [
     {
       id: 'C02',
-      tag: '2026-10-11 历史受控案例 · 人工冻结输入',
+      tag: '自建测试 · 2026-10-11',
       quote: '我们访问精确位置。',
       result: text.summary.exact_label,
       raw: 'EXACT_MATCH',
@@ -335,7 +334,7 @@ function evidenceSummary(t, mode, shot) {
     },
     {
       id: 'C03',
-      tag: '2026-10-11 历史受控案例 · 人工冻结输入',
+      tag: '自建测试 · 2026-10-11',
       quote: '本自建测试应用访问位置信息，用于静态规则测试。',
       result: text.summary.category_label,
       raw: 'CATEGORY_MATCH',
@@ -345,7 +344,7 @@ function evidenceSummary(t, mode, shot) {
   ] : [
     {
       id: 'C05',
-      tag: '2026-10-11 历史受控案例 · 人工冻结输入',
+      tag: '自建测试 · 2026-10-11',
       quote: '本自建测试应用不访问精确位置。',
       result: text.summary.ambiguous_label,
       raw: 'AMBIGUOUS_DISCLOSURE',
@@ -354,7 +353,7 @@ function evidenceSummary(t, mode, shot) {
     },
     {
       id: 'C06',
-      tag: '2026-10-11 历史受控案例 · 人工冻结输入',
+      tag: '自建测试 · 2026-10-11',
       quote: '后续正文和适用范围尚未提供。',
       result: text.summary.insufficient_label,
       raw: 'INSUFFICIENT_EVIDENCE',
@@ -388,7 +387,7 @@ function evidenceSummary(t, mode, shot) {
     drawRoundedRect(x + 36, y + 236, w - 72, 165, 10, '#16191e', '#262b32', 1);
     ctx.fillStyle = v.accent;
     ctx.fillRect(x + 36, y + 236, 4, 165);
-    type('政策声明原句（逐字保留）：', x + 60, y + 276, 19, PALETTE.textMuted, false, 500);
+    type('政策原文', x + 60, y + 276, 19, PALETTE.textMuted, false, 500);
     wrap('“' + v.quote + '”', x + 60, y + 324, w - 120, 30, PALETTE.textMain, 44, 550);
 
     // Explanation footer
@@ -454,10 +453,10 @@ function limits(shot) {
   line([[lx + 38, ly + 92], [lx + lw - 38, ly + 92]], '#252a32', 1);
 
   const values = [
-    ['3 · INSUFFICIENT_EVIDENCE', PALETTE.amber],
-    ['PARTIAL', PALETTE.gold],
-    ['UNREVIEWED', PALETTE.gold],
-    ['NOT_CHECKED', PALETTE.slate]
+    ['3 条 · 证据不足', PALETTE.amber],
+    ['部分提取', PALETTE.gold],
+    ['尚未复核', PALETTE.gold],
+    ['尚未检查', PALETTE.slate]
   ];
   text.limits.rows_labels.forEach((label, i) => {
     const ry = ly + 132 + i * 96;
@@ -472,17 +471,17 @@ function limits(shot) {
   ctx.fillStyle = PALETTE.sage;
   ctx.fillRect(rx, ry, rw, 4.5);
 
-  type('历史真实样本适用边界', rx + 40, ry + 64, 24, PALETTE.gold, false, 600);
+  type('这份记录还缺什么？', rx + 40, ry + 64, 24, PALETTE.gold, false, 600);
   line([[rx + 40, ry + 92], [rx + rw - 40, ry + 92]], '#252a32', 1);
 
   ctx.fillStyle = PALETTE.amber;
   ctx.fillRect(rx + 40, ry + 134, 4, 130);
-  type('01 · 静态潜在线索 ≠ 运行时实际采集', rx + 62, ry + 162, 26, PALETTE.textMain, false, 650);
+  type('01 · 实际使用情况还不清楚', rx + 62, ry + 162, 26, PALETTE.textMain, false, 650);
   wrap(text.limits.right_first, rx + 62, ry + 208, rw - 104, 24, PALETTE.textSub, 38, 400);
 
   ctx.fillStyle = PALETTE.sage;
   ctx.fillRect(rx + 40, ry + 324, 4, 150);
-  type('02 · 附件 NOT_CHECKED（未知）≠ 附件缺失', rx + 62, ry + 352, 26, PALETTE.textMain, false, 650);
+  type('02 · 附件还没检查', rx + 62, ry + 352, 26, PALETTE.textMain, false, 650);
   wrap(text.limits.right_second, rx + 62, ry + 398, rw - 104, 24, PALETTE.textSub, 38, 400);
 
   badge(shot.badge || text.limits.badge, PALETTE.amber);
@@ -518,7 +517,6 @@ function seek(value) {
 
   if (shot.kind === 'identity') {
     identity(seconds, shot.id === 'closing');
-    caption(shot);
   } else if (shot.kind === 'summary') {
     evidenceSummary(seconds, shot.mode, shot);
     caption(shot);

@@ -5,5 +5,14 @@
   "duration_seconds": 180,
   "sample_rate": 48000,
   "channels": 2,
-  "sha256": "771407add19064ef9eeafafab8f09bf108b6831b0023856435df38ee9eae228a"
+  "arrangement": {
+    "intro_until": 11,
+    "reduced_density_reading": [
+      102,
+      132
+    ],
+    "outro_from": 173,
+    "timing": "Arrangement decisions applied on existing 2.5-second musical bars"
+  },
+  "sha256": "fe6b09022132939d1221a63d35c2cd28f77b3337b762cdae22256f508356a510"
 }

@@ -1,24 +1,50 @@
 {
   "writer": "Gemini",
-  "requested_model": "gemini-3.8-flash-medium",
+  "delivery_channel": "USER_SUPPLIED_GEMINI4_PACKAGE",
+  "model_designation": "Gemini4 (user designation; no provider model identifier asserted)",
   "completed": true,
-  "primary_revision": 4,
-  "factual_amendment_revision": 5,
-  "adopted_at": "2026-10-14T12:47:13.584Z",
-  "primary_copy_sha256": "39373d7d87df6da9b38515dbd9058021e6c0df244e4d515ae11fa4740be74f0c",
-  "amendment_sha256": "2a815dab8fb6fad88c082ef5dd2e658f41e7f3c79ab6b2a2fc2ee20870a0e7b2",
-  "adopted_copy_sha256": "06a0a3cc66aad3404f40b9ea7eb4253bc6f841e3b3ac6805c8bf9066ec25d5d0",
-  "main_agent_role": "Data mapping and layout only; all narrative wording from Gemini, factual errors returned to Gemini",
-  "preserved_evidence": [
-    "original policy quotations",
-    "API and byte offset",
-    "dates and source versions",
-    "result enums",
-    "benchmark counts, abstentions and failures"
+  "source_archive_sha256": "e35abb2ba02f686ee2ac73b551f905fb8900dc13a548290c95f25db5b252a475",
+  "source_files": [
+    {
+      "file": "01-Director-Review-and-180s-Spec.md",
+      "sha256": "e2d03045db85887759eefc05eb9734111b9885d774e5386dba5973c9ad4ae015"
+    },
+    {
+      "file": "02-storyboard.json",
+      "sha256": "ea9876e2be849f20ae301408c2a45e0dff8da1afccca90c49a2da52297a3ffd6"
+    },
+    {
+      "file": "03-film.mjs",
+      "sha256": "6d05c8a5a9c15ed94541ce7a8fa63b72754c9353e1097a2f2733b590b24f8e09"
+    },
+    {
+      "file": "04-index.html",
+      "sha256": "807a549df29136ccc4c60ff89ad7f348b31768e1628c5b0da9d0d983ed0a302f"
+    }
+  ],
+  "adopted_date": "2026-10-15",
+  "adopted_narrative_sha256": "80a5f5ca8ef01e480575e096d073167c69a5ee281de156e147ae60e319729dc8",
+  "main_agent_role": "Integration, layout compatibility and independent verification; no editorial rewrite",
+  "narrative_fields_equal_to_supplied_storyboard": false,
+  "original_pngs_identical": true,
+  "technical_amendments": [
+    "Classic deferred local scripts preserve offline file playback; mobile controls wrap",
+    "Fit long node labels and annotation titles within their existing boxes without changing words",
+    "Sequence outgoing and incoming annotation fades so two note texts never paint together",
+    "Arrange original procedural music around the supplied 11/102/132/173-second chapter boundaries"
   ],
   "limits": [
-    "No human aesthetic or listening sign-off",
-    "Gemini writing is separate from DeepSeek policy extraction",
-    "Raw tool logs and personal account metadata excluded"
+    "Author statements about complete viewing are self-reports, not independently established",
+    "Supplied crop verification does not replace browser, media and factual verification",
+    "No human aesthetic acceptance inferred from receiving the archive"
+  ],
+  "authorized_factual_amendments": [
+    {
+      "shot": "quote",
+      "field": "copy",
+      "from": "左侧高亮定位",
+      "to": "左侧原文列出",
+      "authorization": "Direct user approval in this chat on 2026-10-15; only this factual wording change"
+    }
   ]
 }

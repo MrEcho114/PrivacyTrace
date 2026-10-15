@@ -1,8 +1,8 @@
-# PrivacyTrace：代码潜在线索与政策声明对照
+# PrivacyTrace：Android 静态线索与隐私政策声明核验工作台
 
 180 秒、1920×1080、30 fps。画面字幕与原创背景配乐，无旁白。对应 [Issue #45](https://github.com/MrEcho114/PrivacyTrace/issues/45)，制作方法见仓库 `docs/showcase/issue-45-production-plan.md`。
 
-叙述文案按用户要求由 Gemini 完全重写并作最终措辞选择，来源见 `copy-provenance.json`。主代理只映射文案、处理换行和核对事实；事实错误退回 Gemini 修订。政策引句、API、日期、原始结果及统计数字保留原记录。
+采用用户在 2026-10-15 返回的 Gemini4 完整导演包，包括 20 镜顺序、字幕、深黑视觉、批注和裁切，来源见 `copy-provenance.json`。用户只授权将 quote 镜“左侧高亮定位”改为“左侧原文列出”；其余叙述逐字保留。主代理处理本地播放兼容、文字适配、批注切换和独立核验。政策引句、API、日期、原始结果及统计数字保留原记录。
 
 ## 播放
 

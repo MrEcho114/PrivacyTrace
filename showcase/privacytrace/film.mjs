@@ -1,3 +1,4 @@
+window.__assetPrefix = './';
 (async () => {
 const $ = id => document.getElementById(id);
 const canvas = $('film'), ctx = canvas.getContext('2d', { alpha: false });
@@ -5,170 +6,552 @@ const { story, sources } = window.filmData;
 const text = story.copy;
 const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 const ease = x => { x = clamp(x); return x * x * (3 - 2 * x); };
+const easeOut = x => { x = clamp(x); return 1 - Math.pow(1 - x, 3); };
 const segmenter = new Intl.Segmenter('zh', { granularity: 'word' });
 const images = new Map();
 const audio = $('music'), exporting = new URLSearchParams(location.search).has('export');
 let seconds = 0, playing = false, raf = 0;
-function type(text, x, y, size = 32, color = '#f7f3e9', serif = false, weight = 500) {
-  ctx.font = `${weight} ${size}px ${serif ? 'FilmSerif' : 'FilmSans'}`; ctx.fillStyle = color; ctx.fillText(text, x, y);
-}
-function wrap(text, x, y, maxWidth, size = 30, color = '#f7f3e9', lineHeight = 46) {
-  ctx.font = `400 ${size}px FilmSans`; ctx.fillStyle = color;
-  let line = ''; const pieces = [];
-  for (const part of segmenter.segment(text)) {
-    if (/^[，。；：？！、）】》”’]+$/.test(part.segment) && pieces.length && pieces.at(-1) !== '\n') pieces[pieces.length - 1] += part.segment;
-    else pieces.push(part.segment);
+
+// Pioneer-inspired palette (#080909 dark cinema canvas, #eee8d8 warm cream, #d0c9b9 / #b6b3a8 muted sand, #db8a55 / #c9ad64 / #82b3a4 tri-color accents)
+const PALETTE = {
+  bg: '#080909',
+  bgGlow: '#121518',
+  cardBg: '#111316',
+  cardBgAlt: '#15181c',
+  cardBorder: '#262a30',
+  textMain: '#eee8d8',
+  textSub: '#d0c9b9',
+  textMuted: '#b6b3a8',
+  textDim: '#8c897f',
+  amber: '#db8a55',
+  gold: '#c9ad64',
+  sage: '#82b3a4',
+  slate: '#7c858e'
+};
+
+function type(str, x, y, size = 32, color = PALETTE.textMain, serif = false, weight = 500, shadow = false, maxWidth) {
+  ctx.save();
+  ctx.font = `${weight} ${size}px ${serif ? 'FilmSerif' : 'FilmSans'}`;
+  if (maxWidth && ctx.measureText(str).width > maxWidth) {
+    const fitted = size * maxWidth / ctx.measureText(str).width;
+    ctx.font = `${weight} ${fitted}px ${serif ? 'FilmSerif' : 'FilmSans'}`;
   }
-  for (const piece of pieces) { if (piece === '\n') { ctx.fillText(line, x, y); y += lineHeight; line = ''; continue; } if (line && ctx.measureText(line + piece).width > maxWidth) { ctx.fillText(line, x, y); y += lineHeight; line = ''; } line += piece; }
-  ctx.fillText(line, x, y); return y;
+  ctx.fillStyle = color;
+  if (shadow) {
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.88)';
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 2;
+  }
+  ctx.fillText(str, x, y);
+  ctx.restore();
 }
+
+function wrap(str, x, y, maxWidth, size = 26, color = PALETTE.textSub, lineHeight = 40, weight = 400, shadow = false) {
+  ctx.save();
+  ctx.font = `${weight} ${size}px FilmSans`;
+  ctx.fillStyle = color;
+  if (shadow) {
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 2;
+  }
+  let line = '';
+  const pieces = [];
+  for (const part of segmenter.segment(str)) {
+    if (/^[，。；：？！、）】》”’]+$/.test(part.segment) && pieces.length && pieces.at(-1) !== '\n') {
+      pieces[pieces.length - 1] += part.segment;
+    } else {
+      pieces.push(part.segment);
+    }
+  }
+  for (const piece of pieces) {
+    if (piece === '\n') {
+      ctx.fillText(line, x, y);
+      y += lineHeight;
+      line = '';
+      continue;
+    }
+    if (line && ctx.measureText(line + piece).width > maxWidth) {
+      ctx.fillText(line, x, y);
+      y += lineHeight;
+      line = '';
+    }
+    line += piece;
+  }
+  if (line) ctx.fillText(line, x, y);
+  ctx.restore();
+  return y;
+}
+
+function drawRoundedRect(x, y, w, h, r, fill, stroke, strokeWidth = 1) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  if (fill) {
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+  if (stroke) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = strokeWidth;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawTriStripe(x, y, w = 66, h = 4.5) {
+  const third = w / 3;
+  ctx.fillStyle = PALETTE.amber;
+  ctx.fillRect(x, y, third, h);
+  ctx.fillStyle = PALETTE.gold;
+  ctx.fillRect(x + third, y, third, h);
+  ctx.fillStyle = PALETTE.sage;
+  ctx.fillRect(x + third * 2, y, third, h);
+}
+
 function line(points, color, width, progress = 1) {
-  ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
   const distances = points.slice(1).map((p, i) => Math.hypot(p[0] - points[i][0], p[1] - points[i][1]));
   let remaining = distances.reduce((a, b) => a + b, 0) * clamp(progress);
-  ctx.beginPath(); ctx.moveTo(...points[0]);
+  ctx.beginPath();
+  ctx.moveTo(...points[0]);
   for (let i = 0; i < distances.length; i++) {
     const p = clamp(remaining / (distances[i] || 1));
-    ctx.lineTo(points[i][0] + (points[i + 1][0] - points[i][0]) * p, points[i][1] + (points[i + 1][1] - points[i][1]) * p);
-    remaining -= distances[i]; if (p < 1) break;
+    ctx.lineTo(
+      points[i][0] + (points[i + 1][0] - points[i][0]) * p,
+      points[i][1] + (points[i + 1][1] - points[i][1]) * p
+    );
+    remaining -= distances[i];
+    if (p < 1) break;
   }
   ctx.stroke();
+  ctx.restore();
 }
-function background(t) {
-  const g = ctx.createLinearGradient(0, 0, 1920, 1080); g.addColorStop(0, '#162731'); g.addColorStop(1, '#101921');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, 1920, 1080);
-  // A fixed field of paper-like specks; no random or history-dependent state.
-  ctx.fillStyle = '#c3d2cd'; ctx.globalAlpha = .04;
-  for (let i = 0; i < 280; i++) ctx.fillRect((i * 443) % 1920, (i * 277) % 1080, 1, 1);
+
+function background(t, shot) {
+  // Pioneer #080909 cinema canvas with subtle studio radial light
+  ctx.fillStyle = PALETTE.bg;
+  ctx.fillRect(0, 0, 1920, 1080);
+  const rad = ctx.createRadialGradient(960, 420, 40, 960, 460, 980);
+  rad.addColorStop(0, '#131619');
+  rad.addColorStop(0.55, '#0b0d0e');
+  rad.addColorStop(1, '#080909');
+  ctx.fillStyle = rad;
+  ctx.fillRect(0, 0, 1920, 1080);
+
+  // Deterministic subtle studio grain (no history dependence)
+  ctx.fillStyle = PALETTE.textMain;
+  ctx.globalAlpha = 0.022;
+  for (let i = 0; i < 240; i++) {
+    ctx.fillRect((i * 443) % 1920, (i * 277) % 1080, 1, 1);
+  }
   ctx.globalAlpha = 1;
-  line([[96, 76], [320, 76]], '#7bae9c', 3, ease(t / 2));
-  type('PrivacyTrace', 96, 117, 28, '#d6ded9', false, 550);
+
+  // Pioneer-style top-left brand bar: 3-color stripe + PrivacyTrace + chapter label
+  drawTriStripe(90, 56, 66, 4.5);
+  type('PrivacyTrace', 172, 66, 22, '#cec7b7', false, 600);
+  if (shot && shot.chapter) {
+    ctx.fillStyle = '#34383d';
+    ctx.fillRect(328, 48, 1.5, 20);
+    type(shot.chapter, 346, 65, 19, PALETTE.textDim, false, 450);
+  }
 }
-function badge(text, color = '#a8c7bb') {
-  ctx.font = '500 23px FilmSans'; const w = ctx.measureText(text).width;
-  ctx.fillStyle = '#172a32'; ctx.fillRect(1818 - w - 30, 74, w + 42, 44);
-  type(text, 1830 - w - 28, 105, 23, color);
+
+function badge(str, accent = PALETTE.sage) {
+  ctx.save();
+  ctx.font = '500 19px FilmSans';
+  const w = ctx.measureText(str).width;
+  const boxW = w + 44;
+  const x = 1830 - boxW;
+  const y = 38;
+  drawRoundedRect(x, y, boxW, 38, 7, '#121518', '#2a2f36', 1);
+  ctx.fillStyle = accent;
+  ctx.beginPath();
+  ctx.arc(x + 16, y + 19, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+  type(str, x + 28, y + 25, 19, PALETTE.textSub, false, 500);
+  ctx.restore();
 }
+
 function identity(t, closing = false) {
-  // The line reveal shares one retreating camera; the closing pulls back again.
-  const camera = closing ? 1 - .06 * ease((t - 174) / 6) : 1.10 - .10 * ease(t / 8);
-  ctx.save(); ctx.translate(960, 540); ctx.scale(camera, camera); ctx.translate(-960, -540);
-  const p = closing ? 1 : ease((t - .2) / 5);
-  line([[180, 610], [490, 610], [660, 445], [960, 445]], '#7bae9c', 7, p);
-  line([[1740, 610], [1430, 610], [1260, 445], [960, 445]], '#8ca5b5', 7, p);
-  for (const x of [180, 1740]) { ctx.fillStyle = '#b7d0c5'; ctx.beginPath(); ctx.arc(x, 610, 10, 0, Math.PI * 2); ctx.fill(); }
-  ctx.globalAlpha = closing ? 1 : ease((t - 2) / 1.5);
-  type(text.identity.code_label, 128, 702, 32, '#b7cbbf');
-  type(text.identity.policy_label, 1446, 702, 32, '#b7c6cd');
+  const local = closing ? (t - 173) / 7 : t / 11;
+  const camScale = closing ? 1 - 0.03 * ease(local) : 1.04 - 0.04 * ease(t / 7);
+  ctx.save();
+  ctx.translate(960, 500);
+  ctx.scale(camScale, camScale);
+  ctx.translate(-960, -500);
+
+  // Subtle architectural precision rings & grid (inspired by Pioneer's technical instrumentation, distinct geometry)
+  ctx.save();
+  ctx.strokeStyle = 'rgba(182, 179, 168, 0.06)';
+  ctx.lineWidth = 1;
+  for (const r of [220, 360, 520, 700]) {
+    ctx.beginPath();
+    ctx.arc(960, 420, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.moveTo(140, 420);
+  ctx.lineTo(1780, 420);
+  ctx.stroke();
+  ctx.restore();
+
+  const p = closing ? 1 : ease((t - 0.15) / 3.8);
+
+  // Left evidence track: APK Static Clues (#db8a55)
+  line([[170, 460], [520, 460], [670, 350], [960, 350]], PALETTE.amber, 5.5, p);
+  // Right evidence track: Policy Disclosures (#82b3a4)
+  line([[1750, 460], [1400, 460], [1250, 350], [960, 350]], PALETTE.sage, 5.5, p);
+  // Center verification bridge highlight (#c9ad64)
+  if (p > 0.65) {
+    const bp = ease((p - 0.65) / 0.35);
+    line([[760, 350], [1160, 350]], PALETTE.gold, 6, bp);
+  }
+
+  // Endpoint nodes
+  for (const [x, col] of [[170, PALETTE.amber], [1750, PALETTE.sage]]) {
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.arc(x, 460, 8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (p > 0.85) {
+    ctx.fillStyle = PALETTE.gold;
+    ctx.beginPath();
+    ctx.arc(960, 350, 9, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Left & Right Node Cards
+  const cardAlpha = closing ? 1 : ease((t - 1.0) / 1.4);
+  ctx.globalAlpha = cardAlpha;
+  drawRoundedRect(130, 495, 360, 86, 10, '#121519', '#2b3038', 1);
+  ctx.fillStyle = PALETTE.amber;
+  ctx.fillRect(130, 495, 5, 86);
+  type(text.identity.code_label, 154, 533, 24, PALETTE.textMain, false, 600, false, 312);
+  type('AndroidManifest · classes.dex · 偏移定位', 154, 563, 17, PALETTE.textMuted, false, 400, false, 312);
+
+  drawRoundedRect(1430, 495, 360, 86, 10, '#121519', '#2b3038', 1);
+  ctx.fillStyle = PALETTE.sage;
+  ctx.fillRect(1430, 495, 5, 86);
+  type(text.identity.policy_label, 1454, 533, 24, PALETTE.textMain, false, 600, false, 312);
+  type('原句逐字校验 · 适用条件 · 快照哈希', 1454, 563, 17, PALETTE.textMuted, false, 400, false, 312);
+
+  // Center Hero Title
   ctx.textAlign = 'center';
-  type('PrivacyTrace', 960, 338, closing ? 102 : 110, '#f7f3e9', true, 600);
-  type(closing ? text.identity.closing_main : text.identity.opening_question, 960, 792, 46, '#f7f3e9', true, 500);
-  type(closing ? text.identity.closing_support : text.identity.opening_support, 960, 864, 30, '#b8c7c5');
-  type(text.identity.boundary, 960, 991, 25, '#b7b5aa');
-  ctx.textAlign = 'left'; ctx.globalAlpha = 1;
-  ctx.restore(); badge(closing ? text.badges.closing : text.badges.opening);
+  type('PrivacyTrace', 960, 225, closing ? 86 : 92, PALETTE.textMain, false, 700, true);
+  type('ANDROID 静态证据与隐私政策声明对照工作台', 960, 276, 21, PALETTE.gold, false, 550);
+  ctx.textAlign = 'left';
+
+  // Pioneer-style bottom- anchored editorial block with left vertical accent line
+  drawRoundedRect(130, 638, 1660, 250, 12, 'rgba(14, 17, 20, 0.88)', '#252a30', 1);
+  drawTriStripe(130, 638, 180, 4);
+  ctx.fillStyle = PALETTE.sage;
+  ctx.fillRect(162, 676, 3.5, 174);
+
+  type(closing ? text.identity.closing_main : text.identity.opening_question, 192, 718, 40, PALETTE.textMain, false, 650, true);
+  type(closing ? text.identity.closing_support : text.identity.opening_support, 192, 776, 25, PALETTE.textSub, false, 450);
+  type(text.identity.boundary, 192, 836, 21, PALETTE.textMuted, false, 400);
+
+  ctx.globalAlpha = 1;
+  ctx.restore();
+  badge(closing ? text.badges.closing : text.badges.opening, closing ? PALETTE.gold : PALETTE.sage);
 }
-function product(imageName, crop, p, focus = false, note) {
-  const image = images.get(imageName); if (!image) throw Error('Missing decoded film image: ' + imageName);
-  const box = { x: 110, y: 153, w: note ? 1080 : 1700, h: 702 };
+
+function product(imageName, crop, p, focus = false, note, alpha = 1, noteAlpha = alpha) {
+  const image = images.get(imageName);
+  if (!image) throw Error('Missing decoded film image: ' + imageName);
+  const hasNote = Boolean(note);
+  const box = { x: 90, y: 118, w: hasNote ? 1085 : 1740, h: 716 };
   const c = crop || [0, 0, image.width, image.height];
-  if (c[0] < 0 || c[1] < 0 || c[0] + c[2] > image.width || c[1] + c[3] > image.height) throw Error('Crop exceeds native capture: ' + imageName);
+  if (c[0] < 0 || c[1] < 0 || c[0] + c[2] > image.width || c[1] + c[3] > image.height) {
+    throw Error('Crop exceeds native capture: ' + imageName);
+  }
   const scale = Math.min(box.w / c[2], box.h / c[3]);
   const w = c[2] * scale, h = c[3] * scale;
-  const entry = ease(p / .12), angle = focus ? 0 : (1 - entry) * -.025;
-  ctx.save(); ctx.translate(box.x + box.w / 2 + (1 - entry) * 26, box.y + box.h / 2);
-  ctx.rotate(angle); ctx.scale(.96 + entry * .04, .96 + entry * .04);
-  ctx.shadowColor = '#050b0e'; ctx.shadowBlur = 28; ctx.shadowOffsetY = 14;
-  ctx.fillStyle = '#f6f5f1'; ctx.fillRect(-w / 2 - 3, -h / 2 - 3, w + 6, h + 6);
+
+  // Pioneer-inspired smooth entrance (<=14px travel, subtle perspective settle, square reading hold)
+  const entry = easeOut(p / 0.08);
+  const liftY = (1 - entry) * 14;
+  const sc = 0.982 + entry * 0.018;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(box.x + box.w / 2, box.y + box.h / 2 + liftY);
+  ctx.scale(sc, sc);
+
+  // Deep studio shadow on #080909 background
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.82)';
+  ctx.shadowBlur = 42;
+  ctx.shadowOffsetY = 18;
+  drawRoundedRect(-w / 2 - 4, -h / 2 - 4, w + 8, h + 8, 10, '#f6f5f1', '#2f3337', 1);
   ctx.shadowColor = 'transparent';
+
+  ctx.beginPath();
+  ctx.roundRect(-w / 2, -h / 2, w, h, 7);
+  ctx.clip();
   ctx.drawImage(image, ...c, -w / 2, -h / 2, w, h);
   ctx.restore();
-  if (note) {
-    line([[1250, 222], [1250, 780]], '#587d76', 2);
-    type(note.title, 1304, 276, 29, '#b7d0c5');
-    let y = 364;
-    for (const paragraph of note.lines) { y = wrap(paragraph, 1304, y, 505, 35, '#f7f3e9', 57) + 86; }
-    if (y > 922) throw Error('Reading annotation exceeds frame: ' + imageName);
+
+  if (hasNote && noteAlpha > 0) {
+    ctx.save();
+    ctx.globalAlpha = noteAlpha * easeOut((p - 0.02) / 0.08);
+    const nx = 1210, ny = 148, nw = 620, nh = 656;
+    drawRoundedRect(nx, ny, nw, nh, 12, PALETTE.cardBg, PALETTE.cardBorder, 1.5);
+    drawTriStripe(nx, ny, 140, 4);
+
+    // Header inside side-note card
+    type('核验要点与材料边界', nx + 34, ny + 52, 18, PALETTE.gold, false, 600);
+    type(note.title, nx + 34, ny + 96, 30, PALETTE.textMain, false, 650, false, nw - 68);
+    line([[nx + 34, ny + 122], [nx + nw - 34, ny + 122]], '#262b31', 1);
+
+    let y = ny + 174;
+    note.lines.forEach((paragraph, idx) => {
+      const barCol = idx === 0 ? PALETTE.sage : PALETTE.amber;
+      ctx.fillStyle = barCol;
+      ctx.fillRect(nx + 34, y - 24, 3.5, 32);
+      const nextY = wrap(paragraph, nx + 52, y, nw - 86, 25, idx === 0 ? PALETTE.textMain : PALETTE.textSub, 40, idx === 0 ? 500 : 400);
+      y = nextY + 58;
+    });
+    if (y > ny + nh + 20) throw Error('Reading annotation exceeds frame: ' + imageName);
+    ctx.restore();
   }
-  // Long reading holds remain square to the viewer. Motion only connects shots.
 }
-function evidenceSummary(t, mode) {
+
+function evidenceSummary(t, mode, shot) {
   const pair = mode === 'granularity' ? [
-    { id: 'C02', quote: '我们访问精确位置。', result: text.summary.exact_label, raw: 'EXACT_MATCH' },
-    { id: 'C03', quote: '本自建测试应用访问位置信息，用于静态规则测试。', result: text.summary.category_label, raw: 'CATEGORY_MATCH' },
+    {
+      id: 'C02',
+      tag: '2026-10-11 历史受控案例 · 人工冻结输入',
+      quote: '我们访问精确位置。',
+      result: text.summary.exact_label,
+      raw: 'EXACT_MATCH',
+      accent: PALETTE.sage,
+      explain: text.summary.c02_note
+    },
+    {
+      id: 'C03',
+      tag: '2026-10-11 历史受控案例 · 人工冻结输入',
+      quote: '本自建测试应用访问位置信息，用于静态规则测试。',
+      result: text.summary.category_label,
+      raw: 'CATEGORY_MATCH',
+      accent: PALETTE.gold,
+      explain: text.summary.c03_note
+    },
   ] : [
-    { id: 'C05', quote: '本自建测试应用不访问精确位置。', result: text.summary.ambiguous_label, raw: 'AMBIGUOUS_DISCLOSURE' },
-    { id: 'C06', quote: '后续正文和适用范围尚未提供。', result: text.summary.insufficient_label, raw: 'INSUFFICIENT_EVIDENCE' },
+    {
+      id: 'C05',
+      tag: '2026-10-11 历史受控案例 · 人工冻结输入',
+      quote: '本自建测试应用不访问精确位置。',
+      result: text.summary.ambiguous_label,
+      raw: 'AMBIGUOUS_DISCLOSURE',
+      accent: PALETTE.amber,
+      explain: text.summary.c05_note
+    },
+    {
+      id: 'C06',
+      tag: '2026-10-11 历史受控案例 · 人工冻结输入',
+      quote: '后续正文和适用范围尚未提供。',
+      result: text.summary.insufficient_label,
+      raw: 'INSUFFICIENT_EVIDENCE',
+      accent: PALETTE.slate,
+      explain: text.summary.c06_note
+    },
   ];
-  type(text.summary.title, 110, 204, 48, '#f7f3e9', true);
-  type('getLastKnownLocation("gps")', 110, 265, 31, '#b7d0c5');
+
+  type(text.summary.title, 90, 168, 40, PALETTE.textMain, false, 650);
+  type(text.summary.subtitle, 90, 214, 23, PALETTE.gold, false, 500);
+
   pair.forEach((v, i) => {
-    const x = 110 + i * 874;
-    ctx.fillStyle = '#e8ece4'; ctx.fillRect(x, 321, 830, 434);
-    type(v.id + ' · 历史受控案例', x + 38, 387, 28, '#415451');
-    type(v.result, x + 38, 476, 43, '#263e36', true);
-    wrap(v.quote, x + 38, 558, 744, 32, '#344542');
-    type(v.raw, x + 38, 702, 25, '#52645d');
+    const x = 90 + i * 890;
+    const y = 252, w = 850, h = 560;
+    // Dark obsidian studio card replacing the rejected #e8ece4 light-green card
+    drawRoundedRect(x, y, w, h, 14, PALETTE.cardBg, PALETTE.cardBorder, 1.5);
+    ctx.fillStyle = v.accent;
+    ctx.fillRect(x, y, w, 5);
+
+    // Top row: Case ID & Frozen Input tag
+    drawRoundedRect(x + 36, y + 34, 88, 36, 6, '#1b2026', v.accent, 1);
+    type(v.id, x + 56, y + 59, 22, v.accent, false, 650);
+    type(v.tag, x + 142, y + 59, 20, PALETTE.textMuted, false, 450);
+
+    // Result label + enum badge
+    type(v.result, x + 36, y + 142, 46, PALETTE.textMain, false, 700);
+    drawRoundedRect(x + 36, y + 168, 310, 38, 6, '#171b20', '#2e343d', 1);
+    type(v.raw, x + 52, y + 194, 21, v.accent, false, 600);
+
+    // Verbatim Quote Box
+    drawRoundedRect(x + 36, y + 236, w - 72, 165, 10, '#16191e', '#262b32', 1);
+    ctx.fillStyle = v.accent;
+    ctx.fillRect(x + 36, y + 236, 4, 165);
+    type('政策声明原句（逐字保留）：', x + 60, y + 276, 19, PALETTE.textMuted, false, 500);
+    wrap('“' + v.quote + '”', x + 60, y + 324, w - 120, 30, PALETTE.textMain, 44, 550);
+
+    // Explanation footer
+    wrap(v.explain, x + 36, y + 458, w - 72, 22, PALETTE.textSub, 34, 400);
   });
-  badge(text.summary.badge);
+
+  badge(shot.badge || text.summary.badge, PALETTE.gold);
 }
-function metrics() {
-  type(text.metrics.title, 110, 233, 56, '#f7f3e9', true);
-  type(text.metrics.subtitle, 110, 302, 32, '#baccc5');
-  const columns = [110, 550, 950, 1350];
-  text.metrics.columns.forEach((v, i) => type(v, columns[i], 410, 28, '#b8c7c5'));
-  const rows = [['权限＋关键词', '2 / 6', '0', '0'], ['API-flat', '3 / 6', '1', '0'], ['PrivacyTrace', '6 / 6', '2', '0']];
-  rows.forEach((row, i) => { const y = 507 + i * 116; line([[110, y - 48], [1800, y - 48]], '#536a71', 1); row.forEach((v, j) => type(v, columns[j], y + 10, j === 1 ? 59 : 36, '#f7f3e9', false, j === 1 ? 550 : 400)); });
-  badge(text.metrics.badge);
+
+function metrics(shot) {
+  type(text.metrics.title, 90, 172, 42, PALETTE.textMain, false, 650);
+  type(text.metrics.subtitle, 90, 220, 24, PALETTE.gold, false, 500);
+
+  // Dark studio table container
+  const tx = 90, ty = 258, tw = 1740, th = 548;
+  drawRoundedRect(tx, ty, tw, th, 14, PALETTE.cardBg, PALETTE.cardBorder, 1.5);
+  drawTriStripe(tx, ty, 180, 4.5);
+
+  const columns = [140, 680, 1140, 1490];
+  drawRoundedRect(tx + 24, ty + 28, tw - 48, 64, 8, '#171a1f', '#262b32', 1);
+  text.metrics.columns.forEach((colName, i) => {
+    type(colName, columns[i], ty + 68, 23, PALETTE.textSub, false, 600);
+  });
+
+  const rows = [
+    { vals: ['权限＋关键词', '2 / 6', '0', '0'], accent: PALETTE.slate, highlight: false },
+    { vals: ['API-flat', '3 / 6', '1', '0'], accent: PALETTE.gold, highlight: false },
+    { vals: ['PrivacyTrace', '6 / 6', '2', '0'], accent: PALETTE.sage, highlight: true }
+  ];
+
+  rows.forEach((row, i) => {
+    const ry = ty + 116 + i * 116;
+    if (row.highlight) {
+      drawRoundedRect(tx + 24, ry, tw - 48, 98, 10, '#161d1c', '#2e4540', 1.5);
+      ctx.fillStyle = PALETTE.sage;
+      ctx.fillRect(tx + 24, ry, 5, 98);
+    } else {
+      line([[tx + 28, ry], [tx + tw - 28, ry]], '#232830', 1);
+    }
+    row.vals.forEach((v, j) => {
+      const isScore = j === 1;
+      const col = isScore ? row.accent : (row.highlight ? PALETTE.textMain : PALETTE.textSub);
+      type(v, columns[j], ry + 62, isScore ? 48 : 31, col, false, isScore ? 700 : (row.highlight ? 600 : 450));
+    });
+  });
+
+  type(text.metrics.footnote, tx + 36, ty + 504, 21, PALETTE.textMuted, false, 400);
+  badge(shot.badge || text.metrics.badge, PALETTE.sage);
 }
-function limits() {
-  type(text.limits.title, 110, 235, 56, '#f7f3e9', true);
-  type(text.limits.context, 110, 309, 34, '#bad0c7');
-  type(text.limits.scan_prefix + '：2026-10-09', 110, 391, 28, '#b8c7c5');
-  type(text.limits.snapshot_prefix + '：2026-10-03 · 1.0', 110, 442, 28, '#b8c7c5');
-  const values = ['3 · INSUFFICIENT_EVIDENCE', 'PARTIAL', 'UNREVIEWED', 'NOT_CHECKED'];
-  const terms = text.limits.rows_labels.map((label, i) => [label, values[i]]);
-  terms.forEach((v, i) => { type(v[0], 110, 535 + i * 65, 30, '#b8c7c5'); type(v[1], 400, 535 + i * 65, 32, '#f7f3e9'); });
-  line([[950, 340], [950, 791]], '#587d76', 2);
-  wrap(text.limits.right_first, 1050, 411, 700, 42, '#f7f3e9', 67);
-  wrap(text.limits.right_second, 1050, 610, 700, 34, '#baccc5', 57);
-  badge(text.limits.badge);
+
+function limits(shot) {
+  type(text.limits.title, 90, 172, 42, PALETTE.textMain, false, 650);
+  type(text.limits.context, 90, 220, 23, PALETTE.amber, false, 500);
+
+  // Left card: GKD 1.12.1 Metadata & Status Rows
+  const lx = 90, ly = 258, lw = 860, lh = 548;
+  drawRoundedRect(lx, ly, lw, lh, 14, PALETTE.cardBg, PALETTE.cardBorder, 1.5);
+  ctx.fillStyle = PALETTE.amber;
+  ctx.fillRect(lx, ly, lw, 4.5);
+
+  type(text.limits.scan_prefix + '：2026-10-09', lx + 38, ly + 64, 24, PALETTE.textSub, false, 500);
+  type(text.limits.snapshot_prefix + '：2026-10-03 / v1.0', lx + 430, ly + 64, 24, PALETTE.textSub, false, 500);
+  line([[lx + 38, ly + 92], [lx + lw - 38, ly + 92]], '#252a32', 1);
+
+  const values = [
+    ['3 · INSUFFICIENT_EVIDENCE', PALETTE.amber],
+    ['PARTIAL', PALETTE.gold],
+    ['UNREVIEWED', PALETTE.gold],
+    ['NOT_CHECKED', PALETTE.slate]
+  ];
+  text.limits.rows_labels.forEach((label, i) => {
+    const ry = ly + 132 + i * 96;
+    drawRoundedRect(lx + 36, ry, lw - 72, 76, 8, '#16191e', '#252a31', 1);
+    type(label, lx + 58, ry + 47, 25, PALETTE.textSub, false, 500);
+    type(values[i][0], lx + 360, ry + 48, 26, values[i][1], false, 650);
+  });
+
+  // Right card: Two Boundary Explanations
+  const rx = 980, ry = 258, rw = 850, rh = 548;
+  drawRoundedRect(rx, ry, rw, rh, 14, PALETTE.cardBg, PALETTE.cardBorder, 1.5);
+  ctx.fillStyle = PALETTE.sage;
+  ctx.fillRect(rx, ry, rw, 4.5);
+
+  type('历史真实样本适用边界', rx + 40, ry + 64, 24, PALETTE.gold, false, 600);
+  line([[rx + 40, ry + 92], [rx + rw - 40, ry + 92]], '#252a32', 1);
+
+  ctx.fillStyle = PALETTE.amber;
+  ctx.fillRect(rx + 40, ry + 134, 4, 130);
+  type('01 · 静态潜在线索 ≠ 运行时实际采集', rx + 62, ry + 162, 26, PALETTE.textMain, false, 650);
+  wrap(text.limits.right_first, rx + 62, ry + 208, rw - 104, 24, PALETTE.textSub, 38, 400);
+
+  ctx.fillStyle = PALETTE.sage;
+  ctx.fillRect(rx + 40, ry + 324, 4, 150);
+  type('02 · 附件 NOT_CHECKED（未知）≠ 附件缺失', rx + 62, ry + 352, 26, PALETTE.textMain, false, 650);
+  wrap(text.limits.right_second, rx + 62, ry + 398, rw - 104, 24, PALETTE.textSub, 38, 400);
+
+  badge(shot.badge || text.limits.badge, PALETTE.amber);
 }
+
 function caption(shot) {
-  ctx.fillStyle = '#101921'; ctx.fillRect(0, 878, 1920, 202);
-  line([[110, 896], [270, 896]], '#7bae9c', 3);
-  type(shot.title, 110, 952, 42, '#f7f3e9', true, 550);
-  const lastY = wrap(shot.copy, 110, 1012, 1695, 28, '#bcc9c4', 42);
-  if (lastY > 1054) throw Error('Caption exceeds safe area: ' + shot.id);
+  // Pioneer-inspired bottom dark gradient vignette + shadowed NotoSansSC two-tier caption
+  const grad = ctx.createLinearGradient(0, 820, 0, 1080);
+  grad.addColorStop(0, 'rgba(8, 9, 9, 0)');
+  grad.addColorStop(0.24, 'rgba(8, 9, 9, 0.92)');
+  grad.addColorStop(1, '#080909');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 820, 1920, 260);
+
+  line([[90, 872], [1830, 872]], '#1f2328', 1);
+  drawTriStripe(90, 871, 84, 3.5);
+
+  // Main Title (Pioneer 38.4px scale at 1920px width)
+  type(shot.title, 90, 926, 38.4, PALETTE.textMain, false, 650, true);
+  // Subtitle
+  const lastY = wrap(shot.copy, 90, 976, 1740, 24, PALETTE.textSub, 36, 400, true);
+  if (lastY > 1062) throw Error('Caption exceeds safe area: ' + shot.id);
 }
+
 function seek(value) {
   if (!Number.isFinite(value)) throw Error('Film time must be finite');
   seconds = clamp(value, 0, story.duration_seconds);
   const shot = story.shots.find(s => seconds >= s.start && seconds < s.end) || story.shots.at(-1);
   const p = clamp((seconds - shot.start) / (shot.end - shot.start));
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; background(seconds);
-  if (shot.kind === 'identity') identity(seconds, shot.id === 'closing');
-  else {
-    if (shot.kind === 'summary') evidenceSummary(seconds, shot.mode);
-    else if (shot.kind === 'metrics') metrics();
-    else if (shot.kind === 'limits') limits();
-    else {
-      const index = story.shots.indexOf(shot), previous = story.shots[index - 1];
-      const transition = ease(p / .1);
-      if (previous?.kind === 'product' && transition < 1) {
-        product(previous.image, previous.crop, 1, true, previous.note);
-        ctx.globalAlpha = transition;
-      }
-      product(shot.image, shot.crop, p, shot.focus, shot.note); ctx.globalAlpha = 1;
-      badge(shot.badge || text.badges.product);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1;
+  background(seconds, shot);
+
+  if (shot.kind === 'identity') {
+    identity(seconds, shot.id === 'closing');
+    caption(shot);
+  } else if (shot.kind === 'summary') {
+    evidenceSummary(seconds, shot.mode, shot);
+    caption(shot);
+  } else if (shot.kind === 'metrics') {
+    metrics(shot);
+    caption(shot);
+  } else if (shot.kind === 'limits') {
+    limits(shot);
+    caption(shot);
+  } else {
+    const index = story.shots.indexOf(shot), previous = story.shots[index - 1];
+    const transition = ease(p / 0.08);
+    if (previous?.kind === 'product' && transition < 1) {
+      // Crossfade images; retire the old reading card before revealing the new.
+      const oldNote = 1 - ease(transition * 2);
+      const newNote = ease(transition * 2 - 1);
+      product(previous.image, previous.crop, 1, true, previous.note, 1 - transition, oldNote);
+      product(shot.image, shot.crop, p, shot.focus, shot.note, transition, newNote);
+    } else {
+      product(shot.image, shot.crop, p, shot.focus, shot.note, 1);
     }
+    ctx.globalAlpha = 1;
+    badge(shot.badge || text.badges.product);
     caption(shot);
   }
-  $('timeline').value = String(seconds); $('time').textContent = `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')} / 3:00`;
+
+  $('timeline').value = String(seconds);
+  $('time').textContent = `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')} / 3:00`;
   canvas.setAttribute('aria-label', `${shot.title}。${shot.copy || ''}`);
   window.__state = { time: seconds, shot: shot.id, title: shot.title, playing };
   return window.__state;
 }
+
 function pause() { playing = false; audio.pause(); cancelAnimationFrame(raf); $('play').textContent = '播放'; seek(seconds); }
 function jump(t) { pause(); seek(t); if (!exporting) audio.currentTime = seconds; }
 function tick() { if (!playing) return; seek(audio.currentTime); if (audio.ended || seconds >= story.duration_seconds) { pause(); seek(story.duration_seconds); return; } raf = requestAnimationFrame(tick); }
@@ -196,8 +579,8 @@ if (exporting) document.body.classList.add('export');
 try {
   if (!text) throw Error('Gemini narrative copy is missing');
   document.title = text.film_title;
-  await Promise.all([document.fonts.load('550 42px FilmSerif'), document.fonts.load('400 28px FilmSans'),
-    ...[...new Set(story.shots.filter(s => s.image).map(s => s.image))].map(async name => { const i = new Image(); i.src = './' + name; await i.decode(); images.set(name, i); }),
+  await Promise.all([document.fonts.load('650 38px FilmSans'), document.fonts.load('400 24px FilmSans'), document.fonts.load('550 42px FilmSerif'),
+    ...[...new Set(story.shots.filter(s => s.image).map(s => s.image))].map(async name => { const i = new Image(); i.src = (window.__assetPrefix ?? './privacytrace-') + name; await i.decode(); images.set(name, i); }),
     exporting ? Promise.resolve() : new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(Error('Local soundtrack metadata timeout')), 30000);
       const done = () => { clearTimeout(timer); Math.abs(audio.duration - 180) < .1 ? resolve() : reject(Error('Soundtrack duration mismatch')); };

@@ -58,6 +58,26 @@ async function main() {
     for (const t of sampleTimes) { await page.evaluate(t => window.__seek(t), t); samples.set(t, digest(await page.screenshot())); }
     for (const t of [...sampleTimes].reverse()) { await page.evaluate(t => window.__seek(t), t); assert.equal(digest(await page.screenshot()), samples.get(t)); }
     proof.boundary_checks = sampleTimes.length;
+    // Observe actual canvas text paint calls throughout note-to-note cuts.
+    // Reading cards share a screen region; their words must never coexist.
+    proof.annotation_transitions = await page.evaluate(shots => {
+      const canvas = document.getElementById('film'), ctx = canvas.getContext('2d');
+      const paint = ctx.fillText, titles = new Set(shots.filter(s => s.note).map(s => s.note.title));
+      let seen = new Set(); const samples = [];
+      ctx.fillText = function(str, ...args) { if (titles.has(str) && this.globalAlpha > .001) seen.add(str); return paint.call(this, str, ...args); };
+      try {
+        shots.forEach((shot, i) => {
+          if (!i || shot.kind !== 'product' || shots[i - 1].kind !== 'product' || !shot.note || !shots[i - 1].note) return;
+          for (const fraction of [.25, .5, .75]) {
+            const time = shot.start + (shot.end - shot.start) * .08 * fraction;
+            seen = new Set(); window.__seek(time); samples.push({ time, painted_note_titles: [...seen] });
+          }
+        });
+      } finally { ctx.fillText = paint; }
+      return samples;
+    }, story.shots);
+    assert(proof.annotation_transitions.length > 0, 'No note-to-note transitions inspected');
+    for (const sample of proof.annotation_transitions) assert(sample.painted_note_titles.length <= 1, 'Overlapping annotation text at ' + sample.time);
     await page.goto(url); await page.waitForFunction(() => window.__ready);
     const controlsFit = () => page.evaluate(() => {
       const canvas = document.getElementById('film').getBoundingClientRect(), nav = document.querySelector('nav').getBoundingClientRect();
@@ -96,16 +116,17 @@ async function main() {
     if (video) {
       const videoPage = await context.newPage(); videoPage.on('pageerror', e => errors.push(e.message));
       await videoPage.goto(url);
-      await videoPage.setContent('<body style="margin:0;background:#101921"><video id="v" controls style="width:100%;height:100vh;object-fit:contain"></video></body>');
+      await videoPage.setContent('<body style="margin:0;background:#080909"><video id="v" controls style="width:100%;height:100vh;object-fit:contain"></video></body>');
       await videoPage.evaluate(src => { document.getElementById('v').src = src; }, pathToFileURL(video).href);
       await videoPage.waitForFunction(() => document.getElementById('v').readyState >= 2);
       const metadata = await videoPage.evaluate(() => { const v = document.getElementById('v'); return { duration: v.duration, width: v.videoWidth, height: v.videoHeight }; });
       assert(Math.abs(metadata.duration - 180) < .1); assert.equal(metadata.width, 1920); assert.equal(metadata.height, 1080);
-      for (const t of [6, 18, 48, 74, 112, 139, 165, 171, 177]) {
+      const encodedSeeks = [5, 15, 48, 57, 74, 89, 107, 117, 137, 158, 168, 176];
+      for (const t of encodedSeeks) {
         await videoPage.evaluate(t => new Promise(resolve => { const v = document.getElementById('v'); v.addEventListener('seeked', resolve, { once: true }); v.currentTime = t; }), t);
         await videoPage.screenshot({ path: path.join(output, `encoded-${t}.png`) });
       }
-      proof.encoded_browser = { ...metadata, seeks: 9, file_sha256: digest(fs.readFileSync(video)) };
+      proof.encoded_browser = { ...metadata, seeks: encodedSeeks.length, file_sha256: digest(fs.readFileSync(video)) };
       if (full) {
         await page.getByRole('button', { name: '重播', exact: true }).click();
         await videoPage.evaluate(async () => { const v = document.getElementById('v'); v.currentTime = 0; await v.play(); });

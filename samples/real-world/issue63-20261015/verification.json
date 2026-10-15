@@ -1,0 +1,62 @@
+{
+  "validated_at": "2026-10-15T09:42:04.566928+00:00",
+  "scan_code_sha": "4cae1fd7e2ddb68345f389aa19535d2fc3db26ec",
+  "scope": "Results only; no product, scanner, shared tool, workflow, or historical registry edits.",
+  "authoritative_check": {
+    "command": "pwsh -NoProfile -File scripts/check.ps1",
+    "exit_code": 0,
+    "api_passed": 617,
+    "api_skipped": 20,
+    "api_warning": 1,
+    "web_passed": 46,
+    "web_skipped": 0,
+    "ruff": "PASSED",
+    "schema_diff": "NONE",
+    "typecheck": "PASSED",
+    "build": "PASSED",
+    "full_docker_regression": "NOT_ENABLED_LOCALLY",
+    "private_log_sha256": "52d4ab825de652505052b04439630b19c7dbfe251fad9532ff0269de1107f00a"
+  },
+  "existing_registry_verifier": {
+    "script": "scripts/verify-real-samples.py",
+    "script_sha256": "c480dd38e252afdb2f1b02c8ba29aee535117eee1b5735867fd7a431fdeb56ae",
+    "execution": "Restricted Docker, no-network, read-only, non-root; existing script supplied to Python -c, manifest.csv and input APK directory mounted read-only.",
+    "verified_samples": [
+      "gkd-v1.12.1",
+      "newpipe-v0.29.1",
+      "k9mail-24.0"
+    ],
+    "exit_code": 0
+  },
+  "candidate_ledger_verifier": {
+    "pr": 61,
+    "source_commit": "bda03e5851b23e060a804b75d9392e7eb3d439ff",
+    "script": "scripts/verify-run-ledger.py",
+    "script_sha256": "f6941e04c3392cf64b1a33fff568c9fdb24a1c03500dfc8445b59ccde11a8ca1",
+    "merged": false,
+    "review_state": "CHANGES_REQUESTED_AT_START",
+    "verified_rows": 4,
+    "exit_code": 0
+  },
+  "artifact_checks": {
+    "private_input_hashes": 4,
+    "validated_policy_captures": 4,
+    "policy_original_spans": 4,
+    "report_byte_hashes": 3,
+    "rule_reference_closure": 12,
+    "all_rule_results": "INSUFFICIENT_EVIDENCE",
+    "isolation_cleanup_receipts": 4,
+    "public_path_or_token_pattern_matches": 0,
+    "review": "Main-agent byte/hash/reference checks plus read-only subagent artifact review; not human semantic policy review."
+  },
+  "files_sha256": {
+    "acquisitions.json": "5ed04def070495a4cd0a21ebc22a0d2ad9b79a9f18cf466d0f0a5120f1e80f4f",
+    "candidates.csv": "3ae7d37d3fc7c2e9bffa7a40b199279762ed6fb28ce2720c3645fb3740596b51",
+    "manifest.csv": "707a11c0f71f90206469143eac244dea980b80564f29db3015d7bbd11dc99ee4",
+    "README.md": "5cb2f50beecd17b8d960d210c6870b69ec1a5c4ab0dd30ef26ddb5e0f302123f",
+    "restricted-index.json": "f0c68bedfce1dcd5fa1f2e01ef9c03549e2de04226ddde4f647a769658f6cc9a",
+    "runs.csv": "4d0ecb7ade63649e5f0b763de2e9e6a607447d8666d84d0038dcadfae3bbb716",
+    "summary.json": "def67c54d5083149de472d2a44827367d7def68a25e8fa9a254147b1070324c2"
+  },
+  "remote_ci": "Tracked by final PR head; not a claim of remote CI completion in this pre-commit artifact."
+}

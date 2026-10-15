@@ -1,0 +1,768 @@
+{
+  "schema_version": 1,
+  "issue": 63,
+  "status": "PARTIAL_DELIVERY",
+  "scan_code_sha": "4cae1fd7e2ddb68345f389aa19535d2fc3db26ec",
+  "ledger_candidate_sha": "bda03e5851b23e060a804b75d9392e7eb3d439ff",
+  "counts": {
+    "historical_distinct_apps": 1,
+    "new_confirmed_apps": 2,
+    "total_confirmed_apps": 3,
+    "new_challenge_candidates": 1,
+    "pipeline_attempts": 4,
+    "usable_reports": 3,
+    "pipeline_succeeded": 3,
+    "end_to_end_partial": 3,
+    "failed_scans": 1,
+    "confirmed_complex_challenge_apps": 0,
+    "apk_download_attempts": 3,
+    "download_page_checks": 1,
+    "fresh_policy_pages": 4
+  },
+  "target_status": "Three App identities produced usable scan reports: historical GKD rescan plus two new APKs. All three end-to-end results remain PARTIAL. Telegram input invalid and identity UNKNOWN; four confirmed Apps target not reached.",
+  "historical_replay": {
+    "new_app": false,
+    "new_scan": true,
+    "historical_apk_sha256": "edcc03be24bc54d44c04746b46e2e33244120638e2199450b4407195447466a6",
+    "historical_record": "docs/stages/s1-pr29-real-sample-verification-20261009.md",
+    "historical_result_reused": false,
+    "historical_policy_reused": false
+  },
+  "policy_transform": "Decode downloaded HTML as UTF-8; lxml 6.1.3 removes script/style/nav/footer/header; first main/article/dev_page_content (or whole document fallback); strip nonempty itertext nodes, join LF plus final LF, then Windows text output serializes CRLF. Captures preserve those exact UTF-8 CRLF bytes. COMPLETE is identity capture of this text only, source-document completeness remains PARTIAL.",
+  "report_hash_contract": "SHA-256 of exact private JobStore.report export: json.dumps(model_dump(mode=json), ensure_ascii=False, indent=2) plus LF, UTF-8, LF newlines. Export delivery_mode=PERSISTED_REPLAY; source_origin remains REAL_SCAN. Not a semantic or sanitized-output hash.",
+  "samples": [
+    {
+      "sample_id": "gkd-v1.12.1",
+      "app_name": "GKD",
+      "selection_reason": "Historical baseline: accessibility/screen capture; retained APK rescanned with fresh policy, not a newly acquired App.",
+      "newly_acquired_app": false,
+      "pipeline_status": "SUCCEEDED",
+      "started_at": "2026-10-15T09:32:31.334565+00:00",
+      "completed_at": "2026-10-15T09:32:39.192810+00:00",
+      "duration_seconds": 7.86,
+      "input_sha256": "edcc03be24bc54d44c04746b46e2e33244120638e2199450b4407195447466a6",
+      "input_bytes": 3287479,
+      "policy": {
+        "source_url": "https://gkd.li/guide/privacy",
+        "acquired_at": "2026-10-15T09:29:38.611758+00:00",
+        "html_sha256": "729eea9813fdc239de4628c1595657b1612d7d2dd2be515b6040a8dabd3d46d2",
+        "captured_at": "2026-10-15T09:32:31.311815Z",
+        "captured_text_sha256": "fe52e2a775cee6231a7427c0f28ce5861d63c3eed4f1698d540ca9ac427f43fb",
+        "capture_sha256": "ff6d96b86b00355244656497d5e2fccecaec4807d12e22914c47815ccf3639ed",
+        "text_codepoints": 748,
+        "capture_completeness": "COMPLETE",
+        "source_document_completeness": "PARTIAL",
+        "extraction_status": "PARTIAL",
+        "review_status": "UNREVIEWED",
+        "attachments_status": "NOT_CHECKED",
+        "exact_apk_version_applicability": "UNKNOWN",
+        "region": "UNKNOWN",
+        "candidate": {
+          "id": "policy-claim-1",
+          "data_type": "SCREEN_CAPTURE",
+          "action": "UNKNOWN",
+          "subject": "UNKNOWN",
+          "polarity": "UNKNOWN",
+          "condition": "仅调试；本轮官网页不证明对应旧版 APK，附件未检查",
+          "evidence_id": "policy-sentence-1",
+          "start_offset": 183,
+          "end_offset": 192,
+          "excerpt_sha256": "396cd7ef89d51c6064ac497bc57596001ef08c4b2abe25c8b42ba51fcf9362c5",
+          "short_quote": "屏幕截图（仅调试）"
+        }
+      },
+      "job_id": "issue63-gkd-v1-12-1-01",
+      "ruleset_version": "0.3.0",
+      "scan_code_sha": "4cae1fd7e2ddb68345f389aa19535d2fc3db26ec",
+      "artifact_index_id": "issue63-20261015/gkd-v1.12.1",
+      "package_name": "li.songe.gkd",
+      "version_name": "1.12.1",
+      "version_code": 92,
+      "report_sha256": "c5a7681b53f9c7a68fef0b6d3ddbd1accdfdf4d08a3b4aa05a623859151ad077",
+      "stored_record_sha256": "3cbea450255559674fe721a346acc1bad89700c24a45d682236e37fe2fe12177",
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex"
+        ],
+        "failed_dex": []
+      },
+      "counts": {
+        "evidence": 5,
+        "behaviors": 3,
+        "claims": 1,
+        "issues": 3
+      },
+      "evidence_counts_by_kind": {
+        "MANIFEST": 1,
+        "API": 2,
+        "POLICY_DOCUMENT": 1,
+        "POLICY_SENTENCE": 1
+      },
+      "tools": {
+        "androguard": "4.1.3",
+        "jadx": "UNAVAILABLE_BYTECODE_FALLBACK",
+        "ruleset": "0.3.0",
+        "sdk_signatures": "1.0.0",
+        "worker_image": "sha256:6400ad5a4f1bbc8136cf544795eae66c02d9eb813bc1190bf666fb7d5144a875",
+        "human_review_gate": "NOT_REQUIRED_BY_WORKFLOW",
+        "scan_errors": "[]"
+      },
+      "result_status_counts": {
+        "INSUFFICIENT_EVIDENCE": 3
+      },
+      "static_trace_examples": [
+        {
+          "id": "ev-35791bcc4493420937306ecc",
+          "kind": "MANIFEST",
+          "status": "STATIC_POTENTIAL",
+          "source": "AndroidManifest.xml",
+          "locator": "apk_sha256=edcc03be24bc54d44c04746b46e2e33244120638e2199450b4407195447466a6;permission=android.permission.WRITE_EXTERNAL_STORAGE;tag=uses-permission;max_sdk=28",
+          "api_call": null
+        },
+        {
+          "id": "ev-887b01d4ad83f18a57ed7051",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=edcc03be24bc54d44c04746b46e2e33244120638e2199450b4407195447466a6;dex=classes.dex;caller=Lr2;->p(Lw2;Ljava/util/concurrent/Executor;Landroid/accessibilityservice/AccessibilityService$TakeScreenshotCallback;)V;offset_bytes=2;target=Landroid/accessibilityservice/AccessibilityService;->takeScreenshot(ILjava/util/concurrent/Executor;Landroid/accessibilityservice/AccessibilityService$TakeScreenshotCallback;)V",
+          "api_call": {
+            "target_descriptor": "Landroid/accessibilityservice/AccessibilityService;->takeScreenshot(ILjava/util/concurrent/Executor;Landroid/accessibilityservice/AccessibilityService$TakeScreenshotCallback;)V",
+            "rule_id": "android.screen.accessibility-screenshot",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-be25cc3efeb61d77e109749f",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=edcc03be24bc54d44c04746b46e2e33244120638e2199450b4407195447466a6;dex=classes.dex;caller=Lyw;->A(Ljava/lang/Object;)Ljava/lang/Object;;offset_bytes=3936;target=Landroid/app/UiAutomation;->takeScreenshot()Landroid/graphics/Bitmap;",
+          "api_call": {
+            "target_descriptor": "Landroid/app/UiAutomation;->takeScreenshot()Landroid/graphics/Bitmap;",
+            "rule_id": "android.screen.automation-screenshot",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        }
+      ],
+      "rule_results": [
+        {
+          "id": "issue-1",
+          "behavior_id": "behavior-35791bcc4493420937306ecc",
+          "data_type": "FILES_MEDIA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-35791bcc4493420937306ecc"
+          ],
+          "policy_document_ids": [],
+          "requires_review": true
+        },
+        {
+          "id": "issue-2",
+          "behavior_id": "behavior-887b01d4ad83f18a57ed7051",
+          "data_type": "SCREEN_CAPTURE",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-887b01d4ad83f18a57ed7051",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-3",
+          "behavior_id": "behavior-be25cc3efeb61d77e109749f",
+          "data_type": "SCREEN_CAPTURE",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-be25cc3efeb61d77e109749f",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        }
+      ],
+      "outcome": "partial",
+      "outcome_reason": "Usable report; policy extraction PARTIAL, semantic review UNREVIEWED and exact version applicability UNKNOWN. DEX completion is independent.",
+      "isolation": {
+        "receipt_sha256": "3c60721b14ae15b32d84a90dce30ea38df6e2a9d89fa188b4f7bbdd6904fd22d",
+        "image_id": "sha256:6400ad5a4f1bbc8136cf544795eae66c02d9eb813bc1190bf666fb7d5144a875",
+        "container": "privacytrace-0856579aac11458685f15cc67db88fed",
+        "container_created": true,
+        "user": "65534:65534",
+        "network": "none",
+        "readonly_root": true,
+        "cap_drop": [
+          "ALL"
+        ],
+        "security_options": [
+          "no-new-privileges:true"
+        ],
+        "memory_bytes": 1073741824,
+        "memory_swap_bytes": 1073741824,
+        "nano_cpus": 1000000000,
+        "pids_limit": 32,
+        "log_driver": "none",
+        "readonly_input_mount_count": 1,
+        "input_mount_readonly": true,
+        "timeout_seconds": 180,
+        "input_retention": "DELETE_ON_EXIT",
+        "input_removed": true,
+        "cleanup_verified": true,
+        "primary_error_code": null,
+        "cleanup_errors": []
+      }
+    },
+    {
+      "sample_id": "newpipe-v0.29.1",
+      "app_name": "NewPipe",
+      "selection_reason": "Media client: file capability, app/device-related static clues; project-service policy and opt-in crash scope.",
+      "newly_acquired_app": true,
+      "pipeline_status": "SUCCEEDED",
+      "started_at": "2026-10-15T09:32:39.209206+00:00",
+      "completed_at": "2026-10-15T09:32:49.714452+00:00",
+      "duration_seconds": 10.516,
+      "input_sha256": "18447bfb1e06d113edc88df93f471827280de06f6f3d4dc42f56f28b9c1bab79",
+      "input_bytes": 11507122,
+      "policy": {
+        "source_url": "https://newpipe.net/legal/privacy/",
+        "acquired_at": "2026-10-15T09:29:35.480769+00:00",
+        "html_sha256": "ec70803ad935f52833cb2a57ffacbc5eb6ddf629b09a0c7312b9cdbd285bbeaf",
+        "captured_at": "2026-10-15T09:32:39.194321Z",
+        "captured_text_sha256": "096fb3dd20527e9435b9e562fbe47b6e16786474b98c47801b1f8d9d32657c8c",
+        "capture_sha256": "74c2d8c3e521954d7e532f2209ef10844fcaf4b7a4912ca76652c9237b086231",
+        "text_codepoints": 12046,
+        "capture_completeness": "COMPLETE",
+        "source_document_completeness": "PARTIAL",
+        "extraction_status": "PARTIAL",
+        "review_status": "UNREVIEWED",
+        "attachments_status": "NOT_CHECKED",
+        "exact_apk_version_applicability": "UNKNOWN",
+        "region": "UNKNOWN",
+        "candidate": {
+          "id": "policy-claim-1",
+          "data_type": "DEVICE_INFORMATION",
+          "action": "UNKNOWN",
+          "subject": "UNKNOWN",
+          "polarity": "UNKNOWN",
+          "condition": "User-initiated crash report; project/services notice; version applicability UNKNOWN",
+          "evidence_id": "policy-sentence-1",
+          "start_offset": 6810,
+          "end_offset": 6854,
+          "excerpt_sha256": "7a78ce32400914aad5353fff8e1c4049df38ea6748d86dbc5ba1c4a445cff104",
+          "short_quote": "operating system name, version and API level"
+        }
+      },
+      "job_id": "issue63-newpipe-v0-29-1-01",
+      "ruleset_version": "0.3.0",
+      "scan_code_sha": "4cae1fd7e2ddb68345f389aa19535d2fc3db26ec",
+      "artifact_index_id": "issue63-20261015/newpipe-v0.29.1",
+      "package_name": "org.schabi.newpipe",
+      "version_name": "0.29.1",
+      "version_code": 1015,
+      "report_sha256": "856b315f3223b2f31365c0bb045bae43dc6d78ee03e948c68976d9fa9b683fe7",
+      "stored_record_sha256": "4fe484343596f0cd161d4135e22c847614025c5aa96ada098007d8b4cc081833",
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex",
+          "classes2.dex",
+          "classes3.dex"
+        ],
+        "failed_dex": []
+      },
+      "counts": {
+        "evidence": 6,
+        "behaviors": 4,
+        "claims": 1,
+        "issues": 4
+      },
+      "evidence_counts_by_kind": {
+        "MANIFEST": 1,
+        "API": 3,
+        "POLICY_DOCUMENT": 1,
+        "POLICY_SENTENCE": 1
+      },
+      "tools": {
+        "androguard": "4.1.3",
+        "jadx": "UNAVAILABLE_BYTECODE_FALLBACK",
+        "ruleset": "0.3.0",
+        "sdk_signatures": "1.0.0",
+        "worker_image": "sha256:6400ad5a4f1bbc8136cf544795eae66c02d9eb813bc1190bf666fb7d5144a875",
+        "human_review_gate": "NOT_REQUIRED_BY_WORKFLOW",
+        "scan_errors": "[]"
+      },
+      "result_status_counts": {
+        "INSUFFICIENT_EVIDENCE": 4
+      },
+      "static_trace_examples": [
+        {
+          "id": "ev-584115b041a8c729224c1381",
+          "kind": "MANIFEST",
+          "status": "STATIC_POTENTIAL",
+          "source": "AndroidManifest.xml",
+          "locator": "apk_sha256=18447bfb1e06d113edc88df93f471827280de06f6f3d4dc42f56f28b9c1bab79;permission=android.permission.WRITE_EXTERNAL_STORAGE;tag=uses-permission",
+          "api_call": null
+        },
+        {
+          "id": "ev-a3ea0c6e98d41133ae4024dd",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=18447bfb1e06d113edc88df93f471827280de06f6f3d4dc42f56f28b9c1bab79;dex=classes.dex;caller=Landroidx/appcompat/app/AppCompatDelegateImpl$AutoTimeNightModeManager;->getApplyableNightMode()I;offset_bytes=142;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "api_call": {
+            "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+            "rule_id": "android.location.last-known.generic",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-f05b4c4947c349e722f02875",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=18447bfb1e06d113edc88df93f471827280de06f6f3d4dc42f56f28b9c1bab79;dex=classes.dex;caller=Landroidx/appcompat/app/AppCompatDelegateImpl$AutoTimeNightModeManager;->getApplyableNightMode()I;offset_bytes=200;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "api_call": {
+            "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+            "rule_id": "android.location.last-known.generic",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        }
+      ],
+      "rule_results": [
+        {
+          "id": "issue-1",
+          "behavior_id": "behavior-584115b041a8c729224c1381",
+          "data_type": "FILES_MEDIA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-584115b041a8c729224c1381"
+          ],
+          "policy_document_ids": [],
+          "requires_review": true
+        },
+        {
+          "id": "issue-2",
+          "behavior_id": "behavior-a3ea0c6e98d41133ae4024dd",
+          "data_type": "LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-a3ea0c6e98d41133ae4024dd",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-3",
+          "behavior_id": "behavior-f05b4c4947c349e722f02875",
+          "data_type": "LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-f05b4c4947c349e722f02875",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-4",
+          "behavior_id": "behavior-997f18b108985f00fd062387",
+          "data_type": "DEVICE_IDENTIFIER",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-997f18b108985f00fd062387",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        }
+      ],
+      "outcome": "partial",
+      "outcome_reason": "Usable report; policy extraction PARTIAL, semantic review UNREVIEWED and exact version applicability UNKNOWN. DEX completion is independent.",
+      "isolation": {
+        "receipt_sha256": "a327832122a00e370f238e1da96db23cefcf769a1cfde86e47539745893fcabc",
+        "image_id": "sha256:6400ad5a4f1bbc8136cf544795eae66c02d9eb813bc1190bf666fb7d5144a875",
+        "container": "privacytrace-60f4a1ea3b4d433db30dd3801129d2aa",
+        "container_created": true,
+        "user": "65534:65534",
+        "network": "none",
+        "readonly_root": true,
+        "cap_drop": [
+          "ALL"
+        ],
+        "security_options": [
+          "no-new-privileges:true"
+        ],
+        "memory_bytes": 1073741824,
+        "memory_swap_bytes": 1073741824,
+        "nano_cpus": 1000000000,
+        "pids_limit": 32,
+        "log_driver": "none",
+        "readonly_input_mount_count": 1,
+        "input_mount_readonly": true,
+        "timeout_seconds": 180,
+        "input_retention": "DELETE_ON_EXIT",
+        "input_removed": true,
+        "cleanup_verified": true,
+        "primary_error_code": null,
+        "cleanup_errors": []
+      }
+    },
+    {
+      "sample_id": "k9mail-24.0",
+      "app_name": "K-9 Mail",
+      "selection_reason": "Email client: contacts/camera capabilities and static API clues; latest-release policy applicability limitation.",
+      "newly_acquired_app": true,
+      "pipeline_status": "SUCCEEDED",
+      "started_at": "2026-10-15T09:32:49.732646+00:00",
+      "completed_at": "2026-10-15T09:33:00.920216+00:00",
+      "duration_seconds": 11.187,
+      "input_sha256": "6b80ec681f0c882ca334f4d533778e6e50e814ee214db798d9e129a369a85af4",
+      "input_bytes": 10895261,
+      "policy": {
+        "source_url": "https://k9mail.app/privacy",
+        "acquired_at": "2026-10-15T09:29:36.226026+00:00",
+        "html_sha256": "a26d48b94bd01b64a7bd4e84b0b8815d27e71c97dd3cb0225318bc6c85fa4fe9",
+        "captured_at": "2026-10-15T09:32:49.717042Z",
+        "captured_text_sha256": "26820ae2c2c9afc0df178ab2e0d5bfc5e308ccfc93249513c699108d8a343eac",
+        "capture_sha256": "04d3c19e4070606c9d419156f3fe6a5b1a6dd525099fa3769f35656f2ef068ee",
+        "text_codepoints": 12366,
+        "capture_completeness": "COMPLETE",
+        "source_document_completeness": "PARTIAL",
+        "extraction_status": "PARTIAL",
+        "review_status": "UNREVIEWED",
+        "attachments_status": "NOT_CHECKED",
+        "exact_apk_version_applicability": "UNKNOWN",
+        "region": "UNKNOWN",
+        "candidate": {
+          "id": "policy-claim-1",
+          "data_type": "CONTACTS",
+          "action": "UNKNOWN",
+          "subject": "UNKNOWN",
+          "polarity": "UNKNOWN",
+          "condition": "Notice targets latest general Thunderbird/K-9 release; exact 24.0 applicability UNKNOWN; sideload is not Play Store",
+          "evidence_id": "policy-sentence-1",
+          "start_offset": 2252,
+          "end_offset": 2409,
+          "excerpt_sha256": "5ed072f4a0df7fc046d8f6bf7d535b8ac8150a441905bfda37df86bd94d43286",
+          "short_quote": "address book"
+        }
+      },
+      "job_id": "issue63-k9mail-24-0-01",
+      "ruleset_version": "0.3.0",
+      "scan_code_sha": "4cae1fd7e2ddb68345f389aa19535d2fc3db26ec",
+      "artifact_index_id": "issue63-20261015/k9mail-24.0",
+      "package_name": "com.fsck.k9",
+      "version_name": "24.0",
+      "version_code": 39046,
+      "report_sha256": "8608fd61c432e5345e8a75aa0572e8856aa1c0efb661044f3b4053a9670ca5f7",
+      "stored_record_sha256": "39ab362754c1236cb7328969b36f64d46babe557d014362b47fdc794d17f1fe3",
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex",
+          "classes2.dex"
+        ],
+        "failed_dex": []
+      },
+      "counts": {
+        "evidence": 7,
+        "behaviors": 5,
+        "claims": 1,
+        "issues": 5
+      },
+      "evidence_counts_by_kind": {
+        "MANIFEST": 2,
+        "API": 3,
+        "POLICY_DOCUMENT": 1,
+        "POLICY_SENTENCE": 1
+      },
+      "tools": {
+        "androguard": "4.1.3",
+        "jadx": "UNAVAILABLE_BYTECODE_FALLBACK",
+        "ruleset": "0.3.0",
+        "sdk_signatures": "1.0.0",
+        "worker_image": "sha256:6400ad5a4f1bbc8136cf544795eae66c02d9eb813bc1190bf666fb7d5144a875",
+        "human_review_gate": "NOT_REQUIRED_BY_WORKFLOW",
+        "scan_errors": "[]"
+      },
+      "result_status_counts": {
+        "INSUFFICIENT_EVIDENCE": 5
+      },
+      "static_trace_examples": [
+        {
+          "id": "ev-12f9222b484205703a0db335",
+          "kind": "MANIFEST",
+          "status": "STATIC_POTENTIAL",
+          "source": "AndroidManifest.xml",
+          "locator": "apk_sha256=6b80ec681f0c882ca334f4d533778e6e50e814ee214db798d9e129a369a85af4;permission=android.permission.READ_CONTACTS;tag=uses-permission",
+          "api_call": null
+        },
+        {
+          "id": "ev-17a5f0e8b2528d0c8ae691eb",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=6b80ec681f0c882ca334f4d533778e6e50e814ee214db798d9e129a369a85af4;dex=classes.dex;caller=Landroidx/appcompat/app/AppCompatDelegateImpl$AutoTimeNightModeManager;->getApplyableNightMode()I;offset_bytes=142;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "api_call": {
+            "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+            "rule_id": "android.location.last-known.generic",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-762f05bba188e3dd9a496c39",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=6b80ec681f0c882ca334f4d533778e6e50e814ee214db798d9e129a369a85af4;dex=classes.dex;caller=Landroidx/appcompat/app/AppCompatDelegateImpl$AutoTimeNightModeManager;->getApplyableNightMode()I;offset_bytes=200;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "api_call": {
+            "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+            "rule_id": "android.location.last-known.generic",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        }
+      ],
+      "rule_results": [
+        {
+          "id": "issue-1",
+          "behavior_id": "behavior-12f9222b484205703a0db335",
+          "data_type": "CONTACTS",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-12f9222b484205703a0db335"
+          ],
+          "policy_document_ids": [],
+          "requires_review": true
+        },
+        {
+          "id": "issue-2",
+          "behavior_id": "behavior-6985f1f8f92404da733a71b1",
+          "data_type": "CAMERA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-6985f1f8f92404da733a71b1"
+          ],
+          "policy_document_ids": [],
+          "requires_review": true
+        },
+        {
+          "id": "issue-3",
+          "behavior_id": "behavior-17a5f0e8b2528d0c8ae691eb",
+          "data_type": "LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-17a5f0e8b2528d0c8ae691eb",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-4",
+          "behavior_id": "behavior-762f05bba188e3dd9a496c39",
+          "data_type": "LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-762f05bba188e3dd9a496c39",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-5",
+          "behavior_id": "behavior-b45ad094a17084417976b2a4",
+          "data_type": "CAMERA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-b45ad094a17084417976b2a4",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        }
+      ],
+      "outcome": "partial",
+      "outcome_reason": "Usable report; policy extraction PARTIAL, semantic review UNREVIEWED and exact version applicability UNKNOWN. DEX completion is independent.",
+      "isolation": {
+        "receipt_sha256": "ca4f6a92ea6a4a1f524e594c6810dc5364fbad0dce6619511a652fd2313de416",
+        "image_id": "sha256:6400ad5a4f1bbc8136cf544795eae66c02d9eb813bc1190bf666fb7d5144a875",
+        "container": "privacytrace-eae0207cf76f465eb7fc5d33dc402a95",
+        "container_created": true,
+        "user": "65534:65534",
+        "network": "none",
+        "readonly_root": true,
+        "cap_drop": [
+          "ALL"
+        ],
+        "security_options": [
+          "no-new-privileges:true"
+        ],
+        "memory_bytes": 1073741824,
+        "memory_swap_bytes": 1073741824,
+        "nano_cpus": 1000000000,
+        "pids_limit": 32,
+        "log_driver": "none",
+        "readonly_input_mount_count": 1,
+        "input_mount_readonly": true,
+        "timeout_seconds": 180,
+        "input_retention": "DELETE_ON_EXIT",
+        "input_removed": true,
+        "cleanup_verified": true,
+        "primary_error_code": null,
+        "cleanup_errors": []
+      }
+    },
+    {
+      "sample_id": "telegram-current",
+      "app_name": "Telegram candidate",
+      "selection_reason": "Complex messaging challenge candidate: contacts/cloud services; official download failed ZIP validation before identity or complexity could be established.",
+      "newly_acquired_app": false,
+      "pipeline_status": "FAILED",
+      "started_at": "2026-10-15T09:33:00.943421+00:00",
+      "completed_at": "2026-10-15T09:33:04.595206+00:00",
+      "duration_seconds": 3.656,
+      "input_sha256": "b5830c8cc97905526fb81d762a5bf8def7ca56a4dfd96146436231c210c7d6e4",
+      "input_bytes": 261439,
+      "policy": {
+        "source_url": "https://telegram.org/privacy",
+        "acquired_at": "2026-10-15T09:29:37.948902+00:00",
+        "html_sha256": "392f82ca21f59afba5ef0a6a49291a986b805f8c281c019a424aad98d56802d1",
+        "captured_at": "2026-10-15T09:33:00.921737Z",
+        "captured_text_sha256": "0a5e56897b73e1e132430e93da654360a18434f1f28ff81f1545c8b9119e9283",
+        "capture_sha256": "de3bf64fb0ff9536447d357bbfd660b286c71930abc082a59ac48843224839b5",
+        "text_codepoints": 32835,
+        "capture_completeness": "COMPLETE",
+        "source_document_completeness": "PARTIAL",
+        "extraction_status": "PARTIAL",
+        "review_status": "UNREVIEWED",
+        "attachments_status": "NOT_CHECKED",
+        "exact_apk_version_applicability": "UNKNOWN",
+        "region": "UNKNOWN",
+        "candidate": {
+          "id": "policy-claim-1",
+          "data_type": "CONTACTS",
+          "action": "UNKNOWN",
+          "subject": "UNKNOWN",
+          "polarity": "UNKNOWN",
+          "condition": "Cloud-service notice; APK version applicability UNKNOWN; attachments NOT_CHECKED",
+          "evidence_id": "policy-sentence-1",
+          "start_offset": 7613,
+          "end_offset": 7665,
+          "excerpt_sha256": "adc2dfc421003e9cdc744115eb80b5763a93cad01cdf17c898813bc6f619db0b",
+          "short_quote": "We ask your permission before syncing your contacts."
+        }
+      },
+      "job_id": "issue63-telegram-current-01",
+      "ruleset_version": "0.3.0",
+      "scan_code_sha": "4cae1fd7e2ddb68345f389aa19535d2fc3db26ec",
+      "artifact_index_id": "issue63-20261015/telegram-current",
+      "package_name": "UNKNOWN",
+      "version_name": "UNKNOWN",
+      "version_code": "UNKNOWN",
+      "counts": null,
+      "report_sha256": null,
+      "outcome": "failed",
+      "outcome_reason": "ZIP_INVALID: official download bytes rejected in restricted Docker. No package, DEX, API or policy comparison result; not evidence of APK hardening.",
+      "errors": [
+        {
+          "code": "ZIP_INVALID"
+        }
+      ],
+      "isolation": {
+        "receipt_sha256": "f34f9f0712eaa6ce9782e5c369fee2323fed266724c99d96c7b3fba3453e824e",
+        "image_id": "sha256:6400ad5a4f1bbc8136cf544795eae66c02d9eb813bc1190bf666fb7d5144a875",
+        "container": "privacytrace-80361d01c74040e2817f8327a8761503",
+        "container_created": true,
+        "user": "65534:65534",
+        "network": "none",
+        "readonly_root": true,
+        "cap_drop": [
+          "ALL"
+        ],
+        "security_options": [
+          "no-new-privileges:true"
+        ],
+        "memory_bytes": 1073741824,
+        "memory_swap_bytes": 1073741824,
+        "nano_cpus": 1000000000,
+        "pids_limit": 32,
+        "log_driver": "none",
+        "readonly_input_mount_count": 1,
+        "input_mount_readonly": true,
+        "timeout_seconds": 180,
+        "input_retention": "DELETE_ON_EXIT",
+        "input_removed": true,
+        "cleanup_verified": true,
+        "primary_error_code": "ZIP_INVALID",
+        "cleanup_errors": []
+      }
+    }
+  ]
+}

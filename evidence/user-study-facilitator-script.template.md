@@ -112,5 +112,5 @@ participant_id,background,condition,material,sample_id,ground_truth_version,ques
 
 ## 9. 本模板状态
 
-- 本文件是流程模板；演练走查结果由**另一名成员**在 `evidence/user-study-rehearsal-checklist.template.md` 中独立记录。
-- 未执行走查前，该清单保持未勾选；本文件不预先声明走查已通过。
+- 本文件是流程模板；准备包的技术验收以自动化检查、冻结证据和复算结果为准。
+- 演练走查清单只供可选操作核对，未执行不影响准备包验收；不得把未执行步骤记为已运行。

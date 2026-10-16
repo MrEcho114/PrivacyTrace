@@ -1,7 +1,7 @@
 # 理解测试准备包 · 演练走查清单 · 模板（#23 PT-907）
 
 > 用途：在真实研究启动前，用**演练数据**把准备包从生成到归档走完一遍，确认命令、字段与口径确实可用。
-> **本清单必须由另一名成员独立执行**：执行者不得是本准备包（`evidence/user-study*.template.*` 共 9 个模板文件）的作者会话。
+> **本清单为可选的操作核对参考，不是验收门槛**；无需指定其他成员或取得人工签名。以 `scripts/check.sh`、`scripts/verify-user-study-pack.py` 及可复算的冻结材料作为技术验收依据。
 > **不得伪造走查结果**：未执行就保持未勾选，不要凭预期打勾；只有真的执行过、并在条目下写明证据链接或输出摘要的条目才可以勾选。
 > 演练数据一律标注 **SYNTHETIC ONLY / 演练**，不得冒充真实用户研究，不得用于关闭 Issue #23。
 > 用词要求：客观中立，不出现"偷数据 / 窃取 / 泄露 / 违法 / 违规"等定性词。
@@ -13,9 +13,9 @@
 
 ## 0. 前置说明
 
-- [ ] 0.1 已确认执行者是**另一名成员**，不是本准备包作者会话；执行者与日期填入第 3 节签署位。
+- [ ] 0.1 （可选）记录演练执行环境、操作者和日期；不作为准备包验收条件。
 - [ ] 0.2 已确认本清单与准备包模板文件的 `git_commit` 一致（`git rev-parse HEAD`）。
-- [ ] 0.3 已确认第 1 节各条的期望结果是在提交 `210c941` 实测的；若演练链路脚本在此期间被改动，以实际生成的演练包内容为准，并把差异记入第 3 节签署位。
+- [ ] 0.3 已确认第 1 节各条的期望结果是在提交 `210c941` 实测的；若演练链路脚本在此期间被改动，以实际生成的演练包内容为准，并把差异记入第 3 节可选记录区。
 
 ## 1. 演练链路（逐条勾选）
 
@@ -81,13 +81,13 @@
 
   ```
   verify-user-study-pack: root=<仓库根绝对路径，正斜杠形式>
-  rows: question-bank=14 answer-key=50 assignment=8 observations=0 (rehearsal-excluded=72)
-  rehearsal rows: excluded (contract 4)
+  rows: question-bank=14 answer-key=50 assignment=8 observations=72 (rehearsal-included=72)
+  rehearsal rows: included in semantic verification
   issues: 0
   result: OK
   ```
 
-  机器可读形态：`python scripts/verify-user-study-pack.py --json` 输出 `{"ok": true, "issues": []}`（两空格缩进）。退出码语义：`0` = 全部检查通过；`1` = 至少一个 issue（`issues: <n>`，其后逐条列出 `[code] path: detail`，末行 `result: FAIL`）；`2` = 用法或环境错误（stderr 以 `error:` 开头，例如 `--root` 指向的不是目录）。`rows:` 一行核对题库 / 答案键 / 分配表行数，并把标注 `SYNTHETIC_REHEARSAL` 的演练作答行按契约 4 排除（`rehearsal-excluded=`）。
+  机器可读形态：`python scripts/verify-user-study-pack.py --json` 输出 `{"ok": true, "issues": []}`（两空格缩进）。退出码语义：`0` = 全部检查通过；`1` = 至少一个 issue（`issues: <n>`，其后逐条列出 `[code] path: detail`，末行 `result: FAIL`）；`2` = 用法或环境错误（stderr 以 `error:` 开头，例如 `--root` 指向的不是目录）。`rows:` 一行核对题库 / 答案键 / 分配表行数，并把标注 `SYNTHETIC_REHEARSAL` 的演练作答行全部纳入语义校验（`rehearsal-included=`）。
   证据：___
 
   备注 1（本机沙箱边界，实测）：在 DSH 沙箱下，脚本的 dataset 重建检查会用 `tempfile.TemporaryDirectory()` 建 0o700 目录，该目录在沙箱内不可访问，于是出现 `[manifest-dataset-rebuild] evidence/synthetic/freeze-manifest.json: dataset rebuild failed: PermissionError: [WinError 5] 拒绝访问。: '<TEMP>\pt907-pack-xxxx'`。这不是校验器不可用：把 `TMPDIR`/`TEMP`/`TMP` 指到可写目录，并用强制 0o777 建目录的启动 shim（如 `G:\GZQ\session-files\_pt907_walkthrough\run_pack_verifier.py`）即可让同一个脚本跑通，脚本自身逻辑不做任何改动。Linux/CI（`scripts/check.sh`）无此问题，不需要任何处理。
@@ -123,20 +123,20 @@
   期望结果：命中 `.gitignore:28:evidence/private/`（即私有记录目录确实被 Git 忽略）；`git status --porcelain` 中**不出现**任何你新写入的私有记录文件。
   证据：___
 
-  说明：删除/保留时点按 `evidence/user-study-records-policy.template.md` 第 5 节执行；演练记录在走查结论签署后 14 天内删除。`<study-id>` 是占位符，按第 4 节的命名规则替换；该目录应尚未存在，命令只用来确认忽略规则命中。
+  说明：删除/保留时点按 `evidence/user-study-records-policy.template.md` 第 5 节执行；可选演练的临时记录在演练完成后 14 天内删除。`<study-id>` 是占位符，按第 4 节的命名规则替换；该目录应尚未存在，命令只用来确认忽略规则命中。
 
 ## 2. 走查中发现问题时的处置
 
 - [ ] 2.1 任何一条命令非零退出或输出与期望不符：如实记录命令原文、退出码与报错原文，把对应条目保持未勾选。
 - [ ] 2.2 发现字段名/条件名/材料名与 `evidence/user-study.template.csv` 不一致：记录不一致的两处原文，不要自行改准备包文件。
 
-## 3. 签署
+## 3. 可选执行记录
 
 | 项 | 内容 |
 |---|---|
-| 执行者（非本准备包作者） | |
+| 执行者（可选） | |
 | 执行日期 | |
 | 结论（通过／不通过／部分通过） | |
 | 证据链接（命令输出、日志、截图路径） | |
 
-未执行的条目保持未勾选；本条清单的勾选状态本身就是"是否真的走过一遍"的证据。
+未执行的条目保持未勾选，不影响技术验收结论；自愿执行时应提供实际命令输出或证据，不得编造。

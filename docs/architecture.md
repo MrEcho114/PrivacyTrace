@@ -1,5 +1,7 @@
 # 架构决策 ADR-001
 
+> 后续公网服务的技术栈与执行边界提案见 [ADR-0003](adr/0003-public-api-docker-boundary.md) 和 [2026-10-16 调研方案](planning/api-docker-20261016.md)。该提案尚未实施；下文建仓方案保留原时点状态。
+
 状态：建仓默认方案；后续变更需记录理由。日期：2026-10-02。
 
 后端使用 Python 3.11+ / FastAPI / Pydantic，便于接入 Python APK 分析生态；前端使用 Vue 3 / TypeScript / Vite。数据库基线为 SQLite，当前只有 schema，待样本主线接入。建仓使用 uv 和 npm 锁定依赖，不引入工作流队列、RAG 或多智能体框架。

@@ -4,6 +4,8 @@
 
 ## 2026-10-12 协作与领取入口
 
+后续公网服务按 [API Docker 调研与实施方案](planning/api-docker-20261016.md) 及 [#68](https://github.com/MrEcho114/PrivacyTrace/issues/68) 的当前任务图推进：保留 Vue/FastAPI/Androguard，规划独立 API 容器、持久任务运行时及专用扫描执行边界。当前仅方案/Issues 更新；不影响受控评测、参与者研究和赛事交付，未授权部署。
+
 开始/恢复先执行 [协作检查清单](agents/skills-workflow.md#6-工单流转阻塞依赖与交接规范)，读取 GitHub 的唯一当前执行记录；阶段索引和总规格不作为新的实现入口。现存交付的覆盖、未核验项与剩余工作见 [协作落地记录](stages/workflow-coordination-20261012.md)，按其快照日期和 SHA 使用，领取时刷新。
 
 受控功能沿 [主线整合交付](https://github.com/MrEcho114/PrivacyTrace/pull/47) 核对已有覆盖；两条来源交付保留追溯，是否已合入及剩余验收以最新 main 和当前执行记录为准。前端、插件、材料分别复用已有候选，只执行明确授权的真实缺口。待审不等于已合入，原任务状态/负责人和历史收据不由本索引替代。

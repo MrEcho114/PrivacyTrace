@@ -1,0 +1,123 @@
+{
+  "scenario_id": "C01",
+  "analysis": {
+    "job_id": "controlled-d777703543174ee88a7dab2f86c4ea9b",
+    "status": "SUCCEEDED",
+    "coverage": "COMPLETE",
+    "counts": {
+      "evidence": 3,
+      "behaviors": 1,
+      "claims": 1,
+      "issues": 1
+    },
+    "human_review_gate": "NOT_REQUIRED_BY_WORKFLOW"
+  },
+  "elapsed_seconds": 3.8150664139999435,
+  "predictions": {
+    "permission_keyword": [
+      {
+        "data_type": "PRECISE_LOCATION",
+        "action": "CAPABILITY",
+        "status": "EXACT_MATCH",
+        "evidence_ids": [
+          "ev-ffefeda2a688a1c0c6194317"
+        ]
+      }
+    ],
+    "api_flat": [
+      {
+        "data_type": "PRECISE_LOCATION",
+        "action": "CAPABILITY",
+        "status": "INSUFFICIENT_EVIDENCE",
+        "evidence_ids": [
+          "ev-ffefeda2a688a1c0c6194317"
+        ]
+      }
+    ],
+    "privacytrace": [
+      {
+        "data_type": "PRECISE_LOCATION",
+        "action": "CAPABILITY",
+        "status": "INSUFFICIENT_EVIDENCE",
+        "evidence_ids": [
+          "ev-ffefeda2a688a1c0c6194317"
+        ]
+      }
+    ]
+  },
+  "policy_spans_validated": true,
+  "policy_span_validation": {
+    "validated": true,
+    "checked_evidence_ids": [
+      "policy-sentence-1"
+    ],
+    "policy_document_sha256": {
+      "policy-official": "1be4bc0b826f7adba437d8e9fdae21cc017e492bcb6269521df29a0db6c3f122"
+    },
+    "errors": []
+  },
+  "scheme_elapsed_seconds": {
+    "permission_keyword": 7.123999921532231e-06,
+    "api_flat": 2.2140000055514975e-06,
+    "privacytrace": 0.001403352000011182
+  },
+  "truth_files_absent": true,
+  "material_sha256": "7e143bd487a56be8e0402ee80c64fd6f76a2085d4084e75ad790f468826f527e",
+  "prediction_image": "sha256:c49e26ccbdd10e7cfb26faa29d042663d8901f41f47992256dc408223b8e0b03",
+  "coverage": {
+    "status": "COMPLETE",
+    "scope": "DEX_ENTRIES",
+    "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+    "behavior_limitations": [
+      "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+      "不保证覆盖反射、动态加载及运行时生成的调用。",
+      "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+      "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+      "静态潜在行为不能证明实际访问、收集或外传。"
+    ],
+    "sdk_attribution_limitations": [],
+    "limitations": [
+      "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+      "JADX unavailable or timed out; bytecode evidence retained"
+    ],
+    "scanned_dex": [
+      "classes.dex"
+    ],
+    "failed_dex": []
+  },
+  "api_evidence": [],
+  "evidence_locators": [
+    {
+      "id": "ev-ffefeda2a688a1c0c6194317",
+      "kind": "MANIFEST",
+      "source": "AndroidManifest.xml",
+      "locator": "apk_sha256=121ea9e78200ed3361fc6d2fd0f5598e6bded34fd17e7128619d96f914a58753;permission=android.permission.ACCESS_FINE_LOCATION;tag=uses-permission",
+      "api_call": null
+    },
+    {
+      "id": "policy-snapshot",
+      "kind": "POLICY_DOCUMENT",
+      "source": "https://example.invalid/privacytrace/controlled/C01",
+      "locator": "Full captured UTF-8 artifact",
+      "api_call": null
+    },
+    {
+      "id": "policy-sentence-1",
+      "kind": "POLICY_SENTENCE",
+      "source": "https://example.invalid/privacytrace/controlled/C01",
+      "locator": "codepoints [25,34)",
+      "api_call": null
+    }
+  ],
+  "features_sha256": "fd7cd0b99373f2186fdf288b5f21a1db2bea0eb15ab1209e9ff74a50ba7bedf1",
+  "stored_job_sha256": "d6e443bba3c8ef412b6f1c5057d3465490cd14d19c5cdf7c17aa0cfb2bb31766",
+  "report_sha256": "910872475549feaa3c1c0e8ae223109869c083472e676fef58c562942d1b64aa",
+  "behavior_limitations": [
+    "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+    "不保证覆盖反射、动态加载及运行时生成的调用。",
+    "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+    "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+    "静态潜在行为不能证明实际访问、收集或外传。"
+  ],
+  "apk_sha256": "121ea9e78200ed3361fc6d2fd0f5598e6bded34fd17e7128619d96f914a58753"
+}

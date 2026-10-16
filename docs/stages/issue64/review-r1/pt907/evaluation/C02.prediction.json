@@ -1,0 +1,168 @@
+{
+  "scenario_id": "C02",
+  "analysis": {
+    "job_id": "controlled-525f54513c38438ba6ebe105a087d855",
+    "status": "SUCCEEDED",
+    "coverage": "COMPLETE",
+    "counts": {
+      "evidence": 4,
+      "behaviors": 2,
+      "claims": 1,
+      "issues": 2
+    },
+    "human_review_gate": "NOT_REQUIRED_BY_WORKFLOW"
+  },
+  "elapsed_seconds": 4.298910501000023,
+  "predictions": {
+    "permission_keyword": [
+      {
+        "data_type": "PRECISE_LOCATION",
+        "action": "CAPABILITY",
+        "status": "EXACT_MATCH",
+        "evidence_ids": [
+          "ev-b958386a932fcfc767b86335"
+        ]
+      }
+    ],
+    "api_flat": [
+      {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "status": "EXACT_MATCH",
+        "evidence_ids": [
+          "ev-ba08efa814f6ece2c21c8e79"
+        ]
+      }
+    ],
+    "privacytrace": [
+      {
+        "data_type": "PRECISE_LOCATION",
+        "action": "CAPABILITY",
+        "status": "INSUFFICIENT_EVIDENCE",
+        "evidence_ids": [
+          "ev-b958386a932fcfc767b86335"
+        ]
+      },
+      {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "status": "EXACT_MATCH",
+        "evidence_ids": [
+          "ev-ba08efa814f6ece2c21c8e79",
+          "policy-snapshot",
+          "policy-sentence-1"
+        ]
+      }
+    ]
+  },
+  "policy_spans_validated": true,
+  "policy_span_validation": {
+    "validated": true,
+    "checked_evidence_ids": [
+      "policy-sentence-1"
+    ],
+    "policy_document_sha256": {
+      "policy-official": "e00c9039757eb8300f858c2a507555ae366ed3efa61c5dace073d5849f56b10c"
+    },
+    "errors": []
+  },
+  "scheme_elapsed_seconds": {
+    "permission_keyword": 9.478000038143364e-06,
+    "api_flat": 5.9720000535889994e-06,
+    "privacytrace": 0.002023158000042713
+  },
+  "truth_files_absent": true,
+  "material_sha256": "727b8265189e81d1fb3a33591d5f07bc873b64f5bdf6c80855c5206d790b75dd",
+  "prediction_image": "sha256:c49e26ccbdd10e7cfb26faa29d042663d8901f41f47992256dc408223b8e0b03",
+  "coverage": {
+    "status": "COMPLETE",
+    "scope": "DEX_ENTRIES",
+    "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+    "behavior_limitations": [
+      "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+      "不保证覆盖反射、动态加载及运行时生成的调用。",
+      "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+      "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+      "静态潜在行为不能证明实际访问、收集或外传。"
+    ],
+    "sdk_attribution_limitations": [],
+    "limitations": [
+      "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+      "JADX unavailable or timed out; bytecode evidence retained"
+    ],
+    "scanned_dex": [
+      "classes.dex"
+    ],
+    "failed_dex": []
+  },
+  "api_evidence": [
+    {
+      "id": "ev-ba08efa814f6ece2c21c8e79",
+      "kind": "API",
+      "status": "STATIC_POTENTIAL",
+      "source": "classes.dex",
+      "locator": "apk_sha256=a487e72b9ff97661b0d3853e14f112ed35a6c08c06bfb77e818918594798acf5;dex=classes.dex;caller=Lorg/privacytrace/controlled/c02/MainActivity;->readLocation(Landroid/location/LocationManager;)Landroid/location/Location;;offset_bytes=4;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "excerpt": "invoke-virtual v2, v0, Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "document_id": null,
+      "artifact_sha256": null,
+      "start_offset": null,
+      "end_offset": null,
+      "api_call": {
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "rule_id": "android.location.last-known.gps",
+        "ruleset_version": "0.3.0",
+        "context": {
+          "provider": "gps"
+        }
+      }
+    }
+  ],
+  "evidence_locators": [
+    {
+      "id": "ev-b958386a932fcfc767b86335",
+      "kind": "MANIFEST",
+      "source": "AndroidManifest.xml",
+      "locator": "apk_sha256=a487e72b9ff97661b0d3853e14f112ed35a6c08c06bfb77e818918594798acf5;permission=android.permission.ACCESS_FINE_LOCATION;tag=uses-permission",
+      "api_call": null
+    },
+    {
+      "id": "ev-ba08efa814f6ece2c21c8e79",
+      "kind": "API",
+      "source": "classes.dex",
+      "locator": "apk_sha256=a487e72b9ff97661b0d3853e14f112ed35a6c08c06bfb77e818918594798acf5;dex=classes.dex;caller=Lorg/privacytrace/controlled/c02/MainActivity;->readLocation(Landroid/location/LocationManager;)Landroid/location/Location;;offset_bytes=4;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "api_call": {
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "rule_id": "android.location.last-known.gps",
+        "ruleset_version": "0.3.0",
+        "context": {
+          "provider": "gps"
+        }
+      }
+    },
+    {
+      "id": "policy-snapshot",
+      "kind": "POLICY_DOCUMENT",
+      "source": "https://example.invalid/privacytrace/controlled/C02",
+      "locator": "Full captured UTF-8 artifact",
+      "api_call": null
+    },
+    {
+      "id": "policy-sentence-1",
+      "kind": "POLICY_SENTENCE",
+      "source": "https://example.invalid/privacytrace/controlled/C02",
+      "locator": "codepoints [23,32)",
+      "api_call": null
+    }
+  ],
+  "features_sha256": "80bd3aaed516cb01c260e683b1f44c3228747abcfff50f5669fb3049cdca3d72",
+  "stored_job_sha256": "ac533bea7b6c7f6a60e2bb02b6edf5781c11649c0853099c44c424d2267d1c33",
+  "report_sha256": "98a201ec76c6e51d486fff91eb8cc1dcab7fec028b0497d1165d4bab161cf824",
+  "behavior_limitations": [
+    "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+    "不保证覆盖反射、动态加载及运行时生成的调用。",
+    "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+    "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+    "静态潜在行为不能证明实际访问、收集或外传。"
+  ],
+  "apk_sha256": "a487e72b9ff97661b0d3853e14f112ed35a6c08c06bfb77e818918594798acf5"
+}

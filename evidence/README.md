@@ -26,14 +26,14 @@ S1 强制双人核验表已取消，用户不用填写。代理保留可追溯�
 
 | 文件 | 用途 |
 |---|---|
-| [synthetic/user-study.csv](synthetic/user-study.csv) | 演练作答记录；带 `SYNTHETIC_REHEARSAL` 标记的行在校验时按契约 4 排除 |
+| [synthetic/user-study.csv](synthetic/user-study.csv) | 演练作答记录；`SYNTHETIC_REHEARSAL` 仅标识模拟性质，默认必须全部接受答案键、顺序、重复作答语义校验 |
 | [synthetic/user-study-question-bank.csv](synthetic/user-study-question-bank.csv) | 演练题库与等价题集 |
 | [synthetic/user-study-answer-key.csv](synthetic/user-study-answer-key.csv) | 演练答案键与证据位置/判分口径 |
 | [synthetic/user-study-assignment.csv](synthetic/user-study-assignment.csv) | 演练参与者与平衡顺序分配 |
 | [synthetic/freeze-manifest.json](synthetic/freeze-manifest.json) | 演练准备包冻结清单（`kind=user-study-pack-freeze`）：登记被覆盖文件的 `path`/`sha256`/`bytes` 与数据集摘要 `dataset_sha256`，是准备包的哈希权威记录 |
 | `evidence/synthetic/rehearsal-walkthrough.md` | 演练走查记录（本会话执行、**非独立成员**）；独立走查仍待组员按 `user-study-rehearsal-checklist.template.md` 完成 |
 
-准备包校验器 `scripts/verify-user-study-pack.py`：`python scripts/verify-user-study-pack.py` 复核清单与文件（退出码 0 = 全部通过、1 = 至少一个 issue、2 = 用法或环境错误）；`python scripts/verify-user-study-pack.py --write-manifest` 由冻结责任人重算 `files[]` 与 `dataset_sha256`（清单不存在时拒绝创建）。
+准备包校验器 `scripts/verify-user-study-pack.py`：`python scripts/verify-user-study-pack.py` 默认校验全部 Synthetic 观测（本版 72 条）并复核清单与文件（退出码 0 = 全部通过、1 = 至少一个 issue、2 = 用法或环境错误）；`python scripts/verify-user-study-pack.py --write-manifest` 由冻结责任人重算 `files[]` 与 `dataset_sha256`（清单不存在时拒绝创建）。
 
 使用顺序：填对照材料与题库/答案键/分配表 → 确认记录字段与保留约定 → 按主持脚本执行 → 由另一名成员走查演练链路（`synthetic/`，**SYNTHETIC ONLY**）。
 

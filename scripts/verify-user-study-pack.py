@@ -14,13 +14,12 @@ verifies. The dataset digest is never trusted from the pack:
 is written into a temporary directory, so a stale or hand-edited
 ``dataset_sha256`` cannot survive verification.
 
-Pairing: the template file and the synthetic file are two halves of one
-artifact, so the checks read the union of both (a question id defined in either
-bank is known, and the synthetic row wins when both define it). The observation
-sheet belongs to the rehearsal, so its order and participant sets are compared
-with the synthetic assignment table. Rows whose ``notes`` carries the
-``SYNTHETIC_REHEARSAL`` marker, and CSV lines starting with ``#``, are rehearsal
-scaffolding: they are parsed but do not participate in the cross-checks.
+Pairing: template and synthetic files are two halves of each contract artifact.
+Both are checked; the synthetic row wins when both define a question id.
+Synthetic observation rows MUST participate in semantic checks, including
+answer-key correctness, duplicates and assignment consistency. The
+``SYNTHETIC_REHEARSAL`` marker identifies fictional data, not an exemption.
+Only CSV comment lines starting with ``#`` are skipped.
 
 Exit codes: 0 = every check passed, 1 = at least one issue, 2 = usage or
 environment error. Output is deterministic: issues are sorted by
@@ -139,9 +138,36 @@ REQUIRED_MANIFEST_PATHS = (
     *QUESTION_BANK_FILES,
     *ANSWER_KEY_FILES,
     *ASSIGNMENT_FILES,
+    "evidence/user-study-comparison.template.md",
+    "evidence/user-study-consent.template.md",
+    "evidence/user-study-facilitator-script.template.md",
+    "evidence/user-study-records-policy.template.md",
+    "evidence/user-study-rehearsal-checklist.template.md",
+    "evidence/trace.schema.md",
+    "evidence/synthetic/README.md",
     OBSERVATIONS,
+    "samples/synthetic/README.md",
+    "samples/synthetic/manifest.csv",
+    "samples/synthetic/policies.csv",
+    "samples/synthetic/runs.csv",
+    "scripts/build-dataset.py",
+    "scripts/validate-trace.py",
+    "scripts/verify-run-ledger.py",
+    "scripts/metrics-user-study.py",
+    "scripts/generate-synthetic-pt907.py",
     "scripts/verify-user-study-pack.py",
 )
+
+
+def required_manifest_paths(root: Path) -> list[str]:
+    """Mandatory contracts plus every existing synthetic trace used by the builder."""
+    trace_dir = root / DATASET_DIR / "trace"
+    trace_files = (
+        [path.relative_to(root).as_posix() for path in trace_dir.glob("*.jsonl")]
+        if trace_dir.is_dir()
+        else []
+    )
+    return sorted(set(REQUIRED_MANIFEST_PATHS).union(trace_files))
 HEX_DIGITS = "0123456789abcdef"
 
 
@@ -473,9 +499,9 @@ def check_assignment_rows(
 
 
 def load_observations(
-    root: Path, rel: str, include_rehearsal: bool = False
+    root: Path, rel: str
 ) -> tuple[list[dict[str, str]] | None, int, list[Issue]]:
-    """Load the observation sheet; rows marked as rehearsal stay out by default."""
+    """Load all observations, including synthetic ones, for semantic verification."""
     path = root / rel
     if not path.is_file():
         return None, 0, [Issue("file-missing", rel, "required observation file not found")]
@@ -492,7 +518,7 @@ def load_observations(
         ]
     issues: list[Issue] = []
     records: list[dict[str, str]] = []
-    excluded = 0
+    rehearsal_rows = 0
     for number, row in enumerate(rows, start=1):
         if len(row) != len(header):
             issues.append(
@@ -505,11 +531,9 @@ def load_observations(
             continue
         record = {name: value.strip() for name, value in zip(header, row)}
         if REHEARSAL_MARKER in record.get("notes", ""):
-            excluded += 1
-            if not include_rehearsal:
-                continue
+            rehearsal_rows += 1
         records.append(record)
-    return records, excluded, issues
+    return records, rehearsal_rows, issues
 
 
 def check_observation_rows(
@@ -522,9 +546,28 @@ def check_observation_rows(
     issues: list[Issue] = []
     orders: dict[str, list[str]] = {}
     pairs: set[tuple[str, str]] = set()
+    first_answers: dict[tuple[str, str, str, str], int] = {}
     for number, record in enumerate(records, start=1):
         participant_id = record["participant_id"]
         material = record["material"]
+        answer_key = (
+            participant_id,
+            record["sample_id"],
+            record["question_id"],
+            material,
+        )
+        previous = first_answers.get(answer_key)
+        if previous is not None:
+            issues.append(
+                Issue(
+                    "observation-duplicate",
+                    rel,
+                    f"row {number}: duplicate answer for {answer_key!r} "
+                    f"(first seen in row {previous})",
+                )
+            )
+        else:
+            first_answers[answer_key] = number
         if material not in MATERIALS:
             issues.append(
                 Issue(
@@ -778,16 +821,25 @@ def check_manifest(root: Path, builder: Path) -> list[Issue]:
             )
         )
     excluded_set = {normalize_path(item) for item in excluded}
-    for rel_path in REQUIRED_MANIFEST_PATHS:
-        if rel_path in expected or rel_path in by_path or rel_path in excluded_set:
-            continue
-        if (root / rel_path).is_file():
+    for rel_path in required_manifest_paths(root):
+        if rel_path in excluded_set:
             issues.append(
                 Issue(
-                    "manifest-missing-file",
+                    "manifest-required-excluded",
                     rel_path,
-                    "pack material exists but is absent from files[] "
-                    "(covered_globs does not reach it either)",
+                    "mandatory pack material cannot be excluded from freeze coverage",
+                )
+            )
+        if not (root / rel_path).is_file():
+            issues.append(
+                Issue("file-missing", rel_path, "mandatory pack material not found")
+            )
+        elif rel_path not in expected:
+            issues.append(
+                Issue(
+                    "manifest-required-uncovered",
+                    rel_path,
+                    "mandatory pack material is not covered by covered_globs",
                 )
             )
     declared_dataset = manifest.get("dataset_sha256")
@@ -819,9 +871,7 @@ def check_manifest(root: Path, builder: Path) -> list[Issue]:
     return issues
 
 
-def verify_root(
-    root: Path, include_rehearsal: bool = False
-) -> tuple[list[Issue], dict[str, int]]:
+def verify_root(root: Path) -> tuple[list[Issue], dict[str, int]]:
     """Run every contract check over one pack root; return (issues, summary)."""
     root = Path(root).resolve()
     summary: dict[str, int] = {}
@@ -861,9 +911,7 @@ def verify_root(
         issues += check_assignment_rows(records, rel, bank)
     summary["assignment_rows"] = sum(len(rows) for rows in assignment_records.values())
 
-    observations, rehearsal_rows, found = load_observations(
-        root, OBSERVATIONS, include_rehearsal
-    )
+    observations, rehearsal_rows, found = load_observations(root, OBSERVATIONS)
     issues += found
     if observations is not None:
         rehearsal_assignment = assignment_records.get(ASSIGNMENT_FILES[1])
@@ -887,22 +935,16 @@ def render_text(
     root: Path,
     issues: Sequence[Issue],
     summary: dict[str, int],
-    include_rehearsal: bool = False,
 ) -> str:
     """Render the deterministic human-readable report."""
-    rehearsal_mode = (
-        "included (--include-rehearsal diagnostic)"
-        if include_rehearsal
-        else "excluded (contract 4)"
-    )
     lines = [
         f"verify-user-study-pack: root={root.as_posix()}",
         (
             "rows: question-bank={question_bank_rows} answer-key={answer_key_rows} "
             "assignment={assignment_rows} observations={observation_rows} "
-            "(rehearsal-excluded={observation_rehearsal_rows})"
+            "(rehearsal-included={observation_rehearsal_rows})"
         ).format(**summary),
-        f"rehearsal rows: {rehearsal_mode}",
+        "rehearsal rows: included in semantic verification",
         f"issues: {len(issues)}",
     ]
     lines += [f"  [{issue.code}] {issue.path}: {issue.detail}" for issue in issues]
@@ -934,6 +976,18 @@ def write_manifest(root: Path) -> dict:
     excluded = manifest.get("excluded")
     if not isinstance(excluded, list) or not all(isinstance(item, str) for item in excluded):
         excluded = DEFAULT_EXCLUDED
+    mandatory = set(required_manifest_paths(root))
+    illegally_excluded = mandatory.intersection(
+        {normalize_path(item) for item in excluded}
+    )
+    if illegally_excluded:
+        raise UsageError(
+            "cannot exclude mandatory freeze paths: "
+            + ", ".join(sorted(illegally_excluded))
+        )
+    missing = sorted(item for item in mandatory if not (root / item).is_file())
+    if missing:
+        raise UsageError("mandatory freeze files are missing: " + ", ".join(missing))
     dataset_sha, error = rebuild_dataset_digest(root, dataset_builder_path(root, SCRIPT_DIR))
     if error is not None:
         raise UsageError(f"cannot rebuild the dataset digest: {error}")
@@ -969,14 +1023,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="recompute files[], sha256, bytes and dataset_sha256 in place",
     )
-    parser.add_argument(
-        "--include-rehearsal",
-        action="store_true",
-        help=(
-            "diagnostic: also cross-check rows marked SYNTHETIC_REHEARSAL; "
-            "contract 4 excludes them by default"
-        ),
-    )
     args = parser.parse_args(argv)
     root = args.root if args.root is not None else SCRIPT_DIR.parent
     if not root.is_dir():
@@ -990,11 +1036,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"error: {exc}", file=sys.stderr)
             return 2
         print(f"freeze manifest rewritten: {MANIFEST}")
-    issues, summary = verify_root(root, args.include_rehearsal)
+    issues, summary = verify_root(root)
     if args.as_json:
         print(render_json(issues))
     else:
-        sys.stdout.write(render_text(root, issues, summary, args.include_rehearsal))
+        sys.stdout.write(render_text(root, issues, summary))
     return 1 if issues else 0
 
 

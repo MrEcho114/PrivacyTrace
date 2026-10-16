@@ -1,5 +1,7 @@
 """HTTP seam for local private intake; no browser-supplied scanner facts."""
 
+import hmac
+
 from fastapi import HTTPException, Request
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
@@ -56,6 +58,23 @@ def install_web_api(app, local_write):
         local_write(request)
         return web_operation(lambda: service.configure(payload))
 
+    def draft_access(request: Request, draft_id: str) -> None:
+        if app.state.config.mode != "remote":
+            if request.method != "GET":
+                local_write(request)
+            return
+        from .auth import TOKEN_REGEX, extract_token_from_request, hash_token
+
+        token = extract_token_from_request(request)
+        if not token or not TOKEN_REGEX.fullmatch(token):
+            raise HTTPException(status_code=401, detail="Draft capability token required")
+        try:
+            digest = service.get_draft_token_digest(draft_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="DRAFT_NOT_FOUND") from exc
+        if not digest or not hmac.compare_digest(hash_token(token), digest):
+            raise HTTPException(status_code=403, detail="Draft access denied")
+
     @app.post("/api/v1/web/drafts")
     def create(payload: DraftInput, request: Request):
         is_remote = (
@@ -63,11 +82,14 @@ def install_web_api(app, local_write):
         )
         if not is_remote:
             local_write(request)
-        res = web_operation(lambda: service.create(payload))
         if is_remote:
             from .auth import generate_capability_token
 
             token, digest = generate_capability_token()
+            res = web_operation(lambda: service.create(payload, token_digest=digest))
+        else:
+            res = web_operation(lambda: service.create(payload))
+        if is_remote:
             draft_dict = res if isinstance(res, dict) else res.model_dump()
             draft_dict["capability_token"] = token
             draft_dict["token"] = token
@@ -76,12 +98,13 @@ def install_web_api(app, local_write):
         return res
 
     @app.get("/api/v1/web/drafts/{draft_id}")
-    def get(draft_id: str):
+    def get(draft_id: str, request: Request):
+        draft_access(request, draft_id)
         return web_operation(lambda: service.get(draft_id))
 
     @app.post("/api/v1/web/drafts/{draft_id}/apk")
     async def upload(draft_id: str, request: Request):
-        local_write(request)
+        draft_access(request, draft_id)
         try:
             return await service.upload(draft_id, request)
         except KeyError as exc:
@@ -91,20 +114,20 @@ def install_web_api(app, local_write):
 
     @app.post("/api/v1/web/drafts/{draft_id}/sources/{source_id}/fetch")
     def fetch(draft_id: str, source_id: str, payload: RevisionInput, request: Request):
-        local_write(request)
+        draft_access(request, draft_id)
         return web_operation(lambda: service.fetch_source(draft_id, source_id, payload.revision))
 
     @app.post("/api/v1/web/drafts/{draft_id}/sources/{source_id}/extract")
     def extract(draft_id: str, source_id: str, payload: RevisionInput, request: Request):
-        local_write(request)
+        draft_access(request, draft_id)
         return web_operation(lambda: service.extract(draft_id, source_id, payload.revision))
 
     @app.post("/api/v1/web/drafts/{draft_id}/candidates")
     def save(draft_id: str, payload: CandidateInput, request: Request):
-        local_write(request)
+        draft_access(request, draft_id)
         return web_operation(lambda: service.save_candidates(draft_id, payload))
 
     @app.post("/api/v1/web/drafts/{draft_id}/start")
     def start(draft_id: str, payload: StartInput, request: Request):
-        local_write(request)
+        draft_access(request, draft_id)
         return web_operation(lambda: service.start(draft_id, payload))

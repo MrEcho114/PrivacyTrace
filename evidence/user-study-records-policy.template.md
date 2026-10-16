@@ -4,7 +4,7 @@
 > 这是**模板**，不含真实参与者数据；演练记录一律标注 **SYNTHETIC ONLY / 演练**，不得冒充真实用户研究。
 > 用词要求：客观中立，不出现"偷数据 / 窃取 / 泄露 / 违法 / 违规"等定性词。
 
-配套文件：主持流程见 `evidence/user-study-facilitator-script.template.md`；材料与题集见 `evidence/user-study-comparison.template.md`；同意与退出口径见 `evidence/user-study-consent.template.md`；走查见 `evidence/user-study-rehearsal-checklist.template.md`。
+配套文件：主持流程见 `evidence/user-study-facilitator-script.template.md`；材料与题集见 `evidence/user-study-comparison.template.md`；同意与退出口径见 `evidence/user-study-consent.template.md`；可选操作检查见 `evidence/user-study-rehearsal-checklist.template.md`。
 
 ## 1. 记录单位与文件
 
@@ -89,4 +89,4 @@
 ## 7. 本模板状态
 
 - 本文件是约定模板；删除/保留承诺在真实研究启动前由主办方确认。
-- `evidence/user-study-rehearsal-checklist.template.md` 为可选的操作核对参考，不强制人工走查、指定人员或签署；准备包技术验收以自动化检查和冻结证据为准。
+- `evidence/user-study-rehearsal-checklist.template.md` 为可选的操作核对参考，不增加额外人员安排或签署要求；准备包技术验收以自动化检查和冻结证据为准。

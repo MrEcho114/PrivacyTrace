@@ -71,13 +71,13 @@
     },
     {
       "path": "evidence/user-study-consent.template.md",
-      "sha256": "76aebb5eda96d8a179a2ee04d494fed8a68583a9112be8bd84a91105c9e0d8ec",
-      "bytes": 2067
+      "sha256": "5734d7a22525b0302d7530d56acd9e6566353ca5716791ea5c40766b2263c949",
+      "bytes": 2073
     },
     {
       "path": "evidence/user-study-facilitator-script.template.md",
-      "sha256": "cd49ebf639448800e6ad57c202f8eb833917ad8ec2a59dacec42298ad5b3246a",
-      "bytes": 8033
+      "sha256": "bdfd50582c5e1e0350527ed35cefdcd93fd404025c99d1457b11f4092e11852b",
+      "bytes": 8039
     },
     {
       "path": "evidence/user-study-question-bank.template.csv",
@@ -86,13 +86,13 @@
     },
     {
       "path": "evidence/user-study-records-policy.template.md",
-      "sha256": "9d029533e48425c6b7d6a2bc30ebfbe466693da598366bb9da6bf9927eff5f82",
-      "bytes": 8045
+      "sha256": "6f30bfef0a6f86ac5de31a2424f2a7d6649f676ff438efd1312e1a3f1d9cab99",
+      "bytes": 8054
     },
     {
       "path": "evidence/user-study-rehearsal-checklist.template.md",
-      "sha256": "d8db2dbbf018a70b242ab30ff2c19bcb84ba41eeaeb24f9b6ae9e68f34e3bceb",
-      "bytes": 11004
+      "sha256": "82392e9f327df9cb93ff1dcca8f514d51d51ee95fe42f2d13fbbe96d11b8f1c3",
+      "bytes": 10992
     },
     {
       "path": "evidence/user-study.template.csv",

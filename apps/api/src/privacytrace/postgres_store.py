@@ -187,8 +187,12 @@ class PostgresJobStore(JobStore):
         if previous is None:
             count = self._local.connection.execute(
                 sa.select(sa.func.count())
-                .select_from(jobs)
-                .where(jobs.c.instance_id == self.instance_id)
+                .select_from(scopes)
+                .where(
+                    scopes.c.instance_id == self.instance_id,
+                    scopes.c.kind == "JOB",
+                    scopes.c.tombstone.is_(False),
+                )
             ).scalar_one()
             if count >= self.MAX_RECORDS:
                 raise ValueError("Job record limit reached")

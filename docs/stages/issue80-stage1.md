@@ -115,3 +115,18 @@ uv run --project apps/api --locked --extra worker python -B -m pytest \
 真实数据库 COMMIT 拒绝已覆盖；提交成功后确认丢失、数据库断连下结果不确定、掉电/文件系统目录耐久性及迁移中途故障恢复尚未验证。原有后续范围继续保持，不将正常服务重启冒称掉电恢复，也不把 scanner 替身、跳过用例或本机检查冒称真实 Docker、Linux 部署或远端 CI。后续进入 PR 流程时仍需按最终候选版本运行相应检查；本轮没有提交或远端状态变更。
 
 权限与迁移依据：[PostgreSQL privileges](https://www.postgresql.org/docs/17/ddl-priv.html)、[SQLAlchemy PostgreSQL](https://docs.sqlalchemy.org/en/20/dialects/postgresql.html)、[Alembic](https://alembic.sqlalchemy.org/en/latest/cookbook.html#sharing-a-connection-across-one-or-more-programmatic-migration-commands)。这些资料不是本项目实测证据，实际检查结果以上述命令输出为准。
+
+## PR #87 两项 P2 修复（2026-10-17）
+
+用户明确要求修复 PR #87，本轮主交付代理接手这两项评审修订，唯一交付入口仍为原 PR／原远端分支；以上历史授权、SHA、计数与收据不倒改。范围限材料容量、活跃 Job 额度、相关启动恢复及回归；不进入第二阶段，不关闭 #80、不合并或部署。
+
+- `.objects` 每实例最多 1536 MiB 文件字节、16384 个文件；每次写入在同一实例的 PostgreSQL 事务 advisory lock 内，扫描实际目录并预留本次完整对象的大小后才创建文件。旧 current/model 指针对应的对象、回滚与崩溃留下的未登记对象均计入；异常目录项拒绝写入，不能通过索引替换绕开容量检查。对象数量上限另限制小文件和零字节残留的增长。
+- 达到上限时以 `Private material capacity reached; operator action required` 拒绝写入，不创建新对象或替换已提交引用。保留现有每草稿 128 MiB revision 逻辑检查；APK 仍由原有 Draft 数量和单文件大小约束，不计入这个 `.objects` 上限。文件字节／数量限制不等于整个卷的剩余空间、文件系统分配块或数据库容量保证。
+- 启动时仅为实际被标记为中断失败的 Job 写回草稿事件；空闲草稿不再因每次重启产生对象，即使对象容量已满仍可启动并授权读取。若恢复在途 Job 需要新增事件对象而容量已满，恢复写入明确失败，需要运维处理容量后重试；不默默丢弃事件或删除旧材料。
+- `MAX_RECORDS=1000` 只计当前实例中未 tombstone 的 JOB 作用域。删除释放活跃额度，但保留 tombstone、撤销访问凭据，旧 ID 不能重建，迟到 `save_job` 不能复活任务。墓碑与审计属于保留历史，不占活跃额度；数据库历史预算与清理仍属后续运维／生命周期范围。
+
+修复前，最初六项真实数据库回归全部失败；修复后扩为八项，覆盖创建至上限／多轮删除重建／旧 ID 与迟到写保护、释放额度后的并发创建、current/model 连续覆盖至字节边界、回滚和未登记文件计量、零字节对象数上限、独立连接并发容量检查，以及满容量下三次 HTTP 服务重启读取。专项连同既有 PostgreSQL、JSON 接缝及配置检查为 **63 passed / 0 skipped**，使用隔离的 PostgreSQL 16.15 可丢弃测试实例与不同 runtime/migration 角色；不沿用上一轮 PostgreSQL 17.9 的版本声明。
+
+完整 GC、自动释放残留文件、成套备份恢复、数据库历史容量管理、掉电及磁盘空间耗尽故障注入仍未交付。达到上限后需运维检查引用与一致备份、处理或扩充私有卷；不能直接把所有未索引文件视为可删除材料。本轮权威检查及最终 SHA 的远端结果以 PR #87 的最新修订记录为准。
+
+本轮原样 `pwsh -NoProfile -File scripts/check.ps1` 已通过：后端 **1045 passed / 20 skipped**，前端 **46 passed / 0 skipped**；治理、Ruff、准备包、schema 零差异、类型检查与生产构建通过。未设置 `PYTEST_ADDOPTS`，没有排除符号链接用例；历史 Windows WinError 1314 仍是旧记录，本轮不复现。真实数据库 51 项已运行；跳过的 20 项仍为 11 个 Docker opt-in 与 9 个缺受控构建产物的用例，不能称本地 Docker 验收完成。额外迁移目录 Ruff 和 `git diff --check` 通过。

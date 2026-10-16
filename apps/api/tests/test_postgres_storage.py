@@ -28,6 +28,7 @@ from test_capability_tokens import controlled_bundle, seed_job
 from privacytrace.auth import generate_capability_token
 from privacytrace.job_store import JobStore
 from privacytrace.main import create_app
+from privacytrace.postgres_intake import PostgresWebIntake
 from privacytrace.postgres_schema import REVISION, SCHEMA, audit, documents, jobs, scopes
 from privacytrace.postgres_store import PostgresJobStore
 from privacytrace.resources import ROOT
@@ -89,6 +90,191 @@ def queued(job_id=None):
     job.id = job_id or uuid4().hex
     job.state = "QUEUED"
     return job
+
+
+def test_deleted_jobs_release_active_quota_without_reusing_tombstones(store, monkeypatch):
+    monkeypatch.setattr(store, "MAX_RECORDS", 2)
+    deleted = []
+    for _ in range(3):
+        batch = [queued(), queued()]
+        for job in batch:
+            store.create_if_absent(job)
+        with pytest.raises(ValueError, match="Job record limit"):
+            store.create_if_absent(queued())
+        for job in batch:
+            store.delete(job.id)
+            deleted.append(job)
+    assert store.list() == []
+    store.create_if_absent(queued())
+    for job in deleted:
+        assert store.is_tombstoned(job.id)
+        with pytest.raises(ValueError, match="already exists"):
+            store.create_if_absent(job)
+        store.save_job(job)  # A late writer retains the tombstone instead of reviving it.
+        with pytest.raises(KeyError):
+            store.get(job.id)
+        with pytest.raises(KeyError):
+            store.get_token_digest(job.id)
+
+
+def test_released_job_quota_remains_serialized(store, monkeypatch):
+    monkeypatch.setattr(store, "MAX_RECORDS", 1)
+    old = queued()
+    store.create_if_absent(old)
+    store.delete(old.id)
+    barrier = Barrier(2)
+
+    def create():
+        barrier.wait()
+        try:
+            store.create_if_absent(queued())
+            return "created"
+        except ValueError as exc:
+            assert "Job record limit" in str(exc)
+            return "full"
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert sorted(pool.map(lambda _: create(), range(2))) == ["created", "full"]
+    assert len(store.list()) == 1
+    assert store.is_tombstoned(old.id)
+
+
+def object_bytes(intake):
+    return sum(path.stat().st_size for path in intake.materials.iterdir())
+
+
+@pytest.mark.parametrize("document", ["current.json", "model.json"])
+def test_object_bytes_bound_repeated_current_writes_and_restart(store, monkeypatch, document):
+    intake = PostgresWebIntake(store)
+    directory = intake.directory(uuid4().hex) if document == "current.json" else intake.root
+    directory.mkdir(exist_ok=True)
+    path = directory / document
+    key = path.relative_to(intake.root).as_posix()
+    value = {"value": "synthetic"}
+    size = len(json.dumps(value, ensure_ascii=False).encode("utf-8"))
+    monkeypatch.setattr(PostgresWebIntake, "MAX_OBJECT_BYTES", size * 3, raising=False)
+    try:
+        for _ in range(3):
+            with store._transaction():
+                intake._write_private(path, value)
+        before = store.document(key)
+        assert object_bytes(intake) == size * 3
+        with pytest.raises(ValueError, match="material capacity"):
+            with store._transaction():
+                intake._write_private(path, value)
+        assert store.document(key) == before
+        assert intake._read(path) == value
+        assert object_bytes(intake) == size * 3
+    finally:
+        intake.close()
+    restarted = PostgresWebIntake(store)
+    try:
+        assert restarted._read(path) == value
+        for _ in range(3):
+            with pytest.raises(ValueError, match="material capacity"):
+                with store._transaction():
+                    restarted._write_private(path, value)
+        assert object_bytes(restarted) == size * 3
+    finally:
+        restarted.close()
+
+
+def test_full_object_volume_keeps_idle_drafts_readable_after_service_restart(
+    postgres_app, monkeypatch,
+):
+    with TestClient(postgres_app()) as client:
+        response = client.post(
+            "/api/v1/web/drafts",
+            json={"name": "committed", "sources": [{"id": "host", "title": "fixture"}]},
+        )
+        assert response.status_code == 200, response.text
+        draft = response.json()
+        intake = client.app.state.web_intake
+        used = object_bytes(intake)
+        count = len(list(intake.materials.iterdir()))
+    monkeypatch.setattr(PostgresWebIntake, "MAX_OBJECT_BYTES", used, raising=False)
+    monkeypatch.setattr(PostgresWebIntake, "MAX_OBJECTS", count, raising=False)
+    for _ in range(3):
+        with TestClient(postgres_app()) as client:
+            response = client.get(
+                f"/api/v1/web/drafts/{draft['id']}", headers=bearer(draft["token"]),
+            )
+            assert response.status_code == 200, response.text
+            assert response.json()["name"] == "committed"
+            intake = client.app.state.web_intake
+            assert object_bytes(intake) == used
+            assert len(list(intake.materials.iterdir())) == count
+
+
+def test_object_quota_includes_rolled_back_and_unindexed_files(store, monkeypatch):
+    intake = PostgresWebIntake(store)
+    path = intake.root / "model.json"
+    value = {"value": "synthetic"}
+    try:
+        with store._transaction():
+            intake._write_private(path, value)
+        before = store.document("model.json")
+        with pytest.raises(RuntimeError, match="abort"):
+            with store._transaction():
+                intake._write_private(path, {"value": "rolled back"})
+                raise RuntimeError("abort")
+        (intake.materials / uuid4().hex).write_bytes(b"unindexed crash residue")
+        used = object_bytes(intake)
+        size = len(json.dumps(value).encode())
+        monkeypatch.setattr(intake, "MAX_OBJECT_BYTES", used + size - 1, raising=False)
+        with pytest.raises(ValueError, match="material capacity"):
+            with store._transaction():
+                intake._write_private(path, value)
+        assert object_bytes(intake) == used
+        assert store.document("model.json") == before
+        assert intake._read(path) == value
+    finally:
+        intake.close()
+
+
+def test_object_count_bounds_zero_byte_residue(store, monkeypatch):
+    intake = PostgresWebIntake(store)
+    try:
+        for _ in range(3):
+            (intake.materials / uuid4().hex).touch()
+        monkeypatch.setattr(intake, "MAX_OBJECTS", 3, raising=False)
+        with pytest.raises(ValueError, match="material capacity"):
+            with store._transaction():
+                intake._write_private(intake.root / "model.json", {})
+        assert len(list(intake.materials.iterdir())) == 3
+        with pytest.raises(KeyError):
+            store.document("model.json")
+    finally:
+        intake.close()
+
+
+def test_object_capacity_serialized_across_store_connections(store, postgres_urls, monkeypatch):
+    other = PostgresJobStore(postgres_urls[0], store.instance_id, store.root.parent.parent)
+    intakes = [PostgresWebIntake(s) for s in (store, other)]
+    value = {"value": "synthetic"}
+    size = len(json.dumps(value).encode())
+    monkeypatch.setattr(PostgresWebIntake, "MAX_OBJECT_BYTES", size, raising=False)
+    barrier = Barrier(2)
+
+    def write(intake):
+        barrier.wait()
+        try:
+            # Also protect callers without an existing outer transaction.
+            intake._write_private(intake.root / "model.json", value)
+            return "written"
+        except ValueError as exc:
+            assert "material capacity" in str(exc)
+            return "full"
+
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            assert sorted(pool.map(write, intakes)) == ["full", "written"]
+        assert object_bytes(intakes[0]) == size
+        assert intakes[0]._read(intakes[0].root / "model.json") == value
+    finally:
+        for intake in intakes:
+            intake.close()
+        other.close()
 
 
 def bearer(token):

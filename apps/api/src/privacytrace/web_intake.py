@@ -641,6 +641,7 @@ class WebIntake:
             self.owner_fd = fd
             for directory in self._draft_directories():
                 draft = self._get(directory.name)
+                changed = False
                 self._safe(directory / "upload.pending").unlink(missing_ok=True)
                 for run in draft["jobs"]:
                     job = self._job_unless_deleted(run["job_id"])
@@ -653,8 +654,10 @@ class WebIntake:
                         )
                         self.store.save_job(job)
                         run["events"].append({"state": "FAILED", "at": now()})
+                        changed = True
                 # Recover event history without modifying immutable input revisions.
-                self._write_private(directory / "current.json", draft)
+                if changed:
+                    self._write_private(directory / "current.json", draft)
 
     def start(self, draft_id, payload: StartInput):
         self.start_service()

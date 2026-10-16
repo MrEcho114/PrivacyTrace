@@ -76,6 +76,19 @@ def install_log_redaction() -> None:
         redacting_factory._privacytrace_redacts_tokens = True
         logging.setLogRecordFactory(redacting_factory)
 
+    # logging.Logger.makeRecord applies "extra" *after* LogRecordFactory,
+    # so install a last-mile guard for all present and future normal handlers.
+    current_handle = logging.Handler.handle
+    if not getattr(current_handle, "_privacytrace_redacts_tokens", False):
+        handler_sanitizer = TokenRedactionFilter()
+
+        def redacting_handle(handler, record):
+            handler_sanitizer.filter(record)
+            return current_handle(handler, record)
+
+        redacting_handle._privacytrace_redacts_tokens = True
+        logging.Handler.handle = redacting_handle
+
     redaction_filter = TokenRedactionFilter()
     root_logger = logging.getLogger()
     if redaction_filter not in root_logger.filters:

@@ -26,13 +26,18 @@ The experiment design is fixed, so a record may not invent its own:
 ``condition`` accepts only the two designed reading orders, ``baseline_first``
 and ``report_first`` (see ``evidence/user-study-facilitator-script.template.md``),
 and ``participant_id`` and ``question_id`` must be non-empty ids of letters,
-digits, ``_``, ``.`` and ``-``. One row is exactly one
-``(participant_id, question_id, material)`` combination — the documented unit of
-an answer — and a repeated combination is rejected, so the same answer entered
-twice can never be read as a second experimental group. The key deliberately
-omits ``sample_id``: different participants may legitimately reuse a question id,
-and one question id may legitimately appear against a different material, so
-neither of those is a duplicate.
+digits, ``_``, ``.`` and ``-``. An answer is keyed by ``(participant_id, sample_id, question_id, material)``.
+This permits the same question id to recur across different Apps, but prevents
+double counting a response for the same sample. Older five-column inputs have
+empty sample ids and retain the previous duplicate policy.
+Within one dataset a participant has one assigned reading order; conflicting
+``condition`` values are rejected.
+
+Optional ``sample_id``, ``ground_truth_version``, and ``answer`` fields are
+retained internally for auditing. Aggregate output only publishes provenance
+completeness counts, not raw answers. Formal collection may enable
+``--require-provenance`` to require sample and ground truth identifiers,
+and either the answer or an explanatory note for an already judged row.
 
 Locate-time accounting (``evidence_locate_time_seconds``). Durations are split
 by ``evidence_located`` so that a fast failure can never be reported as faster
@@ -77,6 +82,7 @@ FALSE_VALUES = {"false", "0", "no", "n", "f"}
 MATERIALS = {"baseline", "privacyTrace"}
 CONDITIONS = {"baseline_first", "report_first"}
 ID_PATTERN = re.compile(r"[A-Za-z0-9_.-]+")
+PROVENANCE_FIELDS = ("sample_id", "ground_truth_version", "answer")
 NUMERIC_COLUMN = "evidence_loc_seconds"
 LOCATED_COLUMN = "evidence_located"
 CONCEPT_COLUMN = "misconception"
@@ -159,24 +165,78 @@ def split_concepts(value: str) -> list[str]:
     return [part.strip() for part in value.split(";") if part.strip()]
 
 
-def answer_key(record: dict) -> tuple[str, str, str]:
-    """The documented unit of one answer: participant, question and material."""
+def answer_key(record: dict) -> tuple[str, str, str, str]:
+    """One participant/sample/question/material response."""
     return (
         record["participant_id"],
+        record.get("sample_id", ""),
         record["question_id"],
         record["material"],
     )
 
 
+def validate_condition_consistency(
+    records: list[dict], line_numbers: list[int] | None = None
+) -> None:
+    """A participant belongs to only one order group within this dataset."""
+    first_seen: dict[str, tuple[str, int]] = {}
+    for index, record in enumerate(records):
+        participant = record["participant_id"]
+        condition = record["condition"]
+        previous = first_seen.get(participant)
+        if previous is None:
+            first_seen[participant] = (condition, index)
+        elif previous[0] != condition:
+            where = ""
+            if line_numbers is not None:
+                where = (
+                    f" (lines {line_numbers[previous[1]]} "
+                    f"and {line_numbers[index]})"
+                )
+            raise ValueError(
+                f"conflicting condition for participant_id={participant!r}: "
+                f"{previous[0]!r} vs {condition!r}{where}"
+            )
+
+
+def validate_provenance(records: list[dict]) -> None:
+    """Require enough source information to review formal observations."""
+    for index, record in enumerate(records, start=1):
+        for field in ("sample_id", "ground_truth_version"):
+            if not record.get(field):
+                raise ValueError(f"record {index}: {field} is required for provenance")
+        if record["is_correct"] is not None and not (
+            record.get("answer") or record.get("notes")
+        ):
+            raise ValueError(
+                f"record {index}: judged answer requires answer or explanatory notes"
+            )
+
+
+def provenance_counts(records: list[dict]) -> dict:
+    """Only publish aggregate completeness; never participants' answers."""
+    return {
+        "complete": sum(
+            all(r.get(field) for field in PROVENANCE_FIELDS) for r in records
+        ),
+        "total": len(records),
+        "with_sample_id": sum(bool(r.get("sample_id")) for r in records),
+        "with_ground_truth_version": sum(
+            bool(r.get("ground_truth_version")) for r in records
+        ),
+        "with_answer": sum(bool(r.get("answer")) for r in records),
+    }
+
+
 def reject_repeated_answers(
     records: list[dict], line_numbers: list[int] | None = None
 ) -> None:
-    """Raise when one ``(participant_id, question_id, material)`` combination repeats.
+    """Raise when one participant/sample/question/material response is repeated.
 
     ``line_numbers``, when given, carries the source line of each record so the
     error can point at both rows; in-memory records are reported by key alone.
     """
-    first_seen: dict[tuple[str, str, str], int] = {}
+    first_seen: dict[tuple[str, str, str, str], int] = {}
     for index, record in enumerate(records):
         key = answer_key(record)
         previous = first_seen.get(key)
@@ -191,11 +251,12 @@ def reject_repeated_answers(
             )
         raise ValueError(
             f"duplicate answer for participant_id={key[0]!r}, "
-            f"question_id={key[1]!r}, material={key[2]!r}{where}"
+            f"sample_id={key[1]!r}, question_id={key[2]!r}, "
+            f"material={key[3]!r}{where}"
         )
 
 
-def load_records(path: Path) -> list[dict]:
+def load_records(path: Path, *, require_provenance: bool = False) -> list[dict]:
     """Load and validate the one-row-per-answer CSV."""
     with path.open(encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
@@ -216,6 +277,16 @@ def load_records(path: Path) -> list[dict]:
                     "condition": parse_condition(row["condition"]),
                     "material": parse_material(row["material"]),
                     "question_id": parse_id(row["question_id"], "question_id"),
+                    "sample_id": (
+                        parse_id(row["sample_id"], "sample_id")
+                        if row.get("sample_id", "").strip()
+                        else ""
+                    ),
+                    "ground_truth_version": row.get(
+                        "ground_truth_version", ""
+                    ).strip(),
+                    "answer": row.get("answer", "").strip(),
+                    "notes": row.get("notes", "").strip(),
                     "is_correct": parse_bool(row["is_correct"]),
                     "evidence_loc_seconds": parse_seconds(
                         row.get(NUMERIC_COLUMN, "")
@@ -227,6 +298,9 @@ def load_records(path: Path) -> list[dict]:
     if not records:
         raise ValueError("record file has no answer rows")
     reject_repeated_answers(records, line_numbers)
+    validate_condition_consistency(records, line_numbers)
+    if require_provenance:
+        validate_provenance(records)
     return records
 
 
@@ -295,9 +369,10 @@ def compute_metrics(records: list[dict]) -> dict:
     """Aggregate records into the Issue #23 metric report.
 
     Records built in memory carry the same contract as a loaded CSV: a repeated
-    ``(participant_id, question_id, material)`` combination is rejected.
+    ``(participant_id, sample_id, question_id, material)`` combination is rejected.
     """
     reject_repeated_answers(records)
+    validate_condition_consistency(records)
     participants = sorted({record["participant_id"] for record in records})
     conditions = sorted({record["condition"] for record in records})
     materials = sorted({record["material"] for record in records})
@@ -381,6 +456,7 @@ def compute_metrics(records: list[dict]) -> dict:
     return {
         "records": len(records),
         "participants": len(participants),
+        "provenance": provenance_counts(records),
         "conditions": conditions,
         "materials": materials,
         "accuracy": {
@@ -596,6 +672,11 @@ def main() -> None:
         help="output format (default: json)",
     )
     parser.add_argument(
+        "--require-provenance",
+        action="store_true",
+        help="reject records without auditable provenance",
+    )
+    parser.add_argument(
         "--selfcheck",
         action="store_true",
         help="run the built-in fixture check and exit",
@@ -604,7 +685,9 @@ def main() -> None:
     if args.selfcheck:
         selfcheck()
         return
-    metrics = compute_metrics(load_records(args.input))
+    metrics = compute_metrics(
+        load_records(args.input, require_provenance=args.require_provenance)
+    )
     if args.format == "json":
         print(json.dumps(metrics, ensure_ascii=False, indent=2))
     else:

@@ -168,7 +168,11 @@ def test_pt907_pipeline_runs_end_to_end(tmp_path):
     }
     assert len(dataset["dataset_sha256"]) == 64
 
-    metrics = metrics_mod.compute_metrics(metrics_mod.load_records(answers))
+    records = metrics_mod.load_records(answers)
+    assert records[0]["sample_id"] == "example-app"
+    assert records[0]["ground_truth_version"] == "0.1.0"
+    metrics = metrics_mod.compute_metrics(records)
+    assert metrics["provenance"]["with_sample_id"] == 4
     assert metrics["accuracy"]["correct"] == 3
     assert metrics["accuracy"]["answered"] == 4
     assert metrics["accuracy"]["missing"] == 0

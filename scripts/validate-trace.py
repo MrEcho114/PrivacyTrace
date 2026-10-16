@@ -34,7 +34,7 @@ def load_lines(path: Path) -> list[dict]:
         except json.JSONDecodeError as exc:
             raise ValueError(f"{path.name}:{number} is not valid JSON") from exc
         if not isinstance(parsed, dict):
-            raise TypeError(f"{path.name}:{number} must be a JSON object")
+            raise ValueError(f"{path.name}:{number} must be a JSON object")
         lines.append(parsed)
     return lines
 
@@ -83,7 +83,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input", type=Path, help="trace JSONL file")
     args = parser.parse_args()
-    lines = validate(load_lines(args.input))
+    try:
+        lines = validate(load_lines(args.input))
+    except ValueError as error:
+        parser.exit(2, f"error: {error}\n")
     print(json.dumps({"valid_lines": len(lines)}, ensure_ascii=False, indent=2))
 
 

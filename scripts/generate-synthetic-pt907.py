@@ -2,8 +2,10 @@
 
 The generated package mirrors the real-world field structure used by Issue #23:
 sample manifest, run ledger, trace logs, policy source metadata, and user-study
-answers. Every value is intentionally synthetic: app names, packages, URLs,
-hashes, timestamps, and participant IDs are fictitious and deterministic.
+answers plus the question bank, the independent answer key, and the balanced
+reading-order assignment. Every value is intentionally synthetic: app names,
+packages, URLs, hashes, timestamps, and participant IDs are fictitious and
+deterministic.
 
 This fixture exists only to rehearse and validate tooling. It MUST NOT be used
 as Issue #23 acceptance evidence and MUST NOT be presented as real sample
@@ -152,6 +154,123 @@ TRACE_STAGES = {
     "syn-contact-v1": ("dex", "联系人"),
     "syn-wallet-v1": ("dex", "设备标识"),
 }
+
+SAMPLE_IDS = [sample["sample_id"] for sample in SAMPLES]
+
+SYNTHETIC_NOTE = "SYNTHETIC_REHEARSAL"
+
+COMMENT_LINE = (
+    "# SYNTHETIC_REHEARSAL：由 scripts/generate-synthetic-pt907.py 生成；"
+    "非真实证据，不得用于 Issue #23 验收。"
+)
+
+# One equivalent set pairs the material-A question with its material-B twin, so
+# the two readings of the same slot stay comparable (`user-study-comparison`
+# section 4: "A、B 用不同但难度等价的 App/题目").
+DIMENSION_SETS = [
+    ("eq-01", "location", "定位"),
+    ("eq-02", "contacts", "联系人"),
+    ("eq-03", "camera", "相机"),
+    ("eq-04", "other", "设备标识"),
+    ("eq-05", "location", "定位"),
+    ("eq-06", "contacts", "联系人"),
+]
+
+STEM_TEMPLATES = [
+    "这个 App 会不会用到你的【{label}】？请说明依据。",
+    "你认为这个 App 是否涉及【{label}】？请说明依据。",
+]
+
+# Synthetic ground truth: which data types each sample is taken to use.
+SAMPLE_DIMENSIONS = {
+    "syn-map-v1": {"location", "other"},
+    "syn-cam-v1": {"camera", "location"},
+    "syn-contact-v1": {"contacts", "other"},
+    "syn-wallet-v1": {"other"},
+}
+
+SCORING_RULE = (
+    "answer 与 expected_answer 相同记 true、不同记 false"
+    "（A=该样本会用到该类别，B=不会用到该类别）"
+)
+
+ASSIGNMENT_SETS = ("eq-01", "eq-02", "eq-03")
+
+
+def question_bank_rows() -> list[dict]:
+    """Return the 12 rehearsal questions grouped into six A/B equivalent sets."""
+    rows = []
+    for index, (set_id, dimension, label) in enumerate(DIMENSION_SETS):
+        for offset, template in enumerate(STEM_TEMPLATES):
+            rows.append(
+                {
+                    "question_id": f"q{index + 1 + offset * 6:02d}",
+                    "dimension": dimension,
+                    "equivalent_set": set_id,
+                    "stem": template.format(label=label),
+                    "notes": SYNTHETIC_NOTE,
+                }
+            )
+    return rows
+
+
+QUESTION_SETS = {
+    row["question_id"]: row["equivalent_set"] for row in question_bank_rows()
+}
+QUESTION_DIMENSIONS = {
+    row["question_id"]: row["dimension"] for row in question_bank_rows()
+}
+
+
+def expected_answer(sample_id: str, question_id: str) -> str:
+    """Synthetic ground truth for one cell: A (uses it) or B (does not)."""
+    dimension = QUESTION_DIMENSIONS[question_id]
+    return "A" if dimension in SAMPLE_DIMENSIONS[sample_id] else "B"
+
+
+def modeled_slip(participant_index: int, question_index: int) -> bool:
+    """Deterministic error model: 12 of the 72 observations are typed wrong.
+
+    It decides only whether the synthetic participant typed the other letter;
+    correctness is then derived by comparing the answer with expected_answer.
+    """
+    return (participant_index + question_index) % 6 == 0
+
+
+def evidence_locations(sample_id: str, question_id: str) -> tuple[str, str]:
+    """Deterministic synthetic pointers; never quoted as real policy text."""
+    sample_index = SAMPLE_IDS.index(sample_id)
+    question_index = int(question_id[1:])
+    paragraph = (sample_index + question_index) % 5 + 1
+    report_row = (sample_index * 3 + question_index) % 7 + 1
+    return (
+        f"SYNTHETIC: baseline §2 第{paragraph}段",
+        f"SYNTHETIC: report §1 证据行 {report_row}",
+    )
+
+
+def assignment_rows() -> list[dict]:
+    """Six synthetic participants: 3/3 per reading order, 1/1 inside each set."""
+    rows = []
+    for index in range(1, 7):
+        condition = "baseline_first" if index <= 3 else "report_first"
+        order = (
+            "baseline;privacyTrace"
+            if condition == "baseline_first"
+            else "privacyTrace;baseline"
+        )
+        rows.append(
+            {
+                "participant_id": f"syn-user-{index:02d}",
+                "condition": condition,
+                "material_order": order,
+                "equivalent_set": ASSIGNMENT_SETS[
+                    (index - 1) % len(ASSIGNMENT_SETS)
+                ],
+                "notes": SYNTHETIC_NOTE,
+            }
+        )
+    return rows
 
 
 def digest(value: str) -> str:
@@ -348,12 +467,23 @@ def write_user_study(root: Path) -> Path:
             "baseline_first" if participant_index <= 3 else "report_first"
         )
         for question_index in range(1, 13):
+            question_id = f"q{question_index:02d}"
             material = (
                 "baseline"
                 if (condition == "baseline_first") == (question_index <= 6)
                 else "privacyTrace"
             )
-            is_correct = (participant_index + question_index) % 6 != 0
+            sample_id = sample_cycle[
+                (participant_index + question_index) % len(sample_cycle)
+            ]
+            # The observation is derived from the answer key: the expected answer
+            # comes from the key, the modeled slip decides whether the synthetic
+            # participant typed it, and is_correct is their comparison.
+            expected = expected_answer(sample_id, question_id)
+            answer = expected
+            if modeled_slip(participant_index, question_index):
+                answer = "B" if expected == "A" else "A"
+            is_correct = answer == expected
             misconception = ""
             if question_index == 3 and participant_index % 2 == 0:
                 misconception = "权限=调用"
@@ -367,10 +497,10 @@ def write_user_study(root: Path) -> Path:
                     "ordinary-user",
                     condition,
                     material,
-                    sample_cycle[(participant_index + question_index) % len(sample_cycle)],
+                    sample_id,
                     "synthetic-0.1.0",
-                    f"q{question_index:02d}",
-                    "A",
+                    question_id,
+                    answer,
                     "true" if is_correct else "false",
                     str(12 + participant_index * 2 + question_index % 8),
                     misconception,
@@ -386,6 +516,73 @@ def write_user_study(root: Path) -> Path:
         writer = csv.writer(handle)
         writer.writerow(header)
         writer.writerows(rows)
+    return path
+
+
+def write_question_bank(root: Path) -> Path:
+    fieldnames = ["question_id", "dimension", "equivalent_set", "stem", "notes"]
+    path = root / "evidence" / "synthetic" / "user-study-question-bank.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        handle.write(COMMENT_LINE + "\n")
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(question_bank_rows())
+    return path
+
+
+def write_answer_key(root: Path) -> Path:
+    fieldnames = [
+        "sample_id",
+        "question_id",
+        "equivalent_set",
+        "scorable",
+        "expected_answer",
+        "evidence_location_baseline",
+        "evidence_location_report",
+        "scoring",
+    ]
+    rows = []
+    for question_id in sorted(QUESTION_SETS):
+        for sample_id in sorted(SAMPLE_IDS):
+            baseline, report = evidence_locations(sample_id, question_id)
+            rows.append(
+                {
+                    "sample_id": sample_id,
+                    "question_id": question_id,
+                    "equivalent_set": QUESTION_SETS[question_id],
+                    "scorable": "true",
+                    "expected_answer": expected_answer(sample_id, question_id),
+                    "evidence_location_baseline": baseline,
+                    "evidence_location_report": report,
+                    "scoring": SCORING_RULE,
+                }
+            )
+    path = root / "evidence" / "synthetic" / "user-study-answer-key.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        handle.write(COMMENT_LINE + "\n")
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
+
+
+def write_assignment(root: Path) -> Path:
+    fieldnames = [
+        "participant_id",
+        "condition",
+        "material_order",
+        "equivalent_set",
+        "notes",
+    ]
+    path = root / "evidence" / "synthetic" / "user-study-assignment.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        handle.write(COMMENT_LINE + "\n")
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(assignment_rows())
     return path
 
 
@@ -433,6 +630,17 @@ against the first material and the last six against the second one. The fixture
 is deliberately not tuned to produce a material effect: it exercises the
 grouping, the effect logic is covered by unit tests.
 
+Three of the files carry the independent reference the answers are graded
+against: `user-study-question-bank.csv` (12 questions, six `equivalent_set`
+pairs), `user-study-answer-key.csv` (one row per observed
+`(sample_id, question_id)` with the synthetic `expected_answer` and the
+synthetic evidence pointers in both materials) and `user-study-assignment.csv`
+(six participants, balanced 1/1 inside each assigned set). `answer` and
+`is_correct` in `user-study.csv` are derived from that key, so every row
+satisfies `is_correct == (answer == expected_answer)`. The `#`-prefixed first
+line of the three reference files marks them as synthetic and is not part of
+the CSV header.
+
 This is not real evidence. It must not be cited, merged into `evidence/` as a
 completed study, or used to close Issue #23. Regenerate with
 `python scripts/generate-synthetic-pt907.py`.
@@ -450,6 +658,9 @@ def generate(root: Path) -> dict:
     trace_dir = write_traces(root)
     policies = write_policies(root)
     user_study = write_user_study(root)
+    question_bank = write_question_bank(root)
+    answer_key = write_answer_key(root)
+    assignment = write_assignment(root)
     readme = write_readme(root)
     evidence_readme = write_evidence_readme(root)
     return {
@@ -459,6 +670,9 @@ def generate(root: Path) -> dict:
         "trace_dir": str(trace_dir),
         "policies": str(policies),
         "user_study": str(user_study),
+        "question_bank": str(question_bank),
+        "answer_key": str(answer_key),
+        "assignment": str(assignment),
         "readme": str(readme),
         "evidence_readme": str(evidence_readme),
         "generated_at": GENERATED_AT,

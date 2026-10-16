@@ -2,6 +2,13 @@
 
 > 这是**模板**。实际使用前按参与者填写，签署后的原件只保存在被 Git 忽略的私有目录，**绝不提交仓库**，也不写真实姓名。
 
+相关文件（交叉引用，不改变本同意书的口径）：
+
+- 主持流程与禁止行为：`evidence/user-study-facilitator-script.template.md`
+- 记录字段、保留期限与删除方式：`evidence/user-study-records-policy.template.md`
+- 对照材料与题集：`evidence/user-study-comparison.template.md`
+- 演练走查：`evidence/user-study-rehearsal-checklist.template.md`
+
 ## 研究目的
 
 我们邀请你参加一项关于「手机应用隐私说明是否好懂」的简短测试。目的是了解普通人能否理解应用会使用哪些隐私数据、这些内容有没有在说明里讲清楚。**这不是法律或安全鉴定**，我们不会判断某个 App 是否违法。
@@ -21,6 +28,7 @@
 ## 自愿与退出
 
 - 参与完全自愿；任何时候都可以退出，不需要说明理由，也不会有任何损失。
+- 退出时已记录内容的删除口径见 `evidence/user-study-records-policy.template.md` 第 5 节（要求退出即当场删除）。
 
 ## 风险
 

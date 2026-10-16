@@ -29,7 +29,8 @@ subprocess.run(prefix + ["build", "--file", root + "/apps/api/worker.Dockerfile"
 PY
 fi
 uv run --project apps/api --locked --extra worker pytest apps/api/tests -q -p no:cacheprovider
-uv run --project apps/api --locked --extra worker ruff check apps/api/src apps/api/tests scripts/export-schema.py scripts/verify_workflow.py scripts/build-dataset.py scripts/metrics-user-study.py scripts/validate-trace.py scripts/verify-run-ledger.py scripts/generate-synthetic-pt907.py
+uv run --project apps/api --locked --extra worker ruff check apps/api/src apps/api/tests scripts/export-schema.py scripts/verify_workflow.py scripts/build-dataset.py scripts/metrics-user-study.py scripts/validate-trace.py scripts/verify-run-ledger.py scripts/generate-synthetic-pt907.py scripts/verify-user-study-pack.py
+uv run --project apps/api --locked --extra worker python scripts/verify-user-study-pack.py
 uv run --project apps/api --locked --extra worker python scripts/export-schema.py
 git diff --exit-code -- packages/contracts apps/web/src/contracts.generated.ts
 npm ci

@@ -1,0 +1,3 @@
+sample_id,question_id,equivalent_set,scorable,expected_answer,evidence_location_baseline,evidence_location_report,scoring
+PLACEHOLDER-sample,PLACEHOLDER-q01,eq-01,true,A,PLACEHOLDER：材料 A 第 X 段,PLACEHOLDER：报告 第 Y 行,PLACEHOLDER：answer 与 expected_answer 相同记 true、不同记 false（A=会用到该类别，B=不会用到）
+PLACEHOLDER-sample,PLACEHOLDER-q02,eq-01,false,,,,PLACEHOLDER：本行示意不判分；不判分理由写在此列

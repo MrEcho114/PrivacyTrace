@@ -62,3 +62,12 @@
 | notes | 客观备注，不写主观定性 |
 
 指标由 `scripts/metrics-user-study.py` 复算，禁止手填汇总数字。准确率同时按 `material`（材料效果）、`condition`（顺序效果）和两者交叉给出，并单列未判（`is_correct` 留空）的条数。
+
+## 6. 配套材料（题目表 / 独立答案键 / 顺序安排表）
+
+本节只新增交叉引用，不改变上文任何比较口径、题面与条件名。
+
+- 题目表：`evidence/user-study-question-bank.template.csv`，表头 `question_id,dimension,equivalent_set,stem,notes`。`equivalent_set` 标明等价题组，同组题面不得出现答案泄露词。
+- 独立答案键：`evidence/user-study-answer-key.template.csv`，表头 `sample_id,question_id,equivalent_set,scorable,expected_answer,evidence_location_baseline,evidence_location_report,scoring`。`expected_answer` 取值 A = 该样本会用到该类别，B = 不会用到；`scorable=false` 时留空 `expected_answer` 并在 `scoring` 写明不判分理由。判分只看答案键，不看记录表已填的 `is_correct`。
+- 顺序安排表：`evidence/user-study-assignment.template.csv`，表头 `participant_id,condition,material_order,equivalent_set,notes`。`material_order` 写实际阅读顺序（`baseline_first` → `baseline;privacyTrace`，`report_first` → `privacyTrace;baseline`）；两种条件人数差不超过 1，每个等价题组内部同样平衡。
+- 演练实例（**SYNTHETIC ONLY，不是真实证据**）：`evidence/synthetic/user-study-question-bank.csv`、`evidence/synthetic/user-study-answer-key.csv`、`evidence/synthetic/user-study-assignment.csv`，与 `evidence/synthetic/user-study.csv` 自洽，由 `python scripts/generate-synthetic-pt907.py` 生成。

@@ -34,7 +34,9 @@ def load_lines(path: Path) -> list[dict]:
         except json.JSONDecodeError as exc:
             raise ValueError(f"{path.name}:{number} is not valid JSON") from exc
         if not isinstance(parsed, dict):
-            raise ValueError(f"{path.name}:{number} must be a JSON object")
+            raise ValueError(  # noqa: TRY004 - malformed JSONL is user input
+                f"{path.name}:{number} must be a JSON object"
+            )
         lines.append(parsed)
     return lines
 

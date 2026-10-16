@@ -59,6 +59,7 @@ def verify(ledger: Path, manifest: Path | None = None) -> list[dict]:
         raise ValueError("Run ledger has no rows")
     known_samples = _sample_ids(manifest) if manifest is not None else set()
     seen: set[str] = set()
+    seen_jobs: dict[tuple[str, str], str] = {}
     results = []
     for row in rows:
         run_id = row["run_id"].strip()
@@ -70,8 +71,16 @@ def verify(ledger: Path, manifest: Path | None = None) -> list[dict]:
             raise ValueError(f"Invalid sample_id for {run_id}")
         if manifest is not None and sample_id not in known_samples:
             raise ValueError(f"Unknown sample_id for {run_id}: {sample_id}")
-        if not row["job_id"].strip():
+        job_id = row["job_id"].strip()
+        if not job_id:
             raise ValueError(f"Missing job_id for {run_id}")
+        job_key = (sample_id, job_id)
+        if job_key in seen_jobs:
+            raise ValueError(
+                f"Duplicate (sample_id, job_id) for {run_id}: "
+                f"{job_key} already used by {seen_jobs[job_key]}"
+            )
+        seen_jobs[job_key] = run_id
         outcome = row["outcome"].strip()
         if outcome not in OUTCOMES:
             raise ValueError(f"Unknown outcome for {run_id}: {outcome}")

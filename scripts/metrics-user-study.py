@@ -13,11 +13,39 @@ can recompute every number.
 
 Required columns: ``participant_id``, ``condition``, ``material``,
 ``question_id``, ``is_correct``. Optional columns: ``evidence_loc_seconds``
-(finite, non-negative number; empty means not measured), ``misconception``
-(free text; separate multiple concepts with ``;``). An empty ``is_correct``
-means the answer was never judged: it is counted under ``missing`` and left out
-of every rate, so unjudged rows cannot silently turn into wrong answers. No
-participant identity is exposed beyond anonymized ids.
+(finite, non-negative number; empty means not measured), ``evidence_located``
+(``true`` / ``false`` / empty, the same tokens ``is_correct`` accepts), and
+``misconception`` (free text; separate multiple concepts with ``;``). An empty
+``is_correct`` means the answer was never judged: it is counted under
+``missing`` and left out of every rate, so unjudged rows cannot silently turn
+into wrong answers. A missing ``evidence_located`` column is read as all-empty,
+which means no question asked for a location. No participant identity is
+exposed beyond anonymized ids.
+
+Locate-time accounting (``evidence_locate_time_seconds``). Durations are split
+by ``evidence_located`` so that a fast failure can never be reported as faster
+than a slow success:
+
+* ``success`` -- rows with ``evidence_located == true`` (locating was required
+  and the participant pointed at a concrete place). ``records`` counts every
+  such row; ``timed`` is the duration distribution over those of them whose
+  ``evidence_loc_seconds`` is not empty.
+* ``failure`` -- rows with ``evidence_located == false`` (locating was required
+  and the participant did not point at a concrete place). Same shape as
+  ``success``, counted and reported separately: these durations are failed
+  attempts, never successes.
+* ``not_required`` -- rows with an empty ``evidence_located``: the question did
+  not ask for a location, which is not a failure. ``records`` counts them; they
+  enter no distribution and no rate.
+* ``success_rate`` -- ``success.records / (success.records + failure.records)``,
+  i.e. ``true / (true + false)``; the empty cells stay out of the denominator
+  and ``None`` (rendered as ``—``) is reported when that denominator is ``0``.
+* ``by_material_outcome`` / ``by_condition_outcome`` -- the same block computed
+  inside each material and each reading order.
+* ``overall`` / ``by_material`` / ``by_condition`` -- the older mixed-duration
+  distributions (every non-empty duration regardless of outcome), kept so
+  earlier reports stay reproducible. They must not be used to compare materials
+  or orders; use the success blocks for that.
 """
 
 from __future__ import annotations
@@ -35,11 +63,12 @@ TRUE_VALUES = {"true", "1", "yes", "y", "t"}
 FALSE_VALUES = {"false", "0", "no", "n", "f"}
 MATERIALS = {"baseline", "privacyTrace"}
 NUMERIC_COLUMN = "evidence_loc_seconds"
+LOCATED_COLUMN = "evidence_located"
 CONCEPT_COLUMN = "misconception"
 
 
-def parse_bool(value: str) -> bool | None:
-    """Parse a judged cell; empty means not judged; raise on anything ambiguous."""
+def parse_tristate(value: str, column: str) -> bool | None:
+    """Parse a tri-state boolean cell; empty means the column does not apply."""
     token = value.strip().lower()
     if token in TRUE_VALUES:
         return True
@@ -47,7 +76,17 @@ def parse_bool(value: str) -> bool | None:
         return False
     if not token:
         return None
-    raise ValueError(f"is_correct must be a boolean value or empty, got {value!r}")
+    raise ValueError(f"{column} must be a boolean value or empty, got {value!r}")
+
+
+def parse_bool(value: str) -> bool | None:
+    """Parse a judged cell; empty means not judged; raise on anything ambiguous."""
+    return parse_tristate(value, "is_correct")
+
+
+def parse_located(value: str) -> bool | None:
+    """Parse ``evidence_located``; empty means the question asked for no location."""
+    return parse_tristate(value, LOCATED_COLUMN)
 
 
 def parse_seconds(value: str) -> float | None:
@@ -104,6 +143,7 @@ def load_records(path: Path) -> list[dict]:
                     "evidence_loc_seconds": parse_seconds(
                         row.get(NUMERIC_COLUMN, "")
                     ),
+                    "evidence_located": parse_located(row.get(LOCATED_COLUMN, "")),
                     "misconception": row.get(CONCEPT_COLUMN, "").strip(),
                 }
             )
@@ -133,6 +173,31 @@ def distribution(values: list[float]) -> dict:
         "mean": round(statistics.mean(ordered), 6),
         "median": round(statistics.median(ordered), 6),
         "p90": round(percentile(ordered, 90), 6),
+    }
+
+
+def locate_distribution(subset: list[dict]) -> dict:
+    """Duration distribution over the subset's rows that carry a measured time."""
+    return distribution(
+        [
+            record["evidence_loc_seconds"]
+            for record in subset
+            if record["evidence_loc_seconds"] is not None
+        ]
+    )
+
+
+def locate_outcome_block(subset: list[dict]) -> dict:
+    """Split a subset by ``evidence_located`` into success, failure, not required."""
+    success = [record for record in subset if record["evidence_located"] is True]
+    failure = [record for record in subset if record["evidence_located"] is False]
+    not_required = [record for record in subset if record["evidence_located"] is None]
+    judged = len(success) + len(failure)
+    return {
+        "success": {"records": len(success), "timed": locate_distribution(success)},
+        "failure": {"records": len(failure), "timed": locate_distribution(failure)},
+        "not_required": {"records": len(not_required)},
+        "success_rate": round(len(success) / judged, 6) if judged else None,
     }
 
 
@@ -191,26 +256,28 @@ def compute_metrics(records: list[dict]) -> dict:
         if record["evidence_loc_seconds"] is not None
     ]
     locate_by_condition = {
-        condition: distribution(
-            [
-                record["evidence_loc_seconds"]
-                for record in records
-                if record["condition"] == condition
-                and record["evidence_loc_seconds"] is not None
-            ]
+        condition: locate_distribution(
+            [record for record in records if record["condition"] == condition]
         )
         for condition in conditions
     }
     locate_by_material = {
-        material: distribution(
-            [
-                record["evidence_loc_seconds"]
-                for record in records
-                if record["material"] == material
-                and record["evidence_loc_seconds"] is not None
-            ]
+        material: locate_distribution(
+            [record for record in records if record["material"] == material]
         )
         for material in materials
+    }
+    locate_outcome_by_material = {
+        material: locate_outcome_block(
+            [record for record in records if record["material"] == material]
+        )
+        for material in materials
+    }
+    locate_outcome_by_condition = {
+        condition: locate_outcome_block(
+            [record for record in records if record["condition"] == condition]
+        )
+        for condition in conditions
     }
 
     concept_totals: Counter[str] = Counter()
@@ -241,6 +308,9 @@ def compute_metrics(records: list[dict]) -> dict:
             "by_participant": by_participant,
         },
         "evidence_locate_time_seconds": {
+            **locate_outcome_block(records),
+            "by_material_outcome": locate_outcome_by_material,
+            "by_condition_outcome": locate_outcome_by_condition,
             "overall": distribution(locate_times),
             "by_material": locate_by_material,
             "by_condition": locate_by_condition,
@@ -265,6 +335,28 @@ def rate_text(values: dict) -> str:
     )
 
 
+def duration_text(values: dict) -> str:
+    """Render one duration distribution, or ``—`` when nothing was measured."""
+    if not values["count"]:
+        return "—（0 条有时长）"
+    return (
+        f"{values['min']} / {values['max']} / {values['mean']} / "
+        f"{values['median']} / {values['p90']}（{values['count']} 条有时长）"
+    )
+
+
+def locate_outcome_text(block: dict) -> str:
+    """Render one success/failure/not-required block with its rate denominator."""
+    rate = "—" if block["success_rate"] is None else f"{block['success_rate']:.4f}"
+    return (
+        f"成功率 {rate}"
+        f"（成功 {block['success']['records']} / 失败 {block['failure']['records']}，"
+        f"未要求定位 {block['not_required']['records']} 不计入分母）"
+        f"；成功定位耗时：{duration_text(block['success']['timed'])}"
+        f"；定位失败尝试耗时：{duration_text(block['failure']['timed'])}"
+    )
+
+
 def render_markdown(metrics: dict) -> str:
     """Render the metric report as plain Markdown."""
     accuracy = metrics["accuracy"]
@@ -284,14 +376,24 @@ def render_markdown(metrics: dict) -> str:
     lines += ["", "## 材料×顺序交叉准确率"]
     for key, values in accuracy["by_material_and_condition"].items():
         lines.append(f"- {key}: {rate_text(values)}")
-    locate = metrics["evidence_locate_time_seconds"]["overall"]
-    lines += ["", "## 定位证据耗时（秒）", f"- 记录数：{locate['count']}"]
-    if locate["count"]:
-        lines.append(
-            "- 最小/最大/均值/中位/P90："
-            f"{locate['min']} / {locate['max']} / {locate['mean']} / "
-            f"{locate['median']} / {locate['p90']}"
-        )
+    locate = metrics["evidence_locate_time_seconds"]
+    lines += [
+        "",
+        "## 定位证据耗时（秒）",
+        (
+            "- 口径：按 `evidence_located` 分「成功定位 / 定位失败尝试 / 未要求定位」；"
+            "`evidence_located` 空＝该题没要求定位，只计数，不进任何分布与比率"
+        ),
+        f"- 全部记录：{locate_outcome_text(locate)}",
+    ]
+    for material, block in locate["by_material_outcome"].items():
+        lines.append(f"- 材料 {material}：{locate_outcome_text(block)}")
+    for condition, block in locate["by_condition_outcome"].items():
+        lines.append(f"- 阅读顺序 {condition}：{locate_outcome_text(block)}")
+    lines.append(
+        "- 对照（不分成败的混合口径，仅用于与旧报告对数，不得据此比较材料）："
+        f"{duration_text(locate['overall'])}"
+    )
     misconceptions = metrics["misconceptions"]
     lines += [
         "",
@@ -317,6 +419,7 @@ def selfcheck() -> None:
             "question_id": "q1",
             "is_correct": True,
             "evidence_loc_seconds": 12.0,
+            "evidence_located": True,
             "misconception": "权限=调用",
         },
         {
@@ -326,6 +429,7 @@ def selfcheck() -> None:
             "question_id": "q2",
             "is_correct": False,
             "evidence_loc_seconds": 30.0,
+            "evidence_located": False,
             "misconception": "",
         },
         {
@@ -335,6 +439,7 @@ def selfcheck() -> None:
             "question_id": "q1",
             "is_correct": True,
             "evidence_loc_seconds": 8.0,
+            "evidence_located": True,
             "misconception": "权限=调用;法律判定",
         },
         {
@@ -344,6 +449,7 @@ def selfcheck() -> None:
             "question_id": "q2",
             "is_correct": True,
             "evidence_loc_seconds": None,
+            "evidence_located": None,
             "misconception": "",
         },
         {
@@ -353,6 +459,7 @@ def selfcheck() -> None:
             "question_id": "q3",
             "is_correct": None,
             "evidence_loc_seconds": None,
+            "evidence_located": None,
             "misconception": "",
         },
         {
@@ -362,6 +469,7 @@ def selfcheck() -> None:
             "question_id": "q4",
             "is_correct": True,
             "evidence_loc_seconds": 10.0,
+            "evidence_located": True,
             "misconception": "",
         },
     ]
@@ -374,6 +482,18 @@ def selfcheck() -> None:
     assert metrics["accuracy"]["by_material"]["baseline"]["rate"] == 1.0
     assert metrics["accuracy"]["by_condition"]["report_first"]["rate"] == 1.0
     assert metrics["evidence_locate_time_seconds"]["overall"]["median"] == 11.0
+    locate = metrics["evidence_locate_time_seconds"]
+    assert locate["success"]["records"] == 3
+    assert locate["success"]["timed"]["count"] == 3
+    assert locate["success"]["timed"]["min"] == 8.0
+    assert locate["success"]["timed"]["median"] == 10.0
+    assert locate["failure"]["records"] == 1
+    assert locate["failure"]["timed"]["count"] == 1
+    assert locate["failure"]["timed"]["min"] == 30.0
+    assert locate["not_required"]["records"] == 2
+    assert locate["success_rate"] == 0.75
+    assert locate["by_material_outcome"]["baseline"]["success_rate"] == 1.0
+    assert locate["by_material_outcome"]["privacyTrace"]["success_rate"] == round(2 / 3, 6)
     assert metrics["misconceptions"]["total_count"] == 3
     print("selfcheck: OK")
 

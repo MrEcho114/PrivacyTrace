@@ -1,0 +1,4 @@
+{"ts": "2026-10-13T01:30:00+00:00", "sample_id": "syn-map-v1", "job_id": "job-syn-map-1", "stage": "intake", "event": "start", "status": "ok", "detail": "synthetic rehearsal"}
+{"ts": "2026-10-13T01:30:00+00:00", "sample_id": "syn-map-v1", "job_id": "job-syn-map-1", "stage": "dex", "event": "evidence", "status": "ok", "evidence_ref": "ev-syn-1", "data_type": "定位", "location": "com.synth.syn-map-v1.Main", "duration_ms": 120}
+{"ts": "2026-10-13T01:30:00+00:00", "sample_id": "syn-map-v1", "job_id": "job-syn-map-1", "stage": "consistency", "event": "conclusion", "status": "ok", "detail": "synthetic conclusion; not real acceptance evidence"}
+{"ts": "2026-10-13T01:30:00+00:00", "sample_id": "syn-map-v1", "job_id": "job-syn-map-1", "stage": "report", "event": "done", "status": "ok", "detail": "synthetic rehearsal complete"}

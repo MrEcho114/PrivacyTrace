@@ -26,8 +26,8 @@
   "files": [
     {
       "path": "evidence/synthetic/README.md",
-      "sha256": "a4f7b3497cb164b83375b4cb833a5a2816b35bfcf75c65504ad1ff27bcd04db5",
-      "bytes": 1616
+      "sha256": "54b568f623f9ec15cd1cc5612051b1f67e3c9a1b5747ecbb96cb945a823d6bbd",
+      "bytes": 1844
     },
     {
       "path": "evidence/synthetic/user-study-answer-key.csv",
@@ -86,8 +86,8 @@
     },
     {
       "path": "evidence/user-study-records-policy.template.md",
-      "sha256": "a9b45a168682e12fc783ca3b936e1a475425941fd5d1f4fdb0f08a806f86c546",
-      "bytes": 7536
+      "sha256": "193f460c67716d5516f1e5730fef888bfd69b61eebd97ea6c984a4178b64d7b9",
+      "bytes": 7969
     },
     {
       "path": "evidence/user-study-rehearsal-checklist.template.md",
@@ -166,8 +166,8 @@
     },
     {
       "path": "scripts/verify-user-study-pack.py",
-      "sha256": "8d59bc677b84c35332391b81504f54b74762ece601cee198d028a3eb85820fc9",
-      "bytes": 38143
+      "sha256": "23545fd4e5e3758fa1cc99b78a1931f53497861ea32274e7a4bd893ae33ab050",
+      "bytes": 39948
     }
   ],
   "dataset_sha256": "83907a2f8e422ebe4f5952af9fe7d93a81c4afef29edbbd6e32a55b9a6c18014"

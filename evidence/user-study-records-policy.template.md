@@ -8,7 +8,7 @@
 
 ## 1. 记录单位与文件
 
-- 一行 = 一次作答（一个 `participant_id` + 一个 `question_id` + 一个 `material`）。
+- 一行 = 一次作答；唯一键为 `(participant_id, sample_id, question_id, material)`。同一参与者可对不同 App 回答同一题，但不可重复登记同一样本、题号和材料组合。
 - 列顺序必须与 `evidence/user-study.template.csv` 表头逐字一致。
 - **真实记录**与**演练记录**必须是两个不同的文件，演练文件不得混入真实记录文件；演练记录文件名或 `notes` 必须含 `SYNTHETIC`。
 
@@ -33,6 +33,8 @@
 | `evidence_located` | 是否指出材料中的具体位置 | `true` / `false` / 空（没要求定位） | 否 |
 | `git_commit` | 本场所用材料对应的提交 | 完整或短 SHA；同场同值 | 是 |
 | `notes` | 客观备注 | 只写可核查的事实（如"该题用时明显偏长""未完成"）；演练记录写 `SYNTHETIC ONLY`；不写主观定性 | 否 |
+
+正式实验统计建议使用 `python scripts/metrics-user-study.py --input <私有记录路径> --require-provenance`，要求样本 ID、真值版本，以及已判分答案的原始作答或客观缺失说明。该模式不会代替独立答案键的复核；没有版本关联的旧式最小 CSV 仅用于兼容演练。
 
 指标脚本 `scripts/metrics-user-study.py` 的必需列是 `participant_id`、`condition`、`material`、`question_id`、`is_correct`；缺列会直接报错，因此本表 17 列必须整份保留，不得为了省事删列。
 

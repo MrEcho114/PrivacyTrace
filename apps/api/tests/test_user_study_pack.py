@@ -9,6 +9,7 @@ scripts/build-dataset.py over the temporary samples/synthetic fixture).
 import csv
 import importlib.util
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -98,20 +99,13 @@ def _assignment_rows():
 
 def _observation_rows():
     return [
-        ["p01", "baseline_first", "baseline", "syn-app-v1", "q01", "A", "true", ""],
+        [
+            "p01", "baseline_first", "baseline", "syn-app-v1",
+            "q01", "A", "true", "SYNTHETIC_REHEARSAL",
+        ],
         ["p01", "baseline_first", "privacyTrace", "syn-app-v1", "q02", "", "", ""],
         ["p02", "report_first", "privacyTrace", "syn-app-v1", "q01", "B", "false", ""],
         ["p02", "report_first", "baseline", "syn-app-v1", "q02", "", "", ""],
-        [
-            "p99",
-            "baseline_first",
-            "privacyTrace",
-            "ghost-sample",
-            "q01",
-            "B",
-            "true",
-            "SYNTHETIC_REHEARSAL",
-        ],
     ]
 
 
@@ -218,6 +212,19 @@ def _build_pack(
     _write_csv(observations_path, OBSERVATION_HEADER, observations)
     observations_path.write_bytes(b"# synthetic rehearsal sheet\n" + observations_path.read_bytes())
     _write_dataset_fixture(root)
+    # Include all mandatory frozen materials so isolated tmp_path packs exercise
+    # the same coverage guarantees as the actual repository.
+    for rel in pack.REQUIRED_MANIFEST_PATHS:
+        target = root / rel
+        if target.is_file():
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if rel.startswith("scripts/"):
+            shutil.copyfile(ROOT / rel, target)
+        elif rel == RECORDS_TEMPLATE:
+            _write_csv(target, RECORDS_HEADER, [])
+        else:
+            target.write_text("synthetic test contract fixture\n", encoding="utf-8")
     return root
 
 
@@ -250,8 +257,8 @@ def _rewrite_manifest(root, mutate):
     )
 
 
-def _codes(root, include_rehearsal=False):
-    issues, _summary = pack.verify_root(root, include_rehearsal)
+def _codes(root):
+    issues, _summary = pack.verify_root(root)
     return {issue.code for issue in issues}
 
 
@@ -312,6 +319,9 @@ def test_records_template_is_frozen_by_the_manifest(tmp_path):
     manifest = json.loads((root / pack.MANIFEST).read_text(encoding="utf-8"))
     assert RECORDS_TEMPLATE in [entry["path"] for entry in manifest["files"]]
     assert pack.verify_root(root)[0] == []
+    assert set(pack.REQUIRED_MANIFEST_PATHS) <= {
+        item["path"] for item in manifest["files"]
+    }
 
 
 def test_write_manifest_repairs_stale_covered_globs(tmp_path):
@@ -349,7 +359,7 @@ def test_rejects_manifest_omitting_a_pack_material(tmp_path):
     _rewrite_manifest(root, drop_entry)
     issues, _summary = pack.verify_root(root)
     assert [issue.path for issue in issues] == [RECORDS_TEMPLATE]
-    assert issues[0].code == "manifest-missing-file"
+    assert issues[0].code == "manifest-required-uncovered"
 
 
 def test_valid_pack_passes(tmp_path):
@@ -364,13 +374,21 @@ def test_valid_pack_passes(tmp_path):
     assert summary["observation_rehearsal_rows"] == 1
 
 
-def test_rehearsal_rows_are_excluded_by_default(tmp_path):
+def test_rehearsal_rows_are_checked_by_default(tmp_path):
     root = _build_pack(tmp_path)
     _seed_manifest(root)
     pack.write_manifest(root)
-    assert _codes(root) == set()
-    codes = _codes(root, include_rehearsal=True)
-    assert "observation-uncovered" in codes
+    issues, summary = pack.verify_root(root)
+    assert issues == []
+    assert summary["observation_rows"] == 4
+    assert summary["observation_rehearsal_rows"] == 1
+
+    rows = _observation_rows()
+    rows[0][6] = "false"
+    _build_pack(tmp_path, observation_rows=rows)
+    # Refresh valid checksums; semantic validation must still reject bad grading.
+    pack.write_manifest(root)
+    assert "observation-consistency" in _codes(root)
     assert "observation-participant-mismatch" in codes
 
 
@@ -555,11 +573,102 @@ def test_cli_write_manifest_exit_codes(tmp_path, capsys):
     assert capsys.readouterr().out.rstrip().endswith("result: OK")
 
 
-def test_cli_include_rehearsal_flag(tmp_path, capsys):
+def test_cli_checks_rehearsal_by_default(tmp_path, capsys):
     root = _build_pack(tmp_path)
     _seed_manifest(root)
     pack.write_manifest(root)
-    assert pack.main(["--root", str(root), "--json", "--include-rehearsal"]) == 1
+    rows = _observation_rows()
+    rows[0][6] = "false"
+    _build_pack(tmp_path, observation_rows=rows)
+    pack.write_manifest(root)
+    assert pack.main(["--root", str(root), "--json"]) == 1
     payload = json.loads(capsys.readouterr().out)
-    assert payload["ok"] is False
-    assert {issue["code"] for issue in payload["issues"]} >= {"observation-uncovered"}
+    assert {issue["code"] for issue in payload["issues"]} >= {
+        "observation-consistency"
+    }
+
+
+def test_rejects_duplicate_observation_even_with_fresh_manifest(tmp_path):
+    rows = _observation_rows()
+    rows.append(rows[0].copy())
+    root = _build_pack(tmp_path, observation_rows=rows)
+    _seed_manifest(root)
+    pack.write_manifest(root)
+    assert "observation-duplicate" in _codes(root)
+
+
+def test_allows_same_participant_and_question_across_different_samples():
+    rows = [dict(zip(OBSERVATION_HEADER, row)) for row in _observation_rows()]
+    different = dict(rows[0], sample_id="other-sample")
+    answers = pack.answer_key_index(
+        [
+            {"sample_id": "syn-app-v1", "question_id": "q01",
+             "scorable": "true", "expected_answer": "A"},
+            {"sample_id": "syn-app-v1", "question_id": "q02",
+             "scorable": "false", "expected_answer": ""},
+            {"sample_id": "other-sample", "question_id": "q01",
+             "scorable": "true", "expected_answer": "A"},
+        ]
+    )
+    issues = pack.check_observation_rows(
+        rows + [different], pack.OBSERVATIONS, answers,
+        [dict(zip(pack.ASSIGNMENT_HEADER, row)) for row in _assignment_rows()],
+    )
+    assert not any(issue.code == "observation-duplicate" for issue in issues)
+
+
+def test_freeze_rejects_core_tool_removed_from_globs_and_hashes(tmp_path):
+    root = _build_pack(tmp_path)
+    _seed_manifest(root)
+    pack.write_manifest(root)
+    mandatory = "scripts/metrics-user-study.py"
+
+    def remove_tool(manifest):
+        manifest["covered_globs"] = [
+            glob for glob in manifest["covered_globs"] if glob != mandatory
+        ]
+        manifest["files"] = [
+            item for item in manifest["files"] if item["path"] != mandatory
+        ]
+
+    _rewrite_manifest(root, remove_tool)
+    assert "manifest-required-uncovered" in _codes(root)
+
+
+def test_freeze_rejects_excluded_mandatory_tool(tmp_path):
+    root = _build_pack(tmp_path)
+    _seed_manifest(root)
+    pack.write_manifest(root)
+    _rewrite_manifest(
+        root, lambda manifest: manifest["excluded"].append("scripts/build-dataset.py")
+    )
+    assert "manifest-required-excluded" in _codes(root)
+    with pytest.raises(pack.UsageError, match="cannot exclude mandatory"):
+        pack.write_manifest(root)
+
+
+def test_freeze_rejects_missing_mandatory_tool(tmp_path):
+    root = _build_pack(tmp_path)
+    _seed_manifest(root)
+    pack.write_manifest(root)
+    (root / "scripts/metrics-user-study.py").unlink()
+    assert "file-missing" in _codes(root)
+
+
+def test_freeze_rejects_removed_trace_entry_even_when_hashes_are_rewritten(tmp_path):
+    root = _build_pack(tmp_path)
+    _seed_manifest(root)
+    pack.write_manifest(root)
+
+    def remove_trace(manifest):
+        manifest["covered_globs"] = [
+            item for item in manifest["covered_globs"]
+            if item != "samples/synthetic/**"
+        ]
+        manifest["files"] = [
+            item for item in manifest["files"]
+            if not item["path"].startswith("samples/synthetic/")
+        ]
+
+    _rewrite_manifest(root, remove_trace)
+    assert "manifest-required-uncovered" in _codes(root)

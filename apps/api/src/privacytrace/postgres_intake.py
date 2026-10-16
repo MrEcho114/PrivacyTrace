@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import stat
 from uuid import uuid4
 
 from .policy_intake import read_safe
@@ -10,6 +11,11 @@ from .web_intake import WebIntake
 
 
 class PostgresWebIntake(WebIntake):
+    # Per-instance immutable objects, including replaced pointers and crash residue.
+    # Bound file count as well as bytes so empty/very small objects cannot grow forever.
+    MAX_OBJECT_BYTES = 1536 * 1024 * 1024
+    MAX_OBJECTS = 16384
+
     def __init__(self, store):
         super().__init__(store)
         self.data_store = store
@@ -56,26 +62,46 @@ class PostgresWebIntake(WebIntake):
         input and are never used as a source of authority. A rolled-back write
         can leave an unreferenced object; it cannot replace committed contents.
         """
-        key = self._key(path)
-        raw = json.dumps(value, ensure_ascii=False).encode("utf-8")
-        if len(raw) > 8 * 1024 * 1024:
-            raise ValueError("Input revision too large")
-        reference = uuid4().hex
-        target = self._safe(self.materials / reference)
-        fd = os.open(target, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-        with os.fdopen(fd, "wb") as handle:
-            handle.write(raw)
-            handle.flush()
-            os.fsync(handle.fileno())
-        self.store.save_document(
-            key,
-            reference,
-            hashlib.sha256(raw).hexdigest(),
-            len(raw),
-            token_digest=value.get("token_digest") if key.endswith("/capability.json") else None,
-        )
-        # Retain the single-host intake's directory/mtime/upload bookkeeping.
-        self._safe(path).touch(mode=0o600, exist_ok=True)
+        # The instance advisory lock covers measurement through publication, even
+        # when a caller has not opened an outer transaction. Never delete an old
+        # object here: its reference may still be committed or needed for recovery.
+        with self.store._transaction():
+            key = self._key(path)
+            raw = json.dumps(value, ensure_ascii=False).encode("utf-8")
+            if len(raw) > 8 * 1024 * 1024:
+                raise ValueError("Input revision too large")
+            self._check_object_capacity(len(raw))
+            reference = uuid4().hex
+            target = self._safe(self.materials / reference)
+            fd = os.open(target, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(raw)
+                handle.flush()
+                os.fsync(handle.fileno())
+            self.store.save_document(
+                key,
+                reference,
+                hashlib.sha256(raw).hexdigest(),
+                len(raw),
+                token_digest=(
+                    value.get("token_digest") if key.endswith("/capability.json") else None
+                ),
+            )
+            # Retain the single-host intake's directory/mtime/upload bookkeeping.
+            self._safe(path).touch(mode=0o600, exist_ok=True)
+
+    def _check_object_capacity(self, incoming_bytes):
+        used, count = 0, 0
+        for path in self._safe(self.materials).iterdir():
+            info = self._safe(path).stat(follow_symlinks=False)
+            if not stat.S_ISREG(info.st_mode):
+                raise ValueError("Unexpected private material entry")
+            used += info.st_size
+            count += 1
+            if count >= self.MAX_OBJECTS or used + incoming_bytes > self.MAX_OBJECT_BYTES:
+                raise ValueError("Private material capacity reached; operator action required")
+        if incoming_bytes > self.MAX_OBJECT_BYTES:
+            raise ValueError("Private material capacity reached; operator action required")
 
     def _save(self, draft):
         if self.store.document_bytes(draft["id"]) > 128 * 1024 * 1024:

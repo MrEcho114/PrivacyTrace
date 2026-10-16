@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Download checksum-pinned official tools to project cache; compile source without network."""
 
 import argparse

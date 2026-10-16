@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Run inside the pinned network-disabled builder, never on untrusted APKs."""
 
 import hashlib

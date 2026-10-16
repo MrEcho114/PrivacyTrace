@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Run the integrated source/CLI/HTTP/browser/offline acceptance; retain failed runs."""
 
 import argparse

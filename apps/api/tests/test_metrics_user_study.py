@@ -403,3 +403,95 @@ def test_compute_metrics_allows_shared_question_across_materials():
         answer("p1", "baseline_first", "privacyTrace", True, question_id="q1"),
     ]
     assert metrics_mod.compute_metrics(records)["records"] == 2
+
+
+def test_provenance_retained_without_leaking_answers(tmp_path):
+    path = write_csv(
+        tmp_path,
+        "participant_id,condition,material,sample_id,ground_truth_version,"
+        "question_id,answer,is_correct\n"
+        "p1,baseline_first,baseline,app-a,truth-v1,q1,private response,true\n",
+    )
+    records = metrics_mod.load_records(path, require_provenance=True)
+    assert records[0]["sample_id"] == "app-a"
+    assert records[0]["ground_truth_version"] == "truth-v1"
+    assert records[0]["answer"] == "private response"
+    result = metrics_mod.compute_metrics(records)
+    assert result["provenance"]["complete"] == 1
+    assert "private response" not in json.dumps(result)
+
+
+def test_same_question_on_distinct_samples_is_allowed(tmp_path):
+    path = write_csv(
+        tmp_path,
+        "participant_id,condition,material,sample_id,ground_truth_version,"
+        "question_id,answer,is_correct\n"
+        "p1,baseline_first,baseline,app-a,v1,q1,A,true\n"
+        "p1,baseline_first,baseline,app-b,v1,q1,B,false\n",
+    )
+    rows = metrics_mod.load_records(path, require_provenance=True)
+    assert metrics_mod.compute_metrics(rows)["records"] == 2
+
+
+def test_duplicate_on_same_sample_is_rejected(tmp_path):
+    path = write_csv(
+        tmp_path,
+        "participant_id,condition,material,sample_id,question_id,is_correct\n"
+        "p1,baseline_first,baseline,app-a,q1,true\n"
+        "p1,baseline_first,baseline,app-a,q1,false\n",
+    )
+    with pytest.raises(ValueError, match="duplicate answer"):
+        metrics_mod.load_records(path)
+
+
+def test_strict_provenance_requires_sample_and_auditable_judgement(tmp_path):
+    path = write_csv(
+        tmp_path,
+        "participant_id,condition,material,question_id,is_correct\n"
+        "p1,baseline_first,baseline,q1,true\n",
+    )
+    with pytest.raises(ValueError, match="sample_id is required"):
+        metrics_mod.load_records(path, require_provenance=True)
+    path = write_csv(
+        tmp_path,
+        "participant_id,condition,material,sample_id,ground_truth_version,"
+        "question_id,is_correct\n"
+        "p1,baseline_first,baseline,app-a,v1,q1,true\n",
+    )
+    with pytest.raises(ValueError, match="judged answer requires"):
+        metrics_mod.load_records(path, require_provenance=True)
+
+
+def test_strict_provenance_accepts_explained_missing_answer(tmp_path):
+    path = write_csv(
+        tmp_path,
+        "participant_id,condition,material,sample_id,ground_truth_version,"
+        "question_id,is_correct,notes\n"
+        "p1,baseline_first,baseline,app-a,v1,q1,true,answer unavailable\n",
+    )
+    assert len(metrics_mod.load_records(path, require_provenance=True)) == 1
+
+
+def test_conflicting_condition_fails_both_entrypoints(tmp_path):
+    path = write_csv(
+        tmp_path,
+        "participant_id,condition,material,question_id,is_correct\n"
+        "p1,baseline_first,baseline,q1,true\n"
+        "p1,report_first,privacyTrace,q2,false\n",
+    )
+    with pytest.raises(ValueError, match="conflicting condition"):
+        metrics_mod.load_records(path)
+    rows = [
+        answer("p1", "baseline_first", "baseline", True, question_id="q1"),
+        answer("p1", "report_first", "privacyTrace", False, question_id="q2"),
+    ]
+    with pytest.raises(ValueError, match="conflicting condition"):
+        metrics_mod.compute_metrics(rows)
+
+
+def test_different_participants_can_be_assigned_different_orders():
+    rows = [
+        answer("p1", "baseline_first", "baseline", True),
+        answer("p2", "report_first", "privacyTrace", True),
+    ]
+    assert metrics_mod.compute_metrics(rows)["participants"] == 2

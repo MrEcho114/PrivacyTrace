@@ -71,3 +71,8 @@
 - 独立答案键：`evidence/user-study-answer-key.template.csv`，表头 `sample_id,question_id,equivalent_set,scorable,expected_answer,evidence_location_baseline,evidence_location_report,scoring`。`expected_answer` 取值 A = 该样本会用到该类别，B = 不会用到；`scorable=false` 时留空 `expected_answer` 并在 `scoring` 写明不判分理由。判分只看答案键，不看记录表已填的 `is_correct`。
 - 顺序安排表：`evidence/user-study-assignment.template.csv`，表头 `participant_id,condition,material_order,equivalent_set,notes`。`material_order` 写实际阅读顺序（`baseline_first` → `baseline;privacyTrace`，`report_first` → `privacyTrace;baseline`）；两种条件人数差不超过 1，每个等价题组内部同样平衡。
 - 演练实例（**SYNTHETIC ONLY，不是真实证据**）：`evidence/synthetic/user-study-question-bank.csv`、`evidence/synthetic/user-study-answer-key.csv`、`evidence/synthetic/user-study-assignment.csv`，与 `evidence/synthetic/user-study.csv` 自洽，由 `python scripts/generate-synthetic-pt907.py` 生成。
+## 6. 指标复核与原始记录关联
+
+- 统计脚本保留 `sample_id`、`ground_truth_version`、`answer`，供依据独立答案键抽查 `is_correct`。聚合指标只包含完整性数量，不输出参与者回答原文。
+- 不同 App 的相同题号可重复；同一 `(participant_id, sample_id, question_id, material)` 不得重复。同一轮实验的参与者只能分配一个 `condition`。
+- 正式实验使用 `python scripts/metrics-user-study.py --input <私有记录路径> --require-provenance`；旧版最小 CSV 仅保留历史兼容能力。

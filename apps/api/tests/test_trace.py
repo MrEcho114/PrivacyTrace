@@ -96,3 +96,23 @@ def test_validate_rejects_invalid_json_line(tmp_path):
     write_trace(path, ["not json"])
     with pytest.raises(ValueError, match="not valid JSON"):
         trace_mod.load_lines(path)
+
+
+@pytest.mark.parametrize("raw", ["[]", '"scalar"', "42", "null"])
+def test_rejects_non_object_json(tmp_path, raw):
+    path = tmp_path / "trace.jsonl"
+    write_trace(path, [raw])
+    with pytest.raises(ValueError, match="must be a JSON object"):
+        trace_mod.load_lines(path)
+
+
+def test_cli_non_object_error_is_code_2(tmp_path, monkeypatch, capsys):
+    import sys
+
+    path = tmp_path / "trace.jsonl"
+    write_trace(path, ["[]"])
+    monkeypatch.setattr(sys, "argv", ["validate-trace.py", str(path)])
+    with pytest.raises(SystemExit) as excinfo:
+        trace_mod.main()
+    assert excinfo.value.code == 2
+    assert "error: trace.jsonl:1 must be a JSON object" in capsys.readouterr().err

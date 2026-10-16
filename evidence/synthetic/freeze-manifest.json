@@ -51,8 +51,8 @@
     },
     {
       "path": "evidence/trace.schema.md",
-      "sha256": "0010f05c6a76da83336abbd1f45a8914bfcaf81a692965ae870bb4b521085fb2",
-      "bytes": 5375
+      "sha256": "f6668f57022703746195a6650e1bb05a5acb7fcaa5e373158a70bc75d8a306c8",
+      "bytes": 5550
     },
     {
       "path": "evidence/user-study-answer-key.template.csv",
@@ -66,8 +66,8 @@
     },
     {
       "path": "evidence/user-study-comparison.template.md",
-      "sha256": "50e3f12d9bd4ac07f9382f4c13582cdbc32f37ecafde10a5c8a9194f166dd2bc",
-      "bytes": 5122
+      "sha256": "8e7f1657ee72be704e47eadbe3a60ff5b5eaf6eb9a023a0a67c30a81a0d3d431",
+      "bytes": 5690
     },
     {
       "path": "evidence/user-study-consent.template.md",
@@ -151,13 +151,13 @@
     },
     {
       "path": "scripts/metrics-user-study.py",
-      "sha256": "3bbe0f7b28aed45c7e79cc13828801f64c7014a4b70cf9039d49bdf83a0e446c",
-      "bytes": 24181
+      "sha256": "13f5d8205625fd86282b2de4c11389a9d11aa5cb07c75ee50dd8946362531e05",
+      "bytes": 27683
     },
     {
       "path": "scripts/validate-trace.py",
-      "sha256": "377f6e0298759312c3f809543c561197ed89e63746bdf727171c2dfddabc8b0d",
-      "bytes": 3733
+      "sha256": "7c7c036bb57ae9926747425fe40f8796c79c234df49c56e411e751e5c916f27c",
+      "bytes": 3823
     },
     {
       "path": "scripts/verify-run-ledger.py",

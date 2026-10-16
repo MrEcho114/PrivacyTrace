@@ -257,6 +257,9 @@ def diagnostics(rows):
             "coverage_partial": sum((row["coverage"] or {}).get("status") == "PARTIAL"
                                     for row in selected),
             "coverage_unobserved": sum(row["coverage"] is None for row in selected),
+            "execution_failures": sum(row["analysis_status"] != "SUCCEEDED" for row in selected),
+            "missing_target_predictions": sum(row["analysis_status"] == "SUCCEEDED"
+                                              and row["actual"] is None for row in selected),
             "truncated_outputs": sum(any("truncated" in text.lower()
                                          for text in (row["behavior_limitations"] or []))
                                      for row in selected),
@@ -292,6 +295,8 @@ def comparison_markdown(result):
                      f"{row['actual'] or 'NO_PREDICTION'} | {row['agreement']} | {errors} |")
     lines.extend(["", "P/R/F1: N/A (no binary runtime collection/legality target). "
                   "CPU, peak memory and human preparation cost: not measured.", "",
+                  "The legacy failures column includes missing target predictions; diagnostics "
+                  "separately count execution failures and successful runs with no target output.", "",
                   "Complete DEX processing does not prove complete behavior coverage. "
                   "Prediction files retain non-target findings and coverage limitations.", ""])
     return "\n".join(lines)

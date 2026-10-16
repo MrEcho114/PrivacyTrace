@@ -1,0 +1,4 @@
+{"ts": "2026-10-13T01:40:00+00:00", "sample_id": "syn-cam-v1", "job_id": "job-syn-cam-1", "stage": "intake", "event": "start", "status": "ok", "detail": "synthetic rehearsal"}
+{"ts": "2026-10-13T01:40:00+00:00", "sample_id": "syn-cam-v1", "job_id": "job-syn-cam-1", "stage": "dex", "event": "evidence", "status": "ok", "evidence_ref": "ev-syn-1", "data_type": "相机", "location": "com.synth.syn-cam-v1.Main", "duration_ms": 120}
+{"ts": "2026-10-13T01:40:00+00:00", "sample_id": "syn-cam-v1", "job_id": "job-syn-cam-1", "stage": "consistency", "event": "conclusion", "status": "partial", "detail": "synthetic conclusion; not real acceptance evidence"}
+{"ts": "2026-10-13T01:40:00+00:00", "sample_id": "syn-cam-v1", "job_id": "job-syn-cam-1", "stage": "report", "event": "done", "status": "partial", "detail": "synthetic rehearsal complete"}

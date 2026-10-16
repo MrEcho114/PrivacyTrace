@@ -1,0 +1,5 @@
+sample_id,app_name,policy_source_url,policy_version,policy_captured_at,policy_sha256,is_synthetic
+syn-cam-v1,CameraMemo Synthetic,https://synthetic.example.invalid/privacy/syn-cam-v1,synthetic-1,2026-10-13T00:40:00+00:00,82af45022894d39d77f8cc3ac8780d614ba7d3f574b91fa18810ddf77ef4c5b9,true
+syn-contact-v1,ContactsSync Synthetic,https://synthetic.example.invalid/privacy/syn-contact-v1,synthetic-1,2026-10-13T01:00:00+00:00,680129ae942123654618cc5619c58f3007d861efcf52ac5906001a7cf34ca9f2,true
+syn-map-v1,MapNav Synthetic,https://synthetic.example.invalid/privacy/syn-map-v1,synthetic-1,2026-10-13T00:20:00+00:00,88a1b9b68806f0539bedaa61ea905f1ad6562bed1ace7d125183a40b8190e251,true
+syn-wallet-v1,PackedWallet Synthetic,https://synthetic.example.invalid/privacy/syn-wallet-v1,synthetic-1,2026-10-13T01:20:00+00:00,db27e9f344a0c7fbea3934b5c67afc101bff7b3c2977684a23a80912ac926a6f,true

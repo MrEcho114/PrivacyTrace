@@ -1,5 +1,7 @@
 # PrivacyTrace 开发计划导航
 
+后续服务端方向：[公网 API Docker 部署调研与实施方案（2026-10-16）](api-docker-20261016.md)，对应 [Android 总规格 #68](https://github.com/MrEcho114/PrivacyTrace/issues/68)。本轮完成方案与工单调整，容器化及公网服务尚未实现，不改变赛事保底与历史验收。
+
 当前计划：[2026-10-10 Issue 重建与同步记录](2026-10-10-issue-rebuild/README.md) · [落地计划](2026-10-10-issue-rebuild/spec.md) · [验收规范#30](https://github.com/MrEcho114/PrivacyTrace/issues/30)。现有编号保留，已新增[#31双场景闭环](https://github.com/MrEcho114/PrivacyTrace/issues/31)、同步11张、关闭S0#2并核验6条依赖。
 
 线上状态见[总索引#1](https://github.com/MrEcho114/PrivacyTrace/issues/1)，原过时描述已同步修正；[回读核验收据](2026-10-10-issue-rebuild/publication-receipt.json)记录本次结果。原始快照和历史文档仍保留。

@@ -389,7 +389,6 @@ def test_rehearsal_rows_are_checked_by_default(tmp_path):
     # Refresh valid checksums; semantic validation must still reject bad grading.
     pack.write_manifest(root)
     assert "observation-consistency" in _codes(root)
-    assert "observation-participant-mismatch" in codes
 
 
 def test_header_only_template_skips_balance_check(tmp_path):

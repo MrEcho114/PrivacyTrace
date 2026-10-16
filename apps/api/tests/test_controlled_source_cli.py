@@ -16,6 +16,7 @@ from privacytrace.main import create_app
 SUITE_NAME = os.environ.get("PRIVACYTRACE_CONTROLLED_SUITE", "spec30")
 SUITE = SUITES[SUITE_NAME]
 ARTIFACTS = os.environ.get("PRIVACYTRACE_CONTROLLED_ARTIFACTS")
+LABELS = json.loads((SUITE / "ground-truth.json").read_bytes())["scenarios"]
 pytestmark = pytest.mark.skipif(not ARTIFACTS, reason="requires fresh controlled source build")
 
 
@@ -32,7 +33,7 @@ def cli(module, *args):
 
 @pytest.mark.parametrize("scenario,expected", [
     (scenario, label["expected"])
-    for scenario, label in json.loads((SUITE / "ground-truth.json").read_bytes())["scenarios"].items()
+    for scenario, label in LABELS.items()
     if SUITE_NAME == "pt907" or scenario in {"C02", "C06"}
 ])
 def test_source_cli_http_roundtrip(tmp_path, scenario, expected):

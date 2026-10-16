@@ -6,7 +6,7 @@ import os
 import re
 import shutil
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from urllib.parse import urlsplit
@@ -91,6 +91,16 @@ class WebIntake:
     def _read(self, path):
         return json.loads(read_safe(self._safe(path), max_bytes=8 * 1024 * 1024))
 
+    def _write_private(self, path, value):
+        write_private(self._safe(path), value)
+
+    def _document_exists(self, path):
+        return self._safe(path).exists()
+
+    def _draft_directories(self):
+        return [p for p in self.root.iterdir()
+                if p.is_dir() and re.fullmatch(r"[a-f0-9]{32}", p.name)]
+
     def _save(self, draft):
         directory = self.directory(draft["id"])
         revision = draft["revision"]
@@ -99,15 +109,15 @@ class WebIntake:
         if sum(p.stat().st_size for p in directory.glob("revision-*.json")) > 128 * 1024 * 1024:
             raise ValueError("Input history quota reached; create a new draft")
         snapshot = self._safe(directory / f"revision-{revision}.json")
-        if snapshot.exists():
+        if self._document_exists(snapshot):
             raise ValueError("Input revision already exists")
-        write_private(snapshot, draft)
-        write_private(self._safe(directory / "current.json"), draft)
+        self._write_private(snapshot, draft)
+        self._write_private(self._safe(directory / "current.json"), draft)
         return draft
 
     def _get(self, draft_id):
         path = self.directory(draft_id) / "current.json"
-        if not path.exists():
+        if not self._document_exists(path):
             raise KeyError(draft_id)
         return self._read(path)
 
@@ -143,7 +153,7 @@ class WebIntake:
         with self.data_store._transaction():
             self._get(draft_id)
             path = self._safe(self.directory(draft_id) / "capability.json")
-            if not path.exists():
+            if not self._document_exists(path):
                 return None
             return self._read(path)["token_digest"]
 
@@ -218,7 +228,8 @@ class WebIntake:
             self._safe(self.root)
             if token_digest is not None:
                 self._cleanup_expired_drafts()
-            drafts = list(self.root.glob("*/current.json"))
+            drafts = [p / "current.json" for p in self._draft_directories()
+                      if self._document_exists(p / "current.json")]
             if len(drafts) >= self.MAX_DRAFTS:
                 raise ValueError("Local draft quota reached")
             # Derived by the transport middleware from the trusted client peer.
@@ -228,7 +239,7 @@ class WebIntake:
                 for current in drafts:
                     capability = self._safe(current.parent / "capability.json")
                     if (
-                        capability.exists()
+                        self._document_exists(capability)
                         and self._read(capability).get("owner_hash") == owner_hash
                     ):
                         owned += 1
@@ -239,7 +250,7 @@ class WebIntake:
             directory.mkdir(mode=0o700)
             try:
                 if token_digest is not None:
-                    write_private(
+                    self._write_private(
                         self._safe(directory / "capability.json"),
                         {"token_digest": token_digest, "owner_hash": owner_hash},
                     )
@@ -263,15 +274,18 @@ class WebIntake:
     async def upload(self, draft_id, request):
         directory = self.directory(draft_id)
         pending = self._safe(directory / "upload.pending")
-        with self.data_store._transaction():
-            draft = self._get(draft_id)
-            if draft["uploaded"] or draft["jobs"]:
-                raise ValueError("APK already uploaded; new materials require a new draft")
-            fd = os.open(pending, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        size = 0
-        digest = hashlib.sha256()
+        fd, owned = None, False
         try:
+            with self.data_store._transaction():
+                draft = self._get(draft_id)
+                if draft["uploaded"] or draft["jobs"]:
+                    raise ValueError("APK already uploaded; new materials require a new draft")
+                fd = os.open(pending, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                owned = True
+            size = 0
+            digest = hashlib.sha256()
             with os.fdopen(fd, "wb") as handle:
+                fd = None  # The file object now owns the descriptor.
                 async for chunk in request.stream():
                     size += len(chunk)
                     if size > MAX_INPUT:
@@ -290,13 +304,18 @@ class WebIntake:
                 )
                 return self._save(draft)
         finally:
-            pending.unlink(missing_ok=True)
+            try:
+                if fd is not None:
+                    os.close(fd)
+            finally:
+                if owned:
+                    pending.unlink(missing_ok=True)
 
     def _settings(self, private=False):
         path = self._safe(self.root / "model.json")
         config = (
             self._read(path)
-            if path.exists()
+            if self._document_exists(path)
             else {
                 "enabled": os.environ.get("PRIVACYTRACE_LLM_ENABLED", "0") == "1",
                 "api_base": os.environ.get("PRIVACYTRACE_LLM_API_BASE", ""),
@@ -343,7 +362,7 @@ class WebIntake:
                 or (not config["api_key"] and not config["api_base"].startswith("http://"))
             ):
                 raise ValueError("MODEL_CONFIGURATION_INCOMPLETE")
-            write_private(self._safe(self.root / "model.json"), config)
+            self._write_private(self._safe(self.root / "model.json"), config)
             return self._settings()
 
     def fetch_source(self, draft_id, source_id, revision):
@@ -590,6 +609,14 @@ class WebIntake:
             draft["revision"] += 1
             return self._save(draft)
 
+    def _job_unless_deleted(self, job_id):
+        try:
+            return self.store.get(job_id)
+        except KeyError:
+            if not self.store.is_tombstoned(job_id):
+                raise  # An unexplained missing record is not evidence of deletion.
+            return None
+
     def start_service(self):
         with self.data_store._transaction():
             if self.owner_fd is not None:
@@ -612,13 +639,13 @@ class WebIntake:
                 os.close(fd)
                 raise ValueError("Another web intake process owns this store") from exc
             self.owner_fd = fd
-            for directory in self.root.iterdir():
-                if not directory.is_dir():
-                    continue
+            for directory in self._draft_directories():
                 draft = self._get(directory.name)
                 self._safe(directory / "upload.pending").unlink(missing_ok=True)
                 for run in draft["jobs"]:
-                    job = self.store.get(run["job_id"])
+                    job = self._job_unless_deleted(run["job_id"])
+                    if job is None:
+                        continue
                     if job.state not in TERMINAL:
                         job.state = "FAILED"
                         job.error = json.dumps(
@@ -627,21 +654,47 @@ class WebIntake:
                         self.store.save_job(job)
                         run["events"].append({"state": "FAILED", "at": now()})
                 # Recover event history without modifying immutable input revisions.
-                write_private(directory / "current.json", draft)
+                self._write_private(directory / "current.json", draft)
 
     def start(self, draft_id, payload: StartInput):
         self.start_service()
+        reservation = Future()
+        try:
+            job, draft, captures = self._register_start(draft_id, payload, reservation)
+        except BaseException:
+            reservation.cancel()
+            raise
+        if draft is None:  # Existing idempotent submission; do not launch it twice.
+            return job
+        try:
+            # _register_start has exited its transaction successfully. Reserve
+            # capacity inside that transaction, but execute only after commit.
+            future = self.executor.submit(self._run, draft, job, captures)
+        except RuntimeError:
+            reservation.cancel()
+            job.state = "FAILED"
+            job.error = json.dumps({"code": "WEB_SUBMISSION_FAILED"})
+            self.store.save_job(job)
+            raise ValueError("Web worker submission rejected") from None
+        self.futures[job.id] = future
+        return job
+
+    def _register_start(self, draft_id, payload, reservation):
         with self.data_store._transaction():
             draft = self._get(draft_id)
             for run in draft["jobs"]:
                 if run["request_id"] == payload.request_id:
                     if run["revision"] != payload.revision:
                         raise ValueError("Submission ID reused with different input")
-                    return self.store.get(run["job_id"])
+                    return self.store.get(run["job_id"]), None, None
             if draft["revision"] != payload.revision or not draft["uploaded"]:
                 raise ValueError("Input changed or APK not uploaded")
-            if any(self.store.get(r["job_id"]).state not in TERMINAL for r in draft["jobs"]):
-                raise ValueError("Draft already has a running job")
+            for run in draft["jobs"]:
+                previous = self._job_unless_deleted(run["job_id"])
+                if previous is not None and previous.state not in TERMINAL:
+                    raise ValueError("Draft already has a running job")
+            if not re.fullmatch(r"[a-f0-9]{64}", draft.get("apk_sha256") or ""):
+                raise ValueError("Registered APK digest is unavailable")
             if len(draft["jobs"]) >= 10 or sum(not f.done() for f in self.futures.values()) >= 4:
                 raise ValueError("Local job quota reached")
             captures = self.captures(draft)
@@ -656,7 +709,8 @@ class WebIntake:
             )
             capability_path = self._safe(self.directory(draft_id) / "capability.json")
             token_digest = (
-                self._read(capability_path)["token_digest"] if capability_path.exists() else None
+                self._read(capability_path)["token_digest"]
+                if self._document_exists(capability_path) else None
             )
             self.store.create_if_absent(job, token_digest=token_digest)
             draft["jobs"].append(
@@ -667,17 +721,17 @@ class WebIntake:
                     "events": [{"state": "QUEUED", "at": now()}],
                 }
             )
-            write_private(self.directory(draft_id) / "current.json", draft)
+            self._write_private(self.directory(draft_id) / "current.json", draft)
             self.futures = {k: f for k, f in self.futures.items() if not f.done()}
-            self.futures[job.id] = self.executor.submit(self._run, draft, job, captures)
-            return job
+            self.futures[job.id] = reservation
+            return job, draft, captures
 
     def _event(self, draft_id, job_id, state):
         with self.data_store._transaction():
             draft = self._get(draft_id)
             run = next(r for r in draft["jobs"] if r["job_id"] == job_id)
             run["events"].append({"state": state, "at": now()})
-            write_private(self.directory(draft_id) / "current.json", draft)
+            self._write_private(self.directory(draft_id) / "current.json", draft)
 
     def _run(self, draft, job, captures):
         source_receipts = [
@@ -712,7 +766,9 @@ class WebIntake:
                 None,
                 draft["name"],
                 store_dir=self.store.root,
+                job_store=self.store,
                 captured_policies=captures,
+                expected_apk_sha256=draft["apk_sha256"],
                 existing_job=job,
                 on_stage=lambda stage: self._event(draft["id"], job.id, stage),
                 extra_tools={
@@ -728,13 +784,17 @@ class WebIntake:
             )
             self.store.save_job(job)
         finally:
-            self._event(draft["id"], job.id, self.store.get(job.id).state)
+            current = self._job_unless_deleted(job.id)
+            if current is not None:
+                self._event(draft["id"], job.id, current.state)
 
     def close(self):
         # Cancel only jobs owned by this service; the existing scanner handles container cleanup.
         for job_id, future in self.futures.items():
-            if not future.done() and self.store.get(job_id).state not in TERMINAL:
-                self.store.cancel(job_id)
+            if not future.done():
+                job = self._job_unless_deleted(job_id)
+                if job is not None and job.state not in TERMINAL:
+                    self.store.cancel(job_id)
         self.executor.shutdown(wait=True, cancel_futures=False)
         if self.owner_fd is not None:
             os.close(self.owner_fd)

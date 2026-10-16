@@ -13,7 +13,6 @@ from fastapi import FastAPI, HTTPException, Request
 from .auth import SecuritySeam, generate_capability_token
 from .config import ServerConfig
 from .consistency import evaluate
-from .job_store import JobStore
 from .middleware import (
     JobWriteBoundsMiddleware,
     RemoteTransportSecurityMiddleware,
@@ -22,6 +21,7 @@ from .middleware import (
 from .models import AnalysisJob, EvaluationInput, EvaluationResult, SourceOrigin
 from .resources import ROOT, read_json, taxonomy
 from .runtime_models import JobsResponse, Report, ReviewRequest
+from .storage_factory import create_store
 from .web_api import install_web_api
 from .web_intake import WebIntake
 
@@ -71,7 +71,11 @@ def create_app(
         try:
             yield
         finally:
-            app.state.web_intake.close()
+            try:
+                app.state.web_intake.close()
+            finally:
+                if getattr(app.state.job_store, "uses_postgres", False):
+                    app.state.job_store.close()
 
     app = FastAPI(title="PrivacyTrace", version="0.1.0", lifespan=lifespan)
     app.state.config = config
@@ -84,10 +88,13 @@ def create_app(
     # An explicit argument wins; the environment variable lets the acceptance
     # harness boot an isolated instance without touching the repository data dir.
     configured = store_root or (os.environ.get(STORE_ROOT_ENV) or None)
-    app.state.job_store = JobStore(
-        Path(configured) if configured else ROOT / "data/jobs"
-    )
-    app.state.web_intake = WebIntake(app.state.job_store)
+    app.state.job_store = create_store(Path(configured) if configured else ROOT / "data/jobs")
+    if getattr(app.state.job_store, "uses_postgres", False):
+        from .postgres_intake import PostgresWebIntake
+
+        app.state.web_intake = PostgresWebIntake(app.state.job_store)
+    else:
+        app.state.web_intake = WebIntake(app.state.job_store)
     app.state.security_seam = SecuritySeam(config, app.state.job_store)
     install_web_api(app, local_write)
 

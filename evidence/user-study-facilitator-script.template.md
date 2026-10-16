@@ -11,7 +11,7 @@
 - 匿名知情同意书：`evidence/user-study-consent.template.md`
 - 记录表骨架：`evidence/user-study.template.csv`
 - 最小记录字段与保留/删除约定：`evidence/user-study-records-policy.template.md`
-- 演练走查清单：`evidence/user-study-rehearsal-checklist.template.md`
+- 演练操作检查表：`evidence/user-study-rehearsal-checklist.template.md`
 
 ## 0. 开场前准备（每场开始前）
 
@@ -113,4 +113,4 @@ participant_id,background,condition,material,sample_id,ground_truth_version,ques
 ## 9. 本模板状态
 
 - 本文件是流程模板；准备包的技术验收以自动化检查、冻结证据和复算结果为准。
-- 演练走查清单只供可选操作核对，未执行不影响准备包验收；不得把未执行步骤记为已运行。
+- 演练操作检查表只供可选操作核对，未执行不影响准备包验收；不得把未执行步骤记为已运行。

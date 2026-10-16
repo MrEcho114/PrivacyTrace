@@ -7,7 +7,7 @@
 - 主持流程与禁止行为：`evidence/user-study-facilitator-script.template.md`
 - 记录字段、保留期限与删除方式：`evidence/user-study-records-policy.template.md`
 - 对照材料与题集：`evidence/user-study-comparison.template.md`
-- 演练走查：`evidence/user-study-rehearsal-checklist.template.md`
+- 演练操作检查：`evidence/user-study-rehearsal-checklist.template.md`
 
 ## 研究目的
 

@@ -31,10 +31,10 @@ S1 强制双人核验表已取消，用户不用填写。代理保留可追溯�
 | [synthetic/user-study-answer-key.csv](synthetic/user-study-answer-key.csv) | 演练答案键与证据位置/判分口径 |
 | [synthetic/user-study-assignment.csv](synthetic/user-study-assignment.csv) | 演练参与者与平衡顺序分配 |
 | [synthetic/freeze-manifest.json](synthetic/freeze-manifest.json) | 演练准备包冻结清单（`kind=user-study-pack-freeze`）：登记被覆盖文件的 `path`/`sha256`/`bytes` 与数据集摘要 `dataset_sha256`，是准备包的哈希权威记录 |
-| `evidence/synthetic/rehearsal-walkthrough.md` | 历史 Synthetic 演练运行记录，仅用于技术复核；无需补做其他成员人工走查 |
+| `evidence/synthetic/rehearsal-walkthrough.md` | 历史 Synthetic 演练运行记录，仅用于技术复核；无需再安排其他成员补做验证 |
 
 准备包校验器 `scripts/verify-user-study-pack.py`：`python scripts/verify-user-study-pack.py` 默认校验全部 Synthetic 观测（本版 72 条）并复核清单与文件（退出码 0 = 全部通过、1 = 至少一个 issue、2 = 用法或环境错误）；`python scripts/verify-user-study-pack.py --write-manifest` 由冻结责任人重算 `files[]` 与 `dataset_sha256`（清单不存在时拒绝创建）。
 
-使用顺序：准备对照材料、题库/答案键与分配表 → 确认记录与保留约定 → 使用 `scripts/check.sh` 及 `scripts/verify-user-study-pack.py` 校验。可选参照走查清单排查操作问题；不设人工走查验收门槛。此项流程取消仅针对 #62 准备包；#65 的真实参与者知情同意、实际测试及匿名记录要求不变。
+使用顺序：准备对照材料、题库/答案键与分配表 → 确认记录与保留约定 → 使用 `scripts/check.sh` 及 `scripts/verify-user-study-pack.py` 校验。可选参照操作检查表排查问题；不增加人工验收环节。此项流程取消仅针对 #62 准备包；#65 的真实参与者知情同意、实际测试及匿名记录要求不变。
 
 私有记录：真实记录、同意书与演练记录只放被 Git 忽略的 `evidence/private/`（见 [.gitignore](../.gitignore) 第 27–28 行），**不提交仓库**，也不写真实姓名或本机私有路径。演练数据见 [synthetic/README.md](synthetic/README.md)，标注 **SYNTHETIC ONLY**，不得当作真实研究证据或用于关闭 Issue #23。

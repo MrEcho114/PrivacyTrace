@@ -87,7 +87,17 @@ def load_runs(path: Path, manifest: Path | None = None) -> list[dict]:
 
 
 def load_traces(directory: Path) -> list[dict]:
-    """Read every JSONL trace file, validated, with per-line provenance."""
+    """Read every JSONL trace file, validated, with per-line provenance.
+
+    An existing directory without any ``*.jsonl`` file is a legitimate empty
+    trace input. A path that does not exist, or that exists but is not a
+    directory, is a caller mistake and fails instead of silently yielding the
+    empty dataset.
+    """
+    if not directory.exists():
+        raise ValueError(f"trace directory does not exist: {directory}")
+    if not directory.is_dir():
+        raise ValueError(f"trace path is not a directory: {directory}")
     contract = _trace_contract()
     traces = []
     for path in sorted(directory.glob("*.jsonl")):
@@ -212,7 +222,10 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, default=None)
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
-    dataset = build(args.manifest, args.ledger, args.trace_dir)
+    try:
+        dataset = build(args.manifest, args.ledger, args.trace_dir)
+    except ValueError as error:
+        parser.exit(2, f"error: {error}\n")
     rendered = json.dumps(dataset, ensure_ascii=False, indent=2)
     if args.out is None:
         print(rendered)

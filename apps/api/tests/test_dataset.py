@@ -1,6 +1,7 @@
 import csv
 import importlib.util
 import json
+import sys
 
 import pytest
 
@@ -221,3 +222,96 @@ def test_build_dataset_rejects_illegal_ledger_without_traces(
     write_ledger(ledger, **overrides)
     with pytest.raises(ValueError, match=match):
         dataset_mod.build(manifest, ledger, trace_dir)
+
+
+def test_load_traces_rejects_missing_directory(tmp_path):
+    trace_dir = tmp_path / "missing-trace"
+    with pytest.raises(ValueError, match="does not exist") as error:
+        dataset_mod.load_traces(trace_dir)
+    assert str(trace_dir) in str(error.value)
+
+
+def test_load_traces_rejects_path_that_is_a_file(tmp_path):
+    trace_file = tmp_path / "trace.jsonl"
+    trace_file.write_text("", encoding="utf-8")
+    with pytest.raises(ValueError, match="not a directory") as error:
+        dataset_mod.load_traces(trace_file)
+    assert str(trace_file) in str(error.value)
+
+
+def test_build_dataset_rejects_missing_trace_directory(tmp_path):
+    manifest = tmp_path / "manifest.csv"
+    ledger = tmp_path / "runs.csv"
+    trace_dir = tmp_path / "missing-trace"
+    write_manifest(manifest)
+    write_ledger(ledger)
+    with pytest.raises(ValueError, match="does not exist") as error:
+        dataset_mod.build(manifest, ledger, trace_dir)
+    assert str(trace_dir) in str(error.value)
+
+
+def test_build_dataset_rejects_trace_path_that_is_a_file(tmp_path):
+    manifest = tmp_path / "manifest.csv"
+    ledger = tmp_path / "runs.csv"
+    trace_file = tmp_path / "trace.jsonl"
+    write_manifest(manifest)
+    write_ledger(ledger)
+    trace_file.write_text("", encoding="utf-8")
+    with pytest.raises(ValueError, match="not a directory") as error:
+        dataset_mod.build(manifest, ledger, trace_file)
+    assert str(trace_file) in str(error.value)
+
+
+def test_build_dataset_allows_empty_trace_directory(tmp_path):
+    manifest = tmp_path / "manifest.csv"
+    ledger = tmp_path / "runs.csv"
+    trace_dir = tmp_path / "trace"
+    write_manifest(manifest)
+    write_ledger(ledger)
+    trace_dir.mkdir()
+    dataset = dataset_mod.build(manifest, ledger, trace_dir)
+    assert dataset["evidence"] == []
+    assert dataset["conclusions"] == []
+    assert dataset["trace_events"] == {
+        "total": 0,
+        "evidence": 0,
+        "conclusions": 0,
+        "lifecycle": {},
+    }
+    assert len(dataset["dataset_sha256"]) == 64
+    assert (
+        dataset["dataset_sha256"]
+        == dataset_mod.build(manifest, ledger, trace_dir)["dataset_sha256"]
+    )
+
+
+def test_load_traces_ignores_non_jsonl_files(tmp_path):
+    trace_dir = tmp_path / "trace"
+    trace_dir.mkdir()
+    (trace_dir / "notes.txt").write_text("not a trace\n", encoding="utf-8")
+    assert dataset_mod.load_traces(trace_dir) == []
+
+
+def test_main_exits_nonzero_on_missing_trace_directory(tmp_path, monkeypatch, capsys):
+    manifest = tmp_path / "manifest.csv"
+    ledger = tmp_path / "runs.csv"
+    missing_trace = tmp_path / "missing-trace"
+    write_manifest(manifest)
+    write_ledger(ledger)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "build-dataset.py",
+            "--ledger",
+            str(ledger),
+            "--manifest",
+            str(manifest),
+            "--trace-dir",
+            str(missing_trace),
+        ],
+    )
+    with pytest.raises(SystemExit) as exit_info:
+        dataset_mod.main()
+    assert exit_info.value.code not in (0, None)
+    assert str(missing_trace) in capsys.readouterr().err

@@ -19,6 +19,7 @@ def answer(
     is_correct: bool | None,
     seconds: float | None = None,
     misconception: str = "",
+    located: bool | None = None,
 ) -> dict:
     return {
         "participant_id": participant_id,
@@ -27,6 +28,7 @@ def answer(
         "question_id": "q1",
         "is_correct": is_correct,
         "evidence_loc_seconds": seconds,
+        "evidence_located": located,
         "misconception": misconception,
     }
 
@@ -138,6 +140,109 @@ def test_metrics_report_stays_finite_with_partial_durations():
     assert locate["overall"]["count"] == 1
     assert locate["by_material"]["privacyTrace"]["count"] == 0
     assert json.dumps(metrics)
+
+
+def test_fast_failure_is_not_reported_faster_than_slow_success():
+    """复审举例：baseline 20 秒且成功 vs privacyTrace 1 秒但失败。"""
+    records = [
+        answer("p1", "baseline_first", "baseline", True, 20.0, located=True),
+        answer("p1", "baseline_first", "privacyTrace", False, 1.0, located=False),
+    ]
+    metrics = metrics_mod.compute_metrics(records)
+    locate = metrics["evidence_locate_time_seconds"]
+    # 1 秒的失败样本不得进入成功定位耗时分布
+    assert locate["success"]["records"] == 1
+    assert locate["success"]["timed"]["count"] == 1
+    assert locate["success"]["timed"]["min"] == 20.0
+    assert locate["success"]["timed"]["median"] == 20.0
+    # 该失败样本的时长只出现在失败口径
+    assert locate["failure"]["records"] == 1
+    assert locate["failure"]["timed"]["count"] == 1
+    assert locate["failure"]["timed"]["min"] == 1.0
+    assert locate["success_rate"] == 0.5
+    by_material = locate["by_material_outcome"]
+    assert by_material["baseline"]["success"]["timed"]["median"] == 20.0
+    assert by_material["baseline"]["failure"]["records"] == 0
+    assert by_material["privacyTrace"]["success"]["records"] == 0
+    assert by_material["privacyTrace"]["failure"]["timed"]["median"] == 1.0
+    markdown = metrics_mod.render_markdown(metrics)
+    assert "材料 baseline：成功率 1.0000（成功 1 / 失败 0" in markdown
+    privacy_line = next(
+        line
+        for line in markdown.splitlines()
+        if line.startswith("- 材料 privacyTrace：")
+    )
+    assert "成功率 0.0000（成功 0 / 失败 1" in privacy_line
+    assert "成功定位耗时：—（0 条有时长）" in privacy_line
+    assert "定位失败尝试耗时：1.0 / 1.0 / 1.0 / 1.0 / 1.0（1 条有时长）" in privacy_line
+
+
+def test_blank_evidence_located_counts_as_not_required():
+    records = [
+        answer("p1", "baseline_first", "baseline", True, 5.0, located=None),
+        answer("p1", "baseline_first", "baseline", True, 7.0, located=True),
+    ]
+    locate = metrics_mod.compute_metrics(records)["evidence_locate_time_seconds"]
+    assert locate["not_required"]["records"] == 1
+    assert locate["success"]["records"] == 1
+    assert locate["success"]["timed"]["count"] == 1
+    assert locate["success"]["timed"]["min"] == 7.0
+    assert locate["success_rate"] == 1.0
+
+
+def test_success_without_duration_is_counted_but_not_timed():
+    records = [
+        answer("p1", "baseline_first", "baseline", True, None, located=True),
+        answer("p1", "baseline_first", "baseline", True, 4.0, located=True),
+    ]
+    locate = metrics_mod.compute_metrics(records)["evidence_locate_time_seconds"]
+    assert locate["success"]["records"] == 2
+    assert locate["success"]["timed"]["count"] == 1
+    assert locate["success"]["timed"]["min"] == 4.0
+    assert locate["success_rate"] == 1.0
+
+
+def test_success_rate_is_none_when_no_row_was_judged_for_location():
+    records = [answer("p1", "baseline_first", "baseline", True, 5.0, located=None)]
+    metrics = metrics_mod.compute_metrics(records)
+    locate = metrics["evidence_locate_time_seconds"]
+    assert locate["success_rate"] is None
+    assert locate["success"]["records"] == 0
+    assert locate["failure"]["records"] == 0
+    assert locate["not_required"]["records"] == 1
+    assert json.dumps(metrics)
+    assert "成功率 —（成功 0 / 失败 0，未要求定位 1 不计入分母）" in (
+        metrics_mod.render_markdown(metrics)
+    )
+
+
+def test_load_records_reads_evidence_located_tristate(tmp_path):
+    path = write_csv(
+        tmp_path,
+        "participant_id,condition,material,question_id,is_correct,evidence_located\n"
+        "p1,baseline_first,baseline,q1,true,true\n"
+        "p1,baseline_first,baseline,q2,true,false\n"
+        "p1,baseline_first,baseline,q3,true,\n",
+    )
+    located = [row["evidence_located"] for row in metrics_mod.load_records(path)]
+    assert located == [True, False, None]
+
+
+def test_missing_evidence_located_column_means_not_required(tmp_path):
+    path = write_csv(
+        tmp_path,
+        "participant_id,condition,material,question_id,is_correct\n"
+        "p1,baseline_first,baseline,q1,true\n",
+    )
+    assert metrics_mod.load_records(path)[0]["evidence_located"] is None
+
+
+def test_parse_located_rejects_ambiguous_value():
+    with pytest.raises(ValueError, match="evidence_located must be a boolean"):
+        metrics_mod.parse_located("maybe")
+    assert metrics_mod.parse_located(" true ") is True
+    assert metrics_mod.parse_located("FALSE") is False
+    assert metrics_mod.parse_located("  ") is None
 
 
 def test_load_records_reads_material_column(tmp_path):

@@ -12,11 +12,18 @@ ledger_mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ledger_mod)
 
 
-def write_manifest(path):
+def write_manifest(path, sample_ids=("app-1",)):
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["sample_id", "package_name"])
-        writer.writerow(["app-1", "com.example.app"])
+        for sample_id in sample_ids:
+            writer.writerow([sample_id, f"com.example.{sample_id}"])
+
+
+def append_row(path, row):
+    with path.open("a", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(row))
+        writer.writerow(row)
 
 
 def write_ledger(path, row):
@@ -131,3 +138,46 @@ def test_verify_allows_failed_run_without_report_hash(tmp_path):
     rows = ledger_mod.verify(ledger, manifest)
     assert rows[0]["outcome"] == "failed"
     assert rows[0]["report_sha256"] == ""
+
+
+def test_verify_rejects_duplicate_sample_job_pair(tmp_path):
+    manifest = tmp_path / "manifest.csv"
+    write_manifest(manifest)
+    ledger = tmp_path / "runs.csv"
+    row = base_row()
+    write_ledger(ledger, row)
+    append_row(ledger, {**row, "run_id": "run-2"})
+    with pytest.raises(ValueError) as excinfo:
+        ledger_mod.verify(ledger, manifest)
+    message = str(excinfo.value)
+    assert "('app-1', 'job-1')" in message
+    assert "run-2" in message
+    assert "run-1" in message
+
+
+def test_verify_allows_same_sample_with_different_job_ids(tmp_path):
+    manifest = tmp_path / "manifest.csv"
+    write_manifest(manifest)
+    ledger = tmp_path / "runs.csv"
+    row = base_row()
+    write_ledger(ledger, row)
+    append_row(ledger, {**row, "run_id": "run-2", "job_id": "job-2"})
+    rows = ledger_mod.verify(ledger, manifest)
+    assert [(entry["sample_id"], entry["job_id"]) for entry in rows] == [
+        ("app-1", "job-1"),
+        ("app-1", "job-2"),
+    ]
+
+
+def test_verify_allows_same_job_id_for_different_samples(tmp_path):
+    manifest = tmp_path / "manifest.csv"
+    write_manifest(manifest, sample_ids=("app-1", "app-2"))
+    ledger = tmp_path / "runs.csv"
+    row = base_row()
+    write_ledger(ledger, row)
+    append_row(ledger, {**row, "run_id": "run-2", "sample_id": "app-2"})
+    rows = ledger_mod.verify(ledger, manifest)
+    assert [(entry["sample_id"], entry["job_id"]) for entry in rows] == [
+        ("app-1", "job-1"),
+        ("app-2", "job-1"),
+    ]

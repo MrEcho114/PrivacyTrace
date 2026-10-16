@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import time
@@ -9,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
-from .controlled import SUITE, analyze
+from .controlled import SUITE, SUITES, analyze, scenario_ids
 from .isolated_scan import docker_prefix
 from .job_store import JobStore
 from .policy_intake import digest, read_safe
@@ -107,9 +108,10 @@ def schemes(report):
     return output
 
 
-def predict(features, artifacts, store_dir, timeout):
+def predict(features, artifacts, store_dir, timeout, suite=SUITE):
     started = time.perf_counter()
-    output = analyze(features, artifacts, store_dir, timeout, "controlled-" + uuid4().hex)
+    output = analyze(features, artifacts, store_dir, timeout, "controlled-" + uuid4().hex,
+                     suite=suite)
     record = {
         "scenario_id": features.stem,
         "analysis": output,
@@ -126,6 +128,10 @@ def predict(features, artifacts, store_dir, timeout):
             ],
             policy_spans_validated=True,
             features_sha256=digest(read_safe(features)),
+            stored_job_sha256=digest(read_safe(store_dir / (output["job_id"] + ".json"))),
+            report_sha256=digest(report.model_dump_json().encode()),
+            behavior_limitations=report.coverage.behavior_limitations,
+            apk_sha256=report.sample.apk_sha256,
         )
     record["elapsed_seconds"] = time.perf_counter() - started
     return record
@@ -163,15 +169,15 @@ def score(records, truth):
             success = bool(record and record["analysis"]["status"] == "SUCCEEDED")
             api = record.get("api_evidence", []) if record else []
             rules = taxonomy()
-            expected_caller = (
+            expected_caller = label.get("caller_descriptor", (
                 "Lorg/privacytrace/controlled/"
                 + scenario.lower()
                 + "/MainActivity;->readLocation(Landroid/location/LocationManager;)"
                 "Landroid/location/Location;"
-            )
+            ))
             located = len(api) == label["api_count"] and all(
                 item["api_call"]["target_descriptor"] == label["target_descriptor"]
-                and item["api_call"]["context"] == {"provider": "gps"}
+                and item["api_call"]["context"] == label.get("target_context", {"provider": "gps"})
                 and any(
                     rule["rule_id"] == item["api_call"]["rule_id"]
                     and rule["data_type"] == label["data_type"]
@@ -180,7 +186,8 @@ def score(records, truth):
                     for rule in rules["api_mappings"]
                 )
                 and "caller=" + expected_caller in item["locator"]
-                and "offset_bytes=4;" in item["locator"]
+                and (re.search(r"offset_bytes=\d+;", item["locator"]) is not None
+                     if "caller_descriptor" in label else "offset_bytes=4;" in item["locator"])
                 and item["source"] == "classes.dex"
                 for item in api
             )
@@ -216,24 +223,91 @@ def score(records, truth):
                     "errors": record["analysis"].get("errors", [])
                     if record
                     else [{"code": "MISSING_RECORD"}],
+                    "analysis_status": record["analysis"]["status"] if record else "MISSING",
+                    "features_sha256": record.get("features_sha256") if record else None,
+                    "apk_sha256": record.get("apk_sha256") if record else None,
+                    "report_sha256": record.get("report_sha256") if record else None,
+                    "behavior_limitations": record.get("behavior_limitations") if record else None,
+                    "stored_job_sha256": record.get("stored_job_sha256") if record else None,
                 }
             )
     return rows, summaries
 
 
-def run_benchmark(artifacts, output, timeout, blocked_error=None):
+def diagnostics(rows):
+    """Status classification, evidence location and coverage have separate denominators."""
+    result = {}
+    for scheme in SCHEMES:
+        selected = [row for row in rows if row["scheme"] == scheme]
+        confusion = {}
+        for row in selected:
+            key = row["expected"] + " -> " + (row["actual"] or "NO_PREDICTION")
+            confusion[key] = confusion.get(key, 0) + 1
+        result[scheme] = {
+            "total": len(selected),
+            "confusion_counts": confusion,
+            "mapping_and_locator_checked": sum(row["api_mapping_and_locator_checked"]
+                                               for row in selected),
+            "policy_spans_validated": sum(row["policy_spans_validated"] for row in selected),
+            "coverage_complete": sum((row["coverage"] or {}).get("status") == "COMPLETE"
+                                     for row in selected),
+            "coverage_partial": sum((row["coverage"] or {}).get("status") == "PARTIAL"
+                                    for row in selected),
+            "coverage_unobserved": sum(row["coverage"] is None for row in selected),
+            "truncated_outputs": sum(any("truncated" in text.lower()
+                                         for text in (row["behavior_limitations"] or []))
+                                     for row in selected),
+            "mismatches_or_failures": [row["scenario_id"] for row in selected
+                                        if not row["agreement"]],
+            "precision_recall_f1": None,
+            "precision_recall_f1_reason": "N/A: no binary runtime collection or legality target",
+            "cpu_peak_memory": None,
+            "human_preparation_seconds": None,
+        }
+    return result
+
+
+def comparison_markdown(result):
+    lines = ["# Controlled comparison", "",
+             f"Suite: {result['suite']}; truth SHA256: `{result['truth_sha256']}`.", "",
+             "One target per source scenario; failures and abstentions remain in the denominator.",
+             "Status agreement, API mapping/location and DEX processing coverage are separate.", "",
+             "| Scheme | Total | Status agreement | Failures | Abstentions | "
+             "Mapping/location | Complete DEX | Truncated |",
+             "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+    for scheme, summary in result["summaries"].items():
+        detail = result["diagnostics"][scheme]
+        lines.append(f"| {scheme} | {summary['total']} | {summary['status_agreement']} | "
+                     f"{summary['failures']} | {summary['abstentions']} | "
+                     f"{detail['mapping_and_locator_checked']} | {detail['coverage_complete']} | "
+                     f"{detail['truncated_outputs']} |")
+    lines.extend(["", "| Scenario | Scheme | Expected | Actual | Agreement | Errors |",
+                  "| --- | --- | --- | --- | --- | --- |"])
+    for row in result["rows"]:
+        errors = ", ".join(error.get("code", "UNKNOWN") for error in row["errors"])
+        lines.append(f"| {row['scenario_id']} | {row['scheme']} | {row['expected']} | "
+                     f"{row['actual'] or 'NO_PREDICTION'} | {row['agreement']} | {errors} |")
+    lines.extend(["", "P/R/F1: N/A (no binary runtime collection/legality target). "
+                  "CPU, peak memory and human preparation cost: not measured.", "",
+                  "Complete DEX processing does not prove complete behavior coverage. "
+                  "Prediction files retain non-target findings and coverage limitations.", ""])
+    return "\n".join(lines)
+
+
+def run_benchmark(artifacts, output, timeout, blocked_error=None, *, suite=SUITE):
     # Verify the freeze before execution; prediction subprocesses never receive truth paths/labels.
-    truth_raw = read_safe(SUITE / "ground-truth.json")
-    if digest(truth_raw) != (SUITE / "ground-truth.sha256").read_text().strip():
+    truth_raw = read_safe(suite / "ground-truth.json")
+    if digest(truth_raw) != (suite / "ground-truth.sha256").read_text().strip():
         raise ValueError("Ground truth changed after freeze")
     truth = json.loads(truth_raw)
-    if truth["inputs_lock_sha256"] != digest(read_safe(SUITE / "inputs.lock.json")):
+    if truth["inputs_lock_sha256"] != digest(read_safe(suite / "inputs.lock.json")):
         raise ValueError("Frozen truth refers to different features")
-    if set(truth["scenarios"]) != {f"C0{i}" for i in range(1, 7)}:
-        raise ValueError("Six scenario minimum required")
+    scenarios = scenario_ids(suite)
+    if set(truth["scenarios"]) != set(scenarios):
+        raise ValueError("Frozen scenario set does not match registered suite")
     output.mkdir(parents=True, exist_ok=False)
     records = []
-    for scenario in ("C02", "C06", "C01", "C03", "C04", "C05"):
+    for scenario in ("C02", "C06", *(s for s in scenarios if s not in {"C02", "C06"})):
         started = time.perf_counter()
         if blocked_error is not None:
             # A broken freeze is an execution failure, not a model abstention.
@@ -253,7 +327,9 @@ def run_benchmark(artifacts, output, timeout, blocked_error=None):
                         "privacytrace.benchmark",
                         "predict",
                         "--features",
-                        str(SUITE / "features" / (scenario + ".json")),
+                        str(suite / "features" / (scenario + ".json")),
+                        "--suite",
+                        next(name for name, path in SUITES.items() if path == suite),
                         "--artifacts",
                         str(artifacts),
                         "--store-dir",
@@ -284,6 +360,10 @@ def run_benchmark(artifacts, output, timeout, blocked_error=None):
     implementation_files = sorted((ROOT / "apps/api/src/privacytrace").glob("*.py")) + [
         ROOT / "rules/taxonomy.v0.3.json",
         ROOT / SDK_SIGNATURE_FILES[ACTIVE_SDK_SIGNATURES_VERSION],
+        ROOT / "scripts/build-controlled-apks.py",
+        ROOT / "scripts/controlled/compile.py",
+        ROOT / "scripts/validate-spec30.py",
+        ROOT / "scripts/verify-controlled-browser.cjs",
     ]
     result = {
         "implementation_hashes": {
@@ -291,14 +371,20 @@ def run_benchmark(artifacts, output, timeout, blocked_error=None):
             for path in implementation_files
         },
         "schema_version": 1,
+        "suite": next(name for name, path in SUITES.items() if path == suite),
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "truth_sha256": digest(truth_raw),
+        "prediction_sha256": {
+            scenario: digest(read_safe(output / (scenario + ".prediction.json")))
+            for scenario in scenarios
+        },
         "protocol": truth,
         "scheme_inputs": SCHEME_INPUTS,
         "rows": rows,
         "summaries": summaries,
+        "diagnostics": diagnostics(rows),
         "limitations": [
-            "Six authored fixtures; no held-out generalization claim.",
+            f"{len(scenarios)} authored source scenarios; no held-out generalization claim.",
             "Manual agent-assisted candidates; no automatic extraction accuracy claim.",
             "Static invoke never proves execution, collection, safety or illegality.",
             "Baseline status names are nominal experimental predictions, not user findings.",
@@ -307,6 +393,7 @@ def run_benchmark(artifacts, output, timeout, blocked_error=None):
     (output / "comparison.json").write_text(
         json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
     )
+    (output / "comparison.md").write_text(comparison_markdown(result), encoding="utf-8")
     passed = all(
         row["agreement"]
         and row["api_mapping_and_locator_checked"]
@@ -319,6 +406,8 @@ def run_benchmark(artifacts, output, timeout, blocked_error=None):
     return {
         "status": "COMPARED",
         "six_scenarios_passed": passed,
+        "scenario_count": len(scenarios),
+        "scenarios_passed": passed,
         "summaries": summaries,
         "comparison": str(output / "comparison.json"),
     }
@@ -339,14 +428,16 @@ def main():
         help="Record all scenarios as failed without scanning untrusted artifacts",
     )
     for child in (predictor, runner):
+        child.add_argument("--suite", choices=SUITES, default="spec30")
         child.add_argument("--artifacts", type=Path, required=True)
         child.add_argument("--timeout", type=int, default=120)
     args = parser.parse_args()
     try:
         output = (
-            predict(args.features, args.artifacts, args.store_dir, args.timeout)
+            predict(args.features, args.artifacts, args.store_dir, args.timeout, SUITES[args.suite])
             if args.mode == "predict"
-            else run_benchmark(args.artifacts, args.output, args.timeout, args.blocked_error)
+            else run_benchmark(args.artifacts, args.output, args.timeout, args.blocked_error,
+                               suite=SUITES[args.suite])
         )
     except (ValueError, OSError, KeyError, TypeError):
         output = {

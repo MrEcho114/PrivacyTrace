@@ -197,7 +197,10 @@ class WebIntake:
                 owned = 0
                 for current in drafts:
                     capability = self._safe(current.parent / "capability.json")
-                    if capability.exists() and self._read(capability).get("owner_hash") == owner_hash:
+                    if (
+                        capability.exists()
+                        and self._read(capability).get("owner_hash") == owner_hash
+                    ):
                         owned += 1
                 if owned >= self.MAX_DRAFTS_PER_IP:
                     raise ValueError("Client draft quota reached")

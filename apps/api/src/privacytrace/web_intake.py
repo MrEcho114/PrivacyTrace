@@ -541,7 +541,9 @@ class WebIntake:
                 ruleset_version=taxonomy()["version"],
                 created_at=datetime.now(timezone.utc),
             )
-            self.store.create_if_absent(job, token_digest=self.get_draft_token_digest(draft_id))
+            capability_path = self._safe(self.directory(draft_id) / "capability.json")
+            token_digest = self._read(capability_path)["token_digest"] if capability_path.exists() else None
+            self.store.create_if_absent(job, token_digest=token_digest)
             draft["jobs"].append(
                 {
                     "job_id": job.id,

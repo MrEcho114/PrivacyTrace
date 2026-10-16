@@ -156,8 +156,8 @@
     },
     {
       "path": "scripts/validate-trace.py",
-      "sha256": "7c7c036bb57ae9926747425fe40f8796c79c234df49c56e411e751e5c916f27c",
-      "bytes": 3823
+      "sha256": "e1e496b0d96a8ad75116b2775fa1a7ceb59f9d2a355bfdb22bd8ce9f9aaeda41",
+      "bytes": 3901
     },
     {
       "path": "scripts/verify-run-ledger.py",

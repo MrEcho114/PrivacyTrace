@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from privacytrace.main import create_app
 from privacytrace.middleware import install_log_redaction
 from privacytrace.models import AnalysisJob
+from privacytrace.resources import taxonomy
 from datetime import datetime, timezone
 
 
@@ -69,7 +70,7 @@ def test_state_updates_preserve_capability_digest(tmp_path):
     from privacytrace.job_store import JobStore
     store = JobStore(tmp_path)
     job = AnalysisJob(id="token-job", sample_id="token-sample", input_mode="APK",
-                      source_origin="REAL_SCAN", state="QUEUED", ruleset_version="v1",
+                      source_origin="REAL_SCAN", state="QUEUED", ruleset_version=taxonomy()["version"],
                       created_at=datetime.now(timezone.utc))
     store.create_if_absent(job, token_digest="a" * 64)
     for state in ("RUNNING", "FAILED"):

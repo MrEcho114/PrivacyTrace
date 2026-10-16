@@ -103,7 +103,15 @@ class WebIntake:
         with self.data_store._transaction():
             return self._get(draft_id)
 
-    def create(self, payload: DraftInput):
+    def get_draft_token_digest(self, draft_id: str) -> str | None:
+        with self.data_store._transaction():
+            self._get(draft_id)
+            path = self._safe(self.directory(draft_id) / "capability.json")
+            if not path.exists():
+                return None
+            return self._read(path)["token_digest"]
+
+    def create(self, payload: DraftInput, token_digest: str | None = None):
         if len({s.id for s in payload.sources}) != len(payload.sources):
             raise ValueError("Duplicate source IDs")
         sources = []
@@ -131,6 +139,8 @@ class WebIntake:
                 raise ValueError("Local draft quota reached")
             draft_id = uuid4().hex
             self.directory(draft_id).mkdir(mode=0o700)
+            if token_digest is not None:
+                write_private(self._safe(self.directory(draft_id) / "capability.json"), {"token_digest": token_digest})
             return self._save(
                 {
                     "id": draft_id,
@@ -531,7 +541,7 @@ class WebIntake:
                 ruleset_version=taxonomy()["version"],
                 created_at=datetime.now(timezone.utc),
             )
-            self.store.create_if_absent(job)
+            self.store.create_if_absent(job, token_digest=self.get_draft_token_digest(draft_id))
             draft["jobs"].append(
                 {
                     "job_id": job.id,

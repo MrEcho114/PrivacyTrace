@@ -4,6 +4,8 @@ import hashlib
 import json
 import os
 import re
+import shutil
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from urllib.parse import urlsplit
@@ -25,6 +27,12 @@ from .resources import taxonomy
 from .web_models import CandidateInput, DraftInput, ModelSettings, StartInput, WebCandidate
 
 TERMINAL = {"SUCCEEDED", "FAILED", "CANCELLED"}
+
+
+class UploadTooLarge(ValueError):
+    """APK upload exceeded the documented byte limit."""
+
+
 
 
 def now():
@@ -50,6 +58,8 @@ def write_private(path, value):
 class WebIntake:
     MAX_DRAFTS = 12  # At most 12 * 150 MiB of retained uploads, plus bounded revisions.
     MAX_REVISIONS = 256
+    MAX_DRAFTS_PER_IP = 3
+    DRAFT_TTL_SECONDS = 24 * 60 * 60
 
     def __init__(self, store):
         self.store = store
@@ -111,7 +121,48 @@ class WebIntake:
                 return None
             return self._read(path)["token_digest"]
 
-    def create(self, payload: DraftInput, token_digest: str | None = None):
+    def _cleanup_expired_drafts(self):
+        """Lazy cleanup during creation. Caller holds the intake transaction lock.
+
+        Finished job reports live in JobStore outside draft directories. Active
+        or uncertain jobs and ongoing uploads prevent deletion.
+        """
+        cutoff = time.time() - self.DRAFT_TTL_SECONDS
+        for directory in self.root.iterdir():
+            if not directory.is_dir() or not re.fullmatch(r"[a-f0-9]{32}", directory.name):
+                continue
+            directory = self.directory(directory.name)
+            current = self._safe(directory / "current.json")
+            capability = self._safe(directory / "capability.json")
+            # Legacy local-mode inputs have no remote capability metadata.
+            if not current.exists() or not capability.exists():
+                continue
+            if current.stat().st_mtime >= cutoff or (directory / "upload.pending").exists():
+                continue
+            try:
+                draft = self._read(current)
+                active = False
+                for run in draft["jobs"]:
+                    future = self.futures.get(run["job_id"])
+                    if future is not None and not future.done():
+                        active = True
+                        break
+                    if self.store.get(run["job_id"]).state not in TERMINAL:
+                        active = True
+                        break
+                if active:
+                    continue
+            except (KeyError, ValueError, OSError, TypeError):
+                # Unknown state is not evidence of safe deletion.
+                continue
+            shutil.rmtree(directory)
+
+    def create(
+        self,
+        payload: DraftInput,
+        token_digest: str | None = None,
+        owner_ip: str | None = None,
+    ):
         if len({s.id for s in payload.sources}) != len(payload.sources):
             raise ValueError("Duplicate source IDs")
         sources = []
@@ -135,28 +186,46 @@ class WebIntake:
             sources.append(value)
         with self.data_store._transaction():
             self._safe(self.root)
-            if len(list(self.root.glob("*/current.json"))) >= self.MAX_DRAFTS:
-                raise ValueError("Local draft quota reached")
-            draft_id = uuid4().hex
-            self.directory(draft_id).mkdir(mode=0o700)
             if token_digest is not None:
-                write_private(
-                    self._safe(self.directory(draft_id) / "capability.json"),
-                    {"token_digest": token_digest},
+                self._cleanup_expired_drafts()
+            drafts = list(self.root.glob("*/current.json"))
+            if len(drafts) >= self.MAX_DRAFTS:
+                raise ValueError("Local draft quota reached")
+            # Derived by the transport middleware from the trusted client peer.
+            owner_hash = hashlib.sha256(owner_ip.encode()).hexdigest() if owner_ip else None
+            if token_digest is not None and owner_hash:
+                owned = 0
+                for current in drafts:
+                    capability = self._safe(current.parent / "capability.json")
+                    if capability.exists() and self._read(capability).get("owner_hash") == owner_hash:
+                        owned += 1
+                if owned >= self.MAX_DRAFTS_PER_IP:
+                    raise ValueError("Client draft quota reached")
+            draft_id = uuid4().hex
+            directory = self.directory(draft_id)
+            directory.mkdir(mode=0o700)
+            try:
+                if token_digest is not None:
+                    write_private(
+                        self._safe(directory / "capability.json"),
+                        {"token_digest": token_digest, "owner_hash": owner_hash},
+                    )
+                return self._save(
+                    {
+                        "id": draft_id,
+                        "revision": 1,
+                        "name": payload.name,
+                        "sources": sources,
+                        "candidates": [],
+                        "uploaded": False,
+                        "apk_sha256": None,
+                        "jobs": [],
+                        "created_at": now(),
+                    }
                 )
-            return self._save(
-                {
-                    "id": draft_id,
-                    "revision": 1,
-                    "name": payload.name,
-                    "sources": sources,
-                    "candidates": [],
-                    "uploaded": False,
-                    "apk_sha256": None,
-                    "jobs": [],
-                    "created_at": now(),
-                }
-            )
+            except Exception:
+                shutil.rmtree(directory)
+                raise
 
     async def upload(self, draft_id, request):
         directory = self.directory(draft_id)
@@ -173,7 +242,7 @@ class WebIntake:
                 async for chunk in request.stream():
                     size += len(chunk)
                     if size > MAX_INPUT:
-                        raise ValueError("APK exceeds 150 MiB")
+                        raise UploadTooLarge("APK exceeds 150 MiB")
                     digest.update(chunk)
                     handle.write(chunk)
                 if size == 0:

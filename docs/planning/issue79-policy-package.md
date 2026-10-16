@@ -37,4 +37,16 @@
 3. #70 导入时复用旧验证器；与原入口比较来源分离、原句、偏移及未复核语义。当前尚无新薄适配，未声称本项通过。
 4. #72 消费同一包装及映射，个人 Key 留手机；不把 APK、整机清单、任务凭据或 Key 放进指令、样例或包装产物。
 
-本轮完成源码盘点与缺口定位；尚未生成 Skill、调用外部模型或完成实际联网行为验证。后续包装目录拟为 `skills/privacytrace-policy-collection/`，共享业务模型和生成契约仍归 #70，客户端归 #72。
+首轮仅完成源码盘点与缺口定位；当时尚未生成 Skill、调用外部模型或完成实际联网行为验证。
+
+## 包装实现与验证（2026-10-16 续）
+
+已在 [skills/privacytrace-policy-collection](../../skills/privacytrace-policy-collection/SKILL.md) 交付便携入口、网页整份可复制指令、既有抽取提示词导出、合成示例与导入映射。`scripts/export-policy-collection.py` 从权威源码生成提示词/字段约束与 UTF-8/LF 哈希，`--check` 可检测漂移。
+
+最小发现外层为 `privacytrace-policy-collection/1`：results 各项包含 discovery_status、source 及可选 reported_at。source 使用既有 WebSource 输入字段；仅新增发现状态及外部自报时点，避免把它们塞进服务端收据。source_type 未确定时不借原模型默认值宣称官方来源；导入前需要补确认。具体规则以包内 [导入映射](../../skills/privacytrace-policy-collection/references/import-mapping.md) 为准，#70 拥有实际接入、验证与公共契约，#72 拥有客户端。
+
+- 19 项专项通过：版本/哈希一致性、引用便携性、8 个来源收集示例、8 个既有 Mock 抽取校验场景及原 HTTP 入口投影语义；不是新导入器验收。
+- Skill 结构验证通过。一次独立离线合成走查中，用户正文中的注入指令作为原文保留，未写 checked 或已核验标记；网址与无联网分别记录。该走查不证明真实联网或普遍抵抗注入。
+- 本地权威入口通过：API 787 passed / 20 skipped（未开启 Docker），Web 46 passed；Ruff、既有用户研究准备包检查、公共契约零差异、类型和生产构建通过。补充外部自报时点说明后重跑专项与生成检查；源码行为未变。
+
+尚未执行真实来源发现、真实网页模型收集、#70 新薄适配、#72 手机调用及最终远程报告验证。完整工单保持开放；本次仅交付其可独立完成的包装，公共模型、生成契约与 CI 未改。

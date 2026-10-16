@@ -260,7 +260,9 @@ class JobStore:
                     return existing.job
             except KeyError:
                 pass
-            self._write(StoredJob(job=job))
+            record = existing.model_copy(deep=True) if "existing" in locals() else StoredJob(job=job)
+            record.job = job
+            self._write(record)
             return job
 
     def get_token_digest(self, job_id: str) -> str | None:

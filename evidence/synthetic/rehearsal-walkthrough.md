@@ -5,8 +5,8 @@
 
 ## 0. 先说边界（本记录的效力范围）
 
-- **执行者是本准备包的同一会话**（DSH `session-68819f85-…`，创作该准备包的会话），**不是独立成员**。Issue #62 验收第 3 条要求的「由另一成员完成一次标注为演练的全流程走查」**仍未满足**，本记录不能替代它，只能作为「命令与口径确实可执行、可复算」的实跑证据。
-- 走查清单 `evidence/user-study-rehearsal-checklist.template.md` 保持 **13 条全部未勾选**：它是模板，勾选权属于那另一名成员。本记录按清单条目编号逐条给出实跑结果，便于其复核。
+- **历史事实**：本演练记录由准备包作者会话（DSH `session-68819f85-…`）执行，反映当时实际运行结果。**现行流程**：Issue #62 已于 2026-10-16 验收关闭，项目负责人正式取消指定其他成员人工走查及签署要求；本历史记录不再产生任何待完成的验收义务。
+- 走查清单 `evidence/user-study-rehearsal-checklist.template.md` 是空白模板，保持未勾选代表模板本身未记录执行结果，不构成验收阻塞。本记录按编号保留当时实跑证据。
 - 本次走查 **未联网**、**未 `git add` / `commit` / `push`**、**未写任何真实参与者数据**。
 - 演练链路的「材料效果 / 顺序效果」数字是**刻意平衡的演练数据**（每个条件各 3 人、每个等价题组各一次），只用来验证命令能跑通、分母口径清楚，**不构成任何结论**。
 
@@ -42,7 +42,7 @@ DSH 沙箱下 `tempfile.TemporaryDirectory()` 的 `mkdir(mode=0o700)` 会得到�
 | 1.7 | 冻结清单复核（见第 3 节） | 0 | 清单 29 个文件、13 条 `covered_globs`、9 个模板哈希逐条 `MATCH`；`dataset_sha256` 与 1.4 内部字段一致 |
 | 1.8 | `git check-ignore -v evidence/private/user-study/rehearsal-01/user-study.csv` | 0 | 命中 `.gitignore:28:evidence/private/`；走查前后 `git status --porcelain` 无新增未跟踪私有记录文件 |
 
-演练数据的复算口径（供独立走查者核对）：72 行观测中 `answer` 分布 A 30 / B 42，`is_correct` 60 true / 12 false；每行 `is_correct == (answer == answer_key.expected_answer)`（自洽违规 0 行）；`material` 与 `condition` 各 36/36。
+演练数据的复算口径（供任何复核者核对）：72 行观测中 `answer` 分布 A 30 / B 42，`is_correct` 60 true / 12 false；每行 `is_correct == (answer == answer_key.expected_answer)`（自洽违规 0 行）；`material` 与 `condition` 各 36/36。
 
 ## 3. 冻结清单：材料、工具与报告的版本／哈希
 
@@ -83,7 +83,7 @@ DSH 沙箱下 `tempfile.TemporaryDirectory()` 的 `mkdir(mode=0o700)` 会得到�
 
 ## 5. 未验证 / 已知限制（如实保留）
 
-- **独立成员走查未完成**：本记录由作者会话执行，验收第 3 条的「另一成员独立走查」仍待组员执行并签署清单第 3 节。
+- **流程修订（2026-10-16）**：不再设置其他成员人工走查及签署验收义务。保留作者会话的历史实跑记录，配合 CI 与冻结证据完成技术核验。
 - **`bash scripts/check.sh` / `pwsh -NoProfile -File scripts/check.ps1` 本机未跑通**：Git for Windows Bash 报 `couldn't create signal pipe, Win32 error 5`、`C:\Windows\system32\bash.exe` 返回 `E_ACCESSDENIED`（沙箱禁止命名管道），只能由 CI 执行；本地等价验证为 venv 内 `pytest` + `ruff` + 各校验脚本 + `themasterplan verify`。
 - **真实样本与真实参与者流程未执行**：本记录只走演练链路；真实研究需按 `evidence/user-study-consent.template.md`、`evidence/user-study-records-policy.template.md` 与主持脚本执行。
 - **原始 Trace 完整性边界**：`dataset_sha256` 只证明归一化数据集内容一致，不证明原始日志文件相同；原始 Trace 文件的哈希以本清单 `files[]` 中的逐文件 SHA-256 为准。
@@ -91,11 +91,11 @@ DSH 沙箱下 `tempfile.TemporaryDirectory()` 的 `mkdir(mode=0o700)` 会得到�
 
 ## 6. 结论
 
-**部分通过**（演练链路本身可执行、可复算：1.1–1.8 共 15 次调用全部退出码 0，冻结清单 29 个文件与 9 个模板哈希逐条吻合）。
+**当时的技术演练已通过**（演练链路本身可执行、可复算：1.1–1.8 共 15 次调用全部退出码 0；当时冻结清单与 9 个模板哈希逐条吻合）。后续模板修订应以最新 `freeze-manifest.json` 为准。
 
-不满足部分：Issue #62 验收第 3 条要求的**独立成员**全流程走查仍待组员完成；`scripts/check.sh` 的权威入口只能由 CI 核验。演练数据的一切指标（各 30/36、四格 15/18）不得当作真实结论。
+现行验收不要求其他成员人工走查；`scripts/check.sh` 的权威入口由 CI 核验。演练数据的一切指标（各 30/36、四格 15/18）不得当作真实结论。
 
 
 ## 7. 后续修复记录（第 6 轮复审，2026-10-16）
 
-此节是针对第 6 轮审查修复的**预期校验口径**说明，并非修改第 1–6 节的历史实跑记录；原作者会话的非独立走查身份不变。校验器改为默认纳入所有 `SYNTHETIC_REHEARSAL` 行（当前 72 条）执行答案键、一人一顺序、重复作答检查，不再显示 `rehearsal-excluded=72`。规范化数据集内容和 `dataset_sha256` 预期不变。以上仍需以更新提交的 CI 与另一名成员后续独立走查的实测结果为准，不能把本节当成已经完成独立成员走查的证据。
+此节是针对第 6 轮审查修复的**预期校验口径**说明，并非修改第 1–6 节的历史实跑记录；原作者会话的非独立走查身份不变。校验器改为默认纳入所有 `SYNTHETIC_REHEARSAL` 行（当前 72 条）执行答案键、一人一顺序、重复作答检查，不再显示 `rehearsal-excluded=72`。规范化数据集内容和 `dataset_sha256` 预期不变。以上以更新提交的 CI 和可复核产物为准；历史作者会话运行记录不等于实际用户实验。

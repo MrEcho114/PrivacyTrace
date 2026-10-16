@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from pydantic import Field
 
 from .models import Model
+from .web_intake import UploadTooLarge
 from .web_models import CandidateInput, DraftInput, ModelSettings, StartInput
 
 
@@ -86,7 +87,10 @@ def install_web_api(app, local_write):
             from .auth import generate_capability_token
 
             token, digest = generate_capability_token()
-            res = web_operation(lambda: service.create(payload, token_digest=digest))
+            owner_ip = getattr(request.state, "client_ip", "unknown")
+            res = web_operation(
+                lambda: service.create(payload, token_digest=digest, owner_ip=owner_ip)
+            )
         else:
             res = web_operation(lambda: service.create(payload))
         if is_remote:
@@ -109,6 +113,8 @@ def install_web_api(app, local_write):
             return await service.upload(draft_id, request)
         except KeyError as exc:
             raise HTTPException(404, detail="DRAFT_NOT_FOUND") from exc
+        except UploadTooLarge as exc:
+            raise HTTPException(413, detail="UPLOAD_TOO_LARGE") from exc
         except (ValueError, OSError) as exc:
             raise HTTPException(409, detail="UPLOAD_REJECTED") from exc
 

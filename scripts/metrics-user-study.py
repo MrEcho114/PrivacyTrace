@@ -22,6 +22,18 @@ into wrong answers. A missing ``evidence_located`` column is read as all-empty,
 which means no question asked for a location. No participant identity is
 exposed beyond anonymized ids.
 
+The experiment design is fixed, so a record may not invent its own:
+``condition`` accepts only the two designed reading orders, ``baseline_first``
+and ``report_first`` (see ``evidence/user-study-facilitator-script.template.md``),
+and ``participant_id`` and ``question_id`` must be non-empty ids of letters,
+digits, ``_``, ``.`` and ``-``. One row is exactly one
+``(participant_id, question_id, material)`` combination — the documented unit of
+an answer — and a repeated combination is rejected, so the same answer entered
+twice can never be read as a second experimental group. The key deliberately
+omits ``sample_id``: different participants may legitimately reuse a question id,
+and one question id may legitimately appear against a different material, so
+neither of those is a duplicate.
+
 Locate-time accounting (``evidence_locate_time_seconds``). Durations are split
 by ``evidence_located`` so that a fast failure can never be reported as faster
 than a slow success:
@@ -54,6 +66,7 @@ import argparse
 import csv
 import json
 import math
+import re
 import statistics
 from collections import Counter
 from pathlib import Path
@@ -62,6 +75,8 @@ REQUIRED = {"participant_id", "condition", "material", "question_id", "is_correc
 TRUE_VALUES = {"true", "1", "yes", "y", "t"}
 FALSE_VALUES = {"false", "0", "no", "n", "f"}
 MATERIALS = {"baseline", "privacyTrace"}
+CONDITIONS = {"baseline_first", "report_first"}
+ID_PATTERN = re.compile(r"[A-Za-z0-9_.-]+")
 NUMERIC_COLUMN = "evidence_loc_seconds"
 LOCATED_COLUMN = "evidence_located"
 CONCEPT_COLUMN = "misconception"
@@ -117,9 +132,67 @@ def parse_material(value: str) -> str:
     return material
 
 
+def parse_condition(value: str) -> str:
+    """Parse the designed reading order; raise on any other spelling."""
+    condition = value.strip()
+    if condition not in CONDITIONS:
+        raise ValueError(
+            f"condition must be one of {sorted(CONDITIONS)}, got {value!r}"
+        )
+    return condition
+
+
+def parse_id(value: str, column: str) -> str:
+    """Parse a required identifier; an empty or malformed id is rejected."""
+    identifier = value.strip()
+    if not identifier:
+        raise ValueError(f"{column} must not be empty, got {value!r}")
+    if not ID_PATTERN.fullmatch(identifier):
+        raise ValueError(
+            f"{column} must match {ID_PATTERN.pattern}, got {value!r}"
+        )
+    return identifier
+
+
 def split_concepts(value: str) -> list[str]:
     """Split a misconception cell on ``;`` and drop empty fragments."""
     return [part.strip() for part in value.split(";") if part.strip()]
+
+
+def answer_key(record: dict) -> tuple[str, str, str]:
+    """The documented unit of one answer: participant, question and material."""
+    return (
+        record["participant_id"],
+        record["question_id"],
+        record["material"],
+    )
+
+
+def reject_repeated_answers(
+    records: list[dict], line_numbers: list[int] | None = None
+) -> None:
+    """Raise when one ``(participant_id, question_id, material)`` combination repeats.
+
+    ``line_numbers``, when given, carries the source line of each record so the
+    error can point at both rows; in-memory records are reported by key alone.
+    """
+    first_seen: dict[tuple[str, str, str], int] = {}
+    for index, record in enumerate(records):
+        key = answer_key(record)
+        previous = first_seen.get(key)
+        if previous is None:
+            first_seen[key] = index
+            continue
+        where = ""
+        if line_numbers is not None:
+            where = (
+                f"; first recorded on line {line_numbers[previous]}, "
+                f"repeated on line {line_numbers[index]}"
+            )
+        raise ValueError(
+            f"duplicate answer for participant_id={key[0]!r}, "
+            f"question_id={key[1]!r}, material={key[2]!r}{where}"
+        )
 
 
 def load_records(path: Path) -> list[dict]:
@@ -132,13 +205,17 @@ def load_records(path: Path) -> list[dict]:
         if missing:
             raise ValueError(f"record file is missing required columns: {missing}")
         records = []
+        line_numbers = []
         for row in reader:
+            line_numbers.append(reader.line_num)
             records.append(
                 {
-                    "participant_id": row["participant_id"].strip(),
-                    "condition": row["condition"].strip(),
+                    "participant_id": parse_id(
+                        row["participant_id"], "participant_id"
+                    ),
+                    "condition": parse_condition(row["condition"]),
                     "material": parse_material(row["material"]),
-                    "question_id": row["question_id"].strip(),
+                    "question_id": parse_id(row["question_id"], "question_id"),
                     "is_correct": parse_bool(row["is_correct"]),
                     "evidence_loc_seconds": parse_seconds(
                         row.get(NUMERIC_COLUMN, "")
@@ -149,6 +226,7 @@ def load_records(path: Path) -> list[dict]:
             )
     if not records:
         raise ValueError("record file has no answer rows")
+    reject_repeated_answers(records, line_numbers)
     return records
 
 
@@ -214,7 +292,12 @@ def accuracy_block(subset: list[dict]) -> dict:
 
 
 def compute_metrics(records: list[dict]) -> dict:
-    """Aggregate records into the Issue #23 metric report."""
+    """Aggregate records into the Issue #23 metric report.
+
+    Records built in memory carry the same contract as a loaded CSV: a repeated
+    ``(participant_id, question_id, material)`` combination is rejected.
+    """
+    reject_repeated_answers(records)
     participants = sorted({record["participant_id"] for record in records})
     conditions = sorted({record["condition"] for record in records})
     materials = sorted({record["material"] for record in records})

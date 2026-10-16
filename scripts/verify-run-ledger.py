@@ -43,10 +43,58 @@ def parse_optional_int(value: str, field: str) -> int | None:
     return int(token)
 
 
-def _sample_ids(manifest: Path) -> set[str]:
-    with manifest.open(encoding="utf-8", newline="") as handle:
+def load_manifest(path: Path) -> list[dict]:
+    """Read the sample manifest, validating identity and recorded hashes.
+
+    The manifest is the second source of truth for sample identity, so it is
+    checked as strictly as the ledger: the ``sample_id`` column must exist, and
+    every value must be non-empty, match ``ID_PATTERN`` and be unique. A
+    recorded ``apk_sha256`` must be a lowercase SHA-256; an empty value, or a
+    missing column, means "not recorded" and stays acceptable. Two rows sharing
+    a ``sample_id`` are always rejected, even with different hashes, because the
+    dataset could not say which APK the sample refers to.
+
+    The returned dicts keep the five keys and stripped values the builder always
+    produced, so valid manifests yield the same dataset and ``dataset_sha256``.
+    This is the single definition of the manifest contract;
+    ``scripts/build-dataset.py`` delegates to it instead of parsing again.
+    """
+    with path.open(encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
-        return {row["sample_id"] for row in reader}
+        if "sample_id" not in (reader.fieldnames or []):
+            raise ValueError("Sample manifest is missing required columns")
+        rows = [
+            {
+                "sample_id": row.get("sample_id", "").strip(),
+                "package_name": row.get("package_name", "").strip(),
+                "version_name": row.get("version_name", "").strip(),
+                "version_code": row.get("version_code", "").strip(),
+                "apk_sha256": row.get("apk_sha256", "").strip(),
+            }
+            for row in reader
+        ]
+    seen_hashes: dict[str, str] = {}
+    for row in rows:
+        sample_id = row["sample_id"]
+        if not sample_id or not ID_PATTERN.fullmatch(sample_id):
+            raise ValueError(f"Invalid sample_id in manifest: {sample_id!r}")
+        if sample_id in seen_hashes:
+            raise ValueError(
+                f"Manifest has a duplicate sample_id {sample_id!r} "
+                f"(apk_sha256 {seen_hashes[sample_id]!r} and "
+                f"{row['apk_sha256']!r})"
+            )
+        seen_hashes[sample_id] = row["apk_sha256"]
+        apk_hash = row["apk_sha256"]
+        if apk_hash and not HASH_PATTERN.fullmatch(apk_hash):
+            raise ValueError(
+                f"apk_sha256 must be lowercase SHA-256 for {sample_id}: {apk_hash!r}"
+            )
+    return rows
+
+
+def _sample_ids(manifest: Path) -> set[str]:
+    return {row["sample_id"] for row in load_manifest(manifest)}
 
 
 def verify(ledger: Path, manifest: Path | None = None) -> list[dict]:

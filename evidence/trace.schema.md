@@ -33,6 +33,7 @@
 - **行数收敛**：每条 trace 行都会被归一成 `evidence`、`conclusion`，或计入 `trace_events.lifecycle`（`start`/`error`/`done`）；数据集里 `trace_events.total` 必须等于这三类计数之和，对不上就构建失败——不存在"读了却没进数据集"的行。
 - **账本先校验**：构建时先用 `scripts/verify-run-ledger.py` 校验 run 账本（未知样本、未知 outcome、非法 `report_sha256`、成功运行缺报告哈希都会被拒），再拿这些已校验记录去做 trace 引用闭合。因此即使 trace 目录为空，坏账本也无法产出 `dataset_sha256`。
 - 数据集 `schema_version` 为 `0.3.0`：`evidence`/`conclusions` 每条带 `event` 字段，`evidence` 另外保留原始 trace 行的 `status` 与 `detail`（`ok` 的成功线索与 `failed`/受限线索不会归一化成同一份内容），`runs` 直接取自已校验的账本记录（含 `scanned_at`、`evidence_count`/`behavior_count`/`claim_count`）；以上连同 `trace_events` 全部参与 `dataset_sha256` 计算。
+- **两类计数不同口径**：账本里的 `evidence_count`/`behavior_count`/`claim_count` 是报告侧计数，`trace_events` 里的 `evidence`/`conclusions`/`lifecycle` 是 trace 抽取事件的条数，两者不互相推导，构建器不做相等断言（`samples/synthetic` 中每个 trace 文件只有 1 条 `event=evidence`，账本却记 2/4/3/1；`behavior_count`/`claim_count` 在 trace 事件类型里没有对应项）；两处数字都原样进入 `dataset_sha256`。
 - **不写入** APK 字节、完整政策原文、反编译全文或任何凭据；`location` 只写定位摘要。
 
 ## 哈希边界（`dataset_sha256` 能证明什么）

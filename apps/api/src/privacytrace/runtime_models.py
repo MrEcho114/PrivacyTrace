@@ -98,13 +98,23 @@ class StoredJob(Model):
     coverage: ScanCoverage | None = None
     tools: dict[str, str] = Field(default_factory=dict)
     reviews: list[ReviewEvent] = Field(default_factory=list, max_length=1000)
+    token_digest: str | None = None
+    tombstone: bool = False
 
     @model_validator(mode="after")
     def validate_record(self):
-        if self.job.input_mode not in {"APK", "CONTROLLED_APK"}:
-            raise ValueError("Local persisted jobs require APK input mode")
-        if self.job.source_origin == "SYNTHETIC":
-            raise ValueError("Persisted jobs cannot claim a synthetic sample")
+        if self.tombstone:
+            return self
+        if self.bundle is not None:
+            if self.job.input_mode not in {"APK", "CONTROLLED_APK"}:
+                raise ValueError("Local persisted jobs require APK input mode")
+            if self.job.source_origin == "SYNTHETIC":
+                raise ValueError("Persisted jobs cannot claim a synthetic sample")
+        else:
+            if self.job.input_mode not in {"APK", "CONTROLLED_APK", "SYNTHETIC"}:
+                raise ValueError(
+                    "Local persisted jobs require APK, CONTROLLED_APK, or SYNTHETIC input mode"
+                )
         if self.job.created_at.tzinfo is None:
             raise ValueError("Job created_at requires a timezone")
         if self.bundle:

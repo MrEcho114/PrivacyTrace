@@ -17,7 +17,17 @@ concurrency:
 
 jobs:
   source-browser-offline:
-    name: six scenarios and independent offline replay
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: spec30
+            artifact_prefix: spec30
+            name: six scenarios and independent offline replay
+          - suite: pt907
+            artifact_prefix: pt907
+            name: twelve controlled scenarios and browser evidence
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -48,19 +58,21 @@ jobs:
           node tmp/spec30-browser/node_modules/playwright/cli.js install --with-deps chromium
 
       - name: Run actual source, isolated scan, HTTP, browser and offline acceptance
-        run: uv run --project apps/api --locked --extra worker python scripts/validate-spec30.py --output tmp/spec30-ci
+        run: uv run --project apps/api --locked --extra worker python scripts/validate-spec30.py --suite ${{ matrix.suite }} --output tmp/spec30-ci
 
       - name: Upload version-bound evidence, including failures
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: spec30-integration-${{ github.event.pull_request.head.sha || github.sha }}
+          name: ${{ matrix.artifact_prefix }}-integration-${{ github.event.pull_request.head.sha || github.sha }}
           # Include only the existing controlled export, never the job store or APKs.
           path: |
             tmp/spec30-ci/integration-receipt.json
             tmp/spec30-ci/build-a/build-receipt.json
             tmp/spec30-ci/build-b/build-receipt.json
             tmp/spec30-ci/evaluation/comparison.json
+            tmp/spec30-ci/evaluation/*.prediction.json
+            tmp/spec30-ci/evaluation/*.md
             tmp/spec30-ci/browser-proof/
             tmp/spec30-ci/offline-proof/
             tmp/spec30-ci/offline/

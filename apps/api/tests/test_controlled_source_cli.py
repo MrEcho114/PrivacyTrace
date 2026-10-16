@@ -10,15 +10,18 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from privacytrace.controlled import SUITES
 from privacytrace.main import create_app
-from privacytrace.resources import ROOT
 
-SUITE = ROOT / "benchmarks/controlled"
+SUITE_NAME = os.environ.get("PRIVACYTRACE_CONTROLLED_SUITE", "spec30")
+SUITE = SUITES[SUITE_NAME]
 ARTIFACTS = os.environ.get("PRIVACYTRACE_CONTROLLED_ARTIFACTS")
 pytestmark = pytest.mark.skipif(not ARTIFACTS, reason="requires fresh controlled source build")
 
 
 def cli(module, *args):
+    if module == "controlled":
+        args = (*args, "--suite", SUITE_NAME)
     result = subprocess.run(
         [sys.executable, "-m", "privacytrace." + module, *map(str, args)],
         capture_output=True, text=True, encoding="utf-8", timeout=180,
@@ -27,8 +30,11 @@ def cli(module, *args):
     return result.returncode, json.loads(result.stdout)
 
 
-@pytest.mark.parametrize("scenario,expected", [("C02", "EXACT_MATCH"),
-                                               ("C06", "INSUFFICIENT_EVIDENCE")])
+@pytest.mark.parametrize("scenario,expected", [
+    (scenario, label["expected"])
+    for scenario, label in json.loads((SUITE / "ground-truth.json").read_bytes())["scenarios"].items()
+    if SUITE_NAME == "pt907" or scenario in {"C02", "C06"}
+])
 def test_source_cli_http_roundtrip(tmp_path, scenario, expected):
     store = tmp_path / "jobs"
     code, output = cli(

@@ -114,7 +114,10 @@ def predict(features, artifacts, store_dir, timeout, suite=SUITE):
                      suite=suite)
     record = {
         "scenario_id": features.stem,
-        "analysis": output,
+        # Local report/receipt paths stay in the private job store, never in CI artifacts.
+        "analysis": {key: value for key, value in output.items()
+                     if key in {"job_id", "status", "coverage", "counts", "human_review_gate",
+                                "errors", "primary_error", "cleanup_errors"}},
         "elapsed_seconds": time.perf_counter() - started,
         "predictions": None,
     }

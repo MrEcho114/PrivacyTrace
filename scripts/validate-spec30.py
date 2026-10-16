@@ -209,7 +209,8 @@ def main():
         env = {**os.environ, "PRIVACYTRACE_CONTROLLED_ARTIFACTS": str(build_a),
                "PRIVACYTRACE_CONTROLLED_SUITE": args.suite}
         if not stage("source-cli-regressions", [sys.executable, "-m", "pytest",
-                     "apps/api/tests/test_controlled_source_cli.py", "-q", "-p", "no:cacheprovider"],
+                     "apps/api/tests/test_controlled_source_cli.py", "-q", "-p", "no:cacheprovider",
+                     "--basetemp", str(output / "source-cli-temp")],
                      env=env):
             return 1
         npm = "npm.cmd" if os.name == "nt" else "npm"

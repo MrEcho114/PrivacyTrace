@@ -4,7 +4,7 @@
 > 这是**模板**，不含真实参与者数据；演练记录一律标注 **SYNTHETIC ONLY / 演练**，不得冒充真实用户研究。
 > 用词要求：客观中立，不出现"偷数据 / 窃取 / 泄露 / 违法 / 违规"等定性词。
 
-配套文件：主持流程见 `evidence/user-study-facilitator-script.template.md`；材料与题集见 `evidence/user-study-comparison.template.md`；同意与退出口径见 `evidence/user-study-consent.template.md`；走查见 `evidence/user-study-rehearsal-checklist.template.md`。
+配套文件：主持流程见 `evidence/user-study-facilitator-script.template.md`；材料与题集见 `evidence/user-study-comparison.template.md`；同意与退出口径见 `evidence/user-study-consent.template.md`；可选操作检查见 `evidence/user-study-rehearsal-checklist.template.md`。
 
 ## 1. 记录单位与文件
 
@@ -74,7 +74,7 @@
 | 参与者退出前的已记行 | 不保留 | **要求退出时立即删除**（当场） | 删掉该参与者在该场的全部行；同意书副本一并删除 |
 | 原始逐题记录（真实） | 最长 90 天 | 汇总指标产出并复核后 **30 天内**删除原始记录 | 删除记录文件本体及其所在场次目录 |
 | 汇总数据（匿名、无身份信息） | 研究报告生命周期内 | 报告定稿后按项目归档规则处理 | 只保留汇总表与脚本复算输出 |
-| 演练记录 | 最长 30 天 | 走查结论签署后 **14 天内**删除 | 删除演练记录文件与临时输出目录 |
+| 演练记录 | 最长 30 天 | 演练完成后 **14 天内**删除 | 删除演练记录文件与临时输出目录 |
 | 计时/日志等中间文件 | 不保留 | 该场记录归档当天 | 删除 |
 | 备份或同步副本 | 与源同期限 | 与源同时删除 | 同步删除，不留在其它机器或云端 |
 
@@ -89,4 +89,4 @@
 ## 7. 本模板状态
 
 - 本文件是约定模板；删除/保留承诺在真实研究启动前由主办方确认。
-- 演练走查由**另一名成员**按 `evidence/user-study-rehearsal-checklist.template.md` 独立执行并留证。
+- `evidence/user-study-rehearsal-checklist.template.md` 为可选的操作核对参考，不增加额外人员安排或签署要求；准备包技术验收以自动化检查和冻结证据为准。

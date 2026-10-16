@@ -1,7 +1,7 @@
 # 理解测试准备包 · 演练记录（#23 PT-907 / Issue #62）
 
 > **SYNTHETIC ONLY / 演练**：本记录包含的全部数据都是 `scripts/generate-synthetic-pt907.py` 生成的演练数据（假包名 `synthetic.example.invalid`），不代表任何真实用户、真实 App 或真实研究结论，不得用于证明真实效果，也不得用于关闭 Issue #23。
-> 本文件已列入 `evidence/synthetic/freeze-manifest.json` 的 `excluded`，不参与准备包冻结（自引用问题）；它是演练检查的**记录**，不是被冻结的材料。
+> 本文件已列入 `evidence/synthetic/freeze-manifest.json` 的 `excluded`，不参与准备包冻结（自引用问题）；它只记录此次演练的执行情况，并不属于被冻结的材料。
 
 ## 0. 先说边界（本记录的效力范围）
 

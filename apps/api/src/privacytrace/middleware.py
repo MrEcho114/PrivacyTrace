@@ -438,18 +438,9 @@ class JobWriteBoundsMiddleware(BaseHTTPMiddleware):
                         status_code=413,
                         content={"detail": "UPLOAD_TOO_LARGE"},
                     )
-                # Stream inspection
-                chunks = []
-                size = 0
-                async for chunk in request.stream():
-                    size += len(chunk)
-                    if size > self.config.max_apk_body_bytes:
-                        return JSONResponse(
-                            status_code=413,
-                            content={"detail": "UPLOAD_TOO_LARGE"},
-                        )
-                    chunks.append(chunk)
-                request._body = b"".join(chunks)
+                # Preserve request streaming: WebIntake.upload validates the
+                # draft capability before consuming any body bytes, then
+                # streams directly to a bounded private temporary file.
 
             # Web drafts bound (8 MiB)
             elif path.startswith("/api/v1/web/drafts"):

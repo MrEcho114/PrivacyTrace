@@ -32,22 +32,48 @@ def install_web_api(app, local_write):
     async def input_error(request, exc):
         # Pydantic error inputs can contain keys or full private policy text.
         if not request.url.path.startswith("/api/v1/web/"):
-            return await request_validation_exception_handler(request, exc)
+            res = await request_validation_exception_handler(request, exc)
+            body = res.body.decode("utf-8")
+            if "pt_cap_" in body:
+                import json
+                import re
+
+                body = re.sub(r"pt_cap_[A-Za-z0-9_-]{20,}", "pt_cap_***", body)
+                return JSONResponse(status_code=422, content=json.loads(body))
+            return res
         return JSONResponse(status_code=422, content={"detail": "INPUT_VALIDATION_FAILED"})
 
     @app.get("/api/v1/web/settings")
-    def settings():
+    def settings(request: Request):
+        if getattr(app.state, "config", None) and app.state.config.mode == "remote":
+            raise HTTPException(403, detail="SETTINGS_FORBIDDEN_IN_REMOTE_MODE")
         return web_operation(service.settings)
 
     @app.post("/api/v1/web/settings")
     def configure(payload: ModelSettings, request: Request):
+        if getattr(app.state, "config", None) and app.state.config.mode == "remote":
+            raise HTTPException(403, detail="SETTINGS_FORBIDDEN_IN_REMOTE_MODE")
         local_write(request)
         return web_operation(lambda: service.configure(payload))
 
     @app.post("/api/v1/web/drafts")
     def create(payload: DraftInput, request: Request):
-        local_write(request)
-        return web_operation(lambda: service.create(payload))
+        is_remote = (
+            getattr(app.state, "config", None) and app.state.config.mode == "remote"
+        )
+        if not is_remote:
+            local_write(request)
+        res = web_operation(lambda: service.create(payload))
+        if is_remote:
+            from .auth import generate_capability_token
+
+            token, digest = generate_capability_token()
+            draft_dict = res if isinstance(res, dict) else res.model_dump()
+            draft_dict["capability_token"] = token
+            draft_dict["token"] = token
+            draft_dict["secret_token"] = token
+            return draft_dict
+        return res
 
     @app.get("/api/v1/web/drafts/{draft_id}")
     def get(draft_id: str):

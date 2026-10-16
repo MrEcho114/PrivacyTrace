@@ -1,0 +1,17 @@
+[
+  {
+    "index_id": "issue63-20261016/telegram-20261016",
+    "sample_id": "telegram-20261016",
+    "job_id": "issue63-telegram-20261016-01",
+    "artifacts": {
+      "input_sha256": "a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64",
+      "policy_html_sha256": "4c1d234b6adb171b927bd6a00273a57ed9a7a8cceb3aba5c872a9824d935dbcc",
+      "policy_text_sha256": "50720e7fdfcfbbef66c97d527fe51d66516ac8b3d7a272bb5f929346760ea19b",
+      "policy_capture_sha256": "63bf0357f0a9b908bea55a1af97b2d57724c0a7f408454040c9a97ee16c10d40",
+      "stored_job_sha256": "5f43c7ba4060541d5efe42f73d67aa79a1ff789feedf32f7258bb45060bc0659",
+      "report_sha256": "db0f07c92f15930563a9981e90f0cdb0daceb87502658c944ec80d30bce50793",
+      "isolation_receipt_sha256": "88e16c8fe31a6106cc3bfb2d151eccefde288e0c8e1917810c6b8b7b2a3e1318"
+    },
+    "custody": "Task private archive; ACL limited to local user, agent, SYSTEM and Administrators. Request by index ID; no filesystem path or temporary download token is public."
+  }
+]

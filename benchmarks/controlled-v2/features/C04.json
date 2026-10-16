@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "scenario_id": "C04",
+  "package_name": "org.privacytrace.controlled.c04",
+  "policy_file": "C04.txt",
+  "policy_sha256": "46bc5480f3096692f42f876f1d6ee1484ea46d7a26c6d090881d8567b3def9dd",
+  "scope_known": true,
+  "policy_complete": true,
+  "candidates": []
+}

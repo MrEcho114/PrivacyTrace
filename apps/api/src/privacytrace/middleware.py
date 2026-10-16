@@ -55,6 +55,19 @@ class TokenRedactionFilter(logging.Filter):
 
 
 def install_log_redaction() -> None:
+    # Sanitize before any logger routes records to existing or future handlers.
+    current_factory = logging.getLogRecordFactory()
+    if not getattr(current_factory, "_privacytrace_redacts_tokens", False):
+        sanitizer = TokenRedactionFilter()
+
+        def redacting_factory(*args, **kwargs):
+            record = current_factory(*args, **kwargs)
+            sanitizer.filter(record)
+            return record
+
+        redacting_factory._privacytrace_redacts_tokens = True
+        logging.setLogRecordFactory(redacting_factory)
+
     redaction_filter = TokenRedactionFilter()
     root_logger = logging.getLogger()
     if redaction_filter not in root_logger.filters:

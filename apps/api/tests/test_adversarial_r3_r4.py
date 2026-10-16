@@ -248,6 +248,19 @@ def test_adversarial_apk_upload_exceeding_150mb(tmp_path):
     assert r_hdr.status_code == 413
     assert r_hdr.json().get("detail") in ("UPLOAD_TOO_LARGE", "Request too large")
 
+    # Stream test must reach an authorized existing Draft, otherwise the route
+    # intentionally rejects before consuming the upload body.
+    created = client.post(
+        "/api/v1/web/drafts",
+        headers={"X-PrivacyTrace-Local": "1"},
+        json={
+            "name": "bounded",
+            "sources": [{"id": "policy", "title": "Privacy", "text": "policy text"}],
+        },
+    )
+    assert created.status_code == 200
+    draft_url = f"/api/v1/web/drafts/{created.json()['id']}/apk"
+
     # Streaming chunks exceeding 150 MiB
     def chunk_gen():
         chunk = b"X" * (1024 * 1024)
@@ -255,7 +268,7 @@ def test_adversarial_apk_upload_exceeding_150mb(tmp_path):
             yield chunk
 
     r_stream = client.post(
-        "/api/v1/web/drafts/d1/apk",
+        draft_url,
         headers={"X-PrivacyTrace-Local": "1", "Content-Type": "application/octet-stream"},
         content=chunk_gen(),
     )

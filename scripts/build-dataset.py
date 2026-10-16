@@ -5,6 +5,12 @@ run ledger), ``evidence`` and ``conclusions`` (both normalized from trace
 lines). Private material such as APK bytes, full policy text and decompiled
 sources never enters the dataset; only location summaries do.
 
+The manifest is read and validated through the sibling
+``scripts/verify-run-ledger.py`` contract, which is the single definition of the
+manifest rules (required ``sample_id`` column, unique non-empty sample IDs and
+lowercase SHA-256 hashes when recorded), so the builder never parses the CSV on
+its own.
+
 The ledger is read through the sibling ``scripts/verify-run-ledger.py``
 validator, so the build consumes exactly the rows that validator accepts:
 unknown samples, unknown outcomes and malformed report hashes fail the build
@@ -18,6 +24,14 @@ lifecycle event in ``trace_events``; the builder asserts that the counts add up
 to the number of lines read, so an unhandled event fails the build instead of
 vanishing.
 
+The ledger's ``evidence_count``/``behavior_count``/``claim_count`` are report
+counts, not trace counts: they are kept verbatim and feed ``dataset_sha256``,
+while ``trace_events`` counts the extraction lines the trace input carried. The
+builder therefore deliberately does not assert
+``evidence_count == trace_events["evidence"]``. On ``samples/synthetic`` every
+trace file holds one ``event=evidence`` line while the ledger records 2/4/3/1,
+and ``behavior_count``/``claim_count`` have no matching trace event at all.
+
 Every evidence record keeps the trace line's ``status`` and ``detail``, so a
 failed or partially extracted clue never collapses into the same dataset as a
 successful one. The ``dataset_sha256`` is computed over ``schema_version``,
@@ -28,7 +42,6 @@ same hash (the ``generated_at`` timestamp is deliberately excluded).
 from __future__ import annotations
 
 import argparse
-import csv
 import importlib.util
 import json
 from collections import Counter
@@ -67,18 +80,8 @@ def _ledger_contract():
 
 
 def load_manifest(path: Path) -> list[dict]:
-    with path.open(encoding="utf-8", newline="") as handle:
-        reader = csv.DictReader(handle)
-        return [
-            {
-                "sample_id": row["sample_id"].strip(),
-                "package_name": row.get("package_name", "").strip(),
-                "version_name": row.get("version_name", "").strip(),
-                "version_code": row.get("version_code", "").strip(),
-                "apk_sha256": row.get("apk_sha256", "").strip(),
-            }
-            for row in reader
-        ]
+    """Delegate to the ledger contract, the single definition of manifest rules."""
+    return _ledger_contract().load_manifest(path)
 
 
 def load_runs(path: Path, manifest: Path | None = None) -> list[dict]:

@@ -92,11 +92,11 @@ def write_traces(directory):
     )
 
 
-def build_with_trace(tmp_path, lines):
+def build_with_trace(tmp_path, lines, **ledger_overrides):
     manifest = tmp_path / "manifest.csv"
     ledger = tmp_path / "runs.csv"
     write_manifest(manifest)
-    write_ledger(ledger)
+    write_ledger(ledger, **ledger_overrides)
     write_trace_file(tmp_path / "trace", lines)
     return dataset_mod.build(manifest, ledger, tmp_path / "trace")
 
@@ -315,3 +315,76 @@ def test_main_exits_nonzero_on_missing_trace_directory(tmp_path, monkeypatch, ca
         dataset_mod.main()
     assert exit_info.value.code not in (0, None)
     assert str(missing_trace) in capsys.readouterr().err
+
+
+def write_manifest_rows(path, rows):
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(
+            ["sample_id", "package_name", "version_name", "version_code", "apk_sha256"]
+        )
+        for row in rows:
+            writer.writerow(row)
+
+
+def test_build_dataset_keeps_report_counts_independent_of_trace_events(tmp_path):
+    dataset = build_with_trace(tmp_path, [trace_line()], evidence_count="3")
+    assert dataset["runs"][0]["evidence_count"] == 3
+    assert dataset["trace_events"]["evidence"] == 1
+
+
+def test_build_dataset_hash_covers_report_counts(tmp_path):
+    one = build_with_trace(tmp_path, [trace_line()], evidence_count="1")
+    many = build_with_trace(tmp_path, [trace_line()], evidence_count="3")
+    assert one["runs"][0]["evidence_count"] == 1
+    assert many["runs"][0]["evidence_count"] == 3
+    assert one["dataset_sha256"] != many["dataset_sha256"]
+
+
+def test_build_dataset_rejects_duplicate_manifest_sample_id(tmp_path):
+    manifest = tmp_path / "manifest.csv"
+    ledger = tmp_path / "runs.csv"
+    trace_dir = tmp_path / "trace"
+    trace_dir.mkdir()
+    write_manifest_rows(
+        manifest,
+        [
+            ["app-1", "com.example.app", "1.0", "1", "a" * 64],
+            ["app-1", "com.example.app", "1.0", "1", "b" * 64],
+        ],
+    )
+    write_ledger(ledger)
+    with pytest.raises(ValueError, match="duplicate sample_id"):
+        dataset_mod.build(manifest, ledger, trace_dir)
+
+
+def test_main_exits_2_on_manifest_violation(tmp_path, monkeypatch, capsys):
+    manifest = tmp_path / "manifest.csv"
+    ledger = tmp_path / "runs.csv"
+    trace_dir = tmp_path / "trace"
+    trace_dir.mkdir()
+    write_manifest_rows(
+        manifest,
+        [
+            ["app-1", "com.example.app", "1.0", "1", "a" * 64],
+            ["app-1", "com.example.app", "1.0", "1", "b" * 64],
+        ],
+    )
+    write_ledger(ledger)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "build-dataset.py",
+            "--ledger",
+            str(ledger),
+            "--manifest",
+            str(manifest),
+            "--trace-dir",
+            str(trace_dir),
+        ],
+    )
+    with pytest.raises(SystemExit) as exit_info:
+        dataset_mod.main()
+    assert exit_info.value.code == 2
+    assert "duplicate sample_id" in capsys.readouterr().err

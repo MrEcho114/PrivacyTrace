@@ -20,12 +20,13 @@ def answer(
     seconds: float | None = None,
     misconception: str = "",
     located: bool | None = None,
+    question_id: str = "q1",
 ) -> dict:
     return {
         "participant_id": participant_id,
         "condition": condition,
         "material": material,
-        "question_id": "q1",
+        "question_id": question_id,
         "is_correct": is_correct,
         "evidence_loc_seconds": seconds,
         "evidence_located": located,
@@ -115,10 +116,10 @@ def test_compute_metrics_is_deterministic():
 
 def test_blank_is_correct_counts_as_missing_and_leaves_rates_alone():
     records = [
-        answer("p1", "baseline_first", "baseline", True, 12.0),
-        answer("p1", "baseline_first", "baseline", None),
-        answer("p2", "report_first", "privacyTrace", None),
-        answer("p2", "report_first", "privacyTrace", None),
+        answer("p1", "baseline_first", "baseline", True, 12.0, question_id="q1"),
+        answer("p1", "baseline_first", "baseline", None, question_id="q2"),
+        answer("p2", "report_first", "privacyTrace", None, question_id="q1"),
+        answer("p2", "report_first", "privacyTrace", None, question_id="q2"),
     ]
     metrics = metrics_mod.compute_metrics(records)
     assert metrics["records"] == 4
@@ -179,8 +180,8 @@ def test_fast_failure_is_not_reported_faster_than_slow_success():
 
 def test_blank_evidence_located_counts_as_not_required():
     records = [
-        answer("p1", "baseline_first", "baseline", True, 5.0, located=None),
-        answer("p1", "baseline_first", "baseline", True, 7.0, located=True),
+        answer("p1", "baseline_first", "baseline", True, 5.0, located=None, question_id="q1"),
+        answer("p1", "baseline_first", "baseline", True, 7.0, located=True, question_id="q2"),
     ]
     locate = metrics_mod.compute_metrics(records)["evidence_locate_time_seconds"]
     assert locate["not_required"]["records"] == 1
@@ -192,8 +193,8 @@ def test_blank_evidence_located_counts_as_not_required():
 
 def test_success_without_duration_is_counted_but_not_timed():
     records = [
-        answer("p1", "baseline_first", "baseline", True, None, located=True),
-        answer("p1", "baseline_first", "baseline", True, 4.0, located=True),
+        answer("p1", "baseline_first", "baseline", True, None, located=True, question_id="q1"),
+        answer("p1", "baseline_first", "baseline", True, 4.0, located=True, question_id="q2"),
     ]
     locate = metrics_mod.compute_metrics(records)["evidence_locate_time_seconds"]
     assert locate["success"]["records"] == 2
@@ -308,3 +309,97 @@ def test_parse_seconds_rejects_non_numeric():
 def test_selfcheck_prints_ok(capsys):
     metrics_mod.selfcheck()
     assert "selfcheck: OK" in capsys.readouterr().out
+
+
+def test_parse_condition_accepts_only_designed_orders():
+    assert metrics_mod.parse_condition(" baseline_first ") == "baseline_first"
+    assert metrics_mod.parse_condition("report_first") == "report_first"
+    with pytest.raises(ValueError, match="condition must be one of"):
+        metrics_mod.parse_condition("baseline-first")
+
+
+def test_load_records_rejects_unknown_condition(tmp_path):
+    path = write_csv(
+        tmp_path,
+        "participant_id,condition,material,question_id,is_correct\n"
+        "p1,baseline-first,baseline,q1,true\n",
+    )
+    with pytest.raises(ValueError, match="condition must be one of"):
+        metrics_mod.load_records(path)
+
+
+def test_load_records_rejects_blank_participant_id(tmp_path):
+    path = write_csv(
+        tmp_path,
+        "participant_id,condition,material,question_id,is_correct\n"
+        " ,baseline_first,baseline,q1,true\n",
+    )
+    with pytest.raises(ValueError, match="participant_id must not be empty"):
+        metrics_mod.load_records(path)
+
+
+def test_load_records_rejects_blank_question_id(tmp_path):
+    path = write_csv(
+        tmp_path,
+        "participant_id,condition,material,question_id,is_correct\n"
+        "p1,baseline_first,baseline, ,true\n",
+    )
+    with pytest.raises(ValueError, match="question_id must not be empty"):
+        metrics_mod.load_records(path)
+
+
+def test_load_records_rejects_malformed_id(tmp_path):
+    path = write_csv(
+        tmp_path,
+        "participant_id,condition,material,question_id,is_correct\n"
+        "p 1,baseline_first,baseline,q1,true\n",
+    )
+    with pytest.raises(ValueError, match="participant_id must match"):
+        metrics_mod.load_records(path)
+
+
+def test_load_records_rejects_repeated_answer_and_reports_both_lines(tmp_path):
+    path = write_csv(
+        tmp_path,
+        "participant_id,condition,material,question_id,is_correct\n"
+        "p1,baseline_first,baseline,q1,true\n"
+        "p2,report_first,baseline,q2,true\n"
+        "p1,baseline_first,baseline,q1,false\n",
+    )
+    with pytest.raises(ValueError) as excinfo:
+        metrics_mod.load_records(path)
+    message = str(excinfo.value)
+    assert "duplicate answer" in message
+    assert "participant_id='p1'" in message
+    assert "question_id='q1'" in message
+    assert "material='baseline'" in message
+    assert "line 2" in message
+    assert "line 4" in message
+
+
+def test_load_records_allows_shared_question_across_participants_and_materials(tmp_path):
+    path = write_csv(
+        tmp_path,
+        "participant_id,condition,material,question_id,is_correct\n"
+        "p1,baseline_first,baseline,q1,true\n"
+        "p2,report_first,baseline,q1,true\n"
+        "p1,baseline_first,privacyTrace,q1,true\n",
+    )
+    assert len(metrics_mod.load_records(path)) == 3
+
+
+def test_compute_metrics_rejects_repeated_answer():
+    records = [
+        answer("p1", "baseline_first", "baseline", True, question_id="q1"),
+        answer("p1", "baseline_first", "baseline", True, question_id="q1"),
+    ]
+    with pytest.raises(ValueError, match="duplicate answer"):
+        metrics_mod.compute_metrics(records)
+
+
+def test_compute_metrics_allows_shared_question_across_materials():
+    records = [
+        answer("p1", "baseline_first", "baseline", True, question_id="q1"),
+        answer("p1", "baseline_first", "privacyTrace", True, question_id="q1"),
+    ]
+    assert metrics_mod.compute_metrics(records)["records"] == 2

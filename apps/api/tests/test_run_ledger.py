@@ -26,6 +26,14 @@ def append_row(path, row):
         writer.writerow(row)
 
 
+def write_manifest_rows(path, fieldnames, rows):
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(fieldnames)
+        for row in rows:
+            writer.writerow(row)
+
+
 def write_ledger(path, row):
     fieldnames = [
         "run_id",
@@ -181,3 +189,125 @@ def test_verify_allows_same_job_id_for_different_samples(tmp_path):
         ("app-1", "job-1"),
         ("app-2", "job-1"),
     ]
+
+
+HASH_A = "a" * 64
+HASH_B = "b" * 64
+
+
+def test_load_manifest_returns_stripped_five_key_rows(tmp_path):
+    manifest = tmp_path / "manifest.csv"
+    write_manifest_rows(
+        manifest,
+        ["sample_id", "package_name", "version_name", "version_code", "apk_sha256"],
+        [[" app-1 ", " com.example.app ", " 1.0 ", " 1 ", f" {HASH_A} "]],
+    )
+    assert ledger_mod.load_manifest(manifest) == [
+        {
+            "sample_id": "app-1",
+            "package_name": "com.example.app",
+            "version_name": "1.0",
+            "version_code": "1",
+            "apk_sha256": HASH_A,
+        }
+    ]
+
+
+def test_load_manifest_allows_missing_apk_sha256_column(tmp_path):
+    manifest = tmp_path / "manifest.csv"
+    write_manifest(manifest)
+    assert ledger_mod.load_manifest(manifest) == [
+        {
+            "sample_id": "app-1",
+            "package_name": "com.example.app-1",
+            "version_name": "",
+            "version_code": "",
+            "apk_sha256": "",
+        }
+    ]
+
+
+def test_verify_allows_manifest_with_empty_apk_sha256(tmp_path):
+    manifest = tmp_path / "manifest.csv"
+    write_manifest_rows(
+        manifest,
+        ["sample_id", "package_name", "apk_sha256"],
+        [["app-1", "com.example.app-1", ""]],
+    )
+    ledger = tmp_path / "runs.csv"
+    write_ledger(ledger, base_row())
+    rows = ledger_mod.verify(ledger, manifest)
+    assert rows[0]["sample_id"] == "app-1"
+
+
+def test_load_manifest_allows_header_only_manifest(tmp_path):
+    manifest = tmp_path / "manifest.csv"
+    write_manifest_rows(manifest, ["sample_id", "apk_sha256"], [])
+    assert ledger_mod.load_manifest(manifest) == []
+
+
+def test_load_manifest_rejects_duplicate_sample_id(tmp_path):
+    manifest = tmp_path / "manifest.csv"
+    write_manifest_rows(
+        manifest,
+        ["sample_id", "apk_sha256"],
+        [["app-1", HASH_A], ["app-1", HASH_A]],
+    )
+    with pytest.raises(ValueError, match="duplicate sample_id") as error:
+        ledger_mod.load_manifest(manifest)
+    assert "app-1" in str(error.value)
+
+
+def test_load_manifest_rejects_duplicate_sample_id_with_different_hashes(tmp_path):
+    manifest = tmp_path / "manifest.csv"
+    write_manifest_rows(
+        manifest,
+        ["sample_id", "apk_sha256"],
+        [["app-1", HASH_A], ["app-1", HASH_B]],
+    )
+    with pytest.raises(ValueError, match="duplicate sample_id") as error:
+        ledger_mod.load_manifest(manifest)
+    message = str(error.value)
+    assert HASH_A in message
+    assert HASH_B in message
+
+
+def test_verify_rejects_manifest_with_duplicate_sample_id(tmp_path):
+    manifest = tmp_path / "manifest.csv"
+    write_manifest_rows(
+        manifest,
+        ["sample_id", "apk_sha256"],
+        [["app-1", HASH_A], ["app-1", HASH_B]],
+    )
+    ledger = tmp_path / "runs.csv"
+    write_ledger(ledger, base_row())
+    with pytest.raises(ValueError, match="duplicate sample_id"):
+        ledger_mod.verify(ledger, manifest)
+
+
+@pytest.mark.parametrize("sample_id", ["", "app 1", "app/1"])
+def test_load_manifest_rejects_invalid_sample_id(tmp_path, sample_id):
+    manifest = tmp_path / "manifest.csv"
+    write_manifest_rows(
+        manifest, ["sample_id", "package_name"], [[sample_id, "com.example.app"]]
+    )
+    with pytest.raises(ValueError, match="Invalid sample_id"):
+        ledger_mod.load_manifest(manifest)
+
+
+def test_load_manifest_rejects_missing_sample_id_column(tmp_path):
+    manifest = tmp_path / "manifest.csv"
+    write_manifest_rows(manifest, ["package_name"], [["com.example.app"]])
+    with pytest.raises(ValueError, match="missing required columns"):
+        ledger_mod.load_manifest(manifest)
+
+
+@pytest.mark.parametrize(
+    "bad_hash",
+    ["A" * 64, "a" * 63, "a" * 65, "g" * 64, "not-a-hash"],
+)
+def test_load_manifest_rejects_bad_apk_sha256(tmp_path, bad_hash):
+    manifest = tmp_path / "manifest.csv"
+    write_manifest_rows(manifest, ["sample_id", "apk_sha256"], [["app-1", bad_hash]])
+    with pytest.raises(ValueError, match="lowercase SHA-256"):
+        ledger_mod.load_manifest(manifest)

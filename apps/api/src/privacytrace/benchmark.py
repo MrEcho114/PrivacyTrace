@@ -10,9 +10,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
+from pydantic import ValidationError
+
 from .controlled import SUITE, SUITES, analyze, scenario_ids
 from .isolated_scan import docker_prefix
 from .job_store import JobStore
+from .models import EvaluationInput
 from .policy_intake import digest, read_safe
 from .resources import ACTIVE_SDK_SIGNATURES_VERSION, ROOT, SDK_SIGNATURE_FILES, taxonomy
 
@@ -108,6 +111,30 @@ def schemes(report):
     return output
 
 
+def validate_policy_spans(report):
+    """Audit the current material with the same Unicode/codepoint contract as intake.
+
+    Revalidate serialized values, including document identities and snapshot hashes;
+    existing model instances may have been modified since their initial validation.
+    Do not export policy text or exception messages containing private input.
+    """
+    material = report.model_dump(
+        mode="json", include={"job", "evidence", "behaviors", "policy_documents", "policy_claims"},
+    )
+    try:
+        bundle = EvaluationInput.model_validate(material)
+    except ValidationError:
+        return {"validated": False, "checked_evidence_ids": [],
+                "errors": [{"code": "POLICY_EVIDENCE_INVALID"}]}
+    return {
+        "validated": True,
+        "checked_evidence_ids": sorted(item.id for item in bundle.evidence
+                                       if item.kind == "POLICY_SENTENCE"),
+        "policy_document_sha256": {doc.id: doc.artifact.sha256 for doc in bundle.policy_documents},
+        "errors": [],
+    }
+
+
 def predict(features, artifacts, store_dir, timeout, suite=SUITE):
     started = time.perf_counter()
     output = analyze(features, artifacts, store_dir, timeout, "controlled-" + uuid4().hex,
@@ -123,13 +150,23 @@ def predict(features, artifacts, store_dir, timeout, suite=SUITE):
     }
     if output["status"] == "SUCCEEDED":
         report = JobStore(store_dir).report(output["job_id"])
+        policy_validation = validate_policy_spans(report)
+        record.update(policy_spans_validated=policy_validation["validated"],
+                      policy_span_validation=policy_validation)
+        if not policy_validation["validated"]:
+            record["elapsed_seconds"] = time.perf_counter() - started
+            return record
         record.update(
             **schemes(report),
             coverage=report.coverage.model_dump(),
             api_evidence=[
                 item.model_dump(mode="json") for item in report.evidence if item.api_call
             ],
-            policy_spans_validated=True,
+            evidence_locators=[
+                item.model_dump(mode="json",
+                                include={"id", "kind", "source", "locator", "api_call"})
+                for item in report.evidence
+            ],
             features_sha256=digest(read_safe(features)),
             stored_job_sha256=digest(read_safe(store_dir / (output["job_id"] + ".json"))),
             report_sha256=digest(report.model_dump_json().encode()),
@@ -138,6 +175,33 @@ def predict(features, artifacts, store_dir, timeout, suite=SUITE):
         )
     record["elapsed_seconds"] = time.perf_counter() - started
     return record
+
+
+def api_locators_match(api, scenario, label):
+    """Independent frozen mapping/location check, for either shared or referenced APIs."""
+    rules = taxonomy()
+    expected_caller = label.get("caller_descriptor", (
+        "Lorg/privacytrace/controlled/" + scenario.lower()
+        + "/MainActivity;->readLocation(Landroid/location/LocationManager;)"
+        "Landroid/location/Location;"
+    ))
+    return len(api) == label["api_count"] and all(
+        item["api_call"]["target_descriptor"] == label["target_descriptor"]
+        and item["api_call"]["ruleset_version"] == rules["version"]
+        and item["api_call"]["context"] == label.get("target_context", {"provider": "gps"})
+        and any(
+            rule["rule_id"] == item["api_call"]["rule_id"]
+            and rule["data_type"] == label["data_type"]
+            and rule["target_descriptor"] == item["api_call"]["target_descriptor"]
+            and rule["context"] == item["api_call"]["context"]
+            for rule in rules["api_mappings"]
+        )
+        and "caller=" + expected_caller + ";" in item["locator"]
+        and (re.search(r"offset_bytes=\d+;", item["locator"]) is not None
+             if "caller_descriptor" in label else "offset_bytes=4;" in item["locator"])
+        and item["source"] == "classes.dex"
+        for item in api
+    )
 
 
 def score(records, truth):
@@ -171,29 +235,21 @@ def score(records, truth):
             actual = statuses[0] if len(statuses) == 1 else None
             success = bool(record and record["analysis"]["status"] == "SUCCEEDED")
             api = record.get("api_evidence", []) if record else []
-            rules = taxonomy()
-            expected_caller = label.get("caller_descriptor", (
-                "Lorg/privacytrace/controlled/"
-                + scenario.lower()
-                + "/MainActivity;->readLocation(Landroid/location/LocationManager;)"
-                "Landroid/location/Location;"
-            ))
-            located = len(api) == label["api_count"] and all(
-                item["api_call"]["target_descriptor"] == label["target_descriptor"]
-                and item["api_call"]["context"] == label.get("target_context", {"provider": "gps"})
-                and any(
-                    rule["rule_id"] == item["api_call"]["rule_id"]
-                    and rule["data_type"] == label["data_type"]
-                    and rule["target_descriptor"] == item["api_call"]["target_descriptor"]
-                    and rule["context"] == item["api_call"]["context"]
-                    for rule in rules["api_mappings"]
-                )
-                and "caller=" + expected_caller in item["locator"]
-                and (re.search(r"offset_bytes=\d+;", item["locator"]) is not None
-                     if "caller_descriptor" in label else "offset_bytes=4;" in item["locator"])
-                and item["source"] == "classes.dex"
-                for item in api
+            located = api_locators_match(api, scenario, label)
+            locators = {item["id"]: item for item in (record or {}).get("evidence_locators", [])}
+            refs = sorted({ref for item in matching for ref in item["evidence_ids"]})
+            refs_exist = bool(matching and refs) and all(ref in locators for ref in refs)
+            referenced_api = [locators[ref] for ref in refs if ref in locators
+                              and locators[ref].get("api_call")]
+            # No sensitive invoke is expected in capability-only cases (C01).
+            # Verify that absence in the shared scan; it is not a scheme API locator success.
+            scheme_located = (
+                success and refs_exist and api_locators_match(referenced_api, scenario, label)
+                if label["api_count"] else None
             )
+            policy_validation = record.get("policy_span_validation", {}) if record else {}
+            policy_valid = bool(success and policy_validation.get("validated")
+                                and not policy_validation.get("errors"))
             agreement = success and actual == label["expected"]
             summary = summaries[scheme]
             summary["status_agreement"] += int(agreement)
@@ -207,10 +263,10 @@ def score(records, truth):
                     "expected": label["expected"],
                     "actual": actual,
                     "agreement": agreement,
-                    "api_mapping_and_locator_checked": success and located,
-                    "policy_spans_validated": record.get("policy_spans_validated", False)
-                    if record
-                    else False,
+                    "shared_scanner_api_evidence_verified": success and located,
+                    "scheme_prediction_evidence_locator_validated": scheme_located,
+                    "scheme_evidence_references_resolved": success and refs_exist,
+                    "shared_policy_spans_validated": policy_valid,
                     "elapsed_seconds": record.get("elapsed_seconds") if record else None,
                     "scheme_elapsed_seconds": record.get("scheme_elapsed_seconds", {}).get(scheme)
                     if record
@@ -220,12 +276,10 @@ def score(records, truth):
                     if record
                     else False,
                     "material_sha256": record.get("material_sha256") if record else None,
-                    "evidence_ids": sorted(
-                        {ref for item in matching for ref in item["evidence_ids"]}
-                    ),
-                    "errors": record["analysis"].get("errors", [])
-                    if record
-                    else [{"code": "MISSING_RECORD"}],
+                    "evidence_ids": refs,
+                    "errors": ((record["analysis"].get("errors", []) if record
+                                else [{"code": "MISSING_RECORD"}])
+                               + policy_validation.get("errors", [])),
                     "analysis_status": record["analysis"]["status"] if record else "MISSING",
                     "features_sha256": record.get("features_sha256") if record else None,
                     "apk_sha256": record.get("apk_sha256") if record else None,
@@ -249,9 +303,17 @@ def diagnostics(rows):
         result[scheme] = {
             "total": len(selected),
             "confusion_counts": confusion,
-            "mapping_and_locator_checked": sum(row["api_mapping_and_locator_checked"]
-                                               for row in selected),
-            "policy_spans_validated": sum(row["policy_spans_validated"] for row in selected),
+            "shared_scanner_api_evidence_verified": sum(
+                row["shared_scanner_api_evidence_verified"] for row in selected),
+            "scheme_prediction_evidence_locator_validated": sum(
+                row["scheme_prediction_evidence_locator_validated"] is True for row in selected),
+            "scheme_api_locator_applicable": sum(
+                row["scheme_prediction_evidence_locator_validated"] is not None
+                for row in selected),
+            "scheme_api_locator_not_applicable": sum(
+                row["scheme_prediction_evidence_locator_validated"] is None for row in selected),
+            "shared_policy_spans_validated": sum(
+                row["shared_policy_spans_validated"] for row in selected),
             "coverage_complete": sum((row["coverage"] or {}).get("status") == "COMPLETE"
                                      for row in selected),
             "coverage_partial": sum((row["coverage"] or {}).get("status") == "PARTIAL"
@@ -277,15 +339,21 @@ def comparison_markdown(result):
     lines = ["# Controlled comparison", "",
              f"Suite: {result['suite']}; truth SHA256: `{result['truth_sha256']}`.", "",
              "One target per source scenario; failures and abstentions remain in the denominator.",
-             "Status agreement, API mapping/location and DEX processing coverage are separate.", "",
+             "Shared scanner evidence, scheme-referenced API locators and status agreement "
+             "are separate. Scheme API locators are N/A when the frozen target has no invoke.", "",
              "| Scheme | Total | Status agreement | Failures | Abstentions | "
-             "Mapping/location | Complete DEX | Truncated |",
-             "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+             "Shared scanner | Scheme API locators (applicable) | API N/A | "
+             "Shared policy spans | Complete DEX | Truncated |",
+             "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
     for scheme, summary in result["summaries"].items():
         detail = result["diagnostics"][scheme]
         lines.append(f"| {scheme} | {summary['total']} | {summary['status_agreement']} | "
                      f"{summary['failures']} | {summary['abstentions']} | "
-                     f"{detail['mapping_and_locator_checked']} | {detail['coverage_complete']} | "
+                     f"{detail['shared_scanner_api_evidence_verified']} | "
+                     f"{detail['scheme_prediction_evidence_locator_validated']}/"
+                     f"{detail['scheme_api_locator_applicable']} | "
+                     f"{detail['scheme_api_locator_not_applicable']} | "
+                     f"{detail['shared_policy_spans_validated']} | {detail['coverage_complete']} | "
                      f"{detail['truncated_outputs']} |")
     lines.extend(["", "| Scenario | Scheme | Expected | Actual | Agreement | Errors |",
                   "| --- | --- | --- | --- | --- | --- |"])
@@ -379,7 +447,7 @@ def run_benchmark(artifacts, output, timeout, blocked_error=None, *, suite=SUITE
             path.relative_to(ROOT).as_posix(): digest(read_safe(path))
             for path in implementation_files
         },
-        "schema_version": 1,
+        "schema_version": 2,
         "suite": next(name for name, path in SUITES.items() if path == suite),
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "truth_sha256": digest(truth_raw),
@@ -405,8 +473,10 @@ def run_benchmark(artifacts, output, timeout, blocked_error=None, *, suite=SUITE
     (output / "comparison.md").write_text(comparison_markdown(result), encoding="utf-8")
     passed = all(
         row["agreement"]
-        and row["api_mapping_and_locator_checked"]
-        and row["policy_spans_validated"]
+        and row["shared_scanner_api_evidence_verified"]
+        and row["scheme_prediction_evidence_locator_validated"] is not False
+        and row["scheme_evidence_references_resolved"]
+        and row["shared_policy_spans_validated"]
         and row["truth_files_absent"]
         and row["coverage"]["status"] == "COMPLETE"
         for row in rows

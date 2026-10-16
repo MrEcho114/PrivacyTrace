@@ -1,0 +1,8 @@
+# SYNTHETIC_REHEARSAL：由 scripts/generate-synthetic-pt907.py 生成；非真实证据，不得用于 Issue #23 验收。
+participant_id,condition,material_order,equivalent_set,notes
+syn-user-01,baseline_first,baseline;privacyTrace,eq-01,SYNTHETIC_REHEARSAL
+syn-user-02,baseline_first,baseline;privacyTrace,eq-02,SYNTHETIC_REHEARSAL
+syn-user-03,baseline_first,baseline;privacyTrace,eq-03,SYNTHETIC_REHEARSAL
+syn-user-04,report_first,privacyTrace;baseline,eq-01,SYNTHETIC_REHEARSAL
+syn-user-05,report_first,privacyTrace;baseline,eq-02,SYNTHETIC_REHEARSAL
+syn-user-06,report_first,privacyTrace;baseline,eq-03,SYNTHETIC_REHEARSAL

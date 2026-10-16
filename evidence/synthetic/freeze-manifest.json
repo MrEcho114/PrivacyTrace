@@ -71,7 +71,7 @@
     },
     {
       "path": "evidence/user-study-consent.template.md",
-      "sha256": "5734d7a22525b0302d7530d56acd9e6566353ca5716791ea5c40766b2263c949",
+      "sha256": "b228de84e70196215dd53d48b5065e21e90c4fa97a4aba95a96eea728ecfe403",
       "bytes": 2073
     },
     {
@@ -91,7 +91,7 @@
     },
     {
       "path": "evidence/user-study-rehearsal-checklist.template.md",
-      "sha256": "82392e9f327df9cb93ff1dcca8f514d51d51ee95fe42f2d13fbbe96d11b8f1c3",
+      "sha256": "e90bc6948fa4c0fed96939f1a8537013942aff66b2686209fe5d19afb8eb2eea",
       "bytes": 10992
     },
     {

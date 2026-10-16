@@ -191,7 +191,8 @@ def main():
                 "expected",
                 "actual",
                 "agreement",
-                "api_mapping_and_locator_checked",
+                "shared_scanner_api_evidence_verified",
+                "scheme_prediction_evidence_locator_validated",
                 "elapsed_seconds",
                 "errors",
             )
@@ -205,7 +206,8 @@ td,th{border:1px solid #999;padding:.5rem}table{border-collapse:collapse}</style
 <h1>OFFLINE REPLAY · 六场景三方案比较</h1><p>六个自建小样本；基线输出仅作实验记录。
 静态调用不证明实际采集、违法或安全。不报告自动政策抽取准确率或商业应用全局召回。</p>
 <table><thead><tr><th>场景</th><th>方案</th><th>预期</th><th>实际</th><th>一致</th>
-<th>API定位核对</th><th>秒（同材料端到端，共享扫描）</th><th>失败</th></tr></thead><tbody>"""
+<th>共享扫描API核对</th><th>方案引用API定位（None=不适用）</th>
+<th>秒（同材料端到端，共享扫描）</th><th>失败</th></tr></thead><tbody>"""
     page += (
         rows
         + "</tbody></table><h2>方案使用材料与限制</h2><pre>"

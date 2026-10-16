@@ -1,0 +1,59 @@
+{
+  "writer": "Codex",
+  "delivery_channel": "USER_AUTHORIZED_120_SECOND_CINEMATIC_REDESIGN",
+  "completed": true,
+  "source_archive_sha256": "e35abb2ba02f686ee2ac73b551f905fb8900dc13a548290c95f25db5b252a475",
+  "source_files": [
+    {
+      "file": "01-Director-Review-and-180s-Spec.md",
+      "sha256": "e2d03045db85887759eefc05eb9734111b9885d774e5386dba5973c9ad4ae015"
+    },
+    {
+      "file": "02-storyboard.json",
+      "sha256": "ea9876e2be849f20ae301408c2a45e0dff8da1afccca90c49a2da52297a3ffd6"
+    },
+    {
+      "file": "03-film.mjs",
+      "sha256": "6d05c8a5a9c15ed94541ce7a8fa63b72754c9353e1097a2f2733b590b24f8e09"
+    },
+    {
+      "file": "04-index.html",
+      "sha256": "807a549df29136ccc4c60ff89ad7f348b31768e1628c5b0da9d0d983ed0a302f"
+    }
+  ],
+  "adopted_date": "2026-10-15",
+  "adopted_narrative_sha256": "c50f8b16088756c986dfc23fcbb47efb71b4d7dbce86147939735207a0b84c36",
+  "main_agent_role": "Original camera design, plain-language edit, integration and independent delivery verification",
+  "narrative_fields_equal_to_supplied_storyboard": false,
+  "original_pngs_identical": true,
+  "technical_amendments": [
+    "New analytic perspective camera, physical panel thickness and focus rack; exact square reading holds",
+    "Original exploded package opening, three-plane process gallery, code/policy evidence desk and report-reassembly closing",
+    "Timeline metadata drives playback, export, music, camera guards, media checks and portable package duration",
+    "Original procedural cue recomposed to 120 seconds; no Pioneer footage, artwork, music or mascot reused"
+  ],
+  "limits": [
+    "Author statements about complete viewing are self-reports, not independently established",
+    "Supplied crop verification does not replace browser, media and factual verification",
+    "No human aesthetic acceptance inferred from receiving the archive"
+  ],
+  "visual_and_timing_source": "Codex original 120-second / 18-shot design, informed by actual Pioneer v8 film and its camera/reading rhythm; original PrivacyTrace captures retained",
+  "authorization": "2026-10-15 direct user request: learn Pioneer, add beautiful shots, control duration to two minutes and be creative; supersedes the 180-second timing/20-shot preservation constraint and earlier Gemini wording restriction; latest user steering replaces the opening question and vague metaphor with direct statements of the product function, without API-style wording",
+  "skills_applied": [
+    "humanizer-zh",
+    "writing-clearly-and-concisely",
+    "ux-writing",
+    "frontend-design"
+  ],
+  "previous_candidate": "9e225977bc4e8ede24643f3510c39f19a18cc3e9",
+  "review": "Independent read-only camera/source review plus actual browser, raw-frame, encoded-media and offline-package verification; no human aesthetic acceptance inferred",
+  "prior_candidate_authorized_factual_amendments": [
+    {
+      "shot": "quote",
+      "field": "copy",
+      "from": "左侧高亮定位",
+      "to": "左侧原文列出",
+      "authorization": "Direct user approval in this chat on 2026-10-15; only this factual wording change"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PrivacyTrace：从代码查到隐私政策</title>
+  <style>
+    @font-face{font-family:FilmSans;src:url('./assets/fonts/NotoSansSC-Variable.woff2')}@font-face{font-family:FilmSerif;src:url('./assets/fonts/NotoSerifSC-Variable.woff2')}
+    *{box-sizing:border-box}body{margin:0;background:#080909;color:#eee8d8;font-family:FilmSans,sans-serif;min-height:100vh;display:grid;place-items:center}main{width:100%;max-width:1920px}canvas{display:block;width:100%;aspect-ratio:16/9;max-height:calc(100vh - 100px);object-fit:contain;background:#080909}nav{display:flex;gap:12px;align-items:center;padding:14px 24px;background:#111316;border-top:1px solid #262a30}button{font:inherit;background:#1b1f24;color:#eee8d8;border:1px solid #383e47;border-radius:6px;padding:8px 16px;cursor:pointer}button:hover:not(:disabled){background:#252a31}button:disabled{opacity:.55;cursor:wait}button:focus-visible,input:focus-visible{outline:2px solid #82b3a4;outline-offset:3px}input{flex:1;min-width:60px;accent-color:#82b3a4}output{font-variant-numeric:tabular-nums;white-space:nowrap;color:#d0c9b9}#error{padding:12px;color:#db8a55}.export nav,.export #error{display:none}.export main{width:1920px}.export canvas{width:1920px;height:1080px;max-height:none;object-fit:fill}
+    @media(max-width:640px){nav{flex-wrap:wrap;padding:12px;gap:8px}input{order:2;flex-basis:100%}button{padding:8px 10px;font-size:14px}output{margin-left:auto;font-size:14px}}
+  </style>
+</head>
+<body>
+  <main aria-label="PrivacyTrace 120 秒展示影片">
+    <canvas id="film" width="1920" height="1080" role="img" aria-label="影片正在准备"></canvas>
+    <nav aria-label="影片播放控制">
+      <button id="play" disabled>播放</button><button id="restart" disabled>重播</button>
+      <input id="timeline" type="range" min="0" max="120" step="0.0333333333" value="0" aria-label="影片时间轴">
+      <output id="time" for="timeline">0:00 / 2:00</output><button id="fullscreen">全屏</button>
+    </nav>
+    <p id="error" role="alert">正在加载本地字体、素材与配乐…</p>
+    <audio id="music" preload="auto" src="./assets/soundtrack.m4a"></audio>
+  </main>
+  <script src="./data.js" defer></script>
+  <script src="./cinema.js" defer></script>
+  <script src="./film.mjs" defer></script>
+</body>
+</html>

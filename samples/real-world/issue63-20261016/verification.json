@@ -1,0 +1,79 @@
+{
+  "validated_at": "2026-10-16T01:09:59.856724+00:00",
+  "scan_code_sha": "f54fdb26d5674dbf41a965716ddcca5e78af844b",
+  "worker_source_sha": "4cae1fd7e2ddb68345f389aa19535d2fc3db26ec",
+  "scope": "Append-only #63 result archive; no historical files, scanner, shared tools, workflows or other task files changed.",
+  "candidate_ledger_verifier": {
+    "pr": 61,
+    "source_commit": "210c941e64d2872a01d169069d65b28bf3b8728e",
+    "script": "scripts/verify-run-ledger.py",
+    "script_sha256": "3f95962d117faf90454e18cc22bbe9f3497867bf1d4e1d35502616637efc8311",
+    "merged": false,
+    "results": [
+      {
+        "archive": "issue63-20261015",
+        "verified_rows": 4,
+        "exit_code": 0
+      },
+      {
+        "archive": "issue63-20261016",
+        "verified_rows": 1,
+        "exit_code": 0
+      }
+    ]
+  },
+  "existing_registry_verifier": {
+    "script": "scripts/verify-real-samples.py",
+    "script_sha256": "c480dd38e252afdb2f1b02c8ba29aee535117eee1b5735867fd7a431fdeb56ae",
+    "execution": "Inspected restricted Docker, no network, read-only, non-root, resource-limited; two read-only mounts; container removal verified.",
+    "verified_samples": [
+      "telegram-20261016"
+    ],
+    "exit_code": 0
+  },
+  "artifact_checks": {
+    "private_original_byte_hashes": 34,
+    "previous_original_byte_hashes": 27,
+    "new_original_byte_hashes": 7,
+    "validated_policy_captures": 5,
+    "report_byte_hashes": 4,
+    "rule_reference_closure": 53,
+    "previous_rule_reference_closure": 12,
+    "new_rule_reference_closure": 41,
+    "all_rule_results": "INSUFFICIENT_EVIDENCE",
+    "isolation_cleanup_receipts": 5,
+    "previous_public_file_hashes": 7,
+    "new_static_and_policy_evidence_locators": 43,
+    "previous_omitted_locators_added": 3,
+    "public_path_or_token_pattern_matches": 0,
+    "review": "Main-agent original byte/hash/reference audit plus read-only Luna review of previous originals; not human semantic policy review."
+  },
+  "files_sha256": {
+    "acquisitions.json": "c055fb0d75f24791e430c8d34b8bd6f9f92047d045fc3457007051cc88a088ce",
+    "candidates.csv": "9cfa3c4b7ec16f877eb37c594f8ae7e7ea1369c5cb6d68f01da6e4727f85d99e",
+    "manifest.csv": "9cfa3c4b7ec16f877eb37c594f8ae7e7ea1369c5cb6d68f01da6e4727f85d99e",
+    "previous-reference-supplement.json": "ba3be8c266f838d77fddd7c382175ee6fc433aa7752d4b565a2c2c427b6e8fe3",
+    "README.md": "26ea1d649485baf5323af2a29eb8d987353dc633c977ae4a6875839dd05e8a9a",
+    "restricted-index.json": "816112aeb9545fd1749cff54833c075c33169a29dbea5f0bb74c655d00c56099",
+    "runs.csv": "59820162c62f817331cd0acd5589da34620877aaa6deacb40677d9ae0ad5ffe6",
+    "summary.json": "7ead7aa3e42bdeee2fc2e01395999b0514d639b3f3462ebfa15b118260484f7d"
+  },
+  "remote_ci": "Recorded in PR for the final delivery SHA; not asserted by this pre-commit artifact.",
+  "authoritative_check": {
+    "command": "PRIVACYTRACE_DOCKER_TESTS=1 pwsh -NoProfile -File scripts/check.ps1",
+    "exit_code": 0,
+    "api_passed": 628,
+    "api_skipped": 9,
+    "api_warning": 1,
+    "api_seconds": 174.33,
+    "web_passed": 46,
+    "web_skipped": 0,
+    "ruff": "PASSED",
+    "schema_diff": "NONE",
+    "typecheck": "PASSED",
+    "build": "PASSED",
+    "docker_regression": "ENABLED",
+    "skips": "Nine controlled-source CLI cases require a fresh controlled-source build absent from this local checkout; existing Spec30 Integration CI builds and checks controlled sources separately.",
+    "private_log_sha256": "4b23ff47ab85989abf2894066f7f74aa0ffb3c74a3d0aedb93b9458a59308421"
+  }
+}

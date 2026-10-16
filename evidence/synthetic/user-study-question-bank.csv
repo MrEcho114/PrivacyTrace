@@ -1,0 +1,14 @@
+# SYNTHETIC_REHEARSAL：由 scripts/generate-synthetic-pt907.py 生成；非真实证据，不得用于 Issue #23 验收。
+question_id,dimension,equivalent_set,stem,notes
+q01,location,eq-01,这个 App 会不会用到你的【定位】？请说明依据。,SYNTHETIC_REHEARSAL
+q07,location,eq-01,你认为这个 App 是否涉及【定位】？请说明依据。,SYNTHETIC_REHEARSAL
+q02,contacts,eq-02,这个 App 会不会用到你的【联系人】？请说明依据。,SYNTHETIC_REHEARSAL
+q08,contacts,eq-02,你认为这个 App 是否涉及【联系人】？请说明依据。,SYNTHETIC_REHEARSAL
+q03,camera,eq-03,这个 App 会不会用到你的【相机】？请说明依据。,SYNTHETIC_REHEARSAL
+q09,camera,eq-03,你认为这个 App 是否涉及【相机】？请说明依据。,SYNTHETIC_REHEARSAL
+q04,other,eq-04,这个 App 会不会用到你的【设备标识】？请说明依据。,SYNTHETIC_REHEARSAL
+q10,other,eq-04,你认为这个 App 是否涉及【设备标识】？请说明依据。,SYNTHETIC_REHEARSAL
+q05,location,eq-05,这个 App 会不会用到你的【定位】？请说明依据。,SYNTHETIC_REHEARSAL
+q11,location,eq-05,你认为这个 App 是否涉及【定位】？请说明依据。,SYNTHETIC_REHEARSAL
+q06,contacts,eq-06,这个 App 会不会用到你的【联系人】？请说明依据。,SYNTHETIC_REHEARSAL
+q12,contacts,eq-06,你认为这个 App 是否涉及【联系人】？请说明依据。,SYNTHETIC_REHEARSAL

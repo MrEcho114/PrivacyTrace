@@ -1,0 +1,98 @@
+{
+  "previous_archive": "../issue63-20261015",
+  "previous_delivery_sha": "dffc3d28a448b66a99b463e270c5a53227e21a80",
+  "purpose": "Append three omitted public locators from original reports. Original bytes and result statuses remain unchanged; this is source/report replay, not new APK scans.",
+  "samples": [
+    {
+      "sample_id": "newpipe-v0.29.1",
+      "job_id": "issue63-newpipe-v0-29-1-01",
+      "report_sha256": "856b315f3223b2f31365c0bb045bae43dc6d78ee03e948c68976d9fa9b683fe7",
+      "added_static_trace_examples": [
+        {
+          "id": "ev-997f18b108985f00fd062387",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=18447bfb1e06d113edc88df93f471827280de06f6f3d4dc42f56f28b9c1bab79;dex=classes.dex;caller=Lorg/acra/collector/DeviceIdCollector;->collect(Lorg/acra/ReportField;Landroid/content/Context;Lorg/acra/config/CoreConfiguration;Lorg/acra/builder/ReportBuilder;Lorg/acra/data/CrashReportData;)V;offset_bytes=62;target=Landroid/telephony/TelephonyManager;->getDeviceId()Ljava/lang/String;",
+          "api_call": {
+            "target_descriptor": "Landroid/telephony/TelephonyManager;->getDeviceId()Ljava/lang/String;",
+            "rule_id": "android.identifier.device-id",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        }
+      ],
+      "affected_rule_results": [
+        {
+          "id": "issue-4",
+          "behavior_id": "behavior-997f18b108985f00fd062387",
+          "data_type": "DEVICE_IDENTIFIER",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-997f18b108985f00fd062387",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        }
+      ]
+    },
+    {
+      "sample_id": "k9mail-24.0",
+      "job_id": "issue63-k9mail-24-0-01",
+      "report_sha256": "8608fd61c432e5345e8a75aa0572e8856aa1c0efb661044f3b4053a9670ca5f7",
+      "added_static_trace_examples": [
+        {
+          "id": "ev-6985f1f8f92404da733a71b1",
+          "kind": "MANIFEST",
+          "status": "STATIC_POTENTIAL",
+          "source": "AndroidManifest.xml",
+          "locator": "apk_sha256=6b80ec681f0c882ca334f4d533778e6e50e814ee214db798d9e129a369a85af4;permission=android.permission.CAMERA;tag=uses-permission",
+          "api_call": null
+        },
+        {
+          "id": "ev-b45ad094a17084417976b2a4",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=6b80ec681f0c882ca334f4d533778e6e50e814ee214db798d9e129a369a85af4;dex=classes.dex;caller=Landroidx/cardview/widget/CardView$1;->openCamera-RzXb1QE(Ljava/lang/String;Landroid/hardware/camera2/CameraDevice$StateCallback;)V;offset_bytes=126;target=Landroid/hardware/camera2/CameraManager;->openCamera(Ljava/lang/String;Landroid/hardware/camera2/CameraDevice$StateCallback;Landroid/os/Handler;)V",
+          "api_call": {
+            "target_descriptor": "Landroid/hardware/camera2/CameraManager;->openCamera(Ljava/lang/String;Landroid/hardware/camera2/CameraDevice$StateCallback;Landroid/os/Handler;)V",
+            "rule_id": "android.camera.manager-open",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        }
+      ],
+      "affected_rule_results": [
+        {
+          "id": "issue-2",
+          "behavior_id": "behavior-6985f1f8f92404da733a71b1",
+          "data_type": "CAMERA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-6985f1f8f92404da733a71b1"
+          ],
+          "policy_document_ids": [],
+          "requires_review": true
+        },
+        {
+          "id": "issue-5",
+          "behavior_id": "behavior-b45ad094a17084417976b2a4",
+          "data_type": "CAMERA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-b45ad094a17084417976b2a4",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        }
+      ]
+    }
+  ]
+}

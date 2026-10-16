@@ -1,0 +1,268 @@
+{
+  "passed": true,
+  "source_commit": "6d781fde97fe69169db916ab473224a24ed5ce93",
+  "recorded_at": "2026-10-14T08:37:45.011Z",
+  "policy_source_mode": "AUTHORED_LOCAL_HTTP_FIXTURES_WITH_TEST_DNS",
+  "model_mode": "REAL_DEEPSEEK_REQUEST",
+  "model": "deepseek-flash",
+  "apk_mode": "CONSTRUCTED_BINARY_ORDINARY_UPLOAD",
+  "scanner": "RESTRICTED_DOCKER",
+  "captures": [
+    {
+      "file": "assets/stills/import.png",
+      "sha256": "1b8aa1d235c79b93bf1c874a373c3d05c4d48e114ab7a4d2a6d643ce7564a22d",
+      "viewport": [
+        1440,
+        900
+      ],
+      "section": "viewport",
+      "recorded_at": "2026-10-14T08:37:48.52Z",
+      "draft_revision": null
+    },
+    {
+      "file": "assets/stills/candidates.png",
+      "sha256": "ca20b80e29d01ffc48c6a92c34dc19a8172bedc0f03a37c5a657c3d286056ce9",
+      "viewport": [
+        1440,
+        900
+      ],
+      "section": "viewport",
+      "recorded_at": "2026-10-14T08:37:51.38Z",
+      "draft_revision": 7
+    },
+    {
+      "file": "assets/stills/quote.png",
+      "sha256": "e16a2606e5f4c5b6e23beee41ac2959388ca82d62043f04db1b5d1a5f6a80506",
+      "viewport": [
+        1440,
+        900
+      ],
+      "section": ".candidate-grid",
+      "recorded_at": "2026-10-14T08:37:51.593Z",
+      "draft_revision": 7
+    },
+    {
+      "file": "assets/stills/edit.png",
+      "sha256": "5eb4d005087acda184b1ea2c4b679f622742305afe9c945ec5436571613f8151",
+      "viewport": [
+        1440,
+        900
+      ],
+      "section": ".candidate-grid",
+      "recorded_at": "2026-10-14T08:37:51.799Z",
+      "draft_revision": 7
+    },
+    {
+      "file": "assets/stills/third-party.png",
+      "sha256": "5dfec4b7f72c77af173f6c7b6066e4ac654a51b79f7a9ed1d858ff4493737d65",
+      "viewport": [
+        1440,
+        900
+      ],
+      "section": ".candidate-grid",
+      "recorded_at": "2026-10-14T08:37:52.394Z",
+      "draft_revision": 7
+    },
+    {
+      "file": "assets/stills/progress.png",
+      "sha256": "158e1ac8bb102881f589b4bacd4eeafd0c17c932146a1afbd1427d7d1ecc476e",
+      "viewport": [
+        1440,
+        900
+      ],
+      "section": "viewport",
+      "recorded_at": "2026-10-14T08:37:52.577Z",
+      "draft_revision": 11
+    },
+    {
+      "file": "assets/stills/complete.png",
+      "sha256": "1039c0ec2cf2551367fd16df84029bb3c328cea4d0862da2cdcc3ee65effe99c",
+      "viewport": [
+        1440,
+        900
+      ],
+      "section": "viewport",
+      "recorded_at": "2026-10-14T08:37:56.957Z",
+      "draft_revision": 12
+    },
+    {
+      "file": "assets/stills/report.png",
+      "sha256": "e1397c871934253f2a3eb69fc7588e028822e155d467f34d17e44fc6589e4ce7",
+      "viewport": [
+        1440,
+        900
+      ],
+      "section": "viewport",
+      "recorded_at": "2026-10-14T08:37:57.139Z",
+      "draft_revision": 12
+    },
+    {
+      "file": "assets/stills/evidence.png",
+      "sha256": "75a02b0444ecb7c4460bda25830a7497ed11e803910a03bb10fc764d9df9adc4",
+      "viewport": [
+        1440,
+        900
+      ],
+      "section": "#evidence-panel",
+      "recorded_at": "2026-10-14T08:37:57.384Z",
+      "draft_revision": 12
+    },
+    {
+      "file": "assets/stills/source.png",
+      "sha256": "ca557f6d7a0d41ede362853f4d08e5ca1c8539b5f81dc3a96ee0eaef0b7bbb43",
+      "viewport": [
+        1440,
+        900
+      ],
+      "section": ".provenance > article:first-of-type",
+      "recorded_at": "2026-10-14T08:37:57.553Z",
+      "draft_revision": 12
+    }
+  ],
+  "page_errors": [],
+  "apk_sha256": "363f5fc32652b6745a5f9a529d8c003c8fbc2926db1777c025714222fac322ff",
+  "job_id": "27aa4ea8914e48c38a7964d7f145121c",
+  "draft_revision": 12,
+  "sources": [
+    {
+      "title": "受控宿主政策",
+      "status": "ready",
+      "sha256": "030b0d91a76cc6ae9f49f1a581a476cf0906065382971e9f6df5f203b187c759",
+      "captured_at": "2026-10-14T16:37:48.610908+08:00",
+      "model_audit": {
+        "schema_version": 1,
+        "status": "SUCCESS",
+        "model": "deepseek-flash",
+        "prompt_version": "1.0.0",
+        "ruleset_version": "0.3.0",
+        "prompt_sha256": "4efe5e3f4a997ada60a931aef8aa01db8b7136c36289ac53033be6d614c25c92",
+        "endpoint_identifier": "a34e2a4708ed1c61008a151688838dcf1c44d4e7f08054633e72ba7c0b16cfc1",
+        "document_sha256": "030b0d91a76cc6ae9f49f1a581a476cf0906065382971e9f6df5f203b187c759",
+        "duration_ms": 1155,
+        "attempts": 1,
+        "prompt_tokens": 483,
+        "completion_tokens": 181,
+        "total_tokens": 664,
+        "cached_spans": 0,
+        "processed_spans": 1,
+        "rejected_count": 0,
+        "extracted_candidates": 2,
+        "limited_candidates": 0,
+        "requires_human_review": true
+      }
+    },
+    {
+      "title": "受控第三方政策",
+      "status": "ready",
+      "sha256": "e1bfbfbd397a0c1b872ba04ac1ab00975382dd7b08967218a4e6f9cdcdd13c45",
+      "captured_at": "2026-10-14T16:37:48.642787+08:00",
+      "model_audit": {
+        "schema_version": 1,
+        "status": "SUCCESS",
+        "model": "deepseek-flash",
+        "prompt_version": "1.0.0",
+        "ruleset_version": "0.3.0",
+        "prompt_sha256": "4efe5e3f4a997ada60a931aef8aa01db8b7136c36289ac53033be6d614c25c92",
+        "endpoint_identifier": "a34e2a4708ed1c61008a151688838dcf1c44d4e7f08054633e72ba7c0b16cfc1",
+        "document_sha256": "e1bfbfbd397a0c1b872ba04ac1ab00975382dd7b08967218a4e6f9cdcdd13c45",
+        "duration_ms": 875,
+        "attempts": 1,
+        "prompt_tokens": 476,
+        "completion_tokens": 92,
+        "total_tokens": 568,
+        "cached_spans": 0,
+        "processed_spans": 1,
+        "rejected_count": 0,
+        "extracted_candidates": 1,
+        "limited_candidates": 0,
+        "requires_human_review": true
+      }
+    },
+    {
+      "title": "失败来源保留",
+      "status": "failed",
+      "sha256": null,
+      "captured_at": null,
+      "model_audit": {}
+    }
+  ],
+  "candidates": [
+    {
+      "data_type": "PRECISE_LOCATION",
+      "polarity": "AFFIRMATIVE",
+      "subject": "HOST_APP",
+      "excerpt": "当您使用位置查询时，我们会访问精确位置，用于显示当前位置。",
+      "condition": "使用位置查询时",
+      "checked": true
+    },
+    {
+      "data_type": "CONTACTS",
+      "polarity": "NEGATIVE",
+      "subject": "HOST_APP",
+      "excerpt": "我们不会读取联系人。",
+      "condition": null,
+      "checked": true
+    },
+    {
+      "data_type": "LOCATION",
+      "polarity": "UNKNOWN",
+      "subject": "THIRD_PARTY",
+      "excerpt": "第三方位置服务可能处理位置信息，具体范围和条件未说明。",
+      "condition": null,
+      "checked": true
+    }
+  ],
+  "events": [
+    {
+      "state": "QUEUED",
+      "at": "2026-10-14T16:37:52.463251+08:00"
+    },
+    {
+      "state": "INTAKE",
+      "at": "2026-10-14T16:37:52.482193+08:00"
+    },
+    {
+      "state": "STATIC_ANALYSIS",
+      "at": "2026-10-14T16:37:52.498854+08:00"
+    },
+    {
+      "state": "POLICY_PARSING",
+      "at": "2026-10-14T16:37:56.100383+08:00"
+    },
+    {
+      "state": "EVALUATING",
+      "at": "2026-10-14T16:37:56.114206+08:00"
+    },
+    {
+      "state": "REPORTING",
+      "at": "2026-10-14T16:37:56.13188+08:00"
+    },
+    {
+      "state": "SUCCEEDED",
+      "at": "2026-10-14T16:37:56.151714+08:00"
+    }
+  ],
+  "isolation": {
+    "container_created": true,
+    "input_removed": true,
+    "cleanup_verified": true
+  },
+  "result_states": [
+    {
+      "data_type": "PRECISE_LOCATION",
+      "status": "INSUFFICIENT_EVIDENCE"
+    },
+    {
+      "data_type": "PRECISE_LOCATION",
+      "status": "INSUFFICIENT_EVIDENCE"
+    }
+  ],
+  "api_evidence": [
+    {
+      "id": "ev-fe8010a0c2573500d64f254d",
+      "source": "classes.dex",
+      "locator": "apk_sha256=363f5fc32652b6745a5f9a529d8c003c8fbc2926db1777c025714222fac322ff;dex=classes.dex;caller=Lorg/privacytrace/fixture/Main;->run()V;offset_bytes=6;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "target": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;"
+    }
+  ]
+}

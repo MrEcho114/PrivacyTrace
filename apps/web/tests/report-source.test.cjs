@@ -269,3 +269,25 @@ test('the panel stays visible when nothing was truncated', async () => {
   assert.match(output, /第三方 SDK 归属/)
   assert.match(output, /不参与政策一致性判定/)
 })
+
+test('failed controlled source APK keeps its provenance without a report', async () => {
+  const { state } = mount([{ id: 'failed-controlled', state: 'FAILED',
+    input_mode: 'CONTROLLED_APK', source_origin: 'CONTROLLED' }])
+  await state.reload(true)
+  assert.equal(state.report.value, null)
+  assert.equal(state.sourceInfo.value.label, 'CONTROLLED_APK · 自建受控场景')
+})
+
+test('historical unknown and UI fixture reports do not claim an actual CLI scan', async () => {
+  for (const origin of ['UNKNOWN', 'CONTROLLED']) {
+    const fixture = sdkFixture([])
+    fixture.job.source_origin = origin
+    fixture.job.created_at = '2026-10-09T00:00:00Z'
+    const { state } = mount([{ id: 'sdk-job', state: 'SUCCEEDED' }], fixture)
+    await state.reload(true)
+    const output = await html(state)
+    assert.match(output, /记录创建时点/)
+    assert.match(output, /未留存分析生成时点/)
+    assert.doesNotMatch(output, /CLI 实际扫描生成/)
+  }
+})

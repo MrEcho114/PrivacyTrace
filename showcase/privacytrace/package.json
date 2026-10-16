@@ -1,0 +1,8 @@
+{
+  "name": "privacytrace-film",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Editable local PrivacyTrace film; playback needs no installed dependencies",
+  "scripts": {"prepare":"node prepare.cjs", "preview":"node server.cjs", "render":"node render.cjs", "verify":"node verify.cjs --video --full"},
+  "devDependencies": {"playwright":"1.64.0"}
+}

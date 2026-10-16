@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "scenario_id": "C02",
+  "package_name": "org.privacytrace.controlled.c02",
+  "policy_file": "C02.txt",
+  "policy_sha256": "e00c9039757eb8300f858c2a507555ae366ed3efa61c5dace073d5849f56b10c",
+  "scope_known": true,
+  "policy_complete": true,
+  "candidates": [
+    {
+      "excerpt": "我们访问精确位置。",
+      "data_type": "PRECISE_LOCATION",
+      "polarity": "AFFIRMATIVE",
+      "subject": "HOST_APP",
+      "action": "ACCESS"
+    }
+  ]
+}

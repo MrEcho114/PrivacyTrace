@@ -1,0 +1,37 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "enabled": {
+      "default": false,
+      "title": "Enabled",
+      "type": "boolean"
+    },
+    "api_base": {
+      "default": "",
+      "maxLength": 2000,
+      "title": "Api Base",
+      "type": "string"
+    },
+    "model": {
+      "default": "",
+      "maxLength": 100,
+      "title": "Model",
+      "type": "string"
+    },
+    "api_key": {
+      "anyOf": [
+        {
+          "maxLength": 4096,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Api Key"
+    }
+  },
+  "title": "ModelSettings",
+  "type": "object"
+}

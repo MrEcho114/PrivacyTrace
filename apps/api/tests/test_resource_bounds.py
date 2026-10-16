@@ -134,13 +134,24 @@ def test_apk_upload_streaming_exceeding_150mb_returns_413(tmp_path, monkeypatch)
     app = get_app(tmp_path, mode="local", monkeypatch=monkeypatch)
     client = TestClient(app, base_url="http://localhost")
 
+    created = client.post(
+        "/api/v1/web/drafts",
+        headers={"X-PrivacyTrace-Local": "1"},
+        json={
+            "name": "stream-limit",
+            "sources": [{"id": "policy", "title": "Privacy", "text": "policy text"}],
+        },
+    )
+    assert created.status_code == 200
+    draft_url = f"/api/v1/web/drafts/{created.json()['id']}/apk"
+
     def chunk_generator():
         chunk = b"a" * (1024 * 1024)
         for _ in range(151):
             yield chunk
 
     resp = client.post(
-        "/api/v1/web/drafts/test-draft/apk",
+        draft_url,
         headers={"X-PrivacyTrace-Local": "1", "Content-Type": "application/octet-stream"},
         content=chunk_generator(),
     )

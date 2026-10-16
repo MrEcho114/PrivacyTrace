@@ -253,29 +253,35 @@ def test_scenario_4_denial_of_service_and_resource_flood(tmp_path, monkeypatch, 
     client = TestClient(app, base_url="http://testserver")
 
     # 1. 512 KiB limit on reviews
+    job_id, job_token, _ = create_job_or_draft(client)
     huge_note = "A" * (600 * 1024)
     resp_huge_json = client.post(
-        "/api/v1/jobs/sample-job/reviews",
+        f"/api/v1/jobs/{job_id}/reviews",
         json={"actor": "tester", "reason": "flood", "note": huge_note},
-        headers={"Authorization": "Bearer pt_cap_flood_test_token_123"},
+        headers={"Authorization": f"Bearer {job_token}"},
     )
-    assert resp_huge_json.status_code in (413, 401, 403)
+    assert resp_huge_json.status_code == 413
 
     # 2. 150 MiB limit on APK upload
+    created = client.post("/api/v1/web/drafts", json={"name": "flood", "sources": [
+        {"id": "policy", "title": "Policy", "text": "Policy text"},
+    ]})
+    assert created.status_code == 200
+    draft = created.json()
     oversized_length = str(160 * 1024 * 1024)
     resp_huge_apk = client.post(
-        "/api/v1/web/drafts/sample-draft/apk",
+        f"/api/v1/web/drafts/{draft['id']}/apk",
         headers={
             "Content-Length": oversized_length,
             "Content-Type": "application/octet-stream",
-            "Authorization": "Bearer pt_cap_flood_test_token_123",
+            "Authorization": f"Bearer {draft['token']}",
         },
         content=b"x" * 1024,
     )
-    assert resp_huge_apk.status_code in (413, 401, 403)
+    assert resp_huge_apk.status_code == 413
 
     # 3. Log redaction verification
-    assert "flood_test_token_123" not in caplog.text
+    assert job_token not in caplog.text and draft["token"] not in caplog.text
 
 
 # ==============================================================================

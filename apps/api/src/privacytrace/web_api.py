@@ -1,13 +1,12 @@
 """HTTP seam for local private intake; no browser-supplied scanner facts."""
 
-import hmac
-
 from fastapi import HTTPException, Request
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import Field
 
+from .auth import authorize_draft_access
 from .models import Model
 from .web_intake import UploadTooLarge
 from .web_models import CandidateInput, DraftInput, ModelSettings, StartInput
@@ -64,17 +63,7 @@ def install_web_api(app, local_write):
             if request.method != "GET":
                 local_write(request)
             return
-        from .auth import TOKEN_REGEX, extract_token_from_request, hash_token
-
-        token = extract_token_from_request(request)
-        if not token or not TOKEN_REGEX.fullmatch(token):
-            raise HTTPException(status_code=401, detail="Draft capability token required")
-        try:
-            digest = service.get_draft_token_digest(draft_id)
-        except KeyError as exc:
-            raise HTTPException(status_code=404, detail="DRAFT_NOT_FOUND") from exc
-        if not digest or not hmac.compare_digest(hash_token(token), digest):
-            raise HTTPException(status_code=403, detail="Draft access denied")
+        authorize_draft_access(request, service, draft_id)
 
     @app.post("/api/v1/web/drafts")
     def create(payload: DraftInput, request: Request):

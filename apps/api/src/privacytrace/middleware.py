@@ -4,7 +4,6 @@ import ipaddress
 import logging
 import re
 import time
-from collections import defaultdict
 from threading import Lock
 from urllib.parse import urlparse
 
@@ -37,8 +36,8 @@ def redact_log_value(value, depth=0):
     if isinstance(value, (int, float, bool, type(None))):
         return value
     # Unknown objects and bytes may render sensitive data via str()/repr().
-    rendered = str(value)
-    return TOKEN_PATTERN.sub("pt_cap_***", rendered) if TOKEN_PATTERN.search(rendered) else value
+    # Never return an unknown object: a later %r conversion can differ from str.
+    return TOKEN_PATTERN.sub("pt_cap_***", str(value))
 
 
 class TokenRedactionFilter(logging.Filter):
@@ -105,13 +104,21 @@ class RateLimiter:
     def __init__(self, limit_per_minute: int):
         self.limit = limit_per_minute
         self.window = 60.0
-        self.history: dict[str, list[float]] = defaultdict(list)
+        self.history: dict[str, list[float]] = {}
+        self.max_clients = 4096
+        self.last_cleanup = time.monotonic()
         self.lock = Lock()
 
     def is_allowed(self, client_ip: str) -> bool:
         now = time.monotonic()
         with self.lock:
-            timestamps = self.history[client_ip]
+            if now - self.last_cleanup >= self.window or len(self.history) >= self.max_clients:
+                self.history = {ip: ts for ip, ts in self.history.items()
+                                if ts and now - ts[-1] < self.window}
+                self.last_cleanup = now
+            if client_ip not in self.history and len(self.history) >= self.max_clients:
+                return False
+            timestamps = self.history.get(client_ip, [])
             self.history[client_ip] = [t for t in timestamps if now - t < self.window]
             if len(self.history[client_ip]) >= self.limit:
                 return False
@@ -435,9 +442,10 @@ class JobWriteBoundsMiddleware(BaseHTTPMiddleware):
         self.config = config
 
     async def dispatch(self, request: Request, call_next):
-        path = request.url.path
+        path = request.url.path.rstrip("/")
+        remote = self.config.mode == "remote"
 
-        if request.method == "POST":
+        if remote or request.method == "POST":
             if self.config.mode == "local" and path.startswith("/api/v1/web/"):
                 from .main import local_write
 
@@ -448,65 +456,49 @@ class JobWriteBoundsMiddleware(BaseHTTPMiddleware):
                         status_code=exc.status_code, content={"detail": exc.detail}
                     )
 
-            # APK upload bound (150 MiB)
-            if "/drafts/" in path and path.endswith("/apk"):
-                length = request.headers.get("content-length")
-                if length and (
-                    not length.isdigit()
-                    or int(length) > self.config.max_apk_body_bytes
-                ):
-                    return JSONResponse(
-                        status_code=413,
-                        content={"detail": "UPLOAD_TOO_LARGE"},
-                    )
-                # Preserve request streaming: WebIntake.upload validates the
-                # draft capability before consuming any body bytes, then
-                # streams directly to a bounded private temporary file.
+            apk = (request.method == "POST" and path.startswith("/api/v1/web/drafts/")
+                   and path.endswith("/apk"))
+            draft = path == "/api/v1/web/drafts" or path.startswith("/api/v1/web/drafts/")
+            if apk:
+                limit, detail = self.config.max_apk_body_bytes, "UPLOAD_TOO_LARGE"
+            elif draft:
+                limit, detail = self.config.max_draft_body_bytes, "INPUT_TOO_LARGE"
+            elif remote or path == "/api/v1/jobs" or path.startswith("/api/v1/jobs/"):
+                limit, detail = self.config.max_json_body_bytes, "Request too large"
+            else:
+                return await call_next(request)
 
-            # Web drafts bound (8 MiB)
-            elif path.startswith("/api/v1/web/drafts"):
-                length = request.headers.get("content-length")
-                if length and (
-                    not length.isdigit()
-                    or int(length) > self.config.max_draft_body_bytes
-                ):
-                    return JSONResponse(
-                        status_code=413,
-                        content={"detail": "INPUT_TOO_LARGE"},
-                    )
-                chunks = []
-                size = 0
-                async for chunk in request.stream():
-                    size += len(chunk)
-                    if size > self.config.max_draft_body_bytes:
-                        return JSONResponse(
-                            status_code=413,
-                            content={"detail": "INPUT_TOO_LARGE"},
-                        )
-                    chunks.append(chunk)
-                request._body = b"".join(chunks)
+            # For rejected callers, neither buffering nor Pydantic parsing runs.
+            if remote:
+                try:
+                    if path == "/api/v1/web/settings":
+                        request.app.state.security_seam.authorize_admin_settings(request)
+                    if path == "/api/v1/jobs" and request.method == "GET":
+                        request.app.state.security_seam.authorize_jobs_listing(request)
+                    if path.startswith("/api/v1/web/drafts/"):
+                        from .auth import authorize_draft_access
 
-            # Jobs writes bound (512 KiB)
-            elif path == "/api/v1/jobs" or path.startswith("/api/v1/jobs/"):
-                length = request.headers.get("content-length")
-                if length and (
-                    not length.isdigit()
-                    or int(length) > self.config.max_json_body_bytes
-                ):
-                    return JSONResponse(
-                        status_code=413,
-                        content={"detail": "Request too large"},
-                    )
-                chunks = []
-                size = 0
-                async for chunk in request.stream():
-                    size += len(chunk)
-                    if size > self.config.max_json_body_bytes:
-                        return JSONResponse(
-                            status_code=413,
-                            content={"detail": "Request too large"},
-                        )
-                    chunks.append(chunk)
-                request._body = b"".join(chunks)
+                        draft_id = path[len("/api/v1/web/drafts/"):].split("/")[0]
+                        authorize_draft_access(request, request.app.state.web_intake, draft_id)
+                    elif path.startswith("/api/v1/jobs/"):
+                        job_id = path[len("/api/v1/jobs/"):].split("/")[0]
+                        request.app.state.security_seam.authorize_job_access(request, job_id)
+                except HTTPException as exc:
+                    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+            length = request.headers.get("content-length")
+            if length and (not length.isdigit() or int(length) > limit):
+                return JSONResponse(status_code=413, content={"detail": detail})
+            if apk:
+                # WebIntake streams authorized APK bytes into a bounded file.
+                return await call_next(request)
+            chunks = []
+            size = 0
+            async for chunk in request.stream():
+                size += len(chunk)
+                if size > limit:
+                    return JSONResponse(status_code=413, content={"detail": detail})
+                chunks.append(chunk)
+            request._body = b"".join(chunks)
 
         return await call_next(request)

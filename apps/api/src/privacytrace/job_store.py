@@ -252,6 +252,7 @@ class JobStore:
 
     def save_job(self, job: AnalysisJob) -> AnalysisJob:
         with self._transaction():
+            existing = None
             try:
                 existing = self._load(job.id, allow_tombstone=True)
                 if existing.tombstone:
@@ -260,7 +261,7 @@ class JobStore:
                     return existing.job
             except KeyError:
                 pass
-            record = existing.model_copy(deep=True) if "existing" in locals() else StoredJob(job=job)
+            record = existing.model_copy(deep=True) if existing is not None else StoredJob(job=job)
             record.job = job
             self._write(record)
             return job

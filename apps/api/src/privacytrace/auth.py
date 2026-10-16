@@ -54,6 +54,21 @@ def extract_token_from_request(request: Request) -> str | None:
     return None
 
 
+def authorize_draft_access(request: Request, service, draft_id: str) -> None:
+    """Shared pre-body and route check for a remote draft capability."""
+    token = extract_token_from_request(request)
+    if not token or not TOKEN_REGEX.fullmatch(token):
+        raise HTTPException(status_code=401, detail="Draft capability token required")
+    try:
+        digest = service.get_draft_token_digest(draft_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="DRAFT_NOT_FOUND") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="DRAFT_NOT_FOUND") from exc
+    if not digest or not hmac.compare_digest(hash_token(token), digest):
+        raise HTTPException(status_code=403, detail="Draft access denied")
+
+
 class SecuritySeam:
     """Enforces endpoint access matrix and token verification."""
 

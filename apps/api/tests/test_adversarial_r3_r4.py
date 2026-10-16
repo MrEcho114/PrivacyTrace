@@ -42,16 +42,15 @@ def test_adversarial_jobs_listing_direct_remote_forbidden(tmp_path):
 
 def test_adversarial_jobs_listing_trailing_slash_remote(tmp_path):
     """Adversarial: GET /api/v1/jobs/ (trailing slash) must NOT leak job list.
-    Without redirect follow: returns 307 with empty body.
-    With redirect follow: redirected GET /api/v1/jobs returns 403.
+    Both redirect modes are rejected by the pre-body guard with 403.
     """
     app = get_remote_app(tmp_path)
     client = TestClient(app, base_url="http://testserver")
 
     # Without following redirect
     r_no_redir = client.get("/api/v1/jobs/", follow_redirects=False)
-    assert r_no_redir.status_code == 307
-    assert "jobs" not in r_no_redir.text
+    assert r_no_redir.status_code == 403
+    assert "jobs" not in r_no_redir.json()
 
     # Following redirect
     r_redir = client.get("/api/v1/jobs/", follow_redirects=True)
@@ -217,12 +216,12 @@ def test_adversarial_settings_query_parameter_pollution(tmp_path, query):
 
 @pytest.mark.parametrize("method", ["put", "delete", "patch", "head", "options"])
 def test_adversarial_settings_alternative_methods(tmp_path, method):
-    """Adversarial: Alternative HTTP methods on /api/v1/web/settings return 405."""
+    """All remote methods on admin settings are rejected before body parsing."""
     app = get_remote_app(tmp_path)
     client = TestClient(app, base_url="http://testserver")
     req_fn = getattr(client, method)
     resp = req_fn("/api/v1/web/settings")
-    assert resp.status_code == 405
+    assert resp.status_code == 403
 
 
 # ==============================================================================
@@ -296,9 +295,10 @@ def test_adversarial_review_write_exceeding_512kb(tmp_path):
     client = TestClient(app, base_url="http://testserver")
 
     oversized_note = "B" * (512 * 1024 + 1024)
+    created = client.post("/api/v1/jobs", json={}).json()
     resp = client.post(
-        "/api/v1/jobs/test-job/reviews",
-        headers={"Authorization": "Bearer pt_cap_dummytoken12345678901234567890"},
+        f"/api/v1/jobs/{created['id']}/reviews",
+        headers={"Authorization": f"Bearer {created['token']}"},
         json={"actor": "operator", "reason": "test", "note": oversized_note},
     )
     assert resp.status_code == 413
@@ -311,9 +311,10 @@ def test_adversarial_cancel_write_exceeding_512kb(tmp_path):
     client = TestClient(app, base_url="http://testserver")
 
     oversized_data = "C" * (512 * 1024 + 1024)
+    created = client.post("/api/v1/jobs", json={}).json()
     resp = client.post(
-        "/api/v1/jobs/test-job/cancel",
-        headers={"Authorization": "Bearer pt_cap_dummytoken12345678901234567890"},
+        f"/api/v1/jobs/{created['id']}/cancel",
+        headers={"Authorization": f"Bearer {created['token']}"},
         json={"reason": oversized_data},
     )
     assert resp.status_code == 413
@@ -427,6 +428,11 @@ def test_adversarial_error_response_bodies_no_token_leakage(
     must NEVER echo plaintext capability tokens back to the caller."""
     app = get_remote_app(tmp_path)
     client = TestClient(app, base_url="http://testserver")
+
+    if status_code == 413:
+        created = client.post("/api/v1/jobs", json={}).json()
+        endpoint = f"/api/v1/jobs/{created['id']}/reviews"
+        headers = {"Authorization": f"Bearer {created['token']}"}
 
     req_fn = getattr(client, method.lower())
     kwargs = {"headers": headers}

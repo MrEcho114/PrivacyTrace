@@ -76,8 +76,10 @@ def create_app(
     app = FastAPI(title="PrivacyTrace", version="0.1.0", lifespan=lifespan)
     app.state.config = config
 
-    app.add_middleware(RemoteTransportSecurityMiddleware, config=config)
     app.add_middleware(JobWriteBoundsMiddleware, config=config)
+    # Starlette wraps middleware in reverse registration order. Validate the
+    # transport and rate limit before reading or buffering any request body.
+    app.add_middleware(RemoteTransportSecurityMiddleware, config=config)
 
     # An explicit argument wins; the environment variable lets the acceptance
     # harness boot an isolated instance without touching the repository data dir.
@@ -148,8 +150,10 @@ def create_app(
                 body = await request.body()
                 if body:
                     payload = json.loads(body)
-            except Exception:
-                payload = {}
+            except (ValueError, UnicodeError) as exc:
+                raise HTTPException(422, detail="INPUT_VALIDATION_FAILED") from exc
+            if not isinstance(payload, dict):
+                raise HTTPException(422, detail="INPUT_VALIDATION_FAILED")
 
             token, digest = generate_capability_token()
             job_id = str(uuid4())
@@ -164,18 +168,21 @@ def create_app(
             else:
                 origin = SourceOrigin.REAL_SCAN
 
-            job = AnalysisJob(
-                id=job_id,
-                sample_id=sample_id,
-                package_name=f"org.privacytrace.{sample_id}",
-                version_code=1,
-                input_mode=input_mode,
-                source_origin=origin,
-                state="QUEUED",
-                ruleset_version=ruleset_ver,
-                created_at=datetime.now(timezone.utc),
-            )
-            app.state.job_store.create_if_absent(job, token_digest=digest)
+            try:
+                job = AnalysisJob(
+                    id=job_id,
+                    sample_id=sample_id,
+                    package_name=f"org.privacytrace.{sample_id}",
+                    version_code=1,
+                    input_mode=input_mode,
+                    source_origin=origin,
+                    state="QUEUED",
+                    ruleset_version=ruleset_ver,
+                    created_at=datetime.now(timezone.utc),
+                )
+            except ValueError as exc:
+                raise HTTPException(422, detail="INPUT_VALIDATION_FAILED") from exc
+            operation(lambda: app.state.job_store.create_if_absent(job, token_digest=digest))
             return {
                 "job_id": job.id,
                 "id": job.id,

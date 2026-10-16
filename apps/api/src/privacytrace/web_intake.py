@@ -7,6 +7,7 @@ import re
 import shutil
 import time
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from urllib.parse import urlsplit
 from uuid import uuid4
@@ -66,6 +67,7 @@ class WebIntake:
         self.root = store.root / "web"
         self.executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="privacytrace-scan")
         self.futures = {}
+        self.active_drafts = {}
         self.owner_fd = None
         self.root.mkdir(exist_ok=True, mode=0o700)
         self._safe(self.root)
@@ -111,7 +113,31 @@ class WebIntake:
 
     def get(self, draft_id):
         with self.data_store._transaction():
-            return self._get(draft_id)
+            draft = self._get(draft_id)
+            self._touch(draft_id)
+            return draft
+
+    def _touch(self, draft_id):
+        # mtime tracks last activity without creating a new immutable revision.
+        os.utime(self._safe(self.directory(draft_id) / "current.json"), None)
+
+    @contextmanager
+    def _draft_activity(self, draft_id):
+        """Pin inputs across external I/O without holding the storage lock."""
+        with self.data_store._transaction():
+            self._get(draft_id)
+            self._touch(draft_id)
+            self.active_drafts[draft_id] = self.active_drafts.get(draft_id, 0) + 1
+        try:
+            yield
+        finally:
+            with self.data_store._transaction():
+                remaining = self.active_drafts[draft_id] - 1
+                if remaining:
+                    self.active_drafts[draft_id] = remaining
+                else:
+                    del self.active_drafts[draft_id]
+                self._touch(draft_id)
 
     def get_draft_token_digest(self, draft_id: str) -> str | None:
         with self.data_store._transaction():
@@ -137,7 +163,11 @@ class WebIntake:
             # Legacy local-mode inputs have no remote capability metadata.
             if not current.exists() or not capability.exists():
                 continue
-            if current.stat().st_mtime >= cutoff or (directory / "upload.pending").exists():
+            if (
+                current.stat().st_mtime >= cutoff
+                or self.active_drafts.get(directory.name, 0)
+                or (directory / "upload.pending").exists()
+            ):
                 continue
             try:
                 draft = self._read(current)
@@ -317,6 +347,10 @@ class WebIntake:
             return self._settings()
 
     def fetch_source(self, draft_id, source_id, revision):
+        with self._draft_activity(draft_id):
+            return self._fetch_source(draft_id, source_id, revision)
+
+    def _fetch_source(self, draft_id, source_id, revision):
         draft = self.get(draft_id)
         if draft["revision"] != revision or draft["jobs"]:
             raise ValueError("Input changed or already started")
@@ -341,6 +375,10 @@ class WebIntake:
             return self._save(current)
 
     def extract(self, draft_id, source_id, revision):
+        with self._draft_activity(draft_id):
+            return self._extract(draft_id, source_id, revision)
+
+    def _extract(self, draft_id, source_id, revision):
         draft = self.get(draft_id)
         if draft["revision"] != revision or draft["jobs"]:
             raise ValueError("Input version changed or already started")

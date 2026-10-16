@@ -1,6 +1,7 @@
 """Local persisted jobs, review audit events, and explicit synthetic demo API."""
 
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -13,6 +14,8 @@ from .job_store import JobStore
 from .models import AnalysisJob, EvaluationInput, EvaluationResult
 from .resources import ROOT, read_json, taxonomy
 from .runtime_models import JobsResponse, Report, ReviewRequest
+from .web_api import install_web_api
+from .web_intake import WebIntake
 
 STORE_ROOT_ENV = "PRIVACYTRACE_STORE_ROOT"
 
@@ -43,7 +46,15 @@ def local_write(request: Request):
 
 
 def create_app(store_root: Path | None = None):
-    app = FastAPI(title="PrivacyTrace", version="0.1.0")
+    @asynccontextmanager
+    async def lifespan(app):
+        app.state.web_intake.start_service()
+        try:
+            yield
+        finally:
+            app.state.web_intake.close()
+
+    app = FastAPI(title="PrivacyTrace", version="0.1.0", lifespan=lifespan)
     app.add_middleware(
         TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]", "testserver"]
     )
@@ -51,9 +62,29 @@ def create_app(store_root: Path | None = None):
     # harness boot an isolated instance without touching the repository data dir.
     configured = store_root or (os.environ.get(STORE_ROOT_ENV) or None)
     app.state.job_store = JobStore(Path(configured) if configured else ROOT / "data/jobs")
+    app.state.web_intake = WebIntake(app.state.job_store)
+    install_web_api(app, local_write)
 
     @app.middleware("http")
     async def bound_job_writes(request: Request, call_next):
+        if request.method == "POST" and request.url.path.startswith("/api/v1/web/"):
+            try:
+                local_write(request)
+            except HTTPException as exc:
+                return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+            if request.url.path.endswith("/apk"):
+                length = request.headers.get("content-length")
+                if length and (not length.isdigit() or int(length) > 150 * 1024 * 1024):
+                    return JSONResponse(status_code=413, content={"detail": "UPLOAD_TOO_LARGE"})
+            else:
+                chunks = []
+                size = 0
+                async for chunk in request.stream():
+                    size += len(chunk)
+                    if size > 8 * 1024 * 1024:
+                        return JSONResponse(status_code=413, content={"detail": "INPUT_TOO_LARGE"})
+                    chunks.append(chunk)
+                request._body = b"".join(chunks)
         if request.method == "POST" and request.url.path.startswith("/api/v1/jobs/"):
             size = 0
             chunks = []
@@ -104,6 +135,11 @@ def create_app(store_root: Path | None = None):
 
     @app.post("/api/v1/consistency/evaluate", response_model=EvaluationResult)
     def evaluate_evidence(bundle: EvaluationInput):
+        if bundle.job.input_mode == "CONTROLLED_APK":
+            raise HTTPException(
+                status_code=422,
+                detail="Controlled facts require the hash-verified controlled CLI",
+            )
         return evaluate(bundle)
 
     @app.get("/api/v1/jobs", response_model=JobsResponse)

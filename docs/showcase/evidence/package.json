@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "source_zip_sha256": "62111a4ec2aa14b0573afef29d998a4e885ef364a2ea6f253efa2e3411b53df2",
+  "visual_source_sha256": "1f44b21d1fe37acee280d613ebff4d6f70a236fa9d1881f51db6349fafcc5f81",
+  "file_hashes_checked": 49,
+  "actual_offline_relocated_preview": true,
+  "credential_values_checked": 1,
+  "credential_matches": 0,
+  "private_local_path_matches": 0,
+  "errors": [],
+  "external_requests": []
+}

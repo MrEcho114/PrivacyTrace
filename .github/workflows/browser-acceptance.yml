@@ -36,6 +36,7 @@ jobs:
         with:
           # 收据要把自己锚定到真实提交；浅克隆无法解析 ref。
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -61,6 +62,20 @@ jobs:
       - name: Run browser acceptance
         run: npm run acceptance:browser
 
+      - name: Run frontend walkthrough
+        run: npm run acceptance:frontend
+
+      - name: Verify preview lifecycle
+        run: npm run acceptance:preview
+
+      - name: Build restricted worker for web intake
+        run: |
+          uv sync --project apps/api --locked --extra worker
+          docker build --file apps/api/worker.Dockerfile --tag privacytrace-worker:s1 .
+
+      - name: Verify new HTTP intake and actual isolated scan
+        run: npm run acceptance:live
+
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -69,6 +84,12 @@ jobs:
           path: |
             evidence/browser-proof.json
             evidence/screenshots/
+            tmp/issue44-ui/verification.json
+            tmp/issue44-ui/screenshots/
+            tmp/frontend-preview/verification.json
+            tmp/frontend-preview/preview.log
+            tmp/issue44-live-proof/fixtures/verification.json
+            tmp/issue44-live-proof/fixtures/*.png
           if-no-files-found: warn
 
   # 对抗压力套件：比核心验收更重，按日定时跑并支持手动触发，不进每个 PR 的门禁，
@@ -81,6 +102,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0

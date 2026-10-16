@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "scenario_id": "C01",
+  "package_name": "org.privacytrace.controlled.c01",
+  "policy_file": "C01.txt",
+  "policy_sha256": "1be4bc0b826f7adba437d8e9fdae21cc017e492bcb6269521df29a0db6c3f122",
+  "scope_known": true,
+  "policy_complete": true,
+  "candidates": [
+    {
+      "excerpt": "我们访问精确位置。",
+      "data_type": "PRECISE_LOCATION",
+      "polarity": "AFFIRMATIVE",
+      "subject": "HOST_APP",
+      "action": "ACCESS"
+    }
+  ]
+}

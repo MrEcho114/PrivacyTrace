@@ -1,0 +1,1565 @@
+{
+  "schema_version": 1,
+  "issue": 63,
+  "status": "SAMPLE_TARGET_REACHED_POLICY_PARTIAL",
+  "scan_code_sha": "f54fdb26d5674dbf41a965716ddcca5e78af844b",
+  "worker_source_sha": "4cae1fd7e2ddb68345f389aa19535d2fc3db26ec",
+  "ledger_candidate_sha": "210c941e64d2872a01d169069d65b28bf3b8728e",
+  "counts": {
+    "this_round": {
+      "new_confirmed_apps": 1,
+      "pipeline_attempts": 1,
+      "usable_reports": 1,
+      "end_to_end_partial": 1,
+      "failed_scans": 0,
+      "confirmed_complex_challenge_apps": 1,
+      "fresh_policy_pages": 1
+    },
+    "cumulative": {
+      "historical_distinct_apps": 1,
+      "new_confirmed_apps": 3,
+      "total_confirmed_apps": 4,
+      "pipeline_attempts": 5,
+      "usable_reports": 4,
+      "end_to_end_partial": 4,
+      "failed_scans": 1,
+      "confirmed_complex_challenge_apps": 1
+    }
+  },
+  "previous_archive": "../issue63-20261015",
+  "target_status": "Three representative App identities plus one confirmed complex messaging challenge acquired and scanned. All usable end-to-end results remain PARTIAL; the historical invalid Telegram response remains failed.",
+  "worker_provenance": "Pinned previous worker image; git diff 4cae1fd..f54fdb2 -- apps/api/src apps/api/worker.Dockerfile apps/api/pyproject.toml apps/api/uv.lock rules is empty. Host pipeline at f54fdb2.",
+  "policy_transform": "Decode official HTML as UTF-8; lxml 6.1.3 removes script/style/nav/footer/header; first main/article/dev_page_content fallback to document; strip nonempty itertext nodes, join LF plus final LF. New text stored UTF-8/LF. COMPLETE identifies this text only; source completeness PARTIAL.",
+  "report_hash_contract": "SHA-256 of exact private JobStore.report export: json.dumps(model_dump(mode=json), ensure_ascii=False, indent=2) plus LF, UTF-8, LF newlines. delivery_mode=PERSISTED_REPLAY; source_origin=REAL_SCAN.",
+  "samples": [
+    {
+      "sample_id": "telegram-20261016",
+      "app_name": "Telegram",
+      "selection_reason": "Complex messaging challenge: official website-distribution APK, four DEX entries; contacts, location and camera/microphone capabilities plus finite-rule API clues. Larger rule result set than each prior representative; no dynamic collection claim.",
+      "newly_acquired_app": true,
+      "pipeline_status": "SUCCEEDED",
+      "started_at": "2026-10-16T01:02:55.644124+00:00",
+      "completed_at": "2026-10-16T01:03:20.598076+00:00",
+      "duration_seconds": 24.953,
+      "input_sha256": "a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64",
+      "input_bytes": 70358849,
+      "package_name": "org.telegram.messenger.web",
+      "version_name": "13.0.2",
+      "version_code": 71759,
+      "policy": {
+        "document_id": "policy-official",
+        "source_url": "https://telegram.org/privacy",
+        "acquired_at": "2026-10-16T01:02:43.034176+00:00",
+        "html_sha256": "4c1d234b6adb171b927bd6a00273a57ed9a7a8cceb3aba5c872a9824d935dbcc",
+        "captured_at": "2026-10-16T01:02:55.621185Z",
+        "captured_text_sha256": "50720e7fdfcfbbef66c97d527fe51d66516ac8b3d7a272bb5f929346760ea19b",
+        "capture_sha256": "63bf0357f0a9b908bea55a1af97b2d57724c0a7f408454040c9a97ee16c10d40",
+        "text_codepoints": 32425,
+        "capture_completeness": "COMPLETE",
+        "source_document_completeness": "PARTIAL",
+        "extraction_status": "PARTIAL",
+        "review_status": "UNREVIEWED",
+        "attachments_status": "NOT_CHECKED",
+        "exact_apk_version_applicability": "UNKNOWN",
+        "region": "UNKNOWN",
+        "candidate": {
+          "id": "policy-claim-1",
+          "data_type": "CONTACTS",
+          "action": "UNKNOWN",
+          "subject": "UNKNOWN",
+          "polarity": "UNKNOWN",
+          "condition": "Cloud-service notice; exact APK version applicability UNKNOWN; linked terms/attachments NOT_CHECKED",
+          "evidence_id": "policy-sentence-1",
+          "start_offset": 7525,
+          "end_offset": 7577,
+          "excerpt_sha256": "adc2dfc421003e9cdc744115eb80b5763a93cad01cdf17c898813bc6f619db0b",
+          "short_quote": "We ask your permission before syncing your contacts."
+        }
+      },
+      "job_id": "issue63-telegram-20261016-01",
+      "ruleset_version": "0.3.0",
+      "scan_code_sha": "f54fdb26d5674dbf41a965716ddcca5e78af844b",
+      "worker_source_sha": "4cae1fd7e2ddb68345f389aa19535d2fc3db26ec",
+      "report_sha256": "db0f07c92f15930563a9981e90f0cdb0daceb87502658c944ec80d30bce50793",
+      "stored_record_sha256": "5f43c7ba4060541d5efe42f73d67aa79a1ff789feedf32f7258bb45060bc0659",
+      "coverage": {
+        "status": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [
+          "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+          "不保证覆盖反射、动态加载及运行时生成的调用。",
+          "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+          "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+          "静态潜在行为不能证明实际访问、收集或外传。"
+        ],
+        "sdk_attribution_limitations": [],
+        "limitations": [
+          "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+          "JADX unavailable or timed out; bytecode evidence retained"
+        ],
+        "scanned_dex": [
+          "classes.dex",
+          "classes2.dex",
+          "classes3.dex",
+          "classes4.dex"
+        ],
+        "failed_dex": []
+      },
+      "counts": {
+        "evidence": 43,
+        "behaviors": 41,
+        "claims": 1,
+        "issues": 41
+      },
+      "evidence_counts_by_kind": {
+        "MANIFEST": 8,
+        "API": 33,
+        "POLICY_DOCUMENT": 1,
+        "POLICY_SENTENCE": 1
+      },
+      "tools": {
+        "androguard": "4.1.3",
+        "jadx": "UNAVAILABLE_BYTECODE_FALLBACK",
+        "ruleset": "0.3.0",
+        "sdk_signatures": "1.0.0",
+        "worker_image": "sha256:6400ad5a4f1bbc8136cf544795eae66c02d9eb813bc1190bf666fb7d5144a875",
+        "human_review_gate": "NOT_REQUIRED_BY_WORKFLOW",
+        "scan_errors": "[]"
+      },
+      "result_status_counts": {
+        "INSUFFICIENT_EVIDENCE": 41
+      },
+      "static_trace_examples": [
+        {
+          "id": "ev-fadf4dd563d0bfa6dfd38781",
+          "kind": "MANIFEST",
+          "status": "STATIC_POTENTIAL",
+          "source": "AndroidManifest.xml",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;permission=android.permission.ACCESS_FINE_LOCATION;tag=uses-permission",
+          "api_call": null
+        },
+        {
+          "id": "ev-801d9e66d3802f24f8335ca8",
+          "kind": "MANIFEST",
+          "status": "STATIC_POTENTIAL",
+          "source": "AndroidManifest.xml",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;permission=android.permission.ACCESS_COARSE_LOCATION;tag=uses-permission",
+          "api_call": null
+        },
+        {
+          "id": "ev-441d3e4fb7e30f1471101b0a",
+          "kind": "MANIFEST",
+          "status": "STATIC_POTENTIAL",
+          "source": "AndroidManifest.xml",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;permission=android.permission.READ_CONTACTS;tag=uses-permission",
+          "api_call": null
+        },
+        {
+          "id": "ev-d6e6e9ae451ea59f6725722e",
+          "kind": "MANIFEST",
+          "status": "STATIC_POTENTIAL",
+          "source": "AndroidManifest.xml",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;permission=android.permission.CAMERA;tag=uses-permission",
+          "api_call": null
+        },
+        {
+          "id": "ev-02fdd44208d6abfb00f88bbf",
+          "kind": "MANIFEST",
+          "status": "STATIC_POTENTIAL",
+          "source": "AndroidManifest.xml",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;permission=android.permission.RECORD_AUDIO;tag=uses-permission",
+          "api_call": null
+        },
+        {
+          "id": "ev-747ad81eb0c780a6a14c3d8f",
+          "kind": "MANIFEST",
+          "status": "STATIC_POTENTIAL",
+          "source": "AndroidManifest.xml",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;permission=android.permission.READ_MEDIA_IMAGES;tag=uses-permission",
+          "api_call": null
+        },
+        {
+          "id": "ev-5ef44971954051f778636b03",
+          "kind": "MANIFEST",
+          "status": "STATIC_POTENTIAL",
+          "source": "AndroidManifest.xml",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;permission=android.permission.READ_EXTERNAL_STORAGE;tag=uses-permission",
+          "api_call": null
+        },
+        {
+          "id": "ev-13eac444ee0a23cee5ad733e",
+          "kind": "MANIFEST",
+          "status": "STATIC_POTENTIAL",
+          "source": "AndroidManifest.xml",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;permission=android.permission.WRITE_EXTERNAL_STORAGE;tag=uses-permission",
+          "api_call": null
+        },
+        {
+          "id": "ev-96c2f7feaedf2210445f6a39",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes.dex;caller=Lf/n;->e()I;offset_bytes=144;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "api_call": {
+            "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+            "rule_id": "android.location.last-known.generic",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-50664368098ce718fbd674d1",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes.dex;caller=Lf/n;->e()I;offset_bytes=226;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "api_call": {
+            "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+            "rule_id": "android.location.last-known.generic",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-575bb1f1ba0c58ba01dd7bb5",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes.dex;caller=Lorg/telegram/messenger/EmuDetector;->checkDeviceId()Z;offset_bytes=20;target=Landroid/telephony/TelephonyManager;->getDeviceId()Ljava/lang/String;",
+          "api_call": {
+            "target_descriptor": "Landroid/telephony/TelephonyManager;->getDeviceId()Ljava/lang/String;",
+            "rule_id": "android.identifier.device-id",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-83d38101484f27822c8bec74",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes.dex;caller=Lorg/telegram/messenger/LocationController;->start()V;offset_bytes=178;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "api_call": {
+            "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+            "rule_id": "android.location.last-known.generic",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-bd944e74598cc067496102a1",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes.dex;caller=Lorg/telegram/messenger/LocationController;->start()V;offset_bytes=208;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "api_call": {
+            "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+            "rule_id": "android.location.last-known.generic",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-dff87420c07719a96a761637",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes.dex;caller=Lorg/telegram/messenger/MediaController;->lambda$startRecording$37(IIJJLorg/telegram/messenger/MessageSuggestionParams;Lorg/telegram/messenger/MessageObject;Lorg/telegram/messenger/MessageObject;Lorg/telegram/tgnet/tl/TL_stories$StoryItem;Lorg/telegram/messenger/SendMessageChatArguments;)V;offset_bytes=560;target=Landroid/media/AudioRecord;->startRecording()V",
+          "api_call": {
+            "target_descriptor": "Landroid/media/AudioRecord;->startRecording()V",
+            "rule_id": "android.microphone.record",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-e75af17874e2edc9dfd70bb0",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes.dex;caller=Lorg/telegram/messenger/MediaController;->lambda$toggleRecordingPause$30()V;offset_bytes=78;target=Landroid/media/AudioRecord;->startRecording()V",
+          "api_call": {
+            "target_descriptor": "Landroid/media/AudioRecord;->startRecording()V",
+            "rule_id": "android.microphone.record",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-e39d74d71e7bc0e4c057535a",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes.dex;caller=Lorg/telegram/messenger/SendMessagesHelper$LocationProvider;->start()V;offset_bytes=108;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "api_call": {
+            "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+            "rule_id": "android.location.last-known.generic",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-cc87ff14ae4e0e0ea9ebf267",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes.dex;caller=Lorg/telegram/messenger/SendMessagesHelper$LocationProvider;->start()V;offset_bytes=132;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "api_call": {
+            "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+            "rule_id": "android.location.last-known.generic",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-9e7d3eb6ffee275fe2d7f482",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes.dex;caller=Lorg/telegram/messenger/camera/Camera2Session;-><init>(Landroid/content/Context;ZLjava/lang/String;Landroid/util/Size;)V;offset_bytes=292;target=Landroid/hardware/camera2/CameraManager;->openCamera(Ljava/lang/String;Landroid/hardware/camera2/CameraDevice$StateCallback;Landroid/os/Handler;)V",
+          "api_call": {
+            "target_descriptor": "Landroid/hardware/camera2/CameraManager;->openCamera(Ljava/lang/String;Landroid/hardware/camera2/CameraDevice$StateCallback;Landroid/os/Handler;)V",
+            "rule_id": "android.camera.manager-open",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-06b14ed5cc1eac41ec1fb813",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes.dex;caller=Lorg/telegram/messenger/camera/CameraController;->lambda$initCamera$4(ZLjava/lang/Runnable;)V;offset_bytes=372;target=Landroid/hardware/Camera;->open(I)Landroid/hardware/Camera;",
+          "api_call": {
+            "target_descriptor": "Landroid/hardware/Camera;->open(I)Landroid/hardware/Camera;",
+            "rule_id": "android.camera.open-index",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-f68d2798599b116fc3f450ce",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes.dex;caller=Lorg/telegram/messenger/camera/CameraController;->lambda$open$10(Lorg/telegram/messenger/camera/CameraSession;Ljava/lang/Runnable;Landroid/graphics/SurfaceTexture;Ljava/lang/Runnable;)V;offset_bytes=16;target=Landroid/hardware/Camera;->open(I)Landroid/hardware/Camera;",
+          "api_call": {
+            "target_descriptor": "Landroid/hardware/Camera;->open(I)Landroid/hardware/Camera;",
+            "rule_id": "android.camera.open-index",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-11c60b0b7ccf7d5a63b3025c",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes.dex;caller=Lorg/telegram/messenger/camera/CameraController;->lambda$openRound$9(Lorg/telegram/messenger/camera/CameraSession;Ljava/lang/Runnable;Landroid/graphics/SurfaceTexture;Ljava/lang/Runnable;)V;offset_bytes=48;target=Landroid/hardware/Camera;->open(I)Landroid/hardware/Camera;",
+          "api_call": {
+            "target_descriptor": "Landroid/hardware/Camera;->open(I)Landroid/hardware/Camera;",
+            "rule_id": "android.camera.open-index",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-faa51892f6834961cd70dff3",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes.dex;caller=Lorg/telegram/messenger/camera/CameraController;->lambda$startPreview$7(Lorg/telegram/messenger/camera/CameraSession;)V;offset_bytes=16;target=Landroid/hardware/Camera;->open(I)Landroid/hardware/Camera;",
+          "api_call": {
+            "target_descriptor": "Landroid/hardware/Camera;->open(I)Landroid/hardware/Camera;",
+            "rule_id": "android.camera.open-index",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-02f76f5c31b249e19597732c",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes.dex;caller=Lorg/telegram/messenger/camera/CameraController;->lambda$stopPreview$8(Lorg/telegram/messenger/camera/CameraSession;)V;offset_bytes=16;target=Landroid/hardware/Camera;->open(I)Landroid/hardware/Camera;",
+          "api_call": {
+            "target_descriptor": "Landroid/hardware/Camera;->open(I)Landroid/hardware/Camera;",
+            "rule_id": "android.camera.open-index",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-b5b6988d0e9ef1b408288f70",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes.dex;caller=Lorg/telegram/messenger/camera/CameraView$VideoRecorder;->prepareEncoder()V;offset_bytes=136;target=Landroid/media/AudioRecord;->startRecording()V",
+          "api_call": {
+            "target_descriptor": "Landroid/media/AudioRecord;->startRecording()V",
+            "rule_id": "android.microphone.record",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-8a99ade55e92a9a8bb38be07",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes3.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes3.dex;caller=Lorg/telegram/ui/Components/wl;->getLastLocation()Landroid/location/Location;;offset_bytes=58;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "api_call": {
+            "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+            "rule_id": "android.location.last-known.generic",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-5d2602ef07e8b621cdbe0e20",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes3.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes3.dex;caller=Lorg/telegram/ui/Components/y60;->a(Lorg/telegram/ui/Components/y60;Z)V;offset_bytes=264;target=Landroid/media/AudioRecord;->startRecording()V",
+          "api_call": {
+            "target_descriptor": "Landroid/media/AudioRecord;->startRecording()V",
+            "rule_id": "android.microphone.record",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-e88a8a796c28dd592d58ab19",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes3.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes3.dex;caller=Lorg/telegram/ui/ThemeActivity;->B0(Landroid/location/Location;Z)V;offset_bytes=300;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "api_call": {
+            "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+            "rule_id": "android.location.last-known.generic",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-dee6d6eea80448cbcb351203",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes3.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes3.dex;caller=Lorg/telegram/ui/ThemeActivity;->B0(Landroid/location/Location;Z)V;offset_bytes=316;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "api_call": {
+            "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+            "rule_id": "android.location.last-known.generic",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-afb5a8ae021b7fcafe06adac",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes3.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes3.dex;caller=Lorg/telegram/ui/ThemeActivity;->B0(Landroid/location/Location;Z)V;offset_bytes=338;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "api_call": {
+            "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+            "rule_id": "android.location.last-known.generic",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-ba854e60f5e55493b65056e9",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes3.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes3.dex;caller=Lorg/telegram/ui/sc;->run(Ljava/lang/Object;)V;offset_bytes=122;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "api_call": {
+            "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+            "rule_id": "android.location.last-known.generic",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-ce00e7568663e3f9eff0f1c0",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes3.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes3.dex;caller=Lorg/telegram/ui/xc0;->accept(Ljava/lang/Object;)V;offset_bytes=1304;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "api_call": {
+            "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+            "rule_id": "android.location.last-known.generic",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-9e1b09d1ab792123e45f20c8",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes4.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes4.dex;caller=Lfh/k;->I()V;offset_bytes=688;target=Landroid/hardware/camera2/CameraManager;->openCamera(Ljava/lang/String;Landroid/hardware/camera2/CameraDevice$StateCallback;Landroid/os/Handler;)V",
+          "api_call": {
+            "target_descriptor": "Landroid/hardware/camera2/CameraManager;->openCamera(Ljava/lang/String;Landroid/hardware/camera2/CameraDevice$StateCallback;Landroid/os/Handler;)V",
+            "rule_id": "android.camera.manager-open",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-8bf1ef608e52dcfe02d0b136",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes4.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes4.dex;caller=Lfh/k;->J()V;offset_bytes=178;target=Landroid/hardware/camera2/CameraManager;->openCamera(Ljava/lang/String;Landroid/hardware/camera2/CameraDevice$StateCallback;Landroid/os/Handler;)V",
+          "api_call": {
+            "target_descriptor": "Landroid/hardware/camera2/CameraManager;->openCamera(Ljava/lang/String;Landroid/hardware/camera2/CameraDevice$StateCallback;Landroid/os/Handler;)V",
+            "rule_id": "android.camera.manager-open",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-e62bce4488e33affd14f737b",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes4.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes4.dex;caller=Lfh/n;->p(Lfh/d;Lfh/d;)V;offset_bytes=40;target=Landroid/media/AudioRecord;->startRecording()V",
+          "api_call": {
+            "target_descriptor": "Landroid/media/AudioRecord;->startRecording()V",
+            "rule_id": "android.microphone.record",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-170cf53c238ce5fdd47ed76c",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes4.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes4.dex;caller=Lorg/webrtc/Camera1Enumerator;->enumerateFormats(I)Ljava/util/List;;offset_bytes=96;target=Landroid/hardware/Camera;->open(I)Landroid/hardware/Camera;",
+          "api_call": {
+            "target_descriptor": "Landroid/hardware/Camera;->open(I)Landroid/hardware/Camera;",
+            "rule_id": "android.camera.open-index",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-2f1ef5a62350b4d8d95ba745",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes4.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes4.dex;caller=Lorg/webrtc/Camera1Session;->create(Lorg/webrtc/CameraSession$CreateSessionCallback;Lorg/webrtc/CameraSession$Events;ZLandroid/content/Context;Lorg/webrtc/SurfaceTextureHelper;Ljava/lang/String;III)V;offset_bytes=72;target=Landroid/hardware/Camera;->open(I)Landroid/hardware/Camera;",
+          "api_call": {
+            "target_descriptor": "Landroid/hardware/Camera;->open(I)Landroid/hardware/Camera;",
+            "rule_id": "android.camera.open-index",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-03ed1135c052265b73e5ce95",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes4.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes4.dex;caller=Lorg/webrtc/Camera2Session;->openCamera()V;offset_bytes=82;target=Landroid/hardware/camera2/CameraManager;->openCamera(Ljava/lang/String;Landroid/hardware/camera2/CameraDevice$StateCallback;Landroid/os/Handler;)V",
+          "api_call": {
+            "target_descriptor": "Landroid/hardware/camera2/CameraManager;->openCamera(Ljava/lang/String;Landroid/hardware/camera2/CameraDevice$StateCallback;Landroid/os/Handler;)V",
+            "rule_id": "android.camera.manager-open",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-c09a8deb514598da857b077c",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes4.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes4.dex;caller=Lorg/webrtc/audio/WebRtcAudioRecord;->startRecording()Z;offset_bytes=62;target=Landroid/media/AudioRecord;->startRecording()V",
+          "api_call": {
+            "target_descriptor": "Landroid/media/AudioRecord;->startRecording()V",
+            "rule_id": "android.microphone.record",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-37f508196f5860000dc5739a",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes4.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes4.dex;caller=Lorg/webrtc/voiceengine/WebRtcAudioRecord;->startRecording()Z;offset_bytes=62;target=Landroid/media/AudioRecord;->startRecording()V",
+          "api_call": {
+            "target_descriptor": "Landroid/media/AudioRecord;->startRecording()V",
+            "rule_id": "android.microphone.record",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-03fb1b44979b3aab639996dd",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes4.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes4.dex;caller=Lorg/webrtc/voiceengine/WebRtcAudioRecord;->initDeviceAudioRecord(Landroid/media/projection/MediaProjection;)V;offset_bytes=270;target=Landroid/media/AudioRecord;->startRecording()V",
+          "api_call": {
+            "target_descriptor": "Landroid/media/AudioRecord;->startRecording()V",
+            "rule_id": "android.microphone.record",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        },
+        {
+          "id": "ev-d92ab4f4a96c979d46e4751e",
+          "kind": "API",
+          "status": "STATIC_POTENTIAL",
+          "source": "classes4.dex",
+          "locator": "apk_sha256=a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64;dex=classes4.dex;caller=Lzg/q0;->j(Lorg/telegram/messenger/Utilities$Callback;)V;offset_bytes=106;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+          "api_call": {
+            "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+            "rule_id": "android.location.last-known.generic",
+            "ruleset_version": "0.3.0",
+            "context": {}
+          }
+        }
+      ],
+      "policy_evidence": [
+        {
+          "id": "policy-snapshot",
+          "kind": "POLICY_DOCUMENT",
+          "status": "DECLARED",
+          "document_id": "policy-official",
+          "source": "https://telegram.org/privacy",
+          "locator": "Full captured UTF-8 artifact",
+          "start_offset": null,
+          "end_offset": null
+        },
+        {
+          "id": "policy-sentence-1",
+          "kind": "POLICY_SENTENCE",
+          "status": "DECLARED",
+          "document_id": "policy-official",
+          "source": "https://telegram.org/privacy",
+          "locator": "codepoints [7525,7577)",
+          "start_offset": 7525,
+          "end_offset": 7577
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "behavior-fadf4dd563d0bfa6dfd38781",
+          "data_type": "PRECISE_LOCATION",
+          "action": "CAPABILITY",
+          "evidence_ids": [
+            "ev-fadf4dd563d0bfa6dfd38781"
+          ]
+        },
+        {
+          "id": "behavior-801d9e66d3802f24f8335ca8",
+          "data_type": "COARSE_LOCATION",
+          "action": "CAPABILITY",
+          "evidence_ids": [
+            "ev-801d9e66d3802f24f8335ca8"
+          ]
+        },
+        {
+          "id": "behavior-441d3e4fb7e30f1471101b0a",
+          "data_type": "CONTACTS",
+          "action": "CAPABILITY",
+          "evidence_ids": [
+            "ev-441d3e4fb7e30f1471101b0a"
+          ]
+        },
+        {
+          "id": "behavior-d6e6e9ae451ea59f6725722e",
+          "data_type": "CAMERA",
+          "action": "CAPABILITY",
+          "evidence_ids": [
+            "ev-d6e6e9ae451ea59f6725722e"
+          ]
+        },
+        {
+          "id": "behavior-02fdd44208d6abfb00f88bbf",
+          "data_type": "MICROPHONE",
+          "action": "CAPABILITY",
+          "evidence_ids": [
+            "ev-02fdd44208d6abfb00f88bbf"
+          ]
+        },
+        {
+          "id": "behavior-747ad81eb0c780a6a14c3d8f",
+          "data_type": "FILES_MEDIA",
+          "action": "CAPABILITY",
+          "evidence_ids": [
+            "ev-747ad81eb0c780a6a14c3d8f"
+          ]
+        },
+        {
+          "id": "behavior-5ef44971954051f778636b03",
+          "data_type": "FILES_MEDIA",
+          "action": "CAPABILITY",
+          "evidence_ids": [
+            "ev-5ef44971954051f778636b03"
+          ]
+        },
+        {
+          "id": "behavior-13eac444ee0a23cee5ad733e",
+          "data_type": "FILES_MEDIA",
+          "action": "CAPABILITY",
+          "evidence_ids": [
+            "ev-13eac444ee0a23cee5ad733e"
+          ]
+        },
+        {
+          "id": "behavior-96c2f7feaedf2210445f6a39",
+          "data_type": "LOCATION",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-96c2f7feaedf2210445f6a39"
+          ]
+        },
+        {
+          "id": "behavior-50664368098ce718fbd674d1",
+          "data_type": "LOCATION",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-50664368098ce718fbd674d1"
+          ]
+        },
+        {
+          "id": "behavior-575bb1f1ba0c58ba01dd7bb5",
+          "data_type": "DEVICE_IDENTIFIER",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-575bb1f1ba0c58ba01dd7bb5"
+          ]
+        },
+        {
+          "id": "behavior-83d38101484f27822c8bec74",
+          "data_type": "LOCATION",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-83d38101484f27822c8bec74"
+          ]
+        },
+        {
+          "id": "behavior-bd944e74598cc067496102a1",
+          "data_type": "LOCATION",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-bd944e74598cc067496102a1"
+          ]
+        },
+        {
+          "id": "behavior-dff87420c07719a96a761637",
+          "data_type": "MICROPHONE",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-dff87420c07719a96a761637"
+          ]
+        },
+        {
+          "id": "behavior-e75af17874e2edc9dfd70bb0",
+          "data_type": "MICROPHONE",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-e75af17874e2edc9dfd70bb0"
+          ]
+        },
+        {
+          "id": "behavior-e39d74d71e7bc0e4c057535a",
+          "data_type": "LOCATION",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-e39d74d71e7bc0e4c057535a"
+          ]
+        },
+        {
+          "id": "behavior-cc87ff14ae4e0e0ea9ebf267",
+          "data_type": "LOCATION",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-cc87ff14ae4e0e0ea9ebf267"
+          ]
+        },
+        {
+          "id": "behavior-9e7d3eb6ffee275fe2d7f482",
+          "data_type": "CAMERA",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-9e7d3eb6ffee275fe2d7f482"
+          ]
+        },
+        {
+          "id": "behavior-06b14ed5cc1eac41ec1fb813",
+          "data_type": "CAMERA",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-06b14ed5cc1eac41ec1fb813"
+          ]
+        },
+        {
+          "id": "behavior-f68d2798599b116fc3f450ce",
+          "data_type": "CAMERA",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-f68d2798599b116fc3f450ce"
+          ]
+        },
+        {
+          "id": "behavior-11c60b0b7ccf7d5a63b3025c",
+          "data_type": "CAMERA",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-11c60b0b7ccf7d5a63b3025c"
+          ]
+        },
+        {
+          "id": "behavior-faa51892f6834961cd70dff3",
+          "data_type": "CAMERA",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-faa51892f6834961cd70dff3"
+          ]
+        },
+        {
+          "id": "behavior-02f76f5c31b249e19597732c",
+          "data_type": "CAMERA",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-02f76f5c31b249e19597732c"
+          ]
+        },
+        {
+          "id": "behavior-b5b6988d0e9ef1b408288f70",
+          "data_type": "MICROPHONE",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-b5b6988d0e9ef1b408288f70"
+          ]
+        },
+        {
+          "id": "behavior-8a99ade55e92a9a8bb38be07",
+          "data_type": "LOCATION",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-8a99ade55e92a9a8bb38be07"
+          ]
+        },
+        {
+          "id": "behavior-5d2602ef07e8b621cdbe0e20",
+          "data_type": "MICROPHONE",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-5d2602ef07e8b621cdbe0e20"
+          ]
+        },
+        {
+          "id": "behavior-e88a8a796c28dd592d58ab19",
+          "data_type": "LOCATION",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-e88a8a796c28dd592d58ab19"
+          ]
+        },
+        {
+          "id": "behavior-dee6d6eea80448cbcb351203",
+          "data_type": "LOCATION",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-dee6d6eea80448cbcb351203"
+          ]
+        },
+        {
+          "id": "behavior-afb5a8ae021b7fcafe06adac",
+          "data_type": "LOCATION",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-afb5a8ae021b7fcafe06adac"
+          ]
+        },
+        {
+          "id": "behavior-ba854e60f5e55493b65056e9",
+          "data_type": "LOCATION",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-ba854e60f5e55493b65056e9"
+          ]
+        },
+        {
+          "id": "behavior-ce00e7568663e3f9eff0f1c0",
+          "data_type": "LOCATION",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-ce00e7568663e3f9eff0f1c0"
+          ]
+        },
+        {
+          "id": "behavior-9e1b09d1ab792123e45f20c8",
+          "data_type": "CAMERA",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-9e1b09d1ab792123e45f20c8"
+          ]
+        },
+        {
+          "id": "behavior-8bf1ef608e52dcfe02d0b136",
+          "data_type": "CAMERA",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-8bf1ef608e52dcfe02d0b136"
+          ]
+        },
+        {
+          "id": "behavior-e62bce4488e33affd14f737b",
+          "data_type": "MICROPHONE",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-e62bce4488e33affd14f737b"
+          ]
+        },
+        {
+          "id": "behavior-170cf53c238ce5fdd47ed76c",
+          "data_type": "CAMERA",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-170cf53c238ce5fdd47ed76c"
+          ]
+        },
+        {
+          "id": "behavior-2f1ef5a62350b4d8d95ba745",
+          "data_type": "CAMERA",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-2f1ef5a62350b4d8d95ba745"
+          ]
+        },
+        {
+          "id": "behavior-03ed1135c052265b73e5ce95",
+          "data_type": "CAMERA",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-03ed1135c052265b73e5ce95"
+          ]
+        },
+        {
+          "id": "behavior-c09a8deb514598da857b077c",
+          "data_type": "MICROPHONE",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-c09a8deb514598da857b077c"
+          ]
+        },
+        {
+          "id": "behavior-37f508196f5860000dc5739a",
+          "data_type": "MICROPHONE",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-37f508196f5860000dc5739a"
+          ]
+        },
+        {
+          "id": "behavior-03fb1b44979b3aab639996dd",
+          "data_type": "MICROPHONE",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-03fb1b44979b3aab639996dd"
+          ]
+        },
+        {
+          "id": "behavior-d92ab4f4a96c979d46e4751e",
+          "data_type": "LOCATION",
+          "action": "ACCESS",
+          "evidence_ids": [
+            "ev-d92ab4f4a96c979d46e4751e"
+          ]
+        }
+      ],
+      "rule_results": [
+        {
+          "id": "issue-1",
+          "behavior_id": "behavior-fadf4dd563d0bfa6dfd38781",
+          "data_type": "PRECISE_LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-fadf4dd563d0bfa6dfd38781"
+          ],
+          "policy_document_ids": [],
+          "requires_review": true
+        },
+        {
+          "id": "issue-2",
+          "behavior_id": "behavior-801d9e66d3802f24f8335ca8",
+          "data_type": "COARSE_LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-801d9e66d3802f24f8335ca8"
+          ],
+          "policy_document_ids": [],
+          "requires_review": true
+        },
+        {
+          "id": "issue-3",
+          "behavior_id": "behavior-441d3e4fb7e30f1471101b0a",
+          "data_type": "CONTACTS",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-441d3e4fb7e30f1471101b0a"
+          ],
+          "policy_document_ids": [],
+          "requires_review": true
+        },
+        {
+          "id": "issue-4",
+          "behavior_id": "behavior-d6e6e9ae451ea59f6725722e",
+          "data_type": "CAMERA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-d6e6e9ae451ea59f6725722e"
+          ],
+          "policy_document_ids": [],
+          "requires_review": true
+        },
+        {
+          "id": "issue-5",
+          "behavior_id": "behavior-02fdd44208d6abfb00f88bbf",
+          "data_type": "MICROPHONE",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-02fdd44208d6abfb00f88bbf"
+          ],
+          "policy_document_ids": [],
+          "requires_review": true
+        },
+        {
+          "id": "issue-6",
+          "behavior_id": "behavior-747ad81eb0c780a6a14c3d8f",
+          "data_type": "FILES_MEDIA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-747ad81eb0c780a6a14c3d8f"
+          ],
+          "policy_document_ids": [],
+          "requires_review": true
+        },
+        {
+          "id": "issue-7",
+          "behavior_id": "behavior-5ef44971954051f778636b03",
+          "data_type": "FILES_MEDIA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-5ef44971954051f778636b03"
+          ],
+          "policy_document_ids": [],
+          "requires_review": true
+        },
+        {
+          "id": "issue-8",
+          "behavior_id": "behavior-13eac444ee0a23cee5ad733e",
+          "data_type": "FILES_MEDIA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-13eac444ee0a23cee5ad733e"
+          ],
+          "policy_document_ids": [],
+          "requires_review": true
+        },
+        {
+          "id": "issue-9",
+          "behavior_id": "behavior-96c2f7feaedf2210445f6a39",
+          "data_type": "LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-96c2f7feaedf2210445f6a39",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-10",
+          "behavior_id": "behavior-50664368098ce718fbd674d1",
+          "data_type": "LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-50664368098ce718fbd674d1",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-11",
+          "behavior_id": "behavior-575bb1f1ba0c58ba01dd7bb5",
+          "data_type": "DEVICE_IDENTIFIER",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-575bb1f1ba0c58ba01dd7bb5",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-12",
+          "behavior_id": "behavior-83d38101484f27822c8bec74",
+          "data_type": "LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-83d38101484f27822c8bec74",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-13",
+          "behavior_id": "behavior-bd944e74598cc067496102a1",
+          "data_type": "LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-bd944e74598cc067496102a1",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-14",
+          "behavior_id": "behavior-dff87420c07719a96a761637",
+          "data_type": "MICROPHONE",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-dff87420c07719a96a761637",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-15",
+          "behavior_id": "behavior-e75af17874e2edc9dfd70bb0",
+          "data_type": "MICROPHONE",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-e75af17874e2edc9dfd70bb0",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-16",
+          "behavior_id": "behavior-e39d74d71e7bc0e4c057535a",
+          "data_type": "LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-e39d74d71e7bc0e4c057535a",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-17",
+          "behavior_id": "behavior-cc87ff14ae4e0e0ea9ebf267",
+          "data_type": "LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-cc87ff14ae4e0e0ea9ebf267",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-18",
+          "behavior_id": "behavior-9e7d3eb6ffee275fe2d7f482",
+          "data_type": "CAMERA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-9e7d3eb6ffee275fe2d7f482",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-19",
+          "behavior_id": "behavior-06b14ed5cc1eac41ec1fb813",
+          "data_type": "CAMERA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-06b14ed5cc1eac41ec1fb813",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-20",
+          "behavior_id": "behavior-f68d2798599b116fc3f450ce",
+          "data_type": "CAMERA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-f68d2798599b116fc3f450ce",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-21",
+          "behavior_id": "behavior-11c60b0b7ccf7d5a63b3025c",
+          "data_type": "CAMERA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-11c60b0b7ccf7d5a63b3025c",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-22",
+          "behavior_id": "behavior-faa51892f6834961cd70dff3",
+          "data_type": "CAMERA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-faa51892f6834961cd70dff3",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-23",
+          "behavior_id": "behavior-02f76f5c31b249e19597732c",
+          "data_type": "CAMERA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-02f76f5c31b249e19597732c",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-24",
+          "behavior_id": "behavior-b5b6988d0e9ef1b408288f70",
+          "data_type": "MICROPHONE",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-b5b6988d0e9ef1b408288f70",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-25",
+          "behavior_id": "behavior-8a99ade55e92a9a8bb38be07",
+          "data_type": "LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-8a99ade55e92a9a8bb38be07",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-26",
+          "behavior_id": "behavior-5d2602ef07e8b621cdbe0e20",
+          "data_type": "MICROPHONE",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-5d2602ef07e8b621cdbe0e20",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-27",
+          "behavior_id": "behavior-e88a8a796c28dd592d58ab19",
+          "data_type": "LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-e88a8a796c28dd592d58ab19",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-28",
+          "behavior_id": "behavior-dee6d6eea80448cbcb351203",
+          "data_type": "LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-dee6d6eea80448cbcb351203",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-29",
+          "behavior_id": "behavior-afb5a8ae021b7fcafe06adac",
+          "data_type": "LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-afb5a8ae021b7fcafe06adac",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-30",
+          "behavior_id": "behavior-ba854e60f5e55493b65056e9",
+          "data_type": "LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-ba854e60f5e55493b65056e9",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-31",
+          "behavior_id": "behavior-ce00e7568663e3f9eff0f1c0",
+          "data_type": "LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-ce00e7568663e3f9eff0f1c0",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-32",
+          "behavior_id": "behavior-9e1b09d1ab792123e45f20c8",
+          "data_type": "CAMERA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-9e1b09d1ab792123e45f20c8",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-33",
+          "behavior_id": "behavior-8bf1ef608e52dcfe02d0b136",
+          "data_type": "CAMERA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-8bf1ef608e52dcfe02d0b136",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-34",
+          "behavior_id": "behavior-e62bce4488e33affd14f737b",
+          "data_type": "MICROPHONE",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-e62bce4488e33affd14f737b",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-35",
+          "behavior_id": "behavior-170cf53c238ce5fdd47ed76c",
+          "data_type": "CAMERA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-170cf53c238ce5fdd47ed76c",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-36",
+          "behavior_id": "behavior-2f1ef5a62350b4d8d95ba745",
+          "data_type": "CAMERA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-2f1ef5a62350b4d8d95ba745",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-37",
+          "behavior_id": "behavior-03ed1135c052265b73e5ce95",
+          "data_type": "CAMERA",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-03ed1135c052265b73e5ce95",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-38",
+          "behavior_id": "behavior-c09a8deb514598da857b077c",
+          "data_type": "MICROPHONE",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-c09a8deb514598da857b077c",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-39",
+          "behavior_id": "behavior-37f508196f5860000dc5739a",
+          "data_type": "MICROPHONE",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-37f508196f5860000dc5739a",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-40",
+          "behavior_id": "behavior-03fb1b44979b3aab639996dd",
+          "data_type": "MICROPHONE",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-03fb1b44979b3aab639996dd",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        },
+        {
+          "id": "issue-41",
+          "behavior_id": "behavior-d92ab4f4a96c979d46e4751e",
+          "data_type": "LOCATION",
+          "status": "INSUFFICIENT_EVIDENCE",
+          "evidence_ids": [
+            "ev-d92ab4f4a96c979d46e4751e",
+            "policy-snapshot"
+          ],
+          "policy_document_ids": [
+            "policy-official"
+          ],
+          "requires_review": true
+        }
+      ],
+      "outcome": "partial",
+      "outcome_reason": "Usable report, DEX COMPLETE; policy extraction PARTIAL, UNREVIEWED, attachments NOT_CHECKED and exact APK version applicability UNKNOWN.",
+      "artifact_index_id": "issue63-20261016/telegram-20261016",
+      "isolation": {
+        "receipt_sha256": "88e16c8fe31a6106cc3bfb2d151eccefde288e0c8e1917810c6b8b7b2a3e1318",
+        "image_id": "sha256:6400ad5a4f1bbc8136cf544795eae66c02d9eb813bc1190bf666fb7d5144a875",
+        "container": "privacytrace-cdf8281be06b406c8808290ef40c87ff",
+        "container_created": true,
+        "user": "65534:65534",
+        "network": "none",
+        "readonly_root": true,
+        "cap_drop": [
+          "ALL"
+        ],
+        "security_options": [
+          "no-new-privileges:true"
+        ],
+        "memory_bytes": 1073741824,
+        "memory_swap_bytes": 1073741824,
+        "nano_cpus": 1000000000,
+        "pids_limit": 32,
+        "log_driver": "none",
+        "readonly_input_mount_count": 1,
+        "input_mount_readonly": true,
+        "timeout_seconds": 180,
+        "input_retention": "DELETE_ON_EXIT",
+        "input_removed": true,
+        "cleanup_verified": true,
+        "primary_error_code": null,
+        "cleanup_errors": []
+      }
+    }
+  ]
+}

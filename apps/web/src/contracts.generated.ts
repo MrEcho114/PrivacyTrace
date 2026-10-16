@@ -4,7 +4,7 @@
 export type AnalysisJob = {
   "id": string;
   "sample_id": string;
-  "input_mode": "SYNTHETIC" | "APK";
+  "input_mode": "SYNTHETIC" | "APK" | "CONTROLLED_APK";
   "source_origin": SourceOrigin;
   "state": "QUEUED" | "INTAKE" | "STATIC_ANALYSIS" | "POLICY_PARSING" | "EVALUATING" | "REPORTING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
   "ruleset_version": string;
@@ -23,6 +23,11 @@ export type ApiCall = {
   "context"?: Record<string, string>;
 };
 
+export type CandidateInput = {
+  "revision": number;
+  "candidates": Array<WebCandidate>;
+};
+
 export type ContextualHint = {
   "value": string;
   "basis"?: "CONTEXTUAL_PURPOSE_HINT";
@@ -30,6 +35,11 @@ export type ContextualHint = {
 };
 
 export type DeliveryMode = "LIVE_GENERATED" | "PERSISTED_REPLAY";
+
+export type DraftInput = {
+  "name": string;
+  "sources": Array<WebSource>;
+};
 
 export type EvaluationInput = {
   "job": AnalysisJob;
@@ -64,6 +74,13 @@ export type JobsResponse = {
 };
 
 export type MatchStatus = "EXACT_MATCH" | "CATEGORY_MATCH" | "NOT_DECLARED" | "POLICY_SOURCE_CONFLICT" | "AMBIGUOUS_DISCLOSURE" | "INSUFFICIENT_EVIDENCE";
+
+export type ModelSettings = {
+  "enabled"?: boolean;
+  "api_base"?: string;
+  "model"?: string;
+  "api_key"?: string | null;
+};
 
 export type PolicyApplicability = {
   "package_name"?: string | null;
@@ -108,7 +125,7 @@ export type PolicyDocument = {
   "evidence_id": string;
 };
 
-export type PolicySource = "IN_APP_POLICY" | "STORE_POLICY" | "OFFICIAL_WEB_POLICY" | "SDK_POLICY";
+export type PolicySource = "IN_APP_POLICY" | "STORE_POLICY" | "OFFICIAL_WEB_POLICY" | "SDK_POLICY" | "CONTROLLED_POLICY";
 
 export type PrivacyBehavior = {
   "id": string;
@@ -215,3 +232,43 @@ export type SdkSignatureRuleset = {
 };
 
 export type SourceOrigin = "SYNTHETIC" | "CONTROLLED" | "REAL_SCAN" | "UNKNOWN";
+
+export type StartInput = {
+  "revision": number;
+  "request_id": string;
+};
+
+export type WebCandidate = {
+  "id": string;
+  "source_id": string;
+  "excerpt": string;
+  "data_type": string;
+  "polarity"?: "AFFIRMATIVE" | "NEGATIVE" | "UNKNOWN";
+  "subject"?: "HOST_APP" | "THIRD_PARTY" | "UNKNOWN";
+  "action"?: "ACCESS" | "UNKNOWN";
+  "condition"?: string | null;
+  "declared_purpose"?: string | null;
+  "declared_recipient"?: string | null;
+  "ambiguity_flags"?: Array<"CATCH_ALL" | "UNCLEAR_ACTION">;
+  "start_offset"?: number | null;
+  "checked"?: boolean;
+};
+
+export type WebSource = {
+  "id": string;
+  "title": string;
+  "url"?: string;
+  "source_type"?: "OFFICIAL_WEB_POLICY" | "SDK_POLICY" | "STORE_POLICY" | "IN_APP_POLICY";
+  "text"?: string;
+  "version"?: string;
+  "region"?: string;
+  "product"?: string;
+  "package_name"?: string;
+  "version_code"?: number | null;
+  "status"?: "ready" | "manual" | "empty" | "failed";
+  "error_code"?: string | null;
+  "captured_at"?: string | null;
+  "sha256"?: string | null;
+  "final_url"?: string | null;
+  "model_audit"?: Record<string, string | number | boolean>;
+};

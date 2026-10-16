@@ -1,0 +1,38 @@
+[
+  {
+    "sample_id": "telegram-20261016",
+    "kind": "apk",
+    "requested_url": "https://telegram.org/dl/android/apk?fresh=20261016-issue63",
+    "started_at": "2026-10-16T01:02:41.568952+00:00",
+    "status": 200,
+    "final_url_without_query": "https://cdn4.telesco.pe/file/Telegram.apk",
+    "content_type": "application/octet-stream",
+    "content_length": "70358849",
+    "content_range": null,
+    "content_encoding": null,
+    "last_modified": null,
+    "outcome": "acquired",
+    "bytes": 70358849,
+    "sha256": "a995a057e655be77907f9ceec52953edd213c05050102e2924f29bf903e91e64",
+    "completed_at": "2026-10-16T01:02:48.671324+00:00",
+    "duration_seconds": 7.109
+  },
+  {
+    "sample_id": "telegram-20261016",
+    "kind": "policy",
+    "requested_url": "https://telegram.org/privacy",
+    "started_at": "2026-10-16T01:02:41.570533+00:00",
+    "status": 200,
+    "final_url_without_query": "https://telegram.org/privacy",
+    "content_type": "text/html; charset=utf-8",
+    "content_length": "53502",
+    "content_range": null,
+    "content_encoding": null,
+    "last_modified": null,
+    "outcome": "acquired",
+    "bytes": 53502,
+    "sha256": "4c1d234b6adb171b927bd6a00273a57ed9a7a8cceb3aba5c872a9824d935dbcc",
+    "completed_at": "2026-10-16T01:02:43.034176+00:00",
+    "duration_seconds": 1.468
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "origin": "Original procedural instrumental, no samples or voice",
+  "seed": 451014,
+  "bpm": 96,
+  "duration_seconds": 120,
+  "sample_rate": 48000,
+  "channels": 2,
+  "arrangement": {
+    "intro_until": 9,
+    "reduced_density_reading": [
+      66,
+      89
+    ],
+    "outro_from": 113,
+    "timing": "Arrangement decisions applied on existing 2.5-second musical bars"
+  },
+  "sha256": "fb7e005f78aa530d0f2d072e7ddf1b5c88315a69a36413e67d7f2039ad54a30c"
+}

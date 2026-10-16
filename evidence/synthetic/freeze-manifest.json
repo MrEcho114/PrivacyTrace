@@ -1,0 +1,174 @@
+{
+  "kind": "user-study-pack-freeze",
+  "schema_version": "1.0.0",
+  "synthetic_only": true,
+  "hash_normalization": "crlf-to-lf",
+  "dataset_schema_version": "0.3.0",
+  "covered_globs": [
+    "evidence/user-study-*.template.*",
+    "evidence/synthetic/*.csv",
+    "evidence/synthetic/*.md",
+    "evidence/synthetic/README.md",
+    "evidence/trace.schema.md",
+    "samples/synthetic/**",
+    "scripts/build-dataset.py",
+    "scripts/validate-trace.py",
+    "scripts/verify-run-ledger.py",
+    "scripts/metrics-user-study.py",
+    "scripts/generate-synthetic-pt907.py",
+    "scripts/verify-user-study-pack.py",
+    "evidence/user-study.template.csv"
+  ],
+  "excluded": [
+    "evidence/synthetic/freeze-manifest.json",
+    "evidence/synthetic/rehearsal-walkthrough.md"
+  ],
+  "files": [
+    {
+      "path": "evidence/synthetic/README.md",
+      "sha256": "54b568f623f9ec15cd1cc5612051b1f67e3c9a1b5747ecbb96cb945a823d6bbd",
+      "bytes": 1844
+    },
+    {
+      "path": "evidence/synthetic/user-study-answer-key.csv",
+      "sha256": "65a2bb0618e1df4d25aa02d056fa171b421f5cd3adee1d266ee8a2a3a69fb930",
+      "bytes": 10650
+    },
+    {
+      "path": "evidence/synthetic/user-study-assignment.csv",
+      "sha256": "b7b38950032d748e051f0f8bb1407efb5471e52bf5ed15357063e88831285f3f",
+      "bytes": 629
+    },
+    {
+      "path": "evidence/synthetic/user-study-question-bank.csv",
+      "sha256": "46a15cb98ce579efac88354317a49c7c18ed0e33e26cbf096e9088bcb18a1af9",
+      "bytes": 1446
+    },
+    {
+      "path": "evidence/synthetic/user-study.csv",
+      "sha256": "106d25ffc96c078b1e40acaabb53c637d8a390a71f90fbde53c209694cb985dc",
+      "bytes": 14153
+    },
+    {
+      "path": "evidence/trace.schema.md",
+      "sha256": "f6668f57022703746195a6650e1bb05a5acb7fcaa5e373158a70bc75d8a306c8",
+      "bytes": 5550
+    },
+    {
+      "path": "evidence/user-study-answer-key.template.csv",
+      "sha256": "a671d848b4fb61965cd50e1a5d11042ed328b6afbea96459d7039fd3209aa924",
+      "bytes": 467
+    },
+    {
+      "path": "evidence/user-study-assignment.template.csv",
+      "sha256": "804827b2ce5d99724bd36408be89b42c6b6a538fabb19cdadb2598a07bdad0a7",
+      "bytes": 371
+    },
+    {
+      "path": "evidence/user-study-comparison.template.md",
+      "sha256": "8e7f1657ee72be704e47eadbe3a60ff5b5eaf6eb9a023a0a67c30a81a0d3d431",
+      "bytes": 5690
+    },
+    {
+      "path": "evidence/user-study-consent.template.md",
+      "sha256": "b228de84e70196215dd53d48b5065e21e90c4fa97a4aba95a96eea728ecfe403",
+      "bytes": 2073
+    },
+    {
+      "path": "evidence/user-study-facilitator-script.template.md",
+      "sha256": "bdfd50582c5e1e0350527ed35cefdcd93fd404025c99d1457b11f4092e11852b",
+      "bytes": 8039
+    },
+    {
+      "path": "evidence/user-study-question-bank.template.csv",
+      "sha256": "b9ff02aa5a8810576210371508bdd5ceb55ccf8787fc4f65fdf6f45a85a68be2",
+      "bytes": 484
+    },
+    {
+      "path": "evidence/user-study-records-policy.template.md",
+      "sha256": "6f30bfef0a6f86ac5de31a2424f2a7d6649f676ff438efd1312e1a3f1d9cab99",
+      "bytes": 8054
+    },
+    {
+      "path": "evidence/user-study-rehearsal-checklist.template.md",
+      "sha256": "e90bc6948fa4c0fed96939f1a8537013942aff66b2686209fe5d19afb8eb2eea",
+      "bytes": 10992
+    },
+    {
+      "path": "evidence/user-study.template.csv",
+      "sha256": "a094b93758d7d4e89d03f831262b8af33f6f589645bbc0b2f113614b4f275e38",
+      "bytes": 220
+    },
+    {
+      "path": "samples/synthetic/README.md",
+      "sha256": "c7c2cdbde7b4d76f4743cf4d8769c22c0a43339051a9369132e8d977e7d6d896",
+      "bytes": 834
+    },
+    {
+      "path": "samples/synthetic/manifest.csv",
+      "sha256": "256361816336a5963438a98d62fea046f1488d7a918978b97acd89d4833f35f4",
+      "bytes": 1697
+    },
+    {
+      "path": "samples/synthetic/policies.csv",
+      "sha256": "4c9593fe125ae43b30a4ddd2128764aa7cfb5bba341e29fd49520c822ccf896a",
+      "bytes": 884
+    },
+    {
+      "path": "samples/synthetic/runs.csv",
+      "sha256": "36f203caa047b3d7d702bb2fa297a66a908b6eb1a85adb9ec82453111b818245",
+      "bytes": 817
+    },
+    {
+      "path": "samples/synthetic/trace/syn-cam-v1.jsonl",
+      "sha256": "0bf8fc712cfd0cf81dc422c348f3753b28950e57b3957c51e6ea0e307f1e0e94",
+      "bytes": 842
+    },
+    {
+      "path": "samples/synthetic/trace/syn-contact-v1.jsonl",
+      "sha256": "4203517cd10affaa9806ccc94189955fceb89f9dc67bd88f06efd9194fed5d6d",
+      "bytes": 871
+    },
+    {
+      "path": "samples/synthetic/trace/syn-map-v1.jsonl",
+      "sha256": "afcd1d136e8510724c3837f89047ba1e5663f8ba628f1eb127866f342fdf0107",
+      "bytes": 832
+    },
+    {
+      "path": "samples/synthetic/trace/syn-wallet-v1.jsonl",
+      "sha256": "d4fe8354e8abff44d96b6bccb65d40f834766aed3cf26b0f96d481f7c8c56e60",
+      "bytes": 873
+    },
+    {
+      "path": "scripts/build-dataset.py",
+      "sha256": "7f43a0d3b1f297639479925154767d47f89399e1f8d2fc47a9b9789143ca2d09",
+      "bytes": 9876
+    },
+    {
+      "path": "scripts/generate-synthetic-pt907.py",
+      "sha256": "f27e5d549d270d1a1a54ec1ee043627a360e6ef2caf5b44decb21f8b25e7616e",
+      "bytes": 24451
+    },
+    {
+      "path": "scripts/metrics-user-study.py",
+      "sha256": "13f5d8205625fd86282b2de4c11389a9d11aa5cb07c75ee50dd8946362531e05",
+      "bytes": 27683
+    },
+    {
+      "path": "scripts/validate-trace.py",
+      "sha256": "e1e496b0d96a8ad75116b2775fa1a7ceb59f9d2a355bfdb22bd8ce9f9aaeda41",
+      "bytes": 3901
+    },
+    {
+      "path": "scripts/verify-run-ledger.py",
+      "sha256": "f14aa0d82059a5144519be1e04fe4839ecbfb6124457249b5d268543c90cfefe",
+      "bytes": 7053
+    },
+    {
+      "path": "scripts/verify-user-study-pack.py",
+      "sha256": "23545fd4e5e3758fa1cc99b78a1931f53497861ea32274e7a4bd893ae33ab050",
+      "bytes": 39948
+    }
+  ],
+  "dataset_sha256": "83907a2f8e422ebe4f5952af9fe7d93a81c4afef29edbbd6e32a55b9a6c18014"
+}

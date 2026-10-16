@@ -140,7 +140,10 @@ class WebIntake:
             draft_id = uuid4().hex
             self.directory(draft_id).mkdir(mode=0o700)
             if token_digest is not None:
-                write_private(self._safe(self.directory(draft_id) / "capability.json"), {"token_digest": token_digest})
+                write_private(
+                    self._safe(self.directory(draft_id) / "capability.json"),
+                    {"token_digest": token_digest},
+                )
             return self._save(
                 {
                     "id": draft_id,
@@ -542,7 +545,9 @@ class WebIntake:
                 created_at=datetime.now(timezone.utc),
             )
             capability_path = self._safe(self.directory(draft_id) / "capability.json")
-            token_digest = self._read(capability_path)["token_digest"] if capability_path.exists() else None
+            token_digest = (
+                self._read(capability_path)["token_digest"] if capability_path.exists() else None
+            )
             self.store.create_if_absent(job, token_digest=token_digest)
             draft["jobs"].append(
                 {

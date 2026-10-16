@@ -1,0 +1,5 @@
+run_id,sample_id,job_id,report_sha256,outcome,limitations,scanned_at,evidence_count,behavior_count,claim_count,notes
+run-syn-cam-1,syn-cam-v1,job-syn-cam-1,db2a505982b0a0fbef9cd258f23bdc8953cee6bef890b63159a08612a426b548,partial,加固;反编译不完整,2026-10-13T01:40:00+00:00,2,1,2,SYNTHETIC_REHEARSAL
+run-syn-contact-1,syn-contact-v1,job-syn-contact-1,407f29f730c83daf164504c07db95aae08d652279ebb07e1b2fb51c79a1631c1,success,SDK映射缺失,2026-10-13T01:50:00+00:00,4,3,2,SYNTHETIC_REHEARSAL
+run-syn-map-1,syn-map-v1,job-syn-map-1,3d0f3ccbb16768c450c4b5a305298fd2b7c3165154e898a51f59e8ea65935ae2,success,,2026-10-13T01:30:00+00:00,3,2,1,SYNTHETIC_REHEARSAL
+run-syn-wallet-1,syn-wallet-v1,job-syn-wallet-1,,failed,加固;反编译不完整;权限映射缺失,2026-10-13T02:00:00+00:00,1,0,0,SYNTHETIC_REHEARSAL

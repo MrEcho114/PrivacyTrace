@@ -1,0 +1,3 @@
+participant_id,condition,material_order,equivalent_set,notes
+PLACEHOLDER-p01,baseline_first,baseline;privacyTrace,eq-01,PLACEHOLDER 说明行：仅示意列格式，填报时整行删除；不得保留占位参与者
+PLACEHOLDER-p02,report_first,privacyTrace;baseline,eq-01,PLACEHOLDER 说明行：仅示意列格式，填报时整行删除；不得保留占位参与者

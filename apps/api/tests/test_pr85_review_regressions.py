@@ -73,7 +73,7 @@ def test_state_updates_preserve_capability_digest(tmp_path):
                       source_origin="REAL_SCAN", state="QUEUED", ruleset_version=taxonomy()["version"],
                       created_at=datetime.now(timezone.utc))
     store.create_if_absent(job, token_digest="a" * 64)
-    for state in ("RUNNING", "FAILED"):
+    for state in ("STATIC_ANALYSIS", "FAILED"):
         job.state = state
         store.save_job(job)
         assert store.get_token_digest(job.id) == "a" * 64

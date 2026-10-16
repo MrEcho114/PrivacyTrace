@@ -124,3 +124,18 @@ def test_twelfth_apk_tampering_is_rejected(tmp_path, monkeypatch):
     assert validator.verify_build_artifacts(*builds, **options) is None
     (builds[1] / "C12.apk").write_bytes(b"changed")
     assert validator.verify_build_artifacts(*builds, **options) == "BUILD_ARTIFACT_HASH_MISMATCH"
+
+
+def test_failed_prediction_archive_keeps_error_codes_without_private_paths(tmp_path, monkeypatch):
+    from privacytrace import benchmark
+
+    monkeypatch.setattr(benchmark, "analyze", lambda *args, **kwargs: {
+        "job_id": "controlled-test", "status": "FAILED",
+        "errors": [{"code": "ISOLATION_REJECTED"}],
+        "report_path": "/private/local/job.json",
+        "tools": {"isolation_receipt": "/private/local/receipt.json"},
+    })
+    record = benchmark.predict(tmp_path / "C02.json", tmp_path, tmp_path / "jobs", 120)
+    assert record["analysis"]["errors"] == [{"code": "ISOLATION_REJECTED"}]
+    assert record["predictions"] is None
+    assert "/private/local" not in json.dumps(record)

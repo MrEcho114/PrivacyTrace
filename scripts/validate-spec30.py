@@ -194,7 +194,7 @@ def main():
         ):
             rebuild_error = "WORKER_BUILD_FAILED"
             stages[-1]["error_code"] = rebuild_error
-        # Retain 18 result rows on failure; a mismatched build is never scanned.
+        # Retain every scheme/scenario row on failure; mismatched builds are never scanned.
         comparison_command = [
             sys.executable, "-m", "privacytrace.benchmark", "run",
             "--artifacts", str(build_a), "--output", str(output / "evaluation"),
@@ -206,7 +206,8 @@ def main():
                          comparison_command)
         if not (built and rebuilt and compared) or any(item["exit_code"] for item in stages):
             return 1
-        env = {**os.environ, "PRIVACYTRACE_CONTROLLED_ARTIFACTS": str(build_a)}
+        env = {**os.environ, "PRIVACYTRACE_CONTROLLED_ARTIFACTS": str(build_a),
+               "PRIVACYTRACE_CONTROLLED_SUITE": args.suite}
         if not stage("source-cli-regressions", [sys.executable, "-m", "pytest",
                      "apps/api/tests/test_controlled_source_cli.py", "-q", "-p", "no:cacheprovider"],
                      env=env):

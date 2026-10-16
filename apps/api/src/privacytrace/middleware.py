@@ -17,40 +17,48 @@ from .config import ServerConfig
 TOKEN_PATTERN = re.compile(r"pt_cap_[A-Za-z0-9_-]{20,}")
 
 
+def redact_log_value(value, depth=0):
+    """Mask tokens in structured and non-string logging fields before formatting."""
+    if isinstance(value, str):
+        return TOKEN_PATTERN.sub("pt_cap_***", value)
+    if depth >= 12:
+        return TOKEN_PATTERN.sub("pt_cap_***", str(value))
+    if isinstance(value, dict):
+        return {
+            redact_log_value(key, depth + 1): redact_log_value(item, depth + 1)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [redact_log_value(item, depth + 1) for item in value]
+    if isinstance(value, tuple):
+        return tuple(redact_log_value(item, depth + 1) for item in value)
+    if isinstance(value, (set, frozenset)):
+        return type(value)(redact_log_value(item, depth + 1) for item in value)
+    if isinstance(value, (int, float, bool, type(None))):
+        return value
+    # Unknown objects and bytes may render sensitive data via str()/repr().
+    rendered = str(value)
+    return TOKEN_PATTERN.sub("pt_cap_***", rendered) if TOKEN_PATTERN.search(rendered) else value
+
+
 class TokenRedactionFilter(logging.Filter):
-    """Redacts capability tokens from all log messages."""
+    """Sanitize structured records before formatter/handler access."""
 
     def filter(self, record: logging.LogRecord) -> bool:
-        if isinstance(record.msg, str):
-            record.msg = TOKEN_PATTERN.sub("pt_cap_***", record.msg)
-        if record.args:
-            if isinstance(record.args, dict):
-                record.args = {
-                    k: (
-                        TOKEN_PATTERN.sub("pt_cap_***", str(v))
-                        if TOKEN_PATTERN.search(str(v))
-                        else v
-                    )
-                    for k, v in record.args.items()
-                }
-            elif isinstance(record.args, (list, tuple)):
-                record.args = tuple(
-                    (
-                        TOKEN_PATTERN.sub("pt_cap_***", str(a))
-                        if TOKEN_PATTERN.search(str(a))
-                        else a
-                    )
-                    for a in record.args
-                )
         if record.exc_info:
             import traceback
 
-            lines = traceback.format_exception(*record.exc_info)
-            formatted = "".join(lines)
+            formatted = "".join(traceback.format_exception(*record.exc_info))
             record.exc_text = TOKEN_PATTERN.sub("pt_cap_***", formatted)
             record.exc_info = None
         elif record.exc_text:
             record.exc_text = TOKEN_PATTERN.sub("pt_cap_***", record.exc_text)
+
+        # Includes msg, args, stack_info and user-defined "extra" fields. This
+        # also covers non-string msg objects and nested dictionaries.
+        for key, value in list(record.__dict__.items()):
+            if key not in ("exc_info", "exc_text"):
+                record.__dict__[key] = redact_log_value(value)
         return True
 
 

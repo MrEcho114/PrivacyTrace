@@ -1,0 +1,168 @@
+{
+  "scenario_id": "C09",
+  "analysis": {
+    "job_id": "controlled-a8f14448a94544e4af96dbdbf059fada",
+    "status": "SUCCEEDED",
+    "coverage": "COMPLETE",
+    "counts": {
+      "evidence": 4,
+      "behaviors": 2,
+      "claims": 1,
+      "issues": 2
+    },
+    "human_review_gate": "NOT_REQUIRED_BY_WORKFLOW"
+  },
+  "elapsed_seconds": 4.191112676999978,
+  "predictions": {
+    "permission_keyword": [
+      {
+        "data_type": "PRECISE_LOCATION",
+        "action": "CAPABILITY",
+        "status": "EXACT_MATCH",
+        "evidence_ids": [
+          "ev-5faaaea060769b0f27a4c16f"
+        ]
+      }
+    ],
+    "api_flat": [
+      {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "status": "EXACT_MATCH",
+        "evidence_ids": [
+          "ev-d4993c8fb4c7b50b89849775"
+        ]
+      }
+    ],
+    "privacytrace": [
+      {
+        "data_type": "PRECISE_LOCATION",
+        "action": "CAPABILITY",
+        "status": "INSUFFICIENT_EVIDENCE",
+        "evidence_ids": [
+          "ev-5faaaea060769b0f27a4c16f"
+        ]
+      },
+      {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "status": "AMBIGUOUS_DISCLOSURE",
+        "evidence_ids": [
+          "ev-d4993c8fb4c7b50b89849775",
+          "policy-snapshot",
+          "policy-sentence-1"
+        ]
+      }
+    ]
+  },
+  "policy_spans_validated": true,
+  "policy_span_validation": {
+    "validated": true,
+    "checked_evidence_ids": [
+      "policy-sentence-1"
+    ],
+    "policy_document_sha256": {
+      "policy-official": "445c6b2d4281830ab9c6908ee7dd377c49d130fe6f233e03d7b82e9946f214c0"
+    },
+    "errors": []
+  },
+  "scheme_elapsed_seconds": {
+    "permission_keyword": 1.0210000027655042e-05,
+    "api_flat": 7.995999908416707e-06,
+    "privacytrace": 0.0021128619999899456
+  },
+  "truth_files_absent": true,
+  "material_sha256": "ec020cc4436cd2d19723c595eb8a9bcd184eb4f90c920067e465c5ab047c8228",
+  "prediction_image": "sha256:c49e26ccbdd10e7cfb26faa29d042663d8901f41f47992256dc408223b8e0b03",
+  "coverage": {
+    "status": "COMPLETE",
+    "scope": "DEX_ENTRIES",
+    "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+    "behavior_limitations": [
+      "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+      "不保证覆盖反射、动态加载及运行时生成的调用。",
+      "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+      "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+      "静态潜在行为不能证明实际访问、收集或外传。"
+    ],
+    "sdk_attribution_limitations": [],
+    "limitations": [
+      "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+      "JADX unavailable or timed out; bytecode evidence retained"
+    ],
+    "scanned_dex": [
+      "classes.dex"
+    ],
+    "failed_dex": []
+  },
+  "api_evidence": [
+    {
+      "id": "ev-d4993c8fb4c7b50b89849775",
+      "kind": "API",
+      "status": "STATIC_POTENTIAL",
+      "source": "classes.dex",
+      "locator": "apk_sha256=4d37ff23331083c7a2c37d8e257d3797dab243871f00bd26cf2da1d2bfc838f7;dex=classes.dex;caller=Lorg/privacytrace/controlled/c09/MainActivity;->readLocation(Landroid/location/LocationManager;)Landroid/location/Location;;offset_bytes=4;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "excerpt": "invoke-virtual v2, v0, Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "document_id": null,
+      "artifact_sha256": null,
+      "start_offset": null,
+      "end_offset": null,
+      "api_call": {
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "rule_id": "android.location.last-known.gps",
+        "ruleset_version": "0.3.0",
+        "context": {
+          "provider": "gps"
+        }
+      }
+    }
+  ],
+  "evidence_locators": [
+    {
+      "id": "ev-5faaaea060769b0f27a4c16f",
+      "kind": "MANIFEST",
+      "source": "AndroidManifest.xml",
+      "locator": "apk_sha256=4d37ff23331083c7a2c37d8e257d3797dab243871f00bd26cf2da1d2bfc838f7;permission=android.permission.ACCESS_FINE_LOCATION;tag=uses-permission",
+      "api_call": null
+    },
+    {
+      "id": "ev-d4993c8fb4c7b50b89849775",
+      "kind": "API",
+      "source": "classes.dex",
+      "locator": "apk_sha256=4d37ff23331083c7a2c37d8e257d3797dab243871f00bd26cf2da1d2bfc838f7;dex=classes.dex;caller=Lorg/privacytrace/controlled/c09/MainActivity;->readLocation(Landroid/location/LocationManager;)Landroid/location/Location;;offset_bytes=4;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "api_call": {
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "rule_id": "android.location.last-known.gps",
+        "ruleset_version": "0.3.0",
+        "context": {
+          "provider": "gps"
+        }
+      }
+    },
+    {
+      "id": "policy-snapshot",
+      "kind": "POLICY_DOCUMENT",
+      "source": "https://example.invalid/privacytrace/controlled/C09",
+      "locator": "Full captured UTF-8 artifact",
+      "api_call": null
+    },
+    {
+      "id": "policy-sentence-1",
+      "kind": "POLICY_SENTENCE",
+      "source": "https://example.invalid/privacytrace/controlled/C09",
+      "locator": "codepoints [19,33)",
+      "api_call": null
+    }
+  ],
+  "features_sha256": "ac87f6406cf29f4b145f041e188423d1490a877321207d425a912eb410f7f14e",
+  "stored_job_sha256": "4125a4413dc0a7bcf0bc4c06f6254fe7f24effa14a0a09437e90664f879f8cf8",
+  "report_sha256": "c6a6f40f06acab462b6a761e01b9af28fcd1682aad7f3ab0f8047baa18789e3f",
+  "behavior_limitations": [
+    "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+    "不保证覆盖反射、动态加载及运行时生成的调用。",
+    "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+    "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+    "静态潜在行为不能证明实际访问、收集或外传。"
+  ],
+  "apk_sha256": "4d37ff23331083c7a2c37d8e257d3797dab243871f00bd26cf2da1d2bfc838f7"
+}

@@ -1,0 +1,306 @@
+{
+  "schema_version": 1,
+  "validation_commit_sha": "b933e8e03b3f9363f17db365fa0454543d243351",
+  "suites": {
+    "pt907": {
+      "summaries": {
+        "permission_keyword": {
+          "total": 12,
+          "status_agreement": 2,
+          "failures": 1,
+          "abstentions": 0,
+          "predicted": 11
+        },
+        "api_flat": {
+          "total": 12,
+          "status_agreement": 4,
+          "failures": 0,
+          "abstentions": 1,
+          "predicted": 12
+        },
+        "privacytrace": {
+          "total": 12,
+          "status_agreement": 12,
+          "failures": 0,
+          "abstentions": 3,
+          "predicted": 12
+        }
+      },
+      "diagnostics": {
+        "permission_keyword": {
+          "total": 12,
+          "confusion_counts": {
+            "INSUFFICIENT_EVIDENCE -> EXACT_MATCH": 1,
+            "EXACT_MATCH -> EXACT_MATCH": 1,
+            "CATEGORY_MATCH -> NOT_DECLARED": 1,
+            "NOT_DECLARED -> NOT_DECLARED": 1,
+            "AMBIGUOUS_DISCLOSURE -> EXACT_MATCH": 4,
+            "INSUFFICIENT_EVIDENCE -> NOT_DECLARED": 2,
+            "EXACT_MATCH -> NOT_DECLARED": 1,
+            "EXACT_MATCH -> NO_PREDICTION": 1
+          },
+          "shared_scanner_api_evidence_verified": 12,
+          "scheme_prediction_evidence_locator_validated": 0,
+          "scheme_api_locator_applicable": 11,
+          "scheme_api_locator_not_applicable": 1,
+          "shared_policy_spans_validated": 12,
+          "coverage_complete": 12,
+          "coverage_partial": 0,
+          "coverage_unobserved": 0,
+          "execution_failures": 0,
+          "missing_target_predictions": 1,
+          "truncated_outputs": 0,
+          "mismatches_or_failures": [
+            "C01",
+            "C03",
+            "C05",
+            "C06",
+            "C07",
+            "C08",
+            "C09",
+            "C10",
+            "C11",
+            "C12"
+          ],
+          "precision_recall_f1": null,
+          "precision_recall_f1_reason": "N/A: no binary runtime collection or legality target",
+          "cpu_peak_memory": null,
+          "human_preparation_seconds": null
+        },
+        "api_flat": {
+          "total": 12,
+          "confusion_counts": {
+            "INSUFFICIENT_EVIDENCE -> INSUFFICIENT_EVIDENCE": 1,
+            "EXACT_MATCH -> EXACT_MATCH": 2,
+            "CATEGORY_MATCH -> NOT_DECLARED": 1,
+            "NOT_DECLARED -> NOT_DECLARED": 1,
+            "AMBIGUOUS_DISCLOSURE -> EXACT_MATCH": 4,
+            "INSUFFICIENT_EVIDENCE -> NOT_DECLARED": 2,
+            "EXACT_MATCH -> NOT_DECLARED": 1
+          },
+          "shared_scanner_api_evidence_verified": 12,
+          "scheme_prediction_evidence_locator_validated": 11,
+          "scheme_api_locator_applicable": 11,
+          "scheme_api_locator_not_applicable": 1,
+          "shared_policy_spans_validated": 12,
+          "coverage_complete": 12,
+          "coverage_partial": 0,
+          "coverage_unobserved": 0,
+          "execution_failures": 0,
+          "missing_target_predictions": 0,
+          "truncated_outputs": 0,
+          "mismatches_or_failures": [
+            "C03",
+            "C05",
+            "C06",
+            "C07",
+            "C08",
+            "C09",
+            "C10",
+            "C11"
+          ],
+          "precision_recall_f1": null,
+          "precision_recall_f1_reason": "N/A: no binary runtime collection or legality target",
+          "cpu_peak_memory": null,
+          "human_preparation_seconds": null
+        },
+        "privacytrace": {
+          "total": 12,
+          "confusion_counts": {
+            "INSUFFICIENT_EVIDENCE -> INSUFFICIENT_EVIDENCE": 3,
+            "EXACT_MATCH -> EXACT_MATCH": 3,
+            "CATEGORY_MATCH -> CATEGORY_MATCH": 1,
+            "NOT_DECLARED -> NOT_DECLARED": 1,
+            "AMBIGUOUS_DISCLOSURE -> AMBIGUOUS_DISCLOSURE": 4
+          },
+          "shared_scanner_api_evidence_verified": 12,
+          "scheme_prediction_evidence_locator_validated": 11,
+          "scheme_api_locator_applicable": 11,
+          "scheme_api_locator_not_applicable": 1,
+          "shared_policy_spans_validated": 12,
+          "coverage_complete": 12,
+          "coverage_partial": 0,
+          "coverage_unobserved": 0,
+          "execution_failures": 0,
+          "missing_target_predictions": 0,
+          "truncated_outputs": 0,
+          "mismatches_or_failures": [],
+          "precision_recall_f1": null,
+          "precision_recall_f1_reason": "N/A: no binary runtime collection or legality target",
+          "cpu_peak_memory": null,
+          "human_preparation_seconds": null
+        }
+      },
+      "truth_sha256": "0beb0e990c27668658c24341978f871082dc53952affcff1b444d7eb864baeb3"
+    },
+    "spec30": {
+      "summaries": {
+        "permission_keyword": {
+          "total": 6,
+          "status_agreement": 2,
+          "failures": 0,
+          "abstentions": 0,
+          "predicted": 6
+        },
+        "api_flat": {
+          "total": 6,
+          "status_agreement": 3,
+          "failures": 0,
+          "abstentions": 1,
+          "predicted": 6
+        },
+        "privacytrace": {
+          "total": 6,
+          "status_agreement": 6,
+          "failures": 0,
+          "abstentions": 2,
+          "predicted": 6
+        }
+      },
+      "diagnostics": {
+        "permission_keyword": {
+          "total": 6,
+          "confusion_counts": {
+            "INSUFFICIENT_EVIDENCE -> EXACT_MATCH": 1,
+            "EXACT_MATCH -> EXACT_MATCH": 1,
+            "CATEGORY_MATCH -> NOT_DECLARED": 1,
+            "NOT_DECLARED -> NOT_DECLARED": 1,
+            "AMBIGUOUS_DISCLOSURE -> EXACT_MATCH": 1,
+            "INSUFFICIENT_EVIDENCE -> NOT_DECLARED": 1
+          },
+          "shared_scanner_api_evidence_verified": 6,
+          "scheme_prediction_evidence_locator_validated": 0,
+          "scheme_api_locator_applicable": 5,
+          "scheme_api_locator_not_applicable": 1,
+          "shared_policy_spans_validated": 6,
+          "coverage_complete": 6,
+          "coverage_partial": 0,
+          "coverage_unobserved": 0,
+          "execution_failures": 0,
+          "missing_target_predictions": 0,
+          "truncated_outputs": 0,
+          "mismatches_or_failures": [
+            "C01",
+            "C03",
+            "C05",
+            "C06"
+          ],
+          "precision_recall_f1": null,
+          "precision_recall_f1_reason": "N/A: no binary runtime collection or legality target",
+          "cpu_peak_memory": null,
+          "human_preparation_seconds": null
+        },
+        "api_flat": {
+          "total": 6,
+          "confusion_counts": {
+            "INSUFFICIENT_EVIDENCE -> INSUFFICIENT_EVIDENCE": 1,
+            "EXACT_MATCH -> EXACT_MATCH": 1,
+            "CATEGORY_MATCH -> NOT_DECLARED": 1,
+            "NOT_DECLARED -> NOT_DECLARED": 1,
+            "AMBIGUOUS_DISCLOSURE -> EXACT_MATCH": 1,
+            "INSUFFICIENT_EVIDENCE -> NOT_DECLARED": 1
+          },
+          "shared_scanner_api_evidence_verified": 6,
+          "scheme_prediction_evidence_locator_validated": 5,
+          "scheme_api_locator_applicable": 5,
+          "scheme_api_locator_not_applicable": 1,
+          "shared_policy_spans_validated": 6,
+          "coverage_complete": 6,
+          "coverage_partial": 0,
+          "coverage_unobserved": 0,
+          "execution_failures": 0,
+          "missing_target_predictions": 0,
+          "truncated_outputs": 0,
+          "mismatches_or_failures": [
+            "C03",
+            "C05",
+            "C06"
+          ],
+          "precision_recall_f1": null,
+          "precision_recall_f1_reason": "N/A: no binary runtime collection or legality target",
+          "cpu_peak_memory": null,
+          "human_preparation_seconds": null
+        },
+        "privacytrace": {
+          "total": 6,
+          "confusion_counts": {
+            "INSUFFICIENT_EVIDENCE -> INSUFFICIENT_EVIDENCE": 2,
+            "EXACT_MATCH -> EXACT_MATCH": 1,
+            "CATEGORY_MATCH -> CATEGORY_MATCH": 1,
+            "NOT_DECLARED -> NOT_DECLARED": 1,
+            "AMBIGUOUS_DISCLOSURE -> AMBIGUOUS_DISCLOSURE": 1
+          },
+          "shared_scanner_api_evidence_verified": 6,
+          "scheme_prediction_evidence_locator_validated": 5,
+          "scheme_api_locator_applicable": 5,
+          "scheme_api_locator_not_applicable": 1,
+          "shared_policy_spans_validated": 6,
+          "coverage_complete": 6,
+          "coverage_partial": 0,
+          "coverage_unobserved": 0,
+          "execution_failures": 0,
+          "missing_target_predictions": 0,
+          "truncated_outputs": 0,
+          "mismatches_or_failures": [],
+          "precision_recall_f1": null,
+          "precision_recall_f1_reason": "N/A: no binary runtime collection or legality target",
+          "cpu_peak_memory": null,
+          "human_preparation_seconds": null
+        }
+      },
+      "truth_sha256": "9a0a10392d2d052f95e78c69231c27556120c0eff131a403f05d6f5c8cc10c40"
+    }
+  },
+  "files": {
+    "failures/legacy-builder/evaluation/comparison.json": "c0359bdd584978a6484403ad4983e30e93525fbb7bbe244eb81fe843c129b6be",
+    "failures/legacy-builder/evaluation/comparison.md": "c64744a4db450b850f09e9d7140912f8e43851d2e2088d0482129c66bbd276cb",
+    "failures/legacy-builder/integration-receipt.json": "1dbad97d752417a2f648a6353364e019a5b6c2cd31524f7b8f3018e18cfec419",
+    "pt907/browser-proof/browser-proof.json": "6d1ff6fa88665587099b932d80943c7a539744633ecd3a0e1c2862113485a1de",
+    "pt907/browser-proof/C01.png": "3795d9e0b7d6f1e076e819958e6af67c9c142f4319ccea8d234c8b6c2a587ce1",
+    "pt907/browser-proof/C02.png": "c66108c63221fbe66b9b585e6769a621803f79fc12de179b10ef50fb3d22a3d5",
+    "pt907/browser-proof/C03.png": "011c790e9ec131004b12abef7ef7086aa6dd8b424bd290c5ba983c4105ba1f3a",
+    "pt907/browser-proof/C04.png": "ccce88d103d00758b5953eb4d98a88a4402171b63b639153c074b82e50b70432",
+    "pt907/browser-proof/C05.png": "7af5c0b331a56d863467c7858e2d4666d4a1987bb59bccd6d224305698cdfb09",
+    "pt907/browser-proof/C06.png": "5895a624458e178e2b671377814a23746ad57b5b53e0d0d50da1140cec28c785",
+    "pt907/browser-proof/C07.png": "cef61585bba21998cd9227898f7285676c48ee8363a1b84c55c30d275f8b65f5",
+    "pt907/browser-proof/C08.png": "f436ff5393b269037b62b88aec3a07cbd05bfe039ac910d9380a0869bdc3ea4a",
+    "pt907/browser-proof/C09.png": "67c5b3ea3f7eafcc958850fba3a3b9e40731b0798ae4b59230cb728fe9ab8131",
+    "pt907/browser-proof/C10.png": "9b72e0e6ac40d20af5e6c4e87adfa78a761df8f907131c5c1c3391617a03ad32",
+    "pt907/browser-proof/C11.png": "5603ba83178b10fe23d049f66b2194936c472c798d69611cccf821b877ef5558",
+    "pt907/browser-proof/C12.png": "60117e1d9679ef9a553e0fa353c1ebf19030f3551d0b2d6b19a5ea7eb6c5e21c",
+    "pt907/build-a/build-receipt.json": "49cae8c567143def4b08ad581f7e6cb801d6279f655bf771f2d2ffc584a13f7f",
+    "pt907/build-b/build-receipt.json": "49cae8c567143def4b08ad581f7e6cb801d6279f655bf771f2d2ffc584a13f7f",
+    "pt907/evaluation/C01.prediction.json": "34e632c6ffccfb1a375630572afc8bd0065e809e3812d054e5eb0ab344905139",
+    "pt907/evaluation/C02.prediction.json": "0ec606c126d9700c14ff50ffd7c37097f24bcebbed3240a171c81db526b4865b",
+    "pt907/evaluation/C03.prediction.json": "4a414e70f72aaebbac1ea91046ea3833e650ed7cdec45d13fa8f8a0623c55240",
+    "pt907/evaluation/C04.prediction.json": "7f9a80abe292804485ff8244d03b3ab2c416ed4de7e0998a15674afdf705fad5",
+    "pt907/evaluation/C05.prediction.json": "661aef40ab0d2f7d99b7c1a85adea212e0d4d9080129d50abf9018e1314a3d1b",
+    "pt907/evaluation/C06.prediction.json": "48c5951293bbe31235ec57688703fd67235a0f51c3bcca7f7b4f97d681400128",
+    "pt907/evaluation/C07.prediction.json": "13fc33c0a202bc4786c2f8136abfb67065345efdaeb9bc48cbd02740b9b44517",
+    "pt907/evaluation/C08.prediction.json": "2f93dd7621a5616439ed87fd15d841c0f558b3c12c4c5f010780f23edb1288b9",
+    "pt907/evaluation/C09.prediction.json": "16db97399fc6a92c58ae5283cb6371c0e180c917f46b10649b9fa9b46aee4703",
+    "pt907/evaluation/C10.prediction.json": "2f6552de4a38768f2451bc350c71a0cb2849decfd9953f22d84e7890c2b3ac35",
+    "pt907/evaluation/C11.prediction.json": "3bad076271e4f627398e9b6d44f61373ed272232ffa8c993f68f472533836d5a",
+    "pt907/evaluation/C12.prediction.json": "f2ab34948902bf0ee23c64c54049abe114844d9826eb5173565a6e8da6de111b",
+    "pt907/evaluation/comparison.json": "40fb48f0bd9fe3d8755e18b26e499d3dd2be95f66395c8d67bb570864585a242",
+    "pt907/evaluation/comparison.md": "6271216539b7bda83526c3ed04ed7806350fbcdbac359930770b4cd025034d11",
+    "pt907/integration-receipt.json": "15065bd8414b25afc721e5386eda44231af51e73267c65cab25630220138fff8",
+    "spec30/browser-proof/browser-proof.json": "71a458574f1b72b3f5601fb4abc1b0dee126ec2c796052fbdfee47568c674368",
+    "spec30/browser-proof/controlled-c02.png": "b4b3107a93f9ae97c1f5b39b92ec26310470b00b652a3e5e4fcc1f9cf6f1d3f2",
+    "spec30/browser-proof/long-text-mobile.png": "cedff553cfa307266ab6f71152fa3df6ee10e654c02c3bec9df3a97e44a7fe1a",
+    "spec30/build-a/build-receipt.json": "4755b9667c50a18b99713cf1fdf515b6bc5fae3491b907d290e153ad385104f7",
+    "spec30/build-b/build-receipt.json": "4755b9667c50a18b99713cf1fdf515b6bc5fae3491b907d290e153ad385104f7",
+    "spec30/evaluation/C01.prediction.json": "62cdc6530c8b8095c4297049e15481545522799ba1e35a149b0cc57f37f6dac0",
+    "spec30/evaluation/C02.prediction.json": "43427ca10f5d0c98b2ff29084a574312e4aee3777c8cd398526c37e124101965",
+    "spec30/evaluation/C03.prediction.json": "8772e683d9b1e4191308872fc2b4445d73e45b618145f7d1156444903cea3fa1",
+    "spec30/evaluation/C04.prediction.json": "2d368aa63ef88a6529ce1cf0e544b86ad73fd906183fd834486b787ebab3d96e",
+    "spec30/evaluation/C05.prediction.json": "4dc943f95e75faf076ce4b1949485b4c9dec8bebf9dc700199dce8bedfe5fda2",
+    "spec30/evaluation/C06.prediction.json": "1792e28d8863f83951f2538ea3f53942f44ffb683534c3166a81a2739a365126",
+    "spec30/evaluation/comparison.json": "c8bba5de89fbda6541db2be41716070d38e1304e70b7e5fa731f2951e4b87a39",
+    "spec30/evaluation/comparison.md": "0ca70ebf69b35343d467a6b130fd9c88b93b865aa16010754e0426a64f9bae84",
+    "spec30/integration-receipt.json": "c669903009cbfbf02df69febe87f9d5c0d7602b0d947948a650c818ba2fed7e6",
+    "spec30/offline-proof/offline-evidence-c02.png": "a26ae1dfabab122ab53f986d7b6c4a2a7299540219f832f3ec63d1394bee8e6b",
+    "spec30/offline-proof/offline-proof.json": "07d3234a63ebd285281782109efe9396b23973da22d4b5b53c2a5a625f1b1ebe",
+    "README.md": "dffe427c77b5a6458081e1b0c7a78d2aac42231e30c5f03471dfe83b57786f21"
+  }
+}

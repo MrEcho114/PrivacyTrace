@@ -4,5 +4,7 @@
 *.png binary
 # Frozen input hashes cover exact bytes on every checkout platform.
 benchmarks/controlled/** -text whitespace=cr-at-eol
+benchmarks/controlled-v2/** -text whitespace=cr-at-eol
 # Validation receipts retain the exact bytes named by verification-summary.json.
 docs/stages/spec30/*.json -text whitespace=cr-at-eol
+docs/stages/issue64/**/*.json -text whitespace=cr-at-eol

@@ -155,6 +155,22 @@ uv run --project apps/api --locked --extra worker pytest apps/api/tests
 # Linux: PRIVACYTRACE_DOCKER_TESTS=1 uv run --project apps/api --locked --extra worker pytest apps/api/tests
 ```
 
+## Issue 认领与 Blocked 依赖说明
+
+> **Blocked ≠ 禁止认领，也不等于整张 Issue 无法开始。** GitHub 的 `Blocked` / `blocked by` 表示存在待满足的任务依赖，通常影响某些集成步骤或最终验收，而不是对组员设置认领或开发权限限制。
+
+- **可以认领**：对感兴趣且未明确由其他成员负责的 Issue，可先在评论区留言说明认领意向、GitHub 用户名及计划负责的范围，请维护者确认分工。无法自行设置 Assignees，通常是仓库权限或界面能力限制，与是否 Blocked 无关；由有权限的维护者分配即可。已有负责人时先沟通，避免重复实施。
+- **可以提前开展不受依赖影响的工作**：需求澄清、设计、独立模块实现、测试用例、测试环境与文档准备等，只要不依赖尚未交付的接口或产物，就不需要等 Blocked 消失。
+- **受依赖约束的部分应等待或使用明确约定的契约**：涉及真实上游产物的联调、端到端验证、最终验收/关闭，不得在前置条件未满足时宣称完成；使用 Mock 或临时桩应明确记录，不能当作真实集成通过。
+- **先查看依赖的具体范围**：阅读 Issue 正文及 GitHub Dependencies 的 `blocked by` 关系，判断阻塞的是整个实现、某个子功能，还是最终集成/验收；不明确时在该 Issue 评论询问维护者，不要仅凭一个 Blocked 标记放弃认领。
+- **依赖变化及时同步**：如果正文已经取消硬依赖，但原生 Dependencies 仍保留旧关系，请通知维护者更新 GitHub 依赖边。修改文字本身不会自动清除 Blocked 标记。
+
+**推荐认领留言**：
+
+> 我希望认领此 Issue（GitHub：@用户名）。已阅读其依赖关系，计划先完成不受前置任务影响的部分：……；依赖就绪后再完成联调/最终验收。请维护者确认分工并按权限设置 Assignee。
+
+**示例**：[Android 端到端验收 #73](https://github.com/MrEcho114/PrivacyTrace/issues/73) 依赖服务端和客户端可交付产物完成最终主链路验收，但测试方案、设备及用例准备可以提前进行；其正文已将 [#79](https://github.com/MrEcho114/PrivacyTrace/issues/79) 定义为非阻塞扩展分支，GitHub 原生依赖边需另行同步调整。
+
 ## 项目状态与相关文档
 
 - **使用与受控评测**：[六场景说明](benchmarks/controlled/README.md)、[真实 Web 工作流设计](docs/design/issue-44-live-workflow.md)。

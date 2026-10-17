@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import pytest
 
 from privacytrace import benchmark
+from privacytrace.benchmark_locations import load_reference, locator
 from privacytrace.models import EvaluationInput
 from privacytrace.policy_intake import digest
 from privacytrace.resources import taxonomy
@@ -86,12 +87,17 @@ def located_record():
         "api_call": {**{key: rule[key] for key in ("rule_id", "target_descriptor", "context")},
                      "ruleset_version": taxonomy()["version"]},
     }
+    artifact = load_reference()["scenarios"]["C02"]
+    call = next(call for call in artifact["invokes"]
+                if "->readLocation(" in call["caller_descriptor"])
+    api["locator"] = locator(artifact["apk_sha256"], call)
     manifest = {"id": "permission", "kind": "MANIFEST", "source": "AndroidManifest.xml",
                 "locator": "uses-permission[1]", "api_call": None}
     prediction = {"data_type": "PRECISE_LOCATION", "action": "ACCESS",
                   "status": "EXACT_MATCH", "evidence_ids": [api["id"]]}
     record = {
         "scenario_id": "C02", "analysis": {"status": "SUCCEEDED", "errors": []},
+        "apk_sha256": artifact["apk_sha256"],
         "api_evidence": [api], "evidence_locators": [api, manifest],
         "policy_spans_validated": True,
         "policy_span_validation": {"validated": True, "checked_evidence_ids": [], "errors": []},
@@ -129,10 +135,40 @@ def test_wrong_referenced_locator_is_rejected_even_when_shared_scan_is_correct(l
     assert row["scheme_prediction_evidence_locator_validated"] is False
 
 
+@pytest.mark.parametrize("corruption", ["offset", "apk", "embedded_target"])
+def test_c12_exact_callsite_cannot_pass_on_offset_format_alone(located_record, corruption):
+    record, _ = located_record
+    truth = json.loads((benchmark.SUITES["pt907"] / "ground-truth.json").read_bytes())
+    label = truth["scenarios"]["C12"]
+    artifacts = json.loads((benchmark.SUITES["pt907"] / "artifacts.lock.json").read_bytes())
+    apk_hash = artifacts["apks"]["C12"]
+    record.update(scenario_id="C12", apk_sha256=apk_hash)
+    api = record["api_evidence"][0]
+    api["api_call"].update(context={}, rule_id="android.location.last-known.generic")
+    api["locator"] = (f"apk_sha256={apk_hash};dex=classes.dex;caller={label['caller_descriptor']};"
+                      f"offset_bytes=0;target={label['target_descriptor']}")
+    for predictions in record["predictions"].values():
+        predictions[0]["data_type"] = "LOCATION"
+    assert benchmark.score([record], {"scenarios": {"C12": label}})[0][0][
+        "shared_scanner_api_evidence_verified"] is True
+    if corruption == "offset":
+        api["locator"] = api["locator"].replace("offset_bytes=0;", "offset_bytes=4;")
+    elif corruption == "apk":
+        record["apk_sha256"] = "f" * 64
+    else:
+        api["locator"] = api["locator"].replace(";target=", ";target=Wrong")
+    row = benchmark.score([record], {"scenarios": {"C12": label}})[0][0]
+    assert row["shared_scanner_api_evidence_verified"] is False
+    assert row["scheme_prediction_evidence_locator_validated"] is False
+
+
 def test_absence_of_expected_api_is_scanner_success_and_scheme_api_not_applicable(located_record):
     record, truth = located_record
-    truth["scenarios"]["C02"]["api_count"] = 0
-    truth["scenarios"]["C02"]["target_descriptor"] = None
+    label = truth["scenarios"].pop("C02")
+    truth["scenarios"]["C01"] = label
+    label["api_count"] = 0
+    label["target_descriptor"] = None
+    record.update(scenario_id="C01", apk_sha256=load_reference()["scenarios"]["C01"]["apk_sha256"])
     record["api_evidence"] = []
     row = benchmark.score([record], truth)[0][0]
     assert row["scheme_prediction_evidence_locator_validated"] is None
@@ -166,7 +202,12 @@ def test_benchmark_gate_uses_audited_policy_and_scheme_references(
         record.update(scenario_id=scenario, truth_files_absent=True,
                       coverage={"status": "COMPLETE"})
         api = record["api_evidence"][0]
-        api["locator"] = api["locator"].replace("/c02/", "/" + scenario.lower() + "/")
+        artifact = load_reference()["scenarios"][scenario]
+        record["apk_sha256"] = artifact["apk_sha256"]
+        calls = [call for call in artifact["invokes"]
+                 if "->readLocation(" in call["caller_descriptor"]]
+        if calls:
+            api["locator"] = locator(artifact["apk_sha256"], calls[0])
         if not label["api_count"]:
             record["api_evidence"] = []
         for scheme in benchmark.SCHEMES:
@@ -185,6 +226,7 @@ def test_benchmark_gate_uses_audited_policy_and_scheme_references(
     output = tmp_path / "evaluation"
     result = benchmark.run_benchmark(tmp_path, output, 1)
     assert result["scenarios_passed"] is (corruption is None)
+    assert result["six_scenarios_passed"] is result["scenarios_passed"]
     comparison = json.loads((output / "comparison.json").read_bytes())
     assert len(comparison["rows"]) == 18
     assert all(row["agreement"] for row in comparison["rows"])

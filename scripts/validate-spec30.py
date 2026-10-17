@@ -205,6 +205,11 @@ def main():
                          comparison_command)
         if not (built and rebuilt and compared) or any(item["exit_code"] for item in stages):
             return 1
+        if not stage("independent-dex-locations", python(
+            "verify-controlled-locations.py", "--suite", args.suite, "--artifacts", build_a,
+            "--output", output / "evaluation/location-reference-check.json",
+        )):
+            return 1
         env = {**os.environ, "PRIVACYTRACE_CONTROLLED_ARTIFACTS": str(build_a),
                "PRIVACYTRACE_CONTROLLED_SUITE": args.suite}
         if not stage("source-cli-regressions", [sys.executable, "-m", "pytest",
@@ -278,7 +283,8 @@ def main():
         # Allowlist evidence only: no APK, job store, policy capture or raw logs.
         evidence = {}
         for relative in ["build-a/build-receipt.json", "build-b/build-receipt.json",
-                         "evaluation/comparison.json", "browser-proof/browser-proof.json",
+                         "evaluation/comparison.json", "evaluation/location-reference-check.json",
+                         "browser-proof/browser-proof.json",
                          "offline-proof/offline-proof.json"]:
             path = output / relative
             if path.exists():

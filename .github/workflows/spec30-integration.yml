@@ -71,6 +71,7 @@ jobs:
             tmp/spec30-ci/build-a/build-receipt.json
             tmp/spec30-ci/build-b/build-receipt.json
             tmp/spec30-ci/evaluation/comparison.json
+            tmp/spec30-ci/evaluation/location-reference-check.json
             tmp/spec30-ci/evaluation/*.prediction.json
             tmp/spec30-ci/evaluation/*.md
             tmp/spec30-ci/browser-proof/

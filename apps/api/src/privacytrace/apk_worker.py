@@ -17,6 +17,7 @@ import sys
 import tempfile
 from dataclasses import replace
 from pathlib import Path, PurePosixPath
+from urllib.parse import urlsplit
 from zipfile import BadZipFile, ZipFile
 
 from .coverage_scope import behavior_limitations
@@ -779,23 +780,73 @@ def scan_package_set(base_path, splits, rules, inventory=False, sdk_rules=None):
     }
 
 
+def _manifest_resource_strings(value, resources, package_name):
+    """Resolve only referenced string entries, including aliases and locales."""
+    reference = re.fullmatch(r"@(?:(?P<package>[^:/]+):)?string/(?P<key>[^/]+)", value)
+    if reference:
+        owner = reference["package"] or package_name
+        if owner not in resources.get_packages_names():
+            return []
+        # Public analysis entry point populates the name-to-ID index.
+        resources.get_types(owner)
+        resource_id = resources.get_res_id_by_key(owner, "string", reference["key"])
+    else:
+        try:
+            resource_id, owner = resources.parse_id(value)
+        except ValueError:
+            return []
+        if owner and owner not in resources.get_packages_names():
+            return []
+    if not resource_id:
+        return []
+    name = resources.get_resource_xml_name(resource_id, package=owner)
+    if not name or not re.fullmatch(r"@(?:[^:]+:)?string/[^/]+", name):
+        return []
+    try:
+        return [text for _, text in resources.get_resolved_res_configs(resource_id)
+                if isinstance(text, str)]
+    except RecursionError:
+        # Cyclic or excessively deep aliases cannot become source URLs.
+        return []
+
+
+def _metadata_policy_url(value):
+    if len(value) > 2000 or any(character.isspace() or ord(character) < 32 for character in value):
+        return False
+    try:
+        url = urlsplit(value)
+        return (url.scheme in ("http", "https") and bool(url.hostname)
+                and url.username is None and url.password is None
+                and (url.port is None or 0 < url.port <= 65535))
+    except ValueError:
+        return False
+
+
 def inspect_package_metadata(path):
     """Worker-only manifest inspection; no DEX analysis or source fetching."""
-    from androguard.core.axml import AXMLPrinter
+    from androguard.core.axml import ARSCParser, AXMLPrinter
 
     from .package_set import inspect_apk_bytes
 
     package, _ = inspect_apk_bytes(path.read_bytes(), path.name)
-    with ZipFile(path) as archive:
-        root = AXMLPrinter(archive.read("AndroidManifest.xml")).get_xml_obj()
     urls = []
     ns = "{http://schemas.android.com/apk/res/android}"
-    for element in root.iter("meta-data"):
-        for key in (ns + "value", "value", ns + "name", "name"):
-            value = element.get(key, "")
-            if value.startswith(("http://", "https://")) and value not in urls:
-                if len(value) <= 2000 and len(urls) < 8:
-                    urls.append(value)
+    with ZipFile(path) as archive:
+        root = AXMLPrinter(archive.read("AndroidManifest.xml")).get_xml_obj()
+        resources = None
+        for element in root.iter("meta-data"):
+            for key in (ns + "value", "value", ns + "resource", "resource", ns + "name", "name"):
+                value = element.get(key, "")
+                values = [value]
+                if value.startswith("@") and key not in (ns + "name", "name"):
+                    if "resources.arsc" not in archive.namelist():
+                        continue
+                    if resources is None:
+                        resources = ARSCParser(archive.read("resources.arsc"))
+                    values = _manifest_resource_strings(value, resources, package.package_name)
+                for text in values:
+                    if len(urls) < 8 and text not in urls and _metadata_policy_url(text):
+                        urls.append(text)
     result = empty_result()
     result.update(
         apk_sha256=package.sha256, package_file=package.model_dump(mode="json"), policy_urls=urls

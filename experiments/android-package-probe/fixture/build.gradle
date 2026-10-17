@@ -1,0 +1,14 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'org.privacytrace.probe.fixture'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'org.privacytrace.probe.fixture'
+        minSdk 24
+        targetSdk 34
+        versionCode providers.gradleProperty('fixtureVersionCode').orElse('1').get().toInteger()
+        versionName 'controlled-fixture'
+    }
+    dynamicFeatures = [':fixture_feature']
+}

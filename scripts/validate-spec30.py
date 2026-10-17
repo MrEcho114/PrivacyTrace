@@ -13,6 +13,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from controlled_paths import daemon_path
+from privacytrace.controlled import SUITE, SUITES, scenario_ids
 from privacytrace.isolated_scan import docker_prefix
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,8 +24,7 @@ RECEIPT_INVALID = "BUILD_ARTIFACT_RECEIPT_INVALID"
 HASH_MISMATCH = "BUILD_ARTIFACT_HASH_MISMATCH"
 
 
-def _frozen_build_contract():
-    suite = ROOT / "benchmarks/controlled"
+def _frozen_build_contract(suite=SUITE):
     return (
         json.loads((suite / "artifacts.lock.json").read_bytes()),
         json.loads((suite / "inputs.lock.json").read_bytes()),
@@ -32,8 +32,8 @@ def _frozen_build_contract():
     )
 
 
-def verify_build_artifacts(build_a, build_b, *, contract=None):
-    """Hash all twelve actual APK files; never authorize scanning by receipts alone."""
+def verify_build_artifacts(build_a, build_b, *, contract=None, scenarios=SCENARIOS):
+    """Hash both complete builds; never authorize scanning by receipts alone."""
     try:
         frozen, inputs, toolchain = _frozen_build_contract() if contract is None else contract
         if (
@@ -48,7 +48,7 @@ def verify_build_artifacts(build_a, build_b, *, contract=None):
         sources = inputs.get("sources")
         if (
             not isinstance(expected_apks, dict)
-            or set(expected_apks) != set(SCENARIOS)
+            or set(expected_apks) != set(scenarios)
             or not isinstance(expected_sources, dict)
             or not isinstance(sources, dict)
             or set(expected_sources) != set(sources)
@@ -66,10 +66,10 @@ def verify_build_artifacts(build_a, build_b, *, contract=None):
                 or receipt.get("toolchain") != toolchain
                 or not isinstance(receipt.get("apks"), dict)
                 or not isinstance(receipt.get("source_hashes"), dict)
-                or set(receipt["apks"]) != set(SCENARIOS)
+                or set(receipt["apks"]) != set(scenarios)
                 or set(receipt["source_hashes"]) != set(expected_sources)
                 or {file.name for file in directory.glob("*.apk")}
-                != {scenario + ".apk" for scenario in SCENARIOS}
+                != {scenario + ".apk" for scenario in scenarios}
             ):
                 return RECEIPT_INVALID
             for mapping in (receipt["apks"], receipt["source_hashes"], expected_apks, expected_sources):
@@ -81,7 +81,7 @@ def verify_build_artifacts(build_a, build_b, *, contract=None):
                     return RECEIPT_INVALID
             if receipt["apks"] != expected_apks or receipt["source_hashes"] != expected_sources:
                 return HASH_MISMATCH
-            for scenario in SCENARIOS:
+            for scenario in scenarios:
                 apk = directory / (scenario + ".apk")
                 if apk.is_symlink() or not apk.is_file():
                     return RECEIPT_INVALID
@@ -101,6 +101,7 @@ def main():
     parser.add_argument("--output", type=Path)
     parser.add_argument("--cache", type=Path, default=ROOT / "tmp/toolchain")
     parser.add_argument("--cached", action="store_true")
+    parser.add_argument("--suite", choices=SUITES, default="spec30")
     parser.add_argument("--playwright-modules", type=Path,
                         default=ROOT / "tmp/spec30-browser/node_modules")
     args = parser.parse_args()
@@ -163,15 +164,21 @@ def main():
     passed = False
     try:
         build_a, build_b = output / "build-a", output / "build-b"
-        common = ["--cache", args.cache, *(["--cached"] if args.cached else [])]
+        common = ["--suite", args.suite, "--cache", args.cache,
+                  *(["--cached"] if args.cached else [])]
         built = stage("build-a", python("build-controlled-apks.py", *common, "--output", build_a))
-        rebuilt = built and stage("build-b", python("build-controlled-apks.py", "--cache",
+        rebuilt = built and stage("build-b", python("build-controlled-apks.py", "--suite", args.suite, "--cache",
                                                    args.cache, "--cached", "--output", build_b))
         rebuild_error = "BUILD_A_FAILED" if not built else ("BUILD_B_FAILED" if not rebuilt else None)
         if rebuild_error:
             stages[-1]["error_code"] = rebuild_error
         if rebuilt:
-            rebuild_error = verify_build_artifacts(build_a, build_b)
+            rebuild_error = (
+                verify_build_artifacts(build_a, build_b) if args.suite == "spec30"
+                else verify_build_artifacts(build_a, build_b,
+                                            contract=_frozen_build_contract(SUITES[args.suite]),
+                                            scenarios=scenario_ids(SUITES[args.suite]))
+            )
             stages.append({
                 "stage": "rebuild-hashes",
                 "exit_code": 1 if rebuild_error else 0,
@@ -186,24 +193,40 @@ def main():
         ):
             rebuild_error = "WORKER_BUILD_FAILED"
             stages[-1]["error_code"] = rebuild_error
-        # Retain 18 result rows on failure; a mismatched build is never scanned.
+        # Retain every scheme/scenario row on failure; mismatched builds are never scanned.
         comparison_command = [
             sys.executable, "-m", "privacytrace.benchmark", "run",
             "--artifacts", str(build_a), "--output", str(output / "evaluation"),
+            "--suite", args.suite,
         ]
         if rebuild_error is not None:
             comparison_command.extend(["--blocked-error", rebuild_error])
-        compared = stage("six-scenarios", comparison_command)
+        compared = stage("six-scenarios" if args.suite == "spec30" else "twelve-scenarios",
+                         comparison_command)
         if not (built and rebuilt and compared) or any(item["exit_code"] for item in stages):
             return 1
-        env = {**os.environ, "PRIVACYTRACE_CONTROLLED_ARTIFACTS": str(build_a)}
+        env = {**os.environ, "PRIVACYTRACE_CONTROLLED_ARTIFACTS": str(build_a),
+               "PRIVACYTRACE_CONTROLLED_SUITE": args.suite}
         if not stage("source-cli-regressions", [sys.executable, "-m", "pytest",
-                     "apps/api/tests/test_controlled_source_cli.py", "-q", "-p", "no:cacheprovider"],
+                     "apps/api/tests/test_controlled_source_cli.py", "-q", "-p", "no:cacheprovider",
+                     "--basetemp", str(output / "source-cli-temp")],
                      env=env):
             return 1
         npm = "npm.cmd" if os.name == "nt" else "npm"
         if not stage("web-build", [npm, "run", "build"]):
             return 1
+        if args.suite == "pt907":
+            serve("api", python("serve-reports.py", "--store-dir", output / "evaluation/jobs"),
+                  "http://127.0.0.1:8000/api/v1/health")
+            serve("web", ["node", str(ROOT / "node_modules/vite/bin/vite.js"), "preview", "--host",
+                           "127.0.0.1", "--port", "5173", "--strictPort", "--config",
+                           str(ROOT / "apps/web/vite.config.ts"), str(ROOT / "apps/web")],
+                  "http://127.0.0.1:5173")
+            env = {**os.environ, "PLAYWRIGHT_MODULE_PATH":
+                   str(args.playwright_modules.absolute() / "playwright")}
+            passed = stage("controlled-browser", ["node", str(ROOT / "scripts/verify-controlled-browser.cjs"),
+                           str(output / "evaluation/comparison.json"), str(output / "browser-proof")], env=env)
+            return 0 if passed else 1
         if not stage("export-offline", python("export-offline.py", "--run", output / "evaluation",
                                               "--output", output / "offline")):
             return 1
@@ -261,6 +284,7 @@ def main():
             if path.exists():
                 evidence[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
         receipt = {"schema_version": 1, "run_id": run_id, "commit_sha": commit,
+                   "suite": args.suite, "scenario_count": len(scenario_ids(SUITES[args.suite])),
                    "dirty_checkout": dirty, "passed": passed, "stages": stages,
                    "evidence_sha256": evidence,
                    "generated_at": datetime.now(timezone.utc).isoformat()}

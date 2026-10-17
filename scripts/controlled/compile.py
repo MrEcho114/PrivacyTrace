@@ -3,17 +3,19 @@
 import hashlib
 import json
 import subprocess
+import sys
 import tempfile
 import zipfile
 from pathlib import Path
 
 ROOT = Path("/source")
-SUITE = ROOT / "benchmarks/controlled"
+SUITES = {"spec30": ROOT / "benchmarks/controlled", "pt907": ROOT / "benchmarks/controlled-v2"}
 TOOLS = Path("/opt/sdk/android-15")
 PLATFORM = Path("/opt/sdk/android-35/android.jar")
 
 
 def main():
+    SUITE = SUITES[sys.argv[1] if len(sys.argv) > 1 else "spec30"]
     lock = json.loads((SUITE / "inputs.lock.json").read_text())
     tools_lock = json.loads((SUITE / "toolchain.lock.json").read_text())
     sources = {

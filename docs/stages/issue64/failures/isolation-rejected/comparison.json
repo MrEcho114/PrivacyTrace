@@ -1,0 +1,1332 @@
+{
+  "implementation_hashes": {
+    "apps/api/src/privacytrace/__init__.py": "df02c49f3a29db0744f282db294ea5df3eb1827d773b836112c3cf67ac12d379",
+    "apps/api/src/privacytrace/apk_worker.py": "44101e2ee2cc5e7e00fdbdc466a4db2f366daf2d1fbb4d9dde119ae003cf50a1",
+    "apps/api/src/privacytrace/benchmark.py": "e3d7d516c7b83b28c54f961d9ca0cc921ce162df7d3263aa655606334c9475b9",
+    "apps/api/src/privacytrace/benchmark_algorithms.py": "8c01dfa6518917db89223aedadfd4dd8a82a42b52f015a539bd9e1667985de49",
+    "apps/api/src/privacytrace/consistency.py": "2a127258e45676d4304641f9cbc95169d3796ce13d95fb2464c46b596f705db3",
+    "apps/api/src/privacytrace/controlled.py": "ccc771f437df8ec385346ff66e55414b079db1fb89ac6e558f49b92aeed8fcc0",
+    "apps/api/src/privacytrace/coverage_scope.py": "12ad40684a14bad50b252b326cb5b71441c79c44965aa068e523c66641595fd5",
+    "apps/api/src/privacytrace/isolated_scan.py": "a5d19f6c44bf68e74450327694f25ef30da255b80a7a456795b722662d879166",
+    "apps/api/src/privacytrace/job_store.py": "460c5c1e204c39a6c21b31f1e93a54f1e72a777199bf73ddd21e8fea3a534fde",
+    "apps/api/src/privacytrace/main.py": "5a291038cc6f1fe80152eb562a736f509df8cfaf873397019b4499ac28886dea",
+    "apps/api/src/privacytrace/models.py": "0b8751ffd8ff98cbcef1a251a7c6b98922ab9460de28a0f7e436b6005117587f",
+    "apps/api/src/privacytrace/pipeline.py": "50f7762ac9aa94f82a28ebae8dadef70e0568a1f132dc240b874e019ae894906",
+    "apps/api/src/privacytrace/policy_fetch.py": "f05ffe46c63411b0c293afade4fa6e7f6dd3375c47f5a1807e991e46b39e44fc",
+    "apps/api/src/privacytrace/policy_intake.py": "0e7495ea9abe4b9b98a9e066954a96f4512378da2d0126cf2fd90181197ea756",
+    "apps/api/src/privacytrace/policy_llm_extractor.py": "04bbc7fb104fa2022189c1cdf607922730bf6e2b27a20f35af69fa6f9d61c9c5",
+    "apps/api/src/privacytrace/resources.py": "1dc83700c41fd5be4474f6d3d9bbc32690ece6ba537e1f7556988109109a25f9",
+    "apps/api/src/privacytrace/runtime_models.py": "dba4764add258d0ec6575c8bf14c29cb3d80bf44a5f72585a93398577bd74080",
+    "apps/api/src/privacytrace/scan_workspace.py": "1897a41b6180fb637edf6d53c389243cdf196400f05ea847e6c73be38b642ce0",
+    "apps/api/src/privacytrace/sdk_attribution.py": "4f67c147da209b02cbeb0ef66266f2ad23c361b26536cd0f78e09d9f93dfbf7e",
+    "apps/api/src/privacytrace/sdk_ruleset.py": "9b4d929a5f55e78104408eb66d1cd1cc2cee9aa873b6294b94e30f5fdd28923c",
+    "apps/api/src/privacytrace/web_api.py": "972f99e2022c50741b39c0022885bbb956016811a6d35301c0a866eaeba94c19",
+    "apps/api/src/privacytrace/web_intake.py": "4479b6c50343dc9fbb07eaf72b815db147e282d1b9ec1541d1b28e0e938c8a13",
+    "apps/api/src/privacytrace/web_models.py": "935d3cda52355601bc6737be62a95909045532a1f7ca818728d3bdf035a0f9e6",
+    "rules/taxonomy.v0.3.json": "e63297c70dcb3ec67b797e315fdfe469d617296b7bd51084a5ed8e950f513951",
+    "rules/sdk-signatures.v1.0.json": "f4987d328ac7b6697cd3fd92c4f6327cfdeea84566ad6e9934c8aa5bc14150e4",
+    "scripts/build-controlled-apks.py": "858e2c283364baca6064b1872f6b749d1e290eedc8a52c9b9032c08615b8f10a",
+    "scripts/controlled/compile.py": "ba20b5052f049156693c4d9df24b2da455d397686c9dbe29f40c38580d70d2fb",
+    "scripts/validate-spec30.py": "541c69883ee1c477ec6ccab01ea68f40ef8f74bb6280da0862c011d80420edc0",
+    "scripts/verify-controlled-browser.cjs": "c5cd5d643bead0d74623bc20e66e1e9f6af2592a4083e2b7ae47e6c4f389caa7"
+  },
+  "schema_version": 1,
+  "suite": "pt907",
+  "generated_at": "2026-10-16T03:42:51.695270+00:00",
+  "truth_sha256": "0beb0e990c27668658c24341978f871082dc53952affcff1b444d7eb864baeb3",
+  "prediction_sha256": {
+    "C01": "dba028bcd554799510ce73e625e01b41b4f133117f0016295bb76a5110b48b62",
+    "C02": "4e7c7bb719550d1c20dfc3ccd7eee7bcca5130675f0e27d10230f6e533181891",
+    "C03": "aacef0d3f0633efd40c323cb2a5bb64e13748d5c8fa227357c6c2d459e2adf9b",
+    "C04": "ee9fe4c2d6a5c48ba9fd670e4d8624bb40b13e5cd29201f84431e002c402e424",
+    "C05": "88e76f07c20c6ed0f3b27cb33c3d55f254d218ff26dae6661f90a2077e29c66a",
+    "C06": "0d5405a45ac1793675db7a5b74b1b76d4bc8ccfc89abdb039387b9cb3fa076b1",
+    "C07": "41176fd0ea7cb1918e046c784b7233f76975d2c4d6be4ede2f507460ae4bde58",
+    "C08": "c5fa93861cc7a60a0dade3279eb76de68717a404e59652c81cab33e4f127293e",
+    "C09": "3fc9801058e9bcc0d478c96507d93b9b94d3b406453b0db1c49c32dc012e75de",
+    "C10": "df461feb4c95ee6162011f7e38f9ef8fc17f56554c32b93244af71ec27ebde1f",
+    "C11": "9db2c0011f59e4e57ac01d8453149f93d49885120e36ac98c276bf7670d00690",
+    "C12": "659ec41fdf101d077af6ea8c73d714381fef6f89aa68e845cf339a0a450f9d8b"
+  },
+  "protocol": {
+    "schema_version": 1,
+    "frozen_at": "2026-10-16T03:29:25.912578+00:00",
+    "origin": "Issue64 independent authored scenario/source/policy definitions, frozen before any pt907 algorithm execution; original six reused byte-for-byte",
+    "reused_truth_sha256": "9a0a10392d2d052f95e78c69231c27556120c0eff131a403f05d6f5c8cc10c40",
+    "reused_scenarios": [
+      "C01",
+      "C02",
+      "C03",
+      "C04",
+      "C05",
+      "C06"
+    ],
+    "new_scenarios": [
+      "C07",
+      "C08",
+      "C09",
+      "C10",
+      "C11",
+      "C12"
+    ],
+    "inputs_lock_sha256": "c81b218730b74cd55028c415cdfe75ccc8a170504ab3e18b080f13d40b850f78",
+    "counting_unit": "One target outcome per source-built scenario; 12 scenarios in each scheme denominator; non-target capability findings retained in predictions",
+    "metrics": [
+      "status_agreement",
+      "abstentions",
+      "failures",
+      "coverage",
+      "mapping_and_locator",
+      "elapsed_seconds"
+    ],
+    "pr_f1": "NOT_REPORTED: no binary runtime collection or legality target; status confusion counts reported separately",
+    "human_preparation_seconds": null,
+    "resource_measurements": null,
+    "preparation_actor": "Codex-assisted authored candidates checked against source spans; no independent human sign-off or measured cost claimed",
+    "scenarios": {
+      "C01": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "CAPABILITY",
+        "expected": "INSUFFICIENT_EVIDENCE",
+        "api_count": 0,
+        "target_descriptor": null,
+        "source_reference": "android/C01/MainActivity.java",
+        "policy_reference": "policies/C01.txt"
+      },
+      "C02": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "EXACT_MATCH",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C02/MainActivity.java",
+        "policy_reference": "policies/C02.txt"
+      },
+      "C03": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "CATEGORY_MATCH",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C03/MainActivity.java",
+        "policy_reference": "policies/C03.txt"
+      },
+      "C04": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "NOT_DECLARED",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C04/MainActivity.java",
+        "policy_reference": "policies/C04.txt"
+      },
+      "C05": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "AMBIGUOUS_DISCLOSURE",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C05/MainActivity.java",
+        "policy_reference": "policies/C05.txt"
+      },
+      "C06": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "INSUFFICIENT_EVIDENCE",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "source_reference": "android/C06/MainActivity.java",
+        "policy_reference": "policies/C06.txt"
+      },
+      "C07": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "AMBIGUOUS_DISCLOSURE",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "target_context": {
+          "provider": "gps"
+        },
+        "source_reference": "android/C07/MainActivity.java",
+        "policy_reference": "policies/C07.txt",
+        "independent_question": "同一政策肯定与否定并存"
+      },
+      "C08": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "AMBIGUOUS_DISCLOSURE",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "target_context": {
+          "provider": "gps"
+        },
+        "source_reference": "android/C08/MainActivity.java",
+        "policy_reference": "policies/C08.txt",
+        "independent_question": "访问声明带启用功能条件"
+      },
+      "C09": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "AMBIGUOUS_DISCLOSURE",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "target_context": {
+          "provider": "gps"
+        },
+        "source_reference": "android/C09/MainActivity.java",
+        "policy_reference": "policies/C09.txt",
+        "independent_question": "只说明第三方访问而非宿主声明"
+      },
+      "C10": {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "expected": "INSUFFICIENT_EVIDENCE",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "target_context": {
+          "provider": "gps"
+        },
+        "source_reference": "android/C10/MainActivity.java",
+        "policy_reference": "policies/C10.txt",
+        "independent_question": "完整政策缺少地区适用信息"
+      },
+      "C11": {
+        "data_type": "COARSE_LOCATION",
+        "action": "ACCESS",
+        "expected": "EXACT_MATCH",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "target_context": {
+          "provider": "network"
+        },
+        "source_reference": "android/C11/MainActivity.java",
+        "policy_reference": "policies/C11.txt",
+        "independent_question": "network 提供者对应粗略位置"
+      },
+      "C12": {
+        "data_type": "LOCATION",
+        "action": "ACCESS",
+        "expected": "EXACT_MATCH",
+        "api_count": 1,
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "target_context": {},
+        "source_reference": "android/C12/MainActivity.java",
+        "policy_reference": "policies/C12.txt",
+        "independent_question": "调用参数未知时只支持位置类别",
+        "caller_descriptor": "Lorg/privacytrace/controlled/c12/MainActivity;->readLocation(Landroid/location/LocationManager;Ljava/lang/String;)Landroid/location/Location;"
+      }
+    }
+  },
+  "scheme_inputs": {
+    "permission_keyword": "Same APK/permissions/policy/evidence/claims available; uses permission mappings and exact data-type phrases in complete provided text. No hierarchy, polarity or completeness gate; nominal baseline only.",
+    "api_flat": "Same API invoke evidence, trusted full descriptors and context; exact flat data-type phrases in same policy text. No hierarchy, polarity or scope gate. Missing invoke abstains. No descriptor weakening.",
+    "privacytrace": "Same materials; existing deterministic engine and controlled known facts. No expected labels. Reviews are optional local annotations, not signatures."
+  },
+  "rows": [
+    {
+      "scenario_id": "C01",
+      "scheme": "permission_keyword",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.2897470359998806,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C01",
+      "scheme": "api_flat",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.2897470359998806,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C01",
+      "scheme": "privacytrace",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.2897470359998806,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C02",
+      "scheme": "permission_keyword",
+      "expected": "EXACT_MATCH",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.3768233710000004,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C02",
+      "scheme": "api_flat",
+      "expected": "EXACT_MATCH",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.3768233710000004,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C02",
+      "scheme": "privacytrace",
+      "expected": "EXACT_MATCH",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.3768233710000004,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C03",
+      "scheme": "permission_keyword",
+      "expected": "CATEGORY_MATCH",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.2665895950001413,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C03",
+      "scheme": "api_flat",
+      "expected": "CATEGORY_MATCH",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.2665895950001413,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C03",
+      "scheme": "privacytrace",
+      "expected": "CATEGORY_MATCH",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.2665895950001413,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C04",
+      "scheme": "permission_keyword",
+      "expected": "NOT_DECLARED",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.3537610000000768,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C04",
+      "scheme": "api_flat",
+      "expected": "NOT_DECLARED",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.3537610000000768,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C04",
+      "scheme": "privacytrace",
+      "expected": "NOT_DECLARED",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.3537610000000768,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C05",
+      "scheme": "permission_keyword",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.3444670139999744,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C05",
+      "scheme": "api_flat",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.3444670139999744,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C05",
+      "scheme": "privacytrace",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.3444670139999744,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C06",
+      "scheme": "permission_keyword",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.2399242210001375,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C06",
+      "scheme": "api_flat",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.2399242210001375,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C06",
+      "scheme": "privacytrace",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.2399242210001375,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C07",
+      "scheme": "permission_keyword",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4089167399999951,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C07",
+      "scheme": "api_flat",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4089167399999951,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C07",
+      "scheme": "privacytrace",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4089167399999951,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C08",
+      "scheme": "permission_keyword",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4007801550001204,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C08",
+      "scheme": "api_flat",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4007801550001204,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C08",
+      "scheme": "privacytrace",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4007801550001204,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C09",
+      "scheme": "permission_keyword",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4413565610000205,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C09",
+      "scheme": "api_flat",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4413565610000205,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C09",
+      "scheme": "privacytrace",
+      "expected": "AMBIGUOUS_DISCLOSURE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4413565610000205,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C10",
+      "scheme": "permission_keyword",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4747975430000224,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C10",
+      "scheme": "api_flat",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4747975430000224,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C10",
+      "scheme": "privacytrace",
+      "expected": "INSUFFICIENT_EVIDENCE",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4747975430000224,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C11",
+      "scheme": "permission_keyword",
+      "expected": "EXACT_MATCH",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4888668629998847,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C11",
+      "scheme": "api_flat",
+      "expected": "EXACT_MATCH",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4888668629998847,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C11",
+      "scheme": "privacytrace",
+      "expected": "EXACT_MATCH",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4888668629998847,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C12",
+      "scheme": "permission_keyword",
+      "expected": "EXACT_MATCH",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4989186410000457,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C12",
+      "scheme": "api_flat",
+      "expected": "EXACT_MATCH",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4989186410000457,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    },
+    {
+      "scenario_id": "C12",
+      "scheme": "privacytrace",
+      "expected": "EXACT_MATCH",
+      "actual": null,
+      "agreement": false,
+      "api_mapping_and_locator_checked": false,
+      "policy_spans_validated": false,
+      "elapsed_seconds": 1.4989186410000457,
+      "scheme_elapsed_seconds": null,
+      "coverage": null,
+      "truth_files_absent": false,
+      "material_sha256": null,
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "ISOLATION_REJECTED",
+          "message": "Pipeline failed; inspect input and tool prerequisites"
+        }
+      ],
+      "analysis_status": "FAILED",
+      "features_sha256": null,
+      "apk_sha256": null,
+      "report_sha256": null,
+      "behavior_limitations": null,
+      "stored_job_sha256": null
+    }
+  ],
+  "summaries": {
+    "permission_keyword": {
+      "total": 12,
+      "status_agreement": 0,
+      "failures": 12,
+      "abstentions": 0,
+      "predicted": 0
+    },
+    "api_flat": {
+      "total": 12,
+      "status_agreement": 0,
+      "failures": 12,
+      "abstentions": 0,
+      "predicted": 0
+    },
+    "privacytrace": {
+      "total": 12,
+      "status_agreement": 0,
+      "failures": 12,
+      "abstentions": 0,
+      "predicted": 0
+    }
+  },
+  "diagnostics": {
+    "permission_keyword": {
+      "total": 12,
+      "confusion_counts": {
+        "INSUFFICIENT_EVIDENCE -> NO_PREDICTION": 3,
+        "EXACT_MATCH -> NO_PREDICTION": 3,
+        "CATEGORY_MATCH -> NO_PREDICTION": 1,
+        "NOT_DECLARED -> NO_PREDICTION": 1,
+        "AMBIGUOUS_DISCLOSURE -> NO_PREDICTION": 4
+      },
+      "mapping_and_locator_checked": 0,
+      "policy_spans_validated": 0,
+      "coverage_complete": 0,
+      "coverage_partial": 0,
+      "coverage_unobserved": 12,
+      "truncated_outputs": 0,
+      "mismatches_or_failures": [
+        "C01",
+        "C02",
+        "C03",
+        "C04",
+        "C05",
+        "C06",
+        "C07",
+        "C08",
+        "C09",
+        "C10",
+        "C11",
+        "C12"
+      ],
+      "precision_recall_f1": null,
+      "precision_recall_f1_reason": "N/A: no binary runtime collection or legality target",
+      "cpu_peak_memory": null,
+      "human_preparation_seconds": null
+    },
+    "api_flat": {
+      "total": 12,
+      "confusion_counts": {
+        "INSUFFICIENT_EVIDENCE -> NO_PREDICTION": 3,
+        "EXACT_MATCH -> NO_PREDICTION": 3,
+        "CATEGORY_MATCH -> NO_PREDICTION": 1,
+        "NOT_DECLARED -> NO_PREDICTION": 1,
+        "AMBIGUOUS_DISCLOSURE -> NO_PREDICTION": 4
+      },
+      "mapping_and_locator_checked": 0,
+      "policy_spans_validated": 0,
+      "coverage_complete": 0,
+      "coverage_partial": 0,
+      "coverage_unobserved": 12,
+      "truncated_outputs": 0,
+      "mismatches_or_failures": [
+        "C01",
+        "C02",
+        "C03",
+        "C04",
+        "C05",
+        "C06",
+        "C07",
+        "C08",
+        "C09",
+        "C10",
+        "C11",
+        "C12"
+      ],
+      "precision_recall_f1": null,
+      "precision_recall_f1_reason": "N/A: no binary runtime collection or legality target",
+      "cpu_peak_memory": null,
+      "human_preparation_seconds": null
+    },
+    "privacytrace": {
+      "total": 12,
+      "confusion_counts": {
+        "INSUFFICIENT_EVIDENCE -> NO_PREDICTION": 3,
+        "EXACT_MATCH -> NO_PREDICTION": 3,
+        "CATEGORY_MATCH -> NO_PREDICTION": 1,
+        "NOT_DECLARED -> NO_PREDICTION": 1,
+        "AMBIGUOUS_DISCLOSURE -> NO_PREDICTION": 4
+      },
+      "mapping_and_locator_checked": 0,
+      "policy_spans_validated": 0,
+      "coverage_complete": 0,
+      "coverage_partial": 0,
+      "coverage_unobserved": 12,
+      "truncated_outputs": 0,
+      "mismatches_or_failures": [
+        "C01",
+        "C02",
+        "C03",
+        "C04",
+        "C05",
+        "C06",
+        "C07",
+        "C08",
+        "C09",
+        "C10",
+        "C11",
+        "C12"
+      ],
+      "precision_recall_f1": null,
+      "precision_recall_f1_reason": "N/A: no binary runtime collection or legality target",
+      "cpu_peak_memory": null,
+      "human_preparation_seconds": null
+    }
+  },
+  "limitations": [
+    "12 authored source scenarios; no held-out generalization claim.",
+    "Manual agent-assisted candidates; no automatic extraction accuracy claim.",
+    "Static invoke never proves execution, collection, safety or illegality.",
+    "Baseline status names are nominal experimental predictions, not user findings."
+  ]
+}

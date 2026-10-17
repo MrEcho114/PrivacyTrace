@@ -1,0 +1,120 @@
+{
+  "scenario_id": "C04",
+  "analysis": {
+    "job_id": "controlled-5fa86712e2e44904a3964024e2fe76b2",
+    "status": "SUCCEEDED",
+    "coverage": "COMPLETE",
+    "counts": {
+      "evidence": 3,
+      "behaviors": 2,
+      "claims": 0,
+      "issues": 2
+    },
+    "human_review_gate": "NOT_REQUIRED_BY_WORKFLOW"
+  },
+  "elapsed_seconds": 4.731235253999785,
+  "predictions": {
+    "permission_keyword": [
+      {
+        "data_type": "PRECISE_LOCATION",
+        "action": "CAPABILITY",
+        "status": "NOT_DECLARED",
+        "evidence_ids": [
+          "ev-d3eaf0019e2bea935919de65"
+        ]
+      }
+    ],
+    "api_flat": [
+      {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "status": "NOT_DECLARED",
+        "evidence_ids": [
+          "ev-2675f4276c50cdabcc4a72e1"
+        ]
+      }
+    ],
+    "privacytrace": [
+      {
+        "data_type": "PRECISE_LOCATION",
+        "action": "CAPABILITY",
+        "status": "INSUFFICIENT_EVIDENCE",
+        "evidence_ids": [
+          "ev-d3eaf0019e2bea935919de65"
+        ]
+      },
+      {
+        "data_type": "PRECISE_LOCATION",
+        "action": "ACCESS",
+        "status": "NOT_DECLARED",
+        "evidence_ids": [
+          "ev-2675f4276c50cdabcc4a72e1",
+          "policy-snapshot"
+        ]
+      }
+    ]
+  },
+  "scheme_elapsed_seconds": {
+    "permission_keyword": 1.1812999900939758e-05,
+    "api_flat": 1.0119999842572724e-05,
+    "privacytrace": 0.0023255569999491854
+  },
+  "truth_files_absent": true,
+  "material_sha256": "8392101f888fbe931c079a92dad6a0d01a123f345fd5c43c7f2655f2d84afeba",
+  "prediction_image": "sha256:067d8aeb5e3393bf7317755fbab982b22fe10190989f8fa9c067ae204ea40dd9",
+  "coverage": {
+    "status": "COMPLETE",
+    "scope": "DEX_ENTRIES",
+    "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+    "behavior_limitations": [
+      "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+      "不保证覆盖反射、动态加载及运行时生成的调用。",
+      "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+      "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+      "静态潜在行为不能证明实际访问、收集或外传。"
+    ],
+    "sdk_attribution_limitations": [],
+    "limitations": [
+      "Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.",
+      "JADX unavailable or timed out; bytecode evidence retained"
+    ],
+    "scanned_dex": [
+      "classes.dex"
+    ],
+    "failed_dex": []
+  },
+  "api_evidence": [
+    {
+      "id": "ev-2675f4276c50cdabcc4a72e1",
+      "kind": "API",
+      "status": "STATIC_POTENTIAL",
+      "source": "classes.dex",
+      "locator": "apk_sha256=cad0924ef7ed698e4518379d4c1270e9f1dd91ba593f0ce7004bfdb86d3e87a7;dex=classes.dex;caller=Lorg/privacytrace/controlled/c04/MainActivity;->readLocation(Landroid/location/LocationManager;)Landroid/location/Location;;offset_bytes=4;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "excerpt": "invoke-virtual v2, v0, Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+      "document_id": null,
+      "artifact_sha256": null,
+      "start_offset": null,
+      "end_offset": null,
+      "api_call": {
+        "target_descriptor": "Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;",
+        "rule_id": "android.location.last-known.gps",
+        "ruleset_version": "0.3.0",
+        "context": {
+          "provider": "gps"
+        }
+      }
+    }
+  ],
+  "policy_spans_validated": true,
+  "features_sha256": "abd412bd6c5812177ed79f71d4ce0bb01f79f8f14204dd79f55a222d4ce06298",
+  "stored_job_sha256": "48532b25e3e3f61cefeea8f5b961ef37c46d2d04cafef4944ed679e49b9d11c0",
+  "report_sha256": "05083f6d1c18bcfcedd72801a52e5c7e28b228748de9f69134963b38dade9d22",
+  "behavior_limitations": [
+    "仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。",
+    "不保证覆盖反射、动态加载及运行时生成的调用。",
+    "不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。",
+    "复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。",
+    "静态潜在行为不能证明实际访问、收集或外传。"
+  ],
+  "apk_sha256": "cad0924ef7ed698e4518379d4c1270e9f1dd91ba593f0ce7004bfdb86d3e87a7"
+}

@@ -791,7 +791,15 @@ class WebIntake:
                     "kind": "POLICY_DOCUMENT",
                     "status": "DECLARED",
                     "source": source_locator[:1000],
-                    "locator": "Captured UTF-8 text; completeness unknown",
+                    "locator": (
+                        "Captured UTF-8 text; acquisition="
+                        + (source.get("provenance") or (
+                            "DIRECT_WEB_FETCH" if source["status"] == "ready"
+                            else "MANUAL_INPUT"
+                        ))
+                        + "; source type is not proof of official verification; "
+                        "completeness unknown"
+                    ),
                     "document_id": document_id,
                     "artifact_sha256": document.artifact.sha256,
                 }
@@ -1216,7 +1224,7 @@ class WebIntake:
     def _run(self, draft, job, captures):
         source_receipts = [
             {
-                k: s[k]
+                k: s.get(k)
                 for k in (
                     "id",
                     "title",
@@ -1231,6 +1239,7 @@ class WebIntake:
                     "region",
                     "product",
                     "model_audit",
+                    "provenance",
                 )
             }
             for s in draft["sources"]

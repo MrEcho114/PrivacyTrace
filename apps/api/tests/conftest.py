@@ -21,7 +21,10 @@ def synthetic_package_metadata(monkeypatch):
     from privacytrace import web_intake
     from privacytrace.apk_worker import inspect_package_metadata
 
-    monkeypatch.setattr(web_intake, "inspect_package_isolated", inspect_package_metadata)
+    monkeypatch.setattr(
+        web_intake, "inspect_package_isolated",
+        lambda path, **kwargs: inspect_package_metadata(path),
+    )
 
 
 @pytest.fixture

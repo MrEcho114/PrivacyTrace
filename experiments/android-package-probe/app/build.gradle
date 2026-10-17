@@ -1,0 +1,25 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'org.privacytrace.probe'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'org.privacytrace.probe'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '0.1-poc'
+        testInstrumentationRunner 'org.privacytrace.probe.ProbeInstrumentation'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = '17' }
+    lint { abortOnError = true; warningsAsErrors = true }
+}
+
+dependencies { testImplementation 'junit:junit:4.13.2' }

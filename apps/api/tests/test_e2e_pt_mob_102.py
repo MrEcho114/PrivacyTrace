@@ -50,7 +50,8 @@ def build_axml_manifest(
     version_code: int = 7,
     version_name: str = "1.0",
     permissions: list[str] | None = None,
-    meta_data: dict[str, str] | None = None,
+    meta_data: dict[str, str | int] | None = None,
+    meta_data_attribute: str = "value",
 ) -> bytes:
     """Deterministic binary Android XML synthesizer supporting splits, permissions, and metadata."""
     if permissions is None:
@@ -70,7 +71,7 @@ def build_axml_manifest(
         "name",
         "application",
         "meta-data",
-        "value",
+        meta_data_attribute,
     ]
     if version_name is not None:
         raw_strings.extend(["versionName", str(version_name)])
@@ -79,7 +80,7 @@ def build_axml_manifest(
     for p in permissions:
         raw_strings.append(p)
     for k, v in meta_data.items():
-        raw_strings.extend([k, v])
+        raw_strings.extend([k, str(v)])
 
     strings = []
     for s in raw_strings:
@@ -112,6 +113,10 @@ def build_axml_manifest(
         return struct.pack("<HHIII", kind, 16, 16 + len(payload), 1, 0xFFFFFFFF) + payload
 
     def attr(name: str, value: str, ns: str | None = None) -> bytes:
+        if isinstance(value, int):
+            return struct.pack(
+                "<IIIHBBI", idx[ns], idx[name], 0xFFFFFFFF, 8, 0, 1, value
+            )
         return struct.pack(
             "<IIIHBBI", idx[ns] if ns else 0xFFFFFFFF, idx[name], idx[value], 8, 0, 3, idx[value]
         )
@@ -155,7 +160,7 @@ def build_axml_manifest(
     if meta_data:
         chunks += start("application", [])
         for k, v in meta_data.items():
-            m_attrs = [attr("name", str(k), ns), attr("value", str(v), ns)]
+            m_attrs = [attr("name", str(k), ns), attr(meta_data_attribute, v, ns)]
             chunks += start("meta-data", m_attrs)
             chunks += end("meta-data")
         chunks += end("application")
@@ -907,7 +912,7 @@ def test_r2_f26_admin_settings_isolated(tmp_path, monkeypatch):
 
 
 def test_r3_f27_in_app_policy_auto_discovery(tmp_path, monkeypatch):
-    """Tier 1 / F27: Auto-discovery scans manifest and string resources for policy URLs."""
+    """Tier 1 / F27: A literal Manifest URL is returned with unreviewed provenance."""
     app = get_test_app(tmp_path, mode="remote", monkeypatch=monkeypatch)
     client = TestClient(app, base_url="http://testserver")
 
@@ -929,7 +934,9 @@ def test_r3_f27_in_app_policy_auto_discovery(tmp_path, monkeypatch):
     check_unwired_route(resp, "sources auto-discovery")
     assert resp.status_code == 200
     data = resp.json()
-    assert isinstance(data, list) or "sources" in data
+    source = next(s for s in data["sources"] if s["url"] == "https://privacytrace.org/privacy")
+    assert source["status"] == "url_only"
+    assert source["provenance"] == "MANIFEST_METADATA"
 
 
 def test_r3_f28_discovery_provenance_retention(tmp_path, monkeypatch):

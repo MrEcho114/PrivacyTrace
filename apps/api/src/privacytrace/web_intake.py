@@ -909,8 +909,11 @@ class WebIntake:
                 revision = draft["revision"]
                 directory = self.directory(draft_id)
                 packages_dir = self._safe(directory / "packages")
-                apk_files = (sorted(packages_dir.glob("*.apk")) if packages_dir.is_dir()
-                             else [self._safe(directory / "input.apk")])
+                apk_files = (
+                    sorted(p for p in packages_dir.iterdir()
+                           if p.is_file() and p.suffix.lower() == ".apk")
+                    if packages_dir.is_dir() else [self._safe(directory / "input.apk")]
+                )
                 apk_files = [self._safe(p) for p in apk_files if p.exists()]
 
             # Container I/O must not hold the lock shared by every draft.

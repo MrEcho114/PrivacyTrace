@@ -1,13 +1,17 @@
 """Single-host intake: private immutable input revisions and bounded scan workers."""
 
+import asyncio
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
 import stat
 import time
 import zipfile
+
+import anyio
 import zlib
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
@@ -51,9 +55,9 @@ class UploadTooLarge(ValueError):
     """APK upload exceeded the documented byte limit."""
 
 
-def inspect_uploaded_package(path):
+def inspect_uploaded_package(path, *, timeout=120):
     try:
-        metadata = inspect_package_isolated(path)
+        metadata = inspect_package_isolated(path, timeout=timeout)
     except ScanError as exc:
         if exc.code not in {"CORRUPTED_FILE", "DUPLICATE_SPLIT_NAME", "ZIP_INVALID"}:
             raise
@@ -95,6 +99,8 @@ class WebIntake:
         self.root = store.root / "web"
         self.executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="privacytrace-scan")
         self.futures = {}
+        # Bound CPU/disk/isolated Docker upload work across concurrent requests.
+        self._upload_slots = asyncio.Semaphore(2)
         self.active_drafts = {}
         self.owner_fd = None
         self.root.mkdir(exist_ok=True, mode=0o700)
@@ -413,15 +419,22 @@ class WebIntake:
                     raise
 
     async def upload(self, draft_id, request, expect_package_set: bool = False):
+        # Acquire before streaming so slow uploads cannot flood the inspection pool.
+        try:
+            await asyncio.wait_for(self._upload_slots.acquire(), timeout=15)
+        except asyncio.TimeoutError as exc:
+            raise ValueError("UPLOAD_CAPACITY_BUSY") from exc
+        try:
+            return await self._upload_reserved(draft_id, request, expect_package_set)
+        finally:
+            self._upload_slots.release()
+
+    async def _upload_reserved(self, draft_id, request, expect_package_set: bool = False):
         directory = self.directory(draft_id)
         pending = self._safe(directory / "upload.pending")
         staging_packages = self._safe(directory / f"packages.pending.{uuid4().hex}")
         fd = None
         owns_pending = False
-        published_packages = False
-        published_apk = False
-        rollback_draft = None
-        rollback_revision = None
         try:
             with self.data_store._transaction():
                 draft = self._get(draft_id)
@@ -451,6 +464,35 @@ class WebIntake:
             is_pkg_set = expect_package_set or self._is_multi_package_archive(pending)
 
             if is_pkg_set:
+                         # Keep cleanup in the same protected worker; cancellation must not
+            # abandon a thread that may still publish files.
+            return await anyio.to_thread.run_sync(
+                self._finish_upload, draft_id, directory, pending, staging_packages,
+                expect_package_set, digest.hexdigest(), abandon_on_cancel=False,
+            )
+g.unlink(missing_ok=True)
+            if staging_packages.exists():
+                shutil.rmtree(staging_packages, ignore_errors=True)
+
+    def _finish_upload(self, draft_id, directory, pending, staging_packages,
+                       expect_package_set, uploaded_digest):
+        published_packages = False
+        published_apk = False
+        rollback_draft = None
+        rollback_revision = None
+        # A total inspection budget bounds multi-split Docker work.
+        inspection_deadline = time.monotonic() + 180
+
+        def remaining_timeout():
+            seconds = inspection_deadline - time.monotonic()
+            if seconds <= 0:
+                raise ScanError("TIMEOUT", "Package inspection budget exhausted")
+            return max(1, min(120, math.ceil(seconds)))
+
+        try:
+            is_pkg_set = expect_package_set or self._is_multi_package_archive(pending)
+
+            if is_pkg_set:
                 if not zipfile.is_zipfile(pending):
                     raise PackageSetIntegrityError(
                         "CORRUPTED_FILE", "Upload is not a valid ZIP/APK archive"
@@ -471,12 +513,13 @@ class WebIntake:
                 if has_root_manifest:
                     staged_base = staging_packages / "base.apk"
                     shutil.copyfile(pending, staged_base)
-                    pkg_file = inspect_uploaded_package(staged_base)
+                    pkg_file = inspect_uploaded_package(staged_base, timeout=remaining_timeout())
                     package_set = validate_package_set([pkg_file])
                 else:
                     self._unpack_package_set(pending, staging_packages)
                     package_set = validate_package_set([
-                        inspect_uploaded_package(p) for p in sorted(staging_packages.iterdir())
+                        inspect_uploaded_package(p, timeout=remaining_timeout())
+                        for p in sorted(staging_packages.iterdir())
                     ])
 
                 with self.data_store._transaction():
@@ -517,7 +560,7 @@ class WebIntake:
                     published_apk = True
                     draft.update(
                         uploaded=True,
-                        apk_sha256=digest.hexdigest(),
+                        apk_sha256=uploaded_digest,
                         package_set=None,
                         revision=draft["revision"] + 1,
                     )
@@ -545,13 +588,7 @@ class WebIntake:
                     ):
                         snapshot.unlink(missing_ok=True)
             raise
-        finally:
-            if fd is not None:
-                os.close(fd)
-            if owns_pending:
-                pending.unlink(missing_ok=True)
-            if staging_packages.exists():
-                shutil.rmtree(staging_packages, ignore_errors=True)
+
 
     def _settings(self, private=False):
         path = self._safe(self.root / "model.json")

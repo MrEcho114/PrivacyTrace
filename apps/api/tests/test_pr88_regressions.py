@@ -250,3 +250,121 @@ def test_package_directory_runtime_failure_cleans_owned_copy(tmp_path, monkeypat
     assert proof["input_removed"] and proof["cleanup_verified"]
     assert not list((tmp_path / "runs").glob("*/input.apk"))
     assert (packages / "base.apk").exists()
+
+
+def test_pr88_full_split_identity_blocks_report(tmp_path):
+    """Base digest alone cannot authorize a report for a changed split."""
+    from hashlib import sha256
+
+    from privacytrace.job_store import JobStore
+
+    base = apk(tmp_path / "base.apk")
+    original_digest = sha256(base.read_bytes()).hexdigest()
+    base_info = {
+        "file_name": "base.apk", "part": "BASE", "split_name": None,
+        "sha256": original_digest, "size_bytes": base.stat().st_size,
+    }
+    split_info = {
+        "file_name": "feature.apk", "part": "SPLIT", "split_name": "feature",
+        "sha256": "a" * 64, "size_bytes": 120,
+    }
+    registered = {
+        "base": base_info, "splits": [split_info],
+        "package_name": "org.privacytrace.fixture", "version_code": 7,
+        "version_name": "1.0",
+        "total_size_bytes": base_info["size_bytes"] + split_info["size_bytes"],
+    }
+    scanned = apk_worker.scan(base, taxonomy())
+    scanned["package_set"] = {
+        "files": [base_info, {**split_info, "sha256": "b" * 64}],
+        "total_size_bytes": registered["total_size_bytes"],
+        "split_count": 1,
+    }
+    receipt = make_dummy_policy(tmp_path / "policy")
+    result = pipeline.run(
+        base, receipt, "changed split", store_dir=tmp_path / "jobs",
+        package_set=registered, scanner=lambda path, **kw: scanned,
+    )
+    assert result["status"] == "FAILED"
+    assert result["primary_error"]["code"] == "INPUT_DIGEST_MISMATCH"
+    with pytest.raises(ValueError, match="report is not available"):
+        JobStore(tmp_path / "jobs").report(result["job_id"])
+
+
+@pytest.mark.usefixtures("synthetic_package_metadata")
+@pytest.mark.parametrize("mode", ["apk", "package-set"])
+def test_pr88_upload_failed_after_publish_reverts_files_and_revision(tmp_path, monkeypatch, mode):
+    """A failed commit cannot leave an orphan APK, collection or new revision."""
+    sample = apk(tmp_path / "fixture.apk")
+    payload = sample.read_bytes()
+    if mode == "package-set":
+        payload = package_set_archive(
+            tmp_path / "upload.zip", {"base.apk": payload}
+        ).read_bytes()
+    app = create_app(tmp_path / "jobs")
+    with TestClient(app) as client:
+        draft = new_draft(client)
+        directory = app.state.web_intake.directory(draft["id"])
+        previous = (directory / "current.json").read_bytes()
+        original_save = app.state.web_intake._save
+
+        def fail_after_save(updated):
+            saved = original_save(updated)
+            if updated["uploaded"]:
+                raise ValueError("injected post-publish failure")
+            return saved
+
+        monkeypatch.setattr(app.state.web_intake, "_save", fail_after_save)
+        response = client.post(
+            f"/api/v1/web/drafts/{draft['id']}/{mode}",
+            headers=HEADERS, content=payload,
+        )
+        assert response.status_code == 409
+        assert (directory / "current.json").read_bytes() == previous
+        assert not (directory / "input.apk").exists()
+        assert not (directory / "packages").exists()
+        assert not (directory / f"revision-{draft['revision'] + 1}.json").exists()
+        assert not list(directory.glob("*pending*"))
+
+
+def test_pr88_package_set_101_file_report_contract():
+    """A base + all 100 supported splits fits the report contract."""
+    from pydantic import ValidationError
+
+    from privacytrace.runtime_models import PackageSetSummary
+
+    base = {
+        "file_name": "base.apk", "part": "BASE", "split_name": None,
+        "sha256": "a" * 64, "size_bytes": 100,
+    }
+    splits = [{
+        "file_name": f"feature{i}.apk", "part": "SPLIT",
+        "split_name": f"feature{i}", "sha256": "b" * 64, "size_bytes": 1,
+    } for i in range(100)]
+    data = {
+        "base_file": base, "splits": splits, "files": [base, *splits],
+        "total_size_bytes": 200, "split_count": 100,
+        "split_names": [s["split_name"] for s in splits],
+    }
+    assert len(PackageSetSummary.model_validate(data).files) == 101
+    with pytest.raises(ValidationError):
+        PackageSetSummary.model_validate({**data, "files": [base, *splits, splits[0]]})
+
+
+def test_pr88_restart_removes_uncommitted_upload_material(tmp_path):
+    """Crash between filesystem publication and commit leaves no usable orphan."""
+    root = tmp_path / "jobs"
+    app = create_app(root)
+    with TestClient(app) as client:
+        draft = new_draft(client)
+        directory = app.state.web_intake.directory(draft["id"])
+        assert not draft["uploaded"]
+    (directory / "input.apk").write_bytes(b"orphan")
+    (directory / "packages").mkdir()
+    (directory / "packages" / "base.apk").write_bytes(b"orphan")
+    (directory / "upload.pending").write_bytes(b"abandoned")
+    with TestClient(create_app(root)) as client:
+        assert not (directory / "input.apk").exists()
+        assert not (directory / "packages").exists()
+        assert not (directory / "upload.pending").exists()
+        assert not client.get(f"/api/v1/web/drafts/{draft['id']}").json()["uploaded"]

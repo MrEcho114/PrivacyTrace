@@ -1,8 +1,13 @@
 # PrivacyTrace PT-MOB-102 (Issue #70) Test Infrastructure & Quality Gates
 
-> **Authoritative Specification**: PT-MOB-102 (Multi-Package APK Set Intake, Remote Task Lifecycle & Access Protection, and Policy Auto-Discovery & Thin Adaptation)  
-> **Status**: Active / Test-Ready  
-> **Target Worktree**: `C:\Users\Oasis\.gemini\antigravity\worktrees\PrivacyTrace\issue_70`
+> Evidence boundary: these fixtures and contract tests do not establish complete #70 or
+> public-service acceptance. See [current delivery limits](TEST_READY.md). Parser doubles
+> in contract suites are separate from the opt-in real Docker regression in
+> `apps/api/tests/test_pr88_regressions.py`.
+
+> **Authoritative Specification**: PT-MOB-102 (Multi-Package APK Set Intake, Remote Task Lifecycle & Access Protection, and Policy Auto-Discovery & Thin Adaptation)
+> **Status**: Active / Test-Ready
+> **Target Worktree**: `<repository-root>`
 
 ---
 

@@ -27,6 +27,8 @@ from privacytrace.models import EvaluationInput
 from privacytrace.resources import read_json, taxonomy
 from privacytrace.runtime_models import Report
 
+pytestmark = pytest.mark.usefixtures("synthetic_package_metadata")
+
 # ==============================================================================
 # Helper & Fixture Synthesizers
 # ==============================================================================
@@ -852,10 +854,9 @@ def test_r2_f23_explicit_retry_with_lineage(tmp_path, monkeypatch):
         headers={"Authorization": f"Bearer {token}"},
     )
     check_unwired_route(resp, "job retry")
-    assert resp.status_code in (200, 201)
-    data = resp.json()
-    assert data["id"] != "job-failed-1"
-    assert data.get("retry_of") == "job-failed-1"
+    # A metadata-only seed has no retained scan inputs; never create a stuck QUEUED job.
+    assert resp.status_code == 409
+    assert len(app.state.job_store.list()) == 1
 
 
 def test_r2_f24_tombstone_deletion(tmp_path, monkeypatch):
@@ -1458,9 +1459,8 @@ def test_t3_package_set_upload_and_explicit_retry(tmp_path, monkeypatch):
         headers={"Authorization": f"Bearer {token}"},
     )
     check_unwired_route(resp, "job retry")
-    assert resp.status_code in (200, 201)
-    new_job = resp.json()
-    assert new_job["retry_of"] == "job-multisplit-fail"
+    assert resp.status_code == 409  # No retained package set belongs to this seed.
+    assert len(app.state.job_store.list()) == 1
 
 
 def test_t3_single_apk_fallback_with_new_lifecycle_routes(tmp_path, monkeypatch):
@@ -1526,7 +1526,7 @@ def test_t3_cancelled_task_retry_spawn(tmp_path, monkeypatch):
         headers={"Authorization": f"Bearer {token}"},
     )
     check_unwired_route(retry_resp, "job retry")
-    assert retry_resp.status_code in (200, 201)
+    assert retry_resp.status_code == 409  # No retained inputs; cancellation stays final.
 
     # Verify original job remains CANCELLED
     orig = app.state.job_store.get("job-cancel-retry")

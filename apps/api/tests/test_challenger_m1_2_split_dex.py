@@ -1015,7 +1015,7 @@ def test_single_apk_pipeline_end_to_end_backward_compatibility(tmp_path: Path):
         assert "split=" not in ev.locator
 
 
-def test_multi_split_pipeline_end_to_end_attribution(tmp_path: Path):
+def test_multi_split_pipeline_end_to_end_attribution(tmp_path: Path, monkeypatch):
     """Full pipeline execution with a package set correctly publishes report
     with split attribution and coverage completeness.
     """
@@ -1048,6 +1048,13 @@ def test_multi_split_pipeline_end_to_end_attribution(tmp_path: Path):
     )
 
     pkg_set = validate_package_set(packages_dir)
+
+    # Controlled parser double. Actual container transport is covered separately.
+    def fixture_scan(path, **kwargs):
+        assert path == packages_dir
+        return scan_package_set(base_apk, [("feature.cam", split_apk)], taxonomy())
+
+    monkeypatch.setattr("privacytrace.pipeline.scan_isolated", fixture_scan)
 
     result = run_pipeline(
         apk=packages_dir,

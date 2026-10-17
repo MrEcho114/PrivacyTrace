@@ -266,6 +266,17 @@ class JobStore:
             self._write(record)
             return job
 
+    def create_retry(self, job: AnalysisJob, token_digest: str | None) -> AnalysisJob:
+        """Linearize retry creation against deletion under the job-store lock."""
+        with self._transaction():
+            original = self._load(job.retry_of)
+            if original.job.state not in {"FAILED", "CANCELLED"}:
+                raise ValueError("Only failed or cancelled jobs can be retried")
+            if original.token_digest != token_digest or self._path(job.id).exists():
+                raise ValueError("Retry access scope or identifier changed")
+            self._write(StoredJob(job=job, token_digest=token_digest))
+            return job
+
     def get_token_digest(self, job_id: str) -> str | None:
         with self._transaction():
             record = self._load(job_id, allow_tombstone=True)
@@ -381,30 +392,3 @@ class JobStore:
                 record.bundle.job = record.job
             self._write(record)
             return record.job
-
-    def retry(self, job_id: str) -> AnalysisJob:
-        with self._transaction():
-            record = self._load(job_id)
-            if record.job.state not in ("FAILED", "CANCELLED", "TIMEOUT"):
-                msg = f"Job {job_id} is in state {record.job.state} and cannot be retried"
-                raise ValueError(msg)
-            new_id = str(uuid4())
-            new_job = record.job.model_copy(deep=True)
-            new_job.id = new_id
-            new_job.retry_of = job_id
-            new_job.state = "QUEUED"
-            new_job.error = None
-            new_job.created_at = datetime.now(timezone.utc)
-            new_bundle = record.bundle.model_copy(deep=True) if record.bundle else None
-            if new_bundle:
-                new_bundle.job = new_job
-            new_record = StoredJob(
-                job=new_job,
-                bundle=new_bundle,
-                sample=record.sample,
-                coverage=record.coverage,
-                tools=record.tools,
-                token_digest=record.token_digest,
-            )
-            self._write(new_record)
-            return new_job

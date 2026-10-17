@@ -30,6 +30,7 @@ from privacytrace.package_set import (
 )
 
 HEADERS = {"X-PrivacyTrace-Local": "1"}
+pytestmark = pytest.mark.usefixtures("synthetic_package_metadata")
 
 
 def create_draft(client: TestClient) -> dict:

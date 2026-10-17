@@ -60,11 +60,7 @@ def run(
         transition("INTAKE")
         if not name.strip() or len(name) > 200 or not 1 <= timeout <= 180:
             raise ScanError("INVALID_ARGUMENT", "Name or timeout outside allowed range")
-        if hasattr(apk, "is_dir") and apk.is_dir():
-            from .package_set import validate_package_set
-
-            validate_package_set(apk)
-        else:
+        if not (hasattr(apk, "is_dir") and apk.is_dir()):
             validate_input(apk)
         try:
             captures = captured_policies if captured_policies is not None else [load_policy(policy)]
@@ -82,37 +78,8 @@ def run(
         if scanner is not None:
             scanned = scanner(apk, timeout=timeout, cancelled=cancelled)
         elif package_set is not None or (hasattr(apk, "is_dir") and apk.is_dir()):
-            from .apk_worker import scan_package_set
-            from .package_set import PackageSet, validate_package_set
-            from .resources import sdk_signatures
-
-            if hasattr(apk, "is_dir") and apk.is_dir():
-                packages_dir = apk
-            else:
-                packages_dir = apk.parent / "packages"
-
-            if isinstance(package_set, dict):
-                pkg_set_obj = PackageSet.model_validate(package_set)
-            elif package_set is not None:
-                pkg_set_obj = package_set
-            else:
-                pkg_set_obj = validate_package_set(packages_dir)
-
-            base_path = packages_dir / pkg_set_obj.base.file_name
-            if not base_path.exists():
-                base_path = apk
-            splits = [
-                (split.split_name, packages_dir / split.file_name)
-                for split in pkg_set_obj.splits
-            ]
-            rules_data = taxonomy()
-            try:
-                sdk_data = sdk_signatures()
-            except Exception:
-                sdk_data = None
-            scanned = scan_package_set(
-                base_path, splits, rules=rules_data, sdk_rules=sdk_data
-            )
+            packages_dir = apk if apk.is_dir() else apk.parent / "packages"
+            scanned = scan_isolated(packages_dir, timeout=timeout, cancelled=cancelled)
         else:
             scanned = scan_isolated(apk, timeout=timeout, cancelled=cancelled)
         if controlled and (

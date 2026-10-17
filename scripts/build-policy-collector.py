@@ -2,8 +2,10 @@
 
 import argparse
 import ast
+import builtins
 import hashlib
 import json
+import symtable
 from pathlib import Path
 
 from privacytrace.resources import ACTIVE_RULESET_VERSION, TAXONOMY_FILES
@@ -52,6 +54,26 @@ def sha(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def validate_helper_dependencies(helpers, exported_names):
+    """Require review when copied helpers outgrow the portable environment."""
+    source = "\n\n".join(helpers)
+    message = "The source prompt helper dependencies changed; review the package builder"
+    if any(isinstance(node, (ast.Import, ast.ImportFrom)) for node in ast.walk(ast.parse(source))):
+        raise ValueError(message + " (new imports)")
+    available = set(vars(builtins)) | exported_names | {"re"}
+    pending = [symtable.symtable(source, "prompt_helpers", "exec")]
+    missing = set()
+    while pending:
+        scope = pending.pop()
+        missing.update(
+            symbol.get_name() for symbol in scope.get_symbols()
+            if symbol.is_referenced() and symbol.is_global() and symbol.get_name() not in available
+        )
+        pending.extend(scope.get_children())
+    if missing:
+        raise ValueError(message + ": " + ", ".join(sorted(missing)))
+
+
 def render():
     source = (ROOT / SOURCE_PATHS[0]).read_text(encoding="utf-8")
     syntax = ast.parse(source)
@@ -68,6 +90,7 @@ def render():
     ]
     if len(helpers) != 2 or constants.keys() != names:
         raise ValueError("The source prompt interface changed; review the package builder")
+    validate_helper_dependencies(helpers, names | {"sanitize_untrusted_text", "build_user_prompt"})
     schema = WebSource.model_json_schema()
     properties = schema["properties"]
     fields = "\n".join(

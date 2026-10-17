@@ -450,15 +450,17 @@ class WebIntake:
                     if size > MAX_INPUT:
                         raise UploadTooLarge("Upload exceeds 150 MiB")
                     digest.update(chunk)
-                    handle.write(chunk)
+                    await anyio.to_thread.run_sync(handle.write, chunk, abandon_on_cancel=False)
                 if size == 0:
                     if expect_package_set:
                         raise PackageSetIntegrityError(
                             "EMPTY_PACKAGE_SET", "Package set upload is empty"
                         )
                     raise ValueError("Upload is empty")
-                handle.flush()
-                os.fsync(handle.fileno())
+                await anyio.to_thread.run_sync(
+                    lambda: (handle.flush(), os.fsync(handle.fileno())),
+                    abandon_on_cancel=False,
+                )
 
             # Shield the worker until rollback or commit has completed.
             return await anyio.to_thread.run_sync(

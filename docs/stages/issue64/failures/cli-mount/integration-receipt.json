@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "run_id": "20261016T034642Z-ab09d222adb6",
+  "commit_sha": "2e43fe1f36601e9ade43eb8140d6869e5768f0bd",
+  "suite": "pt907",
+  "scenario_count": 12,
+  "dirty_checkout": false,
+  "passed": false,
+  "stages": [
+    {
+      "stage": "build-a",
+      "exit_code": 0,
+      "elapsed_seconds": 24.597987532999923
+    },
+    {
+      "stage": "build-b",
+      "exit_code": 0,
+      "elapsed_seconds": 24.043783793000102
+    },
+    {
+      "stage": "rebuild-hashes",
+      "exit_code": 0
+    },
+    {
+      "stage": "worker-build",
+      "exit_code": 0,
+      "elapsed_seconds": 16.3678937520001
+    },
+    {
+      "stage": "twelve-scenarios",
+      "exit_code": 0,
+      "elapsed_seconds": 57.19316995300005
+    },
+    {
+      "stage": "source-cli-regressions",
+      "exit_code": 1,
+      "elapsed_seconds": 25.596843675999935
+    }
+  ],
+  "evidence_sha256": {
+    "build-a/build-receipt.json": "49cae8c567143def4b08ad581f7e6cb801d6279f655bf771f2d2ffc584a13f7f",
+    "build-b/build-receipt.json": "49cae8c567143def4b08ad581f7e6cb801d6279f655bf771f2d2ffc584a13f7f",
+    "evaluation/comparison.json": "812e3de307c772945e8c848b8abff13a2b8bd3d92f5a5be10b1b7ef9a5d321ff"
+  },
+  "generated_at": "2026-10-16T03:49:16.789971+00:00"
+}

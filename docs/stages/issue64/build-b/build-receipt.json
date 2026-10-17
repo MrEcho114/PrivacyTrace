@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "source_hashes": {
+    "android/C01/AndroidManifest.xml": "9ca9f04fa2a3dcd242a4422623cc50864f42336821048892f4581e9e84461c45",
+    "android/C01/MainActivity.java": "cf205115a43ea4556b0984b63f696de3ee869709a771d71baa1d04e752188d9e",
+    "android/C02/AndroidManifest.xml": "7fcfe665f5a7456e83577370d32868f2c28d308d284fc770a2f1e9d4822b2336",
+    "android/C02/MainActivity.java": "8a9c1c56504da903ae6cb183d09b93b25048b492f26b199fba07843a1af59673",
+    "android/C03/AndroidManifest.xml": "e7bb0eed213e7f552b7cecc488f657b242c7fb40f0f1b19c19b2a977781fa00b",
+    "android/C03/MainActivity.java": "8a659bf240e86b9e27b0ff20c20da800690ac6907cf18aa8bc71b908dd986bec",
+    "android/C04/AndroidManifest.xml": "b4f58d0948340ca27ff82d951f079978afb8cd4e9f2bfd3d13e519dda1b75d1f",
+    "android/C04/MainActivity.java": "e22c4e91d7cb7234543827d773fc3be542e03a82a79aded9564aad024f955f8a",
+    "android/C05/AndroidManifest.xml": "de0660ae6f1e17de71a1ad3d66c62513613084022538024c56e3686e4688733e",
+    "android/C05/MainActivity.java": "b22d2e2178b28105d09e17d33f3ef158cef9670fbd739a70abf5c6a280517d81",
+    "android/C06/AndroidManifest.xml": "71e3d5b50b5d32c13ebd2c310288f870b282dd8af22706c5140117fc967debfb",
+    "android/C06/MainActivity.java": "ba253cf4383ffa087720fc43402b0b6ec0fc2bbd4a5758c1150865232a0cb5f7",
+    "android/C07/AndroidManifest.xml": "beb7d89f1747e95dd86abf3a060bede0c427d9a0e371a70b4364295579adb65c",
+    "android/C07/MainActivity.java": "0651deaa765eb8adbc7dc6bc5e0ec67ace467929ed4c19fe6394d38482ffef17",
+    "android/C08/AndroidManifest.xml": "e16ed0f26bc95b64f720bc0e9f3df99c09376bf2e0b48fcbe41933d3658af06a",
+    "android/C08/MainActivity.java": "098464aac93c2ce11f34fe6c406e95a8de4e9aa83036a93c13f35ac6395b6983",
+    "android/C09/AndroidManifest.xml": "f24226dc32394c44e15aa9ff25952c7b3b5a48046b9c9cc8f0a98d754301bfc1",
+    "android/C09/MainActivity.java": "f10a0aeda0f0743691fa984cb692f6639b728a42b891662cca9f20a1a28030bc",
+    "android/C10/AndroidManifest.xml": "c956cefebd9772317686dd966f0c13f8b3857534f3f4d880d35ce562408499c9",
+    "android/C10/MainActivity.java": "d15cff35345237661c82e484da00dc3c33e394d1306d00b692c23d122fcbfd91",
+    "android/C11/AndroidManifest.xml": "28bb8ab053bc8ce8634c257380cd1e03e48528ab969d826f981f6f0d880c83c5",
+    "android/C11/MainActivity.java": "4dcfcb720d19d59a32171400ca8d14e707136c5246a30d2db4df4f2296f8430f",
+    "android/C12/AndroidManifest.xml": "1ea328de45469d8cea19e9b2232ba9a7cf56cd12bcde1d40c3aeff20bd270c22",
+    "android/C12/MainActivity.java": "99bc0c51b4f95173d958334d4509fac1179763c06a8415874d83f0cfe6576e01"
+  },
+  "apks": {
+    "C01": "121ea9e78200ed3361fc6d2fd0f5598e6bded34fd17e7128619d96f914a58753",
+    "C02": "a487e72b9ff97661b0d3853e14f112ed35a6c08c06bfb77e818918594798acf5",
+    "C03": "c76f5c5004f65609810ef6f68b05ce8857ba4e5b202d96b81b5c94e6771ffffd",
+    "C04": "cad0924ef7ed698e4518379d4c1270e9f1dd91ba593f0ce7004bfdb86d3e87a7",
+    "C05": "d11c648c78d8d90b44bf5f225eedb6a83a176c1ac829bdd0ca960e9ce2c30091",
+    "C06": "88e72442b13d3043ef14e2c097a90550613b831600cd5f92d6a077bb6cd29913",
+    "C07": "3c512048af98cca1e9f4a7472be421a7d943083715375cff8ede48664bb744be",
+    "C08": "3b8ef9e496ac1a1989f5caa17341e0406d562f9e005fa032d8b7d7735493658a",
+    "C09": "4d37ff23331083c7a2c37d8e257d3797dab243871f00bd26cf2da1d2bfc838f7",
+    "C10": "bf0b9e627e708bf3a3ea26954403096750b5df99bd0e1f6be6cccd68d10a0efe",
+    "C11": "afcc6edf8ed840705875d8e1737c38cb6f9c3c8b4e0bc14430a5bf9a8a9bb6cf",
+    "C12": "db0e67f9212b91b83ead0b954d98ca86bb68b73bb431ec3e1e83651efda9cfb9"
+  },
+  "toolchain": {
+    "schema_version": 1,
+    "jdk": "Temurin 17.0.20.1+1",
+    "build_tools": "35.0.0",
+    "platform": "Android 35 revision 2",
+    "archives": {
+      "build-tools.zip": {
+        "url": "https://dl.google.com/android/repository/build-tools_r35_linux.zip",
+        "sha256": "bd3a4966912eb8b30ed0d00b0cda6b6543b949d5ffe00bea54c04c81e1561d88"
+      },
+      "platform.zip": {
+        "url": "https://dl.google.com/android/repository/platform-35_r02.zip",
+        "sha256": "0988cacad01b38a18a47bac14a0695f246bc76c1b06c0eeb8eb0dc825ab0c8e0"
+      },
+      "jdk.tar.gz": {
+        "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_x64_linux_hotspot_17.0.20.1_1.tar.gz",
+        "sha256": "3808d1d15e3ec6bd5b84057fb5d84c33d8a1536a258146bcea2e603fc726e08e"
+      }
+    }
+  },
+  "artifact_use": "UNSIGNED_STATIC_ANALYSIS_ONLY",
+  "javac": "javac 17.0.20.1",
+  "d8": "D8 8.6.2-dev (build abaab469b5ebd4dd2bb91ba0ed6f45277faae4ca from go/r8bot (luci-r8-custom-ci-archive-0-77gl))",
+  "aapt2": "Android Asset Packaging Tool (aapt) 2.19-11948202"
+}

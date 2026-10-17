@@ -415,14 +415,13 @@ class WebIntake:
         directory = self.directory(draft_id)
         pending = self._safe(directory / f"upload.pending.{uuid4().hex}")
         staging_packages = self._safe(directory / f"packages.pending.{uuid4().hex}")
-        fd, owned = None, False
+        fd = None
         try:
             with self.data_store._transaction():
                 draft = self._get(draft_id)
                 if draft["uploaded"] or draft["jobs"]:
                     raise ValueError("APK already uploaded; new materials require a new draft")
                 fd = os.open(pending, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-                owned = True
             size = 0
             digest = hashlib.sha256()
             with os.fdopen(fd, "wb") as handle:
@@ -515,6 +514,8 @@ class WebIntake:
             pending.unlink(missing_ok=True)
             raise
         finally:
+            if fd is not None:
+                os.close(fd)
             pending.unlink(missing_ok=True)
             if staging_packages.exists():
                 shutil.rmtree(staging_packages, ignore_errors=True)

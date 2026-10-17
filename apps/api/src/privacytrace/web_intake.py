@@ -99,7 +99,7 @@ class WebIntake:
         self.root = store.root / "web"
         self.executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="privacytrace-scan")
         self.futures = {}
-        # Bound CPU/disk/isolated Docker upload work across concurrent requests.
+        # Bound disk and Docker inspections across requests.
         self._upload_slots = asyncio.Semaphore(2)
         self.active_drafts = {}
         self.owner_fd = None
@@ -419,7 +419,6 @@ class WebIntake:
                     raise
 
     async def upload(self, draft_id, request, expect_package_set: bool = False):
-        # Acquire before streaming so slow uploads cannot flood the inspection pool.
         try:
             await asyncio.wait_for(self._upload_slots.acquire(), timeout=15)
         except asyncio.TimeoutError as exc:
@@ -461,16 +460,16 @@ class WebIntake:
                 handle.flush()
                 os.fsync(handle.fileno())
 
-            is_pkg_set = expect_package_set or self._is_multi_package_archive(pending)
-
-            if is_pkg_set:
-                         # Keep cleanup in the same protected worker; cancellation must not
-            # abandon a thread that may still publish files.
+            # Shield the worker until rollback or commit has completed.
             return await anyio.to_thread.run_sync(
                 self._finish_upload, draft_id, directory, pending, staging_packages,
                 expect_package_set, digest.hexdigest(), abandon_on_cancel=False,
             )
-g.unlink(missing_ok=True)
+        finally:
+            if fd is not None:
+                os.close(fd)
+            if owns_pending:
+                pending.unlink(missing_ok=True)
             if staging_packages.exists():
                 shutil.rmtree(staging_packages, ignore_errors=True)
 
@@ -480,7 +479,6 @@ g.unlink(missing_ok=True)
         published_apk = False
         rollback_draft = None
         rollback_revision = None
-        # A total inspection budget bounds multi-split Docker work.
         inspection_deadline = time.monotonic() + 180
 
         def remaining_timeout():

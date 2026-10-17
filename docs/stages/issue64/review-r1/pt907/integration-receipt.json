@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "run_id": "20261016T095831Z-4f60dfc473f5",
+  "commit_sha": "b933e8e03b3f9363f17db365fa0454543d243351",
+  "suite": "pt907",
+  "scenario_count": 12,
+  "dirty_checkout": false,
+  "passed": true,
+  "stages": [
+    {
+      "stage": "build-a",
+      "exit_code": 0,
+      "elapsed_seconds": 31.107351861999973
+    },
+    {
+      "stage": "build-b",
+      "exit_code": 0,
+      "elapsed_seconds": 20.325715876000004
+    },
+    {
+      "stage": "rebuild-hashes",
+      "exit_code": 0
+    },
+    {
+      "stage": "worker-build",
+      "exit_code": 0,
+      "elapsed_seconds": 32.66453716700005
+    },
+    {
+      "stage": "twelve-scenarios",
+      "exit_code": 0,
+      "elapsed_seconds": 57.536359535999964
+    },
+    {
+      "stage": "source-cli-regressions",
+      "exit_code": 0,
+      "elapsed_seconds": 43.23279259700007
+    },
+    {
+      "stage": "web-build",
+      "exit_code": 0,
+      "elapsed_seconds": 10.397789429
+    },
+    {
+      "stage": "controlled-browser",
+      "exit_code": 0,
+      "elapsed_seconds": 15.108724861000042
+    }
+  ],
+  "evidence_sha256": {
+    "build-a/build-receipt.json": "49cae8c567143def4b08ad581f7e6cb801d6279f655bf771f2d2ffc584a13f7f",
+    "build-b/build-receipt.json": "49cae8c567143def4b08ad581f7e6cb801d6279f655bf771f2d2ffc584a13f7f",
+    "evaluation/comparison.json": "40fb48f0bd9fe3d8755e18b26e499d3dd2be95f66395c8d67bb570864585a242",
+    "browser-proof/browser-proof.json": "6d1ff6fa88665587099b932d80943c7a539744633ecd3a0e1c2862113485a1de"
+  },
+  "generated_at": "2026-10-16T10:02:07.492737+00:00"
+}

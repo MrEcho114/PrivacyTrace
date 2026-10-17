@@ -46,7 +46,7 @@ def test_metadata_boundary_failure_rolls_back_upload(tmp_path, monkeypatch):
     sample = apk(tmp_path / "base.apk")
     archive = package_set_archive(tmp_path / "set.zip", {"base.apk": sample.read_bytes()})
 
-    def unavailable(path):
+    def unavailable(path, **kwargs):
         raise ScanError("ISOLATION_UNAVAILABLE", "Controlled failure")
 
     monkeypatch.setattr(web_intake, "inspect_package_isolated", unavailable)

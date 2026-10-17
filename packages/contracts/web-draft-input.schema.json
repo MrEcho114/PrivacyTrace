@@ -80,7 +80,8 @@
             "ready",
             "manual",
             "empty",
-            "failed"
+            "failed",
+            "url_only"
           ],
           "title": "Status",
           "type": "string"
@@ -132,6 +133,19 @@
           ],
           "default": null,
           "title": "Final Url"
+        },
+        "provenance": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provenance"
         },
         "model_audit": {
           "additionalProperties": {

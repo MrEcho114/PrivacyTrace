@@ -199,7 +199,6 @@ def scan_isolated(
                 "--label",
                 "privacytrace.run=" + workspace.run_id,
                 "--network=none",
-                "--cgroupns=private",
                 "--read-only",
                 "--user=65534:65534",
                 "--cap-drop=ALL",

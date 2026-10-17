@@ -7,9 +7,6 @@ dependencies = [
   "fastapi>=0.115,<1",
   "pydantic>=2.10,<3",
   "uvicorn>=0.34,<1",
-  "sqlalchemy>=2.0,<3",
-  "alembic>=1.16,<2",
-  "psycopg[binary]>=3.2,<4",
 ]
 
 [project.optional-dependencies]

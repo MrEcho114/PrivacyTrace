@@ -8,7 +8,6 @@ import urllib.request
 from pathlib import Path
 
 from controlled_paths import daemon_path, output_user
-from privacytrace.controlled import SUITES
 from privacytrace.isolated_scan import docker_prefix
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,14 +17,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cache", type=Path, default=ROOT / "tmp/toolchain")
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--suite", choices=SUITES, default="spec30")
     parser.add_argument(
         "--cached", action="store_true", help="Do not download any archive"
     )
     args = parser.parse_args()
     args.cache.mkdir(parents=True, exist_ok=True)
     args.output.mkdir(parents=True, exist_ok=False)
-    lock = json.loads((SUITES[args.suite] / "toolchain.lock.json").read_text())
+    lock = json.loads((ROOT / "benchmarks/controlled/toolchain.lock.json").read_text())
     for name, artifact in lock["archives"].items():
         path = args.cache / name
         if not path.exists():
@@ -77,7 +75,6 @@ def main():
             "--mount",
             "type=bind,source=" + daemon_path(args.output) + ",target=/output",
             image,
-            args.suite,
         ],
         check=True,
     )

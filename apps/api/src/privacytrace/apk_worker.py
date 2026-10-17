@@ -177,7 +177,15 @@ def isolation_probe(path):
     return result
 
 
-def scan(path, rules, inventory=False, sdk_rules=None):
+def scan(
+    path,
+    rules,
+    inventory=False,
+    sdk_rules=None,
+    package_split=None,
+    behavior_count=0,
+    is_split: bool = False,
+):
     from androguard.core.apk import APK
     from androguard.core.dex import DEX, Operand
     from loguru import logger
@@ -187,6 +195,26 @@ def scan(path, rules, inventory=False, sdk_rules=None):
     logger.remove()
     logger.add(sys.stderr, level="WARNING")
     result = empty_result()
+    if is_split:
+        # Defense-in-depth: Splits are ALWAYS prefixed with f"split:{split_name}:" and never "base:"
+        # Semicolons are sanitized to prevent locator key-value injection.
+        s_name = (package_split or "unknown").replace(";", "_")
+        split_prefix = f";split={s_name}"
+        source_prefix = f"split:{s_name}:"
+        recorded_split = s_name
+    elif package_split == "base":
+        split_prefix = ";split=base"
+        source_prefix = "base:"
+        recorded_split = "base"
+    elif package_split:
+        s_name = str(package_split).replace(";", "_")
+        split_prefix = f";split={s_name}"
+        source_prefix = f"split:{s_name}:"
+        recorded_split = s_name
+    else:
+        split_prefix = ""
+        source_prefix = ""
+        recorded_split = None
     inventory_calls = []
     inventory_truncated = False
     sdk_index = load_index(sdk_rules) if sdk_rules else None
@@ -261,7 +289,7 @@ def scan(path, rules, inventory=False, sdk_rules=None):
         ]
 
         def add(kind, source, locator, excerpt, data_type, action="ACCESS", api_call=None):
-            if len(result["behaviors"]) >= 500:
+            if behavior_count + len(result["behaviors"]) >= 500:
                 warning = (
                     "Mapped behavior/evidence output truncated at 500; additional hits omitted. "
                     "DEX processing completion does not imply complete behavior coverage."
@@ -278,6 +306,8 @@ def scan(path, rules, inventory=False, sdk_rules=None):
                 locator=locator,
                 excerpt=excerpt,
             )
+            if recorded_split is not None:
+                evidence["package_split"] = recorded_split
             if api_call:
                 evidence["api_call"] = api_call
             result["evidence"].append(evidence)
@@ -306,19 +336,19 @@ def scan(path, rules, inventory=False, sdk_rules=None):
                     bounds += ";max_sdk=" + max_sdk
                 add(
                     "MANIFEST",
-                    "AndroidManifest.xml",
-                    "apk_sha256=" + result["apk_sha256"] + ";permission=" + permission + bounds,
+                    f"{source_prefix}AndroidManifest.xml",
+                    f"apk_sha256={result['apk_sha256']}{split_prefix};permission={permission}{bounds}",
                     permission + bounds,
                     mapping["data_type"],
                     "CAPABILITY",
                 )
         names = sorted(n for n in archive.namelist() if re.fullmatch(r"classes(?:[0-9]+)?\.dex", n))
-        result["dex_entries"] = names
+        result["dex_entries"] = [f"{source_prefix}{n}" for n in names]
         if "classes.dex" not in names:
             result["coverage"]["limitations"].append(
                 "Primary classes.dex missing; split or incomplete APK"
             )
-        if apk.get_android_manifest_xml().get("split"):
+        if package_split is None and apk.get_android_manifest_xml().get("split"):
             result["coverage"]["limitations"].append(
                 "Split manifest; other package splits unavailable"
             )
@@ -468,12 +498,12 @@ def scan(path, rules, inventory=False, sdk_rules=None):
                                 ]
                                 for rule in matches:
                                     locator = (
-                                        f"apk_sha256={result['apk_sha256']};dex={name};"
+                                        f"apk_sha256={result['apk_sha256']}{split_prefix};dex={name};"
                                         f"caller={caller};offset_bytes={offset};target={target}"
                                     )
                                     add(
                                         "API",
-                                        name,
+                                        f"{source_prefix}{name}",
                                         locator,
                                         op + " " + ins.get_output(offset),
                                         rule["data_type"],
@@ -489,19 +519,21 @@ def scan(path, rules, inventory=False, sdk_rules=None):
                                 # Conservatively invalidate any register operand for unknown ops.
                                 for register in regs:
                                     constants.pop(register, None)
-                result["coverage"]["scanned_dex"].append(name)
+                result["coverage"]["scanned_dex"].append(f"{source_prefix}{name}")
             except Exception as exc:
-                result["coverage"]["failed_dex"].append(name)
+                result["coverage"]["failed_dex"].append(f"{source_prefix}{name}")
                 result["errors"].append(
                     dict(
                         code="DEX_PARSE_FAILED",
-                        message=name + ": " + type(exc).__name__ + ": " + str(exc)[:200],
+                        message=(
+                            f"{source_prefix}{name}: {type(exc).__name__}: {str(exc)[:200]}"
+                        ),
                     )
                 )
         if (
             "classes.dex" in names
             and not result["coverage"]["failed_dex"]
-            and not apk.get_android_manifest_xml().get("split")
+            and not (package_split is None and apk.get_android_manifest_xml().get("split"))
         ):
             result["coverage"]["completeness"] = "COMPLETE"
     if inventory:
@@ -515,33 +547,35 @@ def scan(path, rules, inventory=False, sdk_rules=None):
         result["tools"]["inventory_truncated"] = str(inventory_truncated).lower()
     if sdk_collector is not None:
         for found in sdk_collector.selected():
-            result["evidence"].append(
-                dict(
-                    id=found.evidence_id,
-                    kind="SDK",
-                    status="STATIC_POTENTIAL",
-                    source=found.dex,
-                    locator=(
-                        "apk_sha256="
-                        + result["apk_sha256"]
-                        + ";dex="
-                        + found.dex
-                        + ";class="
-                        + found.class_name
-                    ),
-                    excerpt=(
-                        found.class_name
-                        + " matches published package prefix "
-                        + found.prefix
-                        + " of "
-                        + found.signature.name
-                        + " ("
-                        + found.signature.vendor
-                        + "); attribution only, not evidence "
-                        + "of collection or transfer."
-                    ),
-                )
+            sdk_ev = dict(
+                id=found.evidence_id,
+                kind="SDK",
+                status="STATIC_POTENTIAL",
+                source=f"{source_prefix}{found.dex}",
+                locator=(
+                    "apk_sha256="
+                    + result["apk_sha256"]
+                    + split_prefix
+                    + ";dex="
+                    + found.dex
+                    + ";class="
+                    + found.class_name
+                ),
+                excerpt=(
+                    found.class_name
+                    + " matches published package prefix "
+                    + found.prefix
+                    + " of "
+                    + found.signature.name
+                    + " ("
+                    + found.signature.vendor
+                    + "); attribution only, not evidence "
+                    + "of collection or transfer."
+                ),
             )
+            if recorded_split is not None:
+                sdk_ev["package_split"] = recorded_split
+            result["evidence"].append(sdk_ev)
         if sdk_collector.capped:
             # Attribution gaps are not behavior gaps; file them under the SDK
             # coverage list, never behavior ones. `observed` counts match events
@@ -559,6 +593,139 @@ def scan(path, rules, inventory=False, sdk_rules=None):
             note += "上限截断不代表没有更多 SDK。"
             result["coverage"]["sdk_attribution_limitations"].append(note)
     return result
+
+
+def scan_package_set(base_path, splits, rules, inventory=False, sdk_rules=None):
+    """Scans base APK and all splits in the package set, aggregating permissions,
+    namespacing DEX entries, and resolving coverage completeness.
+
+    splits is a list of (split_name, split_path) tuples.
+    """
+    base_path = Path(base_path)
+    splits = [(s_name, Path(s_path)) for s_name, s_path in splits]
+
+    # 1. Scan base APK
+    base_result = scan(
+        base_path,
+        rules,
+        inventory=inventory,
+        sdk_rules=sdk_rules,
+        package_split="base",
+        is_split=False,
+    )
+
+    # 2. Sequentially scan each split APK
+    split_results = []
+    current_behavior_count = len(base_result["behaviors"])
+    for split_name, split_path in splits:
+        split_res = scan(
+            split_path,
+            rules,
+            inventory=inventory,
+            sdk_rules=sdk_rules,
+            package_split=split_name,
+            behavior_count=current_behavior_count,
+            is_split=True,
+        )
+        split_results.append((split_name, split_path, split_res))
+        current_behavior_count += len(split_res["behaviors"])
+
+    # 3. Aggregate permissions
+    all_perms = set(base_result["permissions"])
+    for _, _, s_res in split_results:
+        all_perms.update(s_res["permissions"])
+    aggregated_permissions = sorted(all_perms)
+
+    # 4. Merge namespaced DEX entries
+    all_dex_entries = list(base_result["dex_entries"])
+    scanned_dex = list(base_result["coverage"]["scanned_dex"])
+    failed_dex = list(base_result["coverage"]["failed_dex"])
+    for _, _, s_res in split_results:
+        all_dex_entries.extend(s_res["dex_entries"])
+        scanned_dex.extend(s_res["coverage"]["scanned_dex"])
+        failed_dex.extend(s_res["coverage"]["failed_dex"])
+
+    # 5. Resolve coverage completeness
+    completeness = (
+        "COMPLETE"
+        if "base:classes.dex" in all_dex_entries and not failed_dex
+        else "PARTIAL"
+    )
+
+    # 6. Deduplicate & merge evidence and behaviors
+    all_evidence = list(base_result["evidence"])
+    all_behaviors = list(base_result["behaviors"])
+    for _, _, s_res in split_results:
+        for ev in s_res["evidence"]:
+            if ev["kind"] == "MANIFEST":
+                perm_in_base = any(
+                    bev["kind"] == "MANIFEST" and bev["excerpt"] == ev["excerpt"]
+                    for bev in base_result["evidence"]
+                )
+                if perm_in_base:
+                    continue
+            all_evidence.append(ev)
+        for bh in s_res["behaviors"]:
+            ev_id = bh["evidence_ids"][0]
+            if any(e["id"] == ev_id for e in all_evidence):
+                all_behaviors.append(bh)
+
+    # 7. Package set summary
+    base_file = {
+        "file_name": base_path.name,
+        "part": "BASE",
+        "split_name": None,
+        "sha256": base_result["apk_sha256"],
+        "size_bytes": base_path.stat().st_size,
+    }
+    split_files = [
+        {
+            "file_name": s_path.name,
+            "part": "SPLIT",
+            "split_name": s_name,
+            "sha256": s_res["apk_sha256"],
+            "size_bytes": s_path.stat().st_size,
+        }
+        for s_name, s_path, s_res in split_results
+    ]
+    package_set_summary = {
+        "base_file": base_file,
+        "splits": split_files,
+        "files": [base_file, *split_files],
+        "total_size_bytes": base_file["size_bytes"] + sum(s["size_bytes"] for s in split_files),
+        "split_count": len(split_files),
+        "split_names": [s["split_name"] for s in split_files],
+    }
+
+    clean_limitations = [
+        lim
+        for lim in base_result["coverage"]["limitations"]
+        if "other package splits unavailable" not in lim
+    ]
+
+    return {
+        "apk_sha256": base_result["apk_sha256"],
+        "package_name": base_result["package_name"],
+        "version_code": base_result["version_code"],
+        "version_name": base_result["version_name"],
+        "permissions": aggregated_permissions,
+        "dex_entries": all_dex_entries,
+        "package_set": package_set_summary,
+        "coverage": {
+            "completeness": completeness,
+            "scope": "DEX_ENTRIES",
+            "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+            "behavior_limitations": base_result["coverage"]["behavior_limitations"],
+            "sdk_attribution_limitations": base_result["coverage"]["sdk_attribution_limitations"],
+            "limitations": clean_limitations,
+            "scanned_dex": scanned_dex,
+            "failed_dex": failed_dex,
+        },
+        "tools": base_result["tools"],
+        "evidence": all_evidence,
+        "behaviors": all_behaviors,
+        "errors": base_result["errors"] + [e for _, _, s in split_results for e in s["errors"]],
+    }
 
 
 def main():
@@ -595,10 +762,29 @@ def main():
     args = parser.parse_args()
     try:
         with contextlib.redirect_stdout(sys.stderr):
-            result = (
-                isolation_probe(args.apk)
-                if args.probe
-                else scan(
+            if args.probe:
+                result = isolation_probe(args.apk)
+            elif args.apk.is_dir():
+                from .package_set import validate_package_set
+
+                pkg_set = validate_package_set(args.apk)
+                base_path = args.apk / pkg_set.base.file_name
+                splits = [(s.split_name, args.apk / s.file_name) for s in pkg_set.splits]
+                rules_data = json.loads(args.rules.read_text(encoding="utf-8"))
+                sdk_data = (
+                    json.loads(args.sdk_rules.read_text(encoding="utf-8"))
+                    if args.sdk_rules is not None and not args.no_sdk_attribution
+                    else None
+                )
+                result = scan_package_set(
+                    base_path,
+                    splits,
+                    rules_data,
+                    inventory=args.inventory,
+                    sdk_rules=sdk_data,
+                )
+            else:
+                result = scan(
                     args.apk,
                     json.loads(args.rules.read_text(encoding="utf-8")),
                     inventory=args.inventory,
@@ -608,7 +794,6 @@ def main():
                         else None
                     ),
                 )
-            )
         if args.jadx:
             try:
                 with tempfile.TemporaryDirectory(prefix="privacytrace-jadx-") as output:

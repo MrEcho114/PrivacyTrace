@@ -27,8 +27,10 @@ def run(
     existing_job=None,
     on_stage=None,
     extra_tools=None,
+    job_store=None,
+    expected_apk_sha256=None,
 ):
-    store = JobStore(store_dir or ROOT / "data" / "jobs")
+    store = job_store if job_store is not None else JobStore(store_dir or ROOT / "data" / "jobs")
     job = existing_job or AnalysisJob(
         id=job_id or uuid4().hex,
         sample_id=name,
@@ -43,7 +45,12 @@ def run(
         store.create_if_absent(job)
 
     def cancelled():
-        return store.get_job(job.id).state == "CANCELLED"
+        try:
+            return store.get_job(job.id).state == "CANCELLED"
+        except KeyError:
+            if store.is_tombstoned(job.id):
+                return True
+            raise
 
     def transition(state):
         if cancelled():
@@ -73,6 +80,8 @@ def run(
             raise ScanError("POLICY_INPUT_INVALID", "Policy capture failed validation") from exc
         transition("STATIC_ANALYSIS")
         scanned = scan_isolated(apk, timeout=timeout, cancelled=cancelled)
+        if expected_apk_sha256 is not None and scanned["apk_sha256"] != expected_apk_sha256:
+            raise ScanError("INPUT_DIGEST_MISMATCH", "Scanned APK differs from registered input")
         if controlled and (
             scanned["apk_sha256"] != controlled["apk_sha256"]
             or scanned["package_name"] != controlled["package_name"]
@@ -141,7 +150,10 @@ def run(
         return {
             "job_id": job.id,
             "status": "SUCCEEDED",
-            "report_path": str(store.root / f"{job.id}.json"),
+            "report_path": (
+                None if getattr(store, "uses_postgres", False)
+                else str(store.root / f"{job.id}.json")
+            ),
             "coverage": report.coverage.status,
             "counts": {
                 "evidence": len(report.evidence),

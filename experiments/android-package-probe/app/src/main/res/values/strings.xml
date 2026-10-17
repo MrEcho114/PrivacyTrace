@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PrivacyTrace 平台探针</string>
+    <string name="notice">独立 Android PoC · 仅本机\n列出系统允许查询的可启动应用，列表可能不完整。选中并确认后，仅读取该应用当前 base 与全部已安装 splits，计算摘要；不联网、不复制 APK、不保存整机清单。没有上传或扫描功能。</string>
+    <string name="list_apps">选择可见应用</string>
+    <string name="app_choice">%1$s\n%2$s</string>
+    <string name="cancel">取消读取</string>
+    <string name="confirm_title">确认本机读取</string>
+    <string name="confirm_body">将读取 %1$s（%2$s）的当前安装包集合。只在本机计算摘要，不发送材料。后台切换会取消读取。</string>
+    <string name="confirm">开始读取</string>
+    <string name="dismiss">返回</string>
+    <string name="working">正在本机查询／读取…</string>
+    <string name="error">未完成：%1$s。未产生完整结果；可重新选择应用。</string>
+    <string name="unexpected_error">系统未能完成读取</string>
+    <string name="empty">未查询到可启动应用；这不代表设备没有其他应用。</string>
+    <string name="result">本机读取完成\n%1$s · versionCode %2$s\n%3$d 个包 · %4$d 字节\n本机集合 SHA-256：\n%5$s\n\n%6$s\n摘要只表示此次读取，不保证后续安装状态，也不是服务端上传收据。</string>
+</resources>

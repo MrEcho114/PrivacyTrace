@@ -1,0 +1,9 @@
+apply plugin: 'com.android.dynamic-feature'
+
+android {
+    namespace 'org.privacytrace.probe.fixture.feature'
+    compileSdk 34
+    defaultConfig { minSdk 24 }
+}
+
+dependencies { implementation project(':fixture') }

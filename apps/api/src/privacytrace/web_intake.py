@@ -10,8 +10,6 @@ import shutil
 import stat
 import time
 import zipfile
-
-import anyio
 import zlib
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
@@ -20,6 +18,8 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 from uuid import uuid4
+
+import anyio
 
 from . import pipeline
 from .isolated_scan import MAX_INPUT, ScanError, inspect_package_isolated

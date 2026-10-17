@@ -1,5 +1,7 @@
 """HTTP seam for local private intake; no browser-supplied scanner facts."""
 
+from zipfile import BadZipFile
+
 from fastapi import HTTPException, Request
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
@@ -8,8 +10,15 @@ from pydantic import Field
 
 from .auth import authorize_draft_access
 from .models import Model
+from .package_set import PackageSetIntegrityError
 from .web_intake import UploadTooLarge
-from .web_models import CandidateInput, DraftInput, ModelSettings, StartInput
+from .web_models import (
+    CandidateInput,
+    DraftInput,
+    ExternalPolicyExportInput,
+    ModelSettings,
+    StartInput,
+)
 
 
 class RevisionInput(Model):
@@ -99,13 +108,33 @@ def install_web_api(app, local_write):
     async def upload(draft_id: str, request: Request):
         draft_access(request, draft_id)
         try:
-            return await service.upload(draft_id, request)
+            return await service.upload(draft_id, request, expect_package_set=False)
         except KeyError as exc:
             raise HTTPException(404, detail="DRAFT_NOT_FOUND") from exc
         except UploadTooLarge as exc:
             raise HTTPException(413, detail="UPLOAD_TOO_LARGE") from exc
+        except PackageSetIntegrityError as exc:
+            raise HTTPException(status_code=exc.http_status, detail=exc.code) from exc
         except (ValueError, OSError) as exc:
             raise HTTPException(409, detail="UPLOAD_REJECTED") from exc
+        except (BadZipFile, EOFError) as exc:
+            raise HTTPException(status_code=400, detail="CORRUPTED_FILE") from exc
+
+    @app.post("/api/v1/web/drafts/{draft_id}/package-set")
+    async def upload_package_set(draft_id: str, request: Request):
+        draft_access(request, draft_id)
+        try:
+            return await service.upload(draft_id, request, expect_package_set=True)
+        except KeyError as exc:
+            raise HTTPException(404, detail="DRAFT_NOT_FOUND") from exc
+        except UploadTooLarge as exc:
+            raise HTTPException(413, detail="UPLOAD_TOO_LARGE") from exc
+        except PackageSetIntegrityError as exc:
+            raise HTTPException(status_code=exc.http_status, detail=exc.code) from exc
+        except (ValueError, OSError) as exc:
+            raise HTTPException(409, detail="UPLOAD_REJECTED") from exc
+        except (BadZipFile, EOFError) as exc:
+            raise HTTPException(status_code=400, detail="CORRUPTED_FILE") from exc
 
     @app.post("/api/v1/web/drafts/{draft_id}/sources/{source_id}/fetch")
     def fetch(draft_id: str, source_id: str, payload: RevisionInput, request: Request):
@@ -126,3 +155,16 @@ def install_web_api(app, local_write):
     def start(draft_id: str, payload: StartInput, request: Request):
         draft_access(request, draft_id)
         return web_operation(lambda: service.start(draft_id, payload))
+
+    @app.post("/api/v1/web/drafts/{draft_id}/sources/discover")
+    def discover_sources(draft_id: str, request: Request):
+        draft_access(request, draft_id)
+        return web_operation(lambda: service.discover_sources(draft_id))
+
+    @app.post("/api/v1/web/drafts/{draft_id}/import-external")
+    def import_external(
+        draft_id: str, payload: ExternalPolicyExportInput, request: Request
+    ):
+        draft_access(request, draft_id)
+        return web_operation(lambda: service.import_external(draft_id, payload))
+

@@ -19,7 +19,7 @@ from .middleware import (
     RemoteTransportSecurityMiddleware,
     install_log_redaction,
 )
-from .models import AnalysisJob, EvaluationInput, EvaluationResult, SourceOrigin
+from .models import AnalysisJob, EvaluationInput, EvaluationResult, Evidence, SourceOrigin
 from .resources import ROOT, read_json, taxonomy
 from .runtime_models import JobsResponse, Report, ReviewRequest
 from .web_api import install_web_api
@@ -210,6 +210,16 @@ def create_app(
             app.state.security_seam.authorize_job_access(request, job_id, action="read")
         return operation(lambda: app.state.job_store.report(job_id))
 
+    @app.get("/api/v1/jobs/{job_id}/evidence/{evidence_id}", response_model=Evidence)
+    def get_job_evidence(job_id: str, evidence_id: str, request: Request):
+        if config.mode == "remote":
+            app.state.security_seam.authorize_job_access(request, job_id, action="read")
+        report = operation(lambda: app.state.job_store.report(job_id))
+        for item in report.evidence:
+            if item.id == evidence_id:
+                return item
+        raise HTTPException(status_code=404, detail="Evidence not found")
+
     @app.post("/api/v1/jobs/{job_id}/reviews", response_model=Report)
     def review(job_id: str, payload: ReviewRequest, request: Request):
         if config.mode == "remote":
@@ -225,6 +235,17 @@ def create_app(
         else:
             local_write(request)
         return operation(lambda: app.state.job_store.cancel(job_id))
+
+    @app.post("/api/v1/jobs/{job_id}/retry", response_model=AnalysisJob)
+    def retry_job(job_id: str, request: Request):
+        if config.mode == "remote":
+            app.state.security_seam.authorize_job_access(request, job_id, action="write")
+        else:
+            local_write(request)
+        try:
+            return operation(lambda: app.state.job_store.retry(job_id))
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     @app.delete("/api/v1/jobs/{job_id}")
     def delete_job(job_id: str, request: Request):

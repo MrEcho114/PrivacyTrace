@@ -19,6 +19,23 @@ from .models import (
 )
 
 
+class PackageFileSummary(Model):
+    file_name: str = Field(min_length=1, max_length=255)
+    part: Literal["BASE", "SPLIT"]
+    split_name: str | None = Field(default=None, max_length=200)
+    sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    size_bytes: int = Field(ge=0)
+
+
+class PackageSetSummary(Model):
+    base_file: PackageFileSummary
+    splits: list[PackageFileSummary] = Field(default_factory=list, max_length=100)
+    files: list[PackageFileSummary] = Field(min_length=1, max_length=100)
+    total_size_bytes: int = Field(ge=0)
+    split_count: int = Field(ge=0)
+    split_names: list[str] = Field(default_factory=list, max_length=100)
+
+
 class SampleMetadata(Model):
     name: str = Field(min_length=1, max_length=200)
     package_name: str = Field(min_length=1, max_length=200)
@@ -27,6 +44,7 @@ class SampleMetadata(Model):
     apk_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     permissions: list[str] = Field(max_length=2000)
     dex_entries: list[str] = Field(max_length=1000)
+    package_set: PackageSetSummary | None = None
 
 
 class ScanCoverage(Model):

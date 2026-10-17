@@ -36,12 +36,42 @@ class WebSource(Model):
     product: str = Field(default="", max_length=100)
     package_name: str = Field(default="", max_length=200)
     version_code: int | None = Field(default=None, ge=0, strict=True)
-    status: Literal["ready", "manual", "empty", "failed"] = "empty"
+    status: Literal["ready", "manual", "empty", "failed", "url_only"] = "empty"
     error_code: str | None = None
     captured_at: str | None = None
     sha256: str | None = None
     final_url: str | None = None
+    provenance: str | None = Field(default=None, max_length=100)
     model_audit: dict[str, str | int | bool] = Field(default_factory=dict)
+
+
+class ExternalSourceInput(Model):
+    title: str = Field(default="External Policy", min_length=1, max_length=100)
+    url: str = Field(default="", max_length=2000)
+    text: str = Field(default="", max_length=200000)
+    status: Literal["ready", "manual", "empty", "failed", "url_only"] | None = None
+    version: str = Field(default="UNKNOWN", max_length=100)
+    region: str = Field(default="", max_length=100)
+    product: str = Field(default="", max_length=100)
+    package_name: str = Field(default="", max_length=200)
+    version_code: int | None = Field(default=None, ge=0, strict=True)
+
+
+class ExternalClaimInput(Model):
+    excerpt: str = Field(min_length=1, max_length=5000)
+    data_type: str = Field(min_length=1, max_length=100)
+    polarity: Literal["AFFIRMATIVE", "NEGATIVE", "POSITIVE", "UNKNOWN"] = "UNKNOWN"
+    subject: Literal["HOST_APP", "THIRD_PARTY", "UNKNOWN"] = "UNKNOWN"
+    action: Literal["ACCESS", "UNKNOWN"] = "UNKNOWN"
+    condition: str | None = Field(default=None, max_length=1000)
+    declared_purpose: str | None = Field(default=None, max_length=1000)
+    declared_recipient: str | None = Field(default=None, max_length=1000)
+
+
+class ExternalPolicyExportInput(Model):
+    source: ExternalSourceInput
+    claims: list[ExternalClaimInput] = Field(default_factory=list, max_length=800)
+    summary: str | None = Field(default=None, max_length=10000)
 
 
 class DraftInput(Model):

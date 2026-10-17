@@ -381,3 +381,30 @@ class JobStore:
                 record.bundle.job = record.job
             self._write(record)
             return record.job
+
+    def retry(self, job_id: str) -> AnalysisJob:
+        with self._transaction():
+            record = self._load(job_id)
+            if record.job.state not in ("FAILED", "CANCELLED", "TIMEOUT"):
+                msg = f"Job {job_id} is in state {record.job.state} and cannot be retried"
+                raise ValueError(msg)
+            new_id = str(uuid4())
+            new_job = record.job.model_copy(deep=True)
+            new_job.id = new_id
+            new_job.retry_of = job_id
+            new_job.state = "QUEUED"
+            new_job.error = None
+            new_job.created_at = datetime.now(timezone.utc)
+            new_bundle = record.bundle.model_copy(deep=True) if record.bundle else None
+            if new_bundle:
+                new_bundle.job = new_job
+            new_record = StoredJob(
+                job=new_job,
+                bundle=new_bundle,
+                sample=record.sample,
+                coverage=record.coverage,
+                tools=record.tools,
+                token_digest=record.token_digest,
+            )
+            self._write(new_record)
+            return new_job

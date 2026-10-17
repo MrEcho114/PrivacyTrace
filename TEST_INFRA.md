@@ -1,11 +1,10 @@
-# PrivacyTrace PT-MOB-102 (Issue #70) Test Infrastructure & Quality Gates
+# PrivacyTrace PR #88 (R6 Fixes) Test Infrastructure & Quality Gates
 
-> Evidence boundary: these fixtures and contract tests do not establish complete #70 or
-> public-service acceptance. See [current delivery limits](TEST_READY.md). Parser doubles
-> in contract suites are separate from the opt-in real Docker regression in
-> `apps/api/tests/test_pr88_regressions.py`.
+> Evidence boundary: These fixtures and contract tests verify the R6 repair track for PR #88 (Issue #70 / PT-MOB-102).
+> Runtime background queue delivery, runner integration, and public-service acceptance boundaries are governed by
+> Issue #80. Parser doubles in contract suites are separate from the opt-in real Docker regression in `apps/api/tests/test_pr88_regressions.py`.
 
-> **Authoritative Specification**: PT-MOB-102 (Multi-Package APK Set Intake, Remote Task Lifecycle & Access Protection, and Policy Auto-Discovery & Thin Adaptation)
+> **Authoritative Specification**: PR #88 Takeover (R1 Source Type Confirmation, R2 collector/1 Batch Collection & Legacy Compatibility, R3 Upload Exception Convergence, R4 Contract Synchronization)
 > **Status**: Active / Test-Ready
 > **Target Worktree**: `<repository-root>`
 
@@ -13,201 +12,155 @@
 
 ## 1. Test Architecture & Foundations
 
-The PrivacyTrace PT-MOB-102 E2E test suite (`apps/api/tests/test_e2e_pt_mob_102.py`) provides opaque-box, requirement-driven verification of Android multi-package APK set intake, capability-scoped task lifecycle protection, in-app policy auto-discovery, and external chat policy import (#79).
+The PrivacyTrace PR #88 E2E test suite (`apps/api/tests/test_e2e_r6_opaque.py`, co-located with `test_external_collection_import.py` and `test_pr88_regressions.py`) provides opaque-box, requirement-driven verification across all R6 features.
 
 ### 1.1 Architecture & Layers
 
 ```
 +-------------------------------------------------------------------------+
 |                          HTTP Client Layer                              |
-|         fastapi.testclient.TestClient (transport & header control)       |
+|         fastapi.testclient.TestClient (transport, headers, streams)     |
 +-------------------------------------------------------------------------+
                                      |
                                      v
 +-------------------------------------------------------------------------+
 |                  Security & Middleware Seam Layer                       |
-|   JobWriteBoundsMiddleware: 150 MiB set quota, pre-body auth, token auth  |
-|   SecuritySeam: pt_cap_* validation, query-param leak block, tombstones |
+|   draft_access auth: Local header / Capability token verification       |
+|   Streaming size quota: 150 MiB MAX_INPUT enforcement                   |
 +-------------------------------------------------------------------------+
                                      |
                                      v
 +-------------------------------------------------------------------------+
 |                      Application Services Layer                         |
-|   web_api.py / web_intake.py: Draft sessions, PackageSet intake,       |
-|                               policy discovery, #79 chat import         |
-|   main.py / job_store.py:     AnalysisJob lifecycle, cancel, retry,    |
-|                               evidence drilldown, human reviews         |
-|   apk_worker.py:              Base & Split DEX/manifest scanning,       |
-|                               evidence attribution (package_split)      |
+|   web_api.py:   Uniform upload_material exception mapping (404, 400,    |
+|                 409, 413, 503), /import-external routing                |
+|   web_intake.py: Draft sessions, BoundedSemaphore concurrency,          |
+|                 ExternalPolicyCollectionInput & ExportInput validation, |
+|                 external_imports audit history & provenance tagging    |
+|   package_set.py: 10 integrity rules, single base APK, split names      |
 +-------------------------------------------------------------------------+
                                      |
                                      v
 +-------------------------------------------------------------------------+
 |                     Storage & Persistence Seam                          |
-|   JobStorageProtocol (MemoryJobStore / FileJobStore)                    |
-|   Zero external database / runner dependencies (#80 abstract boundary) |
+|   JobStore / Draft file storage (atomic save, revision snapshots)       |
+|   Zero external database dependency in local/test profile               |
 +-------------------------------------------------------------------------+
 ```
 
 ### 1.2 Fixture Synthesis Architecture
 
 1. **Deterministic Bytecode & AXML Synthesizer**:
-   - `build_axml_manifest()`: Generates binary Android XML without Android SDK or JVM. Supports custom `package_name`, `version_code`, `version_name`, `split_name`, `<uses-permission>` tags, and `<meta-data>` policy URLs.
-   - `dex()`: Generates binary Dalvik Executable bytecode with realistic API invokes (`Camera.open()`, `LocationManager.getLastKnownLocation()`, `ContentResolver.query()`).
-2. **Multi-Package Archive Synthesizer**:
-   - Assembles valid `.apks` or `.zip` archives containing `base.apk` and multiple split APKs (`split_config.apk`, `split_feature.apk`).
-   - Supports adversarial mutations: missing base APK, package name mismatch, version code discrepancy, duplicate split names, corrupt ZIP signatures, and synthetic >150 MiB stream simulation.
-3. **External #79 Chat Export Generator**:
-   - Synthesizes external chat policy collections with verbatim source text, character-offset verified quotes, `model_audit` AI summary separation, and offline statuses (`url_only`, `not_found`, `failed`).
+   - `apk()` / `manifest()`: Synthesizes valid unsigned APKs with binary AXML and DEX entries without external Android SDK or JVM dependencies.
+   - `package_set_archive()`: Packages base APK and feature split APKs into `.zip` archives with custom compression headers and manifest configurations.
+2. **Policy Collection & Legacy Export Synthesizer**:
+   - `make_collection()`: Produces `ExternalPolicyCollectionInput` payloads conforming to version `privacytrace-policy-collector/1` with valid collection states (`RETRIEVED`, `PROVIDED`, `URL_ONLY`, `OFFLINE`, `UNAVAILABLE`, `NOT_FOUND`).
+   - `make_source()`: Produces source objects with configurable `source_type` (`SDK_POLICY`, `OFFICIAL_WEB_POLICY`, `STORE_POLICY`, `IN_APP_POLICY`), text, URL, and metadata.
+   - `ExternalPolicyExportInput`: Produces legacy single-source export payloads with `source`, `claims`, and `summary`.
 
 ---
 
 ## 2. Test Methodology
 
-The test suite applies four formal verification methodologies to ensure high coverage and defect detection:
-
 ### 2.1 Category-Partition (CP) Method
-
-Inputs and environmental conditions are formally partitioned into equivalence classes:
 
 | Input Domain | Partitions |
 | :--- | :--- |
-| **Package Set Composition** | Single APK, Base + 1 Split, Base + Multiple Splits, Only Splits (No Base), Multiple Bases |
-| **Package Identity** | Homogeneous package name across all parts, Mismatched split package name |
-| **Version Code** | Identical version code across all parts, Mismatched split version code |
-| **Split Identification** | Unique split names, Duplicate split names, Empty split string |
-| **Set Size** | 0 bytes (empty), Normal (<150 MiB), Exact boundary (150 MiB), Exceeded (>150 MiB) |
-| **Digest Integrity** | Matching SHA-256 for all parts, Tampered bytes with mismatched SHA-256 |
-| **Token Transport** | `Authorization: Bearer <token>`, `X-PrivacyTrace-Token: <token>`, Query param `?token=...` (Prohibited) |
-| **Token Validity** | Valid token matching job, Unmatched token from another job, Forged token, Tombstoned job token |
-| **Candidate Review State**| Unreviewed (`checked: False`), Reviewed (`checked: True`), Mismatched quote string |
-| **External Policy Source**| Verbatim text with quotes, AI summary only (no policy text), Offline/failed URL |
+| **Source Type Declaration** | Explicitly declared (`SDK_POLICY`, `OFFICIAL_WEB_POLICY`, `STORE_POLICY`, `IN_APP_POLICY`), Missing/Omitted (`None`), Invalid string |
+| **Collection Envelope** | Valid `version="privacytrace-policy-collector/1"`, Unsupported version, 0 results (empty), 1-8 results, >8 results |
+| **Collection Result States**| `RETRIEVED` (with text + URL), `PROVIDED` (with text), `URL_ONLY` (URL + empty text), `OFFLINE` (optional source), `UNAVAILABLE` (empty text + error code), `NOT_FOUND` (no source) |
+| **Upload Payload Format** | Standalone single APK (`/apk`), Multi-package archive (`/package-set`), Corrupted ZIP header, Truncated ZIP, Non-ZIP bytes |
+| **Upload Exception Mapping**| Missing draft (404), BadZipFile/EOFError (400), UploadTooLarge (413), ScanError (503), PackageSetIntegrityError (exc.http_status), ValueError/OSError (409) |
+| **Draft Quotas** | Source count <= 8 (valid) vs >8 (409), Candidates <= 800 (valid) vs >800 (409), Audits <= 64 (valid) vs >64 (409) |
+| **Policy Provenance** | Auto-discovered (`MANIFEST_METADATA`), Externally imported (`EXTERNAL_CHAT_EXPORT`) |
 
 ### 2.2 Boundary Value Analysis (BVA)
 
-Critical numerical and protocol boundaries are evaluated:
-- **Set Quota Boundary**: `0 bytes` (rejected), `1 byte` (valid minimum), `150 * 1024 * 1024` bytes (maximum allowed), `150 * 1024 * 1024 + 1` bytes (rejected with HTTP 413).
-- **Split Count Boundary**: `0 splits` (valid single APK backward compatibility), `1 split` (minimal split set), `10 splits` (multi-feature set).
-- **Version Code Boundary**: `version_code = 1` vs `version_code = 2` between base and split (must match strictly).
-- **Token String Boundary**: Empty string (401), Malformed prefix (401), Valid `pt_cap_[A-Za-z0-9_-]{20,}` (200), Query parameter injection (400).
+- **Upload Stream Size Boundary**: `0 bytes` (rejected with 409 on `/apk` or 400 on `/package-set`), `150 * 1024 * 1024` bytes (maximum allowed), `> 150 MiB` (rejected with HTTP 413 `UPLOAD_TOO_LARGE`).
+- **Collection Results Boundary**: `0 results` (rejected with 422), `1 result` (minimal valid collection), `8 results` (maximum allowed collection size), `9 results` (rejected with 422).
+- **Draft Source Capacity Boundary**: `7 existing + 1 added = 8` (allowed), `8 existing + 1 added = 9` (rejected with 409).
+- **External Import History Boundary**: `64 audit entries` (maximum allowed), `65th import` (rejected with 409).
 
-### 2.3 Pairwise (Combinatorial) Testing
+### 2.3 Pairwise Combinations
 
-Interactions between independent features are exercised across key pairs:
-- **Package Set Ingestion x Explicit Retry**: A multi-split job that fails or completes can be retried with preserved split evidence and lineage.
-- **Package Set Ingestion x Unreviewed Policy Claims**: A multi-split app analyzed against unreviewed auto-discovered and imported policy claims.
-- **Draft Quota x Multi-Package Archive Streaming**: Archive streaming within pre-body middleware authentication limits.
-- **Single APK Fallback x New Lifecycle Routes**: Single APK jobs work transparently with `/evidence/{id}` and `/retry`.
-- **Cancelled Task x Retry Attempt**: Cancelled multi-package task can be explicitly retried into a new task without reviving the cancelled task.
-- **Tombstoned Task x Evidence / Retry**: Deleted job rejects retry and evidence drilldown with HTTP 404.
+- **Collector Batch Ingestion x Legacy Export Ingestion**: Seamless coexistence of modern collector/1 batch imports and legacy single-source exports in the same draft.
+- **Batch Ingest x Quota Overflow Rollback**: When a batch import would push total draft sources beyond quota, the entire batch is atomically rolled back without partial ingestion.
+- **Multi-Source Ingest x Package Set Scan x Report Generation**: External sources with `provenance="EXTERNAL_CHAT_EXPORT"` correctly propagate to report tools receipts (`web_external_imports`, `web_policy_sources`) and evidence locators.
+- **Concurrent Draft Isolation**: Independent drafts with distinct capability tokens maintain strict isolation without state or audit leakage.
 
 ### 2.4 Real-World Workload Simulation
 
-Simulates complete production user and client journeys:
-- Multi-split app (Base APK + Split Config + Split Feature) with distinct DEX entrypoints.
-- In-app policy auto-discovery extracting privacy policy URLs from manifest metadata and string resources.
-- External #79 chat policy claim import merged into draft revision.
-- Non-blocking analysis submission with unreviewed claims.
-- Progress polling, full report retrieval, evidence drilldown with `package_split` attribution.
-- Auditor review note submission.
-- Explicit retry spawning new linked task with `retry_of` lineage.
-- Irreversible deletion with tombstone verification.
+- **Policy Collector Batch Export Pipeline**: Full-cycle import of realistic batch outputs from policy collectors, containing mixed states (retrieved, provided, url_only, offline, not_found), combined with package set upload and analysis.
+- **Consistency Engine Seam Verification**: Verifying that `SDK_POLICY` (third-party SDK disclosure) evaluated against host app behavior produces `INSUFFICIENT_EVIDENCE`, whereas `OFFICIAL_WEB_POLICY` produces `EXACT_MATCH`, validating R1 mislabeling protection end-to-end.
 
 ---
 
 ## 3. Four-Tier Test Hierarchy & Requirements Coverage
 
-The test suite in `apps/api/tests/test_e2e_pt_mob_102.py` is organized into 4 distinct tiers:
-
 ```
 +---------------------------------------------------------------------+
 | Tier 4: Real-World Workload Scenarios                               |
-|   - Full End-to-End Multi-Split Analysis Workflow (Base + 2 Splits) |
-|   - Policy Discovery, Consistency Evaluation, Evidence Drilldown,   |
-|     Review Notes, Explicit Retry Lineage & Irreversible Tombstone   |
+|   - Policy Collector Batch Export End-to-End Pipeline               |
+|   - Host App vs SDK Consistency Evaluation Seam (Mislabel Defense)   |
+|   - Report Tool Receipt Generation & Provenance Audit Trail         |
 +---------------------------------------------------------------------+
                                    ^
 +---------------------------------------------------------------------+
-| Tier 3: Cross-Feature Combinations (Pairwise)                       |
-|   - Package Set Upload + Explicit Retry Lineage                     |
-|   - Package Set Ingestion + Unreviewed Policy Claims Consistency     |
-|   - Single-APK Compatibility + New Evidence & Retry Routes          |
-|   - Auto-Discovered + #79 Imported Sources Ingestion                |
-|   - Cancelled Task + Retry Spawn (No Resurrection)                  |
-|   - Tombstoned Task + Retry Rejection (404)                         |
+| Tier 3: Cross-Feature Combinations                                  |
+|   - Multi-Source Imports + Quota Enforcement + Atomic Rollback      |
+|   - Multi-Source Ingest + Package Set Upload + Report Receipts      |
+|   - Independent Draft Isolation & Capability Scoping                |
 +---------------------------------------------------------------------+
                                    ^
 +---------------------------------------------------------------------+
-| Tier 2: Boundary & Corner Cases (Adversarial / Stress)              |
-|   - Missing Base APK (400)          - Split Package Mismatch (400)  |
-|   - Split Version Mismatch (400)    - Duplicate Split Name (400)    |
-|   - Empty Archive (400)             - Corrupted ZIP Archive (400)   |
-|   - Quota Exceeded >150 MiB (413)   - Token in Query Param (400)    |
-|   - Cross-Task Token Access (403)   - Post-Cancel Late Write (Drop) |
-|   - Post-Delete Tombstone (404)     - Retry on Running Job (409)    |
-|   - Unreviewed Start (Allowed)      - Quote Mismatch (409)          |
-|   - External AI Summary Only (Safe)                                 |
+| Tier 2: Boundary & Corner Cases                                     |
+|   - Empty Upload Body (409 on /apk, 400 on /package-set, 422 JSON)   |
+|   - 150 MiB Stream Boundary Enforcement (HTTP 413 UPLOAD_TOO_LARGE)  |
+|   - Corrupted ZIP Headers & Central Directory (HTTP 400)            |
+|   - Intra-Payload Duplicate Source IDs (422) & Draft Collision (409)|
+|   - Package Set Missing Base APK (HTTP 400 MISSING_BASE_APK)        |
+|   - Source Quota (>8), Candidate Quota (>800), Audit Quota (>64)    |
 +---------------------------------------------------------------------+
                                    ^
 +---------------------------------------------------------------------+
-| Tier 1: Feature Coverage (Core Functional Requirements)             |
-|   - R1: Multi-Package APK Set Intake & Integrity (Features 1-11)    |
-|   - R2: Task Lifecycle & Capability Access Protection (F12-26)      |
-|   - R3: Policy Auto-Discovery & Thin Adaptation (#79) (F27-33)      |
+| Tier 1: Feature Coverage                                            |
+|   - R1: Source Type Confirmation Interception (HTTP 409)            |
+|   - R1: Source Type Valid Types Accepted (SDK/OFFICIAL/STORE/IN_APP)|
+|   - R1: Mislabeling Protection & Isolation                          |
+|   - R2: collector/1 Batch Collection Contract (All 6 States)        |
+|   - R2: Legacy Compatibility (ExternalPolicyExportInput)            |
+|   - R3: Upload Exception Deduplication (/apk and /package-set)      |
+|   - R4: Contract Serialization Integrity (Pydantic Models)          |
 +---------------------------------------------------------------------+
 ```
 
 ---
 
-## 4. Feature Inventory & Coverage Mapping
+## 4. Test Suite Mapping
 
-| Req | # | Feature | Test Function / Tier in `test_e2e_pt_mob_102.py` |
-| :--- | :--- | :--- | :--- |
-| **R1** | 1 | Standalone Single APK Ingestion | `test_r1_f1_single_apk_intake_backward_compatibility` (Tier 1) |
-| **R1** | 2 | Package Set Manifest Contract | `test_r1_f2_package_set_manifest_contract` (Tier 1) |
-| **R1** | 3 | Package Set Archive Streaming | `test_r1_f3_package_set_archive_streaming` (Tier 1) |
-| **R1** | 4 | Base APK Presence Validation | `test_r1_f4_base_apk_presence_validation` (Tier 1), `test_t2_missing_base_apk` (Tier 2) |
-| **R1** | 5 | Package Name Homogeneity | `test_r1_f5_package_name_homogeneity` (Tier 1), `test_t2_split_package_mismatch` (Tier 2) |
-| **R1** | 6 | Version Code Consistency | `test_r1_f6_version_code_consistency` (Tier 1), `test_t2_split_version_mismatch` (Tier 2) |
-| **R1** | 7 | Split Identification Uniqueness | `test_r1_f7_split_name_uniqueness` (Tier 1), `test_t2_duplicate_split_name` (Tier 2) |
-| **R1** | 8 | Per-File & Set SHA-256 Check | `test_r1_f8_sha256_verification` (Tier 1), `test_t2_sha256_mismatch` (Tier 2) |
-| **R1** | 9 | Cumulative 150 MiB Quota | `test_r1_f9_cumulative_set_size_quota` (Tier 1), `test_t2_quota_exceeded_150mib` (Tier 2) |
-| **R1** | 10 | Evidence Split Attribution | `test_r1_f10_evidence_split_attribution` (Tier 1) |
-| **R1** | 11 | Split DEX Coverage Aggregation | `test_r1_f11_split_dex_coverage_aggregation` (Tier 1) |
-| **R2** | 12 | Anonymous Draft Token Issuance | `test_r2_f12_anonymous_draft_token_issuance` (Tier 1) |
-| **R2** | 13 | Token Digest One-Way Storage | `test_r2_f13_token_digest_one_way_storage` (Tier 1) |
-| **R2** | 14 | Query Param Token Prohibition | `test_r2_f14_query_param_token_prohibition` (Tier 1), `test_t2_token_in_query_param` (Tier 2) |
-| **R2** | 15 | Pre-Body Capability Auth | `test_r2_f15_pre_body_capability_auth` (Tier 1) |
-| **R2** | 16 | Idempotent Task Submission | `test_r2_f16_idempotent_task_submission` (Tier 1) |
-| **R2** | 17 | Job Token Digest Inheritance | `test_r2_f17_job_token_inheritance` (Tier 1) |
-| **R2** | 18 | Job Status & Progress Polling | `test_r2_f18_job_status_and_progress_polling` (Tier 1) |
-| **R2** | 19 | Report Retrieval Access Guard | `test_r2_f19_report_retrieval_access_guard` (Tier 1) |
-| **R2** | 20 | Granular Evidence Drilldown | `test_r2_f20_granular_evidence_drilldown` (Tier 1) |
-| **R2** | 21 | Review & Note Submission | `test_r2_f21_review_note_submission` (Tier 1) |
-| **R2** | 22 | Irreversible Cancellation | `test_r2_f22_irreversible_cancellation` (Tier 1), `test_t2_post_cancel_late_write_discarded` (Tier 2) |
-| **R2** | 23 | Explicit Retry with Lineage | `test_r2_f23_explicit_retry_with_lineage` (Tier 1), `test_t2_retry_on_running_job_rejected` (Tier 2) |
-| **R2** | 24 | Irreversible Tombstone Delete | `test_r2_f24_tombstone_deletion` (Tier 1), `test_t2_post_delete_tombstone_access_rejected` (Tier 2) |
-| **R2** | 25 | Global Job Listing Blocked | `test_r2_f25_global_job_listing_blocked` (Tier 1) |
-| **R2** | 26 | Admin Settings Isolated | `test_r2_f26_admin_settings_isolated` (Tier 1) |
-| **R3** | 27 | In-App Policy Auto-Discovery | `test_r3_f27_in_app_policy_auto_discovery` (Tier 1) |
-| **R3** | 28 | Discovery Provenance Retained | `test_r3_f28_discovery_provenance_retention` (Tier 1) |
-| **R3** | 29 | Non-Blocking Unreviewed Start | `test_r3_f29_non_blocking_unreviewed_candidate_start` (Tier 1), `test_t2_unreviewed_candidate_start_succeeds` (Tier 2) |
-| **R3** | 30 | Review Audit Integrity | `test_r3_f30_review_audit_integrity_unreviewed` (Tier 1) |
-| **R3** | 31 | #79 External Chat Ingestion | `test_r3_f31_external_chat_export_ingest` (Tier 1) |
-| **R3** | 32 | AI Summary / Text Separation | `test_r3_f32_ai_summary_text_separation` (Tier 1), `test_t2_external_chat_ai_summary_only` (Tier 2) |
-| **R3** | 33 | External Offline Status Map | `test_r3_f33_external_offline_status_mapping` (Tier 1) |
-| **R4** | 34 | Contract Sync & Hygiene | Verified by `scripts/export-schema.py` and `ruff check` |
+| Suite | File Path | Focus | Test Count |
+|---|---|---|---|
+| **E2E Opaque Suite** | `apps/api/tests/test_e2e_r6_opaque.py` | 4-Tier Opaque-box E2E Verification for R1, R2, R3, R4 | 21 tests |
+| **External Collection Import** | `apps/api/tests/test_external_collection_import.py` | R1 & R2 Backend Verification, Invariants & Persistence | 40 tests |
+| **PR #88 Regressions** | `apps/api/tests/test_pr88_regressions.py` | Upload Rollback, Package Set Limits, Provenance, Docker | 16 tests |
+| **Total PR #88 R6 Suite** | | | **77 passed, 1 skipped (Docker)** |
 
 ---
 
-## 5. Quality Gates & Thresholds
+## 5. Quality Gates & Execution Commands
 
-| Quality Gate | Requirement | Verification Command | Threshold |
-| :--- | :--- | :--- | :--- |
-| **Code Style & Linting** | Python 3.11+, Ruff check | `uv run --project apps/api --locked --extra worker ruff check apps/api/src apps/api/tests scripts/export-schema.py` | 0 errors, 0 warnings |
-| **Contract Synchronization**| Pydantic to TypeScript Sync | `uv run --project apps/api --locked --extra worker python scripts/export-schema.py && git diff --exit-code -- packages/contracts apps/web/src/contracts.generated.ts` | 0 diff |
-| **Test Suite Execution** | Complete test suite passes | `$env:PYTHONUTF8="1"; uv run --project apps/api --locked --extra worker pytest apps/api/tests/test_e2e_pt_mob_102.py -q -p no:cacheprovider` | 100% pass across all implemented features |
-| **Regression Safety** | Existing tests pass | `$env:PYTHONUTF8="1"; uv run --project apps/api --locked --extra worker pytest apps/api/tests -q -p no:cacheprovider` | Zero regression on existing 981 tests |
-| **Token Safety Gate** | Zero token plaintext on disk | Automated assertion in `test_r2_f13_token_digest_one_way_storage` | 0 plaintext `pt_cap_*` strings |
-| **Quota Enforcement Gate** | >150 MiB rejected pre-write | Automated assertion in `test_r1_f9_cumulative_set_size_quota` | HTTP 413, 0 bytes buffered |
-| **Tombstone Enforcement Gate**| Deleted jobs cannot revive | Automated assertion in `test_r2_f24_tombstone_deletion` | HTTP 404 on all subsequent calls |
+### Test Execution
+```powershell
+uv run --project apps/api --locked --extra worker pytest apps/api/tests/test_external_collection_import.py apps/api/tests/test_pr88_regressions.py apps/api/tests/test_e2e_r6_opaque.py -v
+```
+
+### Static Analysis & Lint
+```powershell
+uv run --project apps/api --locked --extra worker ruff check apps/api/src apps/api/tests/test_e2e_r6_opaque.py
+```
+
+### Contract & Schema Zero-Drift Gate
+```powershell
+uv run --project apps/api --locked --extra worker python scripts/export-schema.py
+git diff --exit-code -- packages/contracts apps/web/src/contracts.generated.ts
+```

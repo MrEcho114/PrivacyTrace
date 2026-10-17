@@ -42,10 +42,13 @@ from .resources import taxonomy
 from .web_models import (
     CandidateInput,
     DraftInput,
+    ExternalCollectionResult,
+    ExternalPolicyCollectionInput,
     ExternalPolicyExportInput,
     ModelSettings,
     StartInput,
     WebCandidate,
+    WebSource,
 )
 
 TERMINAL = {"SUCCEEDED", "FAILED", "CANCELLED"}
@@ -964,92 +967,97 @@ class WebIntake:
 
                 return {"sources": draft["sources"]}
 
-    def import_external(self, draft_id: str, payload: ExternalPolicyExportInput):
+    def import_external(
+        self, draft_id: str, payload: ExternalPolicyCollectionInput | ExternalPolicyExportInput
+    ):
+        """Project collection material into the existing policy and quote validators."""
+        legacy = isinstance(payload, ExternalPolicyExportInput)
+        if legacy:
+            source = payload.source
+            state = (
+                "UNAVAILABLE" if source.status == "failed" else
+                "RETRIEVED" if source.status == "ready" else
+                "PROVIDED" if source.status == "manual" else
+                "URL_ONLY" if source.status in {"url_only", "empty"} or not source.text.strip() else
+                "PROVIDED"
+            )
+            results = [ExternalCollectionResult.model_validate({
+                "state": state,
+                "source": {
+                    **source.model_dump(exclude={"id", "status"}),
+                    "id": source.id or f"src-ext-{uuid4().hex[:8]}",
+                },
+            })]
+        else:
+            results = payload.results
+        sources = [result.source for result in results if result.source is not None]
+        if any(source.source_type is None for source in sources):
+            raise ValueError("SOURCE_TYPE_CONFIRMATION_REQUIRED")
+
         with self.data_store._transaction():
             draft = self._get(draft_id)
             if draft["jobs"]:
                 raise ValueError("Draft already started; cannot import external policy")
-            if len(draft["sources"]) >= 8 or len(draft["candidates"]) + len(payload.claims) > 800:
+            claims = payload.claims if legacy else []
+            if len(draft["sources"]) + len(sources) > 8 or (
+                len(draft["candidates"]) + len(claims) > 800
+            ):
                 raise ValueError("Draft source or candidate quota reached")
+            history = draft.setdefault("external_imports", [])
+            if len(history) >= 64:
+                raise ValueError("External import audit quota reached")
+            existing_ids = {source["id"] for source in draft["sources"]}
+            if existing_ids.intersection(source.id for source in sources):
+                raise ValueError("External source ID already exists")
 
-            source_input = payload.source
-            text = source_input.text or ""
-
-            # Validate claim excerpts against source text
-            for claim in payload.claims:
-                if text.count(claim.excerpt) != 1:
-                    raise ValueError(
-                        f"Claim excerpt {claim.excerpt!r} is not contained in policy text"
-                    )
-
-            source_id = f"src-ext-{uuid4().hex[:8]}"
-            status = source_input.status
-            if status in ("url_only", "empty") or (not text.strip() and status != "failed"):
-                status = "empty"
-            elif status == "failed":
-                status = "failed"
-            elif not status:
-                status = "manual" if text.strip() else "empty"
-
-            model_audit = {}
-            if payload.summary:
-                model_audit["external_summary"] = payload.summary
-
-            new_source = {
-                "id": source_id,
-                "title": source_input.title,
-                "url": source_input.url or "",
-                "source_type": "OFFICIAL_WEB_POLICY",
-                "text": text,
-                "version": source_input.version or "UNKNOWN",
-                "region": source_input.region or "",
-                "product": source_input.product or "",
-                "package_name": source_input.package_name or draft.get("package_name") or "",
-                "version_code": (
-                    source_input.version_code
-                    if source_input.version_code is not None
-                    else draft.get("version_code")
-                ),
-                "status": status,
-                "error_code": "SOURCE_UNAVAILABLE" if status == "failed" else None,
-                "captured_at": now() if text.strip() else None,
-                "sha256": hashlib.sha256(text.encode()).hexdigest() if text.strip() else None,
-                "final_url": None,
-                "provenance": "EXTERNAL_CHAT_EXPORT",
-                "model_audit": model_audit,
+            audit = {
+                "version": "legacy-single-source" if legacy else payload.version,
+                "imported_at": now(),
+                "results": [{
+                    "state": result.state,
+                    "source_id": result.source.id if result.source else None,
+                    "source_type": result.source.source_type if result.source else None,
+                    "observed_at": result.observed_at.isoformat() if result.observed_at else None,
+                } for result in results],
             }
+            if legacy and payload.summary:
+                audit["summary"] = payload.summary
+            for result in results:
+                source = result.source
+                if source is None:
+                    continue  # Failed discovery is audited without inventing a policy source.
+                text = source.text
+                status = (
+                    "manual" if result.state in {"RETRIEVED", "PROVIDED"} else
+                    "failed" if result.state == "UNAVAILABLE" else "empty"
+                )
+                draft["sources"].append(WebSource.model_validate({
+                    **source.model_dump(exclude={"status"}),
+                    "status": status,
+                    "error_code": "SOURCE_UNAVAILABLE" if status == "failed" else None,
+                    "captured_at": now() if text.strip() else None,
+                    "sha256": hashlib.sha256(text.encode()).hexdigest() if text.strip() else None,
+                    "provenance": "EXTERNAL_CHAT_EXPORT",
+                    "model_audit": {"external_summary": payload.summary}
+                    if legacy and payload.summary else {},
+                }).model_dump())
 
             new_candidates = []
-            for claim in payload.claims:
-                cand_id = f"cand-ext-{uuid4().hex[:8]}"
-                pol = claim.polarity
-                if pol == "POSITIVE":
-                    pol = "AFFIRMATIVE"
-                elif pol not in ("AFFIRMATIVE", "NEGATIVE", "UNKNOWN"):
-                    pol = "UNKNOWN"
-                cand = {
-                    "id": cand_id,
-                    "source_id": source_id,
-                    "excerpt": claim.excerpt,
-                    "data_type": claim.data_type,
-                    "polarity": pol,
-                    "subject": (
-                        claim.subject
-                        if claim.subject in ("HOST_APP", "THIRD_PARTY", "UNKNOWN")
-                        else "HOST_APP"
-                    ),
-                    "action": claim.action if claim.action in ("ACCESS", "UNKNOWN") else "ACCESS",
-                    "condition": claim.condition,
-                    "declared_purpose": claim.declared_purpose,
-                    "declared_recipient": claim.declared_recipient,
-                    "ambiguity_flags": [],
-                    "start_offset": text.index(claim.excerpt) if claim.excerpt in text else None,
-                    "checked": False,
-                }
-                new_candidates.append(cand)
-
-            draft["sources"].append(new_source)
+            for claim in claims:
+                source = sources[0]
+                if source.text.count(claim.excerpt) != 1:
+                    raise ValueError("Claim quote must occur exactly once in source text")
+                new_candidates.append(WebCandidate.model_validate({
+                    **claim.model_dump(),
+                    "id": f"cand-ext-{uuid4().hex[:8]}",
+                    "source_id": source.id,
+                    "polarity": "AFFIRMATIVE" if claim.polarity == "POSITIVE" else claim.polarity,
+                    "start_offset": source.text.index(claim.excerpt),
+                }).model_dump())
             draft["candidates"].extend(new_candidates)
+            if new_candidates:
+                self.captures(draft, require_checked=False)
+            history.append(audit)
             draft["revision"] += 1
             return self._save(draft)
 
@@ -1268,6 +1276,9 @@ class WebIntake:
                 extra_tools={
                     "web_input_revision": str(draft["revision"]),
                     "web_policy_sources": json.dumps(source_receipts, ensure_ascii=False),
+                    "web_external_imports": json.dumps(
+                        draft.get("external_imports", []), ensure_ascii=False
+                    ),
                 },
                 package_set=draft.get("package_set"),
             )

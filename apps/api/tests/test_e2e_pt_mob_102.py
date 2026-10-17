@@ -1033,6 +1033,7 @@ def test_r3_f31_external_chat_export_ingest(tmp_path, monkeypatch):
 
     export_payload = {
         "source": {
+            "source_type": "OFFICIAL_WEB_POLICY",
             "title": "Chat Export Policy",
             "url": "https://privacy.example.com",
             "text": "本应用仅在获得用户授权后收集精准地理位置信息。",
@@ -1065,6 +1066,7 @@ def test_r3_f32_ai_summary_text_separation(tmp_path, monkeypatch):
     draft_id, token, _ = create_draft(client, "AI Summary Separation")
     export_payload = {
         "source": {
+            "source_type": "OFFICIAL_WEB_POLICY",
             "title": "External Chat",
             "text": "我们收集设备识别码以用于防作弊。",
         },
@@ -1095,6 +1097,7 @@ def test_r3_f33_external_offline_status_mapping(tmp_path, monkeypatch):
     draft_id, token, _ = create_draft(client, "External Offline Status")
     export_payload = {
         "source": {
+            "source_type": "OFFICIAL_WEB_POLICY",
             "title": "Offline Policy",
             "url": "https://unreachable.example.com",
             "status": "url_only",
@@ -1400,6 +1403,7 @@ def test_t2_external_chat_quote_mismatch_rejected(tmp_path, monkeypatch):
     draft_id, token, _ = create_draft(client, "Quote Mismatch")
     export_payload = {
         "source": {
+            "source_type": "OFFICIAL_WEB_POLICY",
             "title": "Chat Policy",
             "text": "我们只会在开启时访问您的网络状态。",
         },
@@ -1500,6 +1504,7 @@ def test_t3_external_chat_merged_with_auto_discovered_sources(tmp_path, monkeypa
     # 1. External chat import
     export_payload = {
         "source": {
+            "source_type": "OFFICIAL_WEB_POLICY",
             "title": "Chat Source",
             "text": "我们收集相机权限用于扫码功能。",
         },
@@ -1639,6 +1644,7 @@ def test_t4_real_world_multisplit_end_to_end_workflow(tmp_path, monkeypatch):
     # Step 5: External #79 chat import
     export_payload = {
         "source": {
+            "source_type": "OFFICIAL_WEB_POLICY",
             "title": "Chat Collection",
             "text": "我们收集麦克风声音以实现实时语音通话。",
         },

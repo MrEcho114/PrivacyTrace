@@ -1,0 +1,52 @@
+name: PR review
+
+# 确定性审查门 + 模型辅助审查。
+# 门（scripts/review_gates.py）是硬性的：它编码的是已经由人工审查确认过、
+# 且能从源码文本判定的那类问题，出现即失败。
+# 模型那一步只是建议（贴一条 comment），从不 request changes：合并决定归人。
+on:
+  pull_request:
+    branches: ["main"]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    # fork 来的 PR 拿不到 secrets，且审查门只读源码文本，不需要写权限。
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Deterministic review gates
+        run: python scripts/review_gates.py --root .
+
+  model-review:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    needs: gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Advisory model review
+        # 未配置 REVIEW_API_KEY 时该步骤自行跳过并打印原因，不会让 PR 变红。
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REVIEW_API_KEY: ${{ secrets.REVIEW_API_KEY }}
+          REVIEW_API_BASE: ${{ vars.REVIEW_API_BASE }}
+          REVIEW_MODEL: ${{ vars.REVIEW_MODEL }}
+          REVIEW_MAX_CHARS: ${{ vars.REVIEW_MAX_CHARS }}
+        run: python scripts/pr_review.py

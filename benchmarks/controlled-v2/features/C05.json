@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "scenario_id": "C05",
+  "package_name": "org.privacytrace.controlled.c05",
+  "policy_file": "C05.txt",
+  "policy_sha256": "8a9d37700740ed324808949b5628de93c8ddfe4ab84b8a12c3db25476d3f3e5f",
+  "scope_known": true,
+  "policy_complete": true,
+  "candidates": [
+    {
+      "excerpt": "本自建测试应用不访问精确位置。",
+      "data_type": "PRECISE_LOCATION",
+      "polarity": "NEGATIVE",
+      "subject": "HOST_APP",
+      "action": "ACCESS"
+    }
+  ]
+}

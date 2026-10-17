@@ -450,7 +450,7 @@
           "items": {
             "$ref": "#/$defs/PackageFileSummary"
           },
-          "maxItems": 100,
+          "maxItems": 101,
           "minItems": 1,
           "title": "Files",
           "type": "array"

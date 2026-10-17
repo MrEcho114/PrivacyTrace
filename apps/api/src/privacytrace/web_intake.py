@@ -1,6 +1,7 @@
 """Single-host intake: private immutable input revisions and bounded scan workers."""
 
 import hashlib
+from copy import deepcopy
 import json
 import os
 import re
@@ -413,15 +414,21 @@ class WebIntake:
 
     async def upload(self, draft_id, request, expect_package_set: bool = False):
         directory = self.directory(draft_id)
-        pending = self._safe(directory / f"upload.pending.{uuid4().hex}")
+        pending = self._safe(directory / "upload.pending")
         staging_packages = self._safe(directory / f"packages.pending.{uuid4().hex}")
         fd = None
+        owns_pending = False
+        published_packages = False
+        published_apk = False
+        rollback_draft = None
+        rollback_revision = None
         try:
             with self.data_store._transaction():
                 draft = self._get(draft_id)
                 if draft["uploaded"] or draft["jobs"]:
                     raise ValueError("APK already uploaded; new materials require a new draft")
                 fd = os.open(pending, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                owns_pending = True
             size = 0
             digest = hashlib.sha256()
             with os.fdopen(fd, "wb") as handle:
@@ -477,15 +484,19 @@ class WebIntake:
                     if draft["uploaded"] or draft["jobs"]:
                         raise ValueError("APK already uploaded; new materials require a new draft")
 
+                    rollback_draft = deepcopy(draft)
+                    rollback_revision = draft["revision"] + 1
                     target_packages = self._safe(directory / "packages")
                     if target_packages.exists():
                         shutil.rmtree(target_packages)
                     os.replace(staging_packages, target_packages)
+                    published_packages = True
 
                     # Maintain input.apk as copy of base APK for backward compatibility
                     base_path = target_packages / package_set.base.file_name
                     input_apk = self._safe(directory / "input.apk")
                     if base_path.exists():
+                        published_apk = True
                         shutil.copyfile(base_path, input_apk)
 
                     draft.update(
@@ -500,7 +511,10 @@ class WebIntake:
                     draft = self._get(draft_id)
                     if draft["uploaded"] or draft["jobs"]:
                         raise ValueError("APK already uploaded; new materials require a new draft")
+                    rollback_draft = deepcopy(draft)
+                    rollback_revision = draft["revision"] + 1
                     os.replace(pending, self._safe(directory / "input.apk"))
+                    published_apk = True
                     draft.update(
                         uploaded=True,
                         apk_sha256=digest.hexdigest(),
@@ -509,14 +523,30 @@ class WebIntake:
                     )
                     return self._save(draft)
         except Exception:
-            if staging_packages.exists():
-                shutil.rmtree(staging_packages, ignore_errors=True)
-            pending.unlink(missing_ok=True)
+            # The DB transaction may have rolled back, while rename/copy already
+            # published bytes on the private volume. Only remove files owned by
+            # this request; never touch an existing upload reservation.
+            if published_apk:
+                self._safe(directory / "input.apk").unlink(missing_ok=True)
+            if published_packages:
+                shutil.rmtree(self._safe(directory / "packages"), ignore_errors=True)
+            if rollback_draft is not None:
+                with self.data_store._transaction():
+                    snapshot = self._safe(directory / f"revision-{rollback_revision}.json")
+                    if not getattr(self.store, "uses_postgres", False):
+                        current = self._get(draft_id)
+                        if current.get("revision") == rollback_revision and current.get("uploaded"):
+                            self._write_private(directory / "current.json", rollback_draft)
+                    # PostgreSQL manifests roll back atomically; a marker without
+                    # a document is equally safe to remove.
+                    if not self._document_exists(snapshot) or not getattr(self.store, "uses_postgres", False):
+                        snapshot.unlink(missing_ok=True)
             raise
         finally:
             if fd is not None:
                 os.close(fd)
-            pending.unlink(missing_ok=True)
+            if owns_pending:
+                pending.unlink(missing_ok=True)
             if staging_packages.exists():
                 shutil.rmtree(staging_packages, ignore_errors=True)
 
@@ -1012,6 +1042,16 @@ class WebIntake:
                     if p.is_dir():
                         shutil.rmtree(p, ignore_errors=True)
                     else:
+                        p.unlink(missing_ok=True)
+                # Recover a process killed between moving the input and
+                # committing the draft; a missing revision is not authority.
+                if not draft["uploaded"] and not draft["jobs"]:
+                    self._safe(directory / "input.apk").unlink(missing_ok=True)
+                    orphan = self._safe(directory / "packages")
+                    if orphan.exists():
+                        shutil.rmtree(orphan)
+                for p in directory.glob("revision-*.json"):
+                    if not self._document_exists(p):
                         p.unlink(missing_ok=True)
                 for run in draft["jobs"]:
                     job = self._job_unless_deleted(run["job_id"])

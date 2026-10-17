@@ -12,6 +12,45 @@ from .models import AnalysisJob, EvaluationInput
 from .policy_intake import TEAM_REVIEW_GATE, load_policy
 from .resources import taxonomy
 
+def registered_package_set_matches(scanned, registered):
+    """Validate complete immutable APK-set identity before any report is stored."""
+    if not isinstance(registered, dict) or not isinstance(scanned, dict):
+        return False
+    observed = scanned.get("package_set")
+    if not isinstance(observed, dict):
+        return False
+    if (
+        scanned.get("package_name") != registered.get("package_name")
+        or scanned.get("version_code") != registered.get("version_code")
+        or scanned.get("version_name") != registered.get("version_name")
+    ):
+        return False
+    expected = [registered.get("base"), *(registered.get("splits") or [])]
+    actual = observed.get("files")
+    if not isinstance(actual, list) or len(actual) != len(expected):
+        return False
+
+    def index(items):
+        indexed = {}
+        for entry in items:
+            if not isinstance(entry, dict):
+                return None
+            name = entry.get("file_name")
+            if not isinstance(name, str) or not name or name in indexed:
+                return None
+            indexed[name] = tuple(
+                entry.get(key) for key in ("part", "split_name", "sha256", "size_bytes")
+            )
+        return indexed
+
+    expected_files, actual_files = index(expected), index(actual)
+    return (
+        expected_files is not None
+        and expected_files == actual_files
+        and observed.get("total_size_bytes") == registered.get("total_size_bytes")
+        and observed.get("split_count") == len(registered.get("splits") or [])
+    )
+
 
 def run(
     apk,
@@ -91,6 +130,8 @@ def run(
             scanned = scan_isolated(apk, timeout=timeout, cancelled=cancelled)
         if expected_apk_sha256 is not None and scanned["apk_sha256"] != expected_apk_sha256:
             raise ScanError("INPUT_DIGEST_MISMATCH", "Scanned APK differs from registered input")
+        if package_set is not None and not registered_package_set_matches(scanned, package_set):
+            raise ScanError("INPUT_DIGEST_MISMATCH", "Scanned APK set differs from registered input")
         if controlled and (
             scanned["apk_sha256"] != controlled["apk_sha256"]
             or scanned["package_name"] != controlled["package_name"]

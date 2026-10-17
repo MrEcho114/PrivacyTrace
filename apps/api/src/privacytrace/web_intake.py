@@ -1,7 +1,6 @@
 """Single-host intake: private immutable input revisions and bounded scan workers."""
 
 import hashlib
-from copy import deepcopy
 import json
 import os
 import re
@@ -12,6 +11,7 @@ import zipfile
 import zlib
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
+from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
@@ -539,7 +539,10 @@ class WebIntake:
                             self._write_private(directory / "current.json", rollback_draft)
                     # PostgreSQL manifests roll back atomically; a marker without
                     # a document is equally safe to remove.
-                    if not self._document_exists(snapshot) or not getattr(self.store, "uses_postgres", False):
+                    if (
+                        not self._document_exists(snapshot)
+                        or not getattr(self.store, "uses_postgres", False)
+                    ):
                         snapshot.unlink(missing_ok=True)
             raise
         finally:

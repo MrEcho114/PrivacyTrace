@@ -12,6 +12,7 @@ from .models import AnalysisJob, EvaluationInput
 from .policy_intake import TEAM_REVIEW_GATE, load_policy
 from .resources import taxonomy
 
+
 def registered_package_set_matches(scanned, registered):
     """Validate complete immutable APK-set identity before any report is stored."""
     if not isinstance(registered, dict) or not isinstance(scanned, dict):
@@ -131,7 +132,9 @@ def run(
         if expected_apk_sha256 is not None and scanned["apk_sha256"] != expected_apk_sha256:
             raise ScanError("INPUT_DIGEST_MISMATCH", "Scanned APK differs from registered input")
         if package_set is not None and not registered_package_set_matches(scanned, package_set):
-            raise ScanError("INPUT_DIGEST_MISMATCH", "Scanned APK set differs from registered input")
+            raise ScanError(
+                "INPUT_DIGEST_MISMATCH", "Scanned APK set differs from registered input"
+            )
         if controlled and (
             scanned["apk_sha256"] != controlled["apk_sha256"]
             or scanned["package_name"] != controlled["package_name"]

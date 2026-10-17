@@ -701,8 +701,6 @@ def scan_package_set(base_path, splits, rules, inventory=False, sdk_rules=None):
 
     # A split may be the only component with a truncated mapping or failed DEX.
     # Do not let the base APK's limitations hide that reduced evidence coverage.
-    from .coverage_scope import behavior_limitations
-
     baseline_behavior_notes = set(behavior_limitations())
 
     def merged_limits(key):

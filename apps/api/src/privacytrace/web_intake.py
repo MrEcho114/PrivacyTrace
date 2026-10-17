@@ -1,21 +1,35 @@
 """Single-host intake: private immutable input revisions and bounded scan workers."""
 
+import asyncio
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
+import stat
 import time
+import zipfile
+import zlib
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
+from copy import deepcopy
 from datetime import datetime, timezone
+from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 from uuid import uuid4
 
+import anyio
+
 from . import pipeline
-from .isolated_scan import MAX_INPUT
+from .isolated_scan import MAX_INPUT, ScanError, inspect_package_isolated
 from .job_store import JobStore
 from .models import AnalysisJob, EvaluationInput, PolicyClaim, PolicyDocument
+from .package_set import (
+    PackageFile,
+    PackageSetIntegrityError,
+    validate_package_set,
+)
 from .policy_fetch import FetchError, display_url, fetch_policy
 from .policy_intake import build_llm_execution, read_safe
 from .policy_llm_extractor import (
@@ -25,13 +39,34 @@ from .policy_llm_extractor import (
     validate_and_normalize_api_base,
 )
 from .resources import taxonomy
-from .web_models import CandidateInput, DraftInput, ModelSettings, StartInput, WebCandidate
+from .web_models import (
+    CandidateInput,
+    DraftInput,
+    ExternalCollectionResult,
+    ExternalPolicyCollectionInput,
+    ExternalPolicyExportInput,
+    ModelSettings,
+    StartInput,
+    WebCandidate,
+    WebSource,
+)
 
 TERMINAL = {"SUCCEEDED", "FAILED", "CANCELLED"}
 
 
 class UploadTooLarge(ValueError):
     """APK upload exceeded the documented byte limit."""
+
+
+def inspect_uploaded_package(path, *, timeout=120):
+    try:
+        metadata = inspect_package_isolated(path, timeout=timeout)
+    except ScanError as exc:
+        if exc.code not in {"CORRUPTED_FILE", "DUPLICATE_SPLIT_NAME", "ZIP_INVALID"}:
+            raise
+        raise PackageSetIntegrityError(exc.code, "Isolated manifest inspection failed") from exc
+    package = PackageFile.model_validate({**metadata["package_file"], "file_name": path.name})
+    return package
 
 
 
@@ -67,6 +102,8 @@ class WebIntake:
         self.root = store.root / "web"
         self.executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="privacytrace-scan")
         self.futures = {}
+        # Bound disk and Docker inspections across requests.
+        self._upload_slots = asyncio.Semaphore(2)
         self.active_drafts = {}
         self.owner_fd = None
         self.root.mkdir(exist_ok=True, mode=0o700)
@@ -176,7 +213,10 @@ class WebIntake:
             if (
                 current.stat().st_mtime >= cutoff
                 or self.active_drafts.get(directory.name, 0)
-                or (directory / "upload.pending").exists()
+                or any(
+                    p.name.startswith("upload.pending") or p.name.startswith("packages.pending")
+                    for p in directory.iterdir()
+                )
             ):
                 continue
             try:
@@ -263,6 +303,7 @@ class WebIntake:
                         "candidates": [],
                         "uploaded": False,
                         "apk_sha256": None,
+                        "package_set": None,
                         "jobs": [],
                         "created_at": now(),
                     }
@@ -271,17 +312,138 @@ class WebIntake:
                 shutil.rmtree(directory)
                 raise
 
-    async def upload(self, draft_id, request):
+    @staticmethod
+    def _is_multi_package_archive(path: Path) -> bool:
+        """Return True if archive is a multi-package archive without root manifest."""
+        if not zipfile.is_zipfile(path):
+            return False
+        try:
+            with zipfile.ZipFile(path, "r") as zf:
+                namelist = zf.namelist()
+                if "AndroidManifest.xml" in namelist:
+                    return False
+                return any(
+                    name.lower().endswith(".apk") and not name.endswith("/")
+                    for name in namelist
+                )
+        except Exception:
+            return False
+
+    def _unpack_package_set(self, archive_path: Path, target_dir: Path) -> None:
+        """Safely unpack an .apks or .zip archive containing APK files into target_dir."""
+        max_entries = 500
+        max_total_uncompressed = MAX_INPUT  # 150 MiB hard cap
+
+        try:
+            archive = zipfile.ZipFile(archive_path, "r")
+        except (zipfile.BadZipFile, EOFError, zlib.error) as exc:
+            raise PackageSetIntegrityError(
+                "CORRUPTED_FILE", f"Archive is not a valid ZIP file: {exc}"
+            ) from exc
+
+        with archive:
+            entries = archive.infolist()
+            if len(entries) > max_entries:
+                raise PackageSetIntegrityError(
+                    "CORRUPTED_FILE", "Archive exceeds entry count limit"
+                )
+
+            seen = set()
+            total_uncompressed = 0
+            apk_entries = []
+
+            for entry in entries:
+                name = entry.filename
+                if name in seen:
+                    raise PackageSetIntegrityError(
+                        "CORRUPTED_FILE", "Duplicate ZIP entry"
+                    )
+                if (
+                    "\\" in entry.orig_filename
+                    or name.startswith("/")
+                    or ":" in name
+                    or ".." in PurePosixPath(name).parts
+                    or stat.S_ISLNK(entry.external_attr >> 16)
+                ):
+                    raise PackageSetIntegrityError(
+                        "CORRUPTED_FILE", "Escaping, symbolic, or unsafe ZIP entry"
+                    )
+                if entry.flag_bits & 1:
+                    raise PackageSetIntegrityError(
+                        "CORRUPTED_FILE", "Encrypted ZIP entries are unsupported"
+                    )
+
+                seen.add(name)
+                total_uncompressed += entry.file_size
+
+                if (
+                    entry.file_size > MAX_INPUT
+                    or total_uncompressed > max_total_uncompressed
+                    or entry.file_size > max(1, entry.compress_size) * 200
+                ):
+                    raise PackageSetIntegrityError(
+                        "PACKAGE_SET_TOO_LARGE",
+                        "Expanded size or compression ratio exceeds limit",
+                        http_status=413,
+                    )
+
+                if name.lower().endswith(".apk") and not name.endswith("/"):
+                    apk_entries.append(entry)
+
+            if not apk_entries:
+                raise PackageSetIntegrityError(
+                    "EMPTY_PACKAGE_SET", "No APK files found in package set archive"
+                )
+
+            for entry in apk_entries:
+                file_basename = PurePosixPath(entry.filename).name
+                dest_path = self._safe(target_dir / file_basename)
+                if not dest_path.resolve().is_relative_to(target_dir.resolve()):
+                    raise PackageSetIntegrityError(
+                        "CORRUPTED_FILE", "Extracted path escapes target directory"
+                    )
+
+                fd = os.open(dest_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                try:
+                    with os.fdopen(fd, "wb") as dest_handle, archive.open(entry) as src_stream:
+                        while chunk := src_stream.read(1024 * 1024):
+                            dest_handle.write(chunk)
+                        dest_handle.flush()
+                        os.fsync(dest_handle.fileno())
+                except (zipfile.BadZipFile, EOFError, zlib.error) as exc:
+                    dest_path.unlink(missing_ok=True)
+                    raise PackageSetIntegrityError(
+                        "CORRUPTED_FILE",
+                        f"Archive entry '{entry.filename}' is corrupted: {exc}",
+                        http_status=400,
+                    ) from exc
+                except Exception:
+                    dest_path.unlink(missing_ok=True)
+                    raise
+
+    async def upload(self, draft_id, request, expect_package_set: bool = False):
+        try:
+            await asyncio.wait_for(self._upload_slots.acquire(), timeout=15)
+        except asyncio.TimeoutError as exc:
+            raise ValueError("UPLOAD_CAPACITY_BUSY") from exc
+        try:
+            return await self._upload_reserved(draft_id, request, expect_package_set)
+        finally:
+            self._upload_slots.release()
+
+    async def _upload_reserved(self, draft_id, request, expect_package_set: bool = False):
         directory = self.directory(draft_id)
         pending = self._safe(directory / "upload.pending")
-        fd, owned = None, False
+        staging_packages = self._safe(directory / f"packages.pending.{uuid4().hex}")
+        fd = None
+        owns_pending = False
         try:
             with self.data_store._transaction():
                 draft = self._get(draft_id)
                 if draft["uploaded"] or draft["jobs"]:
                     raise ValueError("APK already uploaded; new materials require a new draft")
                 fd = os.open(pending, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-                owned = True
+                owns_pending = True
             size = 0
             digest = hashlib.sha256()
             with os.fdopen(fd, "wb") as handle:
@@ -289,27 +451,147 @@ class WebIntake:
                 async for chunk in request.stream():
                     size += len(chunk)
                     if size > MAX_INPUT:
-                        raise UploadTooLarge("APK exceeds 150 MiB")
+                        raise UploadTooLarge("Upload exceeds 150 MiB")
                     digest.update(chunk)
-                    handle.write(chunk)
+                    await anyio.to_thread.run_sync(handle.write, chunk, abandon_on_cancel=False)
                 if size == 0:
-                    raise ValueError("APK is empty")
-                handle.flush()
-                os.fsync(handle.fileno())
-            with self.data_store._transaction():
-                draft = self._get(draft_id)
-                os.replace(pending, self._safe(directory / "input.apk"))
-                draft.update(
-                    uploaded=True, apk_sha256=digest.hexdigest(), revision=draft["revision"] + 1
+                    if expect_package_set:
+                        raise PackageSetIntegrityError(
+                            "EMPTY_PACKAGE_SET", "Package set upload is empty"
+                        )
+                    raise ValueError("Upload is empty")
+                await anyio.to_thread.run_sync(
+                    lambda: (handle.flush(), os.fsync(handle.fileno())),
+                    abandon_on_cancel=False,
                 )
-                return self._save(draft)
+
+            # Shield the worker until rollback or commit has completed.
+            return await anyio.to_thread.run_sync(
+                self._finish_upload, draft_id, directory, pending, staging_packages,
+                expect_package_set, digest.hexdigest(), abandon_on_cancel=False,
+            )
         finally:
-            try:
-                if fd is not None:
-                    os.close(fd)
-            finally:
-                if owned:
-                    pending.unlink(missing_ok=True)
+            if fd is not None:
+                os.close(fd)
+            if owns_pending:
+                pending.unlink(missing_ok=True)
+            if staging_packages.exists():
+                shutil.rmtree(staging_packages, ignore_errors=True)
+
+    def _finish_upload(self, draft_id, directory, pending, staging_packages,
+                       expect_package_set, uploaded_digest):
+        published_packages = False
+        published_apk = False
+        rollback_draft = None
+        rollback_revision = None
+        inspection_deadline = time.monotonic() + 180
+
+        def remaining_timeout():
+            seconds = inspection_deadline - time.monotonic()
+            if seconds <= 0:
+                raise ScanError("TIMEOUT", "Package inspection budget exhausted")
+            return max(1, min(120, math.ceil(seconds)))
+
+        try:
+            is_pkg_set = expect_package_set or self._is_multi_package_archive(pending)
+
+            if is_pkg_set:
+                if not zipfile.is_zipfile(pending):
+                    raise PackageSetIntegrityError(
+                        "CORRUPTED_FILE", "Upload is not a valid ZIP/APK archive"
+                    )
+
+                try:
+                    with zipfile.ZipFile(pending, "r") as zf:
+                        has_root_manifest = "AndroidManifest.xml" in zf.namelist()
+                except (zipfile.BadZipFile, EOFError, zlib.error) as exc:
+                    raise PackageSetIntegrityError(
+                        "CORRUPTED_FILE",
+                        f"Upload archive central directory is corrupted: {exc}",
+                        http_status=400,
+                    ) from exc
+
+                staging_packages.mkdir(mode=0o700, exist_ok=False)
+
+                if has_root_manifest:
+                    staged_base = staging_packages / "base.apk"
+                    shutil.copyfile(pending, staged_base)
+                    pkg_file = inspect_uploaded_package(staged_base, timeout=remaining_timeout())
+                    package_set = validate_package_set([pkg_file])
+                else:
+                    self._unpack_package_set(pending, staging_packages)
+                    package_set = validate_package_set([
+                        inspect_uploaded_package(p, timeout=remaining_timeout())
+                        for p in sorted(staging_packages.iterdir())
+                    ])
+
+                with self.data_store._transaction():
+                    draft = self._get(draft_id)
+                    if draft["uploaded"] or draft["jobs"]:
+                        raise ValueError("APK already uploaded; new materials require a new draft")
+
+                    rollback_draft = deepcopy(draft)
+                    rollback_revision = draft["revision"] + 1
+                    target_packages = self._safe(directory / "packages")
+                    if target_packages.exists():
+                        shutil.rmtree(target_packages)
+                    os.replace(staging_packages, target_packages)
+                    published_packages = True
+
+                    # Maintain input.apk as copy of base APK for backward compatibility
+                    base_path = target_packages / package_set.base.file_name
+                    input_apk = self._safe(directory / "input.apk")
+                    if base_path.exists():
+                        published_apk = True
+                        shutil.copyfile(base_path, input_apk)
+
+                    draft.update(
+                        uploaded=True,
+                        apk_sha256=package_set.base.sha256,
+                        package_set=package_set.model_dump(),
+                        revision=draft["revision"] + 1,
+                    )
+                    return self._save(draft)
+            else:
+                with self.data_store._transaction():
+                    draft = self._get(draft_id)
+                    if draft["uploaded"] or draft["jobs"]:
+                        raise ValueError("APK already uploaded; new materials require a new draft")
+                    rollback_draft = deepcopy(draft)
+                    rollback_revision = draft["revision"] + 1
+                    os.replace(pending, self._safe(directory / "input.apk"))
+                    published_apk = True
+                    draft.update(
+                        uploaded=True,
+                        apk_sha256=uploaded_digest,
+                        package_set=None,
+                        revision=draft["revision"] + 1,
+                    )
+                    return self._save(draft)
+        except Exception:
+            # The DB transaction may have rolled back, while rename/copy already
+            # published bytes on the private volume. Only remove files owned by
+            # this request; never touch an existing upload reservation.
+            if published_apk:
+                self._safe(directory / "input.apk").unlink(missing_ok=True)
+            if published_packages:
+                shutil.rmtree(self._safe(directory / "packages"), ignore_errors=True)
+            if rollback_draft is not None:
+                with self.data_store._transaction():
+                    snapshot = self._safe(directory / f"revision-{rollback_revision}.json")
+                    if not getattr(self.store, "uses_postgres", False):
+                        current = self._get(draft_id)
+                        if current.get("revision") == rollback_revision and current.get("uploaded"):
+                            self._write_private(directory / "current.json", rollback_draft)
+                    # PostgreSQL manifests roll back atomically; a marker without
+                    # a document is equally safe to remove.
+                    if (
+                        not self._document_exists(snapshot)
+                        or not getattr(self.store, "uses_postgres", False)
+                    ):
+                        snapshot.unlink(missing_ok=True)
+            raise
+
 
     def _settings(self, private=False):
         path = self._safe(self.root / "model.json")
@@ -472,7 +754,7 @@ class WebIntake:
     def captures(self, draft, require_checked=True):
         evidence, claims, documents = [], [], []
         for source in draft["sources"]:
-            if source["status"] in {"failed", "empty"} or not source["text"].strip():
+            if source["status"] in {"failed", "empty", "url_only"} or not source["text"].strip():
                 continue
             document_id = "web-" + source["id"]
             ref = document_id + "-snapshot"
@@ -514,7 +796,15 @@ class WebIntake:
                     "kind": "POLICY_DOCUMENT",
                     "status": "DECLARED",
                     "source": source_locator[:1000],
-                    "locator": "Captured UTF-8 text; completeness unknown",
+                    "locator": (
+                        "Captured UTF-8 text; acquisition="
+                        + (source.get("provenance") or (
+                            "DIRECT_WEB_FETCH" if source["status"] == "ready"
+                            else "MANUAL_INPUT"
+                        ))
+                        + "; source type is not proof of official verification; "
+                        "completeness unknown"
+                    ),
                     "document_id": document_id,
                     "artifact_sha256": document.artifact.sha256,
                 }
@@ -568,7 +858,11 @@ class WebIntake:
                 )
         if not documents:
             raise ValueError("At least one source needs policy text")
-        known = {s["id"] for s in draft["sources"] if s["status"] not in {"failed", "empty"}}
+        known = {
+            s["id"]
+            for s in draft["sources"]
+            if s["status"] not in {"failed", "empty", "url_only"}
+        }
         if any(c["source_id"] not in known for c in draft["candidates"]):
             raise ValueError("Candidate references an unavailable source")
         # Reuse the full existing reference/quote/taxonomy validator before scanning.
@@ -609,12 +903,171 @@ class WebIntake:
             draft["revision"] += 1
             return self._save(draft)
 
+    def discover_sources(self, draft_id: str):
+        with self._draft_activity(draft_id):
+            with self.data_store._transaction():
+                draft = self._get(draft_id)
+                if draft["jobs"]:
+                    raise ValueError("Draft already started; sources are immutable")
+                revision = draft["revision"]
+                directory = self.directory(draft_id)
+                packages_dir = self._safe(directory / "packages")
+                apk_files = (
+                    sorted(p for p in packages_dir.iterdir()
+                           if p.is_file() and p.suffix.lower() == ".apk")
+                    if packages_dir.is_dir() else [self._safe(directory / "input.apk")]
+                )
+                apk_files = [self._safe(p) for p in apk_files if p.exists()]
+
+            # Container I/O must not hold the lock shared by every draft.
+            discovered_urls = []
+            for apk_path in apk_files:
+                metadata = inspect_package_isolated(apk_path)
+                for url in metadata["policy_urls"]:
+                    if url not in discovered_urls:
+                        discovered_urls.append(url)
+
+            with self.data_store._transaction():
+                draft = self._get(draft_id)
+                if draft["revision"] != revision or draft["jobs"]:
+                    raise ValueError("Input changed during policy discovery")
+                existing_urls = {s.get("url") for s in draft["sources"] if s.get("url")}
+                new_sources = []
+                for url in discovered_urls:
+                    if url in existing_urls:
+                        continue
+                    if len(draft["sources"]) + len(new_sources) >= 8:
+                        break
+                    new_src = {
+                        "id": f"src-auto-{uuid4().hex[:8]}",
+                        "title": "Auto Discovered Policy",
+                        "url": url,
+                        "source_type": "IN_APP_POLICY",
+                        "text": "",
+                        "version": "UNKNOWN",
+                        "region": "",
+                        "product": "",
+                        "package_name": draft.get("package_name") or "",
+                        "version_code": draft.get("version_code"),
+                        "status": "url_only",
+                        "error_code": None,
+                        "captured_at": None,
+                        "sha256": None,
+                        "final_url": None,
+                        "provenance": "MANIFEST_METADATA",
+                        "model_audit": {},
+                    }
+                    new_sources.append(new_src)
+                    existing_urls.add(url)
+
+                if new_sources:
+                    draft["sources"].extend(new_sources)
+                    draft["revision"] += 1
+                    self._save(draft)
+
+                return {"sources": draft["sources"]}
+
+    def import_external(
+        self, draft_id: str, payload: ExternalPolicyCollectionInput | ExternalPolicyExportInput
+    ):
+        """Project collection material into the existing policy and quote validators."""
+        legacy = isinstance(payload, ExternalPolicyExportInput)
+        if legacy:
+            source = payload.source
+            state = (
+                "UNAVAILABLE" if source.status == "failed" else
+                "RETRIEVED" if source.status == "ready" else
+                "PROVIDED" if source.status == "manual" else
+                "URL_ONLY" if source.status in {"url_only", "empty"} or not source.text.strip() else
+                "PROVIDED"
+            )
+            results = [ExternalCollectionResult.model_validate({
+                "state": state,
+                "source": {
+                    **source.model_dump(exclude={"id", "status"}),
+                    "id": source.id or f"src-ext-{uuid4().hex[:8]}",
+                },
+            })]
+        else:
+            results = payload.results
+        sources = [result.source for result in results if result.source is not None]
+        if any(source.source_type is None for source in sources):
+            raise ValueError("SOURCE_TYPE_CONFIRMATION_REQUIRED")
+
+        with self.data_store._transaction():
+            draft = self._get(draft_id)
+            if draft["jobs"]:
+                raise ValueError("Draft already started; cannot import external policy")
+            claims = payload.claims if legacy else []
+            if len(draft["sources"]) + len(sources) > 8 or (
+                len(draft["candidates"]) + len(claims) > 800
+            ):
+                raise ValueError("Draft source or candidate quota reached")
+            history = draft.setdefault("external_imports", [])
+            if len(history) >= 64:
+                raise ValueError("External import audit quota reached")
+            existing_ids = {source["id"] for source in draft["sources"]}
+            if existing_ids.intersection(source.id for source in sources):
+                raise ValueError("External source ID already exists")
+
+            audit = {
+                "version": "legacy-single-source" if legacy else payload.version,
+                "imported_at": now(),
+                "results": [{
+                    "state": result.state,
+                    "source_id": result.source.id if result.source else None,
+                    "source_type": result.source.source_type if result.source else None,
+                    "observed_at": result.observed_at.isoformat() if result.observed_at else None,
+                } for result in results],
+            }
+            if legacy and payload.summary:
+                audit["summary"] = payload.summary
+            for result in results:
+                source = result.source
+                if source is None:
+                    continue  # Failed discovery is audited without inventing a policy source.
+                text = source.text
+                status = (
+                    "manual" if result.state in {"RETRIEVED", "PROVIDED"} else
+                    "failed" if result.state == "UNAVAILABLE" else "empty"
+                )
+                draft["sources"].append(WebSource.model_validate({
+                    **source.model_dump(exclude={"status"}),
+                    "status": status,
+                    "error_code": "SOURCE_UNAVAILABLE" if status == "failed" else None,
+                    "captured_at": now() if text.strip() else None,
+                    "sha256": hashlib.sha256(text.encode()).hexdigest() if text.strip() else None,
+                    "provenance": "EXTERNAL_CHAT_EXPORT",
+                    "model_audit": {"external_summary": payload.summary}
+                    if legacy and payload.summary else {},
+                }).model_dump())
+
+            new_candidates = []
+            for claim in claims:
+                source = sources[0]
+                if source.text.count(claim.excerpt) != 1:
+                    raise ValueError("Claim quote must occur exactly once in source text")
+                new_candidates.append(WebCandidate.model_validate({
+                    **claim.model_dump(),
+                    "id": f"cand-ext-{uuid4().hex[:8]}",
+                    "source_id": source.id,
+                    "polarity": "AFFIRMATIVE" if claim.polarity == "POSITIVE" else claim.polarity,
+                    "start_offset": source.text.index(claim.excerpt),
+                }).model_dump())
+            draft["candidates"].extend(new_candidates)
+            if new_candidates:
+                self.captures(draft, require_checked=False)
+            history.append(audit)
+            draft["revision"] += 1
+            return self._save(draft)
+
+
     def _job_unless_deleted(self, job_id):
         try:
             return self.store.get(job_id)
         except KeyError:
             if not self.store.is_tombstoned(job_id):
-                raise  # An unexplained missing record is not evidence of deletion.
+                raise
             return None
 
     def start_service(self):
@@ -642,7 +1095,23 @@ class WebIntake:
             for directory in self._draft_directories():
                 draft = self._get(directory.name)
                 changed = False
-                self._safe(directory / "upload.pending").unlink(missing_ok=True)
+                for p in directory.glob("upload.pending*"):
+                    p.unlink(missing_ok=True)
+                for p in directory.glob("packages.pending*"):
+                    if p.is_dir():
+                        shutil.rmtree(p, ignore_errors=True)
+                    else:
+                        p.unlink(missing_ok=True)
+                # Recover a process killed between moving the input and
+                # committing the draft; a missing revision is not authority.
+                if not draft["uploaded"] and not draft["jobs"]:
+                    self._safe(directory / "input.apk").unlink(missing_ok=True)
+                    orphan = self._safe(directory / "packages")
+                    if orphan.exists():
+                        shutil.rmtree(orphan)
+                for p in directory.glob("revision-*.json"):
+                    if not self._document_exists(p):
+                        p.unlink(missing_ok=True)
                 for run in draft["jobs"]:
                     job = self._job_unless_deleted(run["job_id"])
                     if job is None:
@@ -659,30 +1128,51 @@ class WebIntake:
                 if changed:
                     self._write_private(directory / "current.json", draft)
 
-    def start(self, draft_id, payload: StartInput):
+    def retry(self, job_id):
+        """Retry only jobs with retained, immutable inputs owned by this intake."""
+        self.start_service()
+        self.store.get(job_id)  # Preserve missing/deleted job semantics.
+        with self.data_store._transaction():
+            for current in (directory / "current.json" for directory in self._draft_directories()):
+                draft = self._read(current)
+                run = next((r for r in draft["jobs"] if r["job_id"] == job_id), None)
+                if run is not None:
+                    draft_id = draft["id"]
+                    revision = run["revision"]
+                    break
+            else:
+                raise ValueError("RETRY_INPUT_UNAVAILABLE")
+        return self.start(
+            draft_id, StartInput(revision=revision, request_id=uuid4().hex), retry_of=job_id
+        )
+
+    def start(self, draft_id, payload: StartInput, *, retry_of=None):
         self.start_service()
         reservation = Future()
         try:
-            job, draft, captures = self._register_start(draft_id, payload, reservation)
+            job, draft, captures = self._register_start(
+                draft_id, payload, reservation, retry_of=retry_of
+            )
         except BaseException:
             reservation.cancel()
             raise
-        if draft is None:  # Existing idempotent submission; do not launch it twice.
+        if draft is None:
+            reservation.cancel()
             return job
         try:
-            # _register_start has exited its transaction successfully. Reserve
-            # capacity inside that transaction, but execute only after commit.
+            # Submit only after the input and job records have committed.
             future = self.executor.submit(self._run, draft, job, captures)
         except RuntimeError:
             reservation.cancel()
             job.state = "FAILED"
             job.error = json.dumps({"code": "WEB_SUBMISSION_FAILED"})
             self.store.save_job(job)
+            self._event(draft_id, job.id, "FAILED")
             raise ValueError("Web worker submission rejected") from None
         self.futures[job.id] = future
         return job
 
-    def _register_start(self, draft_id, payload, reservation):
+    def _register_start(self, draft_id, payload, reservation, *, retry_of=None):
         with self.data_store._transaction():
             draft = self._get(draft_id)
             for run in draft["jobs"]:
@@ -692,6 +1182,12 @@ class WebIntake:
                     return self.store.get(run["job_id"]), None, None
             if draft["revision"] != payload.revision or not draft["uploaded"]:
                 raise ValueError("Input changed or APK not uploaded")
+            if retry_of is not None:
+                if (
+                    not any(r["job_id"] == retry_of for r in draft["jobs"])
+                    or self.store.get(retry_of).state not in {"FAILED", "CANCELLED"}
+                ):
+                    raise ValueError("Only failed or cancelled jobs can be retried")
             for run in draft["jobs"]:
                 previous = self._job_unless_deleted(run["job_id"])
                 if previous is not None and previous.state not in TERMINAL:
@@ -700,7 +1196,7 @@ class WebIntake:
                 raise ValueError("Registered APK digest is unavailable")
             if len(draft["jobs"]) >= 10 or sum(not f.done() for f in self.futures.values()) >= 4:
                 raise ValueError("Local job quota reached")
-            captures = self.captures(draft)
+            captures = self.captures(draft, require_checked=False)
             job = AnalysisJob(
                 id=uuid4().hex,
                 sample_id=draft["name"],
@@ -709,21 +1205,23 @@ class WebIntake:
                 state="QUEUED",
                 ruleset_version=taxonomy()["version"],
                 created_at=datetime.now(timezone.utc),
+                retry_of=retry_of,
             )
             capability_path = self._safe(self.directory(draft_id) / "capability.json")
             token_digest = (
                 self._read(capability_path)["token_digest"]
                 if self._document_exists(capability_path) else None
             )
-            self.store.create_if_absent(job, token_digest=token_digest)
-            draft["jobs"].append(
-                {
-                    "job_id": job.id,
-                    "request_id": payload.request_id,
-                    "revision": draft["revision"],
-                    "events": [{"state": "QUEUED", "at": now()}],
-                }
-            )
+            if retry_of is not None:
+                self.store.create_retry(job, token_digest=token_digest)
+            else:
+                self.store.create_if_absent(job, token_digest=token_digest)
+            draft["jobs"].append({
+                "job_id": job.id,
+                "request_id": payload.request_id,
+                "revision": draft["revision"],
+                "events": [{"state": "QUEUED", "at": now()}],
+            })
             self._write_private(self.directory(draft_id) / "current.json", draft)
             self.futures = {k: f for k, f in self.futures.items() if not f.done()}
             self.futures[job.id] = reservation
@@ -739,7 +1237,7 @@ class WebIntake:
     def _run(self, draft, job, captures):
         source_receipts = [
             {
-                k: s[k]
+                k: s.get(k)
                 for k in (
                     "id",
                     "title",
@@ -754,6 +1252,7 @@ class WebIntake:
                     "region",
                     "product",
                     "model_audit",
+                    "provenance",
                 )
             }
             for s in draft["sources"]
@@ -777,7 +1276,11 @@ class WebIntake:
                 extra_tools={
                     "web_input_revision": str(draft["revision"]),
                     "web_policy_sources": json.dumps(source_receipts, ensure_ascii=False),
+                    "web_external_imports": json.dumps(
+                        draft.get("external_imports", []), ensure_ascii=False
+                    ),
                 },
+                package_set=draft.get("package_set"),
             )
         except Exception:
             # Do not expose raw policy text, local paths, response bodies or credentials.

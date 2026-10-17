@@ -1,5 +1,7 @@
 """HTTP seam for local private intake; no browser-supplied scanner facts."""
 
+from zipfile import BadZipFile
+
 from fastapi import HTTPException, Request
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
@@ -7,9 +9,18 @@ from fastapi.responses import JSONResponse
 from pydantic import Field
 
 from .auth import authorize_draft_access
+from .isolated_scan import ScanError
 from .models import Model
+from .package_set import PackageSetIntegrityError
 from .web_intake import UploadTooLarge
-from .web_models import CandidateInput, DraftInput, ModelSettings, StartInput
+from .web_models import (
+    CandidateInput,
+    DraftInput,
+    ExternalPolicyCollectionInput,
+    ExternalPolicyExportInput,
+    ModelSettings,
+    StartInput,
+)
 
 
 class RevisionInput(Model):
@@ -21,8 +32,13 @@ def web_operation(action):
         return action()
     except KeyError as exc:
         raise HTTPException(404, detail="DRAFT_NOT_FOUND") from exc
+    except ScanError as exc:
+        raise HTTPException(503, detail="ISOLATED_INSPECTION_UNAVAILABLE") from exc
     except (ValueError, OSError) as exc:
-        allowed = {"MODEL_NOT_CONFIGURED", "MODEL_CONFIGURATION_INCOMPLETE"}
+        allowed = {
+            "MODEL_NOT_CONFIGURED", "MODEL_CONFIGURATION_INCOMPLETE",
+            "SOURCE_TYPE_CONFIRMATION_REQUIRED",
+        }
         code = str(exc) if str(exc) in allowed else "INPUT_OR_VERSION_REJECTED"
         raise HTTPException(409, detail=code) from exc
 
@@ -95,17 +111,30 @@ def install_web_api(app, local_write):
         draft_access(request, draft_id)
         return web_operation(lambda: service.get(draft_id))
 
-    @app.post("/api/v1/web/drafts/{draft_id}/apk")
-    async def upload(draft_id: str, request: Request):
+    async def upload_material(draft_id: str, request: Request, *, expect_package_set: bool):
         draft_access(request, draft_id)
         try:
-            return await service.upload(draft_id, request)
+            return await service.upload(draft_id, request, expect_package_set=expect_package_set)
         except KeyError as exc:
             raise HTTPException(404, detail="DRAFT_NOT_FOUND") from exc
         except UploadTooLarge as exc:
             raise HTTPException(413, detail="UPLOAD_TOO_LARGE") from exc
+        except ScanError as exc:
+            raise HTTPException(503, detail="ISOLATED_INSPECTION_UNAVAILABLE") from exc
+        except PackageSetIntegrityError as exc:
+            raise HTTPException(status_code=exc.http_status, detail=exc.code) from exc
+        except (BadZipFile, EOFError) as exc:
+            raise HTTPException(status_code=400, detail="CORRUPTED_FILE") from exc
         except (ValueError, OSError) as exc:
             raise HTTPException(409, detail="UPLOAD_REJECTED") from exc
+
+    @app.post("/api/v1/web/drafts/{draft_id}/apk")
+    async def upload(draft_id: str, request: Request):
+        return await upload_material(draft_id, request, expect_package_set=False)
+
+    @app.post("/api/v1/web/drafts/{draft_id}/package-set")
+    async def upload_package_set(draft_id: str, request: Request):
+        return await upload_material(draft_id, request, expect_package_set=True)
 
     @app.post("/api/v1/web/drafts/{draft_id}/sources/{source_id}/fetch")
     def fetch(draft_id: str, source_id: str, payload: RevisionInput, request: Request):
@@ -126,3 +155,16 @@ def install_web_api(app, local_write):
     def start(draft_id: str, payload: StartInput, request: Request):
         draft_access(request, draft_id)
         return web_operation(lambda: service.start(draft_id, payload))
+
+    @app.post("/api/v1/web/drafts/{draft_id}/sources/discover")
+    def discover_sources(draft_id: str, request: Request):
+        draft_access(request, draft_id)
+        return web_operation(lambda: service.discover_sources(draft_id))
+
+    @app.post("/api/v1/web/drafts/{draft_id}/import-external")
+    def import_external(
+        draft_id: str, payload: ExternalPolicyCollectionInput | ExternalPolicyExportInput,
+        request: Request,
+    ):
+        draft_access(request, draft_id)
+        return web_operation(lambda: service.import_external(draft_id, payload))

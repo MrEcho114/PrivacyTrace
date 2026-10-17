@@ -548,7 +548,13 @@ def scan(
     if sdk_collector is not None:
         for found in sdk_collector.selected():
             sdk_ev = dict(
-                id=found.evidence_id,
+                # Attribution IDs must remain distinct across identical classes in splits.
+                id=(
+                    found.evidence_id if recorded_split is None else
+                    "ev-" + hashlib.sha256(
+                        f"{found.evidence_id};{recorded_split};{result['apk_sha256']}".encode()
+                    ).hexdigest()[:24]
+                ),
                 kind="SDK",
                 status="STATIC_POTENTIAL",
                 source=f"{source_prefix}{found.dex}",
@@ -652,23 +658,76 @@ def scan_package_set(base_path, splits, rules, inventory=False, sdk_rules=None):
         else "PARTIAL"
     )
 
-    # 6. Deduplicate & merge evidence and behaviors
-    all_evidence = list(base_result["evidence"])
+    # 6. A collection-wide SDK attribution budget, fairly shared across APKs.
+    # Each component scanner already bounds its own output. Select incrementally
+    # rather than concatenating up to 101 independent 500-item SDK reports.
+    scan_results = [base_result, *(res for _, _, res in split_results)]
+    sdk_streams = [
+        iter(ev for ev in res["evidence"] if ev["kind"] == "SDK")
+        for res in scan_results
+    ]
+    selected_sdk = []
+    while sdk_streams and len(selected_sdk) < MAX_SDK_ATTRIBUTIONS:
+        next_round = []
+        for stream in sdk_streams:
+            if len(selected_sdk) == MAX_SDK_ATTRIBUTIONS:
+                next_round.append(stream)
+                continue
+            item = next(stream, None)
+            if item is not None:
+                selected_sdk.append(item)
+                next_round.append(stream)
+        sdk_streams = next_round
+    sdk_globally_truncated = any(next(stream, None) is not None for stream in sdk_streams)
+
+    all_evidence = [ev for ev in base_result["evidence"] if ev["kind"] != "SDK"]
     all_behaviors = list(base_result["behaviors"])
+    known_evidence_ids = {ev["id"] for ev in all_evidence}
     for _, _, s_res in split_results:
         for ev in s_res["evidence"]:
-            if ev["kind"] == "MANIFEST":
-                perm_in_base = any(
-                    bev["kind"] == "MANIFEST" and bev["excerpt"] == ev["excerpt"]
-                    for bev in base_result["evidence"]
-                )
-                if perm_in_base:
-                    continue
+            if ev["kind"] == "SDK":
+                continue
+            if ev["kind"] == "MANIFEST" and any(
+                bev["kind"] == "MANIFEST" and bev["excerpt"] == ev["excerpt"]
+                for bev in base_result["evidence"]
+            ):
+                continue
             all_evidence.append(ev)
+            known_evidence_ids.add(ev["id"])
         for bh in s_res["behaviors"]:
-            ev_id = bh["evidence_ids"][0]
-            if any(e["id"] == ev_id for e in all_evidence):
+            if bh["evidence_ids"][0] in known_evidence_ids:
                 all_behaviors.append(bh)
+    all_evidence.extend(selected_sdk)
+
+    # A split may be the only component with a truncated mapping or failed DEX.
+    # Do not let the base APK's limitations hide that reduced evidence coverage.
+    from .coverage_scope import behavior_limitations
+
+    baseline_behavior_notes = set(behavior_limitations())
+
+    def merged_limits(key):
+        merged = list(dict.fromkeys(base_result["coverage"][key]))
+        seen = set(merged)
+        for split_name, _, result in split_results:
+            for note in result["coverage"][key]:
+                if key == "behavior_limitations" and note in baseline_behavior_notes:
+                    continue
+                if key == "limitations" and note in seen:
+                    continue
+                labeled = f"split:{split_name}: {note}"
+                if labeled not in seen:
+                    merged.append(labeled)
+                    seen.add(labeled)
+        return merged
+
+    behavior_notes = merged_limits("behavior_limitations")
+    sdk_notes = merged_limits("sdk_attribution_limitations")
+    if sdk_globally_truncated:
+        sdk_notes.append(
+            f"Package-set SDK attribution output capped at {MAX_SDK_ATTRIBUTIONS} "
+            "entries across base and splits; omitted entries are not negative evidence."
+        )
+    coverage_notes = merged_limits("limitations")
 
     # 7. Package set summary
     base_file = {
@@ -697,12 +756,6 @@ def scan_package_set(base_path, splits, rules, inventory=False, sdk_rules=None):
         "split_names": [s["split_name"] for s in split_files],
     }
 
-    clean_limitations = [
-        lim
-        for lim in base_result["coverage"]["limitations"]
-        if "other package splits unavailable" not in lim
-    ]
-
     return {
         "apk_sha256": base_result["apk_sha256"],
         "package_name": base_result["package_name"],
@@ -715,9 +768,9 @@ def scan_package_set(base_path, splits, rules, inventory=False, sdk_rules=None):
             "completeness": completeness,
             "scope": "DEX_ENTRIES",
             "behavior_detection": "LIMITED_RULE_BASED_STATIC",
-            "behavior_limitations": base_result["coverage"]["behavior_limitations"],
-            "sdk_attribution_limitations": base_result["coverage"]["sdk_attribution_limitations"],
-            "limitations": clean_limitations,
+            "behavior_limitations": behavior_notes,
+            "sdk_attribution_limitations": sdk_notes,
+            "limitations": coverage_notes,
             "scanned_dex": scanned_dex,
             "failed_dex": failed_dex,
         },

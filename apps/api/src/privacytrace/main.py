@@ -243,7 +243,7 @@ def create_app(
         else:
             local_write(request)
         try:
-            return operation(lambda: app.state.job_store.retry(job_id))
+            return operation(lambda: app.state.web_intake.retry(job_id))
         except ValueError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
 

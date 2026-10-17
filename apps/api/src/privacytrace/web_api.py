@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from pydantic import Field
 
 from .auth import authorize_draft_access
+from .isolated_scan import ScanError
 from .models import Model
 from .package_set import PackageSetIntegrityError
 from .web_intake import UploadTooLarge
@@ -30,6 +31,8 @@ def web_operation(action):
         return action()
     except KeyError as exc:
         raise HTTPException(404, detail="DRAFT_NOT_FOUND") from exc
+    except ScanError as exc:
+        raise HTTPException(503, detail="ISOLATED_INSPECTION_UNAVAILABLE") from exc
     except (ValueError, OSError) as exc:
         allowed = {"MODEL_NOT_CONFIGURED", "MODEL_CONFIGURATION_INCOMPLETE"}
         code = str(exc) if str(exc) in allowed else "INPUT_OR_VERSION_REJECTED"
@@ -113,6 +116,8 @@ def install_web_api(app, local_write):
             raise HTTPException(404, detail="DRAFT_NOT_FOUND") from exc
         except UploadTooLarge as exc:
             raise HTTPException(413, detail="UPLOAD_TOO_LARGE") from exc
+        except ScanError as exc:
+            raise HTTPException(503, detail="ISOLATED_INSPECTION_UNAVAILABLE") from exc
         except PackageSetIntegrityError as exc:
             raise HTTPException(status_code=exc.http_status, detail=exc.code) from exc
         except (ValueError, OSError) as exc:
@@ -129,6 +134,8 @@ def install_web_api(app, local_write):
             raise HTTPException(404, detail="DRAFT_NOT_FOUND") from exc
         except UploadTooLarge as exc:
             raise HTTPException(413, detail="UPLOAD_TOO_LARGE") from exc
+        except ScanError as exc:
+            raise HTTPException(503, detail="ISOLATED_INSPECTION_UNAVAILABLE") from exc
         except PackageSetIntegrityError as exc:
             raise HTTPException(status_code=exc.http_status, detail=exc.code) from exc
         except (ValueError, OSError) as exc:
@@ -167,4 +174,3 @@ def install_web_api(app, local_write):
     ):
         draft_access(request, draft_id)
         return web_operation(lambda: service.import_external(draft_id, payload))
-

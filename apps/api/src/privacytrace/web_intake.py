@@ -17,12 +17,12 @@ from urllib.parse import urlsplit
 from uuid import uuid4
 
 from . import pipeline
-from .isolated_scan import MAX_INPUT
+from .isolated_scan import MAX_INPUT, ScanError, inspect_package_isolated
 from .job_store import JobStore
 from .models import AnalysisJob, EvaluationInput, PolicyClaim, PolicyDocument
 from .package_set import (
+    PackageFile,
     PackageSetIntegrityError,
-    inspect_apk_bytes,
     validate_package_set,
 )
 from .policy_fetch import FetchError, display_url, fetch_policy
@@ -48,6 +48,17 @@ TERMINAL = {"SUCCEEDED", "FAILED", "CANCELLED"}
 
 class UploadTooLarge(ValueError):
     """APK upload exceeded the documented byte limit."""
+
+
+def inspect_uploaded_package(path):
+    try:
+        metadata = inspect_package_isolated(path)
+    except ScanError as exc:
+        if exc.code not in {"CORRUPTED_FILE", "DUPLICATE_SPLIT_NAME", "ZIP_INVALID"}:
+            raise
+        raise PackageSetIntegrityError(exc.code, "Isolated manifest inspection failed") from exc
+    package = PackageFile.model_validate({**metadata["package_file"], "file_name": path.name})
+    return package
 
 
 
@@ -438,12 +449,15 @@ class WebIntake:
                 staging_packages.mkdir(mode=0o700, exist_ok=False)
 
                 if has_root_manifest:
-                    pkg_file, data = inspect_apk_bytes(pending.read_bytes(), "base.apk")
+                    staged_base = staging_packages / "base.apk"
+                    shutil.copyfile(pending, staged_base)
+                    pkg_file = inspect_uploaded_package(staged_base)
                     package_set = validate_package_set([pkg_file])
-                    (staging_packages / "base.apk").write_bytes(data)
                 else:
                     self._unpack_package_set(pending, staging_packages)
-                    package_set = validate_package_set(staging_packages)
+                    package_set = validate_package_set([
+                        inspect_uploaded_package(p) for p in sorted(staging_packages.iterdir())
+                    ])
 
                 with self.data_store._transaction():
                     draft = self._get(draft_id)
@@ -794,96 +808,80 @@ class WebIntake:
             return self._save(draft)
 
     def discover_sources(self, draft_id: str):
-        with self.data_store._transaction():
-            draft = self._get(draft_id)
-            directory = self.directory(draft_id)
-            apk_files = []
-            packages_dir = directory / "packages"
-            if packages_dir.exists() and packages_dir.is_dir():
-                apk_files.extend(packages_dir.glob("*.apk"))
-            input_apk = directory / "input.apk"
-            if input_apk.exists() and input_apk not in apk_files:
-                apk_files.append(input_apk)
+        with self._draft_activity(draft_id):
+            with self.data_store._transaction():
+                draft = self._get(draft_id)
+                if draft["jobs"]:
+                    raise ValueError("Draft already started; sources are immutable")
+                revision = draft["revision"]
+                directory = self.directory(draft_id)
+                packages_dir = self._safe(directory / "packages")
+                apk_files = (sorted(packages_dir.glob("*.apk")) if packages_dir.is_dir()
+                             else [self._safe(directory / "input.apk")])
+                apk_files = [self._safe(p) for p in apk_files if p.exists()]
 
+            # Container I/O must not hold the lock shared by every draft.
             discovered_urls = []
-            android_ns = "{http://schemas.android.com/apk/res/android}"
-            from androguard.core.apk import APK
-
             for apk_path in apk_files:
-                try:
-                    apk = APK(str(apk_path))
-                    manifest_xml = apk.get_android_manifest_xml()
-                    if manifest_xml is not None:
-                        for elem in manifest_xml.iter("meta-data"):
-                            val = elem.get(android_ns + "value") or elem.get("value") or ""
-                            name = elem.get(android_ns + "name") or elem.get("name") or ""
-                            if isinstance(val, (str, bytes)):
-                                val_str = (
-                                    val.decode("utf-8", "ignore")
-                                    if isinstance(val, bytes)
-                                    else str(val)
-                                )
-                                if val_str.startswith(("http://", "https://")):
-                                    if val_str not in discovered_urls:
-                                        discovered_urls.append(val_str)
-                            if isinstance(name, (str, bytes)):
-                                name_str = (
-                                    name.decode("utf-8", "ignore")
-                                    if isinstance(name, bytes)
-                                    else str(name)
-                                )
-                                if name_str.startswith(("http://", "https://")):
-                                    if name_str not in discovered_urls:
-                                        discovered_urls.append(name_str)
-                except Exception:
-                    continue
+                metadata = inspect_package_isolated(apk_path)
+                for url in metadata["policy_urls"]:
+                    if url not in discovered_urls:
+                        discovered_urls.append(url)
 
-            existing_urls = {s.get("url") for s in draft["sources"] if s.get("url")}
-            new_sources = []
-            for url in discovered_urls:
-                if url in existing_urls:
-                    continue
-                new_src = {
-                    "id": f"src-auto-{uuid4().hex[:8]}",
-                    "title": "Auto Discovered Policy",
-                    "url": url,
-                    "source_type": "IN_APP_POLICY",
-                    "text": "",
-                    "version": "UNKNOWN",
-                    "region": "",
-                    "product": "",
-                    "package_name": draft.get("package_name") or "",
-                    "version_code": draft.get("version_code"),
-                    "status": "url_only",
-                    "error_code": None,
-                    "captured_at": None,
-                    "sha256": None,
-                    "final_url": None,
-                    "provenance": "MANIFEST_METADATA",
-                    "model_audit": {},
-                }
-                new_sources.append(new_src)
-                existing_urls.add(url)
+            with self.data_store._transaction():
+                draft = self._get(draft_id)
+                if draft["revision"] != revision or draft["jobs"]:
+                    raise ValueError("Input changed during policy discovery")
+                existing_urls = {s.get("url") for s in draft["sources"] if s.get("url")}
+                new_sources = []
+                for url in discovered_urls:
+                    if url in existing_urls:
+                        continue
+                    if len(draft["sources"]) + len(new_sources) >= 8:
+                        break
+                    new_src = {
+                        "id": f"src-auto-{uuid4().hex[:8]}",
+                        "title": "Auto Discovered Policy",
+                        "url": url,
+                        "source_type": "IN_APP_POLICY",
+                        "text": "",
+                        "version": "UNKNOWN",
+                        "region": "",
+                        "product": "",
+                        "package_name": draft.get("package_name") or "",
+                        "version_code": draft.get("version_code"),
+                        "status": "url_only",
+                        "error_code": None,
+                        "captured_at": None,
+                        "sha256": None,
+                        "final_url": None,
+                        "provenance": "MANIFEST_METADATA",
+                        "model_audit": {},
+                    }
+                    new_sources.append(new_src)
+                    existing_urls.add(url)
 
-            if new_sources:
-                draft["sources"].extend(new_sources)
-                draft["revision"] += 1
-                self._save(draft)
+                if new_sources:
+                    draft["sources"].extend(new_sources)
+                    draft["revision"] += 1
+                    self._save(draft)
 
-            return {"sources": draft["sources"]}
+                return {"sources": draft["sources"]}
 
     def import_external(self, draft_id: str, payload: ExternalPolicyExportInput):
         with self.data_store._transaction():
             draft = self._get(draft_id)
             if draft["jobs"]:
                 raise ValueError("Draft already started; cannot import external policy")
+            if len(draft["sources"]) >= 8 or len(draft["candidates"]) + len(payload.claims) > 800:
+                raise ValueError("Draft source or candidate quota reached")
 
             source_input = payload.source
             text = source_input.text or ""
 
             # Validate claim excerpts against source text
             for claim in payload.claims:
-                if claim.excerpt not in text:
+                if text.count(claim.excerpt) != 1:
                     raise ValueError(
                         f"Claim excerpt {claim.excerpt!r} is not contained in policy text"
                     )
@@ -1005,7 +1003,25 @@ class WebIntake:
                 # Recover event history without modifying immutable input revisions.
                 write_private(directory / "current.json", draft)
 
-    def start(self, draft_id, payload: StartInput):
+    def retry(self, job_id):
+        """Retry only jobs with retained, immutable inputs owned by this intake."""
+        self.start_service()
+        self.store.get(job_id)  # Preserve missing/deleted job semantics.
+        with self.data_store._transaction():
+            for current in self.root.glob("*/current.json"):
+                draft = self._read(current)
+                run = next((r for r in draft["jobs"] if r["job_id"] == job_id), None)
+                if run is not None:
+                    draft_id = draft["id"]
+                    revision = run["revision"]
+                    break
+            else:
+                raise ValueError("RETRY_INPUT_UNAVAILABLE")
+        return self.start(
+            draft_id, StartInput(revision=revision, request_id=uuid4().hex), retry_of=job_id
+        )
+
+    def start(self, draft_id, payload: StartInput, *, retry_of=None):
         self.start_service()
         with self.data_store._transaction():
             draft = self._get(draft_id)
@@ -1016,6 +1032,10 @@ class WebIntake:
                     return self.store.get(run["job_id"])
             if draft["revision"] != payload.revision or not draft["uploaded"]:
                 raise ValueError("Input changed or APK not uploaded")
+            if retry_of is not None:
+                if (not any(r["job_id"] == retry_of for r in draft["jobs"])
+                        or self.store.get(retry_of).state not in {"FAILED", "CANCELLED"}):
+                    raise ValueError("Only failed or cancelled jobs can be retried")
             if any(self.store.get(r["job_id"]).state not in TERMINAL for r in draft["jobs"]):
                 raise ValueError("Draft already has a running job")
             if len(draft["jobs"]) >= 10 or sum(not f.done() for f in self.futures.values()) >= 4:
@@ -1029,12 +1049,16 @@ class WebIntake:
                 state="QUEUED",
                 ruleset_version=taxonomy()["version"],
                 created_at=datetime.now(timezone.utc),
+                retry_of=retry_of,
             )
             capability_path = self._safe(self.directory(draft_id) / "capability.json")
             token_digest = (
                 self._read(capability_path)["token_digest"] if capability_path.exists() else None
             )
-            self.store.create_if_absent(job, token_digest=token_digest)
+            if retry_of is not None:
+                self.store.create_retry(job, token_digest=token_digest)
+            else:
+                self.store.create_if_absent(job, token_digest=token_digest)
             draft["jobs"].append(
                 {
                     "job_id": job.id,

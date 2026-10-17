@@ -728,10 +728,37 @@ def scan_package_set(base_path, splits, rules, inventory=False, sdk_rules=None):
     }
 
 
+def inspect_package_metadata(path):
+    """Worker-only manifest inspection; no DEX analysis or source fetching."""
+    from androguard.core.axml import AXMLPrinter
+
+    from .package_set import inspect_apk_bytes
+
+    package, _ = inspect_apk_bytes(path.read_bytes(), path.name)
+    with ZipFile(path) as archive:
+        root = AXMLPrinter(archive.read("AndroidManifest.xml")).get_xml_obj()
+    urls = []
+    ns = "{http://schemas.android.com/apk/res/android}"
+    for element in root.iter("meta-data"):
+        for key in (ns + "value", "value", ns + "name", "name"):
+            value = element.get(key, "")
+            if value.startswith(("http://", "https://")) and value not in urls:
+                if len(value) <= 2000 and len(urls) < 8:
+                    urls.append(value)
+    result = empty_result()
+    result.update(
+        apk_sha256=package.sha256, package_file=package.model_dump(mode="json"), policy_urls=urls
+    )
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("apk", type=Path)
     parser.add_argument("--probe", action="store_true", help="Trusted fixture isolation inspection")
+    parser.add_argument(
+        "--metadata", action="store_true", help="Inspect manifest inside the worker"
+    )
     parser.add_argument(
         "--inventory",
         action="store_true",
@@ -764,6 +791,8 @@ def main():
         with contextlib.redirect_stdout(sys.stderr):
             if args.probe:
                 result = isolation_probe(args.apk)
+            elif args.metadata:
+                result = inspect_package_metadata(args.apk)
             elif args.apk.is_dir():
                 from .package_set import validate_package_set
 
@@ -783,6 +812,9 @@ def main():
                     inventory=args.inventory,
                     sdk_rules=sdk_data,
                 )
+                from .package_set import directory_digest
+
+                result["input_sha256"] = directory_digest(args.apk)
             else:
                 result = scan(
                     args.apk,

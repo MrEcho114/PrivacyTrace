@@ -1,5 +1,20 @@
 # Test Suite Readiness: PT-MOB-102 (Issue #70)
 
+## Current delivery boundary (2026-10-17, PR #88 repair)
+
+This is a partial implementation of #70. Its #80 runtime dependency remains open;
+PostgreSQL, real queue delivery, runner integration, restart semantics and public-service
+acceptance are not established by the feature checklist below. Earlier result counts and
+timestamps are the original author's reported snapshot, not final-head acceptance evidence.
+
+The package intake contract suites explicitly opt into a controlled manifest-parser double.
+`test_pr88_regressions.py` separately verifies real Docker intake, Manifest URL discovery,
+multi-package scanning, inspected isolation settings and input cleanup when
+`PRIVACYTRACE_DOCKER_TESTS=1`. Its other guards cover actual retry execution using a fixture
+scanner, access scope, delete/retry ordering, stale discovery, and atomic import rejection.
+Retry requires retained draft inputs; metadata-only or deleted jobs cannot create a new task.
+The final SHA and authoritative/remote check results are recorded in PR #88.
+
 ## Overview
 This document summarizes the test infrastructure, test runner execution instructions, test results, and feature readiness status for the PrivacyTrace Multi-Package APK Set & Remote Lifecycle project (PT-MOB-102 / Issue #70).
 
@@ -24,7 +39,7 @@ This document summarizes the test infrastructure, test runner execution instruct
 
 ### Prerequisites
 - Python 3.12+ managed by `uv`
-- Working directory: Repository root (`C:\Users\Oasis\.gemini\antigravity\worktrees\PrivacyTrace\issue_70`)
+- Working directory: Repository root (`<repository-root>`)
 - UTF-8 terminal encoding: `$env:PYTHONUTF8 = "1"` (Windows PowerShell)
 
 ### Run PT-MOB-102 Test Suite

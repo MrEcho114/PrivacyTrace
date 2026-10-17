@@ -13,6 +13,18 @@ def private_scan_run_root(tmp_path, monkeypatch):
 
 
 @pytest.fixture
+def synthetic_package_metadata(monkeypatch):
+    """Controlled fixture parser double, explicitly opted into by contract suites.
+
+    Real Docker transport and the production parser boundary have separate tests.
+    """
+    from privacytrace import web_intake
+    from privacytrace.apk_worker import inspect_package_metadata
+
+    monkeypatch.setattr(web_intake, "inspect_package_isolated", inspect_package_metadata)
+
+
+@pytest.fixture
 def bundle_data():
     data = deepcopy(read_json("samples/demo/evaluation-input.json"))
     data["behaviors"] = [data["behaviors"][0]]

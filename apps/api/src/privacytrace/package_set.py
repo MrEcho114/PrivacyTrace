@@ -31,6 +31,17 @@ SPLIT_NAME_REGEX = re.compile(SPLIT_NAME_PATTERN)
 RESERVED_SPLIT_NAMES = frozenset({"base"})
 
 
+def directory_digest(directory):
+    """Bind names and bytes without parsing untrusted APK structures on the host."""
+    entries = [
+        (p.name, hashlib.sha256(p.read_bytes()).hexdigest())
+        for p in sorted(directory.iterdir())
+    ]
+    import json
+
+    return hashlib.sha256(json.dumps(entries, ensure_ascii=True).encode()).hexdigest()
+
+
 class PackageSetIntegrityError(Exception):
     """Integrity rejection mapped cleanly to 4xx HTTP responses."""
 

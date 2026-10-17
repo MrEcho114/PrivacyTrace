@@ -1,0 +1,9 @@
+{
+  "RG001": [
+    {
+      "path": "apps/api/src/privacytrace/web_intake.py",
+      "match": "shutil.rmtree(directory)",
+      "reason": "pre-existing rollback cleanup inside create() while the draft transaction is open; the lock-scope fix is tracked in #95"
+    }
+  ]
+}

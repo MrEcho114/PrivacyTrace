@@ -7,6 +7,12 @@ from pydantic import AwareDatetime, Field, field_validator, model_validator
 from .models import Model
 
 PolicySourceType = Literal["OFFICIAL_WEB_POLICY", "SDK_POLICY", "STORE_POLICY", "IN_APP_POLICY"]
+PolicySourceProvenance = Literal[
+    "MANIFEST_METADATA",
+    "EXTERNAL_CHAT_EXPORT",
+    "DIRECT_WEB_FETCH",
+    "MANUAL_INPUT",
+]
 
 
 class WebCandidate(Model):
@@ -41,7 +47,10 @@ class WebSource(Model):
     captured_at: str | None = None
     sha256: str | None = None
     final_url: str | None = None
-    provenance: str | None = Field(default=None, max_length=100)
+    provenance: PolicySourceProvenance | None = Field(
+        default=None,
+        description="Untrusted clue origin only; does not constitute official policy verification.",
+    )
     model_audit: dict[str, str | int | bool] = Field(default_factory=dict)
 
 

@@ -243,16 +243,6 @@ def create_draft(client: TestClient, name: str = "PT-MOB-102 Test Draft"):
     return None, None, resp
 
 
-def check_unwired_route(response, route_description: str):
-    """Skip test gracefully if the target route is not yet wired in the current milestone."""
-    if response.status_code == 404:
-        try:
-            body = response.json()
-            if body.get("detail") == "Not Found":
-                pytest.skip(f"Route for {route_description} not yet wired in current milestone")
-        except Exception:
-            pass
-
 
 def make_test_token(name: str = "token") -> str:
     """Return a deterministic valid capability token of at least 32 characters."""
@@ -334,10 +324,7 @@ def test_r1_f1_single_apk_intake_backward_compatibility(tmp_path, monkeypatch):
 
 def test_r1_f2_package_set_manifest_contract(tmp_path):
     """Tier 1 / F2: Package set manifest data models support base, splits, hashes, and sizes."""
-    try:
-        from privacytrace.package_set import PackageFile, PackagePart, PackageSet
-    except ImportError:
-        pytest.skip("privacytrace.package_set module not yet created in current milestone")
+    from privacytrace.package_set import PackageFile, PackagePart, PackageSet
 
     base_file = PackageFile(
         file_name="base.apk",
@@ -397,10 +384,10 @@ def test_r1_f3_package_set_archive_streaming(tmp_path, monkeypatch):
         content=bundle_path.read_bytes(),
         headers=headers,
     )
-    check_unwired_route(resp, "package-set upload")
     assert resp.status_code == 200
     data = resp.json()
-    assert "package_set" in data or "package_name" in data
+    assert "package_set" in data
+    assert data["package_set"]["package_name"] == "org.privacytrace.app"
 
 
 def test_r1_f4_base_apk_presence_validation(tmp_path, monkeypatch):
@@ -419,7 +406,6 @@ def test_r1_f4_base_apk_presence_validation(tmp_path, monkeypatch):
         content=bundle_path.read_bytes(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip"},
     )
-    check_unwired_route(resp, "package-set upload")
     assert resp.status_code == 200
 
 
@@ -447,7 +433,6 @@ def test_r1_f5_package_name_homogeneity(tmp_path, monkeypatch):
         content=bundle_path.read_bytes(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip"},
     )
-    check_unwired_route(resp, "package-set upload")
     assert resp.status_code == 200
 
 
@@ -475,7 +460,6 @@ def test_r1_f6_version_code_consistency(tmp_path, monkeypatch):
         content=bundle_path.read_bytes(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip"},
     )
-    check_unwired_route(resp, "package-set upload")
     assert resp.status_code == 200
 
 
@@ -509,7 +493,6 @@ def test_r1_f7_split_name_uniqueness(tmp_path, monkeypatch):
         content=bundle_path.read_bytes(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip"},
     )
-    check_unwired_route(resp, "package-set upload")
     assert resp.status_code == 200
 
 
@@ -538,16 +521,15 @@ def test_r1_f8_sha256_verification(tmp_path, monkeypatch):
         content=bundle_path.read_bytes(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip"},
     )
-    check_unwired_route(resp, "package-set upload")
     assert resp.status_code == 200
     data = resp.json()
-    if "package_set" in data:
-        files = data["package_set"].get("files", [])
-        sha_map = {f["file_name"]: f["sha256"] for f in files if "file_name" in f}
-        if "base.apk" in sha_map:
-            assert sha_map["base.apk"] == base_expected_sha
-        if "split.apk" in sha_map:
-            assert sha_map["split.apk"] == split_expected_sha
+    assert "package_set" in data
+    pkg_set = data["package_set"]
+    assert pkg_set["base"]["file_name"] == "base.apk"
+    assert pkg_set["base"]["sha256"] == base_expected_sha
+    assert len(pkg_set["splits"]) == 1
+    assert pkg_set["splits"][0]["file_name"] == "split.apk"
+    assert pkg_set["splits"][0]["sha256"] == split_expected_sha
 
 
 def test_r1_f9_cumulative_set_size_quota(tmp_path, monkeypatch):
@@ -569,27 +551,23 @@ def test_r1_f9_cumulative_set_size_quota(tmp_path, monkeypatch):
         content=bundle_path.read_bytes(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip"},
     )
-    check_unwired_route(resp, "package-set upload")
     assert resp.status_code == 200
 
 
 def test_r1_f10_evidence_split_attribution(tmp_path, monkeypatch):
     """Tier 1 / F10: Evidence model supports package_split field distinguishing base vs split."""
-    try:
-        from privacytrace.models import Evidence
+    from privacytrace.models import Evidence
 
-        ev = Evidence(
-            id="ev-123",
-            kind="MANIFEST",
-            status="STATIC_POTENTIAL",
-            source="split_chat.apk",
-            locator="Lorg/example/Chat;->send()V",
-            excerpt="permission declaration in split",
-            package_split="split_chat",
-        )
-        assert ev.package_split == "split_chat"
-    except (ImportError, AttributeError, ValueError, Exception):
-        pytest.skip("Evidence.package_split attribute not yet added to models.py")
+    ev = Evidence(
+        id="ev-123",
+        kind="MANIFEST",
+        status="STATIC_POTENTIAL",
+        source="split_chat.apk",
+        locator="Lorg/example/Chat;->send()V",
+        excerpt="permission declaration in split",
+        package_split="split_chat",
+    )
+    assert ev.package_split == "split_chat"
 
 
 def test_r1_f11_split_dex_coverage_aggregation(tmp_path, monkeypatch):
@@ -676,27 +654,28 @@ def test_r2_f16_idempotent_task_submission(tmp_path, monkeypatch):
 
     draft_id, token, _ = create_draft(client, "Idempotent Submission")
     apk_path = build_test_apk(tmp_path / "app.apk")
-    client.post(
+    apk_resp = client.post(
         f"/api/v1/web/drafts/{draft_id}/apk",
         content=apk_path.read_bytes(),
         headers={"Authorization": f"Bearer {token}"},
     )
+    rev = apk_resp.json()["revision"]
 
-    start_payload = {"revision": 1, "request_id": "0123456789abcdef0123456789abcdef"}
+    start_payload = {"revision": rev, "request_id": "0123456789abcdef0123456789abcdef"}
     resp1 = client.post(
         f"/api/v1/web/drafts/{draft_id}/start",
         json=start_payload,
         headers={"Authorization": f"Bearer {token}"},
     )
-    if resp1.status_code == 200:
-        data1 = resp1.json()
-        resp2 = client.post(
-            f"/api/v1/web/drafts/{draft_id}/start",
-            json=start_payload,
-            headers={"Authorization": f"Bearer {token}"},
-        )
-        assert resp2.status_code == 200
-        assert resp2.json()["id"] == data1["id"]
+    assert resp1.status_code == 200
+    data1 = resp1.json()
+    resp2 = client.post(
+        f"/api/v1/web/drafts/{draft_id}/start",
+        json=start_payload,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp2.status_code == 200
+    assert resp2.json()["id"] == data1["id"]
 
 
 def test_r2_f17_job_token_inheritance(tmp_path, monkeypatch):
@@ -706,24 +685,25 @@ def test_r2_f17_job_token_inheritance(tmp_path, monkeypatch):
 
     draft_id, token, _ = create_draft(client, "Token Inheritance")
     apk_path = build_test_apk(tmp_path / "app.apk")
-    client.post(
+    apk_resp = client.post(
         f"/api/v1/web/drafts/{draft_id}/apk",
         content=apk_path.read_bytes(),
         headers={"Authorization": f"Bearer {token}"},
     )
+    rev = apk_resp.json()["revision"]
 
     resp = client.post(
         f"/api/v1/web/drafts/{draft_id}/start",
-        json={"revision": 1, "request_id": "0123456789abcdef0123456789abcdef"},
+        json={"revision": rev, "request_id": "0123456789abcdef0123456789abcdef"},
         headers={"Authorization": f"Bearer {token}"},
     )
-    if resp.status_code == 200:
-        job_id = resp.json()["id"]
-        job_resp = client.get(
-            f"/api/v1/jobs/{job_id}",
-            headers={"Authorization": f"Bearer {token}"},
-        )
-        assert job_resp.status_code == 200
+    assert resp.status_code == 200
+    job_id = resp.json()["id"]
+    job_resp = client.get(
+        f"/api/v1/jobs/{job_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert job_resp.status_code == 200
 
 
 def test_r2_f18_job_status_and_progress_polling(tmp_path, monkeypatch):
@@ -789,7 +769,6 @@ def test_r2_f20_granular_evidence_drilldown(tmp_path, monkeypatch):
         f"/api/v1/jobs/{job_id}/evidence/{evidence_id}",
         headers={"Authorization": f"Bearer {token}"},
     )
-    check_unwired_route(resp, "evidence drilldown")
     assert resp.status_code == 200
     data = resp.json()
     assert data["id"] == evidence_id
@@ -858,7 +837,6 @@ def test_r2_f23_explicit_retry_with_lineage(tmp_path, monkeypatch):
         "/api/v1/jobs/job-failed-1/retry",
         headers={"Authorization": f"Bearer {token}"},
     )
-    check_unwired_route(resp, "job retry")
     # A metadata-only seed has no retained scan inputs; never create a stuck QUEUED job.
     assert resp.status_code == 409
     assert len(app.state.job_store.list()) == 1
@@ -931,7 +909,6 @@ def test_r3_f27_in_app_policy_auto_discovery(tmp_path, monkeypatch):
         f"/api/v1/web/drafts/{draft_id}/sources/discover",
         headers={"Authorization": f"Bearer {token}"},
     )
-    check_unwired_route(resp, "sources auto-discovery")
     assert resp.status_code == 200
     data = resp.json()
     source = next(s for s in data["sources"] if s["url"] == "https://privacytrace.org/privacy")
@@ -941,23 +918,22 @@ def test_r3_f27_in_app_policy_auto_discovery(tmp_path, monkeypatch):
 
 def test_r3_f28_discovery_provenance_retention(tmp_path, monkeypatch):
     """Tier 1 / F28: Discovered policy sources retain provenance metadata."""
-    try:
-        from privacytrace.web_models import WebSource
+    from privacytrace.web_models import WebSource
 
-        src = WebSource(
-            id="src-auto-1",
-            title="Auto Discovered Policy",
-            url="https://example.com/privacy",
-            status="manual",
-            provenance="MANIFEST_METADATA",
-        )
-        assert src.provenance == "MANIFEST_METADATA"
-    except (ImportError, TypeError, ValueError, Exception):
-        pytest.skip("WebSource.provenance attribute not yet available in web_models.py")
+    src = WebSource(
+        id="src-auto-1",
+        title="Auto Discovered Policy",
+        url="https://example.com/privacy",
+        status="manual",
+        provenance="MANIFEST_METADATA",
+    )
+    assert src.provenance == "MANIFEST_METADATA"
 
 
 def test_r3_f29_non_blocking_unreviewed_candidate_start(tmp_path, monkeypatch):
     """Tier 1 / F29: Analysis starts successfully with unreviewed candidates (checked=False)."""
+    from privacytrace.models import MatchStatus
+
     app = get_test_app(tmp_path, mode="remote", monkeypatch=monkeypatch)
     client = TestClient(app, base_url="http://testserver")
 
@@ -969,16 +945,16 @@ def test_r3_f29_non_blocking_unreviewed_candidate_start(tmp_path, monkeypatch):
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    # Save candidates with checked: False
+    # Save candidates with checked: False; excerpt matches draft policy text
     cand_payload = {
         "revision": 1,
         "candidates": [
             {
                 "id": "c1",
                 "source_id": "policy",
-                "excerpt": "We collect location data.",
-                "data_type": "LOCATION",
-                "polarity": "POSITIVE",
+                "excerpt": "我们不会读取联系人。",
+                "data_type": "CONTACTS",
+                "polarity": "NEGATIVE",
                 "subject": "HOST_APP",
                 "checked": False,
             }
@@ -990,15 +966,28 @@ def test_r3_f29_non_blocking_unreviewed_candidate_start(tmp_path, monkeypatch):
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    # Start should not reject with 409
+    # Start must succeed with 200 without blocking on unchecked candidate
     start_resp = client.post(
         f"/api/v1/web/drafts/{draft_id}/start",
         json={"revision": 2, "request_id": "0123456789abcdef0123456789abcdef"},
         headers={"Authorization": f"Bearer {token}"},
     )
-    if start_resp.status_code == 409 and "checked" in start_resp.text:
-        pytest.fail("Forced candidate check gate was not relaxed for unreviewed auto-claims!")
-    assert start_resp.status_code in (200, 422)
+    assert start_resp.status_code == 200
+    job_id = start_resp.json()["id"]
+
+    # Wait for completion and verify UNREVIEWED policy document metadata & issue status
+    app.state.web_intake.futures[job_id].result(timeout=15)
+    report = app.state.job_store.report(job_id)
+    assert len(report.policy_documents) > 0
+    for doc in report.policy_documents:
+        assert doc.review_status == "UNREVIEWED"
+        assert doc.completeness == "PARTIAL"
+        assert doc.attachments_status == "NOT_CHECKED"
+
+    assert len(report.result.issues) > 0
+    for issue in report.result.issues:
+        assert issue.status == MatchStatus.INSUFFICIENT_EVIDENCE
+        assert issue.status != MatchStatus.NOT_DECLARED
 
 
 def test_r3_f30_review_audit_integrity_unreviewed(tmp_path, monkeypatch):
@@ -1017,11 +1006,14 @@ def test_r3_f30_review_audit_integrity_unreviewed(tmp_path, monkeypatch):
         artifact=PolicyArtifact(
             text=text, sha256=hashlib.sha256(text.encode()).hexdigest()
         ),
-        completeness="COMPLETE",
+        completeness="PARTIAL",
         evidence_id="ev-1",
         review_status="UNREVIEWED",
+        attachments_status="NOT_CHECKED",
     )
     assert doc.review_status == "UNREVIEWED"
+    assert doc.completeness == "PARTIAL"
+    assert doc.attachments_status == "NOT_CHECKED"
 
 
 def test_r3_f31_external_chat_export_ingest(tmp_path, monkeypatch):
@@ -1052,7 +1044,6 @@ def test_r3_f31_external_chat_export_ingest(tmp_path, monkeypatch):
         json=export_payload,
         headers={"Authorization": f"Bearer {token}"},
     )
-    check_unwired_route(resp, "import-external")
     assert resp.status_code == 200
     data = resp.json()
     assert "revision" in data
@@ -1078,15 +1069,15 @@ def test_r3_f32_ai_summary_text_separation(tmp_path, monkeypatch):
         json=export_payload,
         headers={"Authorization": f"Bearer {token}"},
     )
-    check_unwired_route(resp, "import-external")
-    if resp.status_code == 200:
-        draft = client.get(
-            f"/api/v1/web/drafts/{draft_id}",
-            headers={"Authorization": f"Bearer {token}"},
-        ).json()
-        sources = draft.get("sources", [])
-        for src in sources:
-            assert "AI summary" not in src.get("text", "")
+    assert resp.status_code == 200
+    draft = client.get(
+        f"/api/v1/web/drafts/{draft_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    ).json()
+    sources = draft.get("sources", [])
+    assert len(sources) > 0
+    for src in sources:
+        assert "AI summary" not in src.get("text", "")
 
 
 def test_r3_f33_external_offline_status_mapping(tmp_path, monkeypatch):
@@ -1110,15 +1101,15 @@ def test_r3_f33_external_offline_status_mapping(tmp_path, monkeypatch):
         json=export_payload,
         headers={"Authorization": f"Bearer {token}"},
     )
-    check_unwired_route(resp, "import-external")
-    if resp.status_code == 200:
-        draft = client.get(
-            f"/api/v1/web/drafts/{draft_id}",
-            headers={"Authorization": f"Bearer {token}"},
-        ).json()
-        for s in draft.get("sources", []):
-            if s.get("title") == "Offline Policy":
-                assert s.get("status") in ("empty", "failed")
+    assert resp.status_code == 200
+    draft = client.get(
+        f"/api/v1/web/drafts/{draft_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    ).json()
+    matching = [s for s in draft.get("sources", []) if s.get("title") == "Offline Policy"]
+    assert len(matching) > 0
+    for s in matching:
+        assert s.get("status") in ("empty", "failed")
 
 
 # ==============================================================================
@@ -1142,7 +1133,6 @@ def test_t2_missing_base_apk_rejected(tmp_path, monkeypatch):
         content=bundle_path.read_bytes(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip"},
     )
-    check_unwired_route(resp, "package-set upload")
     assert resp.status_code == 400
     assert "MISSING_BASE_APK" in resp.text or "base" in resp.text.lower()
 
@@ -1164,7 +1154,6 @@ def test_t2_multiple_base_apks_rejected(tmp_path, monkeypatch):
         content=bundle_path.read_bytes(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip"},
     )
-    check_unwired_route(resp, "package-set upload")
     assert resp.status_code == 400
     assert "MULTIPLE_BASE_APKS" in resp.text or "multiple" in resp.text.lower()
 
@@ -1188,7 +1177,6 @@ def test_t2_split_package_mismatch_rejected(tmp_path, monkeypatch):
         content=bundle_path.read_bytes(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip"},
     )
-    check_unwired_route(resp, "package-set upload")
     assert resp.status_code == 400
     assert "PACKAGE_NAME_MISMATCH" in resp.text or "package" in resp.text.lower()
 
@@ -1212,7 +1200,6 @@ def test_t2_split_version_mismatch_rejected(tmp_path, monkeypatch):
         content=bundle_path.read_bytes(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip"},
     )
-    check_unwired_route(resp, "package-set upload")
     assert resp.status_code == 400
     assert "VERSION_CODE_MISMATCH" in resp.text or "version" in resp.text.lower()
 
@@ -1235,7 +1222,6 @@ def test_t2_duplicate_split_name_rejected(tmp_path, monkeypatch):
         content=bundle_path.read_bytes(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip"},
     )
-    check_unwired_route(resp, "package-set upload")
     assert resp.status_code == 400
     assert "DUPLICATE_SPLIT_NAME" in resp.text or "duplicate" in resp.text.lower()
 
@@ -1255,7 +1241,6 @@ def test_t2_empty_archive_rejected(tmp_path, monkeypatch):
         content=empty_zip.read_bytes(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip"},
     )
-    check_unwired_route(resp, "package-set upload")
     assert resp.status_code in (400, 409)
 
 
@@ -1272,7 +1257,6 @@ def test_t2_corrupted_zip_archive_rejected(tmp_path, monkeypatch):
         content=corrupt_bytes,
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip"},
     )
-    check_unwired_route(resp, "package-set upload")
     assert resp.status_code in (400, 409)
 
 
@@ -1391,7 +1375,6 @@ def test_t2_retry_on_running_job_rejected(tmp_path, monkeypatch):
         "/api/v1/jobs/job-running-now/retry",
         headers={"Authorization": f"Bearer {token}"},
     )
-    check_unwired_route(resp, "job retry")
     assert resp.status_code == 409
 
 
@@ -1420,7 +1403,6 @@ def test_t2_external_chat_quote_mismatch_rejected(tmp_path, monkeypatch):
         json=export_payload,
         headers={"Authorization": f"Bearer {token}"},
     )
-    check_unwired_route(resp, "import-external")
     assert resp.status_code == 409
 
 
@@ -1438,14 +1420,13 @@ def test_t2_package_set_upload_idempotency_rejected(tmp_path, monkeypatch):
         content=bundle_path.read_bytes(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip"},
     )
-    check_unwired_route(resp1, "package-set upload")
-    if resp1.status_code == 200:
-        resp2 = client.post(
-            f"/api/v1/web/drafts/{draft_id}/package-set",
-            content=bundle_path.read_bytes(),
-            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip"},
-        )
-        assert resp2.status_code == 409
+    assert resp1.status_code == 200
+    resp2 = client.post(
+        f"/api/v1/web/drafts/{draft_id}/package-set",
+        content=bundle_path.read_bytes(),
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip"},
+    )
+    assert resp2.status_code == 409
 
 
 # ==============================================================================
@@ -1469,7 +1450,6 @@ def test_t3_package_set_upload_and_explicit_retry(tmp_path, monkeypatch):
         "/api/v1/jobs/job-multisplit-fail/retry",
         headers={"Authorization": f"Bearer {token}"},
     )
-    check_unwired_route(resp, "job retry")
     assert resp.status_code == 409  # No retained package set belongs to this seed.
     assert len(app.state.job_store.list()) == 1
 
@@ -1489,7 +1469,6 @@ def test_t3_single_apk_fallback_with_new_lifecycle_routes(tmp_path, monkeypatch)
         f"/api/v1/jobs/{job_id}/evidence/{ev_id}",
         headers={"Authorization": f"Bearer {token}"},
     )
-    check_unwired_route(ev_resp, "evidence drilldown")
     assert ev_resp.status_code == 200
 
 
@@ -1537,7 +1516,6 @@ def test_t3_cancelled_task_retry_spawn(tmp_path, monkeypatch):
         "/api/v1/jobs/job-cancel-retry/retry",
         headers={"Authorization": f"Bearer {token}"},
     )
-    check_unwired_route(retry_resp, "job retry")
     assert retry_resp.status_code == 409  # No retained inputs; cancellation stays final.
 
     # Verify original job remains CANCELLED
@@ -1614,7 +1592,7 @@ def test_t4_real_world_multisplit_end_to_end_workflow(tmp_path, monkeypatch):
     split_feature = build_test_apk(
         tmp_path / "split_chat.apk",
         package_name=pkg,
-        split_name="feature_chat",
+        split_name="split_chat",
         version_code=vcode,
         permissions=["android.permission.RECORD_AUDIO"],
         dex_kind="microphone",
@@ -1634,12 +1612,11 @@ def test_t4_real_world_multisplit_end_to_end_workflow(tmp_path, monkeypatch):
         content=bundle_path.read_bytes(),
         headers={**auth_header, "Content-Type": "application/zip"},
     )
-    check_unwired_route(upload_resp, "package-set upload")
     assert upload_resp.status_code == 200
 
     # Step 4: Policy Auto-Discovery
     disc_resp = client.post(f"/api/v1/web/drafts/{draft_id}/sources/discover", headers=auth_header)
-    check_unwired_route(disc_resp, "sources discover")
+    assert disc_resp.status_code == 200
 
     # Step 5: External #79 chat import
     export_payload = {
@@ -1663,58 +1640,78 @@ def test_t4_real_world_multisplit_end_to_end_workflow(tmp_path, monkeypatch):
     )
 
     # Step 6: Non-blocking analysis submission
+    rev = client.get(f"/api/v1/web/drafts/{draft_id}", headers=auth_header).json()["revision"]
     start_resp = client.post(
         f"/api/v1/web/drafts/{draft_id}/start",
-        json={"revision": 2, "request_id": "0123456789abcdef0123456789abcdef"},
+        json={"revision": rev, "request_id": "0123456789abcdef0123456789abcdef"},
         headers=auth_header,
     )
-    if start_resp.status_code == 200:
-        job_id = start_resp.json()["id"]
+    assert start_resp.status_code == 200
+    job_orig_id = start_resp.json()["id"]
 
-        # Step 7: Poll status
-        status_resp = client.get(f"/api/v1/jobs/{job_id}", headers=auth_header)
-        assert status_resp.status_code == 200
+    # Step 11: Explicit task retry with lineage (cancel first run, then retry)
+    cancel_resp = client.post(f"/api/v1/jobs/{job_orig_id}/cancel", headers=auth_header)
+    assert cancel_resp.status_code == 200
+    assert cancel_resp.json()["state"] == "CANCELLED"
 
-        # Step 8: Retrieve report
-        report_resp = client.get(f"/api/v1/jobs/{job_id}/report", headers=auth_header)
-        if report_resp.status_code == 200:
-            report_data = report_resp.json()
-            # Verify split attribution
-            ev_list = report_data.get("evidence", [])
-            for ev in ev_list:
-                assert "package_split" in ev or "source" in ev
+    retry_resp = client.post(f"/api/v1/jobs/{job_orig_id}/retry", headers=auth_header)
+    assert retry_resp.status_code in (200, 201)
+    job_id = retry_resp.json()["id"]
+    assert job_id != job_orig_id
+    assert retry_resp.json()["retry_of"] == job_orig_id
 
-            # Step 9: Drilldown
-            if ev_list:
-                target_ev_id = ev_list[0]["id"]
-                ev_resp = client.get(
-                    f"/api/v1/jobs/{job_id}/evidence/{target_ev_id}", headers=auth_header
-                )
-                if ev_resp.status_code == 200:
-                    assert ev_resp.json()["id"] == target_ev_id
+    # Step 7: Poll status until SUCCEEDED
+    app.state.web_intake.futures[job_id].result(timeout=15)
+    status_resp = client.get(f"/api/v1/jobs/{job_id}", headers=auth_header)
+    assert status_resp.status_code == 200
+    assert status_resp.json()["state"] == "SUCCEEDED"
 
-            # Step 10: Human review note
-            client.post(
-                f"/api/v1/jobs/{job_id}/reviews",
-                json={
-                    "event_id": "rev-e2e",
-                    "actor": "qa",
-                    "note": "All good",
-                    "action": "CONFIRM",
-                },
-                headers=auth_header,
-            )
+    # Step 8: Retrieve report
+    report_resp = client.get(f"/api/v1/jobs/{job_id}/report", headers=auth_header)
+    assert report_resp.status_code == 200
+    report_data = report_resp.json()
 
-        # Step 11: Explicit retry
-        retry_resp = client.post(f"/api/v1/jobs/{job_id}/retry", headers=auth_header)
-        if retry_resp.status_code in (200, 201):
-            new_job_id = retry_resp.json()["id"]
-            assert new_job_id != job_id
+    # Genuine split checks
+    ev_list = report_data.get("evidence", [])
+    assert len(ev_list) > 0
+    split_evs = [ev for ev in ev_list if ev.get("package_split") == "split_chat"]
+    base_evs = [ev for ev in ev_list if ev.get("package_split") == "base"]
+    assert len(split_evs) > 0, "Expected at least one split_chat evidence item"
+    assert len(base_evs) > 0, "Expected at least one base evidence item"
+    for ev in split_evs:
+        assert ev.get("package_split") == "split_chat"
+    for ev in base_evs:
+        assert ev.get("package_split") == "base"
+    assert any(ev.get("package_split") == "split_chat" for ev in ev_list)
 
-        # Step 12: Delete & tombstone
-        del_resp = client.delete(f"/api/v1/jobs/{job_id}", headers=auth_header)
-        assert del_resp.status_code in (200, 204)
-        assert client.get(f"/api/v1/jobs/{job_id}", headers=auth_header).status_code == 404
+    # Step 9: Drilldown
+    target_ev_id = ev_list[0]["id"]
+    ev_resp = client.get(
+        f"/api/v1/jobs/{job_id}/evidence/{target_ev_id}", headers=auth_header
+    )
+    assert ev_resp.status_code == 200
+    assert ev_resp.json()["id"] == target_ev_id
+
+    # Step 10: Human review note
+    rev_resp = client.post(
+        f"/api/v1/jobs/{job_id}/reviews",
+        json={
+            "actor": "qa@privacytrace.org",
+            "reason": "POLICY_VERIFIED",
+            "note": "All good",
+        },
+        headers=auth_header,
+    )
+    assert rev_resp.status_code == 200
+
+    # Retrying a completed SUCCEEDED job is rejected with HTTP 409
+    retry_succeeded_resp = client.post(f"/api/v1/jobs/{job_id}/retry", headers=auth_header)
+    assert retry_succeeded_resp.status_code == 409
+
+    # Step 12: Delete & tombstone
+    del_resp = client.delete(f"/api/v1/jobs/{job_id}", headers=auth_header)
+    assert del_resp.status_code in (200, 204)
+    assert client.get(f"/api/v1/jobs/{job_id}", headers=auth_header).status_code == 404
 
 
 def test_t4_real_world_adversarial_tamper_and_recovery(tmp_path, monkeypatch):
@@ -1739,7 +1736,6 @@ def test_t4_real_world_adversarial_tamper_and_recovery(tmp_path, monkeypatch):
         content=tampered_bundle.read_bytes(),
         headers={**auth_header, "Content-Type": "application/zip"},
     )
-    check_unwired_route(resp1, "package-set upload")
     assert resp1.status_code == 400
 
     # Recovery: submit corrected set

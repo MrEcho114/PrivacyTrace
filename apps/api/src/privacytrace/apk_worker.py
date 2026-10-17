@@ -186,6 +186,7 @@ def scan(
     package_split=None,
     behavior_count=0,
     is_split: bool = False,
+    base_manifest_excerpts=None,
 ):
     from androguard.core.apk import APK
     from androguard.core.dex import DEX, Operand
@@ -335,11 +336,14 @@ def scan(
                     bounds += ";min_sdk=23"
                 if max_sdk:
                     bounds += ";max_sdk=" + max_sdk
+                excerpt = permission + bounds
+                if base_manifest_excerpts and excerpt in base_manifest_excerpts:
+                    continue
                 add(
                     "MANIFEST",
                     f"{source_prefix}AndroidManifest.xml",
                     f"apk_sha256={result['apk_sha256']}{split_prefix};permission={permission}{bounds}",
-                    permission + bounds,
+                    excerpt,
                     mapping["data_type"],
                     "CAPABILITY",
                 )
@@ -623,6 +627,9 @@ def scan_package_set(base_path, splits, rules, inventory=False, sdk_rules=None):
 
     # 2. Sequentially scan each split APK
     split_results = []
+    seen_manifest_excerpts = {
+        ev["excerpt"] for ev in base_result["evidence"] if ev["kind"] == "MANIFEST"
+    }
     current_behavior_count = len(base_result["behaviors"])
     for split_name, split_path in splits:
         split_res = scan(
@@ -633,9 +640,13 @@ def scan_package_set(base_path, splits, rules, inventory=False, sdk_rules=None):
             package_split=split_name,
             behavior_count=current_behavior_count,
             is_split=True,
+            base_manifest_excerpts=seen_manifest_excerpts,
         )
         split_results.append((split_name, split_path, split_res))
         current_behavior_count += len(split_res["behaviors"])
+        for ev in split_res["evidence"]:
+            if ev["kind"] == "MANIFEST":
+                seen_manifest_excerpts.add(ev["excerpt"])
 
     # 3. Aggregate permissions
     all_perms = set(base_result["permissions"])
@@ -755,6 +766,61 @@ def scan_package_set(base_path, splits, rules, inventory=False, sdk_rules=None):
         "split_names": [s["split_name"] for s in split_files],
     }
 
+    merged_tools = dict(base_result["tools"])
+    if inventory:
+        all_invokes = []
+        truncated = base_result["tools"].get("inventory_truncated") == "true"
+        try:
+            base_invokes = json.loads(base_result["tools"].get("unmapped_android_invokes", "[]"))
+            if isinstance(base_invokes, list):
+                all_invokes.extend(base_invokes)
+        except Exception:
+            pass
+        for _, _, s_res in split_results:
+            if s_res["tools"].get("inventory_truncated") == "true":
+                truncated = True
+            try:
+                s_invokes = json.loads(s_res["tools"].get("unmapped_android_invokes", "[]"))
+                if isinstance(s_invokes, list):
+                    all_invokes.extend(s_invokes)
+            except Exception:
+                pass
+        seen_invokes = set()
+        deduped_invokes = []
+        for inv in all_invokes:
+            if not isinstance(inv, dict):
+                continue
+            key = (
+                inv.get("target_descriptor"),
+                inv.get("caller"),
+                inv.get("dex"),
+                inv.get("offset_bytes"),
+                inv.get("instruction"),
+            )
+            if key not in seen_invokes:
+                seen_invokes.add(key)
+                deduped_invokes.append(inv)
+        deduped_invokes.sort(
+            key=lambda x: (
+                x.get("target_descriptor", ""),
+                x.get("caller", ""),
+                x.get("dex", ""),
+                x.get("offset_bytes", 0),
+            )
+        )
+        if len(deduped_invokes) > 1000:
+            deduped_invokes = deduped_invokes[:1000]
+            truncated = True
+        merged_tools["unmapped_android_invokes"] = json.dumps(
+            deduped_invokes, ensure_ascii=True, sort_keys=True
+        )
+        merged_tools["inventory_scope"] = base_result["tools"].get(
+            "inventory_scope",
+            "Candidate Android-owner invocations, includes mapped calls; max 1000; "
+            "no subclass-owner/name-only classification",
+        )
+        merged_tools["inventory_truncated"] = "true" if truncated else "false"
+
     return {
         "apk_sha256": base_result["apk_sha256"],
         "package_name": base_result["package_name"],
@@ -773,7 +839,7 @@ def scan_package_set(base_path, splits, rules, inventory=False, sdk_rules=None):
             "scanned_dex": scanned_dex,
             "failed_dex": failed_dex,
         },
-        "tools": base_result["tools"],
+        "tools": merged_tools,
         "evidence": all_evidence,
         "behaviors": all_behaviors,
         "errors": base_result["errors"] + [e for _, _, s in split_results for e in s["errors"]],
@@ -782,31 +848,34 @@ def scan_package_set(base_path, splits, rules, inventory=False, sdk_rules=None):
 
 def _manifest_resource_strings(value, resources, package_name):
     """Resolve only referenced string entries, including aliases and locales."""
-    reference = re.fullmatch(r"@(?:(?P<package>[^:/]+):)?string/(?P<key>[^/]+)", value)
-    if reference:
-        owner = reference["package"] or package_name
-        if owner not in resources.get_packages_names():
-            return []
-        # Public analysis entry point populates the name-to-ID index.
-        resources.get_types(owner)
-        resource_id = resources.get_res_id_by_key(owner, "string", reference["key"])
-    else:
-        try:
-            resource_id, owner = resources.parse_id(value)
-        except ValueError:
-            return []
-        if owner and owner not in resources.get_packages_names():
-            return []
-    if not resource_id:
-        return []
-    name = resources.get_resource_xml_name(resource_id, package=owner)
-    if not name or not re.fullmatch(r"@(?:[^:]+:)?string/[^/]+", name):
-        return []
     try:
-        return [text for _, text in resources.get_resolved_res_configs(resource_id)
-                if isinstance(text, str)]
-    except RecursionError:
-        # Cyclic or excessively deep aliases cannot become source URLs.
+        reference = re.fullmatch(r"@(?:(?P<package>[^:/]+):)?string/(?P<key>[^/]+)", value)
+        if reference:
+            owner = reference["package"] or package_name
+            if owner not in resources.get_packages_names():
+                return []
+            # Public analysis entry point populates the name-to-ID index.
+            resources.get_types(owner)
+            resource_id = resources.get_res_id_by_key(owner, "string", reference["key"])
+        else:
+            try:
+                resource_id, owner = resources.parse_id(value)
+            except ValueError:
+                return []
+            if owner and owner not in resources.get_packages_names():
+                return []
+        if not resource_id:
+            return []
+        name = resources.get_resource_xml_name(resource_id, package=owner)
+        if not name or not re.fullmatch(r"@(?:[^:]+:)?string/[^/]+", name):
+            return []
+        return [
+            text
+            for _, text in resources.get_resolved_res_configs(resource_id)
+            if isinstance(text, str)
+        ]
+    except Exception:
+        # Cyclic or excessively deep aliases or malformed ARSC entries cannot become source URLs.
         return []
 
 
@@ -830,6 +899,7 @@ def inspect_package_metadata(path):
 
     package, _ = inspect_apk_bytes(path.read_bytes(), path.name)
     urls = []
+    url_truncated = False
     ns = "{http://schemas.android.com/apk/res/android}"
     with ZipFile(path) as archive:
         root = AXMLPrinter(archive.read("AndroidManifest.xml")).get_xml_obj()
@@ -842,15 +912,29 @@ def inspect_package_metadata(path):
                     if "resources.arsc" not in archive.namelist():
                         continue
                     if resources is None:
-                        resources = ARSCParser(archive.read("resources.arsc"))
-                    values = _manifest_resource_strings(value, resources, package.package_name)
+                        try:
+                            resources = ARSCParser(archive.read("resources.arsc"))
+                        except Exception:
+                            resources = None
+                            continue
+                    try:
+                        values = _manifest_resource_strings(value, resources, package.package_name)
+                    except Exception:
+                        values = []
                 for text in values:
-                    if len(urls) < 8 and text not in urls and _metadata_policy_url(text):
-                        urls.append(text)
+                    if text not in urls and _metadata_policy_url(text):
+                        if len(urls) < 8:
+                            urls.append(text)
+                        else:
+                            url_truncated = True
     result = empty_result()
     result.update(
         apk_sha256=package.sha256, package_file=package.model_dump(mode="json"), policy_urls=urls
     )
+    if url_truncated:
+        result["coverage"]["limitations"].append(
+            "Discovered policy URLs truncated at 8; additional candidate URLs omitted."
+        )
     return result
 
 

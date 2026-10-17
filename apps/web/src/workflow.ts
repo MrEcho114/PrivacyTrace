@@ -17,10 +17,7 @@ export type PolicySource = {
   capturedAt?: string | null; sha256?: string | null; errorCode?: string | null
   modelAudit?: Record<string, unknown>
 }
-export const sourceStatusLabels: Record<PolicySource['status'], string> = {
-  ready: '已获取网页正文', failed: '来源获取失败', manual: '手动补入正文',
-  empty: '尚无正文', url_only: '仅有链接，尚无正文',
-}
+export { sourceStatusLabels } from './types'
 export type Workflow = {
   example: boolean; step: Step; maxStep: number; sourceId: string
   sources: PolicySource[]; candidates: Candidate[]; stage: number

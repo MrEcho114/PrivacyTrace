@@ -1,18 +1,19 @@
-# PrivacyTrace PR #88 (R6 Fixes) Test Infrastructure & Quality Gates
+# PrivacyTrace PR #88 Test Infrastructure & Quality Gates
 
-> Evidence boundary: These fixtures and contract tests verify the R6 repair track for PR #88 (Issue #70 / PT-MOB-102).
+> Evidence boundary: These fixtures and contract tests verify the repair track for PR #88 (Issue #70 / PT-MOB-102 multi-package sets intake and task lifecycle).
 > Runtime background queue delivery, runner integration, and public-service acceptance boundaries are governed by
 > Issue #80. Parser doubles in contract suites are separate from the opt-in real Docker regression in `apps/api/tests/test_pr88_regressions.py`.
 
-> **Authoritative Specification**: PR #88 Takeover (R1 Source Type Confirmation, R2 collector/1 Batch Collection & Legacy Compatibility, R3 Upload Exception Convergence, R4 Contract Synchronization)
-> **Status**: Active / Test-Ready
-> **Target Worktree**: `<repository-root>`
+> **Authoritative Specification**: PR #88 Takeover (Issue #70 Candidate Semantics, Upload Staging Protection, 101-Package Limits, ARSC Fault Isolation, Behavior Budget Deduplication, WebSource Provenance, Frontend Source Status Labels, Test Falsifiability)
+> **Status**: Active / Maintained
+> **Scope**: Test architecture, test hierarchy, and execution guidelines for PR #88 repairs and multi-package intake
+> **Location**: `docs/test-infra.md`
 
 ---
 
 ## 1. Test Architecture & Foundations
 
-The PrivacyTrace PR #88 E2E test suite (`apps/api/tests/test_e2e_r6_opaque.py`, co-located with `test_external_collection_import.py` and `test_pr88_regressions.py`) provides opaque-box, requirement-driven verification across all R6 features.
+The PrivacyTrace PR #88 test suite (`apps/api/tests/test_e2e_pt_mob_102.py`, `apps/api/tests/test_e2e_r6_opaque.py`, `apps/api/tests/test_external_collection_import.py`, `apps/api/tests/test_pr88_regressions.py`, and `apps/web/tests/source-status.test.ts`) provides requirement-driven verification across all PR #88 repair areas.
 
 ### 1.1 Architecture & Layers
 
@@ -36,8 +37,10 @@ The PrivacyTrace PR #88 E2E test suite (`apps/api/tests/test_e2e_r6_opaque.py`, 
 |                 409, 413, 503), /import-external routing                |
 |   web_intake.py: Draft sessions, BoundedSemaphore concurrency,          |
 |                 ExternalPolicyCollectionInput & ExportInput validation, |
-|                 external_imports audit history & provenance tagging    |
-|   package_set.py: 10 integrity rules, single base APK, split names      |
+|                 external_imports audit history & provenance tagging,    |
+|                 active upload staging guard, granular file locks        |
+|   package_set.py: 10 integrity rules, single base APK, split names,     |
+|                 101-package set boundary early exit                     |
 +-------------------------------------------------------------------------+
                                      |
                                      v
@@ -69,14 +72,16 @@ The PrivacyTrace PR #88 E2E test suite (`apps/api/tests/test_e2e_r6_opaque.py`, 
 | **Source Type Declaration** | Explicitly declared (`SDK_POLICY`, `OFFICIAL_WEB_POLICY`, `STORE_POLICY`, `IN_APP_POLICY`), Missing/Omitted (`None`), Invalid string |
 | **Collection Envelope** | Valid `version="privacytrace-policy-collector/1"`, Unsupported version, 0 results (empty), 1-8 results, >8 results |
 | **Collection Result States**| `RETRIEVED` (with text + URL), `PROVIDED` (with text), `URL_ONLY` (URL + empty text), `OFFLINE` (optional source), `UNAVAILABLE` (empty text + error code), `NOT_FOUND` (no source) |
-| **Upload Payload Format** | Standalone single APK (`/apk`), Multi-package archive (`/package-set`), Corrupted ZIP header, Truncated ZIP, Non-ZIP bytes |
-| **Upload Exception Mapping**| Missing draft (404), BadZipFile/EOFError (400), UploadTooLarge (413), ScanError (503), PackageSetIntegrityError (exc.http_status), ValueError/OSError (409) |
+| **Upload Payload Format** | Standalone single APK (`/apk`), Multi-package archive (`/package-set`), Corrupted ZIP header, Truncated ZIP, Non-ZIP bytes, >101 APKs archive |
+| **Upload Exception Mapping**| Missing draft (404), BadZipFile/EOFError (400), UploadTooLarge (413), ScanError (503), PackageSetIntegrityError (exc.http_status: 400 or 413), ValueError/OSError (409) |
 | **Draft Quotas** | Source count <= 8 (valid) vs >8 (409), Candidates <= 800 (valid) vs >800 (409), Audits <= 64 (valid) vs >64 (409) |
-| **Policy Provenance** | Auto-discovered (`MANIFEST_METADATA`), Externally imported (`EXTERNAL_CHAT_EXPORT`) |
+| **Policy Provenance** | Auto-discovered (`MANIFEST_METADATA`), Externally imported (`EXTERNAL_CHAT_EXPORT`), Manual (`MANUAL_INPUT`), Direct fetch (`DIRECT_WEB_FETCH`) |
+| **Candidate Start Semantics** | Unchecked candidates (`checked=False`) accepted without 409; resulting document retains `review_status="UNREVIEWED"` |
 
 ### 2.2 Boundary Value Analysis (BVA)
 
 - **Upload Stream Size Boundary**: `0 bytes` (rejected with 409 on `/apk` or 400 on `/package-set`), `150 * 1024 * 1024` bytes (maximum allowed), `> 150 MiB` (rejected with HTTP 413 `UPLOAD_TOO_LARGE`).
+- **Package Set Entry Boundary**: `101 APKs` (1 base + 100 splits, maximum allowed), `102 APKs` (rejected immediately in intake with HTTP 413 `TOO_MANY_PACKAGES`).
 - **Collection Results Boundary**: `0 results` (rejected with 422), `1 result` (minimal valid collection), `8 results` (maximum allowed collection size), `9 results` (rejected with 422).
 - **Draft Source Capacity Boundary**: `7 existing + 1 added = 8` (allowed), `8 existing + 1 added = 9` (rejected with 409).
 - **External Import History Boundary**: `64 audit entries` (maximum allowed), `65th import` (rejected with 409).
@@ -87,6 +92,7 @@ The PrivacyTrace PR #88 E2E test suite (`apps/api/tests/test_e2e_r6_opaque.py`, 
 - **Batch Ingest x Quota Overflow Rollback**: When a batch import would push total draft sources beyond quota, the entire batch is atomically rolled back without partial ingestion.
 - **Multi-Source Ingest x Package Set Scan x Report Generation**: External sources with `provenance="EXTERNAL_CHAT_EXPORT"` correctly propagate to report tools receipts (`web_external_imports`, `web_policy_sources`) and evidence locators.
 - **Concurrent Draft Isolation**: Independent drafts with distinct capability tokens maintain strict isolation without state or audit leakage.
+- **Concurrent Upload x Service Cleanup**: In-flight uploads registered in `active_drafts` are protected while `start_service` safely purges stale pending uploads.
 
 ### 2.4 Real-World Workload Simulation
 
@@ -110,13 +116,16 @@ The PrivacyTrace PR #88 E2E test suite (`apps/api/tests/test_e2e_r6_opaque.py`, 
 |   - Multi-Source Imports + Quota Enforcement + Atomic Rollback      |
 |   - Multi-Source Ingest + Package Set Upload + Report Receipts      |
 |   - Independent Draft Isolation & Capability Scoping                |
+|   - Active Upload Protection during Service Startup                 |
 +---------------------------------------------------------------------+
                                    ^
 +---------------------------------------------------------------------+
 | Tier 2: Boundary & Corner Cases                                     |
 |   - Empty Upload Body (409 on /apk, 400 on /package-set, 422 JSON)   |
 |   - 150 MiB Stream Boundary Enforcement (HTTP 413 UPLOAD_TOO_LARGE)  |
+|   - 101-Package Limit Immediate Rejection (HTTP 413)                |
 |   - Corrupted ZIP Headers & Central Directory (HTTP 400)            |
+|   - Malformed ARSC Resource String Pool Fault Isolation             |
 |   - Intra-Payload Duplicate Source IDs (422) & Draft Collision (409)|
 |   - Package Set Missing Base APK (HTTP 400 MISSING_BASE_APK)        |
 |   - Source Quota (>8), Candidate Quota (>800), Audit Quota (>64)    |
@@ -124,13 +133,15 @@ The PrivacyTrace PR #88 E2E test suite (`apps/api/tests/test_e2e_r6_opaque.py`, 
                                    ^
 +---------------------------------------------------------------------+
 | Tier 1: Feature Coverage                                            |
-|   - R1: Source Type Confirmation Interception (HTTP 409)            |
-|   - R1: Source Type Valid Types Accepted (SDK/OFFICIAL/STORE/IN_APP)|
-|   - R1: Mislabeling Protection & Isolation                          |
-|   - R2: collector/1 Batch Collection Contract (All 6 States)        |
-|   - R2: Legacy Compatibility (ExternalPolicyExportInput)            |
-|   - R3: Upload Exception Deduplication (/apk and /package-set)      |
-|   - R4: Contract Serialization Integrity (Pydantic Models)          |
+|   - Candidate Unchecked Start Acceptance with UNREVIEWED Semantics   |
+|   - Source Type Confirmation Interception (HTTP 409)                |
+|   - Source Type Valid Types Accepted (SDK/OFFICIAL/STORE/IN_APP)     |
+|   - collector/1 Batch Collection Contract (All 6 States)            |
+|   - Legacy Compatibility (ExternalPolicyExportInput)                |
+|   - WebSource Provenance Enum & Description Typing                  |
+|   - Frontend Source Status Label Rendering (url_only, etc.)         |
+|   - Upload Exception Deduplication (/apk and /package-set)          |
+|   - Contract Serialization Integrity & Zero Schema Drift            |
 +---------------------------------------------------------------------+
 ```
 
@@ -138,29 +149,46 @@ The PrivacyTrace PR #88 E2E test suite (`apps/api/tests/test_e2e_r6_opaque.py`, 
 
 ## 4. Test Suite Mapping
 
-| Suite | File Path | Focus | Test Count |
+| Suite | File Path | Focus | Execution Profile |
 |---|---|---|---|
-| **E2E Opaque Suite** | `apps/api/tests/test_e2e_r6_opaque.py` | 4-Tier Opaque-box E2E Verification for R1, R2, R3, R4 | 21 tests |
-| **External Collection Import** | `apps/api/tests/test_external_collection_import.py` | R1 & R2 Backend Verification, Invariants & Persistence | 40 tests |
-| **PR #88 Regressions** | `apps/api/tests/test_pr88_regressions.py` | Upload Rollback, Package Set Limits, Provenance, Docker | 16 tests |
-| **Total PR #88 R6 Suite** | | | **77 passed, 1 skipped (Docker)** |
+| **PT-MOB-102 E2E Suite** | `apps/api/tests/test_e2e_pt_mob_102.py` | Full E2E multi-package intake, split attribution, start gates | Hermetic / Fast |
+| **E2E Opaque Suite** | `apps/api/tests/test_e2e_r6_opaque.py` | 4-Tier Opaque-box E2E Verification for R1, R2, R3, R4 | Hermetic / Fast |
+| **External Collection Import** | `apps/api/tests/test_external_collection_import.py` | R1 & R2 Backend Verification, Invariants & Persistence | Hermetic / Fast |
+| **PR #88 Regressions** | `apps/api/tests/test_pr88_regressions.py` | Upload Rollback, Package Set Limits, Provenance, Docker | Hermetic (Docker opt-in) |
+| **Web Source Status SFC Test** | `apps/web/tests/source-status.test.ts` | Frontend Vue component status label rendering & dictionary | Node / Vitest |
+| **Web Report Source Test** | `apps/web/tests/report-source.test.cjs` | Web contract and CJS sandbox compatibility | Node / Vitest |
 
 ---
 
-## 5. Quality Gates & Execution Commands
+## 5. Docker Test Boundaries & Environment Requirements
+
+- **Hermetic Contract & Unit Suites**: Standard unit, contract, and mock-based tests run in local environments without Docker daemon dependencies.
+- **Containerized Analysis & Challenger Tests**: Real container extraction and analysis verification (such as `test_challenger_manifest.py`, `test_challenger_dex.py`, and real container runs in `test_pr88_regressions.py`) interact with the Docker daemon and require:
+  - Docker daemon running on the host system.
+  - Environment variable `PRIVACYTRACE_DOCKER_TESTS=1`.
+- **Skip Semantics**: When `PRIVACYTRACE_DOCKER_TESTS` is unset or `0`, container-dependent test cases are skipped intentionally via `@pytest.mark.skipif`, ensuring that developer worktrees and standard CI runners without Docker-in-Docker can execute the complete offline test suite deterministically.
+
+---
+
+## 6. Quality Gates & Execution Commands
 
 ### Test Execution
 ```powershell
-uv run --project apps/api --locked --extra worker pytest apps/api/tests/test_external_collection_import.py apps/api/tests/test_pr88_regressions.py apps/api/tests/test_e2e_r6_opaque.py -v
+uv run --project apps/api --locked --extra worker pytest apps/api/tests/test_external_collection_import.py apps/api/tests/test_pr88_regressions.py apps/api/tests/test_e2e_r6_opaque.py apps/api/tests/test_e2e_pt_mob_102.py -v
 ```
 
 ### Static Analysis & Lint
 ```powershell
-uv run --project apps/api --locked --extra worker ruff check apps/api/src apps/api/tests/test_e2e_r6_opaque.py
+uv run --project apps/api --locked --extra worker ruff check apps/api/src apps/api/tests
 ```
 
 ### Contract & Schema Zero-Drift Gate
 ```powershell
 uv run --project apps/api --locked --extra worker python scripts/export-schema.py
 git diff --exit-code -- packages/contracts apps/web/src/contracts.generated.ts
+```
+
+### Full Authority Gate
+```powershell
+powershell -NoProfile -File scripts/check.ps1
 ```

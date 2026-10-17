@@ -137,7 +137,12 @@
         "provenance": {
           "anyOf": [
             {
-              "maxLength": 100,
+              "enum": [
+                "MANIFEST_METADATA",
+                "EXTERNAL_CHAT_EXPORT",
+                "DIRECT_WEB_FETCH",
+                "MANUAL_INPUT"
+              ],
               "type": "string"
             },
             {
@@ -145,6 +150,7 @@
             }
           ],
           "default": null,
+          "description": "Untrusted clue origin only; does not constitute official policy verification.",
           "title": "Provenance"
         },
         "model_audit": {

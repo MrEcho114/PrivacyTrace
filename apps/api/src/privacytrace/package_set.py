@@ -45,7 +45,9 @@ def directory_digest(directory):
 class PackageSetIntegrityError(Exception):
     """Integrity rejection mapped cleanly to 4xx HTTP responses."""
 
-    def __init__(self, code: str, detail: str, http_status: int = 400):
+    def __init__(self, code: str, detail: str = "", http_status: int = 400):
+        if not detail:
+            detail = f"Package set integrity error: {code}"
         super().__init__(detail)
         self.code = code
         self.detail = detail
@@ -324,6 +326,13 @@ def validate_package_set(
         )
         if not apk_paths:
             raise PackageSetIntegrityError("EMPTY_PACKAGE_SET", "Package set contains no APK files")
+        if len(apk_paths) > 101:
+            raise PackageSetIntegrityError(
+                "PACKAGE_SET_TOO_LARGE",
+                f"Package set contains {len(apk_paths)} APK files; "
+                "maximum allowed is 101 (1 base + 100 splits)",
+                http_status=413,
+            )
         parsed_files = []
         for apk_path in apk_paths:
             pkg_file, _ = inspect_apk_bytes(apk_path.read_bytes(), apk_path.name)
@@ -333,6 +342,15 @@ def validate_package_set(
     # Rule 1: Empty Set
     if not files:
         raise PackageSetIntegrityError("EMPTY_PACKAGE_SET", "Package set contains no APK files")
+
+    # Early rejection if > 101 files
+    if len(files) > 101:
+        raise PackageSetIntegrityError(
+            "PACKAGE_SET_TOO_LARGE",
+            f"Package set contains {len(files)} files; "
+            "maximum allowed is 101 (1 base + 100 splits)",
+            http_status=413,
+        )
 
     # Rule 2: Single file size
     for f in files:

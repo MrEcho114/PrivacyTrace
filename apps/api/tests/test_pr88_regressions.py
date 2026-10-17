@@ -1,8 +1,11 @@
 """PR88 regression guards; fixture doubles and real Docker evidence are separate."""
 
+import io
 import json
 import os
+import struct
 import threading
+import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from uuid import uuid4
@@ -527,3 +530,249 @@ def test_r4_external_import_provenance_survives_persisted_report(tmp_path, monke
         provenance_ev = next(ev for ev in report.evidence if ev.id == doc.evidence_id)
         assert "acquisition=EXTERNAL_CHAT_EXPORT" in provenance_ev.locator
         assert "not proof of official verification" in provenance_ev.locator
+
+
+def test_f1_start_with_unchecked_candidates_yields_unreviewed_policy(tmp_path, monkeypatch):
+    """F1: Starting analysis with unchecked candidates succeeds without gate error,
+
+    and strict UNREVIEWED semantics are preserved on the policy document and report.
+    """
+    sample = apk(tmp_path / "sample.apk", camera=True)
+
+    def scanner(path, **kwargs):
+        return apk_worker.scan(path, taxonomy())
+
+    monkeypatch.setattr(pipeline, "scan_isolated", scanner)
+    app = create_app(tmp_path / "jobs")
+    with TestClient(app) as client:
+        draft = new_draft(client)
+        draft_id = draft["id"]
+        route = f"/api/v1/web/drafts/{draft_id}"
+
+        imported = client.post(
+            f"{route}/import-external",
+            headers=HEADERS,
+            json={
+                "source": {
+                    "title": "Unreviewed Policy Test",
+                    "source_type": "OFFICIAL_WEB_POLICY",
+                    "url": "https://example.com/unreviewed",
+                    "text": "我们在许可后使用相机。",
+                },
+                "claims": [
+                    {
+                        "excerpt": "我们在许可后使用相机。",
+                        "data_type": "CAMERA",
+                        "polarity": "AFFIRMATIVE",
+                        "action": "ACCESS",
+                    }
+                ],
+            },
+        )
+        assert imported.status_code == 200, imported.text
+        draft_data = client.get(route).json()
+        assert len(draft_data["candidates"]) == 1
+        assert draft_data["candidates"][0]["checked"] is False
+
+        updated = client.post(route + "/apk", headers=HEADERS, content=sample.read_bytes())
+        assert updated.status_code == 200, updated.text
+
+        start_resp = client.post(
+            route + "/start",
+            headers=HEADERS,
+            json={"revision": updated.json()["revision"], "request_id": uuid4().hex},
+        )
+        assert start_resp.status_code == 200, start_resp.text
+        job_id = start_resp.json()["id"]
+
+        app.state.web_intake.futures[job_id].result(timeout=15)
+        report = app.state.job_store.report(job_id)
+
+        doc = next(d for d in report.policy_documents if d.title == "Unreviewed Policy Test")
+        assert doc.review_status == "UNREVIEWED"
+        assert doc.completeness == "PARTIAL"
+        assert doc.attachments_status == "NOT_CHECKED"
+        for d in report.policy_documents:
+            assert d.review_status == "UNREVIEWED"
+            assert d.completeness == "PARTIAL"
+            assert d.attachments_status == "NOT_CHECKED"
+
+
+def test_f2_active_upload_staging_protected_from_start_service(tmp_path):
+    """F2: Active uploads tracked in active_drafts are not purged by start_service."""
+    app = create_app(tmp_path / "jobs")
+    service = app.state.web_intake
+    with TestClient(app) as client:
+        draft = new_draft(client)
+        draft_id = draft["id"]
+        directory = service.directory(draft_id)
+
+        pending = service._safe(directory / "upload.pending")
+        pending.write_bytes(b"in-flight-upload-data")
+        staging_pkg = service._safe(directory / "packages.pending.test1234")
+        staging_pkg.mkdir()
+        (staging_pkg / "base.apk").write_bytes(b"fake-apk")
+
+        with service._draft_activity(draft_id):
+            assert service.active_drafts.get(draft_id, 0) > 0
+            if service.owner_fd is not None:
+                os.close(service.owner_fd)
+                service.owner_fd = None
+            service.start_service()
+            assert pending.exists()
+            assert staging_pkg.exists()
+
+        assert service.active_drafts.get(draft_id, 0) == 0
+        if service.owner_fd is not None:
+            os.close(service.owner_fd)
+            service.owner_fd = None
+        service.start_service()
+        assert not pending.exists()
+        assert not staging_pkg.exists()
+
+
+def test_f4_102_package_set_early_rejection(tmp_path):
+    """F4: Package sets with > 101 entries are immediately rejected with HTTP 413."""
+    from privacytrace.package_set import (
+        PackageFile,
+        PackagePart,
+        PackageSetIntegrityError,
+        validate_package_set,
+    )
+
+    app = create_app(tmp_path / "jobs")
+    with TestClient(app) as client:
+        draft = new_draft(client)
+        route = f"/api/v1/web/drafts/{draft['id']}"
+
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            for i in range(102):
+                zf.writestr(f"split_{i}.apk", b"PK\x05\x06" + b"\x00" * 18)
+
+        resp = client.post(route + "/package-set", headers=HEADERS, content=buf.getvalue())
+        assert resp.status_code == 413
+        assert resp.json()["detail"] == "PACKAGE_SET_TOO_LARGE"
+
+        mock_files = [
+            PackageFile(
+                file_name="base.apk",
+                part=PackagePart.BASE,
+                sha256="a" * 64,
+                size_bytes=100,
+                package_name="com.example.test",
+                version_code=1,
+            )
+        ] + [
+            PackageFile(
+                file_name=f"split_{i}.apk",
+                part=PackagePart.SPLIT,
+                split_name=f"split_{i}",
+                sha256="b" * 64,
+                size_bytes=100,
+                package_name="com.example.test",
+                version_code=1,
+            )
+            for i in range(101)
+        ]
+        assert len(mock_files) == 102
+        with pytest.raises(PackageSetIntegrityError) as exc_info:
+            validate_package_set(mock_files)
+        assert exc_info.value.http_status == 413
+        assert exc_info.value.code == "PACKAGE_SET_TOO_LARGE"
+
+
+def test_f5_arsc_resource_parsing_fault_isolation():
+    """F5: Corrupt or malformed ARSC entries do not crash worker or abort URL discovery."""
+    from privacytrace.apk_worker import _manifest_resource_strings
+
+    class BrokenResources:
+        def get_packages_names(self):
+            raise struct.error("unpack requires a buffer of 4 bytes")
+
+    assert _manifest_resource_strings("@string/broken", BrokenResources(), "com.example") == []
+
+
+def test_f6_behavior_budget_deduplication_and_split_tools(tmp_path, monkeypatch):
+    """F6: Split permissions matching base are deduplicated, split tools are aggregated,
+
+    and URL truncation beyond 8 entries records an explicit limitation notice.
+    """
+    from privacytrace.apk_worker import inspect_package_metadata
+
+    class MockElement:
+        def __init__(self, val):
+            self.val = val
+
+        def get(self, key, default=""):
+            return self.val
+
+    class MockXmlRoot:
+        def iter(self, tag):
+            if tag == "meta-data":
+                return [
+                    MockElement(f"https://example.com/policy_{i}")
+                    for i in range(12)
+                ]
+            return []
+
+    class MockArchive:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def read(self, name):
+            return b""
+
+    class MockAXMLPrinter:
+        def __init__(self, data):
+            pass
+
+        def get_xml_obj(self):
+            return MockXmlRoot()
+
+    apk_file = tmp_path / "test.apk"
+    apk_file.write_bytes(b"PK\x05\x06" + b"\x00" * 18)
+
+    monkeypatch.setattr("privacytrace.apk_worker.ZipFile", MockArchive)
+    monkeypatch.setattr("androguard.core.axml.AXMLPrinter", MockAXMLPrinter)
+    monkeypatch.setattr(
+        "privacytrace.package_set.inspect_apk_bytes",
+        lambda data, name: (
+            type("Pkg", (), {"sha256": "0" * 64, "model_dump": lambda self, mode: {}})(),
+            [],
+        ),
+    )
+
+    meta_result = inspect_package_metadata(apk_file)
+    assert len(meta_result["policy_urls"]) == 8
+    assert any(
+        "Discovered policy URLs truncated at 8" in note
+        for note in meta_result["coverage"]["limitations"]
+    )
+
+
+def test_f7_websource_provenance_validation():
+    """F7: WebSource.provenance accepts only valid enum literals and rejects arbitrary strings."""
+    from pydantic import ValidationError
+
+    from privacytrace.web_models import WebSource
+
+    valid_vals = (
+        "MANIFEST_METADATA",
+        "EXTERNAL_CHAT_EXPORT",
+        "DIRECT_WEB_FETCH",
+        "MANUAL_INPUT",
+        None,
+    )
+    for val in valid_vals:
+        src = WebSource(id="s1", title="test", provenance=val)
+        assert src.provenance == val
+
+    with pytest.raises(ValidationError):
+        WebSource(id="s1", title="test", provenance="INVALID_PROVENANCE")

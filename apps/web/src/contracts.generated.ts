@@ -345,6 +345,6 @@ export type WebSource = {
   "captured_at"?: string | null;
   "sha256"?: string | null;
   "final_url"?: string | null;
-  "provenance"?: string | null;
+  "provenance"?: "MANIFEST_METADATA" | "EXTERNAL_CHAT_EXPORT" | "DIRECT_WEB_FETCH" | "MANUAL_INPUT" | null;
   "model_audit"?: Record<string, string | number | boolean>;
 };

@@ -1,5 +1,5 @@
 import type {
-  AnalysisJob, EvaluationResult, Evidence, PolicyDocument, PrivacyBehavior,
+  AnalysisJob, EvaluationResult, Evidence, PolicyDocument, PrivacyBehavior, WebSource,
 } from './contracts.generated'
 
 export type * from './contracts.generated'
@@ -44,4 +44,14 @@ export function parseSource(val: string): ReportSource {
     return { kind: 'job', id: val.slice(4) }
   }
   return { kind: 'job', id: val }
+}
+
+export type SourceStatus = NonNullable<WebSource['status']>
+
+export const sourceStatusLabels: Record<NonNullable<WebSource['status']>, string> = {
+  ready: '已获取网页正文',
+  failed: '来源获取失败',
+  manual: '手动补入正文',
+  empty: '尚无正文',
+  url_only: '仅有链接，尚无正文',
 }

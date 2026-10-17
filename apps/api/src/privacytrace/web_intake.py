@@ -395,6 +395,14 @@ class WebIntake:
                     "EMPTY_PACKAGE_SET", "No APK files found in package set archive"
                 )
 
+            if len(apk_entries) > 101:
+                raise PackageSetIntegrityError(
+                    "PACKAGE_SET_TOO_LARGE",
+                    f"Package set contains {len(apk_entries)} APK files; "
+                    "maximum allowed is 101 (1 base + 100 splits)",
+                    http_status=413,
+                )
+
             for entry in apk_entries:
                 file_basename = PurePosixPath(entry.filename).name
                 dest_path = self._safe(target_dir / file_basename)
@@ -432,51 +440,52 @@ class WebIntake:
             self._upload_slots.release()
 
     async def _upload_reserved(self, draft_id, request, expect_package_set: bool = False):
-        directory = self.directory(draft_id)
-        pending = self._safe(directory / "upload.pending")
-        staging_packages = self._safe(directory / f"packages.pending.{uuid4().hex}")
-        fd = None
-        owns_pending = False
-        try:
-            with self.data_store._transaction():
-                draft = self._get(draft_id)
-                if draft["uploaded"] or draft["jobs"]:
-                    raise ValueError("APK already uploaded; new materials require a new draft")
-                fd = os.open(pending, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-                owns_pending = True
-            size = 0
-            digest = hashlib.sha256()
-            with os.fdopen(fd, "wb") as handle:
-                fd = None  # The file object now owns the descriptor.
-                async for chunk in request.stream():
-                    size += len(chunk)
-                    if size > MAX_INPUT:
-                        raise UploadTooLarge("Upload exceeds 150 MiB")
-                    digest.update(chunk)
-                    await anyio.to_thread.run_sync(handle.write, chunk, abandon_on_cancel=False)
-                if size == 0:
-                    if expect_package_set:
-                        raise PackageSetIntegrityError(
-                            "EMPTY_PACKAGE_SET", "Package set upload is empty"
-                        )
-                    raise ValueError("Upload is empty")
-                await anyio.to_thread.run_sync(
-                    lambda: (handle.flush(), os.fsync(handle.fileno())),
-                    abandon_on_cancel=False,
-                )
+        with self._draft_activity(draft_id):
+            directory = self.directory(draft_id)
+            pending = self._safe(directory / "upload.pending")
+            staging_packages = self._safe(directory / f"packages.pending.{uuid4().hex}")
+            fd = None
+            owns_pending = False
+            try:
+                with self.data_store._transaction():
+                    draft = self._get(draft_id)
+                    if draft["uploaded"] or draft["jobs"]:
+                        raise ValueError("APK already uploaded; new materials require a new draft")
+                    fd = os.open(pending, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                    owns_pending = True
+                size = 0
+                digest = hashlib.sha256()
+                with os.fdopen(fd, "wb") as handle:
+                    fd = None  # The file object now owns the descriptor.
+                    async for chunk in request.stream():
+                        size += len(chunk)
+                        if size > MAX_INPUT:
+                            raise UploadTooLarge("Upload exceeds 150 MiB")
+                        digest.update(chunk)
+                        await anyio.to_thread.run_sync(handle.write, chunk, abandon_on_cancel=False)
+                    if size == 0:
+                        if expect_package_set:
+                            raise PackageSetIntegrityError(
+                                "EMPTY_PACKAGE_SET", "Package set upload is empty"
+                            )
+                        raise ValueError("Upload is empty")
+                    await anyio.to_thread.run_sync(
+                        lambda: (handle.flush(), os.fsync(handle.fileno())),
+                        abandon_on_cancel=False,
+                    )
 
-            # Shield the worker until rollback or commit has completed.
-            return await anyio.to_thread.run_sync(
-                self._finish_upload, draft_id, directory, pending, staging_packages,
-                expect_package_set, digest.hexdigest(), abandon_on_cancel=False,
-            )
-        finally:
-            if fd is not None:
-                os.close(fd)
-            if owns_pending:
-                pending.unlink(missing_ok=True)
-            if staging_packages.exists():
-                shutil.rmtree(staging_packages, ignore_errors=True)
+                # Shield the worker until rollback or commit has completed.
+                return await anyio.to_thread.run_sync(
+                    self._finish_upload, draft_id, directory, pending, staging_packages,
+                    expect_package_set, digest.hexdigest(), abandon_on_cancel=False,
+                )
+            finally:
+                if fd is not None:
+                    os.close(fd)
+                if owns_pending:
+                    pending.unlink(missing_ok=True)
+                if staging_packages.exists():
+                    shutil.rmtree(staging_packages, ignore_errors=True)
 
     def _finish_upload(self, draft_id, directory, pending, staging_packages,
                        expect_package_set, uploaded_digest):
@@ -525,6 +534,19 @@ class WebIntake:
                         for p in sorted(staging_packages.iterdir())
                     ])
 
+                target_packages = self._safe(directory / "packages")
+                if target_packages.exists():
+                    shutil.rmtree(target_packages)
+                os.replace(staging_packages, target_packages)
+                published_packages = True
+
+                # Maintain input.apk as copy of base APK for backward compatibility
+                base_path = target_packages / package_set.base.file_name
+                input_apk = self._safe(directory / "input.apk")
+                if base_path.exists():
+                    published_apk = True
+                    shutil.copyfile(base_path, input_apk)
+
                 with self.data_store._transaction():
                     draft = self._get(draft_id)
                     if draft["uploaded"] or draft["jobs"]:
@@ -532,18 +554,6 @@ class WebIntake:
 
                     rollback_draft = deepcopy(draft)
                     rollback_revision = draft["revision"] + 1
-                    target_packages = self._safe(directory / "packages")
-                    if target_packages.exists():
-                        shutil.rmtree(target_packages)
-                    os.replace(staging_packages, target_packages)
-                    published_packages = True
-
-                    # Maintain input.apk as copy of base APK for backward compatibility
-                    base_path = target_packages / package_set.base.file_name
-                    input_apk = self._safe(directory / "input.apk")
-                    if base_path.exists():
-                        published_apk = True
-                        shutil.copyfile(base_path, input_apk)
 
                     draft.update(
                         uploaded=True,
@@ -553,14 +563,16 @@ class WebIntake:
                     )
                     return self._save(draft)
             else:
+                input_apk = self._safe(directory / "input.apk")
+                os.replace(pending, input_apk)
+                published_apk = True
+
                 with self.data_store._transaction():
                     draft = self._get(draft_id)
                     if draft["uploaded"] or draft["jobs"]:
                         raise ValueError("APK already uploaded; new materials require a new draft")
                     rollback_draft = deepcopy(draft)
                     rollback_revision = draft["revision"] + 1
-                    os.replace(pending, self._safe(directory / "input.apk"))
-                    published_apk = True
                     draft.update(
                         uploaded=True,
                         apk_sha256=uploaded_digest,
@@ -572,7 +584,7 @@ class WebIntake:
             # The DB transaction may have rolled back, while rename/copy already
             # published bytes on the private volume. Only remove files owned by
             # this request; never touch an existing upload reservation.
-            if published_apk:
+            if published_apk or published_packages:
                 self._safe(directory / "input.apk").unlink(missing_ok=True)
             if published_packages:
                 shutil.rmtree(self._safe(directory / "packages"), ignore_errors=True)
@@ -1093,6 +1105,8 @@ class WebIntake:
                 raise ValueError("Another web intake process owns this store") from exc
             self.owner_fd = fd
             for directory in self._draft_directories():
+                if self.active_drafts.get(directory.name, 0):
+                    continue
                 draft = self._get(directory.name)
                 changed = False
                 for p in directory.glob("upload.pending*"):
@@ -1196,6 +1210,11 @@ class WebIntake:
                 raise ValueError("Registered APK digest is unavailable")
             if len(draft["jobs"]) >= 10 or sum(not f.done() for f in self.futures.values()) >= 4:
                 raise ValueError("Local job quota reached")
+            # Per Issue #70 and S1 user acceptance (docs/stages/s1-acceptance-20261009.md),
+            # analysis start does not require manual candidate checks (require_checked=False).
+            # Unreviewed candidates yield policy documents with review_status="UNREVIEWED",
+            # completeness="PARTIAL", and attachments_status="NOT_CHECKED", which are evaluated
+            # as INSUFFICIENT_EVIDENCE by the consistency engine, never promoted to REVIEWED.
             captures = self.captures(draft, require_checked=False)
             job = AnalysisJob(
                 id=uuid4().hex,

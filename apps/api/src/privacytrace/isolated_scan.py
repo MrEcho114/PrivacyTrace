@@ -453,9 +453,9 @@ def scan_isolated(
     return output
 
 
-def inspect_package_isolated(path):
+def inspect_package_isolated(path, timeout=120):
     """Read manifest metadata in the same bounded, inspected worker as scanning."""
-    return scan_isolated(path, metadata=True)
+    return scan_isolated(path, metadata=True, timeout=timeout)
 
 
 def main():

@@ -96,4 +96,4 @@ If no privacy declarations exist in the text, output an empty JSON array: [].
 
 原句、类型、偏移与候选来源仍须经 PrivacyTrace 既有校验。模型输出保持未复核；不能自动填 checked=true。原文与候选分开，既有启动流程的限制不由本包绕过。
 
-版本：privacytrace-policy-collector/1，prompt 1.0.0，ruleset 0.3.0。接入或维护时读[接入说明](integration.md)与[版本依据](provenance.json)；此处复制文本已经包含收集所需内容和可选抽取提示词。
+版本：privacytrace-policy-collector/1，prompt 1.0.0，ruleset 0.3.0。维护资料[接入说明](integration.md)与[版本依据](provenance.json)使用包内相对路径，仅在仓库或本地包中读取。网页复制所需的收集约束和可选抽取提示词已完整包含于本文。

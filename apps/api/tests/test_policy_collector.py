@@ -88,7 +88,8 @@ def test_unreadable_text_returns_no_source_or_private_error_details(tmp_path, co
     assert "Traceback" not in result.stderr
 
 
-def test_stale_export_check_rejects_without_overwriting(tmp_path):
+@pytest.fixture
+def copied_checkout(tmp_path):
     checkout = tmp_path / "checkout"
     manifest = json.loads((PACKAGE / "provenance.json").read_text(encoding="utf-8"))
     for relative in [*manifest["source_sha256"], "scripts/build-policy-collector.py"]:
@@ -97,12 +98,43 @@ def test_stale_export_check_rejects_without_overwriting(tmp_path):
         shutil.copyfile(ROOT / relative, target)
     package = checkout / "skills/privacytrace-policy-collector"
     shutil.copytree(PACKAGE, package)
+    return checkout
+
+
+def test_stale_export_check_rejects_without_overwriting(copied_checkout):
+    checkout = copied_checkout
+    package = checkout / "skills/privacytrace-policy-collector"
     altered = package / "scripts/prepare-extraction.py"
     altered.write_text("modified export", encoding="utf-8")
     result = run_python(checkout / "scripts/build-policy-collector.py", "--check", cwd=checkout)
     assert result.returncode == 1
     assert "scripts/prepare-extraction.py" in result.stderr
     assert altered.read_text(encoding="utf-8") == "modified export"
+
+
+@pytest.mark.parametrize("check", [False, True], ids=["build", "check"])
+@pytest.mark.parametrize("old,new", [
+    ("sanitized = sanitize_untrusted_text(text)", "sanitized = external_normalizer(text)"),
+    ("sanitized = sanitize_untrusted_text(text)",
+     "sanitized = (lambda value: external_normalizer(value))(text)"),
+    ("sanitized = sanitize_untrusted_text(text)",
+     "import textwrap\n    sanitized = textwrap.dedent(text)"),
+    ("def build_user_prompt(text: str) -> str:",
+     "def build_user_prompt(text: str) -> MissingType:"),
+], ids=["external-global", "nested-scope", "new-import", "annotation"])
+def test_upstream_dependencies_fail_before_changing_exports(copied_checkout, check, old, new):
+    source = copied_checkout / "apps/api/src/privacytrace/policy_llm_extractor.py"
+    text = source.read_text(encoding="utf-8")
+    assert old in text
+    source.write_text(text.replace(old, new, 1), encoding="utf-8")
+    package = copied_checkout / "skills/privacytrace-policy-collector"
+    before = {path: path.read_bytes() for path in package.rglob("*") if path.is_file()}
+    result = run_python(copied_checkout / "scripts/build-policy-collector.py",
+                        *(["--check"] if check else []), cwd=copied_checkout)
+    assert result.returncode == 1
+    assert "dependencies changed; review the package builder" in result.stderr
+    assert result.stdout == ""
+    assert {path: path.read_bytes() for path in package.rglob("*") if path.is_file()} == before
 
 
 @pytest.mark.parametrize("example", EXAMPLES["collection"], ids=lambda x: x["state"])

@@ -2,6 +2,8 @@
 
 本包属于 #79。`COPY.txt` 整份复制即可使用，`SKILL.md` 使用同一模板生成。源码以 `provenance.json` 的相对路径、版本和 UTF-8/LF 哈希追溯。维护入口为 `uv run --project apps/api python scripts/build-policy-collector.py`；加 `--check` 检测漂移，不能手工改生成物掩盖漂移。
 
+上游正文边界函数新增全局依赖或内部导入时，生成和检查均明确失败，先复核便携环境再更新生成器；隔离运行回归继续核对独立脚本与原函数的输出。
+
 ## 字段复用与确有缺口
 
 | 需求 | 既有权威 | 本包处理 |

@@ -368,3 +368,160 @@ def test_pr88_restart_removes_uncommitted_upload_material(tmp_path):
         assert not (directory / "packages").exists()
         assert not (directory / "upload.pending").exists()
         assert not client.get(f"/api/v1/web/drafts/{draft['id']}").json()["uploaded"]
+
+
+def test_r4_upload_inspection_does_not_block_other_http_requests(tmp_path, monkeypatch):
+    """Metadata inspection runs off the ASGI event loop, not on it."""
+    entered, release = threading.Event(), threading.Event()
+    sample = apk(tmp_path / "base.apk")
+    archive = package_set_archive(tmp_path / "bundle.zip", {"base.apk": sample.read_bytes()})
+
+    def slow_metadata(path, **kwargs):
+        entered.set()
+        assert release.wait(10), "Test inspection fixture timed out"
+        return apk_worker.inspect_package_metadata(path)
+
+    monkeypatch.setattr(web_intake, "inspect_package_isolated", slow_metadata)
+    app = create_app(tmp_path / "jobs")
+    with TestClient(app) as client, ThreadPoolExecutor(max_workers=2) as pool:
+        first = new_draft(client)
+        second = new_draft(client)
+        route = f"/api/v1/web/drafts/{first['id']}/package-set"
+        pending = pool.submit(client.post, route, headers=HEADERS, content=archive.read_bytes())
+        try:
+            assert entered.wait(5)
+            # The same TestClient and app event loop must service the other draft.
+            other = pool.submit(
+                client.get, f"/api/v1/web/drafts/{second['id']}"
+            ).result(timeout=3)
+            assert other.status_code == 200
+        finally:
+            release.set()
+        completed = pending.result(timeout=15)
+        assert completed.status_code == 200, completed.text
+
+
+def _r4_fake_scan_result(package_split, sdk_count=0, *, behavior_warning=None):
+    import hashlib
+
+    name = package_split or "base"
+    coverage = {
+        "completeness": "COMPLETE",
+        "scope": "DEX_ENTRIES",
+        "behavior_detection": "LIMITED_RULE_BASED_STATIC",
+        "behavior_limitations": [behavior_warning] if behavior_warning else [],
+        "sdk_attribution_limitations": (
+            [f"SDK truncated in {name}"] if name == "feature" else []
+        ),
+        "limitations": [f"Missing resources in {name}"] if name == "feature" else [],
+        "scanned_dex": [f"{name}:classes.dex"],
+        "failed_dex": [],
+    }
+    return {
+        "apk_sha256": hashlib.sha256(name.encode()).hexdigest(),
+        "package_name": "org.example",
+        "version_code": 1,
+        "version_name": "1",
+        "permissions": [],
+        "dex_entries": [f"{name}:classes.dex"],
+        "coverage": coverage,
+        "tools": {"androguard": "test", "ruleset": "test"},
+        "evidence": [
+            {
+                "id": f"sdk-{name}-{i}",
+                "kind": "SDK",
+                "status": "STATIC_POTENTIAL",
+                "source": f"{name}:classes.dex",
+                "locator": f"sdk={name}:{i}",
+                "excerpt": "Synthetic SDK attribution",
+                "package_split": name,
+            }
+            for i in range(sdk_count)
+        ],
+        "behaviors": [],
+        "errors": [],
+    }
+
+
+def test_r4_split_limitations_and_sdk_budget_are_merged(tmp_path, monkeypatch):
+    """SDK selection is collection-bounded and split limitations survive the merge."""
+    base = tmp_path / "base.apk"
+    feature = tmp_path / "feature.apk"
+    config = tmp_path / "config.apk"
+    for item in (base, feature, config):
+        item.write_bytes(b"synthetic")
+    scans = {
+        "base": _r4_fake_scan_result("base", 500),
+        "feature": _r4_fake_scan_result(
+            "feature", 500, behavior_warning="Mapped behavior output truncated at 500"
+        ),
+        "config": _r4_fake_scan_result("config", 500),
+    }
+
+    def fake_scan(path, rules, **kwargs):
+        part = kwargs.get("package_split") or "base"
+        return scans[part]
+
+    monkeypatch.setattr(apk_worker, "scan", fake_scan)
+    result = apk_worker.scan_package_set(
+        base, [("feature", feature), ("config", config)], {"version": "test"}
+    )
+    sdk = [ev for ev in result["evidence"] if ev["kind"] == "SDK"]
+    assert len(sdk) == apk_worker.MAX_SDK_ATTRIBUTIONS
+    assert {"base", "feature", "config"} <= {ev["package_split"] for ev in sdk}
+    assert len({ev["id"] for ev in sdk}) == len(sdk)
+    notes = result["coverage"]
+    assert any("feature" in note and "truncated at 500" in note
+               for note in notes["behavior_limitations"])
+    assert any("feature" in note and "SDK truncated" in note
+               for note in notes["sdk_attribution_limitations"])
+    assert any("Package-set SDK attribution output capped" in note
+               for note in notes["sdk_attribution_limitations"])
+    assert any("feature" in note and "Missing resources" in note
+               for note in notes["limitations"])
+
+
+def test_r4_external_import_provenance_survives_persisted_report(tmp_path, monkeypatch):
+    """Externally supplied policy text must not become verified official fetch data."""
+    sample = apk(tmp_path / "input.apk")
+    app = create_app(tmp_path / "jobs")
+
+    def fixture_scanner(path, **kwargs):
+        return apk_worker.scan(path, taxonomy())
+
+    monkeypatch.setattr(pipeline, "scan_isolated", fixture_scanner)
+    with TestClient(app) as client:
+        draft = new_draft(client)
+        route = f"/api/v1/web/drafts/{draft['id']}"
+        imported = client.post(
+            route + "/import-external", headers=HEADERS,
+            json={
+                "source": {
+                    "title": "Externally supplied policy",
+                    "url": "https://example.com/privacy",
+                    "text": "我们在许可后使用相机。",
+                },
+                "claims": [],
+            },
+        )
+        assert imported.status_code == 200, imported.text
+        updated = client.post(
+            route + "/apk", headers=HEADERS, content=sample.read_bytes()
+        )
+        assert updated.status_code == 200, updated.text
+        job = client.post(
+            route + "/start", headers=HEADERS,
+            json={"revision": updated.json()["revision"], "request_id": uuid4().hex},
+        )
+        assert job.status_code == 200, job.text
+        job_id = job.json()["id"]
+        app.state.web_intake.futures[job_id].result(timeout=15)
+        report = app.state.job_store.report(job_id)
+        receipts = json.loads(report.tools["web_policy_sources"])
+        ext = next(s for s in receipts if s["title"] == "Externally supplied policy")
+        assert ext["provenance"] == "EXTERNAL_CHAT_EXPORT"
+        doc = next(d for d in report.policy_documents
+                   if d.title == "Externally supplied policy")
+        provenance_ev = next(ev for ev in report.evidence if ev.id == doc.evidence_id)
+        assert "acquisition=EXTERNAL_CHAT_EXPORT" in provenance_ev.locator
+        assert "not proof of official verification" in provenance_ev.locator

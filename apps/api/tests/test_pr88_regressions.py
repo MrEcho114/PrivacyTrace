@@ -141,7 +141,8 @@ def test_discovery_releases_shared_lock_and_rejects_stale_results(tmp_path, monk
             current = executor.submit(service.get, draft["id"]).result(timeout=1)
             assert current["uploaded"]
             changed = client.post(
-                route + "/import-external", headers=HEADERS, json={"source": {"text": "补充政策"}}
+                route + "/import-external", headers=HEADERS,
+                json={"source": {"text": "补充政策", "source_type": "IN_APP_POLICY"}},
             )
             assert changed.status_code == 200
         finally:
@@ -171,7 +172,7 @@ def test_external_import_rejects_ambiguity_and_cumulative_quotas(tmp_path, case)
             f"/api/v1/web/drafts/{draft['id']}/import-external",
             headers=HEADERS,
             json={
-                "source": {"text": text},
+                "source": {"text": text, "source_type": "IN_APP_POLICY"},
                 "claims": [
                     {"excerpt": "我们读取相机。", "data_type": "CAMERA"},
                 ],
@@ -498,6 +499,7 @@ def test_r4_external_import_provenance_survives_persisted_report(tmp_path, monke
             json={
                 "source": {
                     "title": "Externally supplied policy",
+                    "source_type": "OFFICIAL_WEB_POLICY",
                     "url": "https://example.com/privacy",
                     "text": "我们在许可后使用相机。",
                 },

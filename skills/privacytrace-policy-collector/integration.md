@@ -29,6 +29,22 @@ WebIntake.create 会清空 model_audit/final_url，重建 captured_at/sha256。�
 
 可选准备工具复制现有 sanitize_untrusted_text / build_user_prompt 的源码及 SYSTEM_PROMPT。输出 source_id 是宿主上下文，messages 仍为原有模型消息；不把 source_id 作为模型候选字段。多来源逐个调用并绑定 source_id，候选交回旧验证器后再关联 WebCandidate，不拼接政策。用户已选择多份时依次处理，不强制缩减选择；网页分段标识由回填入口关联，不将段标题当候选字段。旧启动仍要求候选 checked，该门槛的业务变更归 #70，本包不自动勾选绕过。
 
+## PR #88 候选导入接口
+
+`POST /api/v1/web/drafts/{draft_id}/import-external` 接受本包的
+`{"version":"privacytrace-policy-collector/1","results":[...]}`；远程模式使用该草稿的访问凭据。
+非空来源须先明确 `source_type`；缺失时返回 409 `SOURCE_TYPE_CONFIRMATION_REQUIRED`，不写入草稿。
+`source.id` 保留为草稿来源 ID，与已有来源冲突时整批拒绝。导入不联网，不把外部取得正文标为服务端抓取成功。
+
+兼容的单来源格式仍为 `{"source":{...},"claims":[...],"summary":"..."}`，也须明确来源类型。
+claims 继续经既有原句、类型及引用校验，保持未复核；摘要不进入政策原文。
+标准收集包不增加 claims 字段，按返回的来源 ID 使用既有候选保存接口关联抽取结果。
+
+外部 state、observed_at 和来源 ID/类别保存在草稿 `external_imports` 审计中，
+经过后续抓取和提取仍保留，并进入报告 `tools.web_external_imports`；observed_at 是外部自报时点。
+`source=null` 仅保留审计，不建虚构来源。每个草稿最多保留 64 次导入审计；批量失败不部分保存。
+公共 schema 为 `web-external-collection-input` 和 `web-external-policy-input`。
+
 ## 验证分类
 
 examples.json 为合成材料，example.invalid 无效。自动化检查生成漂移、复制后独立运行、标记转义和单来源绑定，以及既有 HTTP/原句校验兼容。Skill 结构、合成行为、真实联网、#70 新导入器、#72 手机直连与最终报告分别验收。本包未完成后三类，不因此关闭完整 #79。

@@ -29,6 +29,19 @@ export type CandidateInput = {
   "candidates": Array<WebCandidate>;
 };
 
+export type CollectedSourceInput = {
+  "source_type"?: "OFFICIAL_WEB_POLICY" | "SDK_POLICY" | "STORE_POLICY" | "IN_APP_POLICY" | null;
+  "title": string;
+  "url"?: string;
+  "text"?: string;
+  "version"?: string;
+  "region"?: string;
+  "product"?: string;
+  "package_name"?: string;
+  "version_code"?: number | null;
+  "id": string;
+};
+
 export type ContextualHint = {
   "value": string;
   "basis"?: "CONTEXTUAL_PURPOSE_HINT";
@@ -69,6 +82,48 @@ export type Evidence = {
   "end_offset"?: number | null;
   "api_call"?: ApiCall | null;
   "package_split"?: string | null;
+};
+
+export type ExternalClaimInput = {
+  "excerpt": string;
+  "data_type": string;
+  "polarity"?: "AFFIRMATIVE" | "NEGATIVE" | "POSITIVE" | "UNKNOWN";
+  "subject"?: "HOST_APP" | "THIRD_PARTY" | "UNKNOWN";
+  "action"?: "ACCESS" | "UNKNOWN";
+  "condition"?: string | null;
+  "declared_purpose"?: string | null;
+  "declared_recipient"?: string | null;
+};
+
+export type ExternalCollectionResult = {
+  "state": "RETRIEVED" | "PROVIDED" | "URL_ONLY" | "OFFLINE" | "NOT_FOUND" | "UNAVAILABLE";
+  "source": CollectedSourceInput | null;
+  "observed_at"?: string | null;
+};
+
+export type ExternalPolicyCollectionInput = {
+  "version": "privacytrace-policy-collector/1";
+  "results": Array<ExternalCollectionResult>;
+};
+
+export type ExternalPolicyExportInput = {
+  "source": ExternalSourceInput;
+  "claims"?: Array<ExternalClaimInput>;
+  "summary"?: string | null;
+};
+
+export type ExternalSourceInput = {
+  "source_type"?: "OFFICIAL_WEB_POLICY" | "SDK_POLICY" | "STORE_POLICY" | "IN_APP_POLICY" | null;
+  "title"?: string;
+  "url"?: string;
+  "text"?: string;
+  "version"?: string;
+  "region"?: string;
+  "product"?: string;
+  "package_name"?: string;
+  "version_code"?: number | null;
+  "id"?: string | null;
+  "status"?: "ready" | "manual" | "empty" | "failed" | "url_only" | null;
 };
 
 export type JobsResponse = {

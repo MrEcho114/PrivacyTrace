@@ -10,7 +10,7 @@
   "source_sha256": {
     "apps/api/src/privacytrace/models.py": "7e5180d5db269719670202cdd1799875354fdf942ab74a87fcfd1169ebf0a890",
     "apps/api/src/privacytrace/policy_llm_extractor.py": "04bbc7fb104fa2022189c1cdf607922730bf6e2b27a20f35af69fa6f9d61c9c5",
-    "apps/api/src/privacytrace/web_models.py": "e42f4c8c3a5e85584c41e3a7b2edd089e66108fe353908ef941cb9b6b99a3a1d",
+    "apps/api/src/privacytrace/web_models.py": "e49e75a6fab84294f5a1924807ecc95a52eda1e331bbe6da21367a9283382bec",
     "rules/taxonomy.v0.3.json": "e63297c70dcb3ec67b797e315fdfe469d617296b7bd51084a5ed8e950f513951"
   },
   "template_sha256": "097048f371a82cf9134337dd237f68e1ac9471f336dadf30501b718aac12ea82",

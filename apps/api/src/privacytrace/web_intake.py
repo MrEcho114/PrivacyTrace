@@ -13,6 +13,7 @@ import zipfile
 import zlib
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import asynccontextmanager, contextmanager
+from contextvars import copy_context
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
@@ -71,6 +72,34 @@ def inspection_timeout(deadline):
     if seconds <= 0:
         raise ScanError("TIMEOUT", "Package inspection budget exhausted")
     return max(1, min(120, math.ceil(seconds)))
+
+
+async def run_intake_worker(operation, *args):
+    """Drain owned I/O before propagating cancellation or cleaning its inputs."""
+    await anyio.lowlevel.checkpoint()
+    context = copy_context()
+    worker = asyncio.get_running_loop().run_in_executor(None, context.run, operation, *args)
+    cancelled = None
+    result = error = None
+    with anyio.CancelScope(shield=True):
+        while not worker.done():
+            try:
+                await asyncio.shield(worker)
+            except asyncio.CancelledError as exc:
+                cancelled = cancelled or exc
+            except BaseException:
+                break  # Consume the completed worker's exception below.
+        try:
+            result = worker.result()
+        except BaseException as exc:
+            error = exc
+    if cancelled is not None:
+        raise cancelled
+    # Deliver a pending AnyIO cancellation only after the worker owns no I/O.
+    await anyio.lowlevel.checkpoint()
+    if error is not None:
+        raise error
+    return result
 
 
 def inspect_uploaded_package(path, *, timeout=120):
@@ -489,9 +518,7 @@ class WebIntake:
                                 if size > MAX_INPUT:
                                     raise UploadTooLarge("Upload exceeds 150 MiB")
                                 digest.update(chunk)
-                                await anyio.to_thread.run_sync(
-                                    handle.write, chunk, abandon_on_cancel=False
-                                )
+                                await run_intake_worker(handle.write, chunk)
                     except TimeoutError as exc:
                         raise UploadTimedOut("UPLOAD_TIMEOUT") from exc
                     if size == 0:
@@ -500,15 +527,14 @@ class WebIntake:
                                 "EMPTY_PACKAGE_SET", "Package set upload is empty"
                             )
                         raise ValueError("Upload is empty")
-                    await anyio.to_thread.run_sync(
+                    await run_intake_worker(
                         lambda: (handle.flush(), os.fsync(handle.fileno())),
-                        abandon_on_cancel=False,
                     )
 
                 # Shield the worker until rollback or commit has completed.
-                return await anyio.to_thread.run_sync(
+                return await run_intake_worker(
                     self._finish_upload, draft_id, directory, pending, staging_packages,
-                    expect_package_set, digest.hexdigest(), abandon_on_cancel=False,
+                    expect_package_set, digest.hexdigest(),
                 )
             finally:
                 if fd is not None:
@@ -528,6 +554,11 @@ class WebIntake:
 
         def remaining_timeout():
             return inspection_timeout(inspection_deadline)
+
+        def inspect_within_budget(path):
+            package = inspect_uploaded_package(path, timeout=remaining_timeout())
+            remaining_timeout()
+            return package
 
         try:
             is_pkg_set = expect_package_set or self._is_multi_package_archive(pending)
@@ -553,18 +584,20 @@ class WebIntake:
                 if has_root_manifest:
                     staged_base = staging_packages / "base.apk"
                     shutil.copyfile(pending, staged_base)
-                    pkg_file = inspect_uploaded_package(staged_base, timeout=remaining_timeout())
+                    pkg_file = inspect_within_budget(staged_base)
                     package_set = validate_package_set([pkg_file])
                 else:
                     self._unpack_package_set(pending, staging_packages)
                     package_set = validate_package_set([
-                        inspect_uploaded_package(p, timeout=remaining_timeout())
+                        inspect_within_budget(p)
                         for p in sorted(staging_packages.iterdir())
                     ])
 
+                remaining_timeout()
                 target_packages = self._safe(directory / "packages")
                 if target_packages.exists():
                     shutil.rmtree(target_packages)
+                remaining_timeout()
                 os.replace(staging_packages, target_packages)
                 published_packages = True
 
@@ -572,6 +605,7 @@ class WebIntake:
                 base_path = target_packages / package_set.base.file_name
                 input_apk = self._safe(directory / "input.apk")
                 if base_path.exists():
+                    remaining_timeout()
                     os.link(base_path, input_apk)
                     published_apk = True
 
@@ -579,6 +613,7 @@ class WebIntake:
                     draft = self._get(draft_id)
                     if draft["uploaded"] or draft["jobs"]:
                         raise ValueError("APK already uploaded; new materials require a new draft")
+                    remaining_timeout()
 
                     rollback_draft = deepcopy(draft)
                     rollback_revision = draft["revision"] + 1
@@ -592,6 +627,7 @@ class WebIntake:
                     return self._save(draft)
             else:
                 input_apk = self._safe(directory / "input.apk")
+                remaining_timeout()
                 os.replace(pending, input_apk)
                 published_apk = True
 
@@ -599,6 +635,7 @@ class WebIntake:
                     draft = self._get(draft_id)
                     if draft["uploaded"] or draft["jobs"]:
                         raise ValueError("APK already uploaded; new materials require a new draft")
+                    remaining_timeout()
                     rollback_draft = deepcopy(draft)
                     rollback_revision = draft["revision"] + 1
                     draft.update(
@@ -945,9 +982,7 @@ class WebIntake:
 
     async def discover_sources(self, draft_id: str):
         async with self._inspection_slot():
-            return await anyio.to_thread.run_sync(
-                self._discover_sources, draft_id, abandon_on_cancel=False
-            )
+            return await run_intake_worker(self._discover_sources, draft_id)
 
     def _discover_sources(self, draft_id: str):
         with self._draft_activity(draft_id):

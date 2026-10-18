@@ -453,7 +453,7 @@ def scan(
                                             dict(
                                                 target_descriptor=target,
                                                 caller=caller,
-                                                dex=name,
+                                                dex=source_prefix + name,
                                                 offset_bytes=offset,
                                                 instruction=op + " " + ins.get_output(offset),
                                             )

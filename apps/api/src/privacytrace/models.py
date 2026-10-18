@@ -63,7 +63,7 @@ class Evidence(Model):
     start_offset: int | None = Field(default=None, ge=0, strict=True)
     end_offset: int | None = Field(default=None, ge=1, strict=True)
     api_call: ApiCall | None = None
-    package_split: str | None = Field(default=None, max_length=200)
+    package_split: str | None = Field(default=None, max_length=255)
 
     @model_validator(mode="after")
     def validate_kind_status(self):

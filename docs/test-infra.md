@@ -166,7 +166,7 @@ The PrivacyTrace PR #88 test suite (`apps/api/tests/test_e2e_pt_mob_102.py`, `ap
 - **Containerized Analysis & Challenger Tests**: Real container extraction and analysis verification (such as `test_challenger_manifest.py`, `test_challenger_dex.py`, and real container runs in `test_pr88_regressions.py`) interact with the Docker daemon and require:
   - Docker daemon running on the host system.
   - Environment variable `PRIVACYTRACE_DOCKER_TESTS=1`.
-- **Skip Semantics**: When `PRIVACYTRACE_DOCKER_TESTS` is unset or `0`, container-dependent test cases are skipped intentionally via `@pytest.mark.skipif`, ensuring that developer worktrees and standard CI runners without Docker-in-Docker can execute the complete offline test suite deterministically.
+- **Skip Semantics**: Local runs skip opt-in container cases when `PRIVACYTRACE_DOCKER_TESTS` is unset or `0`. The authoritative `scripts/check.sh` forces it to `1` when `CI=true`, builds the worker image and executes these cases against Docker. The separately scheduled browser `challenger` job has its own event condition; its `SKIPPED` status on a pull request does not describe the central Check job's Docker coverage.
 
 ---
 

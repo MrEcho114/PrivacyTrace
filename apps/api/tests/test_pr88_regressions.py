@@ -126,7 +126,7 @@ def test_discovery_releases_shared_lock_and_rejects_stale_results(tmp_path, monk
     entered, release = threading.Event(), threading.Event()
     app = create_app(tmp_path)
 
-    def metadata(path):
+    def metadata(path, **kwargs):
         entered.set()
         assert release.wait(5)
         return {"policy_urls": ["https://example.com/stale"]}
@@ -137,7 +137,7 @@ def test_discovery_releases_shared_lock_and_rejects_stale_results(tmp_path, monk
         route = f"/api/v1/web/drafts/{draft['id']}"
         assert client.post(route + "/apk", headers=HEADERS, content=b"fixture").status_code == 200
         service = app.state.web_intake
-        pending = executor.submit(service.discover_sources, draft["id"])
+        pending = executor.submit(client.post, route + "/sources/discover", headers=HEADERS)
         try:
             assert entered.wait(3)
             # Independent readers/writers can finish while the worker is blocked.
@@ -150,8 +150,7 @@ def test_discovery_releases_shared_lock_and_rejects_stale_results(tmp_path, monk
             assert changed.status_code == 200
         finally:
             release.set()
-        with pytest.raises(ValueError, match="Input changed"):
-            pending.result(timeout=3)
+        assert pending.result(timeout=3).status_code == 409
         current = service.get(draft["id"])
         assert not any(s["url"] == "https://example.com/stale" for s in current["sources"])
         assert not service.active_drafts

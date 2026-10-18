@@ -12,7 +12,7 @@ from .auth import authorize_draft_access
 from .isolated_scan import ScanError
 from .models import Model
 from .package_set import PackageSetIntegrityError
-from .web_intake import UploadTooLarge
+from .web_intake import InspectionBusy, UploadTimedOut, UploadTooLarge
 from .web_models import (
     CandidateInput,
     DraftInput,
@@ -27,20 +27,28 @@ class RevisionInput(Model):
     revision: int = Field(ge=1, strict=True)
 
 
+def web_error(exc):
+    if isinstance(exc, KeyError):
+        return HTTPException(404, detail="DRAFT_NOT_FOUND")
+    if isinstance(exc, InspectionBusy):
+        return HTTPException(
+            503, detail="INSPECTION_CAPACITY_BUSY", headers={"Retry-After": "15"}
+        )
+    if isinstance(exc, ScanError):
+        return HTTPException(503, detail="ISOLATED_INSPECTION_UNAVAILABLE")
+    allowed = {
+        "MODEL_NOT_CONFIGURED", "MODEL_CONFIGURATION_INCOMPLETE",
+        "SOURCE_TYPE_CONFIRMATION_REQUIRED",
+    }
+    code = str(exc) if str(exc) in allowed else "INPUT_OR_VERSION_REJECTED"
+    return HTTPException(409, detail=code)
+
+
 def web_operation(action):
     try:
         return action()
-    except KeyError as exc:
-        raise HTTPException(404, detail="DRAFT_NOT_FOUND") from exc
-    except ScanError as exc:
-        raise HTTPException(503, detail="ISOLATED_INSPECTION_UNAVAILABLE") from exc
-    except (ValueError, OSError) as exc:
-        allowed = {
-            "MODEL_NOT_CONFIGURED", "MODEL_CONFIGURATION_INCOMPLETE",
-            "SOURCE_TYPE_CONFIRMATION_REQUIRED",
-        }
-        code = str(exc) if str(exc) in allowed else "INPUT_OR_VERSION_REJECTED"
-        raise HTTPException(409, detail=code) from exc
+    except (KeyError, ScanError, ValueError, OSError) as exc:
+        raise web_error(exc) from exc
 
 
 def install_web_api(app, local_write):
@@ -119,6 +127,10 @@ def install_web_api(app, local_write):
             raise HTTPException(404, detail="DRAFT_NOT_FOUND") from exc
         except UploadTooLarge as exc:
             raise HTTPException(413, detail="UPLOAD_TOO_LARGE") from exc
+        except UploadTimedOut as exc:
+            raise HTTPException(408, detail="UPLOAD_TIMEOUT") from exc
+        except InspectionBusy as exc:
+            raise web_error(exc) from exc
         except ScanError as exc:
             raise HTTPException(503, detail="ISOLATED_INSPECTION_UNAVAILABLE") from exc
         except PackageSetIntegrityError as exc:
@@ -157,9 +169,12 @@ def install_web_api(app, local_write):
         return web_operation(lambda: service.start(draft_id, payload))
 
     @app.post("/api/v1/web/drafts/{draft_id}/sources/discover")
-    def discover_sources(draft_id: str, request: Request):
+    async def discover_sources(draft_id: str, request: Request):
         draft_access(request, draft_id)
-        return web_operation(lambda: service.discover_sources(draft_id))
+        try:
+            return await service.discover_sources(draft_id)
+        except (KeyError, ScanError, ValueError, OSError) as exc:
+            raise web_error(exc) from exc
 
     @app.post("/api/v1/web/drafts/{draft_id}/import-external")
     def import_external(

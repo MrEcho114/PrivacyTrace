@@ -313,7 +313,7 @@
         "package_split": {
           "anyOf": [
             {
-              "maxLength": 200,
+              "maxLength": 255,
               "type": "string"
             },
             {

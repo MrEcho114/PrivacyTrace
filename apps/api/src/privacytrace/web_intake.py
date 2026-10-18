@@ -12,7 +12,7 @@ import time
 import zipfile
 import zlib
 from concurrent.futures import Future, ThreadPoolExecutor
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
@@ -58,6 +58,21 @@ class UploadTooLarge(ValueError):
     """APK upload exceeded the documented byte limit."""
 
 
+class InspectionBusy(ValueError):
+    """All intake inspection slots are occupied."""
+
+
+class UploadTimedOut(ValueError):
+    """The client did not finish streaming within the upload budget."""
+
+
+def inspection_timeout(deadline):
+    seconds = deadline - time.monotonic()
+    if seconds <= 0:
+        raise ScanError("TIMEOUT", "Package inspection budget exhausted")
+    return max(1, min(120, math.ceil(seconds)))
+
+
 def inspect_uploaded_package(path, *, timeout=120):
     try:
         metadata = inspect_package_isolated(path, timeout=timeout)
@@ -96,6 +111,9 @@ class WebIntake:
     MAX_REVISIONS = 256
     MAX_DRAFTS_PER_IP = 3
     DRAFT_TTL_SECONDS = 24 * 60 * 60
+    INSPECTION_WAIT_SECONDS = 15
+    INSPECTION_BUDGET_SECONDS = 180
+    UPLOAD_TIMEOUT_SECONDS = 180
 
     def __init__(self, store):
         self.store = store
@@ -103,7 +121,7 @@ class WebIntake:
         self.executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="privacytrace-scan")
         self.futures = {}
         # Bound disk and Docker inspections across requests.
-        self._upload_slots = asyncio.Semaphore(2)
+        self._inspection_slots = asyncio.Semaphore(2)
         self.active_drafts = {}
         self.owner_fd = None
         self.root.mkdir(exist_ok=True, mode=0o700)
@@ -429,15 +447,22 @@ class WebIntake:
                     dest_path.unlink(missing_ok=True)
                     raise
 
-    async def upload(self, draft_id, request, expect_package_set: bool = False):
+    @asynccontextmanager
+    async def _inspection_slot(self):
         try:
-            await asyncio.wait_for(self._upload_slots.acquire(), timeout=15)
+            await asyncio.wait_for(
+                self._inspection_slots.acquire(), timeout=self.INSPECTION_WAIT_SECONDS
+            )
         except asyncio.TimeoutError as exc:
-            raise ValueError("UPLOAD_CAPACITY_BUSY") from exc
+            raise InspectionBusy("INSPECTION_CAPACITY_BUSY") from exc
         try:
-            return await self._upload_reserved(draft_id, request, expect_package_set)
+            yield
         finally:
-            self._upload_slots.release()
+            self._inspection_slots.release()
+
+    async def upload(self, draft_id, request, expect_package_set: bool = False):
+        async with self._inspection_slot():
+            return await self._upload_reserved(draft_id, request, expect_package_set)
 
     async def _upload_reserved(self, draft_id, request, expect_package_set: bool = False):
         with self._draft_activity(draft_id):
@@ -457,12 +482,18 @@ class WebIntake:
                 digest = hashlib.sha256()
                 with os.fdopen(fd, "wb") as handle:
                     fd = None  # The file object now owns the descriptor.
-                    async for chunk in request.stream():
-                        size += len(chunk)
-                        if size > MAX_INPUT:
-                            raise UploadTooLarge("Upload exceeds 150 MiB")
-                        digest.update(chunk)
-                        await anyio.to_thread.run_sync(handle.write, chunk, abandon_on_cancel=False)
+                    try:
+                        with anyio.fail_after(self.UPLOAD_TIMEOUT_SECONDS):
+                            async for chunk in request.stream():
+                                size += len(chunk)
+                                if size > MAX_INPUT:
+                                    raise UploadTooLarge("Upload exceeds 150 MiB")
+                                digest.update(chunk)
+                                await anyio.to_thread.run_sync(
+                                    handle.write, chunk, abandon_on_cancel=False
+                                )
+                    except TimeoutError as exc:
+                        raise UploadTimedOut("UPLOAD_TIMEOUT") from exc
                     if size == 0:
                         if expect_package_set:
                             raise PackageSetIntegrityError(
@@ -493,13 +524,10 @@ class WebIntake:
         published_apk = False
         rollback_draft = None
         rollback_revision = None
-        inspection_deadline = time.monotonic() + 180
+        inspection_deadline = time.monotonic() + self.INSPECTION_BUDGET_SECONDS
 
         def remaining_timeout():
-            seconds = inspection_deadline - time.monotonic()
-            if seconds <= 0:
-                raise ScanError("TIMEOUT", "Package inspection budget exhausted")
-            return max(1, min(120, math.ceil(seconds)))
+            return inspection_timeout(inspection_deadline)
 
         try:
             is_pkg_set = expect_package_set or self._is_multi_package_archive(pending)
@@ -540,12 +568,12 @@ class WebIntake:
                 os.replace(staging_packages, target_packages)
                 published_packages = True
 
-                # Maintain input.apk as copy of base APK for backward compatibility
+                # Keep the legacy path without charging the base APK's bytes twice.
                 base_path = target_packages / package_set.base.file_name
                 input_apk = self._safe(directory / "input.apk")
                 if base_path.exists():
+                    os.link(base_path, input_apk)
                     published_apk = True
-                    shutil.copyfile(base_path, input_apk)
 
                 with self.data_store._transaction():
                     draft = self._get(draft_id)
@@ -584,7 +612,7 @@ class WebIntake:
             # The DB transaction may have rolled back, while rename/copy already
             # published bytes on the private volume. Only remove files owned by
             # this request; never touch an existing upload reservation.
-            if published_apk or published_packages:
+            if published_apk:
                 self._safe(directory / "input.apk").unlink(missing_ok=True)
             if published_packages:
                 shutil.rmtree(self._safe(directory / "packages"), ignore_errors=True)
@@ -915,7 +943,13 @@ class WebIntake:
             draft["revision"] += 1
             return self._save(draft)
 
-    def discover_sources(self, draft_id: str):
+    async def discover_sources(self, draft_id: str):
+        async with self._inspection_slot():
+            return await anyio.to_thread.run_sync(
+                self._discover_sources, draft_id, abandon_on_cancel=False
+            )
+
+    def _discover_sources(self, draft_id: str):
         with self._draft_activity(draft_id):
             with self.data_store._transaction():
                 draft = self._get(draft_id)
@@ -933,13 +967,22 @@ class WebIntake:
 
             # Container I/O must not hold the lock shared by every draft.
             discovered_urls = []
+            limitations = []
+            deadline = time.monotonic() + self.INSPECTION_BUDGET_SECONDS
             for apk_path in apk_files:
-                metadata = inspect_package_isolated(apk_path)
+                metadata = inspect_package_isolated(apk_path, timeout=inspection_timeout(deadline))
+                # Worker preflight/cleanup has its own bounded I/O. A late return
+                # must not publish results after this discovery pass has expired.
+                inspection_timeout(deadline)
+                for note in metadata.get("coverage", {}).get("limitations", []):
+                    if note not in limitations:
+                        limitations.append(note)
                 for url in metadata["policy_urls"]:
                     if url not in discovered_urls:
                         discovered_urls.append(url)
 
             with self.data_store._transaction():
+                inspection_timeout(deadline)
                 draft = self._get(draft_id)
                 if draft["revision"] != revision or draft["jobs"]:
                     raise ValueError("Input changed during policy discovery")
@@ -949,6 +992,9 @@ class WebIntake:
                     if url in existing_urls:
                         continue
                     if len(draft["sources"]) + len(new_sources) >= 8:
+                        limitations.append(
+                            "Draft source limit of 8 reached; additional candidate URLs omitted."
+                        )
                         break
                     new_src = {
                         "id": f"src-auto-{uuid4().hex[:8]}",
@@ -977,7 +1023,7 @@ class WebIntake:
                     draft["revision"] += 1
                     self._save(draft)
 
-                return {"sources": draft["sources"]}
+                return {"sources": draft["sources"], "limitations": limitations}
 
     def import_external(
         self, draft_id: str, payload: ExternalPolicyCollectionInput | ExternalPolicyExportInput

@@ -523,11 +523,12 @@ def test_finish_upload_rollback_when_failure_occurs_between_publish_and_commit(
         assert current["uploaded"] is False
 
 
-def test_copyfile_exception_cleanup_behavior(tmp_path: Path, monkeypatch):
-    """Stress-test: If shutil.copyfile fails during copy, observe cleanup behavior."""
+@pytest.mark.parametrize("operation", ["copy", "link"])
+def test_base_publication_failure_cleans_owned_files(tmp_path: Path, monkeypatch, operation):
+    """Failed staging copy or atomic base link must leave no published upload."""
     sample = apk(tmp_path / "base.apk")
     archive_file = package_set_archive(tmp_path / "set.zip", {"base.apk": sample.read_bytes()})
-    payload = archive_file.read_bytes()
+    payload = sample.read_bytes() if operation == "copy" else archive_file.read_bytes()
 
     app = create_app(tmp_path / "jobs")
     service: WebIntake = app.state.web_intake
@@ -554,7 +555,13 @@ def test_copyfile_exception_cleanup_behavior(tmp_path: Path, monkeypatch):
             Path(dst).write_bytes(b"partial-corrupt-data")
             raise OSError("No space left on device during copyfile")
 
-        monkeypatch.setattr(shutil, "copyfile", failing_copy)
+        def failing_link(src, dst):
+            raise OSError("Hard link unavailable")
+
+        if operation == "copy":
+            monkeypatch.setattr(shutil, "copyfile", failing_copy)
+        else:
+            monkeypatch.setattr("privacytrace.web_intake.os.link", failing_link)
 
         resp = client.post(
             f"/api/v1/web/drafts/{draft_id}/package-set",
@@ -563,9 +570,10 @@ def test_copyfile_exception_cleanup_behavior(tmp_path: Path, monkeypatch):
         )
         assert resp.status_code == 409
 
-        # Zero-leak invariant: with published_apk set before copyfile and rollback
-        # unlinking input.apk on published_packages or published_apk, no partial file remains.
+        # Neither a partial staging copy nor a failed link may publish input bytes.
         input_apk_exists = (directory / "input.apk").exists()
         packages_exists = (directory / "packages").exists()
         assert packages_exists is False
         assert input_apk_exists is False
+        assert not list(directory.glob("*pending*"))
+        assert not service.get(draft_id)["uploaded"]

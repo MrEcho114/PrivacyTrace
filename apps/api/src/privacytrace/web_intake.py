@@ -186,6 +186,7 @@ class WebIntake:
                 if p.is_dir() and re.fullmatch(r"[a-f0-9]{32}", p.name)]
 
     def _save(self, draft):
+        self._normalize_source_origins(draft)
         directory = self.directory(draft["id"])
         revision = draft["revision"]
         if revision > self.MAX_REVISIONS:
@@ -203,7 +204,32 @@ class WebIntake:
         path = self.directory(draft_id) / "current.json"
         if not self._document_exists(path):
             raise KeyError(draft_id)
-        return self._read(path)
+        draft = self._read(path)
+        self._normalize_source_origins(draft)
+        return draft
+
+    @staticmethod
+    def _source_origin(draft, source):
+        """Derive origin from server-owned records, including for older drafts."""
+        if source["id"] in draft.get("discovered_source_ids", []):
+            return "MANIFEST_METADATA"
+        if any(
+            result.get("source_id") == source["id"]
+            for imported in draft.get("external_imports", [])
+            for result in imported.get("results", [])
+        ):
+            return "EXTERNAL_CHAT_EXPORT"
+        if source["status"] == "ready":
+            return "DIRECT_WEB_FETCH"
+        if source["status"] == "manual" and source["text"].strip():
+            return "MANUAL_INPUT"
+        return None
+
+    def _normalize_source_origins(self, draft):
+        # A legacy provenance label alone cannot prove discovery/import. Do not
+        # rewrite historical reports; normalize the draft when read or reused.
+        for source in draft["sources"]:
+            source["provenance"] = self._source_origin(draft, source)
 
     def get(self, draft_id):
         with self.data_store._transaction():
@@ -297,16 +323,17 @@ class WebIntake:
             value = source.model_dump()
             # Capture/audit fields are owned by the backend, never trusted from the browser.
             value["model_audit"] = {}
+            value["provenance"] = None
             value["final_url"] = None
             value["captured_at"] = now() if source.text.strip() else None
             value["sha256"] = (
                 hashlib.sha256(source.text.encode()).hexdigest() if source.text else None
             )
             value["status"] = (
-                "failed"
-                if source.status == "failed"
-                else "manual"
+                "manual"
                 if source.text.strip()
+                else "failed"
+                if source.status == "failed"
                 else "empty"
             )
             value["error_code"] = "SOURCE_UNAVAILABLE" if value["status"] == "failed" else None
@@ -744,11 +771,19 @@ class WebIntake:
             if current["revision"] != revision or current["jobs"]:
                 raise ValueError("Input changed while capture was running")
             source = next(s for s in current["sources"] if s["id"] == source_id)
-            source.update(fetched)
-            source["model_audit"] = {}
-            current["candidates"] = [
-                c for c in current["candidates"] if c["source_id"] != source_id
-            ]
+            if (
+                fetched["status"] == "failed" and source["status"] in {"manual", "ready"}
+                and source["text"].strip()
+            ):
+                # A failed refresh does not invalidate the retained capture or
+                # its candidates. Surface the attempt error alongside that material.
+                source["error_code"] = fetched["error_code"]
+            else:
+                source.update(fetched)
+                source["model_audit"] = {}
+                current["candidates"] = [
+                    c for c in current["candidates"] if c["source_id"] != source_id
+                ]
             current["revision"] += 1
             return self._save(current)
 
@@ -836,6 +871,12 @@ class WebIntake:
             document_id = "web-" + source["id"]
             ref = document_id + "-snapshot"
             text = source["text"]
+            origin = self._source_origin(draft, source)
+            acquisition = (
+                "DIRECT_WEB_FETCH" if source["status"] == "ready"
+                else "EXTERNAL_CHAT_EXPORT" if origin == "EXTERNAL_CHAT_EXPORT"
+                else "MANUAL_INPUT"
+            )
             document = PolicyDocument.model_validate(
                 {
                     "id": document_id,
@@ -875,10 +916,8 @@ class WebIntake:
                     "source": source_locator[:1000],
                     "locator": (
                         "Captured UTF-8 text; acquisition="
-                        + (source.get("provenance") or (
-                            "DIRECT_WEB_FETCH" if source["status"] == "ready"
-                            else "MANUAL_INPUT"
-                        ))
+                        + acquisition
+                        + ("; discovery=MANIFEST_METADATA" if origin == "MANIFEST_METADATA" else "")
                         + "; source type is not proof of official verification; "
                         "completeness unknown"
                     ),
@@ -1055,6 +1094,9 @@ class WebIntake:
 
                 if new_sources:
                     draft["sources"].extend(new_sources)
+                    draft.setdefault("discovered_source_ids", []).extend(
+                        s["id"] for s in new_sources
+                    )
                     draft["revision"] += 1
                     self._save(draft)
 
@@ -1335,6 +1377,7 @@ class WebIntake:
             self._write_private(self.directory(draft_id) / "current.json", draft)
 
     def _run(self, draft, job, captures):
+        self._normalize_source_origins(draft)
         source_receipts = [
             {
                 k: s.get(k)

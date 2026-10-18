@@ -36,6 +36,12 @@ def manifest(
     sdk_23_max_sdk=None,
     package_name="org.privacytrace.fixture",
     split_name="config.en",
+    is_feature_split=False,
+    uses_split=None,
+    config_for_split=None,
+    is_split_required=False,
+    split_types=None,
+    required_split_types=None,
 ):
     actual_split = split if isinstance(split, str) else split_name
     raw_strings = [
@@ -54,6 +60,18 @@ def manifest(
     ]
     if version_name is not None:
         raw_strings.extend(["versionName", str(version_name)])
+    dependency_attrs = {
+        "isFeatureSplit": "true" if is_feature_split else None,
+        "isSplitRequired": "true" if is_split_required else None,
+        "configForSplit": config_for_split,
+        "splitTypes": split_types,
+        "requiredSplitTypes": required_split_types,
+    }
+    for name, value in dependency_attrs.items():
+        if value is not None:
+            raw_strings.extend([name, value])
+    if uses_split is not None:
+        raw_strings.extend(["uses-split", uses_split])
     if sdk_23_permission is not None:
         raw_strings.extend(["uses-permission-sdk-23", str(sdk_23_permission)])
     for bound in (max_sdk, sdk_23_max_sdk):
@@ -100,6 +118,11 @@ def manifest(
         return struct.pack("<HHIII", kind, 16, 16 + len(payload), 1, 0xFFFFFFFF) + payload
 
     def attr(name, value, ns=None):
+        if name in {"isFeatureSplit", "isSplitRequired"}:
+            return struct.pack(
+                "<IIIHBBI", idx[ns], idx[name], 0xFFFFFFFF, 8, 0, 0x12,
+                0xFFFFFFFF if value == "true" else 0,
+            )
         if name == "versionCode" and version_code_type is not None:
             return struct.pack(
                 "<IIIHBBI", idx[ns], idx[name], 0xFFFFFFFF, 8, 0, version_code_type,
@@ -138,8 +161,14 @@ def manifest(
         attrs.append(attr("versionName", str(version_name), ns))
     if split:
         attrs.append(attr("split", str(actual_split)))
+    for name, value in dependency_attrs.items():
+        if value is not None:
+            attrs.append(attr(name, value, None if name == "configForSplit" else ns))
     chunks = pool + node(0x100, struct.pack("<II", idx["android"], idx[ns]))
     chunks += start("manifest", attrs)
+    if uses_split is not None:
+        chunks += start("uses-split", [attr("name", uses_split, ns)])
+        chunks += end("uses-split")
     for tag, value, parent, bound in (
         (permission_tag, permission, permission_parent, max_sdk),
         ("uses-permission-sdk-23", sdk_23_permission, sdk_23_parent, sdk_23_max_sdk),

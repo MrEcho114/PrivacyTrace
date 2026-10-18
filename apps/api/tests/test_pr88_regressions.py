@@ -462,7 +462,7 @@ def test_r4_split_limitations_and_sdk_budget_are_merged(tmp_path, monkeypatch):
     }
 
     def fake_scan(path, rules, **kwargs):
-        part = kwargs.get("package_split") or "base"
+        part = kwargs["component"].split_name or "base"
         return scans[part]
 
     monkeypatch.setattr(apk_worker, "scan", fake_scan)

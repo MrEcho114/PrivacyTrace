@@ -135,7 +135,19 @@ async function persistCandidates() {
 }
 async function cancel() { await perform(async () => { if (job.value) { try { job.value = await cancelJob(job.value.id, signal) } finally { await poll() } } }) }
 async function retry() { await perform(async () => { if (!draft.value || !terminal.value) return; submissionId = crypto.randomUUID().replaceAll('-', ''); job.value = await startScan(draft.value.id, { revision: draft.value.revision, request_id: submissionId }, signal); go('progress'); await poll() }) }
-async function retrySource(id: string) { await perform(async () => { if (!draft.value) return; apply(await fetchSource(draft.value.id, id, draft.value.revision, signal)); if (props.state.sources.find(s => s.id === id)?.status !== 'failed') { try { apply(await extractSource(draft.value.id, id, draft.value.revision, signal)) } catch (cause) { notice.value = String(cause instanceof Error ? cause.message : '模型请求未完成') } } }) }
+async function retrySource(id: string) {
+  await perform(async () => {
+    if (!draft.value) return
+    apply(await fetchSource(draft.value.id, id, draft.value.revision, signal))
+    const source = draft.value.sources.find(s => s.id === id)
+    if (!source || source.status === 'failed' || source.error_code) return
+    try {
+      apply(await extractSource(draft.value.id, id, draft.value.revision, signal))
+    } catch (cause) {
+      notice.value = String(cause instanceof Error ? cause.message : '模型请求未完成')
+    }
+  })
+}
 async function retryModel(id: string) { await perform(async () => { if (!draft.value) return; apply(await extractSource(draft.value.id, id, draft.value.revision, signal)) }) }
 function newInput() { generation++; clearTimeout(timer); draft.value = null; job.value = null; file.value = null; submissionId = ''; pendingRevision = null; try { localStorage.removeItem(storageKey) } catch { /* Memory state still resets. */ }; props.state.sources = sourceInput().map(s => ({ id: s.id, title: s.title, url: s.url ?? '', text: s.text ?? '', type: s.source_type ?? 'OFFICIAL_WEB_POLICY', status: 'manual', version: s.version ?? '', region: s.region ?? '', product: s.product ?? '', packageName: s.package_name ?? '', versionCode: s.version_code ?? undefined, complete: false })); props.state.candidates = []; go('import') }
 onMounted(async () => {

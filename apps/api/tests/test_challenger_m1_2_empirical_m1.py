@@ -392,26 +392,24 @@ def test_split_apk_permission_deduplication_preserves_500_behavior_budget(tmp_pa
     assert {"base", "split1", "split2"} <= splits_in_evidence
 
     # 2. Counter-factual: verify that WITHOUT deduplication, behavior budget would be exhausted
-    s_base = scan(base, rules, package_split="base", is_split=False)
+    from privacytrace.apk_worker import ComponentScanContext
+
+    s_base = scan(base, rules, component=ComponentScanContext())
     assert len(s_base["behaviors"]) == 201
 
     s_split1 = scan(
         split1,
         rules,
-        package_split="split1",
-        is_split=True,
-        behavior_count=len(s_base["behaviors"]),
-        base_manifest_excerpts=None,  # Disabled dedup
+        component=ComponentScanContext("split1", len(s_base["behaviors"])),  # No dedup
     )
     assert len(s_split1["behaviors"]) == 201
 
     s_split2 = scan(
         split2,
         rules,
-        package_split="split2",
-        is_split=True,
-        behavior_count=len(s_base["behaviors"]) + len(s_split1["behaviors"]),
-        base_manifest_excerpts=None,  # Disabled dedup
+        component=ComponentScanContext(
+            "split2", len(s_base["behaviors"]) + len(s_split1["behaviors"]),
+        ),  # No dedup
     )
     # Split 2 starts at 402, and hits 500 at 98 behaviors, truncating remaining entries!
     assert len(s_split2["behaviors"]) == 98

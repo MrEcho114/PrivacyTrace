@@ -59,6 +59,17 @@ class PackagePart(StrEnum):
     SPLIT = "SPLIT"
 
 
+class SplitDependencies(Model):
+    """Manifest declarations, never inferred from filenames or DEX coverage."""
+
+    is_feature_split: bool = False
+    uses_split: str | None = Field(default=None, max_length=255, pattern=SPLIT_NAME_PATTERN)
+    config_for_split: str | None = Field(default=None, max_length=255, pattern=SPLIT_NAME_PATTERN)
+    is_split_required: bool = False
+    split_types: list[str] = Field(default_factory=list, max_length=100)
+    required_split_types: list[str] = Field(default_factory=list, max_length=100)
+
+
 class PackageFile(Model):
     file_name: str = Field(min_length=1, max_length=255)
     part: PackagePart
@@ -70,6 +81,7 @@ class PackageFile(Model):
     package_name: str = Field(min_length=1, max_length=200)
     version_code: int = Field(ge=0, strict=True)
     version_name: str | None = Field(default=None, max_length=1024)
+    dependencies: SplitDependencies = Field(default_factory=SplitDependencies)
 
     @model_validator(mode="after")
     def validate_part_split_invariant(self) -> PackageFile:
@@ -143,6 +155,88 @@ class PackageSetManifestInput(Model):
     files: list[PackageFile] = Field(min_length=1, max_length=101)
 
 
+def inspect_split_dependencies(root) -> SplitDependencies:
+    def name(value):
+        if value is None:
+            return None
+        value = value.strip()
+        if len(value) > 255 or not SPLIT_NAME_REGEX.fullmatch(value):
+            raise PackageSetIntegrityError(
+                "INVALID_SPLIT_DEPENDENCY", "Invalid split dependency name",
+            )
+        return value
+
+    def flag(attribute):
+        value = root.get(ANDROID_NS + attribute, "false").strip().lower()
+        if value not in {"true", "false", "1", "0"}:
+            raise PackageSetIntegrityError(
+                "INVALID_SPLIT_DEPENDENCY", "Invalid split dependency flag",
+            )
+        return value in {"true", "1"}
+
+    def types(attribute):
+        raw = root.get(ANDROID_NS + attribute)
+        if raw is None:
+            return []
+        result = sorted({name(value) for value in raw.split(",")})
+        if len(result) > 100:
+            raise PackageSetIntegrityError("INVALID_SPLIT_DEPENDENCY", "Too many split types")
+        return result
+
+    # Android uses the first direct uses-split element. Config target is an
+    # unnamespaced compiled attribute; accept its namespaced spelling as well.
+    uses_split = next((child for child in root if child.tag == "uses-split"), None)
+    target = None
+    if uses_split is not None:
+        target = name(uses_split.get(ANDROID_NS + "name", ""))
+    config = root.get("configForSplit", root.get(ANDROID_NS + "configForSplit"))
+    return SplitDependencies(
+        is_feature_split=flag("isFeatureSplit"), uses_split=target,
+        config_for_split=name(config) if config else None,
+        is_split_required=flag("isSplitRequired"),
+        split_types=types("splitTypes"), required_split_types=types("requiredSplitTypes"),
+    )
+
+
+def validate_split_dependencies(base: SplitDependencies, splits: dict[str, SplitDependencies]):
+    """Validate explicit install dependencies; this does not prove installability."""
+    declarations = [base, *splits.values()]
+    required_types = {value for item in declarations for value in item.required_split_types}
+    offered_types = {value for item in declarations for value in item.split_types}
+    if (base.is_split_required and not splits) or required_types - offered_types:
+        raise PackageSetIntegrityError(
+            "MISSING_REQUIRED_SPLIT", "Required splits or split types are missing",
+        )
+
+    parents = {}
+    for split_name, declaration in splits.items():
+        target = (
+            declaration.uses_split if declaration.is_feature_split else declaration.config_for_split
+        )
+        if target is None:
+            continue  # Implicit dependency on the base APK.
+        if target not in splits:
+            raise PackageSetIntegrityError(
+                "MISSING_REQUIRED_SPLIT", "A declared split target is missing",
+            )
+        if not declaration.is_feature_split and not splits[target].is_feature_split:
+            raise PackageSetIntegrityError(
+                "INVALID_SPLIT_DEPENDENCY", "Config split target is not a feature",
+            )
+        parents[split_name] = target
+
+    for split_name in parents:
+        seen = set()
+        current = split_name
+        while current in parents:
+            if current in seen:
+                raise PackageSetIntegrityError(
+                    "INVALID_SPLIT_DEPENDENCY", "Cyclic split dependency",
+                )
+            seen.add(current)
+            current = parents[current]
+
+
 def inspect_axml(manifest_bytes: bytes) -> tuple[str, int, str | None, str | None]:
     """Inspect binary AndroidManifest.xml and extract metadata.
 
@@ -152,6 +246,14 @@ def inspect_axml(manifest_bytes: bytes) -> tuple[str, int, str | None, str | Non
     Raises:
         PackageSetIntegrityError: if manifest is corrupted, missing, or invalid.
     """
+    metadata = _inspect_manifest(manifest_bytes)
+    return (
+        metadata["package_name"], metadata["version_code"],
+        metadata["version_name"], metadata["split_name"],
+    )
+
+
+def _inspect_manifest(manifest_bytes: bytes) -> dict:
     from androguard.core.axml import AXMLPrinter
     from loguru import logger
 
@@ -222,7 +324,11 @@ def inspect_axml(manifest_bytes: bytes) -> tuple[str, int, str | None, str | Non
     else:
         split_name = None
 
-    return package_name, version_code, version_name, split_name
+    return {
+        "package_name": package_name, "version_code": version_code,
+        "version_name": version_name, "split_name": split_name,
+        "dependencies": inspect_split_dependencies(root),
+    }
 
 
 def inspect_apk_bytes(
@@ -292,19 +398,16 @@ def inspect_apk_bytes(
                 "CORRUPTED_FILE", f"Could not read AndroidManifest.xml in '{file_name}': {exc}"
             ) from exc
 
-    pkg_name, v_code, v_name, split_name = inspect_axml(manifest_bytes)
+    metadata = _inspect_manifest(manifest_bytes)
     sha256 = hashlib.sha256(data).hexdigest()
-    part = PackagePart.SPLIT if split_name is not None else PackagePart.BASE
+    part = PackagePart.SPLIT if metadata["split_name"] is not None else PackagePart.BASE
 
     pkg_file = PackageFile(
         file_name=file_name,
         part=part,
-        split_name=split_name,
         sha256=sha256,
         size_bytes=size_bytes,
-        package_name=pkg_name,
-        version_code=v_code,
-        version_name=v_name,
+        **metadata,
     )
     return pkg_file, data
 
@@ -419,6 +522,8 @@ def validate_package_set(
                 f"Duplicate split name '{split.split_name}' in '{split.file_name}'",
             )
         seen_splits.add(split.split_name)
+
+    validate_split_dependencies(base.dependencies, {s.split_name: s.dependencies for s in splits})
 
     # Rule 8: Declared Manifest SHA-256 Matching
     if declared_manifest is not None:

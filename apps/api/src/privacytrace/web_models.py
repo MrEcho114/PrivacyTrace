@@ -49,7 +49,10 @@ class WebSource(Model):
     final_url: str | None = None
     provenance: PolicySourceProvenance | None = Field(
         default=None,
-        description="Untrusted clue origin only; does not constitute official policy verification.",
+        description=(
+            "Server-derived source origin; input values are ignored. URL discovery origin "
+            "is distinct from text acquisition and does not prove official policy verification."
+        ),
     )
     model_audit: dict[str, str | int | bool] = Field(default_factory=dict)
 

@@ -15,7 +15,7 @@ import stat
 import subprocess
 import sys
 import tempfile
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 from zipfile import BadZipFile, ZipFile
@@ -178,15 +178,24 @@ def isolation_probe(path):
     return result
 
 
+@dataclass(frozen=True)
+class ComponentScanContext:
+    """Identity and remaining collection budget for one package-set component."""
+
+    # None identifies the base component; even a split literally named "base"
+    # keeps its split namespace when called directly without intake validation.
+    split_name: str | None = None
+    prior_behavior_count: int = 0
+    manifest_excerpts: frozenset[str] = frozenset()
+
+
 def scan(
     path,
     rules,
     inventory=False,
     sdk_rules=None,
-    package_split=None,
-    behavior_count=0,
-    is_split: bool = False,
-    base_manifest_excerpts=None,
+    *,
+    component: ComponentScanContext | None = None,
 ):
     from androguard.core.apk import APK
     from androguard.core.dex import DEX, Operand
@@ -197,22 +206,10 @@ def scan(
     logger.remove()
     logger.add(sys.stderr, level="WARNING")
     result = empty_result()
-    if is_split:
-        # Defense-in-depth: Splits are ALWAYS prefixed with f"split:{split_name}:" and never "base:"
-        # Semicolons are sanitized to prevent locator key-value injection.
-        s_name = (package_split or "unknown").replace(";", "_")
-        split_prefix = f";split={s_name}"
-        source_prefix = f"split:{s_name}:"
-        recorded_split = s_name
-    elif package_split == "base":
-        split_prefix = ";split=base"
-        source_prefix = "base:"
-        recorded_split = "base"
-    elif package_split:
-        s_name = str(package_split).replace(";", "_")
-        split_prefix = f";split={s_name}"
-        source_prefix = f"split:{s_name}:"
-        recorded_split = s_name
+    if component is not None:
+        recorded_split = (component.split_name or "base").replace(";", "_")
+        split_prefix = f";split={recorded_split}"
+        source_prefix = "base:" if component.split_name is None else f"split:{recorded_split}:"
     else:
         split_prefix = ""
         source_prefix = ""
@@ -264,6 +261,12 @@ def scan(
         declarations = set()
         android_ns = "{http://schemas.android.com/apk/res/android}"
         manifest_xml = apk.get_android_manifest_xml()
+        if component is None and not manifest_xml.get("split"):
+            # The single-APK lane must not silently accept a base that declares
+            # required splits. Keep standalone split analysis explicitly partial.
+            from .package_set import inspect_split_dependencies, validate_split_dependencies
+
+            validate_split_dependencies(inspect_split_dependencies(manifest_xml), {})
         if manifest_xml is not None and manifest_xml.tag == "manifest":
             # Permission declarations belong directly to <manifest>, not arbitrary
             # descendants. Preserve each tag/SDK condition, not just its name.
@@ -291,7 +294,8 @@ def scan(
         ]
 
         def add(kind, source, locator, excerpt, data_type, action="ACCESS", api_call=None):
-            if behavior_count + len(result["behaviors"]) >= 500:
+            prior_count = component.prior_behavior_count if component else 0
+            if prior_count + len(result["behaviors"]) >= 500:
                 warning = (
                     "Mapped behavior/evidence output truncated at 500; additional hits omitted. "
                     "DEX processing completion does not imply complete behavior coverage."
@@ -337,7 +341,7 @@ def scan(
                 if max_sdk:
                     bounds += ";max_sdk=" + max_sdk
                 excerpt = permission + bounds
-                if base_manifest_excerpts and excerpt in base_manifest_excerpts:
+                if component and excerpt in component.manifest_excerpts:
                     continue
                 add(
                     "MANIFEST",
@@ -353,7 +357,7 @@ def scan(
             result["coverage"]["limitations"].append(
                 "Primary classes.dex missing; split or incomplete APK"
             )
-        if package_split is None and apk.get_android_manifest_xml().get("split"):
+        if component is None and apk.get_android_manifest_xml().get("split"):
             result["coverage"]["limitations"].append(
                 "Split manifest; other package splits unavailable"
             )
@@ -538,7 +542,7 @@ def scan(
         if (
             "classes.dex" in names
             and not result["coverage"]["failed_dex"]
-            and not (package_split is None and apk.get_android_manifest_xml().get("split"))
+            and not (component is None and apk.get_android_manifest_xml().get("split"))
         ):
             result["coverage"]["completeness"] = "COMPLETE"
     if inventory:
@@ -621,8 +625,7 @@ def scan_package_set(base_path, splits, rules, inventory=False, sdk_rules=None):
         rules,
         inventory=inventory,
         sdk_rules=sdk_rules,
-        package_split="base",
-        is_split=False,
+        component=ComponentScanContext(),
     )
 
     # 2. Sequentially scan each split APK
@@ -637,10 +640,9 @@ def scan_package_set(base_path, splits, rules, inventory=False, sdk_rules=None):
             rules,
             inventory=inventory,
             sdk_rules=sdk_rules,
-            package_split=split_name,
-            behavior_count=current_behavior_count,
-            is_split=True,
-            base_manifest_excerpts=seen_manifest_excerpts,
+            component=ComponentScanContext(
+                split_name or "unknown", current_behavior_count, frozenset(seen_manifest_excerpts),
+            ),
         )
         split_results.append((split_name, split_path, split_res))
         current_behavior_count += len(split_res["behaviors"])

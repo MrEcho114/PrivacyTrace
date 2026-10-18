@@ -150,7 +150,7 @@
             }
           ],
           "default": null,
-          "description": "Untrusted clue origin only; does not constitute official policy verification.",
+          "description": "Server-derived source origin; input values are ignored. URL discovery origin is distinct from text acquisition and does not prove official policy verification.",
           "title": "Provenance"
         },
         "model_audit": {

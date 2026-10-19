@@ -25,4 +25,13 @@
 - Wrapper JAR 已与 Gradle 官方 8.7 校验值逐字节哈希核对。Android 任务使用同版本本机 Gradle 8.7 运行；未把 Wrapper 首次联网下载作为已测事实。
 - 最终提交与远端 CI 结果由对应 PR 和 #71 当前执行记录绑定实际交付 SHA；既有 CI 不包含新增 Android 任务。
 
+## 2026-10-19｜PR #90 P2 收据问题修复
+
+此前 Code Review 指出：同一路径先产生 PASS 收据、下一次设备验证失败时，历史 PASS 文件仍然存在，会被下游误认作当前运行结果。本次仅修改实验目录，保留 Android 包读取算法、原有收据字段与设备测试范围。
+
+- `verify-device.ps1`：指定 `-Receipt` 时在 APK/ADB 检查**之前**清除旧收据，清除失败则拒绝验证；成功后在目标目录写临时 UTF-8 JSON，再以同目录重命名提交；无论设备、Git、哈希或文件写入哪个环节失败，均不将部分 JSON 作为成功收据发布。未提供收据参数时仍仅输出成功 JSON。
+- `verify-device.tests.ps1`：提供隔离的假 ADB 与假 APK 字节模拟，计划检查 7 个场景：成功→无设备、成功→缺 APK、成功→安装失败、成功→instrumentation 失败但 ADB 退出 0、成功→再次成功、写入目标路径发生冲突以及未传 `-Receipt` 的 stdout 行为。使用 `.gradle/` 下临时文件，不连接 Android 设备。
+- **运行与证据边界：** 本轮代码编辑执行环境未提供 `pwsh` 或连接的 Android 设备，因此新增脚本回归及真机 instrumentation 尚未在本环境运行。待在有 PowerShell 的环境执行 `pwsh -NoProfile -File ./verify-device.tests.ps1` 并记录输出；可检查的 GitHub CI 不替代该专项回归。旧记录中 14 项 JVM 测试及 Android 构建仍属于此前开发者报告，不能冒充本轮重新执行。
+- 真实跨应用 base/splits 可读性、OEM / 工作资料差异、更新竞争、界面生命周期、Tauri 桥和远程上传仍未验证。收据逻辑修复不证明 Android 平台可行性，也不关闭 #71 或解锁 #70/#73 的整体验收。
+
 没有提交 APK、完整政策、缓存、签名材料、本机私有路径或个人设备清单。所有假数据来自自建测试；文件摘要不是运行时行为、隐私安全或法律结论。

@@ -48,7 +48,11 @@ LABEL org.opencontainers.image.revision=${VCS_REF}
 COPY --from=web-build /build/apps/web/dist /srv
 COPY deploy/Caddyfile /etc/caddy/Caddyfile
 COPY deploy/Caddyfile.common /etc/caddy/Caddyfile.common
-RUN mkdir -p /data/caddy /config/caddy && chown -R 10001:10001 /data /config
+# The upstream binary has cap_net_bind_service=ep. Clear it before cap-drop ALL;
+# otherwise Linux refuses exec when that file capability is outside the bound.
+# This image listens only on unprivileged 8080/8443.
+RUN setcap -r /usr/bin/caddy \
+    && mkdir -p /data/caddy /config/caddy && chown -R 10001:10001 /data /config
 USER 10001:10001
 EXPOSE 8080 8443
 ENTRYPOINT ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]

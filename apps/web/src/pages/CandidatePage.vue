@@ -11,6 +11,7 @@ const emit = defineEmits<{ back: []; next: []; retrySource: [string]; retryModel
 const editorTypes = computed(() => props.state.example ? dataTypes : props.typeLabels ?? {})
 const candidateLimit = computed(() => props.state.example ? 100 : 800)
 const chosenId = ref('')
+const mobileTab = ref<'original' | 'candidates'>('candidates')
 const chosen = computed(() => props.state.candidates.find(item => item.id === chosenId.value))
 const source = computed(() => props.state.sources.find(item => item.id === props.state.sourceId))
 const candidates = computed(() => props.state.candidates.filter(item => item.sourceId === props.state.sourceId))
@@ -34,7 +35,7 @@ watch(() => props.state.candidates.length, () => { if (!chosen.value) chosenId.v
 function select(candidate: Candidate) {
   chosenId.value = candidate.id; notice.value = ''
 }
-function locateQuote() { void nextTick(() => document.getElementById('candidate-quote-mark')?.focus()) }
+function locateQuote() { mobileTab.value = 'original'; void nextTick(() => document.getElementById('candidate-quote-mark')?.focus()) }
 function add() {
   if (!source.value || props.state.candidates.length >= candidateLimit.value) return
   const candidate: Candidate = { id: crypto.randomUUID(), sourceId: source.value.id, quote: '', dataType: props.state.example ? 'location' : 'LOCATION', polarity: 'UNKNOWN', subject: 'UNKNOWN', condition: '', checked: false, action: 'UNKNOWN' }
@@ -60,7 +61,8 @@ function editQuote() { if (chosen.value) chosen.value.startOffset = undefined; e
   <div>
     <div class="page-heading"><h1 id="page-title" tabindex="-1">{{ copy.candidateTitle }}</h1><p>{{ copy.candidateHelp }}</p></div>
     <div class="source-tabs" role="group" aria-label="政策来源"><button v-for="item in state.sources" :key="item.id" :aria-pressed="item.id === state.sourceId" :class="{ selected: item.id === state.sourceId }" @click="state.sourceId = item.id">{{ item.title || '未命名来源' }}<span v-if="item.status === 'failed'"> · 获取失败</span></button></div>
-    <div v-if="source" class="candidate-grid" :inert="busy || undefined">
+    <div v-if="source" class="mobile-panel-tabs" role="tablist" aria-label="检查候选视图"><button type="button" role="tab" :aria-selected="mobileTab === 'original'" :class="{ selected: mobileTab === 'original' }" @click="mobileTab = 'original'">政策原文</button><button type="button" role="tab" :aria-selected="mobileTab === 'candidates'" :class="{ selected: mobileTab === 'candidates' }" @click="mobileTab = 'candidates'">候选声明 {{ candidates.length }}</button></div>
+    <div v-if="source" class="candidate-grid" :data-tab="mobileTab" :inert="busy || undefined">
       <section class="material-panel original-panel"><div class="panel-heading"><h2>政策原文</h2><StatusTag :tone="source.status === 'failed' ? 'error' : 'neutral'">{{ sourceTypes[source.type] }}</StatusTag></div><p class="field-help">{{ source.title }} · {{ source.version || '版本未知' }}</p><UiButton v-if="!state.example" :disabled="busy || source.status === 'failed'" variant="quiet" @click="$emit('retryModel', source.id)">重新提取候选</UiButton>
         <div v-if="source.status === 'failed'" class="notice" role="status"><p>{{ state.example ? copy.sourceFailed : "这份来源未获得正文，可重试或返回材料页手动补入。" }}</p><UiButton v-if="state.example" @click="source.status = source.text.trim() ? 'ready' : 'empty'">重试示例来源</UiButton><UiButton v-else @click="$emit('retrySource', source.id)">重新获取来源</UiButton></div>
         <div v-else class="policy-reading" tabindex="0" aria-label="政策原文阅读区"><span>{{ parts.before }}</span><mark v-if="parts.quote" id="candidate-quote-mark" tabindex="-1">{{ parts.quote }}</mark><span>{{ parts.after }}</span><p v-if="!source.text">{{ copy.missingText }}</p></div>

@@ -18,6 +18,10 @@ const selectedSourceKey = computed({
   },
 })
 const selected = ref<PrivacyIssue | null>(null)
+function selectIssue(issue: PrivacyIssue) {
+  selected.value = issue
+  void nextTick(() => document.getElementById('evidence-panel')?.scrollIntoView({ block: 'start', behavior: 'smooth' }))
+}
 const loading = ref(false)
 const error = ref('')
 const reviewMessage = ref('')
@@ -430,8 +434,8 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         <div class="metrics"><div><strong>{{ dataTypeCount }}</strong><span>涉及的数据类型</span></div><div><strong>{{ report.policy_documents.length }}</strong><span>独立政策来源</span></div><div><strong>{{ report.evidence.length }}</strong><span>可查看的证据</span></div></div>
         <section class="report-section">
           <div class="section-heading"><h2>隐私声明对照</h2><span class="subtle">点开结论后，直接查看代码定位与原句</span></div>
-          <div class="table-scroll"><table><thead><tr><th>隐私数据</th><th>政策来源</th><th>当前结论</th><th>依据</th></tr></thead><tbody>
-            <tr v-for="issue in report.result.issues" :key="issue.id"><td class="type-cell">{{ label(issue.data_type) }}</td><td>{{ documentLabels(issue.policy_document_ids) }}</td><td><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></td><td><button class="evidence-button" :aria-expanded="selected?.id === issue.id" aria-controls="evidence-panel" @click="selected = issue">查看 {{ issue.evidence_ids.length }} 条证据 →</button></td></tr>
+          <div class="table-scroll"><table class="report-table"><thead><tr><th>隐私数据</th><th>政策来源</th><th>当前结论</th><th>依据</th></tr></thead><tbody>
+            <tr v-for="issue in report.result.issues" :key="issue.id"><td class="type-cell" data-label="隐私数据">{{ label(issue.data_type) }}</td><td data-label="政策来源">{{ documentLabels(issue.policy_document_ids) }}</td><td data-label="当前结论"><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></td><td data-label="依据"><button class="evidence-button" :aria-expanded="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue)">查看 {{ issue.evidence_ids.length }} 条证据 →</button></td></tr>
           </tbody></table></div><p v-if="!report.result.issues.length" class="subtle">未产生对照项不等于没有隐私访问，请查看权限与扫描覆盖。</p>
         </section>
         <section v-if="selected" id="evidence-panel" class="evidence-panel" aria-live="polite">

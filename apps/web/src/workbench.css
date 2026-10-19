@@ -255,3 +255,107 @@ dl dd { margin: 0; }
 }
 @media (max-height: 720px) { .apk-panel, .original-panel { position: static; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
+
+.comparison-table td.row-evidence { display: none; }
+
+.desktop-toggle { display: inline; }
+.mobile-toggle { display: none; }
+
+@media (max-width: 560px) {
+  .desktop-toggle { display: none; }
+  .mobile-toggle { display: inline; }
+  .comparison-table { min-width: 0; display: block; }
+  .comparison-table thead { display: none; }
+  .comparison-table tbody { display: block; }
+  .comparison-table tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .comparison-table td { display: block; border: 0; padding: 0; font-size: 13px; line-height: 1.6; }
+  .comparison-table td[data-label="数据类型"] { flex: 0 1 auto; font-size: 14px; }
+  .comparison-table td[data-label="对照结果"] { flex: 0 0 auto; margin-left: auto; }
+  .comparison-table td[data-label="静态线索"],
+  .comparison-table td[data-label="政策来源"] { flex: 1 1 100%; color: var(--muted); font-size: 12px; }
+  .comparison-table td[data-label="静态线索"]::before { content: "线索："; }
+  .comparison-table td[data-label="政策来源"]::before { content: "来源："; }
+  .comparison-table td[data-label="依据"] { flex: 1 1 100%; margin-top: 6px; }
+  .example-evidence { display: none; }
+  .comparison-table td.row-evidence {
+    display: block;
+    flex: 1 1 100%;
+    margin-top: 10px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
+    animation: evidence-slide-in .18s ease-out;
+  }
+  .comparison-table td.row-evidence .evidence-grid { grid-template-columns: 1fr; gap: 12px; }
+  .comparison-table td.row-evidence .evidence-card { padding: 12px; }
+  .comparison-table td.row-evidence .evidence-explanation { margin: 0 0 10px; }
+}
+
+@keyframes evidence-slide-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 560px) {
+  .report-table { min-width: 0; display: block; }
+  .report-table thead { display: none; }
+  .report-table tbody { display: block; }
+  .report-table tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--canvas);
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .report-table td { display: block; border: 0; padding: 0; font-size: 13px; line-height: 1.6; }
+  .report-table td[data-label="隐私数据"] { flex: 1 1 auto; font-size: 14px; font-weight: 600; white-space: normal; }
+  .report-table td[data-label="当前结论"] { flex: 0 0 auto; margin-left: auto; }
+  .report-table td[data-label="政策来源"] { flex: 1 1 100%; color: var(--muted); font-size: 12px; }
+  .report-table td[data-label="政策来源"]::before { content: "来源："; }
+  .report-table td[data-label="依据"] { flex: 1 1 100%; margin-top: 6px; }
+}
+
+.mobile-panel-tabs { display: none; }
+
+@media (max-width: 560px) {
+  .mobile-panel-tabs {
+    display: flex;
+    gap: 6px;
+    margin: 16px 0;
+    padding: 4px;
+    background: var(--surface-muted);
+    border-radius: var(--radius);
+  }
+  .mobile-panel-tabs button {
+    flex: 1;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .mobile-panel-tabs button.selected {
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .candidate-grid[data-tab="original"] .candidates-panel { display: none; }
+  .candidate-grid[data-tab="candidates"] .original-panel { display: none; }
+  .candidate-grid[data-tab="original"] .policy-reading { max-height: none; overflow: visible; }
+}
+
+/* mobile report cards: PT-MOB-202 issue 07, 390px layout */

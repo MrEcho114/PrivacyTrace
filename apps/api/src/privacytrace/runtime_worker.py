@@ -16,6 +16,9 @@ from .storage_factory import create_store
 
 
 _LOG = logging.getLogger(__name__)
+# Celery uses CRITICAL logging to suppress payload-bearing framework records.
+# This module emits only fixed diagnostic codes, so keep its logger observable.
+_LOG.setLevel(logging.WARNING)
 # Diagnostics use fixed labels; never include exception strings, IDs or task input.
 _DIAGNOSTIC_CODES = frozenset(
     {

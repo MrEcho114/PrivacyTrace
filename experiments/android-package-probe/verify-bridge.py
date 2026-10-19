@@ -20,7 +20,15 @@ FIXTURE = "org.privacytrace.probe.fixture"
 DEVICE_XML = "/data/local/tmp/pt-bridge-ui.xml"
 
 
-def verify(adb_path: str, serial: str, verify_recreation: bool = False) -> dict:
+def verify(
+    adb_path: str,
+    serial: str,
+    verify_recreation: bool = False,
+    screenshots: Path | None = None,
+) -> dict:
+    if screenshots is not None and not screenshots.is_dir():
+        raise RuntimeError("Screenshot output directory must already exist")
+
     def adb(*args: str) -> str:
         return subprocess.run(
             [adb_path, "-s", serial, *args],
@@ -30,6 +38,15 @@ def verify(adb_path: str, serial: str, verify_recreation: bool = False) -> dict:
             encoding="utf-8",
             timeout=30,
         ).stdout
+
+    def screenshot(name: str) -> None:
+        if screenshots is not None:
+            png = subprocess.check_output(
+                [adb_path, "-s", serial, "exec-out", "screencap", "-p"], timeout=30
+            )
+            if not png.startswith(b"\x89PNG\r\n\x1a\n"):
+                raise RuntimeError("Device did not return a PNG screenshot")
+            (screenshots / name).write_bytes(png)
 
     def ui() -> ET.Element:
         try:
@@ -102,7 +119,18 @@ def verify(adb_path: str, serial: str, verify_recreation: bool = False) -> dict:
     def select_fixture() -> None:
         start_selection()
         tap(FIXTURE, contains=True, scroll=True)
-        wait_for("确认本机读取")
+        tree = wait_for("确认本机读取")
+        rendered = "\n".join(node.get("text", "") for node in tree.iter("node"))
+        if (
+            f"2 个包 · {total_bytes} 字节" not in rendered
+            or "versionCode 1" not in rendered
+            or f"base · {base.stat().st_size} 字节" not in rendered
+            or f"fixture_feature · {split.stat().st_size} 字节" not in rendered
+        ):
+            raise RuntimeError(
+                "Native confirmation is missing the selected package set and size"
+            )
+        screenshot("confirmation.png")
 
     candidates = list(
         (
@@ -141,6 +169,26 @@ def verify(adb_path: str, serial: str, verify_recreation: bool = False) -> dict:
     adb("shell", "input", "keyevent", "KEYCODE_HOME")
     adb("shell", "am", "start", "-n", f"{HARNESS}/.MainActivity")
     wait_for("CANCELLED")
+
+    select_fixture()
+    # Real replacement, including unchanged versionCode/content. Native consent must
+    # not silently roll forward to the installation that appeared after the dialog.
+    adb("install-multiple", "-r", str(base), str(split))
+    tap("开始读取")
+    rejected = wait_for("INSTALLATION_CHANGED")
+    if any(node.get("text") == "本机读取完成" for node in rejected.iter("node")):
+        raise RuntimeError(
+            "Changed installation incorrectly produced a complete result"
+        )
+    screenshot("reinstall-rejected.png")
+
+    select_fixture()
+    pending_pid = adb("shell", "pidof", HARNESS).strip()
+    adb("shell", "am", "force-stop", HARNESS)
+    adb("shell", "am", "start", "-n", f"{HARNESS}/.MainActivity")
+    wait_for("尚未读取")
+    if not pending_pid or pending_pid == adb("shell", "pidof", HARNESS).strip():
+        raise RuntimeError("Expected a fresh process after controlled force-stop")
 
     if verify_recreation:
         if adb("shell", "getprop", "ro.kernel.qemu").strip() != "1":
@@ -184,6 +232,7 @@ def verify(adb_path: str, serial: str, verify_recreation: bool = False) -> dict:
         re.fullmatch(r"[0-9a-f]{64}", value) for value in values
     ):
         raise RuntimeError("Bridge result is missing its complete installed split set")
+    screenshot("result.png")
     source_commit = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
     ).strip()
@@ -200,6 +249,9 @@ def verify(adb_path: str, serial: str, verify_recreation: bool = False) -> dict:
         "cases": {
             "native_picker_cancel": "PASS",
             "native_confirmation_cancel": "PASS",
+            "selected_set_metadata_before_read": "PASS",
+            "same_version_reinstall_requires_new_confirmation": "PASS",
+            "forced_process_restart_discards_pending_confirmation": "PASS",
             "pause_confirmation_resume_rejected": "PASS",
             "vue_rust_kotlin_selected_split_hashes_after_cancel": "PASS",
             "font_scale_activity_recreation_recovery": "PASS"
@@ -217,6 +269,11 @@ def verify(adb_path: str, serial: str, verify_recreation: bool = False) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "--screenshots",
+        type=Path,
+        help="Existing local directory for controlled confirmation/rejection/result PNGs",
+    )
+    parser.add_argument(
         "--serial", required=True, help="Explicit authorized test-device serial"
     )
     parser.add_argument("--adb", default="adb", help="ADB executable")
@@ -227,7 +284,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     try:
-        result = verify(args.adb, args.serial, args.verify_recreation)
+        result = verify(args.adb, args.serial, args.verify_recreation, args.screenshots)
     except RuntimeError as error:
         # These messages contain only this runner's fixed expectations.
         print(str(error), file=sys.stderr)

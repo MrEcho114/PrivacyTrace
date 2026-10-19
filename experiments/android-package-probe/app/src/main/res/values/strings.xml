@@ -6,7 +6,7 @@
     <string name="app_choice">%1$s\n%2$s</string>
     <string name="cancel">取消读取</string>
     <string name="confirm_title">确认本机读取</string>
-    <string name="confirm_body">将读取 %1$s（%2$s）的当前安装包集合。只在本机计算摘要，不发送材料。后台切换会取消读取。</string>
+    <string name="confirm_body">%1$s\n%2$s · versionCode %3$s\n%4$d 个包 · %5$d 字节\n%6$s\n\n仅读取上述 base 和全部已安装 splits，在本机计算摘要，不发送材料。安装变化后须重新确认；后台切换会取消读取。</string>
     <string name="confirm">开始读取</string>
     <string name="dismiss">返回</string>
     <string name="working">正在本机查询／读取…</string>

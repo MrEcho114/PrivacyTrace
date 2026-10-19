@@ -45,12 +45,32 @@ internal class PackageProbe(
     private val source: PackageSource,
     private val limits: ProbeLimits = ProbeLimits(),
 ) {
+    // Metadata only: no APK stream is opened before native confirmation.
+    fun prepare(packageName: String): Installation = normalized(source.snapshot(packageName), packageName)
+
     fun inspect(packageName: String, cancelled: () -> Boolean = { false }): ProbeResult {
+        if (cancelled() || Thread.currentThread().isInterrupted) fail(ProbeFailure.CANCELLED)
+        return inspectSnapshot(prepare(packageName), cancelled)
+    }
+
+    fun inspectConfirmed(confirmed: Installation, cancelled: () -> Boolean = { false }): ProbeResult {
+        if (cancelled() || Thread.currentThread().isInterrupted) fail(ProbeFailure.CANCELLED)
+        val current = try {
+            prepare(confirmed.packageName)
+        } catch (_: ProbeException) {
+            fail(ProbeFailure.INSTALLATION_CHANGED)
+        }
+        // Consent belongs to this exact installation metadata, not just the package name.
+        if (current != confirmed) fail(ProbeFailure.INSTALLATION_CHANGED)
+        return inspectSnapshot(current, cancelled)
+    }
+
+    private fun inspectSnapshot(before: Installation, cancelled: () -> Boolean): ProbeResult {
+        val packageName = before.packageName
         fun checkCancellation() {
             if (cancelled() || Thread.currentThread().isInterrupted) fail(ProbeFailure.CANCELLED)
         }
         checkCancellation()
-        val before = normalized(source.snapshot(packageName), packageName)
         var total = 0L
         val digests = before.parts.map { part ->
             checkCancellation()

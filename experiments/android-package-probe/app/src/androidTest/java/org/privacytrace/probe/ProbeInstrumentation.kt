@@ -38,10 +38,14 @@ class ProbeInstrumentation : Instrumentation() {
             val source = AndroidPackageSource(targetContext.packageManager)
             stage = "visibility"
             check(source.visibleApps().any { it.packageName == packageName })
+            stage = "confirmation_metadata"
+            val probe = PackageProbe(source)
+            val confirmed = probe.prepare(packageName)
+            check(confirmed.parts.size == expectedParts)
             stage = "first_read"
-            val first = PackageProbe(source).inspect(packageName)
+            val first = probe.inspectConfirmed(confirmed)
             stage = "repeat_read"
-            val second = PackageProbe(source).inspect(packageName)
+            val second = probe.inspectConfirmed(confirmed)
             stage = "package_count"
             check(first.parts.size == expectedParts)
             stage = "stable_digests"

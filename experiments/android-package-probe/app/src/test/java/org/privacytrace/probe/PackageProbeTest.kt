@@ -165,4 +165,75 @@ class PackageProbeTest {
             .inspect(installation.packageName)
         assertNotEquals(first.localSetSha256, other.localSetSha256)
     }
+
+    @Test fun `confirmation prepares the bounded complete set without reading APK bytes`() {
+        val source = Source(installation.copy(parts = listOf(split, base)))
+        val confirmed = PackageProbe(source).prepare(installation.packageName)
+        assertEquals(installation, confirmed)
+        assertEquals(5L, confirmed.parts.sumOf { it.bytes })
+        assertEquals(0, source.opened)
+        expect(ProbeFailure.LIMIT_EXCEEDED) {
+            PackageProbe(source, ProbeLimits(maxTotalBytes = 4)).prepare(installation.packageName)
+        }
+        assertEquals(0, source.opened)
+    }
+
+    @Test fun `unchanged confirmation reads exactly the displayed set regardless of enumeration order`() {
+        val source = Source(installation)
+        val probe = PackageProbe(source)
+        val confirmed = probe.prepare(installation.packageName)
+        source.value = installation.copy(parts = listOf(split, base))
+        val result = probe.inspectConfirmed(confirmed)
+        assertEquals(confirmed.parts.size, result.parts.size)
+        assertEquals(confirmed.parts.sumOf { it.bytes }, result.totalBytes)
+        assertEquals(2, source.opened)
+    }
+
+    @Test fun `changed installation since confirmation requires new consent before any stream opens`() {
+        val changes = listOf(
+            installation.copy(versionCode = 8), installation.copy(updatedMillis = 101),
+            installation.copy(parts = listOf(base)),
+            installation.copy(parts = listOf(base.copy(location = "/new/base.apk"), split)),
+            installation.copy(parts = listOf(base.copy(modifiedMillis = 11), split)),
+            installation.copy(parts = listOf(base.copy(bytes = 4), split)),
+            installation.copy(parts = listOf(base, split.copy(splitName = "config.fr"))),
+        )
+        changes.forEach { changed ->
+            val source = Source(installation)
+            val probe = PackageProbe(source)
+            val confirmed = probe.prepare(installation.packageName)
+            source.value = changed
+            expect(ProbeFailure.INSTALLATION_CHANGED) { probe.inspectConfirmed(confirmed) }
+            assertEquals(0, source.opened)
+        }
+    }
+
+    @Test fun `missing or unreadable installation after confirmation never opens a stream`() {
+        listOf(ProbeFailure.NOT_VISIBLE_OR_MISSING, ProbeFailure.UNREADABLE).forEach { failure ->
+            val confirmed = PackageProbe(Source(installation)).prepare(installation.packageName)
+            val source = object : PackageSource {
+                override fun snapshot(packageName: String): Installation = throw ProbeException(failure)
+                override fun open(part: InstalledPart): InputStream = error("Must not open")
+            }
+            expect(ProbeFailure.INSTALLATION_CHANGED) { PackageProbe(source).inspectConfirmed(confirmed) }
+        }
+    }
+
+    @Test fun `confirmation still rejects installation changes during reading`() {
+        val source = Source(installation).apply {
+            postRead = { if (opened > 0) installation.copy(updatedMillis = 101) else installation }
+        }
+        val probe = PackageProbe(source)
+        val confirmed = probe.prepare(installation.packageName)
+        expect(ProbeFailure.INSTALLATION_CHANGED) { probe.inspectConfirmed(confirmed) }
+        assertEquals(2, source.opened)
+    }
+
+    @Test fun `cancelled confirmation cannot read or return a partial result`() {
+        val source = Source(installation)
+        val probe = PackageProbe(source)
+        val confirmed = probe.prepare(installation.packageName)
+        expect(ProbeFailure.CANCELLED) { probe.inspectConfirmed(confirmed) { true } }
+        assertEquals(0, source.opened)
+    }
 }

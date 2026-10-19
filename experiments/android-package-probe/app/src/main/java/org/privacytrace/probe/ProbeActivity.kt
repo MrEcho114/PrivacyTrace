@@ -16,6 +16,7 @@ class ProbeActivity : Activity() {
     private val busy = AtomicBoolean(false)
     private lateinit var status: TextView
     private lateinit var choices: LinearLayout
+    private var confirmation: AlertDialog? = null
     private val source by lazy { AndroidPackageSource(packageManager) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,7 +33,7 @@ class ProbeActivity : Activity() {
         })
         body.addView(Button(this).apply {
             setText(R.string.cancel)
-            setOnClickListener { cancelled.set(true) }
+            setOnClickListener { cancelRead() }
         })
         status = TextView(this).apply { setTextIsSelectable(true); textSize = 16f }
         choices = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -58,26 +59,44 @@ class ProbeActivity : Activity() {
         }
     }
 
-    private fun confirm(app: VisibleApp) {
-        AlertDialog.Builder(this)
-            .setTitle(R.string.confirm_title)
-            .setMessage(getString(R.string.confirm_body, app.label, app.packageName))
-            .setNegativeButton(R.string.dismiss, null)
-            .setPositiveButton(R.string.confirm) { _, _ ->
-                choices.removeAllViews()
-                runWork {
-                    val result = PackageProbe(source).inspect(app.packageName) { cancelled.get() }
-                    val parts = result.parts.joinToString("\n\n") {
-                        "${it.splitName ?: "base"} · ${it.bytes}\n${it.sha256}"
+    private fun confirm(app: VisibleApp) = runWork {
+        val probe = PackageProbe(source)
+        val confirmed = probe.prepare(app.packageName)
+        val parts = confirmed.parts.joinToString("\n") { "${it.splitName ?: "base"} · ${it.bytes} 字节" }
+        show {
+            confirmation = AlertDialog.Builder(this)
+                .setTitle(R.string.confirm_title)
+                .setMessage(getString(
+                    R.string.confirm_body, app.label, app.packageName, confirmed.versionCode.toString(),
+                    confirmed.parts.size, confirmed.parts.sumOf { it.bytes }, parts,
+                ))
+                .setNegativeButton(R.string.dismiss) { _, _ -> cancelRead() }
+                .setOnCancelListener { cancelRead() }
+                .setPositiveButton(R.string.confirm) { _, _ ->
+                    confirmation = null
+                    choices.removeAllViews()
+                    runWork {
+                        val result = probe.inspectConfirmed(confirmed) { cancelled.get() }
+                        val parts = result.parts.joinToString("\n\n") {
+                            "${it.splitName ?: "base"} · ${it.bytes}\n${it.sha256}"
+                        }
+                        show {
+                            status.text = getString(
+                                R.string.result, result.packageName, result.versionCode.toString(),
+                                result.parts.size, result.totalBytes, result.localSetSha256, parts,
+                            )
+                        }
                     }
-                    show {
-                        status.text = getString(
-                            R.string.result, result.packageName, result.versionCode.toString(),
-                            result.parts.size, result.totalBytes, result.localSetSha256, parts,
-                        )
-                    }
-                }
-            }.show()
+                }.show()
+        }
+    }
+
+    private fun cancelRead() {
+        cancelled.set(true)
+        confirmation?.dismiss()
+        confirmation = null
+        choices.removeAllViews()
+        status.text = getString(R.string.error, ProbeFailure.CANCELLED.name)
     }
 
     private fun runWork(action: () -> Unit) {
@@ -108,7 +127,7 @@ class ProbeActivity : Activity() {
     }
 
     override fun onStop() {
-        cancelled.set(true)
+        if (confirmation != null || busy.get()) cancelRead() else cancelled.set(true)
         super.onStop()
     }
 

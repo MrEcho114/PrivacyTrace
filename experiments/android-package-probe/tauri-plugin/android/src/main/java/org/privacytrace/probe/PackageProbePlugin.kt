@@ -63,22 +63,45 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
 
     private fun confirm(request: Pending, app: VisibleApp) {
         if (pending !== request || request.operation.cancelled.get()) return
+        dialog = null
+        request.reading = true
+        worker.execute {
+            try {
+                val confirmed = PackageProbe(source).prepare(app.packageName)
+                activity.runOnUiThread {
+                    request.reading = false
+                    if (pending !== request) return@runOnUiThread
+                    if (request.operation.cancelled.get()) finish(request, failure = "CANCELLED")
+                    else showConfirmation(request, app, confirmed)
+                }
+            } catch (error: ProbeException) {
+                activity.runOnUiThread { finish(request, failure = error.failure.name) }
+            } catch (_: Exception) {
+                activity.runOnUiThread { finish(request, failure = "UNREADABLE") }
+            }
+        }
+    }
+
+    private fun showConfirmation(request: Pending, app: VisibleApp, confirmed: Installation) {
+        val parts = confirmed.parts.joinToString("\n") { "${it.splitName ?: "base"} · ${it.bytes} 字节" }
         dialog = AlertDialog.Builder(activity)
             .setTitle("确认本机读取")
-            .setMessage("${app.label}\n${app.packageName}\n\n读取当前 base 和全部已安装 splits 的摘要；材料仅留本机。本实验不上传。")
+            .setMessage("${app.label}\n${app.packageName} · versionCode ${confirmed.versionCode}\n" +
+                "${confirmed.parts.size} 个包 · ${confirmed.parts.sumOf { it.bytes }} 字节\n$parts\n\n" +
+                "仅读取上述 base 和全部已安装 splits 的摘要；材料仅留本机，本实验不上传。安装变化后须重新确认。")
             .setNegativeButton("取消") { _, _ -> cancelCurrent() }
             .setOnCancelListener { cancelCurrent() }
-            .setPositiveButton("开始读取") { _, _ -> read(request, app.packageName) }
+            .setPositiveButton("开始读取") { _, _ -> read(request, confirmed) }
             .show()
     }
 
-    private fun read(request: Pending, packageName: String) {
+    private fun read(request: Pending, confirmed: Installation) {
         if (pending !== request || request.operation.cancelled.get()) return
         dialog = null
         request.reading = true
         worker.execute {
             try {
-                val result = PackageProbe(source).inspect(packageName) { request.operation.cancelled.get() }
+                val result = PackageProbe(source).inspectConfirmed(confirmed) { request.operation.cancelled.get() }
                 activity.runOnUiThread { finish(request, result = result) }
             } catch (error: ProbeException) {
                 activity.runOnUiThread { finish(request, failure = error.failure.name) }

@@ -9,6 +9,7 @@
 - 不申请 `INTERNET`、`QUERY_ALL_PACKAGES`、存储、安装或跨用户权限，不使用 root；列表及摘要只在内存中，不复制 APK，不调用模型或服务端。
 - 列表只是当前用户下可查询的启动应用子集。不可见与不存在均返回 `NOT_VISIBLE_OR_MISSING`，不据此判断安装事实。
 - 每次读取前后重查包名、versionCode、更新时间、base/split 标识、路径、长度和修改时间。缺包、不可读、变化、超限或取消时不返回部分成功。它不是 Android 原子安装快照，也不能保证完成之后安装内容不再改变。
+- 选中后先读取受限的安装元数据，原生确认窗口显示版本、包数、逐包长度及总大小；此时不打开 APK 字节流。开始读取前再次核对确认快照，变化或已不可读时返回 `INSTALLATION_CHANGED`，必须重新选择确认。网页不能提供或修改该快照。
 - 默认本机实验预算：64 个文件、单文件 128 MiB、合计 256 MiB。检查声明大小与实际流字节数，避免加法溢出；这些值不是服务端能力或 #70 限额。
 - `localSetSha256` 使用带长度前缀的 UTF-8 字段：域 `privacytrace-local-package-probe-v1`、包名、十进制 versionCode，再按 base 优先／split 名排序，依次放入角色标识（`base` 或 `split:<name>`）、十进制长度、文件 SHA-256。它是 PoC 私有指纹，**不作为 #70 API 契约、上传凭据或报告证据**。
 
@@ -101,3 +102,4 @@ instrumentation 在真实 PackageManager 快照之后、第一次打开 APK 之�
 | Google Play 权限材料与资格 | 尚未申请；构建可用不代表获批 |
 
 平台调查和本轮执行事实见 [EVIDENCE.md](EVIDENCE.md)。
+完整 #71 用户故事的覆盖、缺口与整合归属见 [ACCEPTANCE.md](ACCEPTANCE.md)。

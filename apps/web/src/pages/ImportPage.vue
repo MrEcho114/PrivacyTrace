@@ -5,7 +5,7 @@ import UiField from '../components/UiField.vue'
 import StatusTag from '../components/StatusTag.vue'
 import UiIcon from '../components/UiIcon.vue'
 import { copy } from '../copy'
-import { emptySource, sourceTypes } from '../workflow'
+import { emptySource, sourceProvenanceLabel, sourceStatusLabel, sourceTypes } from '../workflow'
 import type { Workflow } from '../workflow'
 const props = defineProps<{ state: Workflow; busy?: boolean; uploadedName?: string }>()
 const emit = defineEmits<{ example: []; next: []; file: [File]; dirty: [] }>()
@@ -83,7 +83,7 @@ function useText(id: string) {
       </section>
       <section class="material-panel policy-panel"><div class="panel-heading"><h2>政策来源</h2><span class="field-help">{{ state.sources.length }} 份来源</span></div>
         <article v-for="(source, index) in state.sources" :key="source.id" class="source-editor">
-          <div class="source-heading"><h3>{{ source.title || `政策来源 ${index + 1}` }}</h3><StatusTag :tone="source.status === 'failed' ? 'error' : source.text ? 'info' : 'neutral'">{{ source.status === 'failed' ? '获取失败' : source.status === 'manual' ? '手动补入' : state.example && source.text ? '示例节选' : '待准备' }}</StatusTag><UiButton v-if="state.sources.length > 1" variant="quiet" :aria-label="`移除来源 ${index + 1}`" @click="removeSource(source.id)">移除</UiButton></div>
+          <div class="source-heading"><h3>{{ source.title || `政策来源 ${index + 1}` }}</h3><StatusTag :tone="source.status === 'failed' ? 'error' : source.text ? 'info' : 'neutral'">{{ state.example ? (source.text ? '示例节选' : '待准备') : `${sourceStatusLabel(source.status)} · ${sourceProvenanceLabel(source.provenance)}` }}</StatusTag><UiButton v-if="state.sources.length > 1" variant="quiet" :aria-label="`移除来源 ${index + 1}`" @click="removeSource(source.id)">移除</UiButton></div>
           <div class="field-pair"><UiField label="来源名称" :id="'title-' + source.id"><input :id="'title-' + source.id" v-model="source.title" maxlength="100" placeholder="例如：应用官网政策" /></UiField><UiField label="来源类型" :id="'type-' + source.id"><select :id="'type-' + source.id" v-model="source.type"><option v-for="(text, value) in sourceTypes" :key="value" :value="value">{{ text }}</option></select></UiField></div>
           <UiField label="政策网址" :id="'url-' + source.id"><input :id="'url-' + source.id" v-model="source.url" type="url" maxlength="2000" placeholder="https://" /></UiField>
           <details class="source-body" :open="!state.example && index === 0"><summary>正文与适用范围<span class="source-summary-meta">{{ source.text ? `${source.text.length} 字` : copy.missingText }}</span></summary>

@@ -17,7 +17,7 @@ violations. The accepted repairs are:
   `status="ready"`; the acquisition is `EXTERNAL_CHAT_EXPORT` until the backend
   replaces the text with a fetched capture, identified by `final_url`. A
   `PROVIDED` body remains `status="manual"`. The persisted import audit is
-  unchanged. Both the draft and report source panels now show the provenance
+  unchanged. The import, draft and report source panels now show the provenance
   label (Manifest 发现 / 外部导入 / 后端抓取 / 手动输入), so a collector body is
   not confused with a backend fetch. New/updated tests cover draft status,
   report acquisition and the rendered labels.
@@ -25,7 +25,9 @@ violations. The accepted repairs are:
   server start gate was already relaxed (`captures(require_checked=False)`), but
   `LiveWorkflow.begin` rejected any unchecked candidate. The UI gate is removed;
   a compiled-component test starts with `checked=false` and verifies that
-  `saveCandidates` receives it and `startScan` is called.
+  `saveCandidates` receives it and `startScan` is called. The candidate-page
+  instruction and the Issue 44 design record now say unchecked candidates may be
+  kept as UNREVIEWED instead of requiring per-item checking.
 - **The 101-file boundary did not fit the inspection budget.** A real isolated
   metadata pass over 101 APKs took **254.02 s** on this host; the 180 s budget
   would reject a valid maximal set with 503. The total inspection budget is now

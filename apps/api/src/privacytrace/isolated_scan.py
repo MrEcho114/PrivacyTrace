@@ -9,7 +9,7 @@ import threading
 import time
 from pathlib import Path
 
-from .scan_workspace import DEFAULT_QUOTA, ScanError, ScanWorkspace
+from .scan_workspace import DEFAULT_QUOTA, ScanError, ScanWorkspace, safe_path
 
 ROOT = Path(__file__).resolve().parents[4]
 MAX_INPUT = 150 * 1024 * 1024
@@ -70,13 +70,26 @@ def scan_isolated(
     inventory=False,
     run_root=None,
     quota_bytes=None,
+    metadata=False,
 ):
     """Only the owned immutable copy is mounted; default retention is zero.
 
     Reserve cumulative space before copying; keep a bounded audit receipt but no
     APK or raw worker logs after a normal exit. Hard crashes require manual repair.
     """
-    path = validate_input(path)
+    path = Path(path).absolute()
+    is_set = path.is_dir()
+    if is_set:
+        safe_path(path)
+        inputs = sorted(path.iterdir())
+        if not 1 <= len(inputs) <= 101 or any(p.suffix.lower() != ".apk" for p in inputs):
+            raise ScanError("UNSAFE_INPUT", "Package directory must contain only bounded APK files")
+        inputs = [validate_input(p) for p in inputs]
+    else:
+        inputs = [validate_input(path)]
+    input_size = sum(p.stat().st_size for p in inputs)
+    if input_size > MAX_INPUT:
+        raise ScanError("INPUT_TOO_LARGE", "Package set exceeds 150 MiB")
     if not 1 <= timeout <= 180:
         raise ScanError("INVALID_TIMEOUT", "Timeout must be between 1 and 180 seconds")
     try:
@@ -136,33 +149,45 @@ def scan_isolated(
         )
 
     try:
-        original = path.stat()
-        workspace = ScanWorkspace(root, quota, original.st_size)
+        workspace = ScanWorkspace(root, quota, input_size)
         run_dir, copied = workspace.path, workspace.input
         phase = "COPYING"
-        digest_builder = hashlib.sha256()
-        with path.open("rb") as src, copied.open("xb") as dst:
-            total = 0
-            while chunk := src.read(1024 * 1024):
-                if cancelled():
-                    raise ScanError("CANCELLED", "Analysis cancelled by user")
-                total += len(chunk)
-                if total > MAX_INPUT:
-                    raise ScanError("INPUT_TOO_LARGE", "Input grew beyond maximum while copying")
-                if total > original.st_size:
-                    raise ScanError("INPUT_CHANGED", "Input changed while copying")
-                dst.write(chunk)
-                digest_builder.update(chunk)
-        current = path.stat()
-        if (
-            total != original.st_size
-            or current.st_size != original.st_size
-            or current.st_mtime_ns != original.st_mtime_ns
-        ):
+        if is_set:
+            copied.mkdir(mode=0o755)
+        total = 0
+        for source in inputs:
+            original = source.stat()
+            target = copied / source.name if is_set else copied
+            with source.open("rb") as src, target.open("xb") as dst:
+                count = 0
+                while chunk := src.read(1024 * 1024):
+                    if cancelled():
+                        raise ScanError("CANCELLED", "Analysis cancelled by user")
+                    count += len(chunk)
+                    total += len(chunk)
+                    if total > MAX_INPUT:
+                        raise ScanError(
+                            "INPUT_TOO_LARGE", "Input grew beyond maximum while copying"
+                        )
+                    if total > input_size or count > original.st_size:
+                        raise ScanError("INPUT_CHANGED", "Input changed while copying")
+                    dst.write(chunk)
+            current = source.stat()
+            if (count != original.st_size or current.st_size != original.st_size
+                    or current.st_mtime_ns != original.st_mtime_ns
+                    or (current.st_dev, current.st_ino) != (original.st_dev, original.st_ino)):
+                raise ScanError("INPUT_CHANGED", "Input changed while copying")
+            target.chmod(0o444)
+        if total != input_size or (is_set and sorted(path.iterdir()) != inputs):
             raise ScanError("INPUT_CHANGED", "Input changed while copying")
-        digest = digest_builder.hexdigest()
+        from .package_set import directory_digest
+
+        def copied_digest():
+            return (directory_digest(copied) if is_set
+                    else hashlib.sha256(copied.read_bytes()).hexdigest())
+
+        digest = copied_digest()
         proof["apk_sha256"] = digest
-        copied.chmod(0o444)
         if cancelled():
             raise ScanError("CANCELLED", "Analysis cancelled by user")
         phase = "PREFLIGHT"
@@ -215,7 +240,7 @@ def scan_isolated(
                 f"type=bind,source={mount},target=/input/sample.apk,readonly",
                 image_id,
                 "/input/sample.apk",
-                *(["--probe"] if probe else ["--jadx", "jadx"]),
+                *(["--probe"] if probe else ["--metadata"] if metadata else ["--jadx", "jadx"]),
                 *(["--inventory"] if inventory and not probe else []),
             ]
         )
@@ -319,8 +344,8 @@ def scan_isolated(
         ):
             raise ScanError("WORKER_INVALID_OUTPUT", "Worker hash or tools have invalid structure")
         if (
-            hashlib.sha256(copied.read_bytes()).hexdigest() != digest
-            or output["apk_sha256"] != digest
+            copied_digest() != digest
+            or output.get("input_sha256", output["apk_sha256"]) != digest
         ):
             raise ScanError("INPUT_CHANGED", "Worker output hash differs from immutable input copy")
         output["tools"]["worker_image"] = image_id
@@ -428,6 +453,11 @@ def scan_isolated(
             error.receipt = str(workspace.receipt)
         raise error
     return output
+
+
+def inspect_package_isolated(path, timeout=120):
+    """Read manifest metadata in the same bounded, inspected worker as scanning."""
+    return scan_isolated(path, metadata=True, timeout=timeout)
 
 
 def main():

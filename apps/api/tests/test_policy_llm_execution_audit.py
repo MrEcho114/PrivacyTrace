@@ -189,9 +189,10 @@ def test_response_and_per_chunk_candidate_limits(tmp_path):
     ex1 = PolicyLLMExtractor(LLMExtractorConfig(
         enabled=True, client=enormous, max_response_bytes=50,
     ))
-    result1 = ex1.extract_from_spans(raw.read_text(encoding="utf-8"), [
-        {"start": 0, "end": len(raw.read_text()), "text": raw.read_text()}
-    ])
+    policy_text = raw.read_text(encoding="utf-8")
+    result1 = ex1.extract_from_spans(
+        policy_text, [{"start": 0, "end": len(policy_text), "text": policy_text}]
+    )
     assert result1.status == "FAILED"
     assert enormous.call_count == 1
     assert "RESPONSE_TOO_LARGE" in " ".join(result1.telemetry.errors)

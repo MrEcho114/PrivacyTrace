@@ -110,6 +110,18 @@
           ],
           "default": null,
           "title": "Error"
+        },
+        "retry_of": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retry Of"
         }
       },
       "required": [
@@ -297,6 +309,19 @@
             }
           ],
           "default": null
+        },
+        "package_split": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Package Split"
         }
       },
       "required": [

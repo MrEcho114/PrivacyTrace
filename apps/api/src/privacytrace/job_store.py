@@ -266,6 +266,17 @@ class JobStore:
             self._write(record)
             return job
 
+    def create_retry(self, job: AnalysisJob, token_digest: str | None) -> AnalysisJob:
+        """Linearize retry creation against deletion under the job-store lock."""
+        with self._transaction():
+            original = self._load(job.retry_of)
+            if original.job.state not in {"FAILED", "CANCELLED"}:
+                raise ValueError("Only failed or cancelled jobs can be retried")
+            if original.token_digest != token_digest or self._path(job.id).exists():
+                raise ValueError("Retry access scope or identifier changed")
+            self._write(StoredJob(job=job, token_digest=token_digest))
+            return job
+
     def get_token_digest(self, job_id: str) -> str | None:
         with self._transaction():
             record = self._load(job_id, allow_tombstone=True)

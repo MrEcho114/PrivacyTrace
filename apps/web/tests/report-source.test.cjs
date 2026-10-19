@@ -20,6 +20,7 @@ const typesCode = ts.transpileModule(fs.readFileSync(path.join(__dirname, '../sr
 }).outputText
 const typesExports = {}
 vm.runInNewContext(typesCode, { exports: typesExports })
+assert.ok(typesExports.sourceStatusLabels, 'typesExports must export sourceStatusLabels')
 
 // Compile the real selector module rather than stubbing it, so the mounted
 // component is exercised against the same paging logic the browser runs.
@@ -48,6 +49,7 @@ function mount(jobs = [], fixture = null) {
     require: name => {
       if (name === './api') return api
       if (name === './types') return typesExports
+      if (name === './workflow') return { sourceStatusLabels: typesExports.sourceStatusLabels }
       if (name === './sdkEvidence') return sdkEvidenceExports
       if (name === 'vue') return { ...vue, onMounted() {}, onBeforeUnmount(fn) { unmount = fn } }
       throw new Error(`Unexpected import: ${name}`)

@@ -15,6 +15,8 @@ from privacytrace.sdk_ruleset import SdkSignatureRuleset
 from privacytrace.web_models import (
     CandidateInput,
     DraftInput,
+    ExternalPolicyCollectionInput,
+    ExternalPolicyExportInput,
     ModelSettings,
     StartInput,
 )
@@ -31,6 +33,8 @@ MODELS = {
     "web-candidate-input": CandidateInput,
     "web-start-input": StartInput,
     "web-model-settings": ModelSettings,
+    "web-external-collection-input": ExternalPolicyCollectionInput,
+    "web-external-policy-input": ExternalPolicyExportInput,
 }
 ANNOTATIONS = {
     "title",

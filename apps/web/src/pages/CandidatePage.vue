@@ -79,6 +79,6 @@ function editQuote() { if (chosen.value) chosen.value.startOffset = undefined; e
         </form>
       </section>
     </div>
-    <div class="flow-footer"><UiButton @click="$emit('back')">{{ copy.editMaterials }}</UiButton><span class="field-help">{{ state.example ? copy.reportHelp : "未采用的候选请删除；其余逐条检查。空候选不代表政策未声明。" }}</span><UiButton variant="primary" :disabled="busy" :busy="busy" @click="$emit('next')">{{ state.example ? copy.nextProgress : "保存候选并开始分析" }}</UiButton></div>
+    <div class="flow-footer"><UiButton @click="$emit('back')">{{ copy.editMaterials }}</UiButton><span class="field-help">{{ state.example ? copy.reportHelp : "未采用的候选可删除；未检查的候选会保留，启动分析不强制逐条检查，也不会自动提升核验状态。空候选不代表政策未声明。" }}</span><UiButton variant="primary" :disabled="busy" :busy="busy" @click="$emit('next')">{{ state.example ? copy.nextProgress : "保存候选并开始分析" }}</UiButton></div>
   </div>
 </template>

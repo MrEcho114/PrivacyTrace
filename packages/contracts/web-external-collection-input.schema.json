@@ -1,0 +1,162 @@
+{
+  "$defs": {
+    "CollectedSourceInput": {
+      "additionalProperties": false,
+      "properties": {
+        "source_type": {
+          "anyOf": [
+            {
+              "enum": [
+                "OFFICIAL_WEB_POLICY",
+                "SDK_POLICY",
+                "STORE_POLICY",
+                "IN_APP_POLICY"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Type"
+        },
+        "title": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "url": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Url",
+          "type": "string"
+        },
+        "text": {
+          "default": "",
+          "maxLength": 200000,
+          "title": "Text",
+          "type": "string"
+        },
+        "version": {
+          "default": "UNKNOWN",
+          "maxLength": 100,
+          "title": "Version",
+          "type": "string"
+        },
+        "region": {
+          "default": "",
+          "maxLength": 100,
+          "title": "Region",
+          "type": "string"
+        },
+        "product": {
+          "default": "",
+          "maxLength": 100,
+          "title": "Product",
+          "type": "string"
+        },
+        "package_name": {
+          "default": "",
+          "maxLength": 200,
+          "title": "Package Name",
+          "type": "string"
+        },
+        "version_code": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version Code"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9_-]{1,60}$",
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "id"
+      ],
+      "title": "CollectedSourceInput",
+      "type": "object"
+    },
+    "ExternalCollectionResult": {
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "enum": [
+            "RETRIEVED",
+            "PROVIDED",
+            "URL_ONLY",
+            "OFFLINE",
+            "NOT_FOUND",
+            "UNAVAILABLE"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CollectedSourceInput"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed At"
+        }
+      },
+      "required": [
+        "state",
+        "source"
+      ],
+      "title": "ExternalCollectionResult",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": "privacytrace-policy-collector/1",
+      "title": "Version",
+      "type": "string"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/ExternalCollectionResult"
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "title": "Results",
+      "type": "array"
+    }
+  },
+  "required": [
+    "version",
+    "results"
+  ],
+  "title": "ExternalPolicyCollectionInput",
+  "type": "object"
+}

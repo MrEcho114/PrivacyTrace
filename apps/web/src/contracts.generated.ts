@@ -14,6 +14,7 @@ export type AnalysisJob = {
   "region"?: string | null;
   "product_scope"?: string | null;
   "error"?: string | null;
+  "retry_of"?: string | null;
 };
 
 export type ApiCall = {
@@ -26,6 +27,19 @@ export type ApiCall = {
 export type CandidateInput = {
   "revision": number;
   "candidates": Array<WebCandidate>;
+};
+
+export type CollectedSourceInput = {
+  "source_type"?: "OFFICIAL_WEB_POLICY" | "SDK_POLICY" | "STORE_POLICY" | "IN_APP_POLICY" | null;
+  "title": string;
+  "url"?: string;
+  "text"?: string;
+  "version"?: string;
+  "region"?: string;
+  "product"?: string;
+  "package_name"?: string;
+  "version_code"?: number | null;
+  "id": string;
 };
 
 export type ContextualHint = {
@@ -67,6 +81,49 @@ export type Evidence = {
   "start_offset"?: number | null;
   "end_offset"?: number | null;
   "api_call"?: ApiCall | null;
+  "package_split"?: string | null;
+};
+
+export type ExternalClaimInput = {
+  "excerpt": string;
+  "data_type": string;
+  "polarity"?: "AFFIRMATIVE" | "NEGATIVE" | "POSITIVE" | "UNKNOWN";
+  "subject"?: "HOST_APP" | "THIRD_PARTY" | "UNKNOWN";
+  "action"?: "ACCESS" | "UNKNOWN";
+  "condition"?: string | null;
+  "declared_purpose"?: string | null;
+  "declared_recipient"?: string | null;
+};
+
+export type ExternalCollectionResult = {
+  "state": "RETRIEVED" | "PROVIDED" | "URL_ONLY" | "OFFLINE" | "NOT_FOUND" | "UNAVAILABLE";
+  "source": CollectedSourceInput | null;
+  "observed_at"?: string | null;
+};
+
+export type ExternalPolicyCollectionInput = {
+  "version": "privacytrace-policy-collector/1";
+  "results": Array<ExternalCollectionResult>;
+};
+
+export type ExternalPolicyExportInput = {
+  "source": ExternalSourceInput;
+  "claims"?: Array<ExternalClaimInput>;
+  "summary"?: string | null;
+};
+
+export type ExternalSourceInput = {
+  "source_type"?: "OFFICIAL_WEB_POLICY" | "SDK_POLICY" | "STORE_POLICY" | "IN_APP_POLICY" | null;
+  "title"?: string;
+  "url"?: string;
+  "text"?: string;
+  "version"?: string;
+  "region"?: string;
+  "product"?: string;
+  "package_name"?: string;
+  "version_code"?: number | null;
+  "id"?: string | null;
+  "status"?: "ready" | "manual" | "empty" | "failed" | "url_only" | null;
 };
 
 export type JobsResponse = {
@@ -80,6 +137,23 @@ export type ModelSettings = {
   "api_base"?: string;
   "model"?: string;
   "api_key"?: string | null;
+};
+
+export type PackageFileSummary = {
+  "file_name": string;
+  "part": "BASE" | "SPLIT";
+  "split_name"?: string | null;
+  "sha256": string;
+  "size_bytes": number;
+};
+
+export type PackageSetSummary = {
+  "base_file": PackageFileSummary;
+  "splits"?: Array<PackageFileSummary>;
+  "files": Array<PackageFileSummary>;
+  "total_size_bytes": number;
+  "split_count": number;
+  "split_names"?: Array<string>;
 };
 
 export type PolicyApplicability = {
@@ -194,6 +268,7 @@ export type SampleMetadata = {
   "apk_sha256": string;
   "permissions": Array<string>;
   "dex_entries": Array<string>;
+  "package_set"?: PackageSetSummary | null;
 };
 
 export type ScanCoverage = {
@@ -265,10 +340,11 @@ export type WebSource = {
   "product"?: string;
   "package_name"?: string;
   "version_code"?: number | null;
-  "status"?: "ready" | "manual" | "empty" | "failed";
+  "status"?: "ready" | "manual" | "empty" | "failed" | "url_only";
   "error_code"?: string | null;
   "captured_at"?: string | null;
   "sha256"?: string | null;
   "final_url"?: string | null;
+  "provenance"?: "MANIFEST_METADATA" | "EXTERNAL_CHAT_EXPORT" | "DIRECT_WEB_FETCH" | "MANUAL_INPUT" | null;
   "model_audit"?: Record<string, string | number | boolean>;
 };

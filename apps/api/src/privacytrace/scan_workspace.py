@@ -162,6 +162,13 @@ class ScanWorkspace:
     def remove_input(self):
         safe_path(self.input)
         if self.input.exists():
+            if self.input.is_dir():
+                for part in self.input.iterdir():
+                    safe_path(part)
+                    part.chmod(0o600)
+                    part.unlink()
+                self.input.rmdir()
+                return not self.input.exists()
             self.input.chmod(0o600)  # Clear Windows read-only attribute before unlink.
             self.input.unlink()
         return not self.input.exists()

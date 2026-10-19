@@ -80,7 +80,8 @@
             "ready",
             "manual",
             "empty",
-            "failed"
+            "failed",
+            "url_only"
           ],
           "title": "Status",
           "type": "string"
@@ -132,6 +133,25 @@
           ],
           "default": null,
           "title": "Final Url"
+        },
+        "provenance": {
+          "anyOf": [
+            {
+              "enum": [
+                "MANIFEST_METADATA",
+                "EXTERNAL_CHAT_EXPORT",
+                "DIRECT_WEB_FETCH",
+                "MANUAL_INPUT"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Server-derived source origin; input values are ignored. URL discovery origin is distinct from text acquisition and does not prove official policy verification.",
+          "title": "Provenance"
         },
         "model_audit": {
           "additionalProperties": {

@@ -34,11 +34,20 @@ def manifest(
     permission_tag="uses-permission",
     max_sdk=None,
     sdk_23_max_sdk=None,
+    package_name="org.privacytrace.fixture",
+    split_name="config.en",
+    is_feature_split=False,
+    uses_split=None,
+    config_for_split=None,
+    is_split_required=False,
+    split_types=None,
+    required_split_types=None,
 ):
+    actual_split = split if isinstance(split, str) else split_name
     raw_strings = [
         "manifest",
         "package",
-        "org.privacytrace.fixture",
+        str(package_name),
         "versionCode",
         str(version_code),
         "http://schemas.android.com/apk/res/android",
@@ -47,10 +56,22 @@ def manifest(
         "name",
         permission,
         "split",
-        "config.en",
+        str(actual_split),
     ]
     if version_name is not None:
         raw_strings.extend(["versionName", str(version_name)])
+    dependency_attrs = {
+        "isFeatureSplit": "true" if is_feature_split else None,
+        "isSplitRequired": "true" if is_split_required else None,
+        "configForSplit": config_for_split,
+        "splitTypes": split_types,
+        "requiredSplitTypes": required_split_types,
+    }
+    for name, value in dependency_attrs.items():
+        if value is not None:
+            raw_strings.extend([name, value])
+    if uses_split is not None:
+        raw_strings.extend(["uses-split", uses_split])
     if sdk_23_permission is not None:
         raw_strings.extend(["uses-permission-sdk-23", str(sdk_23_permission)])
     for bound in (max_sdk, sdk_23_max_sdk):
@@ -97,6 +118,11 @@ def manifest(
         return struct.pack("<HHIII", kind, 16, 16 + len(payload), 1, 0xFFFFFFFF) + payload
 
     def attr(name, value, ns=None):
+        if name in {"isFeatureSplit", "isSplitRequired"}:
+            return struct.pack(
+                "<IIIHBBI", idx[ns], idx[name], 0xFFFFFFFF, 8, 0, 0x12,
+                0xFFFFFFFF if value == "true" else 0,
+            )
         if name == "versionCode" and version_code_type is not None:
             return struct.pack(
                 "<IIIHBBI", idx[ns], idx[name], 0xFFFFFFFF, 8, 0, version_code_type,
@@ -128,15 +154,21 @@ def manifest(
 
     ns = "http://schemas.android.com/apk/res/android"
     attrs = [
-        attr("package", "org.privacytrace.fixture"),
+        attr("package", str(package_name)),
         attr("versionCode", str(version_code), ns),
     ]
     if version_name is not None:
         attrs.append(attr("versionName", str(version_name), ns))
     if split:
-        attrs.append(attr("split", "config.en"))
+        attrs.append(attr("split", str(actual_split)))
+    for name, value in dependency_attrs.items():
+        if value is not None:
+            attrs.append(attr(name, value, None if name == "configForSplit" else ns))
     chunks = pool + node(0x100, struct.pack("<II", idx["android"], idx[ns]))
     chunks += start("manifest", attrs)
+    if uses_split is not None:
+        chunks += start("uses-split", [attr("name", uses_split, ns)])
+        chunks += end("uses-split")
     for tag, value, parent, bound in (
         (permission_tag, permission, permission_parent, max_sdk),
         ("uses-permission-sdk-23", sdk_23_permission, sdk_23_parent, sdk_23_max_sdk),
@@ -433,13 +465,22 @@ def apk(
     sdk_23_permission=None,
     version_code="7",
     version_name="1.0",
+    package_name="org.privacytrace.fixture",
+    split_name="config.en",
     manifest_options=None,
     **dex_options,
 ):
     if entries is None:
         entries = {"classes.dex": dex(**dex_options)}
-    options = dict(split=split, permission=permission, sdk_23_permission=sdk_23_permission,
-                   version_code=version_code, version_name=version_name)
+    options = dict(
+        split=split,
+        permission=permission,
+        sdk_23_permission=sdk_23_permission,
+        version_code=version_code,
+        version_name=version_name,
+        package_name=package_name,
+        split_name=split_name,
+    )
     options.update(manifest_options or {})
     with ZipFile(path, "w", compression=ZIP_STORED) as archive:
         for name, payload in {
@@ -449,3 +490,59 @@ def apk(
             info = ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0))
             archive.writestr(info, payload)
     return path
+
+
+def apk_bytes(
+    *,
+    entries=None,
+    split=False,
+    permission="android.permission.CAMERA",
+    sdk_23_permission=None,
+    version_code="7",
+    version_name="1.0",
+    package_name="org.privacytrace.fixture",
+    split_name="config.en",
+    manifest_options=None,
+    **dex_options,
+) -> bytes:
+    import io
+
+    if entries is None:
+        entries = {"classes.dex": dex(**dex_options)}
+    options = dict(
+        split=split,
+        permission=permission,
+        sdk_23_permission=sdk_23_permission,
+        version_code=version_code,
+        version_name=version_name,
+        package_name=package_name,
+        split_name=split_name,
+    )
+    options.update(manifest_options or {})
+    buf = io.BytesIO()
+    with ZipFile(buf, "w", compression=ZIP_STORED) as archive:
+        for name, payload in {
+            "AndroidManifest.xml": manifest(**options),
+            **entries,
+        }.items():
+            info = ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0))
+            archive.writestr(info, payload)
+    return buf.getvalue()
+
+
+def package_set_archive(
+    path: Path | None = None, apks: dict[str, bytes] | None = None
+) -> bytes | Path:
+    import io
+
+    apks = apks or {}
+    buf = io.BytesIO()
+    with ZipFile(buf, "w", compression=ZIP_STORED) as archive:
+        for name, payload in apks.items():
+            info = ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0))
+            archive.writestr(info, payload)
+    data = buf.getvalue()
+    if path is not None:
+        path.write_bytes(data)
+        return path
+    return data

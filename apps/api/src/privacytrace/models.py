@@ -1,5 +1,6 @@
 """Facts, policy declarations, and contextual hints are separate typed records."""
 
+import re
 from datetime import datetime
 from enum import StrEnum
 from hashlib import sha256
@@ -62,6 +63,7 @@ class Evidence(Model):
     start_offset: int | None = Field(default=None, ge=0, strict=True)
     end_offset: int | None = Field(default=None, ge=1, strict=True)
     api_call: ApiCall | None = None
+    package_split: str | None = Field(default=None, max_length=255)
 
     @model_validator(mode="after")
     def validate_kind_status(self):
@@ -87,6 +89,12 @@ class Evidence(Model):
             raise ValueError("API evidence requires structured api_call, not a kind label")
         if self.kind != "POLICY_DOCUMENT" and self.artifact_sha256 is not None:
             raise ValueError("Only document evidence references an artifact hash")
+        if is_policy and self.package_split is not None:
+            raise ValueError("Policy evidence must not reference a package split")
+        if self.package_split is not None:
+            if not re.fullmatch(r"^[a-zA-Z0-9_.-]+$", self.package_split):
+                msg = f"Evidence package_split '{self.package_split}' contains invalid characters"
+                raise ValueError(msg)
         return self
 
 
@@ -213,6 +221,7 @@ class AnalysisJob(Model):
     region: str | None = Field(default=None, min_length=1)
     product_scope: str | None = Field(default=None, min_length=1)
     error: str | None = None
+    retry_of: str | None = None
 
     @model_validator(mode="after")
     def validate_controlled_origin(self):

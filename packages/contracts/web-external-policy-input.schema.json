@@ -1,0 +1,241 @@
+{
+  "$defs": {
+    "ExternalClaimInput": {
+      "additionalProperties": false,
+      "properties": {
+        "excerpt": {
+          "maxLength": 5000,
+          "minLength": 1,
+          "title": "Excerpt",
+          "type": "string"
+        },
+        "data_type": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Data Type",
+          "type": "string"
+        },
+        "polarity": {
+          "default": "UNKNOWN",
+          "enum": [
+            "AFFIRMATIVE",
+            "NEGATIVE",
+            "POSITIVE",
+            "UNKNOWN"
+          ],
+          "title": "Polarity",
+          "type": "string"
+        },
+        "subject": {
+          "default": "UNKNOWN",
+          "enum": [
+            "HOST_APP",
+            "THIRD_PARTY",
+            "UNKNOWN"
+          ],
+          "title": "Subject",
+          "type": "string"
+        },
+        "action": {
+          "default": "UNKNOWN",
+          "enum": [
+            "ACCESS",
+            "UNKNOWN"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Condition"
+        },
+        "declared_purpose": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Declared Purpose"
+        },
+        "declared_recipient": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Declared Recipient"
+        }
+      },
+      "required": [
+        "excerpt",
+        "data_type"
+      ],
+      "title": "ExternalClaimInput",
+      "type": "object"
+    },
+    "ExternalSourceInput": {
+      "additionalProperties": false,
+      "properties": {
+        "source_type": {
+          "anyOf": [
+            {
+              "enum": [
+                "OFFICIAL_WEB_POLICY",
+                "SDK_POLICY",
+                "STORE_POLICY",
+                "IN_APP_POLICY"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Type"
+        },
+        "title": {
+          "default": "External Policy",
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "url": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Url",
+          "type": "string"
+        },
+        "text": {
+          "default": "",
+          "maxLength": 200000,
+          "title": "Text",
+          "type": "string"
+        },
+        "version": {
+          "default": "UNKNOWN",
+          "maxLength": 100,
+          "title": "Version",
+          "type": "string"
+        },
+        "region": {
+          "default": "",
+          "maxLength": 100,
+          "title": "Region",
+          "type": "string"
+        },
+        "product": {
+          "default": "",
+          "maxLength": 100,
+          "title": "Product",
+          "type": "string"
+        },
+        "package_name": {
+          "default": "",
+          "maxLength": 200,
+          "title": "Package Name",
+          "type": "string"
+        },
+        "version_code": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version Code"
+        },
+        "id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_-]{1,60}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "enum": [
+                "ready",
+                "manual",
+                "empty",
+                "failed",
+                "url_only"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Status"
+        }
+      },
+      "title": "ExternalSourceInput",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "source": {
+      "$ref": "#/$defs/ExternalSourceInput"
+    },
+    "claims": {
+      "items": {
+        "$ref": "#/$defs/ExternalClaimInput"
+      },
+      "maxItems": 800,
+      "title": "Claims",
+      "type": "array"
+    },
+    "summary": {
+      "anyOf": [
+        {
+          "maxLength": 10000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Summary"
+    }
+  },
+  "required": [
+    "source"
+  ],
+  "title": "ExternalPolicyExportInput",
+  "type": "object"
+}

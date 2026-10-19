@@ -8,7 +8,7 @@ import CandidatePage from './pages/CandidatePage.vue'
 import { cancelJob, loadJob, loadTaxonomy } from './api'
 import { createDraft, displaySourceUrl, extractSource, fetchSource, readDraft, saveCandidates, startScan, uploadApk } from './liveApi'
 import type { LiveDraft } from './liveApi'
-import { quoteExists } from './workflow'
+import { quoteExists, sourceProvenanceLabel, sourceStatusLabel } from './workflow'
 import type { Workflow, Candidate } from './workflow'
 import type { AnalysisJob, WebCandidate, WebSource } from './types'
 const props = defineProps<{ state: Workflow }>()
@@ -37,7 +37,7 @@ function apply(value: LiveDraft) {
   draft.value = value; remember(value.id)
   props.state.sources = value.sources.map(s => ({ id: s.id, title: s.title, type: s.source_type ?? 'OFFICIAL_WEB_POLICY', url: s.url ?? '', text: s.text ?? '',
     status: s.status ?? 'empty', version: s.version ?? '', region: s.region ?? '', product: s.product ?? '', complete: false,
-    packageName: s.package_name ?? '', versionCode: s.version_code, capturedAt: s.captured_at, sha256: s.sha256, errorCode: s.error_code, modelAudit: s.model_audit }))
+    packageName: s.package_name ?? '', versionCode: s.version_code, capturedAt: s.captured_at, sha256: s.sha256, errorCode: s.error_code, provenance: s.provenance, modelAudit: s.model_audit }))
   props.state.candidates = value.candidates.map(c => ({ id: c.id, sourceId: c.source_id, quote: c.excerpt, dataType: c.data_type,
     polarity: c.polarity === 'AFFIRMATIVE' ? 'AFFIRMED' : c.polarity === 'NEGATIVE' ? 'NEGATED' : 'UNKNOWN',
     subject: c.subject === 'HOST_APP' ? 'APP' : c.subject === 'THIRD_PARTY' ? 'THIRD_PARTY' : 'UNKNOWN',
@@ -101,7 +101,6 @@ function encodeCandidate(c: Candidate): WebCandidate {
 async function begin() {
   await perform(async () => {
     if (!draft.value) return
-    if (props.state.candidates.some(c => !c.checked)) throw new Error('请检查剩余候选，或删除不采用的候选。没有候选的来源仍会保留证据不足提示。')
     if (pendingRevision === null) {
       apply(await saveCandidates(draft.value.id, { revision: draft.value.revision, candidates: props.state.candidates.map(encodeCandidate) }, signal))
       pendingRevision = draft.value.revision
@@ -135,7 +134,19 @@ async function persistCandidates() {
 }
 async function cancel() { await perform(async () => { if (job.value) { try { job.value = await cancelJob(job.value.id, signal) } finally { await poll() } } }) }
 async function retry() { await perform(async () => { if (!draft.value || !terminal.value) return; submissionId = crypto.randomUUID().replaceAll('-', ''); job.value = await startScan(draft.value.id, { revision: draft.value.revision, request_id: submissionId }, signal); go('progress'); await poll() }) }
-async function retrySource(id: string) { await perform(async () => { if (!draft.value) return; apply(await fetchSource(draft.value.id, id, draft.value.revision, signal)); if (props.state.sources.find(s => s.id === id)?.status !== 'failed') { try { apply(await extractSource(draft.value.id, id, draft.value.revision, signal)) } catch (cause) { notice.value = String(cause instanceof Error ? cause.message : '模型请求未完成') } } }) }
+async function retrySource(id: string) {
+  await perform(async () => {
+    if (!draft.value) return
+    apply(await fetchSource(draft.value.id, id, draft.value.revision, signal))
+    const source = draft.value.sources.find(s => s.id === id)
+    if (!source || source.status === 'failed' || source.error_code) return
+    try {
+      apply(await extractSource(draft.value.id, id, draft.value.revision, signal))
+    } catch (cause) {
+      notice.value = String(cause instanceof Error ? cause.message : '模型请求未完成')
+    }
+  })
+}
 async function retryModel(id: string) { await perform(async () => { if (!draft.value) return; apply(await extractSource(draft.value.id, id, draft.value.revision, signal)) }) }
 function newInput() { generation++; clearTimeout(timer); draft.value = null; job.value = null; file.value = null; submissionId = ''; pendingRevision = null; try { localStorage.removeItem(storageKey) } catch { /* Memory state still resets. */ }; props.state.sources = sourceInput().map(s => ({ id: s.id, title: s.title, url: s.url ?? '', text: s.text ?? '', type: s.source_type ?? 'OFFICIAL_WEB_POLICY', status: 'manual', version: s.version ?? '', region: s.region ?? '', product: s.product ?? '', packageName: s.package_name ?? '', versionCode: s.version_code ?? undefined, complete: false })); props.state.candidates = []; go('import') }
 onMounted(async () => {
@@ -168,6 +179,6 @@ onBeforeUnmount(() => { generation++; controller.abort(); clearTimeout(timer) })
       <div class="source-actions"><UiButton v-if="!terminal" :disabled="busy" @click="cancel">取消分析</UiButton><UiButton v-if="terminal && job?.state !== 'SUCCEEDED'" :disabled="busy" @click="retry">重新创建分析</UiButton><UiButton v-if="job?.state === 'SUCCEEDED'" variant="primary" @click="go('report')">查看报告</UiButton><UiButton variant="quiet" @click="poll">重新读取进度</UiButton></div>
     </div>
     <div v-else><div class="page-heading"><h1 id="page-title" tabindex="-1">对照报告</h1><p>本机存档 · 输入版本 {{ draft?.revision }} · 查看存档不会重新扫描。</p></div><ExistingReports :initial-job-id="job?.id" /></div>
-    <section v-if="draft && state.step !== 'import'" class="material-panel"><h2>来源与核验范围</h2><article v-for="source in draft.sources" :key="source.id" class="source-editor"><strong>{{ source.title }}</strong><p>{{ source.status === 'failed' ? '来源获取失败' : source.status === 'empty' ? '尚无正文' : source.status === 'manual' ? '手动补入正文' : '已获取网页正文' }} · 正文完整度未知 · 未复核 · 附件未检查</p><p v-if="source.error_code" class="error-text">{{ source.error_code }} · 返回材料页粘贴正文，或重试网址。</p><p class="field-help">请求网址 {{ displaySourceUrl(source.url) || '手动输入' }} · 最终网址 {{ displaySourceUrl(source.final_url) || '未获取／手动输入' }}</p><p v-if="source.captured_at" class="field-help">获取时点 {{ source.captured_at }} · SHA-256 {{ source.sha256 }}</p><p v-if="source.model_audit?.status" class="field-help">{{ source.model_audit.status === 'FAILED' ? '模型提取未完成，可手动添加或重新提取' : source.model_audit.status === 'PARTIAL' ? '模型仅提取部分候选' : '模型候选已返回' }} · 原句逐字校验 · 拒绝 {{ source.model_audit.rejected_count ?? 0 }} 条<span v-if="source.model_audit.limited_candidates"> · 超出候选上限 {{ source.model_audit.limited_candidates }} 条</span> · 仍需检查语义</p></article></section>
+    <section v-if="draft && state.step !== 'import'" class="material-panel"><h2>来源与核验范围</h2><article v-for="source in draft.sources" :key="source.id" class="source-editor"><strong>{{ source.title }}</strong><p>{{ sourceStatusLabel(source.status) }} · {{ sourceProvenanceLabel(source.provenance) }} · 正文完整度未知 · 未复核 · 附件未检查</p><p v-if="source.error_code" class="error-text">{{ source.error_code }} · 返回材料页粘贴正文，或重试网址。</p><p class="field-help">请求网址 {{ displaySourceUrl(source.url) || '手动输入' }} · 最终网址 {{ displaySourceUrl(source.final_url) || '未获取／手动输入' }}</p><p v-if="source.captured_at" class="field-help">获取时点 {{ source.captured_at }} · SHA-256 {{ source.sha256 }}</p><p v-if="source.model_audit?.status" class="field-help">{{ source.model_audit.status === 'FAILED' ? '模型提取未完成，可手动添加或重新提取' : source.model_audit.status === 'PARTIAL' ? '模型仅提取部分候选' : '模型候选已返回' }} · 原句逐字校验 · 拒绝 {{ source.model_audit.rejected_count ?? 0 }} 条<span v-if="source.model_audit.limited_candidates"> · 超出候选上限 {{ source.model_audit.limited_candidates }} 条</span> · 仍需检查语义</p></article></section>
   </div>
 </template>

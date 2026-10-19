@@ -4,7 +4,7 @@
 
 当前计划：[2026-10-10 Issue 重建与同步记录](2026-10-10-issue-rebuild/README.md) · [落地计划](2026-10-10-issue-rebuild/spec.md) · [验收规范#30](https://github.com/MrEcho114/PrivacyTrace/issues/30)。现有编号保留，已新增[#31双场景闭环](https://github.com/MrEcho114/PrivacyTrace/issues/31)、同步11张、关闭S0#2并核验6条依赖。
 
-线上状态见[总索引#1](https://github.com/MrEcho114/PrivacyTrace/issues/1)，原过时描述已同步修正；[回读核验收据](2026-10-10-issue-rebuild/publication-receipt.json)记录本次结果。原始快照和历史文档仍保留。
+[总索引#1](https://github.com/MrEcho114/PrivacyTrace/issues/1) 已于 2026-10-19 关闭并停止维护，仅作历史索引；当前任务状态以各 Issue/PR 的执行记录为准。[回读核验收据](2026-10-10-issue-rebuild/publication-receipt.json)记录本次结果。原始快照和历史文档仍保留。
 
 下文是 **2026-10-03 生成的历史索引快照**。其中建仓 SHA、35测试数、未做清单、排期与门禁不代表当前状态。PR29 已合并，S1 已接受且双人门槛已撤销；执行应使用上面的新计划。
 

@@ -11,6 +11,7 @@ from test_postgres_storage import store as store
 
 from privacytrace.durable_intake import DurableWebIntake
 from privacytrace.postgres_execution import PostgresExecution
+from privacytrace.postgres_intake import PostgresWebIntake
 from privacytrace.postgres_outbox import PostgresOutbox
 from privacytrace.postgres_schema import outbox, runtime_inputs
 from privacytrace.postgres_store import PostgresJobStore
@@ -41,6 +42,37 @@ def uploaded(intake):
             uploaded=True, apk_sha256=hashlib.sha256(path.read_bytes()).hexdigest(), revision=2
         )
         return intake._save(current)
+
+
+def test_cutover_requires_stopped_legacy_owner_and_prevents_accidental_legacy_restart(store):
+    legacy = PostgresWebIntake(store)
+    legacy.start_service()
+    try:
+        with pytest.raises(ValueError, match="Stop the legacy"):
+            DurableWebIntake(store, runner=object())
+    finally:
+        legacy.close()
+    from test_postgres_storage import queued
+
+    old = queued()
+    store.create_if_absent(old)
+    durable = DurableWebIntake(store, runner=object())
+    try:
+        assert store.get(old.id).state == "FAILED"
+        assert "SERVICE_INTERRUPTED" in store.get(old.id).error
+        with pytest.raises(ValueError, match="durable runtime"):
+            legacy.start_service()
+        draft = uploaded(durable)
+        managed = durable.start(
+            draft["id"], StartInput(revision=draft["revision"], request_id=uuid4().hex)
+        )
+        another = DurableWebIntake(store, runner=object())
+        try:
+            assert store.get(managed.id).state == "QUEUED"
+        finally:
+            another.close()
+    finally:
+        durable.close()
 
 
 def test_registration_snapshot_event_and_job_survive_new_api_instance_without_local_submission(

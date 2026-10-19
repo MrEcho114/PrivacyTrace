@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 SCHEMA = "privacytrace"
-REVISION = "0080_04"
+REVISION = "0080_05"
 metadata = sa.MetaData(schema=SCHEMA)
 
 scopes = sa.Table(
@@ -211,3 +211,29 @@ runner_materials = sa.Table(
     ),
 )
 sa.Index("runner_material_expiry", runner_materials.c.instance_id, runner_materials.c.expires_at)
+
+deletions = sa.Table(
+    "deletion_intents",
+    metadata,
+    sa.Column("instance_id", sa.String(36), primary_key=True),
+    sa.Column("kind", sa.String(10), primary_key=True),
+    sa.Column("scope_id", sa.String(100), primary_key=True),
+    sa.Column("sequence", sa.BigInteger, nullable=False),
+    sa.Column("mac", sa.String(64), nullable=False),
+    sa.UniqueConstraint("instance_id", "sequence", name="deletion_sequence"),
+    sa.CheckConstraint("kind IN ('JOB', 'DRAFT') AND sequence > 0", name="deletion_kind"),
+    sa.CheckConstraint("mac ~ '^[a-f0-9]{64}$'", name="deletion_mac"),
+)
+uploads = sa.Table(
+    "upload_reservations",
+    metadata,
+    sa.Column("instance_id", sa.String(36), primary_key=True),
+    sa.Column("draft_id", sa.String(32), primary_key=True),
+    sa.Column("owner", UUID(as_uuid=True), nullable=False),
+    sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(
+        ["instance_id", "draft_id"],
+        [f"{SCHEMA}.analysis_scopes.instance_id", f"{SCHEMA}.analysis_scopes.scope_id"],
+    ),
+    sa.CheckConstraint("draft_id ~ '^[a-f0-9]{32}$'", name="upload_draft"),
+)

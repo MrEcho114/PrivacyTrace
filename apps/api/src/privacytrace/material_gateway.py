@@ -59,8 +59,9 @@ class MaterialHandler(PrivateHandler):
 
 
 def create_gateway(store, address, tls, peers, materials=None):
+    materials = materials or RuntimeMaterials.from_env(store)
     server = PrivateServer(address, MaterialHandler, tls, peers)
-    server.materials = materials or RuntimeMaterials.from_env(store)
+    server.materials = materials
     return server
 
 

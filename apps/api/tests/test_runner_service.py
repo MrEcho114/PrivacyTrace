@@ -7,6 +7,10 @@ is really parsed in the fixed scanner container. This is not the Celery E2E.
 import hashlib
 import json
 import os
+import subprocess
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
 from uuid import uuid4
 
 import pytest
@@ -21,6 +25,7 @@ from test_runtime_tls import tls_materials as tls_materials
 
 from privacytrace.isolated_scan import command, docker_prefix
 from privacytrace.material_gateway import create_gateway
+from privacytrace.postgres_execution import LeaseLost, PostgresExecution
 from privacytrace.runner_client import RunnerClient, RunnerScanError
 from privacytrace.runner_service import Runner, RunnerConfig, create_runner_server
 from privacytrace.runtime_tls import PrivateClient
@@ -116,18 +121,27 @@ def test_only_runner_certificate_can_fetch_material_even_with_valid_ticket(
         wrong_role.open("/v1/material", ticket=file["ticket"])
 
 
-@pytest.mark.parametrize("fault", ["timeout", "output"])
+@pytest.mark.parametrize("fault", ["timeout", "output", "oom"])
 def test_actual_docker_fault_is_bounded_and_keeps_inspect_receipt(runner_stack, tmp_path, fault):
     client, original, draft, path, lease, _ = runner_stack
     tag = controlled_image(
-        "controlled-worker.Dockerfile" if fault == "timeout" else "invalid-worker.Dockerfile",
+        {
+            "timeout": "controlled-worker.Dockerfile",
+            "output": "invalid-worker.Dockerfile",
+            "oom": "oom-worker.Dockerfile",
+        }[fault],
         "privacytrace-worker:pt80-" + fault,
     )
     image = command([*docker_prefix(), "image", "inspect", tag, "--format", "{{.Id}}"]).strip()
     # This boot-selected fault image does not parse an APK. It exercises actual
     # Docker timeout/invalid-output cleanup, separately from the real APK case.
     runner = Runner(
-        RunnerConfig(lease.instance_id, image, tmp_path / ("fault-" + fault), timeout=1),
+        RunnerConfig(
+            lease.instance_id,
+            image,
+            tmp_path / ("fault-" + fault),
+            timeout=1 if fault == "timeout" else 20,
+        ),
         original.gateway,
     )
     tls = client.remote.opener  # Original TLS is intentionally not extracted or logged.
@@ -146,7 +160,16 @@ def test_actual_docker_fault_is_bounded_and_keeps_inspect_receipt(runner_stack, 
     }
     try:
         result = runner.run(value)
-        assert result["error"] == ("TIMEOUT" if fault == "timeout" else "WORKER_INVALID_OUTPUT")
+        assert (
+            result["error"]
+            == {"timeout": "TIMEOUT", "output": "WORKER_INVALID_OUTPUT", "oom": "OOM"}[fault]
+        )
+        if fault == "oom":
+            assert result["receipt"]["exit_state"] == {
+                "Running": False,
+                "OOMKilled": True,
+                "ExitCode": 137,
+            }
         assert result["receipt"]["container_created"]
         assert result["receipt"]["input_removed"] and result["receipt"]["cleanup_verified"]
         assert not list(runner.operations.iterdir())
@@ -173,3 +196,159 @@ def test_bad_material_digest_is_rejected_before_docker_scan(runner_stack):
         client._response(value)
     assert error.value.code == "RUNNER_INPUT_REJECTED" and error.value.runtime_receipt is None
     assert not list(runner.operations.iterdir())
+
+
+def test_actual_runner_process_kill_recovers_owned_container_and_disk_reservation(
+    runner_stack, tls_materials, tmp_path
+):
+    client, original, draft, path, lease, gateway = runner_stack
+    tag = controlled_image("controlled-worker.Dockerfile", "privacytrace-worker:pt80-crash")
+    image = command([*docker_prefix(), "image", "inspect", tag, "--format", "{{.Id}}"]).strip()
+    root = tmp_path / "crashed-runner"
+    request_id = str(uuid4())
+    value = {
+        "version": 1,
+        "operation": "scan",
+        "request_id": request_id,
+        "instance_id": lease.instance_id,
+        "scope_id": lease.job_id,
+        "owner": str(lease.owner),
+        "fence": lease.fence,
+        "package_set": False,
+        "files": [client.materials.register(path, draft_id=draft["id"], lease=lease)],
+    }
+    # This child is the trusted Runner, configured at boot. Its input has no
+    # database URL, broker credential or material-signing key.
+    tls = tls_materials["other"]
+    boot = {
+        "instance": lease.instance_id,
+        "image": image,
+        "root": str(root),
+        "gateway": "https://127.0.0.1:" + str(gateway.server_port),
+        "ca": str(tls.ca),
+        "cert": str(tls.cert),
+        "key": str(tls.key),
+        "manifest": value,
+    }
+    code = (
+        "import json,sys;from pathlib import Path;"
+        "from privacytrace.runner_service import Runner,RunnerConfig;"
+        "from privacytrace.runtime_tls import PrivateClient,RuntimeTLS;"
+        "v=json.load(sys.stdin);t=RuntimeTLS(Path(v['ca']),Path(v['cert']),Path(v['key']));"
+        "r=Runner(RunnerConfig(v['instance'],v['image'],Path(v['root']),timeout=30),"
+        "PrivateClient(v['gateway'],t));r.run(v['manifest'])"
+    )
+    env = {
+        name: os.environ[name]
+        for name in ("PATH", "PYTHONPATH", "HOME", "LANG")
+        if name in os.environ
+    }
+    with (tmp_path / "crashed-runner.log").open("wb") as log:
+        process = subprocess.Popen(
+            [sys.executable, "-B", "-c", code],
+            stdin=subprocess.PIPE,
+            stdout=log,
+            stderr=log,
+            env=env,
+        )
+        process.stdin.write(json.dumps(boot).encode())
+        process.stdin.close()
+        container = None
+        try:
+            deadline = time.monotonic() + 20
+            while time.monotonic() < deadline:
+                assert process.poll() is None, "Controlled runner exited before crash injection"
+                receipts = list(
+                    (root / "operations" / request_id / "scans").glob("*/isolation.json")
+                )
+                if receipts:
+                    proof = json.loads(receipts[0].read_bytes())
+                    if proof.get("container_created"):
+                        info = json.loads(
+                            command([*docker_prefix(), "inspect", proof["container"]])
+                        )[0]
+                        if info["State"]["Running"]:
+                            container = proof["container"]
+                            break
+                time.sleep(0.05)
+            assert container, "Actual Docker scan did not reach the controlled crash point"
+            process.kill()
+            process.wait(timeout=10)
+            assert json.loads(command([*docker_prefix(), "inspect", container]))[0]["State"][
+                "Running"
+            ]
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait(timeout=10)
+            recovered = Runner(
+                RunnerConfig(lease.instance_id, image, root, timeout=1), original.gateway
+            )
+            try:
+                assert not list(recovered.operations.iterdir())
+                if container:
+                    gone = subprocess.run(
+                        [*docker_prefix(), "inspect", container], capture_output=True, timeout=10
+                    )
+                    assert gone.returncode != 0 and container.encode() in gone.stderr
+                with recovered._database() as conn:
+                    assert (
+                        conn.execute(
+                            "SELECT state FROM operations WHERE id=?", (request_id,)
+                        ).fetchone()[0]
+                        == "ABORTED"
+                    )
+                # Same interrupted RPC is refused, and the released budget can
+                # execute a new bounded attempt. This fault image never parses APKs.
+                result = recovered.run({**value, "request_id": str(uuid4())})
+                assert result["error"] == "TIMEOUT" and result["receipt"]["cleanup_verified"]
+                assert not list(recovered.operations.iterdir())
+            finally:
+                recovered.close()
+
+
+@pytest.mark.parametrize("action", ["cancel", "delete"])
+def test_actual_running_container_stops_after_database_revocation(runner_stack, tmp_path, action):
+    client, original, draft, path, lease, _ = runner_stack
+    tag = controlled_image("controlled-worker.Dockerfile", "privacytrace-worker:pt80-revoke")
+    image = command([*docker_prefix(), "image", "inspect", tag, "--format", "{{.Id}}"]).strip()
+    root = tmp_path / ("revoked-runner-" + action)
+    runner = Runner(RunnerConfig(lease.instance_id, image, root, timeout=20), original.gateway)
+    request = {
+        "version": 1,
+        "operation": "scan",
+        "request_id": str(uuid4()),
+        "instance_id": lease.instance_id,
+        "scope_id": lease.job_id,
+        "owner": str(lease.owner),
+        "fence": lease.fence,
+        "package_set": False,
+        "files": [client.materials.register(path, draft_id=draft["id"], lease=lease)],
+    }
+    try:
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            task = pool.submit(runner.run, request)
+            deadline, running = time.monotonic() + 10, False
+            while time.monotonic() < deadline:
+                for receipt in (root / "operations" / request["request_id"] / "scans").glob(
+                    "*/isolation.json"
+                ):
+                    proof = json.loads(receipt.read_bytes())
+                    if proof.get("container_created"):
+                        state = json.loads(
+                            command([*docker_prefix(), "inspect", proof["container"]])
+                        )[0]["State"]
+                        running = state["Running"]
+                if running:
+                    break
+                time.sleep(0.05)
+            assert running, "No actual running container at revocation point"
+            getattr(client.store, action)(lease.job_id)
+            result = task.result(timeout=10)
+        assert result["error"] == "CANCELLED"
+        assert result["receipt"]["cleanup_verified"] and result["receipt"]["input_removed"]
+        assert not list(runner.operations.iterdir())
+        with pytest.raises(LeaseLost):
+            PostgresExecution(client.store).checkpoint(lease)
+    finally:
+        runner.close()

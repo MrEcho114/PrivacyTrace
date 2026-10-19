@@ -552,8 +552,7 @@ class WebIntake:
     async def _upload_reserved(self, draft_id, request, expect_package_set: bool = False):
         with self._draft_activity(draft_id):
             directory = self.directory(draft_id)
-            pending = self._safe(directory / "upload.pending")
-            staging_packages = self._safe(directory / f"packages.pending.{uuid4().hex}")
+            pending, staging_packages = self._upload_paths(directory)
             fd = None
             owns_pending = False
             try:
@@ -650,25 +649,24 @@ class WebIntake:
                     ])
 
                 remaining_timeout()
-                target_packages = self._safe(directory / "packages")
-                if target_packages.exists():
-                    shutil.rmtree(target_packages)
-                remaining_timeout()
-                os.replace(staging_packages, target_packages)
-                published_packages = True
-
-                # Keep the legacy path without charging the base APK's bytes twice.
-                base_path = target_packages / package_set.base.file_name
-                input_apk = self._safe(directory / "input.apk")
-                if base_path.exists():
-                    remaining_timeout()
-                    os.link(base_path, input_apk)
-                    published_apk = True
-
                 with self.data_store._transaction():
                     draft = self._get(draft_id)
                     if draft["uploaded"] or draft["jobs"]:
                         raise ValueError(ALREADY_UPLOADED)
+                    self._before_publish_upload(draft_id)
+                    target_packages = self._safe(directory / "packages")
+                    if target_packages.exists():
+                        shutil.rmtree(target_packages)
+                    remaining_timeout()
+                    os.replace(staging_packages, target_packages)
+                    published_packages = True
+                    # Retain the existing base hardlink and package-set identity.
+                    base_path = target_packages / package_set.base.file_name
+                    input_apk = self._safe(directory / "input.apk")
+                    if base_path.exists():
+                        os.link(base_path, input_apk)
+                        published_apk = True
+                    self._after_publish_upload(directory)
                     remaining_timeout()
 
                     rollback_draft = deepcopy(draft)
@@ -682,15 +680,16 @@ class WebIntake:
                     )
                     return self._save(draft)
             else:
-                input_apk = self._safe(directory / "input.apk")
-                remaining_timeout()
-                os.replace(pending, input_apk)
-                published_apk = True
-
                 with self.data_store._transaction():
                     draft = self._get(draft_id)
                     if draft["uploaded"] or draft["jobs"]:
                         raise ValueError(ALREADY_UPLOADED)
+                    self._before_publish_upload(draft_id)
+                    input_apk = self._safe(directory / "input.apk")
+                    remaining_timeout()
+                    os.replace(pending, input_apk)
+                    published_apk = True
+                    self._after_publish_upload(directory)
                     remaining_timeout()
                     rollback_draft = deepcopy(draft)
                     rollback_revision = draft["revision"] + 1
@@ -705,10 +704,15 @@ class WebIntake:
             # The DB transaction may have rolled back, while rename/copy already
             # published bytes on the private volume. Only remove files owned by
             # this request; never touch an existing upload reservation.
-            if published_apk:
-                self._safe(directory / "input.apk").unlink(missing_ok=True)
-            if published_packages:
-                shutil.rmtree(self._safe(directory / "packages"), ignore_errors=True)
+            try:
+                with self.data_store._transaction():
+                    if self._may_remove_published(draft_id):
+                        if published_apk:
+                            self._safe(directory / "input.apk").unlink(missing_ok=True)
+                        if published_packages:
+                            shutil.rmtree(self._safe(directory / "packages"), ignore_errors=True)
+            except (ValueError, OSError, KeyError):
+                pass  # Unknown COMMIT outcome: retain bytes for ledger-based recovery.
             if rollback_draft is not None:
                 with self.data_store._transaction():
                     snapshot = self._safe(directory / f"revision-{rollback_revision}.json")
@@ -728,6 +732,20 @@ class WebIntake:
 
     def _inspect_package(self, path, *, timeout=120):
         return inspect_uploaded_package(path, timeout=timeout)
+
+    def _upload_paths(self, directory):
+        return (self._safe(directory / "upload.pending"),
+                self._safe(directory / f"packages.pending.{uuid4().hex}"))
+
+    def _before_publish_upload(self, draft_id):
+        return
+
+    def _after_publish_upload(self, directory):
+        return
+
+    def _may_remove_published(self, draft_id):
+        return (not getattr(self.store, "uses_postgres", False)
+                or not self._get(draft_id)["uploaded"])
 
     def _settings(self, private=False):
         path = self._safe(self.root / "model.json")
@@ -1244,6 +1262,8 @@ class WebIntake:
 
     def start_service(self):
         with self.data_store._transaction():
+            if self._safe(self.root / "durable-runtime.json").exists():
+                raise ValueError("This root requires the durable runtime")
             if self.owner_fd is not None:
                 return
             path = self._safe(self.root / "service.lock")
@@ -1264,6 +1284,10 @@ class WebIntake:
                 os.close(fd)
                 raise ValueError("Another web intake process owns this store") from exc
             self.owner_fd = fd
+            if self._safe(self.root / "durable-runtime.json").exists():
+                self.owner_fd = None
+                os.close(fd)
+                raise ValueError("This root requires the durable runtime")
             for directory in self._draft_directories():
                 if self.active_drafts.get(directory.name, 0):
                     continue

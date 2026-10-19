@@ -1,3 +1,196 @@
+# #80 公网运行时接口与恢复说明
+
+所有剩余实现使用 `codex/issue80-complete` 和一个最终 `Refs #80` PR。授权、实际会话、
+最新main／head、文件owner和最终提交验收只维护在
+[#80唯一当前执行记录](https://github.com/MrEcho114/PrivacyTrace/issues/80#issuecomment-6248982344)。
+以下是当前候选接口；历史实施收据在文末原文保留。生产部署由#81交付，本票不部署。
+
+## 运行路径与事务
+
+```mermaid
+flowchart LR
+  A[授权的单APK与政策] --> B[API：Job／输入快照／Outbox同事务]
+  B --> C[投递器：提交领取后发布]
+  C --> D[Redis／固定Celery任务]
+  D --> E[worker：PG租约与原pipeline]
+  E --> F[私网mTLS Runner]
+  F --> G[固定摘要Docker扫描]
+  F --> H[受限材料网关]
+  E --> I[fenced报告与终态同事务]
+```
+
+复用PR#87的PostgreSQL、JobStorageProtocol和SecuritySeam；复用已合入#88的业务管线、
+来源／包集合／政策状态／报告模型。[#70 owner正式交接](https://github.com/MrEcho114/PrivacyTrace/issues/80#issuecomment-6260562200)
+允许本会话串行装配共享入口。没有第二套分析引擎。默认JSON／CLI和既有本机Web保持原行为。
+
+迁移只由独立schema owner运行：`PRIVACYTRACE_MIGRATION_DATABASE_URL` 配置后，执行
+`uv run --project apps/api --locked --extra worker alembic -c apps/api/alembic.ini upgrade head`。
+当前schema `0080_05`，按`0080_01`至`0080_05`增量升级，不改已发布迁移。应用严格检查版本，
+不自动迁移，也不持有迁移URL。新增表FORCE RLS沿用实例边界；runtime无superuser／
+CREATE／BYPASSRLS，删除意图只允许SELECT／INSERT，不能清空审计、作用域或历史。
+
+`DurableWebIntake.start()`在原登记事务中固定输入快照，并调用Outbox：Job、凭据摘要、
+输入引用、事件、执行记录和审计同成同败。`PostgresOutbox.register`供可信内部登记使用；
+已有业务事务使用`enqueue`，唯一约束保证同Job／类型／版本一个事件。不从未提交事务发布。
+没有APK材料的旧通用`POST /api/v1/jobs`在durable模式明确返回409 `APK_INTAKE_REQUIRED`，
+使用原草稿→上传→start路径。默认本机模式的通用登记契约保持。
+
+唯一消息版本为以下五字段JSON；不允许扩展键、重复键、未知版本、命令、路径或凭据：
+
+```json
+{"version":1,"event_type":"privacytrace.job.ready","instance_id":"00000000-0000-0000-0000-000000000001","job_id":"server-generated-job-id","event_id":"00000000-0000-0000-0000-000000000002"}
+```
+
+`claim`在短事务内使用DB时间、SKIP LOCKED和随机claim token，限制1–100条、1–300秒。
+先提交，再发布，再独立ack；失败只记固定代码及退避，最多五次领取。发布后ack丢失可以
+重复投递。API进程、Redis内存或RPC缓存均不是任务权威。
+
+worker只注册`privacytrace.execute.v1`，固定JSON、无结果backend／remote-control／自动
+未知队列，拒绝canvas及任务ID不匹配。PG execution最多三次，owner UUID和递增fence、
+默认60秒租约、最长300秒尝试，续租用DB时间。过期／断连恢复沿用同Job和事件，错误标明
+`INTERNAL_RETRY`，不重置预算。用户retry是带`retry_of`的新Job。报告与SUCCEEDED／摘要／
+审计原子提交，同owner及相同结果重复提交只读；取消／删除与撤销、fence递增同事务。
+OOM、超时、畸形输出有限终态失败。恢复器重投300秒未领取事件，耗尽预算留下可查询失败。
+
+## 供#81消费的进程与配置
+
+安装依赖使用`uv sync --project apps/api --locked --extra worker --extra runtime`。
+以下命令均在同一代码版本运行，不把密码放CLI参数或日志；环境由各进程最小权限注入。
+
+| 进程 | Python模块／入口 | 必需配置与隔离 |
+| --- | --- | --- |
+| 公网API | `uvicorn privacytrace.main:app` | STORAGE=postgres、MODE=remote、EXECUTION=durable、DATABASE_URL、INSTANCE_ID、STORE_ROOT及下列control身份；无需broker权限，无Docker socket |
+| 投递器／恢复器 | `python -m privacytrace.queue_runtime`（可`--once`） | PG runtime、实例、材料根、BROKER_URL；无需材料签名／TLS私钥，无Docker socket |
+| 编排worker | `python -m privacytrace.runtime_worker` | PG runtime、实例／材料根、broker及control身份；无Docker socket，不解析APK |
+| 材料网关 | `python -m privacytrace.material_gateway` | PG runtime、实例／材料根、MATERIAL_KEY_FILE、GATEWAY_BIND／PORT／TLS_*／PEERS；独立私网监听 |
+| 专用Runner | `python -m privacytrace.runner_service` | 实例、RUNNER_ROOT／IMAGE_ID／BIND／PORT／TIMEOUT／TLS_*／PEERS、GATEWAY_URL、RUNNER_GATEWAY_TLS_*；专用Linux主机或VM，仅本机固定Unix socket |
+| 回收器 | `python -m privacytrace.material_lifecycle`（可`--once`） | PG runtime、实例／材料根；每30秒回收，不持有broker或删除签名密钥 |
+
+表中所有大写名称均有`PRIVACYTRACE_`前缀。control身份指`MATERIAL_KEY_FILE`（私有32字节）、
+`RUNNER_URL`（固定私网HTTPS字面IP）、`RUNNER_IMAGE_ID`（固定`sha256:`镜像ID）和
+`CONTROL_TLS_CA/CERT/KEY`。`TLS_*`统一为`CA/CERT/KEY`；`PEERS`是允许的DER证书SHA256
+指纹列表。CA、IP／主机名验证、TLS1.3和服务端角色指纹同时适用。禁止代理继承和重定向。
+Runner没有PG／broker／材料签名密钥，APK容器没有任何这些凭据。
+
+API／worker启动拒绝可访问的本机socket和Docker endpoint环境；部署须同时移除挂载／
+Docker组／特权及宿主根挂载，Windows普通用户控制面在真实测试中没有socket能力。
+Runner使用固定本机`unix:///var/run/docker.sock`，不透传Docker API。固定镜像在启动前
+由运维预装并解析摘要，不由请求选择；rootless socket兼容不在本轮声明中。
+
+Redis要求认证、实例key及channel前缀ACL、AOF、容量和`noeviction`。队列为
+`privacytrace.<instance_uuid>`，key前缀`pt80:<instance_uuid>:`。应用所需前缀内读写、
+事务、pubsub和Lua不得扩大为ACL／CONFIG／全库清理权限。`rediss`校验证书及主机名。
+runtime代码不替代这些部署配置；#81应使用独立服务身份和私网规则装配。
+
+## Runner与材料边界
+
+Runner协议版本1固定operation／request／instance／scope／owner／fence／package_set／
+files。文件仅含受限name、摘要、长度、短期ticket；没有镜像、shell、宿主路径、daemon或
+下载URL。ticket最多300秒，绑定任务／草稿、owner和fence；网关及Runner运行许可每次
+检查PG，流传输中重复检查。输入复制到Runner私有目录，绝不绑定API材料卷给容器。
+
+沿用既有isolated_scan：无网络、只读根、65534:65534、cap-drop ALL、no-new-privileges、
+private cgroup、1GiB内存及无额外swap、1CPU、32 pids、有限tmpfs与180秒内超时。
+实际inspect核对完整限制、唯一只读输入挂载；正常退出另检查OOMKilled／ExitCode。
+报告的脱敏`runner_receipt`记录实际限制及清理，宿主路径换成`runner:<request_id>`。
+本轮实际Docker OOM收据为OOMKilled=true、ExitCode137。静态线索仍只代表潜在行为。
+
+Runner独占根目录，SQLite只保留有限RPC缓存（128条／32MiB／360秒），不替代PG账本。
+崩溃后只清理本账本中的UUID操作、精确容器名／label／镜像／只读输入挂载；归属未知
+保留现场并拒绝复用。清理完成后才释放磁盘预算，不执行全局prune。
+
+持久根目录官方材料保留至明确删除，不使用短期TTL。当前上限：12个草稿、1000活动Job、
+4GiB私有材料、16MiB剩余空间底线、单APK／包集合总量150MiB，另有不可变JSON对象数量／
+大小及历史quota。上传使用900秒PG保留、随机owner临时文件、发布前后校验；并发API不能
+凭mtime删除别人的在途上传。容量满或ENOSPC拒绝新登记，数据库指针不能指向未写完的对象。
+
+Job删除撤销该Job并清理其快照／报告；共享Draft输入仍按独立权限保留。
+授权`DELETE /api/v1/web/drafts/{draft_id}`显式删除Draft材料及其关联Job。回收先提交
+指针删除，再重新核对无引用后删文件，保留其他作用域和全局模型配置。未知临时文件不盲删。
+撤销先于物理回收；文件占用或I/O错误留下pending，回收器重试。迟到结果无提交资格。
+
+新旧调度切换必须先停止旧owner，实际取得原`service.lock`后才建立持久模式标记；
+普通API重启不占全局单进程锁。旧调度见标记拒绝启动。旧无execution的活动任务标记
+`SERVICE_INTERRUPTED`，仅显式新任务retry；已有持久任务不受影响。不自动删除模式标记降级。
+
+## 一致备份、恢复与显式JSON导入
+
+备份前停止新接收并等待运行中执行／上传结束；队列中的READY任务可保留。
+`python -m privacytrace.runtime_backup backup <新备份文件>`在实例事务锁下固定数据库
+及材料清单，以同一快照输出白名单表、摘要和全部引用材料。备份有大小上限、版本及HMAC，
+私有0600、fsync、发布不覆盖。无可执行归档条目。全局模型Key、数据库URL、TLS私钥、
+短期ticket和上传保留不入备份；配置及私钥由运维另外恢复。
+
+`DELETION_JOURNAL_ROOT`必须是备份回滚范围之外的独立耐久位置；默认在实例目录外。
+每次删除先fsync HMAC链式意图，再提交PG撤销。数据库保留只追加检查点；新接收留足
+删除日志容量。最新日志和签名密钥必须另外保全，不能用旧备份中的日志替换它们。
+不完整未确认尾部先保留再修复；缺失已提交历史或认证失败会拒绝恢复。
+
+将同一实例UUID、签名密钥与最新删除日志配置到**新的空目标数据库和空材料根**，先由
+迁移角色升级schema，再用受限runtime运行：
+`python -m privacytrace.runtime_backup restore <备份文件>`。
+验证所有材料摘要后导入，在同一事务内失效旧执行owner／递增fence并重放最新删除意图，
+然后完成GC再开放访问。RPC幂等标识含owner，数值fence回退也不能命中旧缓存。
+不允许覆盖一个仍在使用的实例。
+
+工具在FORCE RLS下核验目标实例为空，不能枚举或擦除其他实例；新空数据库由运维明确
+配置。真实恢复测试使用来源之外的第二个可丢弃库，每例使用新的独立实例namespace。
+
+恢复门禁`.restore-in-progress`阻止普通连接访问同一实例根；COMMIT不确定或清理失败时
+保留门禁和已认证所有权，使用同一备份加`--resume`续跑。真实PG提交审计区分“全回滚”
+和“已提交待清理”，防止重复导入；认证通过的临时目录才可回收，未知目标数据保留检查。
+备份RPO之后的新材料不可能由旧快照恢复。最新删除意图即使原DB提交失败也保守重放。
+Linux文件／目录fsync已实跑；Windows文件fsync保留，未声称Windows断电演练。
+
+部署约定备份保留窗口最多7天，周期／副本由#81运维配置并监控到期回收；本工具创建的
+备份不会自行后台过期。备份是私有敏感材料，主动删除后旧副本在保留窗口内仍可能存在，
+恢复必须携带最新独立删除日志，不能声称立即擦除所有离线副本。
+
+JSON导入是明确的离线操作：`python -m privacytrace.runtime_import <JSON根> <job_id...>
+--mapping <新的私有映射文件>`。只接受终态记录，批次有上限，生成新ID／新凭据并同步
+bundle身份；保留原JSON字节、证据／政策／备注和来源，不升级真实性。旧token不获得新
+作用域权限，工具路径不被打开／执行；不导入APK、活动任务或调度。凭据只写独立0600
+映射，不输出stdout；提交不确定时按映射ID／摘要读回，不能靠重试覆盖旧凭据文件。
+
+## 验证入口及当前收据
+
+权威入口仍是原样`bash scripts/check.sh`，Windows委托`pwsh -NoProfile -File scripts/check.ps1`。
+独立联合专项`bash scripts/check-runtime.sh`要求两套不同`*_test`数据库的runtime／migration
+URL、真实redis-server及runtime extra；不同角色由真实测试再次校验。Runner opt-in为
+`PRIVACYTRACE_RUNNER_TESTS=1`和`PRIVACYTRACE_DOCKER_TESTS=1`，真实小tmpfs磁盘满专项
+需专用Linux root测试环境及`PRIVACYTRACE_ENOSPC_TESTS=1`。未提供的边界明确skip。
+
+Windows端到端入口`pwsh -NoProfile -File scripts/check-runtime-e2e.ps1`要求已授权的独立
+WSL VM标记／入口、真实PG和runtime extra，不安装系统、不使用共享broker。普通用户
+API／Celery进程和VM Redis／Runner真实通信，材料不通过共享挂载传输。
+
+当前实施收据（均为2026-10-19候选源码哈希；最终交付SHA须另行复验）：
+
+| 类别 | 实跑结果／证据 | 限制 |
+| --- | --- | --- |
+| PostgreSQL＋Redis | 150 passed，`runtime-lease.log` | 非完整APK链路；部分期限边界用SQL置过期，另有真实进程退出用例 |
+| 真实PG／协议／TLS回归 | 75 passed，`materials-20261019T125831Z.*` | 注册夹具不解析APK，TLS实际握手 |
+| PG＋mTLS＋专用Docker Runner | 10 passed，新`runner-lease.log` | 合成二进制APK实际解析；OOM／timeout等受控镜像不分析APK |
+| 真PG＋文件系统／ENOSPC | 20 passed，`recovery-lease.log` | 独立8MiB tmpfs，不模拟主机物理断电 |
+| 追加恢复／导入 | 12 passed，`backup-20261019T130323Z.*` | 含真实COMMIT拒绝；提交后清理故障在文件系统接口注入，非进程kill |
+| 系统端到端 | 4 passed，`e2e-20261019T130119Z.*` | 真实API／broker／worker／Runner进程重启、授权／取消／删除；不是公网部署 |
+| 先前完整权威检查 | API1602 passed／29 skipped、Web53，`authority-lease-20261019T082759Z.log` | 绑定先前候选，不能证明后续恢复代码；跳过分类保留于执行记录 |
+
+mock、协议单测、实际组件、系统端到端和未执行项分别计数。最终PR必须附最新权威／
+组件／系统结果、完整diff审查及确切远端head的检查结果，不能复用旧SHA绿灯。
+
+收尾后追加的联合专项为**230 passed／0 skipped**；恢复组合为**22 passed**，含大材料、
+受控base/input硬链接及真实ENOSPC。系统专项为**5 passed**（`e2e-20261019T132400Z.*`），
+新增两个实例、两套队列／Runner并发实际扫描与交叉拒绝。更新后的完整权威入口曾通过
+**1643 passed／17 skipped、Web53**；随后收尾须再绑定最终提交验证。可复核的脱敏命令
+输出、原始／脱敏摘要和候选源码LF摘要见[验证索引](evidence/issue80/README.md)及
+[机器可读清单](evidence/issue80/validation.json)。未向仓库提交私有材料或原始带私有路径日志。
+
+## 历史实施记录（原文保留）
+
+<details>
+<summary>早期技术顺序和当时验收／未完成状态，不能当作当前接口状态</summary>
+
 # #80 公网运行时实现与整体验收
 
 统一分支为 `codex/issue80-complete`；全部剩余实现累积到一个最终 PR，使用 `Refs #80`。
@@ -240,3 +433,5 @@ API进程终止／重启、投递、租约、实际Docker、原pipeline与授权
 协议检查、mTLS／PG材料与登记等另有74项，不能都称端到端。Windows专用入口
 `pwsh -NoProfile -File scripts/check-runtime-e2e.ps1` 要求显式独立测试库及既有授权VM标记；
 它不安装系统或复用共享broker。完整故障矩阵、材料删除与一致恢复仍在持续补齐。
+
+</details>

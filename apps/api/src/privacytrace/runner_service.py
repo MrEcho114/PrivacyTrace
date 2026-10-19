@@ -31,6 +31,7 @@ from .scan_workspace import AUDIT_BUDGET, ScanError, disk_usage, safe_path
 
 MAX_DISK = 1024 * 1024 * 1024
 MAX_RESULTS = 32 * 1024 * 1024
+MAX_TRANSFER_SECONDS = 60
 
 
 @dataclass(frozen=True)
@@ -69,6 +70,13 @@ class Runner:
         except OSError:
             self.lock.close()
             raise ValueError("Runner directory already owned by another process") from None
+        try:
+            self._initialize(config)
+        except Exception:
+            self.close()
+            raise
+
+    def _initialize(self, config):
         self.slots = BoundedSemaphore(1)
         self.faulted = False
         self.operations = self.root / "operations"
@@ -130,8 +138,6 @@ class Runner:
                                 "-aq",
                                 "--filter",
                                 "name=^/" + name + "$",
-                                "--filter",
-                                "label=privacytrace.run=" + workspace.name,
                             ]
                         ).strip()
                         if exists:
@@ -142,10 +148,13 @@ class Runner:
                                 or inspected["Config"]["Labels"].get("privacytrace.run")
                                 != workspace.name
                                 or len(mounts) != 1
+                                or mounts[0]["Type"] != "bind"
+                                or mounts[0]["Destination"] != "/input/sample.apk"
+                                or mounts[0]["RW"] is not False
                                 or Path(mounts[0]["Source"]).absolute() != workspace / "input.apk"
                             ):
                                 raise ValueError("Unproven orphan container requires inspection")
-                            command([*self.docker, "rm", "--force", "--volumes", name])
+                            command([*self.docker, "rm", "--force", name])
                 # No other process can own these operation directories. This
                 # clears charged reservations only after stopping owned containers.
                 shutil.rmtree(operation)
@@ -198,6 +207,7 @@ class Runner:
             "input_removed": proof.get("input_removed", False),
             "cleanup_verified": proof.get("cleanup_verified", False),
             "user": proof.get("user"),
+            "exit_state": proof.get("exit_state"),
             "isolation": {
                 key: host[key]
                 for key in (
@@ -262,6 +272,7 @@ class Runner:
         inputs = operation / "inputs"
         inputs.mkdir(mode=0o700)
         try:
+            transfer_deadline = time.monotonic() + MAX_TRANSFER_SECONDS
             for item in value["files"]:
                 target = inputs / item["name"]
                 size, sha = 0, hashlib.sha256()
@@ -270,7 +281,11 @@ class Runner:
                     target.open("xb") as output,
                 ):
                     target.chmod(0o600)
-                    while chunk := source.read(1024 * 1024):
+                    # read1 returns available TLS bytes instead of waiting for
+                    # a full megabyte from a slowly interrupted connection.
+                    while chunk := source.read1(65536):
+                        if time.monotonic() >= transfer_deadline:
+                            raise RuntimeUnavailable("Runner material transfer timed out")
                         size += len(chunk)
                         if size > item["size"]:
                             raise ValueError("Runner input exceeds registered size")

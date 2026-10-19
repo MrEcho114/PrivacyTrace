@@ -6,6 +6,7 @@ import json
 import os
 import socket
 import ssl
+import time
 from dataclasses import dataclass, field
 from http.client import HTTPException
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -154,7 +155,14 @@ class PrivateClient:
     def json(self, path, *, data=None, ticket=None):
         try:
             with self.open(path, data=data, ticket=ticket) as response:
-                raw = response.read(MAX_JSON + 1)
+                chunks, count = [], 0
+                deadline = time.monotonic() + self.timeout
+                while block := response.read1(min(65536, MAX_JSON + 1 - count)):
+                    count += len(block)
+                    if count > MAX_JSON or time.monotonic() >= deadline:
+                        raise RuntimeUnavailable("Private runtime response exceeds limits")
+                    chunks.append(block)
+                raw = b"".join(chunks)
         except PermissionError:
             raise
         except (OSError, HTTPException):

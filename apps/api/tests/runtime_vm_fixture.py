@@ -102,6 +102,12 @@ else:
   subprocess.run(['redis-server',str(root/'redis.conf'),'--daemonize','yes'],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
  elif action in ('redis_stop','runner_stop'):
   stop(action.split('_')[0],data.get('hard',False))
+ elif action in ('runner_pause','runner_continue'):
+  pid=int((root/'runner.pid').read_text());proc=Path('/proc')/str(pid)
+  assert b'privacytrace.runner_service' in (proc/'cmdline').read_bytes()
+  env=(proc/'environ').read_bytes().split(b'\0')
+  assert ('PRIVACYTRACE_RUNNER_ROOT='+str(root/'runner')).encode() in env
+  os.kill(pid,signal.SIGSTOP if action=='runner_pause' else signal.SIGCONT)
  elif action=='runner_check':
   p=root/'runner.pid';assert p.exists()
   env=(Path('/proc')/p.read_text().strip()/'environ').read_bytes()

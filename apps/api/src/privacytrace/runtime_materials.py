@@ -95,7 +95,9 @@ class RuntimeMaterials:
         ):
             raise ValueError("Invalid private material reference")
         if len(parts) == 2:
-            if parts[1] not in {"input.apk", "upload.pending"}:
+            if parts[1] not in {"input.apk", "upload.pending"} and not re.fullmatch(
+                r"upload\.pending\.[a-f0-9]{32}", parts[1]
+            ):
                 raise ValueError("Invalid private material reference")
         else:
             if parts[1] != "packages" and not re.fullmatch(

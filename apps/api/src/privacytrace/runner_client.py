@@ -155,7 +155,10 @@ class RunnerClient:
                 "version": 1,
                 "operation": "scan",
                 "request_id": str(
-                    uuid5(UUID(self.store.instance_id), f"scan:{lease.job_id}:{lease.fence}")
+                    uuid5(
+                        UUID(self.store.instance_id),
+                        f"scan:{lease.job_id}:{lease.fence}:{lease.owner}",
+                    )
                 ),
                 "instance_id": self.store.instance_id,
                 "scope_id": lease.job_id,

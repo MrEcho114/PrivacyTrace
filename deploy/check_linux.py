@@ -85,6 +85,7 @@ def topology_tests(directory):
         lambda c: c["services"]["web"]["networks"].update(database={}),
         lambda c: c["services"]["api"]["environment"].update(PRIVACYTRACE_MODE="local"),
         lambda c: c["services"]["api"]["environment"].pop("PRIVACYTRACE_DATABASE_URL_FILE"),
+        lambda c: c["services"]["web"].update(tmpfs=["/tmp:rw", "gid=10001"]),
         lambda c: c["services"]["api"]["volumes"].append(
             {"type": "volume", "source": "database", "target": "/var/lib/postgresql/data"}
         ),

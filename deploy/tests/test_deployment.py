@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import httpx
+import yaml
 
 DEPLOY = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(DEPLOY))
@@ -47,6 +48,16 @@ class PackagedResourceTests(unittest.TestCase):
 
 
 class StartupTests(unittest.TestCase):
+    def test_compose_tmpfs_options_stay_in_one_absolute_mount(self):
+        for name in ("compose.yaml", "compose.smoke.yaml"):
+            config = yaml.safe_load((DEPLOY / name).read_text(encoding="utf-8"))
+            for service in config["services"].values():
+                for mount in service.get("tmpfs", []):
+                    self.assertTrue(mount.startswith("/"), mount)
+                    self.assertIn(",noexec,nosuid,", mount)
+                    self.assertIn(",uid=", mount)
+                    self.assertIn(",gid=", mount)
+
     def test_production_refuses_even_when_runtime_variables_are_present(self):
         with patch.dict(
             os.environ,

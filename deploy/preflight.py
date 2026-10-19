@@ -41,6 +41,8 @@ def validate(config):
             raise ValueError("Container isolation contract violated")
         if name != "web" and service.get("ports"):
             raise ValueError("Only the HTTPS proxy may publish ports")
+        if any(not mount.startswith("/") for mount in service.get("tmpfs", [])):
+            raise ValueError("Tmpfs options must not become separate mount paths")
         for mount in service.get("volumes", []):
             if mount["type"] != "volume":
                 raise ValueError("Host bind mounts are forbidden")

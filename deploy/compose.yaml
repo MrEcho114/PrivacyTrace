@@ -28,7 +28,7 @@ services:
     volumes:
       - certificates:/data
       - caddy_config:/config
-    tmpfs: [/tmp:rw,noexec,nosuid,size=16m,uid=10001,gid=10001]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m,uid=10001,gid=10001"]
     mem_limit: 256m
     cpus: 1
     depends_on:
@@ -48,7 +48,7 @@ services:
     networks: [api, database]
     secrets: [runtime_database_url]
     volumes: [materials:/var/lib/privacytrace]
-    tmpfs: [/tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001"]
     mem_limit: 768m
     cpus: 1
     healthcheck:
@@ -92,7 +92,7 @@ services:
     networks: [database]
     secrets: [redis_config]
     volumes: [broker:/data]
-    tmpfs: [/tmp:rw,noexec,nosuid,size=16m,uid=999,gid=999]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m,uid=999,gid=999"]
     mem_limit: 256m
     cpus: 1
     healthcheck:

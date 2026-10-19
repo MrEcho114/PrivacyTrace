@@ -21,7 +21,7 @@ Node/Caddy/PostgreSQL/Redis 的 manifest 摘要于 2026-10-19 经 Docker 官方 
 
 - `deploy/tests/test_deployment.py`：生产默认/拼写错误启动拒绝、smoke 秘密/真实 DB 拒绝、只读路径不调用业务、完整 Origin、内部 probe 隔离、live 与 ready 区分、上下文审计拒绝私有输入。
 - `.github/workflows/deployment.yml`：干净 Linux 构建 API/Web，真实 BuildKit context canary 检查，生产 Caddy 配置验证；真实受限容器中跑 HTTP 合成 demo/规则/静态字体、Host/Origin/伪本机请求、转发头去除、probe/管理面拒绝、写入拒绝及 API 重启。
-- `deploy/check_linux.py`：在实际 Compose 渲染配置上检验边界并对 11 类破坏配置做负测，生产 preflight 必须失败；输出 `tmp/deployment-receipt.json`，含源码 SHA、容器 image ID、真实 user/只读根/限额/socket inspect 和未测项，不输出完整 config/env/secrets。
+- `deploy/check_linux.py`：在实际 Compose 渲染配置上检验边界并对 12 类破坏配置做负测，生产 preflight 必须失败；输出 `tmp/deployment-receipt.json`，含源码 SHA、容器 image ID、真实 user/只读根/限额/socket inspect 和未测项，不输出完整 config/env/secrets。
 - 权威 `bash scripts/check.sh` 保留原门禁，部署专项不替代现有后端/前端/受控 Docker 业务验证。
 
 ## #81 六项最终验收

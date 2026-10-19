@@ -34,3 +34,31 @@
 实际构建：Tauri CLI 2.12.3，Rust Tauri / JS API 2.12.4，Rust 1.99.1 Windows GNU 主机，JDK 17 / NDK r27c / AGP 9.3.1 / Kotlin 2.2.10 / Gradle 9.6.1，编译/目标 API 36，APK 只含 x86_64。最终 APK 权限仅 AndroidX 自定义 signature 接收器权限，无 INTERNET、存储或 QUERY_ALL_PACKAGES；备份与 cleartext 关闭。19 项 JVM、8 项 PowerShell 回归、原生四包与 Tauri APK 构建通过，原生 lint 通过；桥接 lint 0 errors / 2 个版本更新提示，Vue 类型/打包通过，npm 审计 0 项。构建/最低版本不是商店资格或系统范围验收。
 
 真实手机、读取中取消/自然竞争矩阵、受保护配置、生产 Web 接线、HTTPS 与完整 #71 仍待完成；复现命令与接口边界见 [BRIDGE.md](../BRIDGE.md)。
+
+## 2026-10-20：确认范围绑定与补缺验收
+
+运行源码 `3bf5138db8dac6c58133380330bfad26ec6dab4c`，以下三份 JSON 均为
+`source_dirty=false`，后续提交只归档证据/说明。用户已暂停 PR #90 合并，
+本轮只补实验确认范围及验证，不关闭 #71。
+
+| 材料 | 证明的范围 |
+| --- | --- |
+| [android34-confirmation-bridge.json](android34-confirmation-bridge.json) | 真实 Tauri 桥接 8 场景：既有取消/暂停/字号重建，新增确认版本/包数/逐包与总量、确认后同版本真实重装拒绝、受控 force-stop 后新进程清空旧确认，最终两份 UI SHA 与构建产物一致 |
+| [android34-confirmation-smoke.json](android34-confirmation-smoke.json) | 本体单 APK、跨 App base/feature split 的普通 UID 设备 smoke，读取路径使用本轮确认快照约束；不能替代确认 UI 走查 |
+| [android34-confirmation-native-walk.json](android34-confirmation-native-walk.json) | 宿主驱动的原生 UI 走查：确认元数据、返回取消、系统返回取消、重新选择后读取两份正确摘要；本机操作辅助脚本不随产品交付，步骤可按下文重现 |
+| [android34-confirmation.png](android34-confirmation.png) | Tauri 原生确认窗口：versionCode 1、2 包/13525 字节、base 6679 与 split 6846 字节，以及重新确认告知 |
+| [android34-confirmation-reinstall-rejected.png](android34-confirmation-reinstall-rejected.png) | 窗口打开后重新安装相同 APK，开始读取返回 INSTALLATION_CHANGED，没有成功摘要 |
+| [android34-confirmation-result.png](android34-confirmation-result.png) | 重新选择确认后的完整摘要；两份 SHA 与本机构建 APK 相符 |
+
+原生 UI 步骤：在已授权模拟器先运行 `verify-device.ps1` 安装自建探针/fixture，
+打开探针，依次“选择可见应用 → Controlled split fixture → 返回”，确认 CANCELLED；
+再次选择并用系统返回键取消；第三次选择并开始读取，核对两个 APK 的 SHA。
+原生确认截图背景有系统应用列表，故只留本机、不提交；公开确认图使用无清单的 Tauri 图。
+
+旧 APK 曾被新增确认信息断言明确拒绝；修复后 25 项 JVM 与上述实际场景通过。
+带截图的预跑曾有一次底层设备命令/解析中断，未生成成功 JSON；本节只归档随后
+独占设备、干净源码的成功运行，不将失败截图作为通过证据。字号恢复 1.0，临时 UI XML 清除。
+
+这是同一 AOSP Android 14/API 34/x86_64 模拟器的受控实验。真实自然重装竞争、
+任意系统进程回收/网络任务恢复、读取中取消时延、OEM/工作资料和真实手机仍未验收。
+受保护配置、生产页面和真实 HTTPS/实例隔离缺口见 [ACCEPTANCE.md](../ACCEPTANCE.md)。

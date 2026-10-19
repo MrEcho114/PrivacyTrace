@@ -5,7 +5,28 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 Push-Location $PSScriptRoot
+$receiptPath = $null
+$temporaryReceipt = $null
 try {
+    # Invalidate a previous success before doing anything that can fail this run.
+    # Resolve relative receipts against this script's directory, as before.
+    if ($Receipt) {
+        $parent = Split-Path -Path $Receipt -Parent
+        if (-not $parent) { $parent = '.' }
+        $receiptDir = (Resolve-Path -LiteralPath $parent -ErrorAction Stop).ProviderPath
+        $receiptName = Split-Path -Path $Receipt -Leaf
+        if (-not $receiptName -or $receiptName -eq '.' -or $receiptName -eq '..') {
+            throw 'Receipt must name a file.'
+        }
+        $receiptPath = Join-Path $receiptDir $receiptName
+        if (Test-Path -LiteralPath $receiptPath -PathType Container) {
+            throw 'Receipt path must not be a directory.'
+        }
+        if (Test-Path -LiteralPath $receiptPath) {
+            Remove-Item -LiteralPath $receiptPath -Force -ErrorAction Stop
+        }
+    }
+
     function Invoke-ProbeAdb([string[]]$ProbeArguments) {
         $output = & $Adb -s $Serial @ProbeArguments 2>&1
         if ($LASTEXITCODE -ne 0) { throw 'ADB operation failed; no passing device receipt produced.' }
@@ -56,6 +77,18 @@ try {
         unverified = @('installation_update_race', 'unreadable_packages', 'oem_matrix', 'tauri_bridge', 'remote_upload')
     }
     $json = $result | ConvertTo-Json -Depth 4
-    if ($Receipt) { [System.IO.File]::WriteAllText($Receipt, $json, [System.Text.UTF8Encoding]::new($false)) }
+    if ($receiptPath) {
+        # Write in the same directory, then publish via a single rename.
+        # A failed write leaves no partial PASS at the requested receipt path.
+        $temporaryReceipt = Join-Path $receiptDir ('.{0}.{1}.tmp' -f $receiptName, [Guid]::NewGuid().ToString('N'))
+        [System.IO.File]::WriteAllText($temporaryReceipt, $json, [System.Text.UTF8Encoding]::new($false))
+        [System.IO.File]::Move($temporaryReceipt, $receiptPath)
+        $temporaryReceipt = $null
+    }
     $json
-} finally { Pop-Location }
+} finally {
+    if ($temporaryReceipt -and (Test-Path -LiteralPath $temporaryReceipt -PathType Leaf)) {
+        Remove-Item -LiteralPath $temporaryReceipt -Force -ErrorAction SilentlyContinue
+    }
+    Pop-Location
+}

@@ -14,7 +14,6 @@ from .queue_runtime import TASK_NAME, BrokerConfig, create_celery_app
 from .runtime_tls import RuntimeUnavailable
 from .storage_factory import create_store
 
-
 _LOG = logging.getLogger(__name__)
 # Celery uses CRITICAL logging to suppress payload-bearing framework records.
 # This module emits only fixed diagnostic codes, so keep its logger observable.

@@ -114,15 +114,23 @@ def topology_tests(directory):
 def smoke_tests():
     run(SMOKE + ["config", "--quiet"])
     run(SMOKE + ["up", "--detach", "--wait", "--wait-timeout", "90"], timeout=120)
+    last_probe = "no response"
     for _ in range(30):
         try:
-            if request("/api/v1/health")[0] == 200:
+            status, body, _ = request("/api/v1/health")
+            last_probe = f"HTTP {status}"
+            # Fixed diagnostic classifications only; never echo arbitrary headers/body.
+            if b"Untrusted forwarding headers" in body:
+                last_probe += " (forwarding rejected)"
+            elif body == b"Invalid host header":
+                last_probe += " (host rejected)"
+            if status == 200:
                 break
-        except OSError:
-            pass
+        except OSError as error:
+            last_probe = type(error).__name__
         time.sleep(1)
     else:
-        raise AssertionError("Proxy/API did not become live")
+        raise AssertionError(f"Proxy/API did not become live: {last_probe}")
     for path in (
         "/",
         "/fonts/NotoSansSC-Variable.woff2",

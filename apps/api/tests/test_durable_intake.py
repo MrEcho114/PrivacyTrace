@@ -112,6 +112,22 @@ def test_registration_snapshot_event_and_job_survive_new_api_instance_without_lo
         other.close()
 
 
+def test_failed_fenced_pipeline_records_authoritative_draft_terminal_event_once(intake, store):
+    draft = uploaded(intake)
+    job = intake.start(draft["id"], StartInput(revision=draft["revision"], request_id=uuid4().hex))
+    event = PostgresOutbox(store).claim()[0]
+    execution = PostgresExecution(store)
+    lease = execution.acquire(event.message)
+    failed = store.get(job.id)
+    failed.state = "FAILED"
+    execution.fenced_store(lease).save_job(failed)
+    intake.terminal_event(lease)
+    history = intake.get(draft["id"])["jobs"][0]["events"]
+    assert history[-1]["state"] == "FAILED"
+    intake.terminal_event(lease)
+    assert intake.get(draft["id"])["jobs"][0]["events"] == history
+
+
 def test_concurrent_same_submission_registers_exactly_one_event_and_snapshot(store, intake):
     draft = uploaded(intake)
     payload = StartInput(revision=draft["revision"], request_id=uuid4().hex)

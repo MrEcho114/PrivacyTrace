@@ -50,6 +50,7 @@ worker只注册`privacytrace.execute.v1`，固定JSON、无结果backend／remot
 默认60秒租约、最长300秒尝试，续租用DB时间。过期／断连恢复沿用同Job和事件，错误标明
 `INTERNAL_RETRY`，不重置预算。用户retry是带`retry_of`的新Job。报告与SUCCEEDED／摘要／
 审计原子提交，同owner及相同结果重复提交只读；取消／删除与撤销、fence递增同事务。
+终态写回Draft事件历史也检查最后状态，重复回调不追加第二条相同终态事件。
 OOM、超时、畸形输出有限终态失败。恢复器重投300秒未领取事件，耗尽预算留下可查询失败。
 
 ## 供#81消费的进程与配置

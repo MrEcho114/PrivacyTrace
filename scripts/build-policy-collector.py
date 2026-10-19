@@ -9,7 +9,7 @@ import symtable
 from pathlib import Path
 
 from privacytrace.resources import ACTIVE_RULESET_VERSION, TAXONOMY_FILES
-from privacytrace.web_models import WebSource
+from privacytrace.web_models import CollectedSourceInput
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "skills/privacytrace-policy-collector"
@@ -91,7 +91,7 @@ def render():
     if len(helpers) != 2 or constants.keys() != names:
         raise ValueError("The source prompt interface changed; review the package builder")
     validate_helper_dependencies(helpers, names | {"sanitize_untrusted_text", "build_user_prompt"})
-    schema = WebSource.model_json_schema()
+    schema = CollectedSourceInput.model_json_schema()
     properties = schema["properties"]
     fields = "\n".join(
         f"- `{name}`（{'必填' if name in schema['required'] else '可省略'}）: "

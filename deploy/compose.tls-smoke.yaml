@@ -1,0 +1,7 @@
+# Merge only with compose.smoke.yaml. Ephemeral local CA; no public ACME account.
+services:
+  web:
+    entrypoint: [caddy, run, --config, /etc/caddy/tls-smoke.Caddyfile, --adapter, caddyfile]
+    ports: ["127.0.0.1:18443:8443"]
+    volumes:
+      - ./tls-smoke.Caddyfile:/etc/caddy/tls-smoke.Caddyfile:ro

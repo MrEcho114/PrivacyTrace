@@ -49,3 +49,16 @@
 正式 Tauri 桥接、手机受保护配置、#80 真实运行时与 HTTPS/实例隔离/断网恢复、#73 整体主链路仍待完成。#70 业务接口已合入，不把它的关闭当作这些验收已通过。#71 保持开放，PR 仍为实验范围的草稿。
 
 没有提交 APK、完整政策、缓存、签名材料、本机私有路径或个人设备清单。所有假数据来自自建测试；文件摘要不是运行时行为、隐私安全或法律结论。
+
+## 2026-10-19｜Tauri 2 实际桥接部分交付
+
+用户继续要求推进；在 #71 当前记录重核归属后，仅延伸同一实验目录与 PR #90。#72 已在其分支修改手机报告/候选页面，本轮没有触碰共享 Web、API、公共契约、CI 或其他 owner 的交付。
+
+- 将原读取器移动到 `core/`，原生探针与 Tauri Android 插件编译同一份源码。网页只调用无参数的原生选择/确认，不接收整机清单或传入路径；结果只含当前选择的本机摘要。
+- 实际打通 Vue → Rust command → Kotlin Plugin → PackageManager/文件流，再把两份摘要返回 WebView。Rust 与 JS API 版本一致，权限仅开放本地 Android 主窗口的两个命令；空闲 cancel IPC 也在每次开始时真实往返。
+- 独立审阅发现 Activity 重建风险，并在旧 APK 通过系统字号变化实际复现：进程保留、新 Vue 页已加载，但选择一直返回 BUSY_OR_INACTIVE。修复当前 Activity 绑定、旧操作废弃与新 gate/worker，再以同一真实重建路径验证恢复；旧回调不能结算新请求。
+- 干净源码 `44e5258f364897474192dd8ddabf39974da9d193` 的实际模拟器桥接五场景与抽取后原生两项 smoke 全部通过。桥接最终 UI 的 base/feature split SHA 与本机构建文件分别相同；源码/产物绑定见 [新增证据](evidence/README.md#同日后续真实-tauri-桥接实验)。截图由独立代理审阅，未截断或被系统栏遮挡；失败 UI dump 也通过 finally 清理。
+- 19 项 JVM、8 项 PowerShell、原生四包与真实 Tauri x86_64 APK、Vue 类型/打包通过；原生 lint 通过（API 34 历史壳针对性忽略 OldTargetApi，其余仍 warnings-as-errors），桥接 lint 0 errors / 2 个版本提示；npm 审计 0 项。固定 Gradle 分发哈希与生成准备脚本已实跑。首个 MSVC 构建因缺 Windows SDK 失败；改为隔离的 GNU Rust 主机交叉构建后通过，没有修改全局 PATH 或共享隔离策略。
+- Windows 权威入口再次实跑仍为 1401 passed / 77 skipped / 8 failed，同样是缺少隔离运行时的既有失败；本轮没有改 API、测试、check.sh 或 CI。最终 Linux/Docker CI 另由当前执行记录绑定交付 head；既有 CI 不运行本实验 Android 专项。
+
+这些是自建应用的模拟器事实。真实手机/OEM/工作资料、自然竞争、读取中取消/后台传输、受保护配置、生产 Web 接线与真实 HTTPS/实例隔离仍未完成；不关闭 #71，不合并/发布/部署。

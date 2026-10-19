@@ -7,6 +7,7 @@
 		output discard
 	}
 	servers {
+		strict_sni_host on
 		timeouts {
 			read_header 10s
 			read_body 60s
@@ -18,4 +19,7 @@
 
 https://{$PT_PUBLIC_HOST} {
 	import /etc/caddy/Caddyfile.common
+}
+http://:8080 {
+	respond 421
 }

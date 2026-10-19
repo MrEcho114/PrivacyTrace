@@ -9,7 +9,9 @@ request_body {
 	max_size 150MB
 }
 @internal path /_health /_health/* /config /config/* /metrics /metrics/* /debug /debug/* /docs /redoc /openapi.json
-respond @internal 404
+handle @internal {
+	respond 404
+}
 handle /api/* {
 	reverse_proxy api:8000 {
 		# Discard forwarding identity. The API itself rejects local-write markers.

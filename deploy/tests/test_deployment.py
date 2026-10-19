@@ -48,6 +48,14 @@ class PackagedResourceTests(unittest.TestCase):
 
 
 class StartupTests(unittest.TestCase):
+    def test_smoke_only_proxy_has_an_edge_network_and_loopback_port(self):
+        config = yaml.safe_load((DEPLOY / "compose.smoke.yaml").read_text(encoding="utf-8"))
+        self.assertTrue(config["networks"]["private"]["internal"])
+        self.assertFalse(config["networks"]["edge"].get("internal", False))
+        self.assertEqual(config["services"]["api"]["networks"], ["private"])
+        self.assertEqual(set(config["services"]["web"]["networks"]), {"edge", "private"})
+        self.assertEqual(config["services"]["web"]["ports"], ["127.0.0.1:18081:8080"])
+
     def test_compose_tmpfs_options_stay_in_one_absolute_mount(self):
         for name in ("compose.yaml", "compose.smoke.yaml"):
             config = yaml.safe_load((DEPLOY / name).read_text(encoding="utf-8"))

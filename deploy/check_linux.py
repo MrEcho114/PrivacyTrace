@@ -181,6 +181,12 @@ def smoke_tests():
         assert "no-new-privileges:true" in host["SecurityOpt"]
         assert not any("docker.sock" in m.get("Source", "") for m in inspect["Mounts"])
         assert host["Memory"] > 0 and host["PidsLimit"] == 128
+        ports = inspect["NetworkSettings"]["Ports"]
+        if role == "web":
+            assert ports["8080/tcp"] == [{"HostIp": "127.0.0.1", "HostPort": "18081"}]
+        else:
+            assert not any(ports.values())
+            assert set(inspect["NetworkSettings"]["Networks"]) == {"privacytrace-smoke_private"}
         inspections[role] = {
             "image_id": inspect["Image"],
             "user": settings["User"],

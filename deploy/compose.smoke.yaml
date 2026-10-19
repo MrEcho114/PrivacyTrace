@@ -37,8 +37,9 @@ services:
     volumes:
       - ./smoke.Caddyfile:/etc/caddy/smoke.Caddyfile:ro
     tmpfs: ["/tmp:rw,noexec,nosuid,size=16m,uid=10001,gid=10001"]
-    networks: [private]
+    networks: [edge, private]
     depends_on:
       api: {condition: service_healthy}
 networks:
+  edge: {}
   private: {internal: true}

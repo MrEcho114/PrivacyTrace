@@ -8,3 +8,6 @@
 http://privacytrace.test:8080 {
 	import /etc/caddy/Caddyfile.common
 }
+http://:8080 {
+	respond 421
+}

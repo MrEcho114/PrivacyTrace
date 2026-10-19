@@ -40,7 +40,14 @@ switch ($arguments[2]) {
             $index = [Array]::IndexOf($arguments, 'expectedParts')
             if ($index -lt 0 -or $index + 1 -ge $arguments.Count) { exit 8 }
             $parts = $arguments[$index + 1]
+            # Android's default pretty printer emits the stream without a result code.
+            if ('-r' -notin $arguments) {
+                "PASS: selected visible package, $parts parts, stable digests"
+                'MATCH: installed APK hashes verified'
+                exit 0
+            }
             "INSTRUMENTATION_STATUS: stream=PASS: selected visible package, $parts parts, stable digests"
+            if ($env:PT_PROBE_MOCK_MODE -ne 'unverified_digest') { 'MATCH: installed APK hashes verified' }
             'INSTRUMENTATION_CODE: -1'
             exit 0
         }
@@ -117,6 +124,10 @@ try {
     Invoke-ReceiptRun 'instrument_failure' $false
     Write-Host 'PASS stale receipt removed on instrumentation failure despite ADB exit zero'
 
+    $null = Invoke-ReceiptRun 'success' $true
+    Invoke-ReceiptRun 'unverified_digest' $false
+    Write-Host 'PASS stale receipt removed when installed hashes were not verified'
+
     $first = Invoke-ReceiptRun 'success' $true
     $env:PT_PROBE_MOCK_RELEASE = '15'
     $second = Invoke-ReceiptRun 'success' $true
@@ -148,7 +159,7 @@ try {
     Assert-True ($stdoutReceipt.result -eq 'PASS') 'Without -Receipt, stdout JSON must still work'
     Assert-True (-not (Test-Path -LiteralPath $receipt)) 'Without -Receipt, no file should be written'
     Write-Host 'PASS stdout-only mode preserved'
-    Write-Host 'PASS all 7 receipt regression scenarios'
+    Write-Host 'PASS all 8 receipt regression scenarios'
 } finally {
     foreach ($name in @('PT_PROBE_MOCK_MODE', 'PT_PROBE_MOCK_RELEASE', 'PT_PROBE_MOCK_RECEIPT')) {
         Remove-Item -Path "Env:$name" -ErrorAction SilentlyContinue

@@ -34,4 +34,18 @@
 - **运行与证据边界：** 本轮代码编辑执行环境未提供 `pwsh` 或连接的 Android 设备，因此新增脚本回归及真机 instrumentation 尚未在本环境运行。待在有 PowerShell 的环境执行 `pwsh -NoProfile -File ./verify-device.tests.ps1` 并记录输出；可检查的 GitHub CI 不替代该专项回归。旧记录中 14 项 JVM 测试及 Android 构建仍属于此前开发者报告，不能冒充本轮重新执行。
 - 真实跨应用 base/splits 可读性、OEM / 工作资料差异、更新竞争、界面生命周期、Tauri 桥和远程上传仍未验证。收据逻辑修复不证明 Android 平台可行性，也不关闭 #71 或解锁 #70/#73 的整体验收。
 
+## 2026-10-19｜Android 模拟器实际验收
+
+用户在原会话恢复推进，并明确选择“暂无真机，先做模拟器验证”。保留维护者所有 P2 修复，从远端 `1921a1b7d18dfa799953338670701a592001ed92` 正常合入 main `ffbd2b7`；本地归属调整前的历史引用单独保留，没有重写远端。
+
+- **环境：** Android 14 / API 34 AOSP x86_64，官方 `system-images;android-34;default;x86_64` revision 4，Windows WHPX。测试进程强制检查普通应用 UID，未使用 adb root。该环境是模拟器，不能替代真机/OEM/工作资料验证。
+- **实际 smoke：** 已查询并读取探针本体单 APK，以及另一受控应用的 base + `fixture_feature`；连续两次摘要一致，分别等于宿主所构建 APK 的 SHA-256。错误的期望 SHA 在实际 instrumentation 的 `artifact_hashes` 阶段返回失败，没有 PASS。
+- **真实发现与修复：** 首次实际调用中 Android 测试已经输出成功，但宿主收据脚本拒绝。默认 `am instrument -w` pretty 输出不含结果码；改用 `-r -w` 后可核对 `INSTRUMENTATION_CODE`。回归假 ADB 同样模拟该差异：先证实旧命令失败，再修复并通过 8 项脚本回归，继续保留失败重验失效旧收据的维护者修复。
+- **安装变化：** 新增 test-only 暂停点和 `verify-update-race.ps1`。真实 PackageManager 快照之后，以实际安装操作将受控 base/split 从 versionCode 1 换为 2，再继续读取。模拟器返回 `UNREADABLE`（旧安装路径不可读），没有完整结果；同时核对当前真实 versionCode 已为 2。它证明受控时序下的失败关闭，不推导自然竞争发生率或其他系统的表现。
+- **界面：** 实际打开探针，选择受控 fixture，检查确认文案后开始读取，界面显示 versionCode 2、2 个包及各自摘要，截图已人工查看。仅此基本选择/确认/结果流程有证据；后台取消与中断恢复尚未验收。
+- **构建与回归：** 4 个 APK、主模块 lint、14 项 JVM 算法回归与 8 项 PowerShell 收据回归分别验证；运行源码与实际 APK 哈希见 [evidence/](evidence/) 中收据。旧日期记录保留原 SHA，不以本次模拟器结果改写。
+- **最新主线的本机检查限制：** Windows 权威入口执行到 API 为 1401 passed / 77 skipped / 8 failed。失败涉及新合入的 pipeline/多包隔离测试，表现为 `ISOLATED_INSPECTION_UNAVAILABLE` 或作业 FAILED；本机已无 `Ubuntu-24.04` WSL 发行版，Docker Desktop daemon 也未运行。与 main 比较，`apps/api`（含全部测试）和 `scripts/check.sh` 没有任何差异。本轮未修改隔离策略或伪造跳过；Ruff、schema 零差异、Web 53 项和生产构建另行通过。完整 Linux/Docker CI 结果由 PR 绑定最终交付 SHA，不能将此 Windows 命令记录为通过。
+
+正式 Tauri 桥接、手机受保护配置、#80 真实运行时与 HTTPS/实例隔离/断网恢复、#73 整体主链路仍待完成。#70 业务接口已合入，不把它的关闭当作这些验收已通过。#71 保持开放，PR 仍为实验范围的草稿。
+
 没有提交 APK、完整政策、缓存、签名材料、本机私有路径或个人设备清单。所有假数据来自自建测试；文件摘要不是运行时行为、隐私安全或法律结论。

@@ -41,22 +41,28 @@ try {
     foreach ($path in $paths) {
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw 'Build all probe APKs first.' }
     }
+    $apkHashes = @($paths | ForEach-Object { (Get-FileHash -LiteralPath $_ -Algorithm SHA256).Hash.ToLowerInvariant() })
     if ((Invoke-ProbeAdb -ProbeArguments @('get-state')).Trim() -ne 'device') { throw 'Selected device is not ready.' }
     Invoke-ProbeAdb -ProbeArguments @('install', '-r', $paths[0]) | Out-Null
     Invoke-ProbeAdb -ProbeArguments @('install', '-r', '-t', $paths[1]) | Out-Null
-    Invoke-ProbeAdb -ProbeArguments @('install-multiple', '-r', $paths[2], $paths[3]) | Out-Null
+    # Only this self-built debug fixture is downgraded when repeating the update-race experiment.
+    Invoke-ProbeAdb -ProbeArguments @('install-multiple', '-r', '-d', $paths[2], $paths[3]) | Out-Null
     foreach ($target in @(
-        @{ Package = 'org.privacytrace.probe'; Parts = 1 },
-        @{ Package = 'org.privacytrace.probe.fixture'; Parts = 2 }
+        @{ Package = 'org.privacytrace.probe'; Parts = 1; BaseHash = $apkHashes[0] },
+        @{ Package = 'org.privacytrace.probe.fixture'; Parts = 2; BaseHash = $apkHashes[2]; SplitHash = $apkHashes[3] }
     )) {
-        $output = Invoke-ProbeAdb -ProbeArguments @(
-            'shell', 'am', 'instrument', '-w',
+        $instrumentArguments = @(
+            'shell', 'am', 'instrument', '-r', '-w',
             '-e', 'probePackage', $target.Package,
             '-e', 'expectedParts', [string]$target.Parts,
-            'org.privacytrace.probe.test/org.privacytrace.probe.ProbeInstrumentation'
+            '-e', 'expectedBaseSha256', $target.BaseHash
         )
+        if ($target.SplitHash) { $instrumentArguments += @('-e', 'expectedSplitSha256', $target.SplitHash) }
+        $instrumentArguments += 'org.privacytrace.probe.test/org.privacytrace.probe.ProbeInstrumentation'
+        $output = Invoke-ProbeAdb -ProbeArguments $instrumentArguments
         if ($output -notmatch '(?m)^INSTRUMENTATION_CODE: -1\s*$' -or
-            $output -notmatch "PASS: selected visible package, $($target.Parts) parts, stable digests") {
+            $output -notmatch "PASS: selected visible package, $($target.Parts) parts, stable digests" -or
+            $output -notmatch '(?m)^MATCH: installed APK hashes verified\s*$') {
             throw 'Device expectations failed; no passing device receipt produced.'
         }
     }
@@ -73,7 +79,7 @@ try {
         android_release = (Invoke-ProbeAdb -ProbeArguments @('shell', 'getprop', 'ro.build.version.release')).Trim()
         cases = @('single_self_app_uid', 'external_base_plus_installed_feature_app_uid')
         result = 'PASS'
-        apk_sha256 = @($paths | ForEach-Object { (Get-FileHash -LiteralPath $_ -Algorithm SHA256).Hash.ToLowerInvariant() })
+        apk_sha256 = $apkHashes
         unverified = @('installation_update_race', 'unreadable_packages', 'oem_matrix', 'tauri_bridge', 'remote_upload')
     }
     $json = $result | ConvertTo-Json -Depth 4

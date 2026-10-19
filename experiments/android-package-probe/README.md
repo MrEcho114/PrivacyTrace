@@ -12,7 +12,7 @@
 - 默认本机实验预算：64 个文件、单文件 128 MiB、合计 256 MiB。检查声明大小与实际流字节数，避免加法溢出；这些值不是服务端能力或 #70 限额。
 - `localSetSha256` 使用带长度前缀的 UTF-8 字段：域 `privacytrace-local-package-probe-v1`、包名、十进制 versionCode，再按 base 优先／split 名排序，依次放入角色标识（`base` 或 `split:<name>`）、十进制长度、文件 SHA-256。它是 PoC 私有指纹，**不作为 #70 API 契约、上传凭据或报告证据**。
 
-本实验只验证 Kotlin 平台接缝。正式客户端仍优先 **Tauri 2 + 现有 Vue + Kotlin 桥接**，没有基于缺少 Rust 工具链就改成原生客户端的架构决定。本轮不改现有 Web、API、模型、生成契约或 CI。#70 仍阻塞真实上传，#81/#73 的部署及端到端验收仍独立。
+本实验只验证 Kotlin 平台接缝。正式客户端仍优先 **Tauri 2 + 现有 Vue + Kotlin 桥接**，没有替换技术栈的架构决定。本轮不改现有 Web、API、模型、生成契约或 CI。2026-10-19，#70 的业务接口已随 PR #88 合入，生产运行时组合验收仍在 #80；本实验没有接入远程上传，#81/#73 的部署及端到端验收仍独立。
 
 ## 构建与本机检查
 
@@ -46,7 +46,7 @@ adb devices -l
 ./verify-device.ps1 -Serial '<本次选择的测试设备>' -Receipt '<本机私有输出文件>'
 ```
 
-设备不可用、包不可见、split 数不符、读失败或摘要不稳定时脚本失败，不产出 PASS 收据（包括清除本次指定路径上旧的 PASS 收据）。它检查 `am instrument` 的实际结果码及 PASS 内容；仅看 adb 进程返回 0 不足以判断测试成功。收据记录源码 HEAD、工作树是否有改动、APK 哈希、Android 版本、模拟器标记和明确用例，不包含设备序列号、整机清单、安装路径或个人包名。源码 HEAD 只供追溯；APK 哈希记录实际被安装的字节，不把可能有本地改动的构建当成可复现证明。
+设备不可用、包不可见、split 数不符、读失败、摘要不稳定或与本机构建 APK 的哈希不符时脚本失败，不产出 PASS 收据（包括清除本次指定路径上旧的 PASS 收据）。它使用 `am instrument -r -w` 的 raw 输出检查实际结果码、PASS 和哈希核对标记；默认 pretty 输出会隐藏结果码，仅看 adb 进程返回 0 不足以判断成功。收据记录源码 HEAD、工作树是否有改动、APK 哈希、Android 版本、模拟器标记和明确用例，不包含设备序列号、整机清单、安装路径或个人包名。源码 HEAD 只供追溯；APK 哈希记录实际被安装的字节，不把可能有本地改动的构建当成可复现证明。
 
 ### 收据生命周期与脚本回归
 
@@ -60,26 +60,44 @@ adb devices -l
 pwsh -NoProfile -File ./verify-device.tests.ps1
 ```
 
-测试在此目录被忽略的 `.gradle/` 内创建隔离副本、伪 APK 字节与假 ADB 命令，覆盖先成功后无设备、缺 APK、安装失败、instrumentation 失败（ADB 退出 0）、成功重验替换收据、原子发布冲突以及省略 `-Receipt` 的 stdout 模式。自动删除临时环境，**不会连接设备、安装 APK 或产生真实平台通过证据**。现有根目录检查与远端 CI 不包含这组回归，必须单独运行并记录结果。
+测试在此目录被忽略的 `.gradle/` 内创建隔离副本、伪 APK 字节与假 ADB 命令，覆盖先成功后无设备、缺 APK、安装失败、instrumentation 失败（ADB 退出 0）、未核对安装摘要、成功重验替换收据、原子发布冲突以及 stdout 模式，共 8 个场景；假 ADB 还模拟不加 `-r` 时隐藏结果码的真实行为。自动删除临时环境，**不会连接设备、安装 APK 或产生真实平台通过证据**。现有根目录检查与远端 CI 不包含这组回归，必须单独运行并记录结果。
 
 两个 smoke case：
 
 1. 探针在自己的普通应用 UID 下读取本体单 APK，期望 1 个文件。这不是跨应用读取证据。
-2. 同一探针读取另一个已安装的自建 fixture，期望 base + `fixture_feature` 共 2 个文件；连续两次的文件/集合摘要必须一致。只有实际设备通过才形成跨应用 splits 读取证据。
+2. 同一探针读取另一个已安装的自建 fixture，期望 base + `fixture_feature` 共 2 个文件；连续两次的文件/集合摘要必须一致，并分别等于本机构建的 base/split 哈希。只有实际设备通过才形成跨应用 splits 读取证据。
 
 模拟器收据不替代真机收据。查看界面用 `adb -s <设备> shell am start -n org.privacytrace.probe/.ProbeActivity`，分别走查确认、取消、切后台和重新选择；截图只保留自建受控应用内容。
+
+### 实际安装更新拒绝实验
+
+先构建 fixture 的版本 2 并保存，再恢复普通 smoke 所需的版本 1；以下 PowerShell 命令在本目录运行。所有安装目标都是本仓库的受控 debug 应用。
+
+```powershell
+./gradlew.bat :fixture:assembleDebug :fixture_feature:assembleDebug -PfixtureVersionCode=2
+New-Item -ItemType Directory -Force .gradle/fixture-v2 | Out-Null
+Copy-Item fixture/build/outputs/apk/debug/fixture-debug.apk .gradle/fixture-v2/base.apk
+Copy-Item fixture-feature/build/outputs/apk/debug/fixture_feature-debug.apk .gradle/fixture-v2/split.apk
+./gradlew.bat :fixture:assembleDebug :fixture_feature:assembleDebug -PfixtureVersionCode=1
+./verify-device.ps1 -Serial '<测试设备>'
+./verify-update-race.ps1 -Serial '<测试设备>' -UpdatedBaseApk .gradle/fixture-v2/base.apk -UpdatedSplitApk .gradle/fixture-v2/split.apk
+```
+
+instrumentation 在真实 PackageManager 快照之后、第一次打开 APK 之前停在**测试代码专有的暂停点**。宿主通过实际 `adb install-multiple -r` 更新 fixture，随后由应用 UID 继续读取。测试要求真实版本已从 1 变成 2，并且读取返回 `INSTALLATION_CHANGED` 或旧路径不可读的 `UNREADABLE`，不得返回完整成功。脚本有超时与进程清理，只向 stdout 输出独立更新收据，不复用普通 smoke 收据；失败不输出 PASS JSON。普通 smoke 允许降级这个自建 debug fixture，以便重复实验。
+
+它验证了可控时序下的真实安装更换，不覆盖自然竞争的概率或所有 OEM 行为。Android 14 / API 34 AOSP x86_64 模拟器已完成两项 smoke、错误摘要拒绝及更新拒绝，详见 [evidence/](evidence/)；真机仍未验证。
 
 ## 仍需实施与验证
 
 | 场景 | 当前状态／下一步 |
 | --- | --- |
 | metadata 缺包、重复 split、尺寸不符、变化、不可读、取消、限额 | JVM 确定性回归；不冒充平台真实事件 |
-| 真实 PackageManager 查询、跨 App base/splits 可读性 | 设备 runner 已准备，本轮无连接设备，待实测 |
+| 真实 PackageManager 查询、跨 App base/splits 可读性 | Android 14 AOSP 模拟器通过；真机与其他系统仍待实测 |
 | OEM / Android 24、30+、近期系统与工作资料隔离 | 待选代表真机；分别记录环境和可见性限制 |
-| 安装期间更新／卸载、同版本重装、后台取消 UI | 算法守卫已测，真实系统竞争和界面仍待设备复现 |
+| 安装期间更新／卸载、同版本重装、后台取消 UI | 版本 1→2 的受控模拟器更新拒绝通过；自然竞争、卸载、同版本重装、后台取消仍待验 |
 | 无 Launcher 的应用 | 本实验不列出；先评估有限 queries 是否满足正式产品范围 |
 | Tauri 2 → Kotlin 调用、生命周期与受保护配置 | 待搭建正式壳；桥只接收已选包名，不能接收任意文件路径 |
-| HTTPS、实例隔离、服务端确认/背压、断网/恢复、删除 | 等 #70 合入并验证后消费稳定契约，最终由 #73 验收 |
+| HTTPS、实例隔离、服务端确认/背压、断网/恢复、删除 | #70 业务接缝已合入；客户端接入及 #80 真实运行时验证仍待完成，最终由 #73 验收 |
 | Google Play 权限材料与资格 | 尚未申请；构建可用不代表获批 |
 
 平台调查和本轮执行事实见 [EVIDENCE.md](EVIDENCE.md)。

@@ -198,9 +198,9 @@ const reportTableHeader = page => page.evaluate(() => {
     },
   }
 })
-// The inline row evidence is desktop-hidden by design (workbench.css:263): above 560px the row button
-// opens #example-evidence instead, and below 560px (#example-evidence is hidden, workbench.css:293) the
-// row expands in place (workbench.css:294). Pin both sides so nobody "fixes" the hidden cell by unhiding it.
+// The inline row evidence is narrow-only by design (ExampleReport.vue v-if inlineEvidence): above
+// 560px the row button opens the standalone #example-evidence section; below 560px that section is
+// absent and the selected row expands in place. Pin both sides so nobody renders both presentations.
 async function assertReportRowToggle(page, label) {
   const width = page.viewportSize().width
   const state = await page.evaluate(() => {
@@ -217,13 +217,13 @@ async function assertReportRowToggle(page, label) {
       mobileVisible: shown(mobile),
     }
   })
-  assert.notEqual(state.row, 'absent', label + ': the selected row must render its inline evidence cell')
   if (width > design.mobileButton.maxWidth) {
-    assert.equal(state.row, 'none', label + ': the inline row evidence stays hidden on desktop (display=' + state.row + ')')
+    assert.ok(state.row === 'absent' || state.row === 'none', label + ': the inline row evidence must not render on desktop (display=' + state.row + ')')
     assert.equal(state.rowVisible, false, label + ': the inline row evidence must not be reachable on desktop')
     assert.equal(state.desktopVisible, true, label + ': the desktop toggle is the visible affordance on desktop')
     assert.equal(state.mobile, 'none', label + ': the mobile toggle stays hidden on desktop (display=' + state.mobile + ')')
   } else {
+    assert.notEqual(state.row, 'absent', label + ': the selected row must render its inline evidence cell at ' + width + 'px')
     assert.equal(state.rowVisible, true, label + ': the row must expand in place at ' + width + 'px (display=' + state.row + ')')
     assert.equal(state.mobileVisible, true, label + ': the mobile toggle is the visible affordance at ' + width + 'px')
     assert.equal(state.desktop, 'none', label + ': the desktop toggle stays hidden at ' + width + 'px (display=' + state.desktop + ')')

@@ -25,7 +25,11 @@ const selectedSourceKey = computed({
 const selected = ref<PrivacyIssue | null>(null)
 function selectIssue(issue: PrivacyIssue) {
   selected.value = issue
-  void nextTick(() => document.getElementById('evidence-panel')?.scrollIntoView({ block: 'start', behavior: 'smooth' }))
+  void nextTick(() => {
+    const panel = document.getElementById('evidence-panel')
+    panel?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    panel?.focus({ preventScroll: true })
+  })
 }
 const loading = ref(false)
 const error = ref('')

@@ -88,13 +88,30 @@ def create_app(
     # An explicit argument wins; the environment variable lets the acceptance
     # harness boot an isolated instance without touching the repository data dir.
     configured = store_root or (os.environ.get(STORE_ROOT_ENV) or None)
+    execution_mode = os.environ.get("PRIVACYTRACE_EXECUTION", "local")
+    if execution_mode not in {"local", "durable"}:
+        raise ValueError("Unknown execution mode")
+    if execution_mode == "durable" and not configured:
+        raise ValueError("Durable execution requires an explicit private store root")
     app.state.job_store = create_store(Path(configured) if configured else ROOT / "data/jobs")
-    if getattr(app.state.job_store, "uses_postgres", False):
-        from .postgres_intake import PostgresWebIntake
+    try:
+        if execution_mode == "durable":
+            from .durable_intake import DurableWebIntake, ensure_control_plane
 
-        app.state.web_intake = PostgresWebIntake(app.state.job_store)
-    else:
-        app.state.web_intake = WebIntake(app.state.job_store)
+            if not getattr(app.state.job_store, "uses_postgres", False):
+                raise ValueError("Durable execution requires PostgreSQL")
+            ensure_control_plane()
+            app.state.web_intake = DurableWebIntake(app.state.job_store)
+        elif getattr(app.state.job_store, "uses_postgres", False):
+            from .postgres_intake import PostgresWebIntake
+
+            app.state.web_intake = PostgresWebIntake(app.state.job_store)
+        else:
+            app.state.web_intake = WebIntake(app.state.job_store)
+    except Exception:
+        if getattr(app.state.job_store, "uses_postgres", False):
+            app.state.job_store.close()
+        raise
     app.state.security_seam = SecuritySeam(config, app.state.job_store)
     install_web_api(app, local_write)
 
@@ -152,6 +169,8 @@ def create_app(
     if config.mode == "remote":
         @app.post("/api/v1/jobs")
         async def create_job(request: Request):
+            if execution_mode == "durable":
+                raise HTTPException(status_code=409, detail="APK_INTAKE_REQUIRED")
             payload = {}
             try:
                 body = await request.body()

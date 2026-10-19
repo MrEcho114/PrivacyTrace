@@ -314,6 +314,18 @@ def scan_isolated(
             thread.join(timeout=5)
         if overflow.is_set():
             raise ScanError("OUTPUT_LIMIT", "Worker output exceeded the bounded capture limit")
+        # Docker's inspected cgroup outcome is authoritative even when SIGKILL
+        # prevented the worker from writing a JSON failure record.
+        state = json.loads(command([*docker, "inspect", name]))[0]["State"]
+        if (
+            state.get("Running") is not False
+            or type(state.get("OOMKilled")) is not bool
+            or type(state.get("ExitCode")) is not int
+        ):
+            raise ScanError("ISOLATION_REJECTED", "Worker exit state could not be verified")
+        proof["exit_state"] = {key: state[key] for key in ("Running", "OOMKilled", "ExitCode")}
+        if state["OOMKilled"]:
+            raise ScanError("OOM", "Isolated scan exceeded its memory limit")
         raw = bytes(streams["stdout"])
         try:
             output = json.loads(raw)

@@ -111,6 +111,7 @@ class DockerBoundary:
             record = {
                 "Config": {"User": "65534:65534", "Labels": {"privacytrace.run": self.label}},
                 "HostConfig": host,
+                "State": {"Running": False, "OOMKilled": False, "ExitCode": 0},
                 "Mounts": [
                     {
                         "Destination": "/input/sample.apk",

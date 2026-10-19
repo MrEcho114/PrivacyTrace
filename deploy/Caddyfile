@@ -1,0 +1,21 @@
+{
+	admin off
+	http_port 8080
+	https_port 8443
+	# No request access log: URLs/headers may contain task access material.
+	log {
+		output discard
+	}
+	servers {
+		timeouts {
+			read_header 10s
+			read_body 60s
+			write 120s
+			idle 60s
+		}
+	}
+}
+
+https://{$PT_PUBLIC_HOST} {
+	import /etc/caddy/Caddyfile.common
+}

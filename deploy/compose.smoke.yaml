@@ -1,0 +1,44 @@
+# Separate, disposable topology: no DB, broker, certificates, secrets, or APKs.
+# Publish loopback only. Never merge this file as a production override.
+name: privacytrace-smoke
+services:
+  api:
+    image: ${PT_API_IMAGE:-privacytrace-api:issue81-test}
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 768m
+    cpus: 1
+    init: true
+    stop_grace_period: 45s
+    environment:
+      PT_DEPLOY_MODE: smoke
+      PT_PUBLIC_HOST: privacytrace.test
+      PRIVACYTRACE_STORAGE: json
+    networks: [private]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m,uid=10001,gid=10001
+      - /var/lib/privacytrace:rw,noexec,nosuid,size=16m,uid=10001,gid=10001
+  web:
+    image: ${PT_WEB_IMAGE:-privacytrace-web:issue81-test}
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 256m
+    cpus: 1
+    init: true
+    ports: ["127.0.0.1:18081:8080"]
+    environment: {PT_PUBLIC_HOST: privacytrace.test}
+    entrypoint: [caddy, run, --config, /etc/caddy/smoke.Caddyfile, --adapter, caddyfile]
+    volumes:
+      - ./smoke.Caddyfile:/etc/caddy/smoke.Caddyfile:ro
+    tmpfs: [/tmp:rw,noexec,nosuid,size=16m,uid=10001,gid=10001]
+    networks: [private]
+    depends_on:
+      api: {condition: service_healthy}
+networks:
+  private: {internal: true}

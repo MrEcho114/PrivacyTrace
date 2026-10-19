@@ -1,0 +1,10 @@
+{
+	admin off
+	auto_https off
+	log {
+		output discard
+	}
+}
+http://privacytrace.test:8080 {
+	import /etc/caddy/Caddyfile.common
+}

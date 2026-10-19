@@ -13,7 +13,8 @@ uv run --project apps/api --locked --extra worker --extra runtime python -B -m p
   apps/api/tests/test_queue_runtime.py apps/api/tests/test_runtime_materials.py \
   apps/api/tests/test_runtime_tls.py apps/api/tests/test_runner_protocol.py \
   apps/api/tests/test_durable_intake.py apps/api/tests/test_runtime_worker.py \
-  apps/api/tests/test_runner_service.py apps/api/tests/test_material_lifecycle.py \
+  apps/api/tests/test_runner_service.py apps/api/tests/test_runner_recovery.py \
+  apps/api/tests/test_material_lifecycle.py \
   apps/api/tests/test_deletion_journal.py apps/api/tests/test_runtime_backup.py \
   apps/api/tests/test_runtime_import.py apps/api/tests/test_material_disk_full.py \
   -q -p no:cacheprovider --tb=short -ra

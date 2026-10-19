@@ -1,6 +1,7 @@
 """Fixed Celery consumer: PostgreSQL lease, original pipeline, private runner."""
 
 import json
+import logging
 import os
 from pathlib import Path
 from threading import Event, Thread
@@ -8,9 +9,32 @@ from threading import Event, Thread
 from .durable_intake import DurableWebIntake, ensure_control_plane
 from .postgres_execution import LeaseLost, PostgresExecution
 from .postgres_outbox import _bounded, decode_message
+from .postgres_store import PostgresOperationUnavailable
 from .queue_runtime import TASK_NAME, BrokerConfig, create_celery_app
 from .runtime_tls import RuntimeUnavailable
 from .storage_factory import create_store
+
+
+_LOG = logging.getLogger(__name__)
+# Diagnostics use fixed labels; never include exception strings, IDs or task input.
+_DIAGNOSTIC_CODES = frozenset(
+    {
+        "EXECUTION_NOT_ACQUIRED",
+        "LEASE_LOST",
+        "STORAGE_UNAVAILABLE",
+        "RUNTIME_IO_UNAVAILABLE",
+        "RUNTIME_INPUT_INVALID",
+        "RUNNER_UNAVAILABLE",
+        "LEASE_HEARTBEAT_UNAVAILABLE",
+        "TERMINAL_EVENT_UNAVAILABLE",
+    }
+)
+
+
+def _diagnostic(code):
+    if code not in _DIAGNOSTIC_CODES:
+        raise ValueError("Unknown runtime diagnostic code")
+    _LOG.warning("privacytrace.worker.%s", code)
 
 
 def execute(message, config):
@@ -29,13 +53,23 @@ def execute(message, config):
         lease_seconds = _bounded(int(os.environ.get("PRIVACYTRACE_LEASE_SECONDS", "60")), 5, 300)
         lease = execution.acquire(message, lease_seconds=lease_seconds)
         if lease is None:
+            _diagnostic("EXECUTION_NOT_ACQUIRED")
             return
 
         def heartbeat():
             while not stopping.wait(min(5, lease_seconds / 3)):
                 try:
                     execution.heartbeat(lease, lease_seconds=lease_seconds)
-                except (LeaseLost, ValueError, OSError):
+                except LeaseLost:
+                    _diagnostic("LEASE_LOST")
+                    heartbeat_failed.set()
+                    return
+                except PostgresOperationUnavailable:
+                    _diagnostic("STORAGE_UNAVAILABLE")
+                    heartbeat_failed.set()
+                    return
+                except (ValueError, OSError):
+                    _diagnostic("LEASE_HEARTBEAT_UNAVAILABLE")
                     heartbeat_failed.set()
                     return
 
@@ -45,11 +79,14 @@ def execute(message, config):
         try:
             intake.execute(lease)
         except LeaseLost:
+            _diagnostic("LEASE_LOST")
             return
         except RuntimeUnavailable:
+            _diagnostic("RUNNER_UNAVAILABLE")
             if not heartbeat_failed.is_set():
                 execution.retry(lease, code="RUNNER_UNAVAILABLE")
         except (ValueError, OSError, KeyError, TypeError):
+            _diagnostic("RUNTIME_INPUT_INVALID")
             if not heartbeat_failed.is_set():
                 job = store.get(lease.job_id)
                 job.state = "FAILED"
@@ -57,9 +94,18 @@ def execute(message, config):
                     {"code": "RUNTIME_INPUT_INVALID", "message": "Runtime input rejected"}
                 )
                 execution.fenced_store(lease).save_job(job)
-    except (ValueError, OSError, KeyError, LeaseLost):
-        # Uncertain DB commits are recovered from the ledger, never by guessing
-        # that the task failed or by echoing credentials/materials in tracebacks.
+    except PostgresOperationUnavailable:
+        # Uncertain DB commits are recovered from the ledger, not exception text.
+        _diagnostic("STORAGE_UNAVAILABLE")
+        return
+    except LeaseLost:
+        _diagnostic("LEASE_LOST")
+        return
+    except OSError:
+        _diagnostic("RUNTIME_IO_UNAVAILABLE")
+        return
+    except (ValueError, KeyError):
+        _diagnostic("RUNTIME_INPUT_INVALID")
         return
     finally:
         stopping.set()
@@ -68,8 +114,12 @@ def execute(message, config):
         if intake:
             try:
                 intake.terminal_event(lease)
-            except (ValueError, KeyError, OSError, LeaseLost):
-                pass
+            except PostgresOperationUnavailable:
+                _diagnostic("STORAGE_UNAVAILABLE")
+            except LeaseLost:
+                _diagnostic("LEASE_LOST")
+            except (ValueError, KeyError, OSError):
+                _diagnostic("TERMINAL_EVENT_UNAVAILABLE")
             intake.close()
         if store:
             store.close()

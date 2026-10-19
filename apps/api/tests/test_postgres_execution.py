@@ -160,6 +160,39 @@ def test_heartbeat_does_not_extend_beyond_total_attempt_deadline(store):
     assert 0 < remaining < 2
 
 
+def test_hard_deadline_recovery_invalidates_old_result_and_advances_fence(store):
+    # Database-clock boundary injection, not a 300-second wall-clock system run.
+    api, event = PostgresExecution(store), ready(store)
+    lease = api.acquire(event.message, lease_seconds=60)
+    with store._transaction() as conn:
+        conn.execute(
+            executions.update()
+            .where(executions.c.job_id == event.job_id)
+            .values(
+                started_at=sa.func.clock_timestamp() - sa.text("INTERVAL '301 seconds'"),
+                leased_until=sa.func.clock_timestamp() - sa.text("INTERVAL '1 second'"),
+            )
+        )
+    with pytest.raises(LeaseLost):
+        api.heartbeat(lease)
+    with pytest.raises(LeaseLost):
+        api.fenced_store(lease).save(*report_input(store, event.job_id))
+    assert api.recover() == {"retried": 1, "failed": 0}
+    assert api.status(event.job_id)["state"] == "RETRY"
+    with pytest.raises(LeaseLost):
+        api.checkpoint(lease)
+    due(store, event.job_id)
+    claimed = PostgresOutbox(store).claim()
+    assert any(item.event_id == event.event_id for item in claimed)
+    replacement = api.acquire(event.message)
+    assert replacement is not None
+    assert replacement.job_id == lease.job_id
+    assert replacement.attempt == lease.attempt + 1
+    assert replacement.fence > lease.fence and replacement.owner != lease.owner
+    with pytest.raises(LeaseLost):
+        api.fenced_store(lease).save(*report_input(store, event.job_id))
+
+
 @pytest.mark.parametrize("action", ["cancel", "delete"])
 def test_revocation_and_fence_change_commit_atomically_and_reject_late_results(store, action):
     api, event = PostgresExecution(store), ready(store)

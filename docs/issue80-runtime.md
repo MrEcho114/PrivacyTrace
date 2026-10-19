@@ -52,6 +52,16 @@ worker只注册`privacytrace.execute.v1`，固定JSON、无结果backend／remot
 审计原子提交，同owner及相同结果重复提交只读；取消／删除与撤销、fence递增同事务。
 终态写回Draft事件历史也检查最后状态，重复回调不追加第二条相同终态事件。
 OOM、超时、畸形输出有限终态失败。恢复器重投300秒未领取事件，耗尽预算留下可查询失败。
+worker仅记录固定诊断标签（EXECUTION_NOT_ACQUIRED、LEASE_LOST、STORAGE_UNAVAILABLE、
+RUNTIME_IO_UNAVAILABLE、RUNTIME_INPUT_INVALID、RUNNER_UNAVAILABLE等），不把原始异常、
+材料路径、DB URL、任务或凭据内容写入诊断日志。该日志只辅助排障，PG 账本仍是状态权威。
+
+300秒为**单次 attempt 的数据库硬截止**：续租最多到`started_at+300s`，过期 owner
+即使仍在执行也无法提交阶段/报告；Runner 的许可检查拒绝过期凭据并由隔离扫描的
+取消检查触发终止和清理。恢复器在租约超时后使旧 fence 失效，按既有三次执行／五次
+投递预算保留同一个 Job 重投；重新执行只准新 owner/fence 提交。DB 时钟推进专项
+`test_hard_deadline_recovery_invalidates_old_result_and_advances_fence` 与真实进程/容器
+终止专项独立计数，不能据前者声称在系统 E2E 中实际等待了300秒。
 
 ## 供#81消费的进程与配置
 
@@ -101,6 +111,12 @@ Runner独占根目录，SQLite只保留有限RPC缓存（128条／32MiB／360秒
 空闲时也执行。回收失败停止接收。该逻辑不声明擦除文件系统或离线副本中的所有残留。
 崩溃后只清理本账本中的UUID操作、精确容器名／label／镜像／只读输入挂载；归属未知
 保留现场并拒绝复用。清理完成后才释放磁盘预算，不执行全局prune。
+
+PR #112 Review 回归补充：`test_runner_recovery.py` 使用**模拟 Docker 命令的故障注入**，
+分别验证 label、镜像、挂载、容器删除失败以及未登记工作目录；失败时保留材料和执行
+账本，不对未证实归属的容器执行删除。问题解除、重新启动后才允许归属确认回收。
+真实 Docker 进程强杀、停止容器与新任务接单仍以 `test_runner_service.py` 原有专项为准；
+模拟命令测试不得被标为真实 Docker 故障演练。
 
 持久根目录官方材料保留至明确删除，不使用短期TTL。当前上限：12个草稿、1000活动Job、
 4GiB私有材料、16MiB剩余空间底线、单APK／包集合总量150MiB，另有不可变JSON对象数量／

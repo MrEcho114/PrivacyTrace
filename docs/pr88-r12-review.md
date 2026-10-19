@@ -44,6 +44,14 @@ violations. The accepted repairs are:
   count-free wording in `docs/test-infra.md`, the validator docstring and the
   test headers.
 
+- **Flaky concurrency regression.** The first CI run of this repair failed in
+  `test_concurrent_upload_and_start_service_race`: its cleaner thread checked
+  `active_drafts` outside the intake transaction and could delete files from a
+  just-started upload, reporting the test's own race as a product failure. The
+  test now holds the same `data_store._transaction()` as `start_service` while
+  checking activity and cleaning; ten local repetitions passed. Production code
+  was not changed for this failure.
+
 ## Deferred
 
 - **24 h remote-draft cleanup.** `DRAFT_TTL_SECONDS`/`_cleanup_expired_drafts`

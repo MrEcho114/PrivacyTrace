@@ -338,17 +338,19 @@ def test_concurrent_upload_and_start_service_race(tmp_path: Path):
                 for _ in range(50):
                     if stop_event.is_set():
                         break
-                    # Attempt cleanup without crashing
-                    for d in service._draft_directories():
-                        if service.active_drafts.get(d.name, 0):
-                            continue
-                        for p in d.glob("upload.pending*"):
-                            p.unlink(missing_ok=True)
-                        for p in d.glob("packages.pending*"):
-                            if p.is_dir():
-                                shutil.rmtree(p, ignore_errors=True)
-                            else:
+                    # Mirror start_service's atomic activity check and cleanup;
+                    # an unlocked check lets a just-started upload be deleted.
+                    with service.data_store._transaction():
+                        for d in service._draft_directories():
+                            if service.active_drafts.get(d.name, 0):
+                                continue
+                            for p in d.glob("upload.pending*"):
                                 p.unlink(missing_ok=True)
+                            for p in d.glob("packages.pending*"):
+                                if p.is_dir():
+                                    shutil.rmtree(p, ignore_errors=True)
+                                else:
+                                    p.unlink(missing_ok=True)
                     time.sleep(0.005)
             except Exception as e:
                 errors.append(f"Cleaner exception: {e}")

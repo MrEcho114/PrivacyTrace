@@ -109,6 +109,42 @@ def test_discovery_deadline_is_shared_across_splits_and_does_not_commit_partial_
         assert not app.state.web_intake.active_drafts
 
 
+@pytest.mark.usefixtures("synthetic_package_metadata")
+def test_discovery_deadline_is_shared_across_splits_on_success(tmp_path, monkeypatch):
+    """The second APK receives the remaining budget, not a fresh per-APK allowance."""
+    base = apk(tmp_path / "base.apk")
+    split = apk(tmp_path / "split.apk", split=True, split_name="feature")
+    archive = package_set_archive(tmp_path / "set.zip", {
+        base.name: base.read_bytes(), split.name: split.read_bytes(),
+    })
+    app = create_app(tmp_path / "jobs")
+    service = app.state.web_intake
+    with TestClient(app) as client:
+        draft = new_draft(client)
+        route = f"/api/v1/web/drafts/{draft['id']}"
+        uploaded = client.post(
+            route + "/package-set", headers=HEADERS, content=archive.read_bytes()
+        )
+        assert uploaded.status_code == 200, uploaded.text
+        clock = [1000.0]
+        real_time = web_intake.time
+        monkeypatch.setattr(
+            web_intake, "time", SimpleNamespace(monotonic=lambda: clock[0], time=real_time.time),
+        )
+        monkeypatch.setattr(service, "INSPECTION_BUDGET_SECONDS", 10)
+        calls = []
+
+        def metadata(path, *, timeout):
+            calls.append(timeout)
+            clock[0] += 2
+            return {"policy_urls": []}
+
+        monkeypatch.setattr(web_intake, "inspect_package_isolated", metadata)
+        response = client.post(route + "/sources/discover", headers=HEADERS)
+        assert response.status_code == 200, response.text
+        assert calls == [10, 8]
+
+
 @pytest.mark.parametrize("worker_truncated", [False, True])
 def test_discovery_exposes_worker_and_draft_truncation(tmp_path, monkeypatch, worker_truncated):
     note = "Discovered policy URLs truncated at 8; additional candidate URLs omitted."

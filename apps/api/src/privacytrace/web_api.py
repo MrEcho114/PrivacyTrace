@@ -12,7 +12,12 @@ from .auth import authorize_draft_access
 from .isolated_scan import ScanError
 from .models import Model
 from .package_set import PackageSetIntegrityError
-from .web_intake import InspectionBusy, UploadTimedOut, UploadTooLarge
+from .web_intake import (
+    ISOLATED_INPUT_ERROR_CODES,
+    InspectionBusy,
+    UploadTimedOut,
+    UploadTooLarge,
+)
 from .web_models import (
     CandidateInput,
     DraftInput,
@@ -34,7 +39,11 @@ def web_error(exc):
         return HTTPException(
             503, detail="INSPECTION_CAPACITY_BUSY", headers={"Retry-After": "15"}
         )
+    if isinstance(exc, PackageSetIntegrityError):
+        return HTTPException(exc.http_status, detail=exc.code)
     if isinstance(exc, ScanError):
+        if exc.code in ISOLATED_INPUT_ERROR_CODES:
+            return HTTPException(400, detail=exc.code)
         return HTTPException(503, detail="ISOLATED_INSPECTION_UNAVAILABLE")
     allowed = {
         "MODEL_NOT_CONFIGURED", "MODEL_CONFIGURATION_INCOMPLETE",
@@ -173,7 +182,7 @@ def install_web_api(app, local_write):
         draft_access(request, draft_id)
         try:
             return await service.discover_sources(draft_id)
-        except (KeyError, ScanError, ValueError, OSError) as exc:
+        except (KeyError, PackageSetIntegrityError, ScanError, ValueError, OSError) as exc:
             raise web_error(exc) from exc
 
     @app.post("/api/v1/web/drafts/{draft_id}/import-external")

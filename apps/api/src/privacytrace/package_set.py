@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+import json
 import re
 import stat
 import sys
@@ -37,8 +38,6 @@ def directory_digest(directory):
         (p.name, hashlib.sha256(p.read_bytes()).hexdigest())
         for p in sorted(directory.iterdir())
     ]
-    import json
-
     return hashlib.sha256(json.dumps(entries, ensure_ascii=True).encode()).hexdigest()
 
 

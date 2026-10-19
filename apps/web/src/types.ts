@@ -55,3 +55,7 @@ export const sourceStatusLabels: Record<NonNullable<WebSource['status']>, string
   empty: '尚无正文',
   url_only: '仅有链接，尚无正文',
 }
+
+export function sourceStatusLabel(status: string | null | undefined): string {
+  return (status && sourceStatusLabels[status as SourceStatus]) || '未知状态'
+}

@@ -9,7 +9,7 @@ import threading
 import time
 from pathlib import Path
 
-from .scan_workspace import DEFAULT_QUOTA, ScanError, ScanWorkspace
+from .scan_workspace import DEFAULT_QUOTA, ScanError, ScanWorkspace, safe_path
 
 ROOT = Path(__file__).resolve().parents[4]
 MAX_INPUT = 150 * 1024 * 1024
@@ -80,8 +80,6 @@ def scan_isolated(
     path = Path(path).absolute()
     is_set = path.is_dir()
     if is_set:
-        from .scan_workspace import safe_path
-
         safe_path(path)
         inputs = sorted(path.iterdir())
         if not 1 <= len(inputs) <= 101 or any(p.suffix.lower() != ".apk" for p in inputs):

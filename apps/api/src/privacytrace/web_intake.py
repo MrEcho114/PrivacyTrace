@@ -54,6 +54,14 @@ from .web_models import (
 
 TERMINAL = {"SUCCEEDED", "FAILED", "CANCELLED"}
 
+# Structured worker errors that describe the uploaded archive, not the service.
+ISOLATED_INPUT_ERROR_CODES = frozenset({
+    "CORRUPTED_FILE",
+    "DUPLICATE_SPLIT_NAME",
+    "INVALID_SPLIT_DEPENDENCY",
+    "ZIP_INVALID",
+})
+
 
 class UploadTooLarge(ValueError):
     """APK upload exceeded the documented byte limit."""
@@ -106,7 +114,9 @@ def inspect_uploaded_package(path, *, timeout=120):
     try:
         metadata = inspect_package_isolated(path, timeout=timeout)
     except ScanError as exc:
-        if exc.code not in {"CORRUPTED_FILE", "DUPLICATE_SPLIT_NAME", "ZIP_INVALID"}:
+        # Structured worker input errors keep their 4xx identity; timeout,
+        # isolation and invalid-output codes stay 503.
+        if exc.code not in ISOLATED_INPUT_ERROR_CODES:
             raise
         raise PackageSetIntegrityError(exc.code, "Isolated manifest inspection failed") from exc
     package = PackageFile.model_validate({**metadata["package_file"], "file_name": path.name})
@@ -1042,12 +1052,20 @@ class WebIntake:
             # Container I/O must not hold the lock shared by every draft.
             discovered_urls = []
             limitations = []
+            package_set = draft.get("package_set") or {}
+            package_name = package_set.get("package_name") or ""
+            version_code = package_set.get("version_code")
             deadline = time.monotonic() + self.INSPECTION_BUDGET_SECONDS
             for apk_path in apk_files:
                 metadata = inspect_package_isolated(apk_path, timeout=inspection_timeout(deadline))
                 # Worker preflight/cleanup has its own bounded I/O. A late return
                 # must not publish results after this discovery pass has expired.
                 inspection_timeout(deadline)
+                package_file = metadata.get("package_file") or {}
+                if not package_name:
+                    package_name = package_file.get("package_name") or ""
+                if version_code is None:
+                    version_code = package_file.get("version_code")
                 for note in metadata.get("coverage", {}).get("limitations", []):
                     if note not in limitations:
                         limitations.append(note)
@@ -1079,8 +1097,8 @@ class WebIntake:
                         "version": "UNKNOWN",
                         "region": "",
                         "product": "",
-                        "package_name": draft.get("package_name") or "",
-                        "version_code": draft.get("version_code"),
+                        "package_name": package_name,
+                        "version_code": version_code,
                         "status": "url_only",
                         "error_code": None,
                         "captured_at": None,

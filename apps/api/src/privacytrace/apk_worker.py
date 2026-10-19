@@ -982,7 +982,7 @@ def main():
             elif args.metadata:
                 result = inspect_package_metadata(args.apk)
             elif args.apk.is_dir():
-                from .package_set import validate_package_set
+                from .package_set import directory_digest, validate_package_set
 
                 pkg_set = validate_package_set(args.apk)
                 base_path = args.apk / pkg_set.base.file_name
@@ -1000,8 +1000,6 @@ def main():
                     inventory=args.inventory,
                     sdk_rules=sdk_data,
                 )
-                from .package_set import directory_digest
-
                 result["input_sha256"] = directory_digest(args.apk)
             else:
                 result = scan(

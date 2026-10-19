@@ -1,5 +1,5 @@
 // Shared editor state and explicit synthetic interaction data. API calls live in liveApi.ts.
-import type { WebSource } from './contracts.generated.ts'
+import type { WebSource } from './contracts.generated'
 export type Step = 'import' | 'candidates' | 'progress' | 'report'
 export type SourceType = 'OFFICIAL_WEB_POLICY' | 'SDK_POLICY' | 'STORE_POLICY' | 'IN_APP_POLICY'
 export type Candidate = {
@@ -17,7 +17,7 @@ export type PolicySource = {
   capturedAt?: string | null; sha256?: string | null; errorCode?: string | null
   modelAudit?: Record<string, unknown>
 }
-export { sourceStatusLabels } from './types'
+export { sourceStatusLabel, sourceStatusLabels } from './types'
 export type Workflow = {
   example: boolean; step: Step; maxStep: number; sourceId: string
   sources: PolicySource[]; candidates: Candidate[]; stage: number

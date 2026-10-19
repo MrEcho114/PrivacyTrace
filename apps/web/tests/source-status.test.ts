@@ -8,7 +8,7 @@ import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
 import { renderToString } from '@vue/server-renderer'
 import ts from 'typescript'
 import * as vue from 'vue'
-import { sourceStatusLabels, type SourceStatus } from '../src/types.ts'
+import { sourceStatusLabel, sourceStatusLabels, type SourceStatus } from '../src/types.ts'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -25,6 +25,9 @@ test('sourceStatusLabels dictionary maps all statuses and marks url_only distinc
   assert.equal(sourceStatusLabels.empty, '尚无正文')
   assert.equal(sourceStatusLabels.failed, '来源获取失败')
   assert.notEqual(sourceStatusLabels.url_only, sourceStatusLabels.ready)
+  assert.equal(sourceStatusLabel('url_only'), '仅有链接，尚无正文')
+  assert.equal(sourceStatusLabel('future_unknown_status'), '未知状态')
+  assert.equal(sourceStatusLabel(null), '未知状态')
 })
 
 // Genuine component rendering verification:
@@ -122,6 +125,7 @@ test('App.vue genuinely renders url_only as "仅有链接，尚无正文" and do
         { title: '合规人员手工录入', status: 'manual' },
         { title: '空正文候选条目', status: 'empty' },
         { title: '远端抓取超时条目', status: 'failed', error_code: 'FETCH_TIMEOUT' },
+        { title: '未知状态条目', status: 'future_unknown_status' },
       ]),
     },
     reviews: [],
@@ -149,6 +153,7 @@ test('App.vue genuinely renders url_only as "仅有链接，尚无正文" and do
     assert.match(html, /合规人员手工录入<\/strong> · 手动补入正文/)
     assert.match(html, /空正文候选条目<\/strong> · 尚无正文/)
     assert.match(html, /远端抓取超时条目<\/strong> · 来源获取失败/)
+    assert.match(html, /未知状态条目<\/strong> · 未知状态/)
     assert.match(html, /FETCH_TIMEOUT/)
   } finally {
     unmount()

@@ -35,10 +35,10 @@ The PrivacyTrace PR #88 test suite (`apps/api/tests/test_e2e_pt_mob_102.py`, `ap
 |                      Application Services Layer                         |
 |   web_api.py:   Uniform upload_material exception mapping (404, 400,    |
 |                 409, 413, 503), /import-external routing                |
-|   web_intake.py: Draft sessions, BoundedSemaphore concurrency,          |
+|   web_intake.py: Draft sessions, asyncio.Semaphore admission (2 slots), |
 |                 ExternalPolicyCollectionInput & ExportInput validation, |
 |                 external_imports audit history & provenance tagging,    |
-|                 active upload staging guard, granular file locks        |
+|                 draft-activity pinning and atomic revision files        |
 |   package_set.py: 10 integrity rules, single base APK, split names,     |
 |                 101-package set boundary early exit                     |
 +-------------------------------------------------------------------------+
@@ -81,7 +81,7 @@ The PrivacyTrace PR #88 test suite (`apps/api/tests/test_e2e_pt_mob_102.py`, `ap
 ### 2.2 Boundary Value Analysis (BVA)
 
 - **Upload Stream Size Boundary**: `0 bytes` (rejected with 409 on `/apk` or 400 on `/package-set`), `150 * 1024 * 1024` bytes (maximum allowed), `> 150 MiB` (rejected with HTTP 413 `UPLOAD_TOO_LARGE`).
-- **Package Set Entry Boundary**: `101 APKs` (1 base + 100 splits, maximum allowed), `102 APKs` (rejected immediately in intake with HTTP 413 `TOO_MANY_PACKAGES`).
+- **Package Set Entry Boundary**: `101 APKs` (1 base + 100 splits, maximum allowed), `102 APKs` (rejected immediately in intake with HTTP 413 `PACKAGE_SET_TOO_LARGE`).
 - **Collection Results Boundary**: `0 results` (rejected with 422), `1 result` (minimal valid collection), `8 results` (maximum allowed collection size), `9 results` (rejected with 422).
 - **Draft Source Capacity Boundary**: `7 existing + 1 added = 8` (allowed), `8 existing + 1 added = 9` (rejected with 409).
 - **External Import History Boundary**: `64 audit entries` (maximum allowed), `65th import` (rejected with 409).

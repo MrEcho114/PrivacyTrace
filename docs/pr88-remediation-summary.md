@@ -29,7 +29,7 @@ This document summarizes the comprehensive technical resolution of each review i
   - S1 Acceptance (`docs/stages/s1-acceptance-20261009.md`): Revocation of manual A/B checklist gates does not imply policy verification. Policies remain `PARTIAL` / `UNREVIEWED` / `NOT_CHECKED`, and rules missing evidence evaluate to `INSUFFICIENT_EVIDENCE`.
 - **Implementation**:
   - In `web_intake.py:_register_start`: Clarified via docstring and comments that unreviewed candidates yield `review_status="UNREVIEWED"`, `completeness="PARTIAL"`, `attachments_status="NOT_CHECKED"`, and `human_review_gate="NOT_REQUIRED_BY_WORKFLOW"`.
-  - In `test_e2e_pt_mob_102.py:test_t1_f15_candidate_unreviewed_strict_assertions`: Added explicit test asserting that starting an analysis with unreviewed candidates successfully returns HTTP 200, generates a job, and the resulting report document strictly retains `review_status == "UNREVIEWED"`.
+  - In `test_e2e_pt_mob_102.py:test_r3_f29_non_blocking_unreviewed_candidate_start`: Added explicit test asserting that starting an analysis with unreviewed candidates successfully returns HTTP 200, generates a job, and the resulting report document strictly retains `review_status == "UNREVIEWED"`.
 
 #### 2.1.2 Root Documentation Disposition
 - **Review Finding**: Root directory contained ephemeral execution reports (`TEST_READY.md`) and valuable architecture documentation placed in the root with unexpanded placeholders (`TEST_INFRA.md`).

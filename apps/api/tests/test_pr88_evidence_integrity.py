@@ -107,6 +107,103 @@ def test_discovered_url_and_fetched_text_keep_distinct_origins(tmp_path, monkeyp
         assert doc.review_status == "UNREVIEWED"
 
 
+@pytest.mark.usefixtures("synthetic_package_metadata")
+def test_discovered_sources_inherit_uploaded_package_identity(tmp_path):
+    """A URL found in the app manifest is scoped to the uploaded package, not left unknown."""
+    policy = "https://example.com/privacy"
+    sample = policy_resource_apk(tmp_path / "policy.apk", values={"policy": policy})
+    app = create_app(tmp_path / "jobs")
+    with TestClient(app) as client:
+        draft = new_draft(client)
+        route = f"/api/v1/web/drafts/{draft['id']}"
+        uploaded = client.post(route + "/apk", headers=HEADERS, content=sample.read_bytes())
+        assert uploaded.status_code == 200, uploaded.text
+        discovery = client.post(route + "/sources/discover", headers=HEADERS)
+        assert discovery.status_code == 200, discovery.text
+        source = next(s for s in discovery.json()["sources"] if s["url"] == policy)
+        assert source["package_name"] == "org.privacytrace.fixture"
+        assert source["version_code"] == 7
+
+
+@pytest.mark.usefixtures("synthetic_package_metadata")
+def test_discovered_sources_inherit_registered_package_set_identity(tmp_path):
+    """A package-set draft keeps its registered identity while discovery inspects real fixtures."""
+    policy = "https://example.com/privacy"
+    base = policy_resource_apk(tmp_path / "base.apk", values={"policy": policy})
+    split = policy_resource_apk(
+        tmp_path / "feature.apk", values={"policy": policy}, split="feature",
+    )
+    archive = package_set_archive(apks={
+        base.name: base.read_bytes(), split.name: split.read_bytes(),
+    })
+    app = create_app(tmp_path / "jobs")
+    with TestClient(app) as client:
+        draft = new_draft(client)
+        route = f"/api/v1/web/drafts/{draft['id']}"
+        uploaded = client.post(route + "/package-set", headers=HEADERS, content=archive)
+        assert uploaded.status_code == 200, uploaded.text
+        discovery = client.post(route + "/sources/discover", headers=HEADERS)
+        assert discovery.status_code == 200, discovery.text
+        source = next(s for s in discovery.json()["sources"] if s["url"] == policy)
+        assert source["package_name"] == "org.privacytrace.fixture"
+        assert source["version_code"] == 7
+
+
+def test_isolated_dependency_error_is_rejected_as_input(tmp_path, monkeypatch):
+    """The isolated worker's malformed-dependency code is a 4xx input rejection, not a 503."""
+    def metadata(path, **kwargs):
+        raise ScanError("INVALID_SPLIT_DEPENDENCY", "Synthetic isolated rejection")
+
+    monkeypatch.setattr(web_intake, "inspect_package_isolated", metadata)
+    app = create_app(tmp_path / "jobs")
+    with TestClient(app) as client:
+        draft = new_draft(client)
+        route = f"/api/v1/web/drafts/{draft['id']}"
+        response = client.post(route + "/package-set", headers=HEADERS, content=apk_bytes())
+        assert response.status_code == 400
+        assert response.json()["detail"] == "INVALID_SPLIT_DEPENDENCY"
+        current = client.get(route).json()
+        assert not current["uploaded"] and current["revision"] == draft["revision"]
+        directory = app.state.web_intake.directory(draft["id"])
+        assert not list(directory.glob("*pending*"))
+        assert not (directory / "packages").exists() and not (directory / "input.apk").exists()
+
+
+def test_discovery_maps_transport_input_error_to_rejection(tmp_path, monkeypatch):
+    """The single-APK discovery lane keeps a worker's input code at 4xx, not 503."""
+    def metadata(path, **kwargs):
+        raise ScanError("INVALID_SPLIT_DEPENDENCY", "Synthetic isolated rejection")
+
+    monkeypatch.setattr(web_intake, "inspect_package_isolated", metadata)
+    app = create_app(tmp_path / "jobs")
+    with TestClient(app) as client:
+        draft = new_draft(client)
+        route = f"/api/v1/web/drafts/{draft['id']}"
+        uploaded = client.post(route + "/apk", headers=HEADERS, content=apk_bytes())
+        assert uploaded.status_code == 200, uploaded.text
+        response = client.post(route + "/sources/discover", headers=HEADERS)
+        assert response.status_code == 400
+        assert response.json()["detail"] == "INVALID_SPLIT_DEPENDENCY"
+        assert client.get(route).json()["revision"] == uploaded.json()["revision"]
+
+
+@pytest.mark.usefixtures("synthetic_package_metadata")
+def test_discovery_maps_in_process_input_error_to_rejection(tmp_path):
+    """The in-process fixture parser keeps the same 4xx classification as the worker."""
+    sample = apk(tmp_path / "bad.apk", manifest_options={
+        "split": "feature", "is_feature_split": True, "uses_split": "bad name",
+    })
+    app = create_app(tmp_path / "jobs")
+    with TestClient(app) as client:
+        draft = new_draft(client)
+        route = f"/api/v1/web/drafts/{draft['id']}"
+        uploaded = client.post(route + "/apk", headers=HEADERS, content=sample.read_bytes())
+        assert uploaded.status_code == 200, uploaded.text
+        response = client.post(route + "/sources/discover", headers=HEADERS)
+        assert response.status_code == 400
+        assert response.json()["detail"] == "INVALID_SPLIT_DEPENDENCY"
+
+
 @pytest.mark.parametrize("outcome", ["failure", "success", "success_then_failure"])
 def test_imported_material_survives_fetch_attempts(tmp_path, monkeypatch, outcome):
     supplied = "We access the camera with permission."
@@ -262,6 +359,75 @@ def exercise_dependency_retry(tmp_path, monkeypatch, real_worker):
 
 def test_http_missing_dependency_rolls_back_and_allows_complete_retry(tmp_path, monkeypatch):
     exercise_dependency_retry(tmp_path, monkeypatch, real_worker=False)
+
+
+@pytest.mark.skipif(os.getenv("PRIVACYTRACE_DOCKER_TESTS") != "1", reason="Opt-in Docker seam")
+def test_real_worker_malformed_dependency_is_a_client_error(tmp_path):
+    """The real isolated worker serialises a malformed dependency as a 4xx input rejection."""
+    base = apk(tmp_path / "base.apk")
+    broken = apk(tmp_path / "feature.apk", manifest_options={
+        "split": "feature", "is_feature_split": True, "uses_split": "bad name",
+    })
+    archive = package_set_archive(apks={
+        base.name: base.read_bytes(), broken.name: broken.read_bytes(),
+    })
+    app = create_app(tmp_path / "jobs")
+    with TestClient(app) as client:
+        draft = new_draft(client)
+        route = f"/api/v1/web/drafts/{draft['id']}"
+        response = client.post(route + "/package-set", headers=HEADERS, content=archive)
+        assert response.status_code == 400, response.text
+        assert response.json()["detail"] == "INVALID_SPLIT_DEPENDENCY"
+        assert not client.get(route).json()["uploaded"]
+
+
+@pytest.mark.skipif(os.getenv("PRIVACYTRACE_DOCKER_TESTS") != "1", reason="Opt-in Docker seam")
+def test_real_worker_discovery_malformed_dependency_is_a_client_error(tmp_path):
+    """The real worker also keeps a malformed dependency on the discovery lane at 4xx."""
+    broken = apk(tmp_path / "bad.apk", manifest_options={
+        "split": "feature", "is_feature_split": True, "uses_split": "bad name",
+    })
+    app = create_app(tmp_path / "jobs")
+    with TestClient(app) as client:
+        draft = new_draft(client)
+        route = f"/api/v1/web/drafts/{draft['id']}"
+        uploaded = client.post(route + "/apk", headers=HEADERS, content=broken.read_bytes())
+        assert uploaded.status_code == 200, uploaded.text
+        response = client.post(route + "/sources/discover", headers=HEADERS)
+        assert response.status_code == 400, response.text
+        assert response.json()["detail"] == "INVALID_SPLIT_DEPENDENCY"
+
+
+@pytest.mark.parametrize("tampered", [False, True])
+def test_registered_package_set_identity_is_bound_before_report(tmp_path, monkeypatch, tampered):
+    """A registered package set that no longer matches the scanned bytes cannot publish."""
+    base = apk(tmp_path / "base.apk")
+    split = apk(tmp_path / "feature.apk", split=True, split_name="feature")
+    archive = package_set_archive(apks={
+        base.name: base.read_bytes(), split.name: split.read_bytes(),
+    })
+    monkeypatch.setattr(pipeline, "scan_isolated", scan_fixture_set)
+    app = create_app(tmp_path / "jobs")
+    with TestClient(app) as client:
+        draft = new_draft(client)
+        route = f"/api/v1/web/drafts/{draft['id']}"
+        uploaded = client.post(route + "/package-set", headers=HEADERS, content=archive)
+        assert uploaded.status_code == 200, uploaded.text
+        if tampered:
+            current = app.state.web_intake.directory(draft["id"]) / "current.json"
+            stored = json.loads(current.read_text(encoding="utf-8"))
+            stored["package_set"]["splits"][0]["sha256"] = "0" * 64
+            current.write_text(json.dumps(stored), encoding="utf-8")
+        started = client.post(route + "/start", headers=HEADERS, json={
+            "revision": uploaded.json()["revision"], "request_id": uuid4().hex,
+        })
+        assert started.status_code == 200, started.text
+        job_id = started.json()["id"]
+        app.state.web_intake.futures[job_id].result(timeout=60)
+        job = app.state.job_store.get(job_id)
+        assert job.state == ("FAILED" if tampered else "SUCCEEDED")
+        if tampered:
+            assert json.loads(job.error)["code"] == "INPUT_DIGEST_MISMATCH"
 
 
 @pytest.mark.skipif(os.getenv("PRIVACYTRACE_DOCKER_TESTS") != "1", reason="Opt-in Docker seam")

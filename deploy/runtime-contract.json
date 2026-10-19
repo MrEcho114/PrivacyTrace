@@ -1,0 +1,29 @@
+{
+  "status": "BLOCKED_PENDING_ISSUE_80",
+  "application_baseline": "e2313e19cd9e43b30aad2044ccf6624e929511cd",
+  "migration_packaged": "0080_01",
+  "production_enabled": false,
+  "roles_pending": ["api_dispatch", "outbox_publisher", "celery_worker", "dedicated_runner"],
+  "handoff_required": [
+    "Role commands, dependency lock, fixed JSON task schema and broker ACL",
+    "Runtime and migration roles, exact schema revision and compatible image digests",
+    "Authenticated private runner protocol, heartbeat freshness and fenced result commit",
+    "Material transfer, destination allowlist, cancellation and deletion replay",
+    "Separate API liveness, DB/broker readiness and runner heartbeat probes"
+  ],
+  "scan_host_constraints": {
+    "dedicated_host_or_vm": true,
+    "internet_docker_api": false,
+    "api_or_worker_socket_mount": false,
+    "scan_concurrency_initial": 1,
+    "apk_network": "none",
+    "apk_read_only_root": true,
+    "apk_user": "non-root",
+    "apk_cap_drop": "ALL",
+    "apk_no_new_privileges": true,
+    "apk_inputs": "only this task, read-only",
+    "apk_secrets": false,
+    "limits_required": ["memory", "cpu", "pids", "wall_time", "disk"],
+    "acceptance": "actual Docker inspect and failure/cleanup receipts required"
+  }
+}

@@ -1,0 +1,124 @@
+# Deployment candidate, NOT production-ready. API fails closed until #80 handoff.
+# Run preflight.py before any `up`. Never put secrets in the env file.
+name: privacytrace
+
+x-restricted: &restricted
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: 128
+  init: true
+  restart: "no"
+  stop_grace_period: 45s
+  logging:
+    driver: local
+    options: {max-size: 10m, max-file: "3"}
+
+services:
+  web:
+    <<: *restricted
+    image: ${PT_WEB_IMAGE:?Set immutable PT_WEB_IMAGE}
+    user: "10001:10001"
+    environment:
+      PT_PUBLIC_HOST: ${PT_PUBLIC_HOST:?Set a single DNS hostname}
+      XDG_DATA_HOME: /data
+      XDG_CONFIG_HOME: /config
+    ports: ["80:8080", "443:8443"]
+    networks: [edge, api]
+    volumes:
+      - certificates:/data
+      - caddy_config:/config
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m,uid=10001,gid=10001"]
+    mem_limit: 256m
+    cpus: 1
+    depends_on:
+      api: {condition: service_healthy}
+
+  api:
+    <<: *restricted
+    image: ${PT_API_IMAGE:?Set immutable PT_API_IMAGE}
+    user: "10001:10001"
+    environment:
+      PT_DEPLOY_MODE: production
+      PT_PUBLIC_HOST: ${PT_PUBLIC_HOST:?Set a single DNS hostname}
+      PRIVACYTRACE_MODE: remote
+      PRIVACYTRACE_STORAGE: postgres
+      PRIVACYTRACE_INSTANCE_ID: ${PT_INSTANCE_ID:?Set stable instance UUID}
+      PRIVACYTRACE_DATABASE_URL_FILE: /run/secrets/runtime_database_url
+    networks: [api, database]
+    secrets: [runtime_database_url]
+    volumes: [materials:/var/lib/privacytrace]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001"]
+    mem_limit: 768m
+    cpus: 1
+    healthcheck:
+      test: [CMD, /opt/venv/bin/python, /app/deploy/probe.py, ready]
+      interval: 15s
+      timeout: 4s
+      retries: 3
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+
+  postgres:
+    <<: *restricted
+    image: postgres:17.9-alpine@sha256:c7526c0f6c3f30260a563d7bcf8ad778effac59a44f8ffa86678c35418338609
+    user: "70:70"
+    environment:
+      POSTGRES_USER: privacytrace_bootstrap
+      POSTGRES_DB: privacytrace
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    networks: [database]
+    secrets: [postgres_password]
+    volumes: [database:/var/lib/postgresql/data]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m,uid=70,gid=70
+      - /var/run/postgresql:rw,noexec,nosuid,size=4m,uid=70,gid=70
+    mem_limit: 768m
+    cpus: 1
+    healthcheck:
+      test: [CMD, pg_isready, -U, privacytrace_bootstrap, -d, privacytrace]
+      interval: 10s
+      timeout: 4s
+      retries: 5
+
+  redis:
+    <<: *restricted
+    image: redis:7.4.8-alpine@sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6
+    user: "999:999"
+    # Private config includes requirepass/ACL; no credential in argv or env.
+    command: [redis-server, /run/secrets/redis_config]
+    networks: [database]
+    secrets: [redis_config]
+    volumes: [broker:/data]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m,uid=999,gid=999"]
+    mem_limit: 256m
+    cpus: 1
+    healthcheck:
+      # Authentication is deliberately not put on a process command line.
+      # Redis returns NOAUTH only when it is listening with authentication on.
+      test: [CMD-SHELL, "redis-cli ping 2>/dev/null | grep -q '^NOAUTH'"]
+      interval: 10s
+      timeout: 4s
+      retries: 5
+
+networks:
+  edge: {}
+  api: {internal: true}
+  database: {internal: true}
+
+volumes:
+  certificates: {}
+  caddy_config: {}
+  materials: {}
+  database: {}
+  broker: {}
+
+secrets:
+  runtime_database_url:
+    file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/runtime_database_url
+  postgres_password:
+    file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/postgres_password
+  redis_config:
+    file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/redis.conf

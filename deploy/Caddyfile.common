@@ -1,0 +1,32 @@
+header {
+	-Server
+	X-Content-Type-Options nosniff
+	Referrer-Policy no-referrer
+	Cache-Control no-store
+	Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+}
+request_body {
+	max_size 150MB
+}
+@internal path /_health /_health/* /config /config/* /metrics /metrics/* /debug /debug/* /docs /redoc /openapi.json
+handle @internal {
+	respond 404
+}
+handle /api/* {
+	reverse_proxy api:8000 {
+		# Discard forwarding identity. The API itself rejects local-write markers.
+		header_up -Forwarded
+		header_up -X-Forwarded-For
+		header_up -X-Forwarded-Host
+		header_up -X-Forwarded-Proto
+		transport http {
+			dial_timeout 3s
+			response_header_timeout 60s
+		}
+	}
+}
+handle {
+	root * /srv
+	try_files {path} /index.html
+	file_server
+}

@@ -1,0 +1,58 @@
+name: Deployment Baseline
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deployment-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-images-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Install locked API test dependencies
+        run: |
+          python3 -m venv .themasterplan/cache/deploy-tools
+          .themasterplan/cache/deploy-tools/bin/pip install --disable-pip-version-check uv==0.11.23
+          .themasterplan/cache/deploy-tools/bin/uv sync --project apps/api --locked --extra worker
+      - name: Deployment behavior and lint
+        run: |
+          apps/api/.venv/bin/python -m unittest discover -s deploy/tests -v
+          apps/api/.venv/bin/ruff check --config apps/api/pyproject.toml deploy
+      - name: Clean builds with negative context canaries
+        run: |
+          mkdir -p data samples/private
+          printf 'synthetic must not enter context\n' > .env.deployment-canary
+          printf 'synthetic must not enter context\n' > samples/private/deployment-canary.apk
+          printf 'synthetic must not enter context\n' > data/deployment-canary.json
+          docker build --file deploy/Dockerfile --target api --tag privacytrace-api:issue81-test \
+            --build-arg VCS_REF="$(git rev-parse HEAD)" .
+          docker build --file deploy/Dockerfile --target web --tag privacytrace-web:issue81-test \
+            --build-arg VCS_REF="$(git rev-parse HEAD)" .
+      - name: Validate production Caddy config without requesting certificates
+        run: |
+          docker run --rm --read-only --user 10001:10001 --cap-drop ALL \
+            --security-opt no-new-privileges --network none \
+            -e PT_PUBLIC_HOST=privacytrace.test --entrypoint caddy privacytrace-web:issue81-test \
+            adapt --config /etc/caddy/Caddyfile --adapter caddyfile --validate > /dev/null
+      - name: Linux configuration, isolation and HTTP/HTTPS synthetic smoke
+        run: apps/api/.venv/bin/python deploy/check_linux.py
+      - name: Publish non-secret evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: deployment-${{ github.event.pull_request.head.sha || github.sha }}
+          path: tmp/deployment-receipt.json
+          if-no-files-found: error

@@ -8,4 +8,7 @@ export PRIVACYTRACE_REDIS_TESTS=1
 uv run --project apps/api --locked --extra worker --extra runtime python -B -m pytest \
   apps/api/tests/test_postgres_storage.py apps/api/tests/test_postgres_outbox.py \
   apps/api/tests/test_postgres_execution.py \
-  apps/api/tests/test_queue_runtime.py -q -p no:cacheprovider --tb=short -ra
+  apps/api/tests/test_queue_runtime.py apps/api/tests/test_runtime_materials.py \
+  apps/api/tests/test_runtime_tls.py apps/api/tests/test_runner_protocol.py \
+  apps/api/tests/test_durable_intake.py apps/api/tests/test_runtime_worker.py \
+  apps/api/tests/test_runner_service.py -q -p no:cacheprovider --tb=short -ra

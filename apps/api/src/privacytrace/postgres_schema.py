@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 SCHEMA = "privacytrace"
-REVISION = "0080_03"
+REVISION = "0080_04"
 metadata = sa.MetaData(schema=SCHEMA)
 
 scopes = sa.Table(
@@ -157,3 +157,57 @@ executions = sa.Table(
 sa.Index(
     "execution_recovery", executions.c.instance_id, executions.c.state, executions.c.leased_until
 )
+
+runtime_inputs = sa.Table(
+    "runtime_inputs",
+    metadata,
+    sa.Column("instance_id", sa.String(36), primary_key=True),
+    sa.Column("job_id", sa.String(100), primary_key=True),
+    sa.Column("draft_id", sa.String(32), nullable=False),
+    sa.Column("document_key", sa.String(200), nullable=False),
+    sa.ForeignKeyConstraint(
+        ["instance_id", "job_id"], [f"{SCHEMA}.jobs.instance_id", f"{SCHEMA}.jobs.job_id"]
+    ),
+    sa.ForeignKeyConstraint(
+        ["instance_id", "draft_id"],
+        [f"{SCHEMA}.analysis_scopes.instance_id", f"{SCHEMA}.analysis_scopes.scope_id"],
+    ),
+    sa.ForeignKeyConstraint(
+        ["instance_id", "document_key"],
+        [f"{SCHEMA}.intake_documents.instance_id", f"{SCHEMA}.intake_documents.document_key"],
+    ),
+    sa.CheckConstraint("draft_id ~ '^[a-f0-9]{32}$'", name="runtime_draft"),
+)
+
+runner_materials = sa.Table(
+    "runner_materials",
+    metadata,
+    sa.Column("instance_id", sa.String(36), primary_key=True),
+    sa.Column("material_id", UUID(as_uuid=True), primary_key=True),
+    sa.Column("scope_id", sa.String(100), nullable=False),
+    sa.Column("draft_id", sa.String(32), nullable=False),
+    sa.Column("path_key", sa.String(300), nullable=False),
+    sa.Column("sha256", sa.String(64), nullable=False),
+    sa.Column("byte_count", sa.BigInteger, nullable=False),
+    sa.Column("mode", sa.String(8), nullable=False),
+    sa.Column("owner", UUID(as_uuid=True)),
+    sa.Column("fence", sa.BigInteger, nullable=False),
+    sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(
+        ["instance_id", "scope_id"],
+        [f"{SCHEMA}.analysis_scopes.instance_id", f"{SCHEMA}.analysis_scopes.scope_id"],
+    ),
+    sa.ForeignKeyConstraint(
+        ["instance_id", "draft_id"],
+        [f"{SCHEMA}.analysis_scopes.instance_id", f"{SCHEMA}.analysis_scopes.scope_id"],
+    ),
+    sa.CheckConstraint("draft_id ~ '^[a-f0-9]{32}$'", name="runner_material_draft"),
+    sa.CheckConstraint("sha256 ~ '^[a-f0-9]{64}$'", name="runner_material_digest"),
+    sa.CheckConstraint("byte_count BETWEEN 1 AND 157286400", name="runner_material_size"),
+    sa.CheckConstraint(
+        "(mode = 'inspect' AND owner IS NULL AND fence = 0) OR "
+        "(mode = 'scan' AND owner IS NOT NULL AND fence > 0)",
+        name="runner_material_mode",
+    ),
+)
+sa.Index("runner_material_expiry", runner_materials.c.instance_id, runner_materials.c.expires_at)

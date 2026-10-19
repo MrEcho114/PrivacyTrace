@@ -89,7 +89,17 @@ def create_app(
     # harness boot an isolated instance without touching the repository data dir.
     configured = store_root or (os.environ.get(STORE_ROOT_ENV) or None)
     app.state.job_store = create_store(Path(configured) if configured else ROOT / "data/jobs")
-    if getattr(app.state.job_store, "uses_postgres", False):
+    execution_mode = os.environ.get("PRIVACYTRACE_EXECUTION", "local")
+    if execution_mode not in {"local", "durable"}:
+        raise ValueError("Unknown execution mode")
+    if execution_mode == "durable":
+        from .durable_intake import DurableWebIntake, ensure_control_plane
+
+        if not getattr(app.state.job_store, "uses_postgres", False):
+            raise ValueError("Durable execution requires PostgreSQL")
+        ensure_control_plane()
+        app.state.web_intake = DurableWebIntake(app.state.job_store)
+    elif getattr(app.state.job_store, "uses_postgres", False):
         from .postgres_intake import PostgresWebIntake
 
         app.state.web_intake = PostgresWebIntake(app.state.job_store)

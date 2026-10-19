@@ -7,6 +7,7 @@ an explicit user retry continues to create a separate job via the existing API.
 
 import hashlib
 import json
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from uuid import UUID, uuid4
@@ -17,6 +18,7 @@ from sqlalchemy.dialects.postgresql import insert
 from .postgres_outbox import MAX_ATTEMPTS as MAX_DELIVERIES
 from .postgres_outbox import PostgresOutbox, _bounded, decode_message
 from .postgres_schema import executions, outbox
+from .postgres_store import PostgresOperationUnavailable
 
 MAX_EXECUTIONS = 3
 MAX_EXECUTION_SECONDS = 300
@@ -380,9 +382,17 @@ class FencedJobStore:
         ):
             raise LeaseLost("Execution lease unavailable")
 
+    @contextmanager
+    def _transaction(self):
+        try:
+            with self.execution.store._transaction() as conn:
+                yield conn
+        except PostgresOperationUnavailable:
+            raise LeaseLost("Execution transaction unavailable") from None
+
     def get_job(self, job_id):
         self._identity(job_id)
-        with self.execution.store._transaction() as conn:
+        with self._transaction() as conn:
             _, record, _ = self.execution._guard(conn, self.lease)
             return record.job
 
@@ -394,7 +404,7 @@ class FencedJobStore:
         self._identity(job.id)
         if job.state == "SUCCEEDED":
             raise ValueError("Successful execution requires an atomic report")
-        with self.execution.store._transaction() as conn:
+        with self._transaction() as conn:
             self.execution._guard(conn, self.lease)
             result = self.execution.store.save_job(job)
             if result.state == "FAILED":
@@ -428,7 +438,7 @@ class FencedJobStore:
             ).encode()
         ).hexdigest()
         store = self.execution.store
-        with store._transaction() as conn:
+        with self._transaction() as conn:
             row = self.execution._row(conn, bundle.job.id)
             if (
                 row

@@ -124,8 +124,7 @@ PR #88 已合入 `e2313e19cd9e43b30aad2044ccf6624e929511cd`。
 
 ## 整票仍未完成的工作
 
-Celery／Redis 实际消费及执行整合、
-专用主机／VM Runner 的认证与固定镜像隔离、材料 GC／容量及磁盘满处理、数据库与材料
+材料 GC／容量及磁盘满处理、数据库与材料
 一致备份恢复和删除重放，以及真实单 APK 全链路和故障端到端仍待实施／验收。
 PR #91 的 `scripts/check.sh` 及 #81 的生产 Compose／CI 不在本次编辑范围。
 上述工作继续使用同一任务分支和一个最终 PR，不以 Outbox 通过替代整票交付。
@@ -146,7 +145,7 @@ Celery 自带的投递头不代表允许任意任务。当前没有启动执行�
 `OutboxDispatcher.once()` 先提交短领取事务，再访问网络，最后独立确认；broker 失败
 只记录固定错误码和有界退避，沿用五次领取上限。发布后确认丢失仍可能产生两条同 ID
 消息，必须由后续数据库 lease／fencing 防止重复执行及重复结果。一次投递的计数不含材料。
-API 创建和原 WebIntake 线程恢复路径尚未切换到持久调度。
+显式选择下文的 durable 模式后，API 使用事务登记，原本机线程路径保持默认兼容。
 
 运行投递器使用 `uv run --project apps/api --locked --extra runtime python -m
 privacytrace.queue_runtime`；可加 `--once`。配置来自已有 PostgreSQL runtime URL／实例和
@@ -205,3 +204,39 @@ Engine smoke 使用已解析摘要的 hello-world，并保存实际 inspect；�
 前一队列候选另通过原样真实 PostgreSQL＋Docker权威检查：**1528 passed / 21 skipped**、
 Web53项；21项为单独运行的11个Redis专项、9个新鲜受控产物缺失和1个Windows预检。
 该收据 `authority-queue.log` 对应队列候选源哈希，未拿它证明后加租约代码已全仓通过。
+
+## 实际消费者、材料网关与专用扫描服务
+
+`PRIVACYTRACE_EXECUTION=durable` 明确选择 PostgreSQL 运行时；API 不提交本机分析线程，
+重启和关闭不替其他worker终止任务。`DurableWebIntake` 复用原登记、政策与包集合逻辑，
+同事务保存不可变运行输入、Job、Outbox和执行记录。worker复用同一pipeline及结果模型。
+本机 JSON／CLI 和未选择 durable 的既有路径保持原行为，不自动迁移私有数据。
+
+入口为 `python -m privacytrace.queue_runtime`、`privacytrace.runtime_worker`、
+`privacytrace.material_gateway` 和专用主机上的 `privacytrace.runner_service`。
+控制面要求显式 `PRIVACYTRACE_STORE_ROOT`；API／worker拒绝可访问的本机Docker socket及
+Docker endpoint环境配置。API无需broker凭据；dispatcher无需材料签名／客户端身份密钥。
+worker仅注册固定 `privacytrace.execute.v1`，校验任务ID、五字段JSON并拒绝嵌入canvas，
+无结果backend／远程控制。租约续期独立于扫描，迟到结果必须通过fenced store。
+
+网关是单独的私网mTLS监听器，没有安装到公开API路由。材料凭据绑定实例、任务／草稿、
+owner、fence、摘要引用及300秒时效，每次读取与运行许可都检查数据库。Runner仅凭单次
+受限凭据从固定网关取材料，不接受下载URL。TLS验证CA、主机IP及明确的角色证书指纹，
+禁止代理环境继承和重定向；Runner没有数据库、迁移或材料签名密钥。
+
+Runner启动时固定 `sha256:` 镜像ID、操作和容器参数；RPC不接受镜像、命令、宿主路径
+或Docker endpoint。它调用既有isolated_scan，保留实际inspect、无网络、只读根、非root、
+能力／资源限制及清理收据；报告只携带脱敏收据和 `runner:<id>` 定位。私有SQLite只存
+短期RPC幂等缓存，不作为任务账本。重启只检查本服务账本中的工作目录、精确label／
+镜像／挂载后回收孤儿，不能全局prune；未证明清理完成时暂停接收并保留预算。
+
+2026-10-19真实Runner组件 **6 passed**：既有构建器产生的合成二进制APK确实通过
+mTLS／PostgreSQL进入固定Docker扫描器；另列受控故障镜像的timeout／畸形输出清理，
+不称这两项进行了APK分析。证据 `runner-lease.log`、`runner-component.xml`。
+
+首条真实系统E2E **1 passed**，证据 `e2e-20261019T080148Z.log/.json/.xml`：普通用户
+Windows API／Celery进程，真实PG、VM Redis、专用WSL2 Runner、无共享材料挂载，经过
+API进程终止／重启、投递、租约、实际Docker、原pipeline与授权报告读取。
+协议检查、mTLS／PG材料与登记等另有74项，不能都称端到端。Windows专用入口
+`pwsh -NoProfile -File scripts/check-runtime-e2e.ps1` 要求显式独立测试库及既有授权VM标记；
+它不安装系统或复用共享broker。完整故障矩阵、材料删除与一致恢复仍在持续补齐。

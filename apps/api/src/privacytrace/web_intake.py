@@ -114,9 +114,10 @@ async def run_intake_worker(operation, *args):
     return result
 
 
-def inspect_uploaded_package(path, *, timeout=120):
+def inspect_uploaded_package(path, *, timeout=120, inspector=None):
     try:
-        metadata = inspect_package_isolated(path, timeout=timeout)
+        inspect = inspect_package_isolated if inspector is None else inspector
+        metadata = inspect(path, timeout=timeout)
     except ScanError as exc:
         # Structured worker input errors keep their 4xx identity; timeout,
         # isolation and invalid-output codes stay 503.
@@ -611,7 +612,7 @@ class WebIntake:
             return inspection_timeout(inspection_deadline)
 
         def inspect_within_budget(path):
-            package = inspect_uploaded_package(path, timeout=remaining_timeout())
+            package = self._inspect_package(path, timeout=remaining_timeout())
             remaining_timeout()
             return package
 
@@ -724,6 +725,9 @@ class WebIntake:
                         snapshot.unlink(missing_ok=True)
             raise
 
+
+    def _inspect_package(self, path, *, timeout=120):
+        return inspect_uploaded_package(path, timeout=timeout)
 
     def _settings(self, private=False):
         path = self._safe(self.root / "model.json")
@@ -1409,7 +1413,7 @@ class WebIntake:
             run["events"].append({"state": state, "at": now()})
             self._write_private(self.directory(draft_id) / "current.json", draft)
 
-    def _run(self, draft, job, captures):
+    def _execute(self, draft, job, captures, *, job_store=None, scanner=None, on_stage=None):
         self._normalize_source_origins(draft)
         source_receipts = [
             {
@@ -1438,26 +1442,34 @@ class WebIntake:
                 if receipt[field]:
                     receipt[field + "_sha256"] = hashlib.sha256(receipt[field].encode()).hexdigest()
                     receipt[field] = display_url(receipt[field])
+        return pipeline.run(
+            self.directory(draft["id"]) / "input.apk",
+            None,
+            draft["name"],
+            store_dir=self.store.root,
+            job_store=self.store if job_store is None else job_store,
+            captured_policies=captures,
+            expected_apk_sha256=draft["apk_sha256"],
+            existing_job=job,
+            on_stage=(
+                on_stage
+                if on_stage is not None
+                else lambda stage: self._event(draft["id"], job.id, stage)
+            ),
+            scanner=scanner,
+            extra_tools={
+                "web_input_revision": str(draft["revision"]),
+                "web_policy_sources": json.dumps(source_receipts, ensure_ascii=False),
+                "web_external_imports": json.dumps(
+                    draft.get("external_imports", []), ensure_ascii=False
+                ),
+            },
+            package_set=draft.get("package_set"),
+        )
+
+    def _run(self, draft, job, captures):
         try:
-            pipeline.run(
-                self.directory(draft["id"]) / "input.apk",
-                None,
-                draft["name"],
-                store_dir=self.store.root,
-                job_store=self.store,
-                captured_policies=captures,
-                expected_apk_sha256=draft["apk_sha256"],
-                existing_job=job,
-                on_stage=lambda stage: self._event(draft["id"], job.id, stage),
-                extra_tools={
-                    "web_input_revision": str(draft["revision"]),
-                    "web_policy_sources": json.dumps(source_receipts, ensure_ascii=False),
-                    "web_external_imports": json.dumps(
-                        draft.get("external_imports", []), ensure_ascii=False
-                    ),
-                },
-                package_set=draft.get("package_set"),
-            )
+            self._execute(draft, job, captures)
         except Exception:
             # Do not expose raw policy text, local paths, response bodies or credentials.
             job.state = "FAILED"

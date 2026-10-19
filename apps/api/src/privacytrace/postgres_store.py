@@ -16,6 +16,10 @@ from .postgres_schema import REVISION, SCHEMA, audit, documents, executions, job
 from .runtime_models import StoredJob
 
 
+class PostgresOperationUnavailable(ValueError):
+    """Sanitized SQL/connection failure; uncertain writes must be read back."""
+
+
 class PostgresJobStore(JobStore):
     """Validated job records in PostgreSQL; APK/policy materials stay on a private volume.
 
@@ -109,7 +113,9 @@ class PostgresJobStore(JobStore):
                     self._local.connection = None
         except SQLAlchemyError:
             # Neither a DSN, SQL parameters, policy text nor capability goes into errors.
-            raise ValueError("PostgreSQL storage rejected the operation") from None
+            raise PostgresOperationUnavailable(
+                "PostgreSQL storage rejected the operation"
+            ) from None
 
     def _scope(self, scope_id):
         return (

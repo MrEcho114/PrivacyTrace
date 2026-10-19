@@ -11,6 +11,7 @@ import re
 import ssl
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from urllib.parse import unquote, urlsplit
 from uuid import UUID
 
@@ -196,21 +197,25 @@ def main():
     args = parser.parse_args()
     store = publisher = None
     try:
+        from .durable_intake import ensure_control_plane
+        from .postgres_execution import PostgresExecution
         from .storage_factory import create_store
 
+        ensure_control_plane()
         if os.environ.get("PRIVACYTRACE_STORAGE") != "postgres":
             raise ValueError("Durable dispatch requires PostgreSQL")
-        store = create_store()
+        store = create_store(Path(os.environ["PRIVACYTRACE_STORE_ROOT"]))
         config = BrokerConfig(os.environ.get("PRIVACYTRACE_BROKER_URL"), store.instance_id)
         publisher = CeleryPublisher(config)
         dispatcher = OutboxDispatcher(store, publisher)
         while True:
+            PostgresExecution(store).recover()
             result = dispatcher.once()
             if args.once:
                 print(json.dumps(result))
                 return 0
             time.sleep(1)
-    except (ValueError, OSError, QueueUnavailable):
+    except (ValueError, OSError, KeyError, QueueUnavailable):
         print(json.dumps({"error": "RUNTIME_DISPATCH_UNAVAILABLE"}))
         return 1
     except KeyboardInterrupt:

@@ -48,7 +48,7 @@ jobs:
             --security-opt no-new-privileges --network none \
             -e PT_PUBLIC_HOST=privacytrace.test --entrypoint caddy privacytrace-web:issue81-test \
             adapt --config /etc/caddy/Caddyfile --adapter caddyfile --validate > /dev/null
-      - name: Linux configuration, isolation and HTTP synthetic smoke
+      - name: Linux configuration, isolation and HTTP/HTTPS synthetic smoke
         run: apps/api/.venv/bin/python deploy/check_linux.py
       - name: Publish non-secret evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

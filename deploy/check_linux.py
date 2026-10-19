@@ -1,12 +1,15 @@
 """Clean Linux deployment checks, using disposable images/volumes and fake inputs.
 
 No public DNS, ACME account, registry push, APK or production secret is used.
-The receipt distinguishes this HTTP smoke from the pending #80 HTTPS/runner E2E.
+The receipt distinguishes synthetic proxy smoke from the pending #80 runner E2E.
 """
 
 import copy
+import http.client
 import json
 import os
+import socket
+import ssl
 import subprocess
 import tempfile
 import time
@@ -18,6 +21,7 @@ from preflight import validate
 
 ROOT = Path(__file__).resolve().parents[1]
 SMOKE = ["docker", "compose", "-f", str(ROOT / "deploy/compose.smoke.yaml")]
+TLS_SMOKE = SMOKE + ["-f", str(ROOT / "deploy/compose.tls-smoke.yaml")]
 
 
 def run(command, **kwargs):
@@ -28,8 +32,13 @@ def output(command):
     return run(command, capture_output=True, text=True).stdout.strip()
 
 
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
 def request(path, *, headers=None, method="GET", host="privacytrace.test"):
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
     req = urllib.request.Request(
         "http://127.0.0.1:18081" + path, headers={"Host": host, **(headers or {})}, method=method
     )
@@ -189,6 +198,7 @@ def smoke_tests():
             assert set(inspect["NetworkSettings"]["Networks"]) == {"privacytrace-smoke_private"}
         inspections[role] = {
             "image_id": inspect["Image"],
+            "source_revision": settings["Labels"]["org.opencontainers.image.revision"],
             "user": settings["User"],
             "read_only": True,
             "socket": False,
@@ -213,6 +223,52 @@ def smoke_tests():
     }
 
 
+def tls_request(context, path, host="privacytrace.test"):
+    raw = socket.create_connection(("127.0.0.1", 18443), timeout=5)
+    try:
+        secure = context.wrap_socket(raw, server_hostname="privacytrace.test")
+    except BaseException:
+        raw.close()
+        raise
+    connection = http.client.HTTPConnection("privacytrace.test", 18443, timeout=5)
+    connection.sock = secure
+    try:
+        connection.request("GET", path, headers={"Host": host})
+        response = connection.getresponse()
+        return response.status, response.read()
+    finally:
+        connection.close()
+
+
+def tls_tests(directory):
+    run(TLS_SMOKE + ["up", "--detach", "--wait", "--wait-timeout", "60"])
+    # Only the public CA certificate leaves the ephemeral container. Never copy keys.
+    root = output(
+        TLS_SMOKE + ["exec", "-T", "web", "cat", "/data/caddy/pki/authorities/local/root.crt"]
+    )
+    certificate = directory / "smoke-public-root.crt"
+    certificate.write_text(root + "\n", encoding="ascii")
+    context = ssl.create_default_context(cafile=str(certificate))
+    assert context.check_hostname and context.verify_mode == ssl.CERT_REQUIRED
+    assert tls_request(context, "/api/v1/health")[0] == 200
+    assert tls_request(context, "/api/v1/demo/report")[0] == 200
+    assert tls_request(context, "/api/v1/health", host="evil.test")[0] == 421
+    assert tls_request(context, "/_health/live")[0] == 404
+    try:
+        tls_request(ssl.create_default_context(), "/api/v1/health")
+    except ssl.SSLCertVerificationError:
+        pass
+    else:
+        raise AssertionError("Untrusted smoke CA was accepted")
+    assert request("/api/v1/health")[0] == 421
+    return {
+        "https_synthetic_proxy_smoke": "pass",
+        "tls_trust": "ephemeral local CA; certificate and hostname verified",
+        "tls_misdirected_host": "421",
+        "tls_untrusted_ca": "rejected",
+    }
+
+
 def main():
     head = output(["git", "rev-parse", "HEAD"])
     receipt = {
@@ -220,7 +276,7 @@ def main():
         "platform": "Linux Docker",
         "production": "BLOCKED",
         "not_tested": [
-            "HTTPS/ACME",
+            "public HTTPS/ACME",
             "real PostgreSQL/Redis dispatch",
             "dedicated runner",
             "APK/splits",
@@ -233,6 +289,8 @@ def main():
         receipt.update(topology_tests(Path(temporary)))
     try:
         receipt.update(smoke_tests())
+        with tempfile.TemporaryDirectory(prefix="privacytrace-tls-") as temporary:
+            receipt.update(tls_tests(Path(temporary)))
     finally:
         # Only this fixed, disposable project; never remove production volumes.
         run(SMOKE + ["down", "--volumes", "--remove-orphans"])

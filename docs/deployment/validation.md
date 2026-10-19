@@ -20,7 +20,7 @@ Node/Caddy/PostgreSQL/Redis 的 manifest 摘要于 2026-10-19 经 Docker 官方 
 ## 已提供的自动验证入口
 
 - `deploy/tests/test_deployment.py`：生产默认/拼写错误启动拒绝、smoke 秘密/真实 DB 拒绝、只读路径不调用业务、完整 Origin、内部 probe 隔离、live 与 ready 区分、上下文审计拒绝私有输入。
-- `.github/workflows/deployment.yml`：干净 Linux 构建 API/Web，真实 BuildKit context canary 检查，生产 Caddy 配置验证；真实受限容器中跑 HTTP 合成 demo/规则/静态字体、Host/Origin/伪本机请求、转发头去除、probe/管理面拒绝、写入拒绝及 API 重启。
+- `.github/workflows/deployment.yml`：干净 Linux 构建 API/Web，真实 BuildKit context canary 检查，生产 Caddy 配置验证；真实受限容器中跑 HTTP 合成 demo/规则/静态字体、Host/Origin/伪本机请求、转发头去除、probe/管理面拒绝、写入拒绝及 API 重启，再用本地 CA 验证真实 HTTPS 的证书信任、主机名与 SNI/Host 拒绝。无公网证书账户或系统 trust 变更。
 - `deploy/check_linux.py`：在实际 Compose 渲染配置上检验边界并对 12 类破坏配置做负测，生产 preflight 必须失败；输出 `tmp/deployment-receipt.json`，含源码 SHA、容器 image ID、真实 user/只读根/限额/socket inspect 和未测项，不输出完整 config/env/secrets。
 - 权威 `bash scripts/check.sh` 保留原门禁，部署专项不替代现有后端/前端/受控 Docker 业务验证。
 
@@ -29,10 +29,10 @@ Node/Caddy/PostgreSQL/Redis 的 manifest 摘要于 2026-10-19 经 Docker 官方 
 | 原验收项 | 当前覆盖 | 仍缺证据 |
 | --- | --- | --- |
 | Linux 构建/启动控制面及专用扫描面、锁版本/资源 | API/Web 构建和只读 smoke、配置和资源审计入口 | 实际 DB/队列/Runner 全拓扑与 registry digest、最终迁移/协议 |
-| 双作用域 HTTPS→真实 APK/splits→报告与拒绝场景 | 合成 HTTP demo、代理限制，写入统一拒绝 | 全部真实业务 E2E、跨实例、超限/恶意来源专项 |
+| 双作用域 HTTPS→真实 APK/splits→报告与拒绝场景 | 合成 HTTP/本地 CA HTTPS demo、代理限制，写入统一拒绝 | 全部真实业务 E2E、公网证书、跨实例、超限/恶意来源专项 |
 | API/编排无 socket，APK 隔离与 daemon 边界 | API 真实容器 inspect；生产配置静态门禁 | 编排及专用扫描主机和 APK 实际 inspect |
 | 重启/依赖故障/取消删除迟到/孤儿清理 | API 合成 smoke 重启，live/ready 区分 | 持久任务、broker/worker/Runner 故障与恢复竞争 |
 | 一致备份/删除重放/升级回滚/轮换/磁盘满 | 运维步骤和停止条件 | 全部实际演练与收据 |
 | 并发 1 容量及无秘密 | 构建上下文 canary/文件白名单 | 硬件/受控 APK 耗时、峰值与拒绝行为实测 |
 
-本机没有可用 Docker，Linux 镜像与受限 Compose 结果必须以实际远端 CI 为准；本机权威检查的 Docker/缺少受控构建产物分支如有跳过，应在 PR 精确列出。Mock、配置渲染、HTTP 合成 smoke、真实 DB/broker、专用扫描、真实外网是不同证据层级。#81 保持 open，未合并、未公网部署、未触发证书账户或修改 DNS。
+Linux 镜像与受限 Compose 结果以实际运行收据为准；本机 Windows/WSL 与干净 Linux CI 分开记录，最终 CI 和镜像源码标签须绑定交付 SHA。本机权威检查如有跳过，在 PR 精确列出。Mock、配置渲染、HTTP/本地 CA HTTPS 合成 smoke、真实 DB/broker、专用扫描、真实外网是不同证据层级。#81 保持 open，未合并、未公网部署、未触发公网证书账户或修改 DNS。

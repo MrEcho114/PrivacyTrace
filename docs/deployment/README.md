@@ -1,6 +1,6 @@
 # PT-SRV-102 部署交付基线
 
-本目录对应 [Issue #81](https://github.com/MrEcho114/PrivacyTrace/issues/81)。当前可交付固定依赖的 API/静态前端镜像、受限配置和 Linux 合成 smoke。**生产启动仍被代码明确拒绝；不得作为公网服务使用。** #80 的持久调度、专用 Runner、故障恢复尚未交接，不能通过挂 Docker socket 或启用 JSON 绕过。
+本目录对应 [Issue #81](https://github.com/MrEcho114/PrivacyTrace/issues/81)。当前可交付固定依赖的 API/静态前端镜像、受限配置和 Linux HTTP/本地 CA HTTPS 合成 smoke。**生产启动仍被代码明确拒绝；不得作为公网服务使用。** #80 的持久调度、专用 Runner、故障恢复尚未交接，不能通过挂 Docker socket 或启用 JSON 绕过。
 
 入口：[`deploy/Dockerfile`](../../deploy/Dockerfile)、[生产清单](../../deploy/compose.yaml)、[独立 smoke](../../deploy/compose.smoke.yaml)、[运行时交接契约](../../deploy/runtime-contract.json)、[恢复手册](operations.md)、[证据与兼容矩阵](validation.md)。没有修改应用业务、既有 worker 镜像、依赖锁、根 `.dockerignore` 或权威检查入口。
 
@@ -18,7 +18,7 @@ uv run --project apps/api --locked --extra worker python deploy/check_linux.py
 bash scripts/check.sh
 ```
 
-专项创建固定名 `privacytrace-smoke` 的临时 Compose 项目，最后删除该项目及其临时卷。不要让其他服务复用该名字；不要同时跑两份专项。只在 `127.0.0.1:18081` 暴露 HTTP，`Host: privacytrace.test`；源码中无 ACME 测试账户或实际域名。它是 HTTP 合成资源检查，不是 HTTPS→APK→报告验收。
+专项创建固定名 `privacytrace-smoke` 的临时 Compose 项目，最后删除该项目及其临时卷。不要让其他服务复用该名字；不要同时跑两份专项。只在 `127.0.0.1:18081` 暴露 HTTP，`Host: privacytrace.test`；随后叠加 `compose.tls-smoke.yaml`，在 loopback 18443 验证本地 CA HTTPS、证书信任、主机名与 SNI/Host 不一致拒绝。只复制 CA 公共证书给测试客户端，私钥留在容器 tmpfs 并随清理销毁；不修改系统 trust store。它不是公网 ACME 或 HTTPS→APK→报告验收。
 
 API runtime 只安装锁定的运行依赖，不安装 Androguard/pytest/Ruff/uv，不运行 APK。通过 `PYTHONPATH=/app/apps/api/src` 保留当前 `resources.ROOT` 预期目录；镜像带 active taxonomy、SDK signatures、明确的合成 demo JSON。前端由锁定 Node/npm 构建，Caddy 仅保存 dist、两份字体及许可证。依赖下载只发生于构建阶段。
 

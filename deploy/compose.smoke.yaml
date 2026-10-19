@@ -36,7 +36,10 @@ services:
     entrypoint: [caddy, run, --config, /etc/caddy/smoke.Caddyfile, --adapter, caddyfile]
     volumes:
       - ./smoke.Caddyfile:/etc/caddy/smoke.Caddyfile:ro
-    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m,uid=10001,gid=10001"]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m,uid=10001,gid=10001
+      - /data:rw,noexec,nosuid,size=16m,uid=10001,gid=10001
+      - /config:rw,noexec,nosuid,size=4m,uid=10001,gid=10001
     networks: [edge, private]
     depends_on:
       api: {condition: service_healthy}

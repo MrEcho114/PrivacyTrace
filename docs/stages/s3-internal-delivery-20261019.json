@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "delivery": "S3-internal-20261019",
+  "scope": "internal review and replay only",
+  "assembly_baseline": "6f2b0892fd195b02b37aca5c79644815f3ce9979",
+  "replay": {
+    "source_commit": "9e56771bca0c1c8db947f4c1d59ee76795ac40ea",
+    "artifact_id": 11815363602,
+    "run_id": 38402665810,
+    "original_zip_bytes": 3056905,
+    "original_zip_members": 24,
+    "original_zip_sha256": "8e7cb5e96b383205322374eb9cec0c30fa911fc2aba2b0fc8c11bb592b966cef",
+    "package_manifest_sha256": "430a9fcf0255191d95d98902ed8d9bf846016b43f86d7240407502d1a4f79a44",
+    "acceptance_url": "https://github.com/MrEcho114/PrivacyTrace/issues/18#issuecomment-6146538170"
+  },
+  "evaluation": {
+    "source_commit": "323780c9a77d7de2bb1857b1b67b4f05fd94a525",
+    "scenarios": 6,
+    "rows": 18,
+    "status_matches": [2, 3, 6],
+    "failures": [0, 0, 0],
+    "abstentions": [0, 1, 2],
+    "precision_recall_f1": null
+  },
+  "film": {
+    "source_commit": "b3106d13a785a08265fe3a9cb60ab3fd3fafb970",
+    "merge_commit": "4cae1fd7e2ddb68345f389aa19535d2fc3db26ec",
+    "capture_commit": "6d781fde97fe69169db916ab473224a24ed5ce93",
+    "mp4_sha256": "8c61fd272be4dfa4ea450db7c37458777f22283970f671e22789e9b60fe1bcf4",
+    "source_zip_sha256": "62111a4ec2aa14b0573afef29d998a4e885ef364a2ea6f253efa2e3411b53df2",
+    "duration_seconds": 120,
+    "width": 1920,
+    "height": 1080,
+    "frame_rate": "30/1",
+    "voiceover": false
+  },
+  "project_public_license": "pending team decision",
+  "formal_submission": {
+    "included": false,
+    "issue": 20,
+    "receipt_verified": false,
+    "guide_issue": 74
+  }
+}

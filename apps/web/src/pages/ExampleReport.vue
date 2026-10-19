@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import UiButton from '../components/UiButton.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { copy } from '../copy'
@@ -9,8 +9,15 @@ const props = defineProps<{ state: Workflow }>()
 defineEmits<{ edit: [] }>()
 const selected = computed(() => exampleRows.find(item => item.id === props.state.evidenceId))
 const rows = computed(() => exampleRows.filter(item => props.state.filter === 'all' || item.source === props.state.filter))
+const visibleIds = computed<Set<string>>(() => new Set(rows.value.map(item => item.id)))
 const selectedSource = computed(() => exampleSources.find(item => item.id === selected.value?.source))
 const fullText = ref(false)
+watch(() => props.state.filter, () => {
+  if (props.state.evidenceId && !visibleIds.value.has(props.state.evidenceId)) {
+    props.state.evidenceId = ''
+    fullText.value = false
+  }
+})
 const originButton = ref<HTMLElement | null>(null)
 const inlineEvidence = ref(false)
 let narrowQuery: MediaQueryList | null = null

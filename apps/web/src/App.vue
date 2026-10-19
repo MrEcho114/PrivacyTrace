@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { cancelJob, deleteJob, loadJob, loadJobReport, loadJobs, loadReport, loadTaxonomy, retryJob, submitReview } from './api'
+import { cancelJob, deleteJob, isNotFoundFor, jobPath, jobReportPath, loadJob, loadJobReport, loadJobs, loadReport, loadTaxonomy, retryJob, submitReview } from './api'
 import { clampSdkPage, getSdkEvidence, sdkPageCount, sdkPageSlice } from './sdkEvidence'
 import type { AnalysisJob, DemoReport, Evidence, MatchStatus, PrivacyIssue, Report, ReportSource, Taxonomy, WebSource } from './types'
 import { parseSource, serializeSource, sourceProvenanceLabel, sourceStatusLabel } from './types'
@@ -312,15 +312,16 @@ async function reload(initial = false) {
     }
   } catch (cause) {
     if (current !== requestId) return
-    const message = cause instanceof Error ? cause.message : ''
     const wantedId = source.value.kind === 'job' ? source.value.id : ''
-    if (wantedId && message.includes('服务返回 404')) {
-      // The record is gone on the server (deleted here or elsewhere); drop it
-      // instead of showing a job the next poll cannot load.
+    if (wantedId && isNotFoundFor(cause, jobPath(wantedId))) {
+      // Only a 404 for the job entity itself proves the record is gone. A
+      // missing report (or a taxonomy/list failure) must not hide a live job.
       removedJobIds.value = [...removedJobIds.value, wantedId]
       jobs.value = jobs.value.filter(job => job.id !== wantedId)
       source.value = { kind: 'demo' }
       error.value = '任务已删除，界面已移除该任务。'
+    } else if (wantedId && isNotFoundFor(cause, jobReportPath(wantedId))) {
+      error.value = '任务仍存在，但报告不可用（可能尚未生成或已被移除），可稍后重试。'
     } else {
       error.value = failure(cause)
     }

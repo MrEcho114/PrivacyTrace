@@ -17,7 +17,10 @@ violations. The accepted repairs are:
   `status="ready"`; the acquisition is `EXTERNAL_CHAT_EXPORT` until the backend
   replaces the text with a fetched capture, identified by `final_url`. A
   `PROVIDED` body remains `status="manual"`. The persisted import audit is
-  unchanged. New/updated tests cover both draft status and the report locator.
+  unchanged. Both the draft and report source panels now show the provenance
+  label (Manifest 发现 / 外部导入 / 后端抓取 / 手动输入), so a collector body is
+  not confused with a backend fetch. New/updated tests cover draft status,
+  report acquisition and the rendered labels.
 - **The web start flow still enforced the per-item candidate check.** The
   server start gate was already relaxed (`captures(require_checked=False)`), but
   `LiveWorkflow.begin` rejected any unchecked candidate. The UI gate is removed;
@@ -31,11 +34,13 @@ violations. The accepted repairs are:
 - **Production test seam.** `pipeline.run(..., scanner=None)` was removed; the
   regression now monkeypatches `pipeline.scan_isolated`.
 - **Low-risk Standards cleanups.** Removed the redundant per-split manifest
-  dedupe (the scan context already de-duplicates), restored the distinct
-  `INPUT_TOO_LARGE` copy-loop error, centralized the “already uploaded” message,
-  routed upload error mapping through `web_error`, removed the unused
-  `inspect_axml` wrapper, named the source-type wire code, and corrected the
-  “10 integrity rules” claim in `docs/test-infra.md`/the validator docstring.
+  dedupe (the scan context already de-duplicates), restored the copy-loop
+  `INPUT_TOO_LARGE` branch (still an internal guard; upload size is bounded
+  earlier), centralized the “already uploaded” message, routed upload error
+  mapping through `web_error`, removed the unused `inspect_axml` wrapper, named
+  the source-type wire code, and replaced the “10 integrity rules” count with
+  count-free wording in `docs/test-infra.md`, the validator docstring and the
+  test headers.
 
 ## Deferred
 

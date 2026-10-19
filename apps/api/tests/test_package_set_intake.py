@@ -3,7 +3,7 @@
 Covers:
 - Dual-mode endpoints (/apk auto-detection and /package-set)
 - Package set data models and AXML binary inspection
-- All 10 integrity rules & rejection modes
+- Integrity rules & rejection modes
 - Transactional staging, rollback, and zero-orphan guarantees
 - Pre-body capability auth on /package-set
 - Multi-package DEX scanning, permission aggregation, coverage completeness,
@@ -223,7 +223,7 @@ def test_transparent_multi_package_on_legacy_apk_endpoint(tmp_path: Path):
 
 
 # ==============================================================================
-# All 10 Integrity Rules & Rejection Modes
+# Integrity Rules & Rejection Modes
 # ==============================================================================
 
 

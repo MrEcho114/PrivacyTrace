@@ -12,12 +12,12 @@ export type Candidate = {
 export type PolicySource = {
   id: string; title: string; url: string; type: SourceType; text: string
   status: NonNullable<WebSource['status']>; version: string; region: string
-  product: string; complete: boolean
+  product: string; complete: boolean; provenance?: string | null
   packageName?: string; versionCode?: number | null
   capturedAt?: string | null; sha256?: string | null; errorCode?: string | null
   modelAudit?: Record<string, unknown>
 }
-export { sourceStatusLabel, sourceStatusLabels } from './types'
+export { sourceProvenanceLabel, sourceStatusLabel, sourceStatusLabels } from './types'
 export type Workflow = {
   example: boolean; step: Step; maxStep: number; sourceId: string
   sources: PolicySource[]; candidates: Candidate[]; stage: number

@@ -120,9 +120,10 @@ test('App.vue genuinely renders url_only as "仅有链接，尚无正文" and do
     coverage: { status: 'COMPLETE', scanned_dex: [], failed_dex: [], limitations: [], behavior_limitations: [] },
     tools: {
       web_policy_sources: JSON.stringify([
-        { title: '官网隐私政策链接', status: 'url_only', url: 'https://example.com/privacy' },
-        { title: '第三方SDK说明正文', status: 'ready', url: 'https://example.com/sdk-privacy' },
-        { title: '合规人员手工录入', status: 'manual' },
+        { title: '官网隐私政策链接', status: 'url_only', url: 'https://example.com/privacy', provenance: 'MANIFEST_METADATA' },
+        { title: '第三方SDK说明正文', status: 'ready', url: 'https://example.com/sdk-privacy', provenance: 'DIRECT_WEB_FETCH' },
+        { title: '外部收集正文', status: 'ready', url: 'https://example.com/collected', provenance: 'EXTERNAL_CHAT_EXPORT' },
+        { title: '合规人员手工录入', status: 'manual', provenance: 'MANUAL_INPUT' },
         { title: '空正文候选条目', status: 'empty' },
         { title: '远端抓取超时条目', status: 'failed', error_code: 'FETCH_TIMEOUT' },
         { title: '未知状态条目', status: 'future_unknown_status' },
@@ -141,16 +142,17 @@ test('App.vue genuinely renders url_only as "仅有链接，尚无正文" and do
     await (state.reload as (silent?: boolean) => Promise<void>)(true)
     const html = await renderHtml(state)
 
-    // Positive assertion: url_only displays canonical Chinese label
-    assert.match(html, /官网隐私政策链接<\/strong> · 仅有链接，尚无正文/)
+    // Positive assertion: url_only displays canonical Chinese label and origin
+    assert.match(html, /官网隐私政策链接<\/strong> · 仅有链接，尚无正文 · Manifest 发现/)
 
     // Negative assertion: url_only MUST NOT fall through to '已获取正文' or '已获取网页正文'
     assert.doesNotMatch(html, /官网隐私政策链接<\/strong> · 已获取正文/)
     assert.doesNotMatch(html, /官网隐私政策链接<\/strong> · 已获取网页正文/)
 
     // Verify all other status labels are also genuinely rendered by App.vue
-    assert.match(html, /第三方SDK说明正文<\/strong> · 已获取网页正文/)
-    assert.match(html, /合规人员手工录入<\/strong> · 手动补入正文/)
+    assert.match(html, /第三方SDK说明正文<\/strong> · 已获取网页正文 · 后端抓取/)
+    assert.match(html, /外部收集正文<\/strong> · 已获取网页正文 · 外部导入/)
+    assert.match(html, /合规人员手工录入<\/strong> · 手动补入正文 · 手动输入/)
     assert.match(html, /空正文候选条目<\/strong> · 尚无正文/)
     assert.match(html, /远端抓取超时条目<\/strong> · 来源获取失败/)
     assert.match(html, /未知状态条目<\/strong> · 未知状态/)

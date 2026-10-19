@@ -156,7 +156,7 @@ class WebIntake:
     DRAFT_TTL_SECONDS = 24 * 60 * 60
     INSPECTION_WAIT_SECONDS = 15
     # One bounded metadata container per package file; the 101-file maximum
-    # measured ~260 s locally, so keep startup headroom for slower runners.
+    # measured ~254 s locally, so keep startup headroom for slower runners.
     INSPECTION_BUDGET_SECONDS = 600
     UPLOAD_TIMEOUT_SECONDS = 180
 

@@ -59,3 +59,14 @@ export const sourceStatusLabels: Record<NonNullable<WebSource['status']>, string
 export function sourceStatusLabel(status: string | null | undefined): string {
   return (status && sourceStatusLabels[status as SourceStatus]) || '未知状态'
 }
+
+const sourceProvenanceLabels: Record<string, string> = {
+  MANIFEST_METADATA: 'Manifest 发现',
+  EXTERNAL_CHAT_EXPORT: '外部导入',
+  DIRECT_WEB_FETCH: '后端抓取',
+  MANUAL_INPUT: '手动输入',
+}
+
+export function sourceProvenanceLabel(provenance: string | null | undefined): string {
+  return (provenance && sourceProvenanceLabels[provenance]) || '出处未标注'
+}

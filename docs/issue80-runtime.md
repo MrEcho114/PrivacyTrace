@@ -96,6 +96,8 @@ private cgroup、1GiB内存及无额外swap、1CPU、32 pids、有限tmpfs与180
 本轮实际Docker OOM收据为OOMKilled=true、ExitCode137。静态线索仍只代表潜在行为。
 
 Runner独占根目录，SQLite只保留有限RPC缓存（128条／32MiB／360秒），不替代PG账本。
+服务循环每30秒回收已到期的非运行记录，启用SQLite secure_delete，并在接收前再次回收；
+空闲时也执行。回收失败停止接收。该逻辑不声明擦除文件系统或离线副本中的所有残留。
 崩溃后只清理本账本中的UUID操作、精确容器名／label／镜像／只读输入挂载；归属未知
 保留现场并拒绝复用。清理完成后才释放磁盘预算，不执行全局prune。
 

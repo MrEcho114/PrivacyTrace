@@ -352,3 +352,27 @@ def test_actual_running_container_stops_after_database_revocation(runner_stack, 
             PostgresExecution(client.store).checkpoint(lease)
     finally:
         runner.close()
+
+
+def test_idle_service_prunes_expired_rpc_result_and_scrubs_sqlite_payload(
+    runner_stack, tls_materials
+):
+    client, runner, draft, path, lease, _ = runner_stack
+    result = client.scanner(draft, lease)(path)
+    assert result["package_name"] == "org.privacytrace.fixture"
+    assert b"org.privacytrace.fixture" in runner.database.read_bytes()
+    # Explicit SQL expiry injection; actual SQLite storage and service sweep.
+    # This tests the expiry boundary, not a six-minute real-time wait.
+    with runner._database() as conn:
+        conn.execute("UPDATE operations SET expires=0 WHERE state='DONE'")
+    tls = tls_materials
+    server = create_runner_server(
+        runner, ("127.0.0.1", 0), tls["other"], [tls["client_fingerprint"]]
+    )
+    try:
+        server.service_actions()
+    finally:
+        server.server_close()
+    with runner._database() as conn:
+        assert conn.execute("SELECT count(*) FROM operations").fetchone()[0] == 0
+    assert b"org.privacytrace.fixture" not in runner.database.read_bytes()

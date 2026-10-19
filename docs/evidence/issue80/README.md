@@ -5,6 +5,9 @@
 它们是提交冻结前的收据；最终确切head、远端检查和逐项验收由
 [#80唯一执行记录](https://github.com/MrEcho114/PrivacyTrace/issues/80#issuecomment-6248982344)与最终PR给出，不能用旧收据代替新head验证。
 
+清单中的候选源码摘要对应`d786ec31235b5a311ad850153d6a15d3c3d97581`；之后的Runner
+空闲缓存回收修正及最终head验收另见执行记录，不能把原收据当作该修正的验证。
+
 | 收据 | 实际结果与性质 |
 | --- | --- |
 | [权威检查](authority.txt) | 原样check.sh；API1643通过／17跳过、Web53通过，含真实PG／Docker／恢复／ENOSPC与新鲜受控源码产物；Ruff、契约零差异及构建通过 |

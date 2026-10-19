@@ -103,6 +103,7 @@ class Runner:
         conn = sqlite3.connect(self.database, timeout=5)
         try:
             conn.execute("PRAGMA synchronous=FULL")
+            conn.execute("PRAGMA secure_delete=ON")
             with conn:
                 yield conn
         finally:
@@ -111,6 +112,13 @@ class Runner:
     def close(self):
         if not self.lock.closed:
             self.lock.close()
+
+    def prune(self):
+        with self._database() as conn:
+            conn.execute(
+                "DELETE FROM operations WHERE state <> 'RUNNING' AND expires < ?",
+                (int(time.time()),),
+            )
 
     def _recover(self):
         # This root is exclusively locked. Only UUID operations present in its
@@ -236,6 +244,10 @@ class Runner:
             json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
         with self._database() as conn:
+            conn.execute(
+                "DELETE FROM operations WHERE state <> 'RUNNING' AND expires < ?",
+                (int(time.time()),),
+            )
             previous = conn.execute(
                 "SELECT digest,state,result FROM operations WHERE id=?", (request_id,)
             ).fetchone()
@@ -245,10 +257,6 @@ class Runner:
                 if previous[1] == "DONE":
                     return json_value(previous[2])
                 raise RuntimeUnavailable("Runner operation interrupted")
-            conn.execute(
-                "DELETE FROM operations WHERE state <> 'RUNNING' AND expires < ?",
-                (int(time.time()),),
-            )
             size, count = conn.execute(
                 "SELECT coalesce(sum(length(result)),0),count(*) FROM operations"
             ).fetchone()
@@ -421,9 +429,23 @@ class RunnerHandler(PrivateHandler):
             self.reply(503, {"error": "RUNNER_UNAVAILABLE"})
 
 
+class RunnerServer(PrivateServer):
+    def service_actions(self):
+        if time.monotonic() - self.last_prune < 30:
+            return
+        self.last_prune = time.monotonic()
+        try:
+            self.runner.prune()
+        except (sqlite3.Error, OSError):
+            # Stop admitting scans if retention cannot be maintained. Never
+            # print private database paths or silently leave unbounded residue.
+            self.runner.faulted = True
+
+
 def create_runner_server(runner, address, tls, peers):
-    server = PrivateServer(address, RunnerHandler, tls, peers)
+    server = RunnerServer(address, RunnerHandler, tls, peers)
     server.runner = runner
+    server.last_prune = 0.0
     return server
 
 

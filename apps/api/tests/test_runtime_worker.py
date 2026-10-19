@@ -10,10 +10,10 @@ import pytest
 
 pytest.importorskip("celery", reason="Install runtime extra for Celery protocol checks")
 
-from privacytrace.queue_runtime import TASK_NAME, BrokerConfig  # noqa: E402
-from privacytrace.runtime_worker import create_worker_app  # noqa: E402
 from privacytrace.postgres_execution import LeaseLost  # noqa: E402
 from privacytrace.postgres_store import PostgresOperationUnavailable  # noqa: E402
+from privacytrace.queue_runtime import TASK_NAME, BrokerConfig  # noqa: E402
+from privacytrace.runtime_worker import create_worker_app  # noqa: E402
 
 
 def test_worker_registry_contains_only_fixed_json_task_and_rejects_embedded_canvas(monkeypatch):

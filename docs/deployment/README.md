@@ -18,7 +18,7 @@ uv run --project apps/api --locked --extra worker python deploy/check_linux.py
 bash scripts/check.sh
 ```
 
-专项创建固定名 `privacytrace-smoke` 的临时 Compose 项目，最后删除该项目及其临时卷。不要让其他服务复用该名字；不要同时跑两份专项。只在 `127.0.0.1:18081` 暴露 HTTP，`Host: privacytrace.test`；随后叠加 `compose.tls-smoke.yaml`，在 loopback 18443 验证本地 CA HTTPS、证书信任、主机名与 SNI/Host 不一致拒绝。只复制 CA 公共证书给测试客户端，私钥留在容器 tmpfs 并随清理销毁；不修改系统 trust store。它不是公网 ACME 或 HTTPS→APK→报告验收。
+专项使用固定名 `privacytrace-smoke` 和 `privacytrace-deployment-infra-test` 临时 Compose 项目，最后删除对应容器/网络/卷。不要让其他服务复用这些名字；不要同时跑两份专项。只在 `127.0.0.1:18081` 暴露 HTTP，`Host: privacytrace.test`；随后叠加 `compose.tls-smoke.yaml`，在 loopback 18443 验证本地 CA HTTPS、证书信任、主机名与 SNI/Host 不一致拒绝。只复制 CA 公共证书给测试客户端，并实际 inspect 私钥存储为容器 tmpfs；不修改系统 trust store。另启动不发布端口的空 PostgreSQL 测试库及 Redis，检查文件秘密认证、非 root/只读根、数据卷/AOF 重建。密码为本次随机合成值，父目录私有；不使用生产材料或应用 schema。它们不是 #80 持久调度、备份恢复或 HTTPS→APK→报告验收。
 
 API runtime 只安装锁定的运行依赖，不安装 Androguard/pytest/Ruff/uv，不运行 APK。通过 `PYTHONPATH=/app/apps/api/src` 保留当前 `resources.ROOT` 预期目录；镜像带 active taxonomy、SDK signatures、明确的合成 demo JSON。前端由锁定 Node/npm 构建，Caddy 仅保存 dist、两份字体及许可证。依赖下载只发生于构建阶段。
 

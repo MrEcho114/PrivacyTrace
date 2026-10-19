@@ -9,8 +9,8 @@
 | uv | `0.11.23@sha256:d0a0a753ab981624b49c97abc98821c1c09f4ca69d1ef5cee69c501be3d88479` | 仅构建阶段；apps/api/uv.lock 不变 |
 | Node | `24.17.0-bookworm-slim@sha256:862263c612aa437e3037674b85419622a9d93bff80aa1eee5398dfe686375532` | 仅构建阶段；package-lock.json 不变 |
 | Caddy | `2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d` | 静态/代理 runtime |
-| PostgreSQL | `17.9-alpine@sha256:c7526c0f6c3f30260a563d7bcf8ad778effac59a44f8ffa86678c35418338609` | 配置锁定；本票不声称实际 DB 专项 |
-| Redis | `7.4.8-alpine@sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6` | 配置锁定；投递角色/ACL 待 #80 |
+| PostgreSQL | `17.9-alpine@sha256:c7526c0f6c3f30260a563d7bcf8ad778effac59a44f8ffa86678c35418338609` | 空测试库认证/卷重建；非 #80 应用存储验收 |
+| Redis | `7.4.8-alpine@sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6` | 合成认证/AOF 哨兵重建；投递角色/ACL 待 #80 |
 | migration | 已打包 `0080_01` | 最终 runtime migration head 待 #80 |
 | API/Web registry digest | 未发布 | CI 记录本地构建 image ID；不可冒称 registry digest |
 | 编排/outbox/Runner/扫描 digest 与协议 | 未交接 | 生产入口 BLOCKED |
@@ -22,6 +22,7 @@ Node/Caddy/PostgreSQL/Redis 的 manifest 摘要于 2026-10-19 经 Docker 官方 
 - `deploy/tests/test_deployment.py`：生产默认/拼写错误启动拒绝、smoke 秘密/真实 DB 拒绝、只读路径不调用业务、完整 Origin、内部 probe 隔离、live 与 ready 区分、上下文审计拒绝私有输入。
 - `.github/workflows/deployment.yml`：干净 Linux 构建 API/Web，真实 BuildKit context canary 检查，生产 Caddy 配置验证；真实受限容器中跑 HTTP 合成 demo/规则/静态字体、Host/Origin/伪本机请求、转发头去除、probe/管理面拒绝、写入拒绝及 API 重启，再用本地 CA 验证真实 HTTPS 的证书信任、主机名与 SNI/Host 拒绝。无公网证书账户或系统 trust 变更。
 - `deploy/check_linux.py`：在实际 Compose 渲染配置上检验边界并对 12 类破坏配置做负测，生产 preflight 必须失败；输出 `tmp/deployment-receipt.json`，含源码 SHA、容器 image ID、真实 user/只读根/限额/socket inspect 和未测项，不输出完整 config/env/secrets。
+- `deploy/check_infrastructure.py`：使用本票生产清单的实际 PostgreSQL/Redis 镜像和 secret 文件挂载，独立项目启动/重建空 `privacytrace_test` 库及合成 Redis 哨兵；验证网络密码认证、无认证拒绝、AOF/noeviction、卷重用、非 root/只读根和无发布端口，最后移除临时卷。不执行应用迁移，不代表 #80 outbox/Celery/租约或一致备份恢复。
 - 权威 `bash scripts/check.sh` 保留原门禁，部署专项不替代现有后端/前端/受控 Docker 业务验证。
 
 ## #81 六项最终验收

@@ -17,6 +17,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from check_infrastructure import check_infrastructure
 from preflight import validate
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -242,6 +243,14 @@ def tls_request(context, path, host="privacytrace.test"):
 
 def tls_tests(directory):
     run(TLS_SMOKE + ["up", "--detach", "--wait", "--wait-timeout", "60"])
+    container = output(TLS_SMOKE + ["ps", "-q", "web"])
+    inspected = json.loads(output(["docker", "inspect", container]))[0]
+    assert {"/data", "/config"}.issubset(inspected["HostConfig"]["Tmpfs"])
+    assert all(
+        m["Type"] == "tmpfs"
+        for m in inspected["Mounts"]
+        if m["Destination"] in {"/data", "/config"}
+    )
     # Only the public CA certificate leaves the ephemeral container. Never copy keys.
     root = output(
         TLS_SMOKE + ["exec", "-T", "web", "cat", "/data/caddy/pki/authorities/local/root.crt"]
@@ -266,6 +275,7 @@ def tls_tests(directory):
         "tls_trust": "ephemeral local CA; certificate and hostname verified",
         "tls_misdirected_host": "421",
         "tls_untrusted_ca": "rejected",
+        "tls_key_storage": "tmpfs verified; no certificate bind or persistent volume",
     }
 
 
@@ -274,6 +284,8 @@ def main():
     receipt = {
         "head_sha": head,
         "platform": "Linux Docker",
+        "docker_server_version": output(["docker", "version", "--format", "{{.Server.Version}}"]),
+        "compose_version": output(["docker", "compose", "version", "--short"]),
         "production": "BLOCKED",
         "not_tested": [
             "public HTTPS/ACME",
@@ -294,6 +306,7 @@ def main():
     finally:
         # Only this fixed, disposable project; never remove production volumes.
         run(SMOKE + ["down", "--volumes", "--remove-orphans"])
+    receipt["infrastructure"] = check_infrastructure()
     target = ROOT / "tmp/deployment-receipt.json"
     target.parent.mkdir(exist_ok=True)
     target.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")

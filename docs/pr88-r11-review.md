@@ -72,6 +72,13 @@ through the same Git Bash entry point: 1425 tests passed, 60 skipped, the web
 suite passed 52/52, and the production web build succeeded. The worker image was
 rebuilt from this candidate before the Docker-gated cases ran.
 
+## Main history reattribution
+
+Upstream `main` was rewritten with an identical tree while this review was in
+progress. The PR branch was merged with the rewritten main at `f73d9b8` so the
+pull request diffs only its own changes; that merge tree equals the validated
+R11 candidate `9cb45d0`. No code or evidence semantics changed.
+
 ## Limits
 
 These remain constructed APK/metadata fixtures and controlled fetch responses;

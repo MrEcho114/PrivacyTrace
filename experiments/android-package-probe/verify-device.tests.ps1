@@ -137,7 +137,7 @@ try {
     Assert-True $failed 'Atomic commit must fail if the destination becomes occupied'
     Assert-True (-not (Test-Path -LiteralPath $receipt -PathType Leaf)) 'Failed commit published a receipt'
     Assert-True (Test-Path -LiteralPath $receipt -PathType Container) 'Mock did not create a destination collision'
-    $temps = @(Get-ChildItem -LiteralPath $sandbox -Filter '.receipt.json.*.tmp' -File)
+    $temps = @(Get-ChildItem -LiteralPath $sandbox -Filter '.receipt.json.*.tmp' -File -Force)
     Assert-True ($temps.Count -eq 0) 'Temporary receipt remained after failed commit'
     Remove-Item -LiteralPath $receipt -Recurse -Force
     Write-Host 'PASS atomic write failure leaves no partial receipt or temporary file'

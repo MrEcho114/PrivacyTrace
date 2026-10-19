@@ -106,11 +106,11 @@ broker 故障、Runner 扫描或数据库与材料备份恢复。
 
 ## 共享 owner 的接口交接需求
 
-PR #88 当前拥有 WebIntake、main、pipeline、JobStore、扫描入口、公共模型及相应测试。
-在 owner 显式交接前，这些文件保持只读。本基础层尚未完成以下接入：
-
-用户已明确选择由 #70 owner 先交付接缝并明确交接；本会话不代改共享文件。
-后续真实 Redis／Docker／Runner 使用既有专用 Linux 测试主机或 VM，环境入口待提供。
+PR #88 已合入 `e2313e19cd9e43b30aad2044ccf6624e929511cd`。
+#70 owner 的[正式交接](https://github.com/MrEcho114/PrivacyTrace/issues/80#issuecomment-6260562200)
+将已合入的包集合、来源与任务产物交给 #80 继续真实运行时整合，#70 已按用户授权关闭。
+共享装配由本会话在唯一执行记录登记具体文件后串行接入，复用既有语义和同一管线。
+以下接口仍待实施，不能据交接记录称其已完成：
 
 1. 在现有授权后的 Job／草稿登记事务内调用 `enqueue`，同时选择持久调度模式；该模式
    不再重复调用进程内 `executor.submit`。默认本机模式保持原行为。不能只附加一条消息
@@ -124,8 +124,52 @@ PR #88 当前拥有 WebIntake、main、pipeline、JobStore、扫描入口、公�
 
 ## 整票仍未完成的工作
 
-Celery／Redis 实际发布和消费、broker 故障恢复、执行 lease／attempt／fencing、
+Celery／Redis 实际消费及执行整合、执行 lease／attempt／fencing、
 专用主机／VM Runner 的认证与固定镜像隔离、材料 GC／容量及磁盘满处理、数据库与材料
 一致备份恢复和删除重放，以及真实单 APK 全链路和故障端到端仍待实施／验收。
 PR #91 的 `scripts/check.sh` 及 #81 的生产 Compose／CI 不在本次编辑范围。
 上述工作继续使用同一任务分支和一个最终 PR，不以 Outbox 通过替代整票交付。
+
+## 已实现的受限 Celery／Redis 发布
+
+可选依赖 `runtime` 固定 Celery 5.6.3，并由 uv.lock 锁定 Kombu／redis-py；既有
+`worker` 和默认 JSON／CLI 不因此隐式加载 broker。`queue_runtime.BrokerConfig` 只接受
+带 username／password 的 Redis URL、规范实例 UUID 和有界 visibility timeout；拒绝
+任意 transport、查询参数和无认证配置，repr 不显示 URL。`rediss` 要求验证证书和主机名。
+
+`CeleryPublisher` 仅发布 `privacytrace.execute.v1`，正文为一个经过既有 `decode_message`
+校验的五字段事件。实例队列和 Redis key prefix 由实例 UUID 推导；固定 JSON、无结果
+backend、无远程控制和自动未知队列，不在 broker 保存 APK、政策、能力凭据或命令。
+Celery 自带的投递头不代表允许任意任务。当前没有启动执行消费者，不能将发布器称为
+已完成的可靠执行或任务白名单消费边界。
+
+`OutboxDispatcher.once()` 先提交短领取事务，再访问网络，最后独立确认；broker 失败
+只记录固定错误码和有界退避，沿用五次领取上限。发布后确认丢失仍可能产生两条同 ID
+消息，必须由后续数据库 lease／fencing 防止重复执行及重复结果。一次投递的计数不含材料。
+API 创建和原 WebIntake 线程恢复路径尚未切换到持久调度。
+
+运行投递器使用 `uv run --project apps/api --locked --extra runtime python -m
+privacytrace.queue_runtime`；可加 `--once`。配置来自已有 PostgreSQL runtime URL／实例和
+`PRIVACYTRACE_BROKER_URL`，不用 CLI 参数传密码，不将迁移凭据交给投递器。
+Redis 运维须设置认证、AOF、容量和 noeviction，并按实例 key／channel 前缀授权。
+Kombu 还需要受前缀约束的读写、事务与 Lua 操作；不授予应用 CONFIG、ACL 或全库清理权限。
+这些部署配置仍由 #81 消费运行时接口后交付，本票不创建生产 Compose。
+
+真实联合专项入口为 `bash scripts/check-runtime.sh`，要求显式可丢弃 PostgreSQL runtime／
+migration URL、真实 redis-server 和 runtime extra；每例使用私有临时目录、随机认证、
+独立 Redis 进程与应用／管理 ACL，不连接共享 broker、不 FLUSHDB／FLUSHALL。
+2026-10-19 实跑 **121 passed / 0 skipped**：既有100项存储／Outbox，加11项真实
+PostgreSQL／Redis组件用例及10项纯配置协议。覆盖真实断连及恢复、AOF重启保留、
+并发投递、取消／删除、未提交事务拒绝、实例ACL和管理命令拒绝。初次真实测试发现
+测试应用角色缺 MULTI／EXEC 权限，纠正后仍验证跨实例与管理拒绝；未用 Mock 替代。
+省略确认／SQL置过期的用例模拟确认丢失边界，不能冒称杀死投递器进程的故障演练。
+
+## 本机 Linux／Docker 验证环境
+
+用户授权的 WSL2 3.0.3、任务专属 Ubuntu24.04.5 VM、Docker Engine29.9.1 已实装。
+Engine smoke 使用已解析摘要的 hello-world，并保存实际 inspect；这不代表Runner验收。
+此前 Windows WinError1314 和无Docker失败均保留原收据。Linux通过Git bundle取得精确
+`4bc826f84b18a8fc8fc28dd4e8075aa8973eb771` 的 detached 验证副本，原样启用真实Docker的
+权威检查 exit0：**1442 passed / 86 skipped**，Web53项及构建通过。该次未配置数据库，
+跳过为76项PostgreSQL、9项新鲜受控构建、1项仅Windows路径预检；不冒称数据库验收。
+后续新代码须使用自己的 head／文件哈希和新验证，不能复用这次环境基线结果。

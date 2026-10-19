@@ -89,7 +89,7 @@ internal class PackageProbe(
         }
         if (before != after) fail(ProbeFailure.INSTALLATION_CHANGED)
         checkCancellation()
-        // Local PoC fingerprint only: this is deliberately NOT the unmerged #70 wire contract.
+        // Local PoC fingerprint only: this is deliberately NOT the #70 wire contract.
         val setHash = MessageDigest.getInstance("SHA-256")
         fun field(value: String) {
             val bytes = value.toByteArray(Charsets.UTF_8)

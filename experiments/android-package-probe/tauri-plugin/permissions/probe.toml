@@ -1,0 +1,9 @@
+[[permission]]
+identifier = "allow-inspect-selected"
+description = "Opens the native foreground picker and reads only the confirmed application."
+commands.allow = ["inspect_selected"]
+
+[[permission]]
+identifier = "allow-cancel"
+description = "Cancels this plugin's current local read or picker."
+commands.allow = ["cancel"]

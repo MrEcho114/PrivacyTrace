@@ -19,7 +19,14 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = '17' }
-    lint { abortOnError = true; warningsAsErrors = true }
+    sourceSets { main.java.srcDir '../core/src/main/java' }
+    lint {
+        abortOnError = true
+        warningsAsErrors = true
+        // Keep this historical API 34 platform harness stable beside the API 36 bridge.
+        // Installing a newer SDK must not turn its intentional target into a lint failure.
+        disable 'OldTargetApi'
+    }
 }
 
 dependencies { testImplementation 'junit:junit:4.13.2' }

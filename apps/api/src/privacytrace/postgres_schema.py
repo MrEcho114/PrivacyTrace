@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 SCHEMA = "privacytrace"
-REVISION = "0080_02"
+REVISION = "0080_03"
 metadata = sa.MetaData(schema=SCHEMA)
 
 scopes = sa.Table(
@@ -106,3 +106,54 @@ outbox = sa.Table(
 )
 sa.Index("outbox_pending", outbox.c.instance_id, outbox.c.state, outbox.c.available_at)
 sa.Index("outbox_claimed", outbox.c.instance_id, outbox.c.state, outbox.c.claimed_until)
+
+executions = sa.Table(
+    "job_executions",
+    metadata,
+    sa.Column("instance_id", sa.String(36), primary_key=True),
+    sa.Column("job_id", sa.String(100), primary_key=True),
+    sa.Column("event_id", UUID(as_uuid=True), nullable=False),
+    sa.Column("state", sa.String(12), nullable=False),
+    sa.Column("attempt", sa.Integer, nullable=False),
+    sa.Column("fence", sa.BigInteger, nullable=False),
+    sa.Column("owner", UUID(as_uuid=True)),
+    sa.Column("leased_until", sa.DateTime(timezone=True)),
+    sa.Column("started_at", sa.DateTime(timezone=True)),
+    sa.Column("available_at", sa.DateTime(timezone=True), nullable=False),
+    sa.Column("result_sha256", sa.String(64)),
+    sa.Column("last_error_code", sa.String(24)),
+    sa.ForeignKeyConstraint(
+        ["instance_id", "job_id"], [f"{SCHEMA}.jobs.instance_id", f"{SCHEMA}.jobs.job_id"]
+    ),
+    sa.ForeignKeyConstraint(
+        ["instance_id", "event_id"],
+        [f"{SCHEMA}.outbox_events.instance_id", f"{SCHEMA}.outbox_events.event_id"],
+    ),
+    sa.CheckConstraint(
+        "state IN ('READY', 'RUNNING', 'RETRY', 'SUCCEEDED', 'FAILED', 'REVOKED')",
+        name="execution_state",
+    ),
+    sa.CheckConstraint("attempt BETWEEN 0 AND 3 AND fence >= 0", name="execution_attempt"),
+    sa.CheckConstraint(
+        "(state = 'RUNNING' AND attempt > 0 AND owner IS NOT NULL "
+        "AND leased_until IS NOT NULL AND started_at IS NOT NULL) OR "
+        "(state <> 'RUNNING' AND leased_until IS NULL AND started_at IS NULL "
+        "AND (state = 'SUCCEEDED' OR owner IS NULL))",
+        name="execution_lease",
+    ),
+    sa.CheckConstraint(
+        "(state = 'SUCCEEDED' AND result_sha256 IS NOT NULL "
+        "AND result_sha256 ~ '^[a-f0-9]{64}$') OR "
+        "(state <> 'SUCCEEDED' AND result_sha256 IS NULL)",
+        name="execution_result",
+    ),
+    sa.CheckConstraint(
+        "last_error_code IS NULL OR last_error_code IN "
+        "('LEASE_EXPIRED', 'RUNNER_UNAVAILABLE', 'WORKER_LOST', 'SCAN_FAILED', "
+        "'DELIVERY_EXHAUSTED', 'BROKER_REDRIVE', 'JOB_UNAVAILABLE')",
+        name="execution_error",
+    ),
+)
+sa.Index(
+    "execution_recovery", executions.c.instance_id, executions.c.state, executions.c.leased_until
+)

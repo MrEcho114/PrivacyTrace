@@ -124,7 +124,7 @@ PR #88 已合入 `e2313e19cd9e43b30aad2044ccf6624e929511cd`。
 
 ## 整票仍未完成的工作
 
-Celery／Redis 实际消费及执行整合、执行 lease／attempt／fencing、
+Celery／Redis 实际消费及执行整合、
 专用主机／VM Runner 的认证与固定镜像隔离、材料 GC／容量及磁盘满处理、数据库与材料
 一致备份恢复和删除重放，以及真实单 APK 全链路和故障端到端仍待实施／验收。
 PR #91 的 `scripts/check.sh` 及 #81 的生产 Compose／CI 不在本次编辑范围。
@@ -173,3 +173,35 @@ Engine smoke 使用已解析摘要的 hello-world，并保存实际 inspect；�
 权威检查 exit0：**1442 passed / 86 skipped**，Web53项及构建通过。该次未配置数据库，
 跳过为76项PostgreSQL、9项新鲜受控构建、1项仅Windows路径预检；不冒称数据库验收。
 后续新代码须使用自己的 head／文件哈希和新验证，不能复用这次环境基线结果。
+
+## 数据库执行资格与内部恢复
+
+增量迁移 `0080_03` 新增 `job_executions`，复用实例事务锁、限制角色及 FORCE RLS。
+登记 Job／Outbox 时同时建立 READY 执行记录；旧事件只在当前实例内补齐记录，不以
+迁移身份跨实例读取材料。消息须匹配已登记且已领取的事件，才可获取执行资格。
+每次领取增加 attempt 和 fencing，最多三次执行；owner 是服务器生成 UUID。
+默认租约60秒、单次硬截止300秒，续租使用数据库时间且不能越过硬截止。
+
+`FencedJobStore` 只向原 pipeline 提供所需读写。每次阶段更新与结果提交都在同一个
+短事务内验证 owner／fence／attempt／事件、未过期租约、未删除且非终态 Job。
+报告与 SUCCEEDED、结果摘要和审计一并提交；同 token／相同完整结果重放只读，其他
+结果拒绝覆盖。`LeaseLost` 让过期 worker 立即退出原管线错误保存路径。
+取消／tombstone 与撤销租约、递增 fence 原子提交，迟到结果不能复活材料。
+
+过期执行及受控基础设施失败保留同一 Job、记录 `INTERNAL_RETRY`，重投原事件；
+执行最多三次、事件总领取仍最多五次，不因恢复重置预算。已投递但未领取的事件在
+300秒后可重新投递，预算耗尽形成可查询 FAILED。数据库恢复会筛选真正需要恢复的
+记录，待投递积压不会挡住过期租约。OOM／扫描输入／管线错误为有限终态失败；
+用户显式 retry 仍由既有 API 创建带 retry_of 的新 Job，不计作内部恢复。
+
+2026-10-19 真实 PostgreSQL 执行专项 **29 passed**；联同存储／Outbox／真实 Redis
+发布专项 **150 passed / 0 skipped**。包含独立连接竞争、取消／删除与提交竞争、
+服务端延迟外键真实 COMMIT 拒绝、相同结果幂等、旧 fence 拒写、权限／迁移无漂移，
+以及独立 worker 进程直接退出后等待真实租约到期恢复。受控报告契约夹具不代表 APK
+扫描；部分预算边界使用 SQL 置过期，与真实进程退出用例分列。证据文件
+`execution-20261019T070207Z.log/.json/.xml`、`runtime-lease.log` 绑定本轮源码哈希。
+这些数据库接口尚待持续接入实际消费者／Runner，不能代替完整端到端。
+
+前一队列候选另通过原样真实 PostgreSQL＋Docker权威检查：**1528 passed / 21 skipped**、
+Web53项；21项为单独运行的11个Redis专项、9个新鲜受控产物缺失和1个Windows预检。
+该收据 `authority-queue.log` 对应队列候选源哈希，未拿它证明后加租约代码已全仓通过。

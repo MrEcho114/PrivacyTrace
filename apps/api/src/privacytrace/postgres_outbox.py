@@ -9,7 +9,7 @@ from uuid import UUID, uuid4
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import insert
 
-from .postgres_schema import jobs, outbox, scopes
+from .postgres_schema import executions, jobs, outbox, scopes
 
 EVENT_TYPE = "privacytrace.job.ready"
 MAX_ATTEMPTS = 5
@@ -132,7 +132,7 @@ class PostgresOutbox:
                 jobs.c.job_id == outbox.c.job_id,
                 scopes.c.kind == "JOB",
                 scopes.c.tombstone.is_(False),
-                jobs.c.record["job"]["state"].as_string() == "QUEUED",
+                jobs.c.record["job"]["state"].as_string().not_in(["FAILED", "CANCELLED"]),
             )
         )
 
@@ -177,7 +177,7 @@ class PostgresOutbox:
                     ]
                 )
             )
-            return self._event(
+            event = self._event(
                 conn.execute(
                     sa.select(outbox).where(
                         outbox.c.instance_id == self.store.instance_id,
@@ -189,6 +189,20 @@ class PostgresOutbox:
                 .mappings()
                 .one()
             )
+            conn.execute(
+                insert(executions)
+                .values(
+                    instance_id=self.store.instance_id,
+                    job_id=job_id,
+                    event_id=event.event_id,
+                    state="READY",
+                    attempt=0,
+                    fence=0,
+                    available_at=now,
+                )
+                .on_conflict_do_nothing()
+            )
+            return event
 
     def get(self, event_id):
         with self.store._transaction() as conn:
@@ -245,6 +259,13 @@ class PostgresOutbox:
                     .where(
                         outbox.c.instance_id == self.store.instance_id,
                         self._live(),
+                        sa.exists(
+                            sa.select(1).where(
+                                jobs.c.instance_id == outbox.c.instance_id,
+                                jobs.c.job_id == outbox.c.job_id,
+                                jobs.c.record["job"]["state"].as_string() != "SUCCEEDED",
+                            )
+                        ),
                         outbox.c.attempts < MAX_ATTEMPTS,
                         sa.or_(
                             sa.and_(outbox.c.state == "PENDING", outbox.c.available_at <= now),

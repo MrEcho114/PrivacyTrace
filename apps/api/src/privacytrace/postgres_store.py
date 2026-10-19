@@ -12,7 +12,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
 
 from .job_store import JobStore
-from .postgres_schema import REVISION, SCHEMA, audit, documents, jobs, scopes
+from .postgres_schema import REVISION, SCHEMA, audit, documents, executions, jobs, scopes
 from .runtime_models import StoredJob
 
 
@@ -230,6 +230,26 @@ class PostgresJobStore(JobStore):
             )
         )
         self._audit(record.job.id, action)
+        if record.tombstone or record.job.state == "CANCELLED":
+            # Same transaction and instance lock as revocation: no late heartbeat
+            # or report can retain a pre-cancellation execution token.
+            self._local.connection.execute(
+                executions.update()
+                .where(
+                    executions.c.instance_id == self.instance_id,
+                    executions.c.job_id == record.job.id,
+                    executions.c.state != "REVOKED",
+                )
+                .values(
+                    state="REVOKED",
+                    fence=executions.c.fence + 1,
+                    owner=None,
+                    leased_until=None,
+                    started_at=None,
+                    result_sha256=None,
+                    last_error_code="JOB_UNAVAILABLE",
+                )
+            )
 
     def create_if_absent(self, job, token_digest=None):
         with self._transaction():

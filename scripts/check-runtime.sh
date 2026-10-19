@@ -7,4 +7,5 @@ command -v redis-server >/dev/null || { printf 'Real redis-server is required\n'
 export PRIVACYTRACE_REDIS_TESTS=1
 uv run --project apps/api --locked --extra worker --extra runtime python -B -m pytest \
   apps/api/tests/test_postgres_storage.py apps/api/tests/test_postgres_outbox.py \
+  apps/api/tests/test_postgres_execution.py \
   apps/api/tests/test_queue_runtime.py -q -p no:cacheprovider --tb=short -ra

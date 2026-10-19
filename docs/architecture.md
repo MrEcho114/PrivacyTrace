@@ -66,7 +66,7 @@ AI 的产品用途在 Policy Parser：切分、结构化、候选解释；规则
 
 PR #88 在既有证据模型上增加包集合与来源发现，不改变“静态线索不等于运行时事实”的边界：
 
-- `/package-set` 接受 1 个 base 与至多 100 个 split（总计 150 MiB）。上传先在同一受限 worker 中解析 manifest，再校验包名/版本一致、split 名唯一、声明依赖（`uses-split`、`configForSplit`、split type）完整且无环。拒绝时保留草稿原状态、清理本次暂存文件并允许整组重试。单 APK 入口保留既有异步扫描校验边界，缺失依赖作为任务失败返回具体错误码；旧 `/apk` 入口仍自动识别多 APK ZIP 并按包集合处理（兼容性扩展）。每个包文件的元数据检查在独立受限 worker 中执行；101 文件上限的总检查预算为 600 秒（本地实测 254 秒，保留慢 runner 余量），流式上传另有 180 秒预算。
+- `/package-set` 接受 1 个 base 与至多 100 个 split（总计 150 MiB）。上传先在同一受限 worker 中解析 manifest，再校验包名/版本一致、split 名唯一、声明依赖（`uses-split`、`configForSplit`、split type）完整且无环。拒绝时保留草稿原状态、清理本次暂存文件并允许整组重试。旧 `/apk` 入口保留既有异步扫描校验边界，缺失依赖作为任务失败返回具体错误码；该入口新增多 APK ZIP 自动识别并按包集合处理（兼容性扩展），单 APK 输入语义不变。每个包文件的元数据检查在独立受限 worker 中执行；101 文件上限的总检查预算为 600 秒（本地实测 254 秒，保留慢 runner 余量），流式上传另有 180 秒预算。
 - `/sources/discover` 只从 manifest 元数据提取候选 URL；服务端保存“发现”记录，来源出处与正文取得方式分开记录。发现 URL 不表示已取得正文，外部导入正文保留导入审计，抓取成功另记 `DIRECT_WEB_FETCH`。政策文档仍为 `UNREVIEWED` / `PARTIAL` / `NOT_CHECKED`，不自动提升复核状态。自动发现来源继承上传包的包名与 versionCode 作为适用边界；用户手工来源仍按输入，空值保持 UNKNOWN。外部导入的 `RETRIEVED` 正文以 `ready` 状态呈现，但 acquisition 仍是 `EXTERNAL_CHAT_EXPORT`，直到后端抓取替换正文。
 - 远程任务增加证据下钻、失败/取消任务的 retry 血缘（`retry_of`）与删除墓碑保护；retry 只复用本服务保留的不可变输入。
 - 包集合的 base 与 split 身份进入报告样本摘要并绑定扫描前后的集合摘要；worker 目录扫描与单 APK 扫描继续在相同隔离参数下执行。

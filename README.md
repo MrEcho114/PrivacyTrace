@@ -31,11 +31,11 @@ PrivacyTrace 是一个面向普通 Android 用户的应用隐私对照工具。�
 | [S0 · 规则与数据契约](https://github.com/MrEcho114/PrivacyTrace/issues/2) | 已完成 | 长政策切片、静态证据与声明对照基线已进入主线 |
 | [S1 · 真实 APK 分析闭环](https://github.com/MrEcho114/PrivacyTrace/issues/3) | 已完成 | 隔离扫描、作业存储、Web 报告与证据下钻 |
 | [S2 · 六场景受控评测](https://github.com/MrEcho114/PrivacyTrace/issues/4) | 已完成 | C01–C06 源码构建、三方案比较、浏览器验收与误差说明 |
-| [S3 · 竞赛交付](https://github.com/MrEcho114/PrivacyTrace/issues/5) | 进行中 | [#18](https://github.com/MrEcho114/PrivacyTrace/issues/18) 内部断网交付验收和 [#19](https://github.com/MrEcho114/PrivacyTrace/issues/19) 材料工单已关闭；[#20](https://github.com/MrEcho114/PrivacyTrace/issues/20) 正式平台提交与回执仍待完成 |
+| [S3 · 竞赛交付](https://github.com/MrEcho114/PrivacyTrace/issues/5) | 进行中 | [#18](https://github.com/MrEcho114/PrivacyTrace/issues/18) 内部断网交付验收和 [#19](https://github.com/MrEcho114/PrivacyTrace/issues/19) 材料工单已关闭；[#107](https://github.com/MrEcho114/PrivacyTrace/issues/107) 正式平台提交与回执仍待完成 |
 | [P1 · 扩展实验](https://github.com/MrEcho114/PrivacyTrace/issues/6) | 部分完成 | [#62](https://github.com/MrEcho114/PrivacyTrace/issues/62) 测试准备包、[#63](https://github.com/MrEcho114/PrivacyTrace/issues/63) 样本归档已完成；[#64](https://github.com/MrEcho114/PrivacyTrace/issues/64) 十二场景候选待合并，[#65](https://github.com/MrEcho114/PrivacyTrace/issues/65) 真实参与者测试待开展 |
 | [Android 客户端](https://github.com/MrEcho114/PrivacyTrace/issues/68) | 规格阶段 | [#69–#73](https://github.com/MrEcho114/PrivacyTrace/issues/69) 已拆分远程认证、API 契约、客户端与真机验收任务；**尚无可交付 Android 客户端** |
 
-**赛事交付边界**：内部通过验收的离线包不代表已公开发布或已在竞赛平台正式提交。参赛材料与当前要求以 [赛事指南 Issue #74](https://github.com/MrEcho114/PrivacyTrace/issues/74)、[正式提交 Issue #20](https://github.com/MrEcho114/PrivacyTrace/issues/20) 和官方通知为准；校内收件时间不能仅凭全国截止日期推定。
+**赛事交付边界**：内部通过验收的离线包不代表已公开发布或已在竞赛平台正式提交。参赛材料与当前要求以 [赛事指南 Issue #74](https://github.com/MrEcho114/PrivacyTrace/issues/74)、[正式提交 Issue #107](https://github.com/MrEcho114/PrivacyTrace/issues/107) 和官方通知为准；唯一采用全国截止时间 2026-10-23 23:59:59，本项目不存在校内提交或校内收件环节。
 
 ### 评测结果的适用范围
 
@@ -176,7 +176,7 @@ uv run --project apps/api --locked --extra worker pytest apps/api/tests
 - **使用与受控评测**：[六场景说明](benchmarks/controlled/README.md)、[真实 Web 工作流设计](docs/design/issue-44-live-workflow.md)。
 - **核心技术验收**：[S1 技术报告](docs/stages/s1-report.md)、[S2 阶段记录](https://github.com/MrEcho114/PrivacyTrace/issues/4)、[S3 阶段记录](https://github.com/MrEcho114/PrivacyTrace/issues/5)。
 - **评测扩展与参与者研究**：[PR #76](https://github.com/MrEcho114/PrivacyTrace/pull/76)、[理解测试准备包 #62](https://github.com/MrEcho114/PrivacyTrace/issues/62)、[真实研究 #65](https://github.com/MrEcho114/PrivacyTrace/issues/65)。
-- **竞赛材料与提交**：[最新指南 #74](https://github.com/MrEcho114/PrivacyTrace/issues/74)、[提交追踪 #20](https://github.com/MrEcho114/PrivacyTrace/issues/20)。仓库内旧版 [赛务核对清单](docs/competition-checklist.md) 仅作为历史文件，不作为本届最新规则来源。
+- **竞赛材料与提交**：[最新指南 #74](https://github.com/MrEcho114/PrivacyTrace/issues/74)、[提交追踪 #107](https://github.com/MrEcho114/PrivacyTrace/issues/107)。仓库内旧版 [赛务核对清单](docs/competition-checklist.md) 仅作为历史文件，不作为本届最新规则来源。
 - **Android 后续规划**：[功能规格 #68](https://github.com/MrEcho114/PrivacyTrace/issues/68)（拟用 Tauri 2 + 现有 Vue 前端，经认证的远程 FastAPI 服务与 Docker Worker；不在手机上直接运行分析引擎）。
 - **依赖与许可**：使用的 Androguard 遵循 [Apache-2.0](https://raw.githubusercontent.com/androguard/androguard/v4.1.3/LICENCE-2.0)。本项目源代码许可仍待团队确定；未经授权的商业 APK、完整政策、私人日志与身份信息不进入公开交付包。
 

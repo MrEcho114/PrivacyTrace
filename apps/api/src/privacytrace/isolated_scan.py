@@ -165,7 +165,11 @@ def scan_isolated(
                         raise ScanError("CANCELLED", "Analysis cancelled by user")
                     count += len(chunk)
                     total += len(chunk)
-                    if total > MAX_INPUT or total > input_size or count > original.st_size:
+                    if total > MAX_INPUT:
+                        raise ScanError(
+                            "INPUT_TOO_LARGE", "Input grew beyond maximum while copying"
+                        )
+                    if total > input_size or count > original.st_size:
                         raise ScanError("INPUT_CHANGED", "Input changed while copying")
                     dst.write(chunk)
             current = source.stat()

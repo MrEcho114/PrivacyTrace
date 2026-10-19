@@ -68,7 +68,6 @@ def run(
     on_stage=None,
     extra_tools=None,
     package_set=None,
-    scanner=None,
     job_store=None,
     expected_apk_sha256=None,
 ):
@@ -122,9 +121,7 @@ def run(
         except (ValueError, OSError, KeyError, TypeError) as exc:
             raise ScanError("POLICY_INPUT_INVALID", "Policy capture failed validation") from exc
         transition("STATIC_ANALYSIS")
-        if scanner is not None:
-            scanned = scanner(apk, timeout=timeout, cancelled=cancelled)
-        elif package_set is not None or (hasattr(apk, "is_dir") and apk.is_dir()):
+        if package_set is not None or (hasattr(apk, "is_dir") and apk.is_dir()):
             packages_dir = apk if apk.is_dir() else apk.parent / "packages"
             scanned = scan_isolated(packages_dir, timeout=timeout, cancelled=cancelled)
         else:

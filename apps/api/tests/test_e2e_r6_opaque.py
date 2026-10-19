@@ -165,7 +165,7 @@ def test_tier1_r2_collector_one_batch_contract_all_states(intake_fixture):
 
     # Initial source + 5 results with sources (NOT_FOUND has no source) = 6 sources
     assert len(sources) == 6
-    assert sources["retrieved-src"]["status"] == "manual"
+    assert sources["retrieved-src"]["status"] == "ready"
     assert sources["retrieved-src"]["text"] == "Full Policy Text."
     assert sources["provided-src"]["status"] == "manual"
     assert sources["url-only-src"]["status"] == "empty"

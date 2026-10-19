@@ -62,8 +62,9 @@ def test_canonical_all_states_preserve_sources_and_external_audit(intake):
     assert len(sources) == 6 and not draft["candidates"]
     assert sources["retrieved"]["text"] == "Original\r\n政策正文。"
     assert sources["retrieved"]["sha256"] == sha256("Original\r\n政策正文。".encode()).hexdigest()
+    assert sources["retrieved"]["status"] == "ready"
+    assert sources["provided"]["status"] == "manual"
     for key in ("retrieved", "provided"):
-        assert sources[key]["status"] == "manual"
         assert sources[key]["source_type"] == "SDK_POLICY"
         assert sources[key]["captured_at"] != observed
         assert sources[key]["final_url"] is None
@@ -219,6 +220,33 @@ def test_unknown_taxonomy_quote_is_not_persisted(intake):
     })
     assert response.status_code == 409
     assert client.get(route).json() == before
+
+
+def test_collection_retrieved_without_fetch_keeps_external_acquisition(
+    intake, tmp_path, monkeypatch
+):
+    client, route, app = intake
+    sample = apk(tmp_path / "fixture.apk")
+    monkeypatch.setattr(pipeline, "scan_isolated",
+                        lambda path, **kw: apk_worker.scan(path, taxonomy()))
+    imported = client.post(route + "/import-external", headers=HEADERS, json=collection(
+        {"state": "RETRIEVED", "source": source("retrieved")},
+    ))
+    assert imported.status_code == 200, imported.text
+    draft = client.get(route).json()
+    retrieved = next(s for s in draft["sources"] if s["id"] == "retrieved")
+    assert retrieved["status"] == "ready"
+    uploaded = client.post(route + "/apk", headers=HEADERS, content=sample.read_bytes())
+    started = client.post(route + "/start", headers=HEADERS, json={
+        "revision": uploaded.json()["revision"], "request_id": uuid4().hex,
+    })
+    assert started.status_code == 200, started.text
+    job_id = started.json()["id"]
+    app.state.web_intake.futures[job_id].result(timeout=15)
+    report = app.state.job_store.report(job_id)
+    document = next(d for d in report.policy_documents if d.id == "web-retrieved")
+    locator = next(ev.locator for ev in report.evidence if ev.id == document.evidence_id)
+    assert "acquisition=EXTERNAL_CHAT_EXPORT;" in locator
 
 
 def test_collection_audit_survives_fetch_extract_and_persisted_report(

@@ -236,22 +236,6 @@ def validate_split_dependencies(base: SplitDependencies, splits: dict[str, Split
             current = parents[current]
 
 
-def inspect_axml(manifest_bytes: bytes) -> tuple[str, int, str | None, str | None]:
-    """Inspect binary AndroidManifest.xml and extract metadata.
-
-    Returns:
-        (package_name, version_code, version_name, split_name)
-        split_name is None for base APK, or non-empty string for split APK.
-    Raises:
-        PackageSetIntegrityError: if manifest is corrupted, missing, or invalid.
-    """
-    metadata = _inspect_manifest(manifest_bytes)
-    return (
-        metadata["package_name"], metadata["version_code"],
-        metadata["version_name"], metadata["split_name"],
-    )
-
-
 def _inspect_manifest(manifest_bytes: bytes) -> dict:
     from androguard.core.axml import AXMLPrinter
     from loguru import logger
@@ -416,7 +400,7 @@ def validate_package_set(
     declared_manifest: PackageSetManifestInput | None = None,
     max_cumulative_size: int = MAX_PACKAGE_SET_SIZE,
 ) -> PackageSet:
-    """Validate a set of PackageFile instances or directory against all 10 integrity rules."""
+    """Validate a set of PackageFile instances or directory against the integrity rules."""
     if isinstance(files, (Path, str)):
         dir_path = Path(files)
         if not dir_path.is_dir():

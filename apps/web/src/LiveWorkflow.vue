@@ -101,7 +101,6 @@ function encodeCandidate(c: Candidate): WebCandidate {
 async function begin() {
   await perform(async () => {
     if (!draft.value) return
-    if (props.state.candidates.some(c => !c.checked)) throw new Error('请检查剩余候选，或删除不采用的候选。没有候选的来源仍会保留证据不足提示。')
     if (pendingRevision === null) {
       apply(await saveCandidates(draft.value.id, { revision: draft.value.revision, candidates: props.state.candidates.map(encodeCandidate) }, signal))
       pendingRevision = draft.value.revision

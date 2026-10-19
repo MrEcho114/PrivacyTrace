@@ -255,7 +255,7 @@ def test_package_directory_runtime_failure_cleans_owned_copy(tmp_path, monkeypat
     assert (packages / "base.apk").exists()
 
 
-def test_pr88_full_split_identity_blocks_report(tmp_path):
+def test_pr88_full_split_identity_blocks_report(tmp_path, monkeypatch):
     """Base digest alone cannot authorize a report for a changed split."""
     from hashlib import sha256
 
@@ -284,9 +284,10 @@ def test_pr88_full_split_identity_blocks_report(tmp_path):
         "split_count": 1,
     }
     receipt = make_dummy_policy(tmp_path / "policy")
+    monkeypatch.setattr(pipeline, "scan_isolated", lambda path, **kw: scanned)
     result = pipeline.run(
         base, receipt, "changed split", store_dir=tmp_path / "jobs",
-        package_set=registered, scanner=lambda path, **kw: scanned,
+        package_set=registered,
     )
     assert result["status"] == "FAILED"
     assert result["primary_error"]["code"] == "INPUT_DIGEST_MISMATCH"

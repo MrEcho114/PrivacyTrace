@@ -14,6 +14,7 @@ from .models import Model
 from .package_set import PackageSetIntegrityError
 from .web_intake import (
     ISOLATED_INPUT_ERROR_CODES,
+    SOURCE_TYPE_CONFIRMATION_REQUIRED,
     InspectionBusy,
     UploadTimedOut,
     UploadTooLarge,
@@ -47,7 +48,7 @@ def web_error(exc):
         return HTTPException(503, detail="ISOLATED_INSPECTION_UNAVAILABLE")
     allowed = {
         "MODEL_NOT_CONFIGURED", "MODEL_CONFIGURATION_INCOMPLETE",
-        "SOURCE_TYPE_CONFIRMATION_REQUIRED",
+        SOURCE_TYPE_CONFIRMATION_REQUIRED,
     }
     code = str(exc) if str(exc) in allowed else "INPUT_OR_VERSION_REJECTED"
     return HTTPException(409, detail=code)
@@ -138,12 +139,8 @@ def install_web_api(app, local_write):
             raise HTTPException(413, detail="UPLOAD_TOO_LARGE") from exc
         except UploadTimedOut as exc:
             raise HTTPException(408, detail="UPLOAD_TIMEOUT") from exc
-        except InspectionBusy as exc:
+        except (InspectionBusy, PackageSetIntegrityError, ScanError) as exc:
             raise web_error(exc) from exc
-        except ScanError as exc:
-            raise HTTPException(503, detail="ISOLATED_INSPECTION_UNAVAILABLE") from exc
-        except PackageSetIntegrityError as exc:
-            raise HTTPException(status_code=exc.http_status, detail=exc.code) from exc
         except (BadZipFile, EOFError) as exc:
             raise HTTPException(status_code=400, detail="CORRUPTED_FILE") from exc
         except (ValueError, OSError) as exc:

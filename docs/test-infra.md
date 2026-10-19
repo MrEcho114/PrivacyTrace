@@ -39,7 +39,7 @@ The PrivacyTrace PR #88 test suite (`apps/api/tests/test_e2e_pt_mob_102.py`, `ap
 |                 ExternalPolicyCollectionInput & ExportInput validation, |
 |                 external_imports audit history & provenance tagging,    |
 |                 draft-activity pinning and atomic revision files        |
-|   package_set.py: 10 integrity rules, single base APK, split names,     |
+|   package_set.py: package-set rules, single base APK, split names,      |
 |                 101-package set boundary early exit                     |
 +-------------------------------------------------------------------------+
                                      |

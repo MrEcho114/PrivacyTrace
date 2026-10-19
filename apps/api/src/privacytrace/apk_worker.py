@@ -701,11 +701,6 @@ def scan_package_set(base_path, splits, rules, inventory=False, sdk_rules=None):
         for ev in s_res["evidence"]:
             if ev["kind"] == "SDK":
                 continue
-            if ev["kind"] == "MANIFEST" and any(
-                bev["kind"] == "MANIFEST" and bev["excerpt"] == ev["excerpt"]
-                for bev in base_result["evidence"]
-            ):
-                continue
             all_evidence.append(ev)
             known_evidence_ids.add(ev["id"])
         for bh in s_res["behaviors"]:

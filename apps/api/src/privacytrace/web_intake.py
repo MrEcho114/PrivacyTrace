@@ -62,6 +62,10 @@ ISOLATED_INPUT_ERROR_CODES = frozenset({
     "ZIP_INVALID",
 })
 
+ALREADY_UPLOADED = "APK already uploaded; new materials require a new draft"
+SOURCE_TYPE_CONFIRMATION_REQUIRED = "SOURCE_TYPE_CONFIRMATION_REQUIRED"
+RETRY_INPUT_UNAVAILABLE = "RETRY_INPUT_UNAVAILABLE"
+
 
 class UploadTooLarge(ValueError):
     """APK upload exceeded the documented byte limit."""
@@ -151,7 +155,9 @@ class WebIntake:
     MAX_DRAFTS_PER_IP = 3
     DRAFT_TTL_SECONDS = 24 * 60 * 60
     INSPECTION_WAIT_SECONDS = 15
-    INSPECTION_BUDGET_SECONDS = 180
+    # One bounded metadata container per package file; the 101-file maximum
+    # measured ~260 s locally, so keep startup headroom for slower runners.
+    INSPECTION_BUDGET_SECONDS = 600
     UPLOAD_TIMEOUT_SECONDS = 180
 
     def __init__(self, store):
@@ -234,6 +240,18 @@ class WebIntake:
         if source["status"] == "manual" and source["text"].strip():
             return "MANUAL_INPUT"
         return None
+
+    @staticmethod
+    def _acquisition(source, origin):
+        # An imported body remains EXTERNAL_CHAT_EXPORT until the backend
+        # replaces it with a fetched capture; final_url identifies that state.
+        if origin == "EXTERNAL_CHAT_EXPORT" and not source.get("final_url"):
+            return "EXTERNAL_CHAT_EXPORT"
+        if source["status"] == "ready":
+            return "DIRECT_WEB_FETCH"
+        if origin == "EXTERNAL_CHAT_EXPORT":
+            return "EXTERNAL_CHAT_EXPORT"
+        return "MANUAL_INPUT"
 
     def _normalize_source_origins(self, draft):
         # A legacy provenance label alone cannot prove discovery/import. Do not
@@ -541,7 +559,7 @@ class WebIntake:
                 with self.data_store._transaction():
                     draft = self._get(draft_id)
                     if draft["uploaded"] or draft["jobs"]:
-                        raise ValueError("APK already uploaded; new materials require a new draft")
+                        raise ValueError(ALREADY_UPLOADED)
                     fd = os.open(pending, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
                     owns_pending = True
                 size = 0
@@ -649,7 +667,7 @@ class WebIntake:
                 with self.data_store._transaction():
                     draft = self._get(draft_id)
                     if draft["uploaded"] or draft["jobs"]:
-                        raise ValueError("APK already uploaded; new materials require a new draft")
+                        raise ValueError(ALREADY_UPLOADED)
                     remaining_timeout()
 
                     rollback_draft = deepcopy(draft)
@@ -671,7 +689,7 @@ class WebIntake:
                 with self.data_store._transaction():
                     draft = self._get(draft_id)
                     if draft["uploaded"] or draft["jobs"]:
-                        raise ValueError("APK already uploaded; new materials require a new draft")
+                        raise ValueError(ALREADY_UPLOADED)
                     remaining_timeout()
                     rollback_draft = deepcopy(draft)
                     rollback_revision = draft["revision"] + 1
@@ -882,11 +900,7 @@ class WebIntake:
             ref = document_id + "-snapshot"
             text = source["text"]
             origin = self._source_origin(draft, source)
-            acquisition = (
-                "DIRECT_WEB_FETCH" if source["status"] == "ready"
-                else "EXTERNAL_CHAT_EXPORT" if origin == "EXTERNAL_CHAT_EXPORT"
-                else "MANUAL_INPUT"
-            )
+            acquisition = self._acquisition(source, origin)
             document = PolicyDocument.model_validate(
                 {
                     "id": document_id,
@@ -1145,7 +1159,7 @@ class WebIntake:
             results = payload.results
         sources = [result.source for result in results if result.source is not None]
         if any(source.source_type is None for source in sources):
-            raise ValueError("SOURCE_TYPE_CONFIRMATION_REQUIRED")
+            raise ValueError(SOURCE_TYPE_CONFIRMATION_REQUIRED)
 
         with self.data_store._transaction():
             draft = self._get(draft_id)
@@ -1181,7 +1195,8 @@ class WebIntake:
                     continue  # Failed discovery is audited without inventing a policy source.
                 text = source.text
                 status = (
-                    "manual" if result.state in {"RETRIEVED", "PROVIDED"} else
+                    "ready" if result.state == "RETRIEVED" else
+                    "manual" if result.state == "PROVIDED" else
                     "failed" if result.state == "UNAVAILABLE" else "empty"
                 )
                 draft["sources"].append(WebSource.model_validate({
@@ -1296,7 +1311,7 @@ class WebIntake:
                     revision = run["revision"]
                     break
             else:
-                raise ValueError("RETRY_INPUT_UNAVAILABLE")
+                raise ValueError(RETRY_INPUT_UNAVAILABLE)
         return self.start(
             draft_id, StartInput(revision=revision, request_id=uuid4().hex), retry_of=job_id
         )

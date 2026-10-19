@@ -286,7 +286,6 @@ dl dd { margin: 0; }
   .comparison-table td[data-label="静态线索"]::before { content: "线索："; }
   .comparison-table td[data-label="政策来源"]::before { content: "来源："; }
   .comparison-table td[data-label="依据"] { flex: 1 1 100%; margin-top: 6px; }
-  .example-evidence { display: none; }
   .comparison-table td.row-evidence {
     display: block;
     flex: 1 1 100%;

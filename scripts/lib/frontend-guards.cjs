@@ -45,7 +45,7 @@ const surfaces = {
   import: ['#page-title', '.file-drop > .ui-button', '.source-editor:first-of-type input[type=url]', '.source-editor:first-of-type > .source-body > summary', '.flow-footer .primary'],
   candidates: ['#page-title', '.source-tabs button:first-child', '.candidate-item:first-child', '#candidate-quote', '.candidate-editor .primary', '.flow-footer .primary'],
   progress: ['#page-title', '.stage-preview .primary', '.execution-details > summary'],
-  report: ['#page-title', '.report-filter select', '.comparison-table tbody tr:first-child button', '#example-evidence-title', '#example-evidence .ui-button'],
+  report: ['#page-title', '.report-filter select', '.comparison-table tbody tr:first-child button[aria-controls="example-evidence"]', '#example-evidence-title', '#example-evidence .ui-button'],
   settings: ['dialog .panel-heading h2', 'dialog .panel-heading .ui-button', 'dialog .settings-section .ui-button'],
 }
 async function assertSurface(page, name) {

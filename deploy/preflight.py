@@ -21,10 +21,16 @@ def validate(config):
         raise ValueError("Unexpected service topology")
     volumes = {
         "web": {("certificates", "/data"), ("caddy_config", "/config")},
-        "api": {("materials", "/var/lib/privacytrace")},
+        "api": {
+            ("materials", "/var/lib/privacytrace"),
+            ("deletion_journal", "/var/lib/privacytrace-deletions"),
+        },
         "postgres": {("database", "/var/lib/postgresql/data")},
         "redis": {("broker", "/data")},
-        "worker": {("materials", "/var/lib/privacytrace")},
+        "worker": {
+            ("materials", "/var/lib/privacytrace"),
+            ("deletion_journal", "/var/lib/privacytrace-deletions"),
+        },
         "dispatcher": {("materials", "/var/lib/privacytrace")},
         "gateway": {("materials", "/var/lib/privacytrace")},
         "migrate": set(),
@@ -177,6 +183,13 @@ def validate(config):
         ):
             raise ValueError("Explicit non-placeholder gateway TLS peers required")
 
+    for role in ("api", "worker"):
+        if (
+            services[role].get("environment", {}).get("PRIVACYTRACE_DELETION_JOURNAL_ROOT")
+            != "/var/lib/privacytrace-deletions"
+        ):
+            raise ValueError("Independent deletion journal volume required")
+
     if "migrate" in services:
         mig = services["migrate"]
         if (
@@ -283,7 +296,8 @@ def _build_synthetic_config():
                 "mem_limit": 805306368,
                 "networks": ["api", "database", "control"],
                 "volumes": [
-                    {"type": "volume", "source": "materials", "target": "/var/lib/privacytrace"}
+                    {"type": "volume", "source": "materials", "target": "/var/lib/privacytrace"},
+                    {"type": "volume", "source": "deletion_journal", "target": "/var/lib/privacytrace-deletions"}
                 ],
                 "secrets": [{"source": "runtime_database_url"}],
                 "tmpfs": ["/tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001"],
@@ -292,6 +306,7 @@ def _build_synthetic_config():
                     "PRIVACYTRACE_STORAGE": "postgres",
                     "PRIVACYTRACE_MODE": "remote",
                     "PRIVACYTRACE_DATABASE_URL_FILE": "/run/secrets/runtime_database_url",
+                    "PRIVACYTRACE_DELETION_JOURNAL_ROOT": "/var/lib/privacytrace-deletions",
                     "PRIVACYTRACE_RUNNER_URL": "https://10.77.0.9:8444",
                     "PRIVACYTRACE_RUNNER_IMAGE_ID": "sha256:" + "a" * 64,
                 },
@@ -337,10 +352,12 @@ def _build_synthetic_config():
                 "mem_limit": 1073741824,
                 "networks": ["database"],
                 "volumes": [
-                    {"type": "volume", "source": "materials", "target": "/var/lib/privacytrace"}
+                    {"type": "volume", "source": "materials", "target": "/var/lib/privacytrace"},
+                    {"type": "volume", "source": "deletion_journal", "target": "/var/lib/privacytrace-deletions"}
                 ],
                 "secrets": [{"source": "runtime_database_url"}, {"source": "broker_url"}],
                 "environment": {
+                    "PRIVACYTRACE_DELETION_JOURNAL_ROOT": "/var/lib/privacytrace-deletions",
                     "PRIVACYTRACE_RUNNER_URL": "https://10.77.0.9:8444",
                     "PRIVACYTRACE_RUNNER_IMAGE_ID": "sha256:" + "a" * 64,
                 },

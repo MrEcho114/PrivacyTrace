@@ -25,7 +25,8 @@ COPY apps/api/migrations /app/apps/api/migrations
 COPY rules/taxonomy.v0.3.json rules/sdk-signatures.v1.0.json /app/rules/
 COPY samples/demo/evaluation-input.json /app/samples/demo/evaluation-input.json
 COPY deploy/serve.py deploy/probe.py deploy/bootstrap.py /app/deploy/
-RUN mkdir -p /var/lib/privacytrace/jobs && chown -R 10001:10001 /var/lib/privacytrace
+RUN mkdir -p /var/lib/privacytrace/jobs /var/lib/privacytrace-deletions \
+    && chown -R 10001:10001 /var/lib/privacytrace /var/lib/privacytrace-deletions
 USER 10001:10001
 EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=4s --start-period=15s --retries=3 \

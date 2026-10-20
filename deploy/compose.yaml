@@ -46,6 +46,7 @@ services:
       PRIVACYTRACE_INSTANCE_ID: ${PT_INSTANCE_ID:?Set stable instance UUID}
       PRIVACYTRACE_DATABASE_URL_FILE: /run/secrets/runtime_database_url
       PRIVACYTRACE_STORE_ROOT: /var/lib/privacytrace/jobs
+      PRIVACYTRACE_DELETION_JOURNAL_ROOT: /var/lib/privacytrace-deletions
       PRIVACYTRACE_MATERIAL_KEY_FILE: /run/secrets/material_key
       PRIVACYTRACE_RUNNER_URL: ${PT_RUNNER_URL:?Explicit private Runner endpoint required}
       PRIVACYTRACE_RUNNER_IMAGE_ID: ${PT_RUNNER_IMAGE_ID:?Explicit immutable Runner image required}
@@ -59,7 +60,9 @@ services:
       - control_tls_ca
       - control_tls_cert
       - control_tls_key
-    volumes: [materials:/var/lib/privacytrace]
+    volumes:
+      - materials:/var/lib/privacytrace
+      - deletion_journal:/var/lib/privacytrace-deletions
     tmpfs: ["/tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001"]
     mem_limit: 768m
     cpus: 1
@@ -165,6 +168,7 @@ services:
       PRIVACYTRACE_DATABASE_URL_FILE: /run/secrets/runtime_database_url
       PRIVACYTRACE_BROKER_URL_FILE: /run/secrets/runtime_broker_url
       PRIVACYTRACE_STORE_ROOT: /var/lib/privacytrace/jobs
+      PRIVACYTRACE_DELETION_JOURNAL_ROOT: /var/lib/privacytrace-deletions
       PRIVACYTRACE_MATERIAL_KEY_FILE: /run/secrets/material_key
       PRIVACYTRACE_LEASE_SECONDS: "60"
       PRIVACYTRACE_RUNNER_URL: ${PT_RUNNER_URL:?Explicit private Runner endpoint required}
@@ -180,7 +184,9 @@ services:
       - control_tls_ca
       - control_tls_cert
       - control_tls_key
-    volumes: [materials:/var/lib/privacytrace]
+    volumes:
+      - materials:/var/lib/privacytrace
+      - deletion_journal:/var/lib/privacytrace-deletions
     tmpfs: ["/tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001"]
     mem_limit: 768m
     cpus: 1
@@ -243,6 +249,7 @@ volumes:
   materials: {}
   database: {}
   broker: {}
+  deletion_journal: {}
 
 secrets:
   runtime_database_url:

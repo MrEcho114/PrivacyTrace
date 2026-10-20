@@ -357,6 +357,20 @@ class SevenServiceTopologyTests(unittest.TestCase):
                 f"Service '{role}' must mount shared materials volume",
             )
 
+    def test_deletion_journal_uses_separate_named_volume(self):
+        services = self.raw_config["services"]
+        for role in ("api", "worker"):
+            spec = services[role]
+            self.assertIn(
+                "deletion_journal:/var/lib/privacytrace-deletions",
+                spec.get("volumes", []),
+            )
+            self.assertEqual(
+                spec["environment"]["PRIVACYTRACE_DELETION_JOURNAL_ROOT"],
+                "/var/lib/privacytrace-deletions",
+            )
+        self.assertIn("deletion_journal", self.raw_config["volumes"])
+
     def test_network_isolation_boundaries(self):
         networks = self.raw_config["networks"]
         self.assertTrue(networks["api"].get("internal"), "Network 'api' must be internal: true")

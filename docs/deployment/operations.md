@@ -38,3 +38,7 @@
 控制面网关在 Docker `control` 用户定义子网中使用显式私有容器 IP（`PT_GATEWAY_CONTAINER_IP`）；`PRIVACYTRACE_GATEWAY_BIND` 必须绑定该地址，不使用被运行时拒绝的 `0.0.0.0`。宿主机只能将 8443/TCP 发布到已有的私网或 VPN 网卡地址 `PT_GATEWAY_HOST_IP`；`PT_CONTROL_SUBNET` 不得与宿主/扫描 VM 路由冲突。Runner 通过该私网地址访问 `PRIVACYTRACE_GATEWAY_URL`，需要证书 SAN 与 IP 匹配、真实 CA/mTLS 与对端指纹。上述值只能在已配置私网和防火墙的隔离环境中提供。
 
 API/Worker 可以通过控制网络连接私有 Runner，但宿主机/VM 防火墙必须只允许既定的 Runner 目的地、专用网关端口及授权对端。禁止将网关绑定到 `0.0.0.0`、公网 IP 或发布 Docker API。Compose 配置负测与实际私网连通/拒绝演练是两个证据层级：后者完成前仍不得宣称 R1–R3 全部通过。
+
+## 独立删除日志卷
+
+API 与 Worker 的 `PRIVACYTRACE_DELETION_JOURNAL_ROOT` 指向单独命名卷 `deletion_journal`，不同于任务材料卷 `materials`。日志必须独立做保全与恢复，且恢复旧快照时需重放删除记录，不能只恢复数据/材料后丢弃日志。不同卷不意味着物理独立备份或一致快照：这需要隔离环境另行验证。当前没有真实恢复演练收据。

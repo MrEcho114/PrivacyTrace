@@ -904,7 +904,8 @@ class WebIntake:
                 (r for r in records.values() if r["source_id"] == source_id),
                 key=lambda r: r["created_at"],
             )
-            for record in by_source[:max(0, len(by_source) - self.MAX_ATTEMPT_RECORDS_PER_SOURCE + 1)]:
+            evict_count = max(0, len(by_source) - self.MAX_ATTEMPT_RECORDS_PER_SOURCE + 1)
+            for record in by_source[:evict_count]:
                 if record["state"] not in {"COMMITTED", "FAILED", "EXPIRED"}:
                     raise ExtractionInProgress("EXTRACTION_IN_PROGRESS")
                 del records[record["attempt_id"]]
@@ -956,7 +957,9 @@ class WebIntake:
                 # An interrupted or failed extract must not undo a committed audit.
                 draft = self._get(draft_id)
                 audit = next(s for s in draft["sources"] if s["id"] == source_id)["model_audit"]
-                entry["state"] = "COMMITTED" if committed or audit.get("attempt_id") == attempt_id else "FAILED"
+                entry["state"] = (
+                    "COMMITTED" if committed or audit.get("attempt_id") == attempt_id else "FAILED"
+                )
                 self._save_attempts(draft_id, records)
 
     @contextmanager
@@ -975,14 +978,22 @@ class WebIntake:
             if attempt_id is not None:
                 self._valid_attempt_id(attempt_id)
                 entry = records.get(attempt_id)
-                if entry is None or entry["source_id"] != source_id or entry["revision"] != revision or entry["state"] != "RESERVED":
+                if (
+                    entry is None
+                    or entry["source_id"] != source_id
+                    or entry["revision"] != revision
+                    or entry["state"] != "RESERVED"
+                ):
                     if changed:
                         self._save_attempts(draft_id, records)
                     raise ValueError("EXTRACTION_ATTEMPT_NOT_RESERVED")
                 entry["state"] = "RUNNING"
                 self._save_attempts(draft_id, records)
             else:
-                if any(r["source_id"] == source_id and r["state"] in {"RESERVED", "RUNNING"} for r in records.values()):
+                if any(
+                    r["source_id"] == source_id and r["state"] in {"RESERVED", "RUNNING"}
+                    for r in records.values()
+                ):
                     if changed:
                         self._save_attempts(draft_id, records)
                     raise ExtractionInProgress("EXTRACTION_IN_PROGRESS")
@@ -1481,9 +1492,16 @@ class WebIntake:
                 attempts_changed = self._expire_reserved(records)
                 for entry in records.values():
                     if entry["state"] == "RUNNING":
-                        source = next((s for s in draft["sources"] if s["id"] == entry["source_id"]), None)
+                        source = next(
+                            (s for s in draft["sources"] if s["id"] == entry["source_id"]),
+                            None,
+                        )
                         audit = source["model_audit"] if source else {}
-                        entry["state"] = "COMMITTED" if audit.get("attempt_id") == entry["attempt_id"] else "FAILED"
+                        entry["state"] = (
+                            "COMMITTED"
+                            if audit.get("attempt_id") == entry["attempt_id"]
+                            else "FAILED"
+                        )
                         attempts_changed = True
                 if attempts_changed:
                     self._save_attempts(directory.name, records)

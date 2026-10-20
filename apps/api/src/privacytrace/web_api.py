@@ -178,16 +178,22 @@ def install_web_api(app, local_write):
         return web_operation(lambda: service.fetch_source(draft_id, source_id, payload.revision))
 
     @app.post("/api/v1/web/drafts/{draft_id}/sources/{source_id}/attempts")
-    def reserve_extraction(draft_id: str, source_id: str, payload: ExtractionReservationInput, request: Request):
+    def reserve_extraction(
+        draft_id: str, source_id: str, payload: ExtractionReservationInput, request: Request
+    ):
         draft_access(request, draft_id)
         return web_operation(
-            lambda: service.reserve_extraction(draft_id, source_id, payload.revision, payload.attempt_id)
+            lambda: service.reserve_extraction(
+                draft_id, source_id, payload.revision, payload.attempt_id
+            )
         )
 
     @app.get("/api/v1/web/drafts/{draft_id}/sources/{source_id}/attempts/{attempt_id}")
     def extraction_attempt(draft_id: str, source_id: str, attempt_id: str, request: Request):
         draft_access(request, draft_id)
-        return web_operation(lambda: service.extraction_attempt_status(draft_id, source_id, attempt_id))
+        return web_operation(
+            lambda: service.extraction_attempt_status(draft_id, source_id, attempt_id)
+        )
 
     @app.get("/api/v1/web/drafts/{draft_id}/sources/{source_id}/extraction-status")
     def extraction_status(draft_id: str, source_id: str, request: Request):

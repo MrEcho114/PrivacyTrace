@@ -252,7 +252,8 @@ def test_extraction_attempt_id_commits_with_same_status_and_legacy_clients(tmp_p
         assert draft["revision"] == old_revision + 1
         assert draft["sources"][0]["model_audit"]["status"] == original_status
         assert draft["sources"][0]["model_audit"]["attempt_id"] == attempt
-        assert client.get(endpoint + "/sources/a/attempts/" + attempt).json()["state"] == "COMMITTED"
+        receipt = client.get(endpoint + "/sources/a/attempts/" + attempt).json()
+        assert receipt["state"] == "COMMITTED"
         assert client.get(endpoint).json()["sources"][0]["model_audit"]["attempt_id"] == attempt
         assert draft["sources"][1]["model_audit"] == {}
         if attempt == "a" * 32:
@@ -345,7 +346,7 @@ def test_concurrent_source_extraction_refuses_second_paid_request_and_releases_s
 
 
 
-def test_reserved_attempt_remains_visible_before_delayed_execution_and_late_expired_post_is_rejected(
+def test_delayed_reserved_attempt_and_late_expired_post_rejected(
     tmp_path, monkeypatch
 ):
     from privacytrace import web_intake

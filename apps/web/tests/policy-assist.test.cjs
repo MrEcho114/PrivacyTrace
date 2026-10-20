@@ -56,7 +56,7 @@ function harness(api = {}, storage = '') {
   const context = { exports: {}, Error, AbortController, setTimeout, clearTimeout, crypto: { randomUUID }, localStorage: { setItem() {}, getItem() { return storage } },
     require(name) {
       if (name === 'vue') return { ...vue, onMounted(fn) { mounted.push(fn) }, onBeforeUnmount(fn) { callbacks.push(fn) }, nextTick() {} }
-      if (name === './liveApi') return { async createDraft() { return stored() }, ...api }
+      if (name === './liveApi') return { async createDraft() { return stored() }, async getExtractionStatus() { return { active: false, revision: 1 } }, ...api }
       if (name === './api') return { async loadTaxonomy() { return { data_types: [] } } }
       if (name === './workflow' || name.endsWith('.vue')) return {}
       throw new Error(name)
@@ -519,11 +519,17 @@ for (const status of ['SUCCESS', 'PARTIAL']) test(`response lost, retry 409, the
 })
 
 test('uncommitted attempt survives a 409 retry and two reads until original commit is visible', async () => {
-  let current, calls = 0, originalAttempt = ''
+  let current, calls = 0, originalAttempt = '', statusReads = 0
   const h = harness({
     async createDraft() { return current },
     async uploadApk() { current = { ...current, uploaded: true }; return current },
     async readDraft() { return current },
+    async getExtractionStatus() {
+      statusReads++
+      // The first pre-retry check has ended, but the first refresh sees the
+      // delayed work still active and must not discard its operation ID.
+      return { active: statusReads === 2, revision: current.revision }
+    },
     async extractSource(_draftId, _sourceId, _revision, _signal, attemptId) {
       calls++
       if (calls === 1) return current
@@ -572,6 +578,68 @@ test('bounded unresolved attempt tracking refuses additional extraction without 
   assert.deepEqual([...h.state.failedSourceIds.value], [])
   h.state.go('import'); await h.state.prepare()
   assert.equal(calls, 17)
+})
+
+
+test('no second model request while a lost-response attempt is still active', async () => {
+  let current, calls = 0, active = false, attemptId = ''
+  const h = harness({
+    async createDraft() { return current },
+    async uploadApk() { current = { ...current, uploaded: true }; return current },
+    async getExtractionStatus() { return { active, revision: current.revision } },
+    async readDraft() { return current },
+    async extractSource(_draft, _source, _revision, _signal, id) {
+      calls++
+      if (calls === 1) return current
+      attemptId = id; active = true
+      throw new Error('connection lost; server still using model')
+    },
+  })
+  current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '政策原句', status: 'manual',
+    model_audit: { status: 'SUCCESS' } }] }
+  h.state.file.value = { name: 'fixture.apk' }; await h.state.prepare()
+  await h.state.retryModel('seed')
+  await h.state.retryModel('seed')
+  assert.equal(calls, 2, 'repeated retry must not send another model request while status is active')
+  assert.match(h.state.error.value, /服务端提取/)
+  await h.state.refreshMaterials()
+  assert.deepEqual([...h.state.failedSourceIds.value], ['seed'])
+  active = false
+  current = { ...current, revision: current.revision + 1,
+    sources: current.sources.map(s => ({ ...s, model_audit: { status: 'SUCCESS', attempt_id: attemptId } })) }
+  await h.state.refreshMaterials()
+  assert.deepEqual([...h.state.failedSourceIds.value], [])
+  h.state.go('import'); await h.state.prepare()
+  assert.equal(calls, 2, 'committed response must reconcile without duplicate model call')
+})
+
+test('inactive uncommitted attempts can be retired after reaching the queue cap', async () => {
+  let current, calls = 0, safeRetry = false
+  const h = harness({
+    async createDraft() { return current },
+    async uploadApk() { current = { ...current, uploaded: true }; return current },
+    async readDraft() { return current },
+    async getExtractionStatus() { return { active: false, revision: current.revision } },
+    async extractSource() {
+      calls++
+      if (calls === 1) return current
+      if (!safeRetry) throw new Error('server did not commit this attempt')
+      current = { ...current, revision: current.revision + 1,
+        sources: current.sources.map(s => ({ ...s, model_audit: { status: 'SUCCESS' } })) }
+      return current
+    },
+  })
+  current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual',
+    model_audit: { status: 'SUCCESS' } }] }
+  h.state.file.value = { name: 'fixture.apk' }; await h.state.prepare()
+  for (let i = 0; i < 18; i++) await h.state.retryModel('seed')
+  assert.equal(calls, 17, 'queue must reject requests after sixteen uncertain failures')
+  await h.state.refreshMaterials()
+  assert.deepEqual([...h.state.failedSourceIds.value], ['seed'], 'retiring queue does not claim an old success as new')
+  safeRetry = true
+  await h.state.retryModel('seed')
+  assert.equal(calls, 18, 'after authoritative idle confirmation a new attempt is allowed')
+  assert.deepEqual([...h.state.failedSourceIds.value], [])
 })
 
 test('persisted failed extraction audit remains retryable after page restoration', async () => {

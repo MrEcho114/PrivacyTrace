@@ -6,7 +6,7 @@ import StatusTag from './components/StatusTag.vue'
 import ImportPage from './pages/ImportPage.vue'
 import CandidatePage from './pages/CandidatePage.vue'
 import { cancelJob, loadJob, loadTaxonomy } from './api'
-import { createDraft, discoverSources, displaySourceUrl, extractSource, fetchSource, importExternal, readDraft, saveCandidates, startScan, uploadApk } from './liveApi'
+import { createDraft, discoverSources, displaySourceUrl, extractSource, getExtractionStatus, fetchSource, importExternal, readDraft, saveCandidates, startScan, uploadApk } from './liveApi'
 import type { LiveDraft } from './liveApi'
 import type { ExternalInput } from './policyAssist'
 import { quoteExists, sourceProvenanceLabel, sourceStatusLabel } from './workflow'
@@ -139,9 +139,30 @@ async function importCollected(input: ExternalInput) {
     notice.value = incoming ? '收集结果已补入当前材料。来源、原句与收集状态分别保留，完整度未知、未复核。' : '已记录离线或未找到结果；尚未取得政策正文，可补充网址或正文。'
   })
 }
+// A lost HTTP response can leave the server still executing its model call.
+async function assertSourceIdle(id: string, requestSignal: AbortSignal) {
+  const pending = pendingExtractionAttempts.get(id)
+  if (!draft.value || !pending?.length) return
+  const status = await getExtractionStatus(draft.value.id, id, requestSignal)
+  assertActive(requestSignal)
+  if (status.active) throw new Error('该来源仍在服务端提取。请稍后重新读取材料对账，暂勿重复请求模型。')
+}
 async function refreshMaterials() {
   await perform(async requestSignal => {
     if (!draft.value) return
+    // Observe activity before reading the persisted revision. An idle service
+    // followed by an unmodified audit means an uncertain attempt has ended.
+    const activity = new Map<string, boolean>()
+    for (const id of pendingExtractionAttempts.keys()) {
+      try {
+        const status = await getExtractionStatus(draft.value.id, id, requestSignal)
+        assertActive(requestSignal)
+        activity.set(id, status.active)
+      } catch (cause) {
+        assertActive(requestSignal)
+        // Old servers without the status endpoint remain conservative.
+      }
+    }
     const value = await readDraft(draft.value.id, requestSignal)
     assertActive(requestSignal)
     for (const source of value.sources) {
@@ -163,6 +184,11 @@ async function refreshMaterials() {
         (matchedAttempt || compatibleTransition)) {
         markExtraction(source.id, false)
         if (matchedAttempt) pendingExtractionAttempts.delete(source.id)
+      }
+      // Retire uncommitted attempts only when the service confirms this
+      // source has no active model call; never evict unconfirmed live attempts.
+      if (!matchedAttempt && pending?.length && activity.get(source.id) === false) {
+        pendingExtractionAttempts.delete(source.id)
       }
     }
     needsPreparation = failedSourceIds.value.length > 0 || value.sources.some(source => !preparedSources.has(source.id))
@@ -202,6 +228,7 @@ async function prepare() {
         markExtraction(source.id, false); continue
       }
       try {
+        await assertSourceIdle(source.id, requestSignal)
         const attemptId = startExtractionAttempt(value, source.id)
         value = await extractSource(value.id, source.id, value.revision, requestSignal, attemptId)
         assertActive(requestSignal); finishExtractionAttempt(value, source.id, attemptId); apply(value)
@@ -280,6 +307,7 @@ async function retrySource(id: string) {
     const source = draft.value.sources.find(s => s.id === id)
     if (!source || source.status === 'failed' || source.error_code) return
     try {
+      await assertSourceIdle(id, requestSignal)
       const attemptId = startExtractionAttempt(draft.value, id)
       const value = await extractSource(draft.value.id, id, draft.value.revision, requestSignal, attemptId)
       assertActive(requestSignal); finishExtractionAttempt(value, id, attemptId); apply(value)
@@ -297,6 +325,7 @@ async function retryModel(id: string) {
   await perform(async requestSignal => {
     if (!draft.value) return
     try {
+      await assertSourceIdle(id, requestSignal)
       const attemptId = startExtractionAttempt(draft.value, id)
       const value = await extractSource(draft.value.id, id, draft.value.revision, requestSignal, attemptId)
       assertActive(requestSignal); finishExtractionAttempt(value, id, attemptId); apply(value)

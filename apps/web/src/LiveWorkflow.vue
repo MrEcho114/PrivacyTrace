@@ -31,6 +31,14 @@ const signal = controller.signal
 let activeRequest: AbortController | null = null
 let needsPreparation = true
 const preparedSources = new Set<string>()
+const failedSourceIds = ref<string[]>([])
+function markExtraction(id: string, failed: boolean) {
+  failedSourceIds.value = failed ? [...new Set([...failedSourceIds.value, id])] : failedSourceIds.value.filter(item => item !== id)
+  if (!failed) preparedSources.add(id)
+}
+function extractionFailed(value: LiveDraft, id: string): boolean {
+  return value.sources.find(source => source.id === id)?.model_audit?.status === 'FAILED'
+}
 const states: Record<string, string> = { QUEUED: '等待处理', INTAKE: '核对输入', STATIC_ANALYSIS: '隔离扫描', POLICY_PARSING: '装载政策快照', EVALUATING: '规则对照', REPORTING: '生成报告', SUCCEEDED: '报告已生成', FAILED: '分析失败', CANCELLED: '已取消' }
 const terminal = computed(() => !!job.value && ['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(job.value.state))
 const events = computed(() => draft.value?.jobs.find(r => r.job_id === job.value?.id)?.events ?? [])
@@ -89,13 +97,15 @@ async function ensureDraft(requestSignal: AbortSignal): Promise<LiveDraft> {
   generation++; clearTimeout(timer); job.value = null; submissionId = ''; pendingRevision = null
   needsPreparation = true
   preparedSources.clear()
+  failedSourceIds.value = []
   apply(value)
   return value
 }
 async function importCollected(input: ExternalInput) {
   await perform(async requestSignal => {
-    let value = await ensureDraft(requestSignal)
     const incoming = 'results' in input ? input.results.filter(r => r.source).length : 1
+    if (props.state.sources.length + incoming > 8) throw new Error(`当前已有 ${props.state.sources.length} 份来源，每份材料最多 8 份来源。请减少本次回填来源。`)
+    let value = await ensureDraft(requestSignal)
     if (value.sources.length + incoming > 8) throw new Error(`当前已有 ${value.sources.length} 份来源，每份材料最多 8 份来源。请减少本次回填来源。`)
     value = await importExternal(value.id, input, requestSignal)
     assertActive(requestSignal)
@@ -137,17 +147,24 @@ async function prepare() {
       }
     }
     if (!value.sources.some(s => s.text?.trim() && s.status !== 'failed')) { go('import'); throw new Error('各份来源均未获得正文。请重试网址，或粘贴／导入政策文本。') }
+    let failedExtraction = false
     for (const source of [...value.sources]) {
       if (!source.text?.trim() || source.status === 'failed' || preparedSources.has(source.id)) continue
-      if (value.candidates.some(c => c.source_id === source.id)) { preparedSources.add(source.id); continue }
+      if (value.candidates.some(c => c.source_id === source.id)) { markExtraction(source.id, false); continue }
       try {
         value = await extractSource(value.id, source.id, value.revision, requestSignal)
         assertActive(requestSignal); apply(value)
+        if (extractionFailed(value, source.id)) {
+          failedExtraction = true; markExtraction(source.id, true)
+          notice.value = `${source.title || source.id}：候选提取未完成。可在候选页面重新提取或手动补充。`
+        } else markExtraction(source.id, false)
+      } catch (cause) {
+        assertActive(requestSignal)
+        failedExtraction = true; markExtraction(source.id, true)
+        notice.value = `${source.title || source.id}：${cause instanceof Error ? cause.message : '模型请求失败'}。可在候选页面重新提取或手动补充。`
       }
-      catch (cause) { assertActive(requestSignal); notice.value = cause instanceof Error ? cause.message : '模型请求失败，可手动添加候选。' }
-      preparedSources.add(source.id)
     }
-    needsPreparation = false
+    needsPreparation = failedExtraction
     go('candidates')
   })
 }
@@ -212,8 +229,23 @@ async function retrySource(id: string) {
     }
   })
 }
-async function retryModel(id: string) { await perform(async () => { if (!draft.value) return; apply(await extractSource(draft.value.id, id, draft.value.revision, signal)) }) }
-function newInput() { const external = !!draft.value?.external_imports?.length; generation++; clearTimeout(timer); draft.value = null; job.value = null; file.value = null; submissionId = ''; pendingRevision = null; try { localStorage.removeItem(storageKey) } catch { /* Memory state still resets. */ }; props.state.sources = sourceInput().map(s => ({ id: s.id, title: s.title, url: s.url ?? '', text: s.text ?? '', type: s.source_type ?? 'OFFICIAL_WEB_POLICY', status: 'manual', version: s.version ?? '', region: s.region ?? '', product: s.product ?? '', packageName: s.package_name ?? '', versionCode: s.version_code ?? undefined, complete: false })); props.state.candidates = []; error.value = ''; notice.value = external ? '已转为新的手动输入版本。原始外部来源、候选与收集审计仍保存在旧材料版本。请重新选择 APK。' : ''; go('import') }
+async function retryModel(id: string) {
+  await perform(async requestSignal => {
+    if (!draft.value) return
+    try {
+      const value = await extractSource(draft.value.id, id, draft.value.revision, requestSignal)
+      assertActive(requestSignal); apply(value)
+      const failed = extractionFailed(value, id)
+      markExtraction(id, failed)
+      needsPreparation = failedSourceIds.value.length > 0
+      notice.value = failed ? '候选提取仍未完成。可再次尝试或手动补充。' : '该来源候选提取请求已完成；候选仍需检查，政策全文及附件未复核。'
+    } catch (cause) {
+      assertActive(requestSignal); markExtraction(id, true); needsPreparation = true
+      throw cause
+    }
+  })
+}
+function newInput() { const external = !!draft.value?.external_imports?.length; generation++; clearTimeout(timer); preparedSources.clear(); failedSourceIds.value = []; needsPreparation = true; draft.value = null; job.value = null; file.value = null; submissionId = ''; pendingRevision = null; try { localStorage.removeItem(storageKey) } catch { /* Memory state still resets. */ }; props.state.sources = sourceInput().map(s => ({ id: s.id, title: s.title, url: s.url ?? '', text: s.text ?? '', type: s.source_type ?? 'OFFICIAL_WEB_POLICY', status: 'manual', version: s.version ?? '', region: s.region ?? '', product: s.product ?? '', packageName: s.package_name ?? '', versionCode: s.version_code ?? undefined, complete: false })); props.state.candidates = []; error.value = ''; notice.value = external ? '已转为新的手动输入版本。原始外部来源、候选与收集审计仍保存在旧材料版本。请重新选择 APK。' : ''; go('import') }
 onMounted(async () => {
   try { labels.value = Object.fromEntries((await loadTaxonomy(signal)).data_types.map(t => [t.id, t.label])) } catch { /* Editor can still show IDs while service is unavailable. */ }
   let id = ''
@@ -224,7 +256,14 @@ onMounted(async () => {
     assertActive(requestSignal); apply(value)
     const latest = draft.value?.jobs.at(-1)
     if (latest) { const restored = await loadJob(latest.job_id, requestSignal); assertActive(requestSignal); job.value = restored; submissionId = latest.request_id; go('progress'); await poll() }
-    else if (draft.value?.uploaded) { draft.value.sources.forEach(source => preparedSources.add(source.id)); needsPreparation = false; go('candidates') }
+    else if (draft.value?.uploaded) {
+      // Only persisted FAILED audits opt back into automatic preparation. Unknown
+      // extraction history stays untouched so deleted candidates are not reborn.
+      failedSourceIds.value = draft.value.sources.filter(source => source.model_audit?.status === 'FAILED').map(source => source.id)
+      draft.value.sources.forEach(source => { if (!failedSourceIds.value.includes(source.id)) preparedSources.add(source.id) })
+      needsPreparation = failedSourceIds.value.length > 0
+      go('candidates')
+    }
     notice.value = '已从本机服务恢复材料。候选检查不代表政策全文已复核。'
   })
 })
@@ -237,7 +276,7 @@ onBeforeUnmount(() => { generation++; controller.abort(); activeRequest?.abort()
     <p v-if="busy" class="notice compact" role="status">正在处理当前请求，请稍候；已获得的来源仍保留。<UiButton v-if="state.step === 'import'" variant="quiet" @click="cancelPreparation">取消准备请求</UiButton></p>
     <p v-if="error" class="error-text" role="alert">{{ error }}</p><p v-if="notice" class="notice compact" role="status">{{ notice }}</p>
     <ImportPage v-if="state.step === 'import'" :state="state" :busy="busy" :uploaded-name="draft?.uploaded ? draft.name : undefined" @file="file = $event" @dirty="state.maxStep = 0" @example="emit('example')" @next="prepare" @import="importCollected" />
-    <CandidatePage v-else-if="state.step === 'candidates'" :state="state" :busy="busy || !!draft?.jobs.length" :type-labels="labels" @back="go('import')" @next="begin" @retry-source="retrySource" @retry-model="retryModel" @persist-candidates="persistCandidates" />
+    <CandidatePage v-else-if="state.step === 'candidates'" :state="state" :busy="busy || !!draft?.jobs.length" :type-labels="labels" :failed-source-ids="failedSourceIds" @back="go('import')" @next="begin" @retry-source="retrySource" @retry-model="retryModel" @persist-candidates="persistCandidates" />
     <div v-else-if="state.step === 'progress'" class="material-panel progress-panel">
       <div class="page-heading"><h1 id="page-title" tabindex="-1">分析进度</h1><p>显示服务实际记录的离散阶段。静态线索不证明实际采集。</p></div>
       <div role="status" aria-live="polite"><StatusTag>{{ states[job?.state ?? 'QUEUED'] }}</StatusTag><p>{{ draft?.name }} · {{ job?.id }}</p></div>

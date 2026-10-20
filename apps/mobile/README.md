@@ -31,9 +31,9 @@ npm run android:build
 
 ## 本轮关键验证
 
-- `npm run build` 与原有 Web 98 项回归通过。
+- `npm run build` 与整合 #118 后的 Web 111 项回归通过。
 - `npm run acceptance:mobile` 使用真实生产 Vue 和受控 native bridge 替身，走上传→个人模型/JSON→政策准备→未勾选候选→启动→报告证据→恢复，检查浏览器不发送 API 请求，并输出390/1440px与大字号截图。
 - 新 `MobileWorkflowTest` 以实际 Kotlin 核心和临时 TLS 测试服务，验证政策导入/start/report 路径与草稿访问材料，以及模型请求仅到模型服务、分析服务收到0请求。两项通过；测试注入私有CA只存在测试代码，不改变产品系统信任。
 - 浏览器 bridge 替身不等于实际 Tauri IPC/Android UI、真实 APK 扫描或实际付费模型。完整APK、真机和部署组合保持独立验收。
 
-按本轮用户要求，以完成开发主链为先，仅做必要验证，不扩展异常矩阵。PR #118 的提取 attempt 协议由原 owner 维护，本轮消费既有兼容端点、不修改其文件或擅自合并。
+按本轮用户要求，以完成开发主链为先，仅做必要验证，不扩展异常矩阵。PR #118 的提取 attempt 协议由原 owner 交付并合入 main；本轮已吸收该主线，消费既有兼容端点、不修改其文件。

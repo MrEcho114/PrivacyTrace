@@ -15,6 +15,7 @@ from .package_set import PackageSetIntegrityError
 from .web_intake import (
     ISOLATED_INPUT_ERROR_CODES,
     SOURCE_TYPE_CONFIRMATION_REQUIRED,
+    ExtractionInProgress,
     InspectionBusy,
     UploadTimedOut,
     UploadTooLarge,
@@ -33,6 +34,15 @@ class RevisionInput(Model):
     revision: int = Field(ge=1, strict=True)
 
 
+class ExtractionInput(RevisionInput):
+    # Optional for older clients; a correlation ID is not an authentication token.
+    attempt_id: str | None = Field(default=None, pattern=r"^[0-9a-f]{32}$")
+
+
+class ExtractionReservationInput(RevisionInput):
+    attempt_id: str = Field(pattern=r"^[0-9a-f]{32}$")
+
+
 def web_error(exc):
     if isinstance(exc, KeyError):
         return HTTPException(404, detail="DRAFT_NOT_FOUND")
@@ -40,6 +50,8 @@ def web_error(exc):
         return HTTPException(
             503, detail="INSPECTION_CAPACITY_BUSY", headers={"Retry-After": "15"}
         )
+    if isinstance(exc, ExtractionInProgress):
+        return HTTPException(409, detail="EXTRACTION_IN_PROGRESS", headers={"Retry-After": "2"})
     if isinstance(exc, PackageSetIntegrityError):
         return HTTPException(exc.http_status, detail=exc.code)
     if isinstance(exc, ScanError):
@@ -49,6 +61,9 @@ def web_error(exc):
     allowed = {
         "MODEL_NOT_CONFIGURED", "MODEL_CONFIGURATION_INCOMPLETE",
         SOURCE_TYPE_CONFIRMATION_REQUIRED,
+        # The client must be able to tell a spent attempt history from a
+        # stale revision, so these stay distinct from the generic rejection.
+        "EXTRACTION_ATTEMPT_QUOTA_REACHED", "EXTRACTION_ATTEMPT_NOT_RESERVED",
     }
     code = str(exc) if str(exc) in allowed else "INPUT_OR_VERSION_REJECTED"
     return HTTPException(409, detail=code)
@@ -165,10 +180,30 @@ def install_web_api(app, local_write):
         draft_access(request, draft_id)
         return web_operation(lambda: service.fetch_source(draft_id, source_id, payload.revision))
 
-    @app.post("/api/v1/web/drafts/{draft_id}/sources/{source_id}/extract")
-    def extract(draft_id: str, source_id: str, payload: RevisionInput, request: Request):
+    @app.post("/api/v1/web/drafts/{draft_id}/sources/{source_id}/attempts")
+    def reserve_extraction(
+        draft_id: str, source_id: str, payload: ExtractionReservationInput, request: Request
+    ):
         draft_access(request, draft_id)
-        return web_operation(lambda: service.extract(draft_id, source_id, payload.revision))
+        return web_operation(
+            lambda: service.reserve_extraction(
+                draft_id, source_id, payload.revision, payload.attempt_id
+            )
+        )
+
+    @app.get("/api/v1/web/drafts/{draft_id}/sources/{source_id}/attempts/{attempt_id}")
+    def extraction_attempt(draft_id: str, source_id: str, attempt_id: str, request: Request):
+        draft_access(request, draft_id)
+        return web_operation(
+            lambda: service.extraction_attempt_status(draft_id, source_id, attempt_id)
+        )
+
+    @app.post("/api/v1/web/drafts/{draft_id}/sources/{source_id}/extract")
+    def extract(draft_id: str, source_id: str, payload: ExtractionInput, request: Request):
+        draft_access(request, draft_id)
+        return web_operation(
+            lambda: service.extract(draft_id, source_id, payload.revision, payload.attempt_id)
+        )
 
     @app.post("/api/v1/web/drafts/{draft_id}/candidates")
     def save(draft_id: str, payload: CandidateInput, request: Request):

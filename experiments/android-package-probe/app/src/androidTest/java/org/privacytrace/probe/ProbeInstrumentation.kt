@@ -23,6 +23,33 @@ class ProbeInstrumentation : Instrumentation() {
         try {
             check(android.os.Process.myUid() >= 10000)
             when (arguments.getString("mode")) {
+                "upload_transport" -> {
+                    stage = "native_upload_transport"
+                    AnalysisTransportTest.cacheRoot = targetContext.cacheDir
+                    try {
+                        val checks = AnalysisTransportTest()
+                        checks.archiveContainsAllPartsAndCleans()
+                        checks.singleApkUsesRawBodyAtWireLimit()
+                        checks.failuresLeaveNoTemporaryApks()
+                        checks.tlsUploadChecksReceiptAndReadback()
+                        checks.mismatchedReceiptRetainsAccess()
+                        checks.lostResponseReconcilesWithoutReplay()
+                        checks.instanceReplacementRefusesCredentials()
+                        checks.otherOriginReceivesNoCredentials()
+                        checks.redirectAndBackpressureNeverReplay()
+                        checks.deleteWaitsForServerAcknowledgement()
+                        checks.strictJsonRejectsAmbiguity()
+                        checks.cancelBeforeSendEmitsNoRequests()
+                        checks.cancelInFlightStopsSocket()
+                        verifyUploadAccess(targetContext)
+                        verifyInstalledUpload(targetContext,
+                            requireNotNull(arguments.getString("expectedBaseSha256")),
+                            requireNotNull(arguments.getString("expectedSplitSha256")))
+                    } finally { AnalysisTransportTest.cacheRoot = null }
+                    output.putString("stream", "PASS: native upload TLS contract13 protected-access installed-fixture-splits ordinary UID\n")
+                    finish(Activity.RESULT_OK, output)
+                    return
+                }
                 "https_health" -> {
                     stage = "native_https_health"
                     HealthTlsCase.values().forEach { HealthTlsChecks.run(it) }

@@ -6,6 +6,10 @@ fn main() {
         "configure_model",
         "clear_model",
         "check_server",
+        "upload_selected",
+        "refresh_upload",
+        "delete_upload",
+        "forget_upload",
     ])
     .android_path("android")
     .build();

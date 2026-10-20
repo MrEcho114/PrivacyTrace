@@ -18,6 +18,7 @@ from .middleware import (
     RemoteTransportSecurityMiddleware,
     install_log_redaction,
 )
+from .mobile_capabilities import install_mobile_capabilities
 from .models import AnalysisJob, EvaluationInput, EvaluationResult, Evidence, SourceOrigin
 from .resources import ROOT, read_json, taxonomy
 from .runtime_models import JobsResponse, Report, ReviewRequest
@@ -114,6 +115,7 @@ def create_app(
         raise
     app.state.security_seam = SecuritySeam(config, app.state.job_store)
     install_web_api(app, local_write)
+    install_mobile_capabilities(app, durable=execution_mode == "durable")
 
     @app.get("/api/v1/health")
     def health():

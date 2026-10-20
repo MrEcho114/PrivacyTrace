@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue';
-import { cancel, inspectSelected, modelStatus, configureModel, clearModel, checkServer, type ProbeResult, type ModelConfigStatus, type ServerHealth } from '../../tauri-plugin/guest-js/index';
+import { cancel, inspectSelected, modelStatus, configureModel, clearModel, checkServer, uploadSelected, refreshUpload, deleteUpload, forgetUpload, type UploadStatus, type ProbeResult, type ModelConfigStatus, type ServerHealth } from '../../tauri-plugin/guest-js/index';
 
 const busy = ref(false);
 const status = ref('尚未读取');
@@ -10,6 +10,28 @@ const modelMessage = ref('正在读取配置状态');
 const healthBusy = ref(false);
 const health = ref<ServerHealth | null>(null);
 const healthMessage = ref('尚未检查服务');
+const uploadResult = ref<UploadStatus | null>(null);
+const uploadMessage = ref('尚未上传');
+async function transfer(action: () => Promise<UploadStatus>) {
+  if (busy.value) return;
+  busy.value = true;
+  uploadResult.value = null;
+  uploadMessage.value = '等待原生确认、准备材料或服务响应；可停止当前操作';
+  try {
+    uploadResult.value = await action();
+    const current = uploadResult.value;
+    uploadMessage.value = current.state === 'SERVER_CONFIRMED'
+      ? '服务器已确认完整包集合（尚未开始分析）'
+      : current.state === 'LOCAL_ACCESS_FORGOTTEN'
+        ? '本机访问材料已清除；远端材料是否删除仍未知，旧草稿无法找回'
+      : current.state === 'DELETED'
+        ? (current.cleanupPending ? '服务器已撤销访问，物理清理仍待完成' : '服务器已确认删除')
+        : '服务器尚未确认上传；没有自动重传';
+  } catch (error) {
+    const code = typeof error === 'string' ? error : 'NATIVE_PROBE_FAILED';
+    uploadMessage.value = `${code}；上传结果未确认，可刷新对应实例。停止传输不会自动删除远端材料。`;
+  } finally { busy.value = false; }
+}
 async function checkHealth() {
   if (busy.value) return;
   busy.value = true;
@@ -66,7 +88,7 @@ async function stop() {
 <template>
   <main>
     <h1>本机桥接验证</h1>
-    <p>实验工具：选择应用后，在原生窗口确认读取当前 base 和全部已安装 splits。仅显示本机摘要，不上传。</p>
+    <p>本机读取：选择应用后，在原生窗口确认读取当前 base 和全部已安装 splits，仅显示摘要。上传请使用下方独立入口。</p>
     <button :disabled="busy" @click="read">选择应用并读取</button>
     <button :disabled="!busy" @click="stop">取消当前操作</button>
     <p role="status">{{ status }}</p>
@@ -93,6 +115,17 @@ async function stop() {
       <button :disabled="!healthBusy" @click="stop">取消服务检查</button>
       <p role="status">{{ healthMessage }}</p>
       <p v-if="health" class="server-origin">{{ health.origin }} · 版本 {{ health.version }} · {{ health.mode }} · {{ health.scope }}</p>
+    </section>
+    <section aria-label="应用安全上传">
+      <h2>应用安全上传</h2>
+      <p>在原生窗口选择实例和应用，确认全部已安装包与长期保留规则后上传。仅上传所选应用；分析和政策交互尚未接入此验证壳。</p>
+      <button :disabled="busy" @click="transfer(uploadSelected)">选择应用并确认上传</button>
+      <button :disabled="busy" @click="transfer(refreshUpload)">刷新上传确认</button>
+      <button :disabled="busy" @click="transfer(deleteUpload)">删除远端材料</button>
+      <button :disabled="busy" @click="transfer(forgetUpload)">清除本机访问材料</button>
+      <button :disabled="!busy" @click="stop">停止当前操作</button>
+      <p role="status">{{ uploadMessage }}</p>
+      <p v-if="uploadResult" class="server-origin">{{ uploadResult.origin }} · {{ uploadResult.state }}</p>
     </section>
   </main>
 </template>

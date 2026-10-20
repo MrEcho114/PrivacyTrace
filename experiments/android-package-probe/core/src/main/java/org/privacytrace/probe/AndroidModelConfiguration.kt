@@ -9,8 +9,8 @@ import java.security.KeyStore
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 
-internal class AndroidModelConfigFiles(context: Context) : ModelConfigFiles {
-    internal val file = File(context.noBackupFilesDir, "model-config-v1.bin")
+internal class AndroidModelConfigFiles(context: Context, name: String = "model-config-v1.bin") : ModelConfigFiles {
+    internal val file = File(context.noBackupFilesDir, name)
     private val atomic = AtomicFile(file)
 
     override fun read(): ByteArray? {
@@ -48,16 +48,16 @@ internal class AndroidModelConfigFiles(context: Context) : ModelConfigFiles {
     }
 }
 
-internal class AndroidModelConfigKeys : ModelConfigKeys {
+internal class AndroidModelConfigKeys(private val alias: String = ALIAS) : ModelConfigKeys {
     companion object { internal const val ALIAS = "privacytrace.model-config.v1" }
     private fun store() = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
 
     override fun key(create: Boolean): SecretKey {
         val keyStore = store()
-        if (keyStore.containsAlias(ALIAS)) return keyStore.getKey(ALIAS, null) as SecretKey
+        if (keyStore.containsAlias(alias)) return keyStore.getKey(alias, null) as SecretKey
         check(create)
         return KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore").apply {
-            init(KeyGenParameterSpec.Builder(ALIAS, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+            init(KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                 .setKeySize(256)
@@ -66,7 +66,7 @@ internal class AndroidModelConfigKeys : ModelConfigKeys {
         }.generateKey()
     }
 
-    override fun delete() { store().deleteEntry(ALIAS) }
+    override fun delete() { store().deleteEntry(alias) }
 }
 
 internal fun androidModelConfiguration(context: Context) =

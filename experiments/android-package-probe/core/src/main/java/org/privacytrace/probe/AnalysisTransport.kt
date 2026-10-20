@@ -29,7 +29,7 @@ internal data class UploadStatus(val origin: String, val draft: String, val stat
 
 // No arbitrary request API, no web-supplied headers, no model configuration.
 internal class AnalysisTransport(address: String, private val sessions: UploadSessions,
-    client: OkHttpClient = healthHttpClient()) {
+    client: OkHttpClient = healthHttpClient(), private val stage: (String) -> Unit = {}) {
     val origin = analysisOrigin(address)
     private val cancelled = AtomicBoolean(false)
     private val current = AtomicReference<Call?>()
@@ -90,6 +90,7 @@ internal class AnalysisTransport(address: String, private val sessions: UploadSe
     }
 
     fun capabilities(): UploadCapabilities {
+        stage("CHECKING_INSTANCE")
         val fields = exchange("api/v1/mobile-capabilities")
         try {
             check(fields["protocol"] == "privacytrace-mobile/1" && fields["supported"] == true)
@@ -117,6 +118,7 @@ internal class AnalysisTransport(address: String, private val sessions: UploadSe
             val existing = get(session)
             if (existing.state == "SERVER_CONFIRMED") return existing
         } else {
+            stage("CREATING_DRAFT")
             val created = exchange("api/v1/web/drafts", "POST", json=
                 "{\"name\":${TransportJson.quote(archive.result.packageName)},\"sources\":[{\"id\":\"pending\",\"title\":\"政策待补充\"}]}")
             val draft = created.text("id")
@@ -127,9 +129,11 @@ internal class AnalysisTransport(address: String, private val sessions: UploadSe
             session = UploadSession(origin, consent.instanceId, draft, token, archive.result.localSetSha256)
             // Save before opening the upload connection. A lost response never
             // discards access to potentially retained remote material.
+            stage("PROTECTING_ACCESS")
             sessions.save(session) { cancelled.get() }
         }
         checkCancelled()
+        stage("UPLOADING")
         val response = exchange("api/v1/web/drafts/${session.draft}/package-set", "POST", session, file=archive.file)
         verifyReceipt(session, response)
         return get(session) // Fresh server readback, never a local success guess.
@@ -143,6 +147,7 @@ internal class AnalysisTransport(address: String, private val sessions: UploadSe
     fun delete(): UploadStatus {
         val caps = capabilities()
         val session = sessions.load(origin, caps.instanceId) ?: throw ServerProbeException("NO_SAVED_UPLOAD")
+        stage("DELETING")
         val response = exchange("api/v1/web/drafts/${session.draft}", "DELETE", session)
         if (response["deleted"] != true || response["cleanup_pending"] !is Boolean) throw ServerProbeException("SERVER_RESPONSE_INVALID")
         // Once an explicit DELETE receipt has been validated, local revocation
@@ -152,6 +157,7 @@ internal class AnalysisTransport(address: String, private val sessions: UploadSe
     }
 
     private fun get(session: UploadSession): UploadStatus {
+        stage("CONFIRMING")
         val response = exchange("api/v1/web/drafts/${session.draft}", session=session)
         if (response["id"] != session.draft || response["uploaded"] !is Boolean) throw ServerProbeException("SERVER_RESPONSE_INVALID")
         if (response["uploaded"] == true) verifyReceipt(session, response)

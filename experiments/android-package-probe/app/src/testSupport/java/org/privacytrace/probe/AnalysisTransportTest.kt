@@ -113,8 +113,10 @@ class AnalysisTransportTest {
             f.server.enqueue(f.json("""{"id":"$draft","capability_token":"$token"}"""))
             f.server.enqueue(f.json(receipt(archive.result)))
             f.server.enqueue(f.json(receipt(archive.result)))
-            val transport = AnalysisTransport(f.origin, sessions, f.client)
+            val stages = mutableListOf<String>()
+            val transport = AnalysisTransport(f.origin, sessions, f.client) { stages.add(it) }
             assertEquals("SERVER_CONFIRMED", transport.upload(archive, caps).state)
+            assertEquals(listOf("CHECKING_INSTANCE", "CREATING_DRAFT", "PROTECTING_ACCESS", "UPLOADING", "CONFIRMING"), stages)
             val requests = (1..4).map { checkNotNull(f.server.takeRequest(2, TimeUnit.SECONDS)) }
             assertEquals(listOf("GET", "POST", "POST", "GET"), requests.map { it.method })
             assertNull(requests[0].getHeader("Authorization")); assertNull(requests[1].getHeader("Authorization"))

@@ -30,6 +30,7 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
         var healthCall: HttpsHealthCall? = null
         var transport: AnalysisTransport? = null
         var capabilities: UploadCapabilities? = null
+        var progress: AlertDialog? = null
     }
 
     private fun begin(invoke: Invoke): Pending? {
@@ -277,7 +278,9 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
                     }.show()
                 return@uploadOriginDialog
             }
-            val transport = try { AnalysisTransport(address, uploadSessions) }
+            val transport = try { AnalysisTransport(address, uploadSessions, stage = { stage ->
+                activity.runOnUiThread { showTransferProgress(request, stage) }
+            }) }
             catch (error: ServerProbeException) { finish(request, failure = error.code); return@uploadOriginDialog }
             request.transport = transport
             request.reading = true
@@ -285,8 +288,11 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
                 try {
                     val caps = transport.capabilities()
                     activity.runOnUiThread {
-                        request.reading = false
                         if (pending !== request) return@runOnUiThread
+                        request.reading = false
+                        request.progress?.dismiss()
+                        request.progress = null
+                        dialog = null
                         if (request.operation.cancelled.get()) finish(request, failure = "CANCELLED")
                         else if (action == "upload") {
                             request.capabilities = caps
@@ -331,6 +337,7 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
         if (pending !== request || request.operation.cancelled.get()) return
         dialog = null
         request.reading = true
+        showTransferProgress(request, "PREPARING")
         worker.execute {
             try {
                 val transport = checkNotNull(request.transport)
@@ -352,6 +359,28 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
     private fun uploadPayload(status: UploadStatus) = JSObject().apply {
         put("origin", status.origin); put("draft", status.draft)
         put("state", status.state); put("cleanupPending", status.cleanupPending)
+    }
+
+    private fun showTransferProgress(request: Pending, stage: String) {
+        if (pending !== request || !request.reading || request.operation.cancelled.get()) return
+        val message = when (stage) {
+            "CHECKING_INSTANCE" -> "正在核对实例与上传能力"
+            "PREPARING" -> "正在准备并复核完整安装包集合"
+            "CREATING_DRAFT" -> "正在创建本次草稿"
+            "PROTECTING_ACCESS" -> "正在加密保存本机访问材料"
+            "UPLOADING" -> "正在传输完整包集合"
+            "CONFIRMING" -> "正在读回并核对服务器确认"
+            "DELETING" -> "正在等待服务器删除确认"
+            else -> return
+        }
+        val progress = request.progress ?: AlertDialog.Builder(activity)
+            .setTitle("分析实例操作")
+            .setMessage(message)
+            .setNegativeButton("停止当前操作") { _, _ -> cancelCurrent() }
+            .setOnCancelListener { cancelCurrent() }.create().also {
+                request.progress = it; dialog = it; it.show()
+            }
+        progress.setMessage("$message\n停止传输不会自动删除服务器已收到的材料。")
     }
 
     private fun read(request: Pending, confirmed: Installation) {
@@ -393,6 +422,7 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
         request.secret = null
         request.healthCall = null
         request.transport = null
+        request.progress = null
         pending = null
         dialog?.dismiss()
         dialog = null

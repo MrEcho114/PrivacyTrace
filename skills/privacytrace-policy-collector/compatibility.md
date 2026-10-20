@@ -70,7 +70,7 @@ uv run --project apps/api --locked --extra worker pytest apps/api/tests/test_pol
 | Web 类型检查与生产构建 | 54 modules，通过 |
 | `npm run acceptance:mobile` | PASS；生产 Vue + native bridge 替身，1 次 start、0 浏览器 API 请求，390/1440 与大字号截图 |
 | 完整 `scripts/check.sh`（`PRIVACYTRACE_DOCKER_TESTS=1`） | API 1531 passed / 183 skipped；e2e 65 passed；Web 111 passed；Ruff、契约、类型与构建通过 |
-| 本机真实网页抓取 | 本机无出网，HTTPS 连接超时；按 UNAVAILABLE 记录，未称取得正文 |
+| 本机真实网页抓取 | 本机直连 HTTPS 超时（环境仅通过本地代理访问外网，抓取按安全策略直连已验证地址）；按 UNAVAILABLE 记录，未称取得正文 |
 
 仍未验证：实际个人模型端点／付费调用、第三方网页聊天复制粘贴、#72 真机与完整 Tauri IPC、完整 APK 扫描及部署组合；这些属于 #72／#73 的验收项，不由本包或本节替代。原生 32 KiB 提示词上限和具体模型协议兼容性未实测。
 

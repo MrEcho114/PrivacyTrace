@@ -217,15 +217,22 @@ async function persistCandidates() {
 async function cancel() { await perform(async () => { if (job.value) { try { job.value = await cancelJob(job.value.id, signal) } finally { await poll() } } }) }
 async function retry() { await perform(async () => { if (!draft.value || !terminal.value) return; submissionId = crypto.randomUUID().replaceAll('-', ''); job.value = await startScan(draft.value.id, { revision: draft.value.revision, request_id: submissionId }, signal); go('progress'); await poll() }) }
 async function retrySource(id: string) {
-  await perform(async () => {
+  await perform(async requestSignal => {
     if (!draft.value) return
-    apply(await fetchSource(draft.value.id, id, draft.value.revision, signal))
+    const fetched = await fetchSource(draft.value.id, id, draft.value.revision, requestSignal)
+    assertActive(requestSignal); apply(fetched)
     const source = draft.value.sources.find(s => s.id === id)
     if (!source || source.status === 'failed' || source.error_code) return
     try {
-      apply(await extractSource(draft.value.id, id, draft.value.revision, signal))
+      const value = await extractSource(draft.value.id, id, draft.value.revision, requestSignal)
+      assertActive(requestSignal); apply(value)
+      const failed = extractionFailed(value, id)
+      markExtraction(id, failed)
+      needsPreparation = failedSourceIds.value.length > 0
+      if (failed) notice.value = '来源已经重新获取，但候选提取仍未完成；可手动添加或重试。'
     } catch (cause) {
-      notice.value = String(cause instanceof Error ? cause.message : '模型请求未完成')
+      assertActive(requestSignal); markExtraction(id, true); needsPreparation = true
+      notice.value = `${cause instanceof Error ? cause.message : '模型请求未完成'}；可手动添加候选或重试。`
     }
   })
 }

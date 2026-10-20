@@ -31,11 +31,19 @@ const signal = controller.signal
 let activeRequest: AbortController | null = null
 let needsPreparation = true
 const preparedSources = new Set<string>()
-// Aborted responses can still correspond to committed server results.
-const pendingExtractionAttempts = new Map<string, { draftId: string; revision: number; attemptId: string }>()
+// A transport failure or cancellation may occur after the server committed.
+ // Keep unresolved attempts until their audit is reconciled. A rejected retry
+ // must never erase the earlier attempt that could have committed.
+type PendingExtractionAttempt = { draftId: string; revision: number; attemptId: string }
+const maxPendingAttemptsPerSource = 16
+const pendingExtractionAttempts = new Map<string, PendingExtractionAttempt[]>()
 function startExtractionAttempt(value: LiveDraft, id: string): string {
+  const attempts = pendingExtractionAttempts.get(id) ?? []
+  if (attempts.length >= maxPendingAttemptsPerSource) {
+    throw new Error('这份来源有多次尚未确认的提取操作。请先重新读取材料；不要重复执行模型请求。')
+  }
   const attemptId = crypto.randomUUID().replaceAll('-', '')
-  pendingExtractionAttempts.set(id, { draftId: value.id, revision: value.revision, attemptId })
+  pendingExtractionAttempts.set(id, [...attempts, { draftId: value.id, revision: value.revision, attemptId }])
   return attemptId
 }
 function finishExtractionAttempt(value: LiveDraft, id: string, attemptId: string) {
@@ -43,6 +51,8 @@ function finishExtractionAttempt(value: LiveDraft, id: string, attemptId: string
   if (audit?.attempt_id && audit.attempt_id !== attemptId) {
     throw new Error('服务返回的候选提取审计与本次请求不匹配。请重新读取材料。')
   }
+  // A direct response carries a committed result; older unresolved attempts
+  // cannot supersede this source's newest committed audit.
   pendingExtractionAttempts.delete(id)
 }
 const failedSourceIds = ref<string[]>([])
@@ -138,8 +148,10 @@ async function refreshMaterials() {
       const audit = source.model_audit
       const previous = draft.value.sources.find(item => item.id === source.id)?.model_audit
       const pending = pendingExtractionAttempts.get(source.id)
-      const matchedAttempt = !!pending && pending.draftId === value.id &&
-        value.revision > pending.revision && audit?.attempt_id === pending.attemptId
+      const matchedAttempt = pending?.some(attempt =>
+        attempt.draftId === value.id && value.revision > attempt.revision &&
+        audit?.attempt_id === attempt.attemptId
+      ) ?? false
       // Preserve legacy untagged status transitions, but never trust a different
       // tagged attempt or arbitrary duration/token metadata to clear a failure.
       const statusTransition = value.revision > draft.value.revision && previous?.status !== audit?.status

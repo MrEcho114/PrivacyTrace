@@ -81,6 +81,8 @@ class CapacitySample:
     queue_wait_s: list[float] = field(default_factory=list)
     peak_memory_bytes: int | None = None
     disk_delta_bytes: int | None = None
+    input_bytes: int | None = None
+    input_sha256: str | None = None
 
     def medians(self) -> dict[str, Any]:
         def median(values: Sequence[float]) -> float | None:
@@ -94,11 +96,14 @@ class CapacitySample:
 
         return {
             "scale": self.scale,
+            "input_bytes": self.input_bytes,
+            "input_sha256": self.input_sha256,
+            "input_origin": "SYNTHETIC",
             "repetitions": len(self.duration_s),
             "duration_s_median": median(self.duration_s),
             "duration_s_min": round(min(self.duration_s), 3) if self.duration_s else None,
             "duration_s_max": round(max(self.duration_s), 3) if self.duration_s else None,
-            "queue_wait_s_median": median(self.queue_wait_s),
+            "queue_wait_sampled_upper_bound_s_median": median(self.queue_wait_s),
             "peak_memory_bytes": self.peak_memory_bytes,
             "disk_delta_bytes": self.disk_delta_bytes,
         }
@@ -216,7 +221,15 @@ def _measure_round(
     except Exception as error:  # noqa: BLE001 - builder is optional at runtime
         return recorder.skip(f"synthetic fixtures unavailable: {type(error).__name__}"), None
 
-    sample = CapacitySample(scale=scale)
+    sample = CapacitySample(
+        scale=scale,
+        input_bytes=len(
+            fixtures.single_apk if scale == "concurrency_1_single_apk" else fixtures.package_set
+        ),
+        input_sha256=(
+            fixtures.single_sha256 if scale == "concurrency_1_single_apk" else fixtures.set_sha256
+        ),
+    )
     peak: int | None = None
     before_disk, _ = materials_disk_bytes(topology)
     for index in range(repetitions):

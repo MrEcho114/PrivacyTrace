@@ -164,6 +164,8 @@ class WebIntake:
     # measured ~254 s locally, so keep startup headroom for slower runners.
     INSPECTION_BUDGET_SECONDS = 600
     UPLOAD_TIMEOUT_SECONDS = 180
+    ATTEMPT_RESERVATION_SECONDS = 120
+    MAX_ATTEMPT_RECORDS_PER_SOURCE = 64
 
     def __init__(self, store):
         self.store = store
@@ -844,8 +846,114 @@ class WebIntake:
             current["revision"] += 1
             return self._save(current)
 
+
+    def _attempts_path(self, draft_id):
+        return self._safe(self.directory(draft_id) / "extraction-attempts.json")
+
+    def _load_attempts(self, draft_id):
+        path = self._attempts_path(draft_id)
+        return self._read(path) if self._document_exists(path) else {}
+
+    def _save_attempts(self, draft_id, records):
+        self._write_private(self._attempts_path(draft_id), records)
+
+    @staticmethod
+    def _valid_attempt_id(attempt_id):
+        if not isinstance(attempt_id, str) or re.fullmatch(r"[a-f0-9]{32}", attempt_id) is None:
+            raise ValueError("Invalid extraction attempt identifier")
+
+    def _expire_reserved(self, records):
+        changed = False
+        for entry in records.values():
+            if entry["state"] == "RESERVED" and time.time() >= entry["expires_at"]:
+                entry["state"] = "EXPIRED"
+                changed = True
+        return changed
+
+    def reserve_extraction(self, draft_id, source_id, revision, attempt_id):
+        """Acknowledgement must precede the client sending a paid extraction."""
+        self._valid_attempt_id(attempt_id)
+        with self.data_store._transaction():
+            draft = self._get(draft_id)
+            if draft["revision"] != revision or draft["jobs"]:
+                raise ValueError("Input version changed or already started")
+            if not any(s["id"] == source_id for s in draft["sources"]):
+                raise KeyError(source_id)
+            records = self._load_attempts(draft_id)
+            changed = self._expire_reserved(records)
+            if attempt_id in records:
+                entry = records[attempt_id]
+                if (entry["source_id"], entry["revision"]) != (source_id, revision):
+                    raise ValueError("Attempt ID belongs to another source or revision")
+                if changed:
+                    self._save_attempts(draft_id, records)
+                return self._attempt_view(entry)
+            if any(r["source_id"] == source_id and r["state"] in {"RESERVED", "RUNNING"}
+                   for r in records.values()) or (draft_id, source_id) in self.active_extractions:
+                if changed:
+                    self._save_attempts(draft_id, records)
+                raise ExtractionInProgress("EXTRACTION_IN_PROGRESS")
+            by_source = sorted(
+                (r for r in records.values() if r["source_id"] == source_id),
+                key=lambda r: r["created_at"],
+            )
+            for record in by_source[:max(0, len(by_source) - self.MAX_ATTEMPT_RECORDS_PER_SOURCE + 1)]:
+                if record["state"] not in {"COMMITTED", "FAILED", "EXPIRED"}:
+                    raise ExtractionInProgress("EXTRACTION_IN_PROGRESS")
+                del records[record["attempt_id"]]
+            entry = {
+                "attempt_id": attempt_id, "source_id": source_id, "revision": revision,
+                "state": "RESERVED", "created_at": time.time(),
+                "expires_at": time.time() + self.ATTEMPT_RESERVATION_SECONDS,
+            }
+            records[attempt_id] = entry
+            self._save_attempts(draft_id, records)
+            return self._attempt_view(entry)
+
+    @staticmethod
+    def _attempt_view(entry):
+        return {
+            "attempt_id": entry["attempt_id"], "state": entry["state"],
+            "revision": entry["revision"],
+        }
+
+    def extraction_attempt_status(self, draft_id, source_id, attempt_id):
+        self._valid_attempt_id(attempt_id)
+        with self.data_store._transaction():
+            draft = self._get(draft_id)
+            if not any(s["id"] == source_id for s in draft["sources"]):
+                raise KeyError(source_id)
+            records = self._load_attempts(draft_id)
+            changed = self._expire_reserved(records)
+            entry = records.get(attempt_id)
+            if entry is None:
+                # A missing reservation cannot be used to start an extraction.
+                return {"attempt_id": attempt_id, "state": "EXPIRED", "revision": draft["revision"]}
+            if entry["source_id"] != source_id:
+                raise KeyError(source_id)
+            audit = next(s for s in draft["sources"] if s["id"] == source_id)["model_audit"]
+            if audit.get("attempt_id") == attempt_id and entry["state"] != "COMMITTED":
+                entry["state"] = "COMMITTED"
+                changed = True
+            if changed:
+                self._save_attempts(draft_id, records)
+            return self._attempt_view(entry)
+
+    def _finish_attempt(self, draft_id, source_id, attempt_id, *, committed):
+        if attempt_id is None:
+            return
+        with self.data_store._transaction():
+            records = self._load_attempts(draft_id)
+            entry = records.get(attempt_id)
+            if entry is not None and entry["source_id"] == source_id:
+                # An interrupted or failed extract must not undo a committed audit.
+                draft = self._get(draft_id)
+                audit = next(s for s in draft["sources"] if s["id"] == source_id)["model_audit"]
+                entry["state"] = "COMMITTED" if committed or audit.get("attempt_id") == attempt_id else "FAILED"
+                self._save_attempts(draft_id, records)
+
     @contextmanager
-    def _extraction_slot(self, draft_id, source_id, revision):
+    def _extraction_slot(self, draft_id, source_id, revision, attempt_id=None):
         key = (draft_id, source_id)
         with self.data_store._transaction():
             draft = self._get(draft_id)
@@ -853,8 +961,24 @@ class WebIntake:
                 raise ValueError("Input version changed or already started")
             if not any(source["id"] == source_id for source in draft["sources"]):
                 raise KeyError(source_id)
+            records = self._load_attempts(draft_id)
+            changed = self._expire_reserved(records)
             if key in self.active_extractions:
                 raise ExtractionInProgress("EXTRACTION_IN_PROGRESS")
+            if attempt_id is not None:
+                self._valid_attempt_id(attempt_id)
+                entry = records.get(attempt_id)
+                if entry is None or entry["source_id"] != source_id or entry["revision"] != revision or entry["state"] != "RESERVED":
+                    if changed:
+                        self._save_attempts(draft_id, records)
+                    raise ValueError("EXTRACTION_ATTEMPT_NOT_RESERVED")
+                entry["state"] = "RUNNING"
+                self._save_attempts(draft_id, records)
+            else:
+                if any(r["source_id"] == source_id and r["state"] in {"RESERVED", "RUNNING"} for r in records.values()):
+                    if changed:
+                        self._save_attempts(draft_id, records)
+                    raise ExtractionInProgress("EXTRACTION_IN_PROGRESS")
             self.active_extractions[key] = True
         try:
             yield
@@ -875,8 +999,15 @@ class WebIntake:
 
     def extract(self, draft_id, source_id, revision, attempt_id=None):
         with self._draft_activity(draft_id):
-            with self._extraction_slot(draft_id, source_id, revision):
-                return self._extract(draft_id, source_id, revision, attempt_id)
+            with self._extraction_slot(draft_id, source_id, revision, attempt_id):
+                try:
+                    value = self._extract(draft_id, source_id, revision, attempt_id)
+                except BaseException:
+                    self._finish_attempt(draft_id, source_id, attempt_id, committed=False)
+                    raise
+                else:
+                    self._finish_attempt(draft_id, source_id, attempt_id, committed=True)
+                    return value
 
     def _extract(self, draft_id, source_id, revision, attempt_id=None):
         if attempt_id is not None and (
@@ -1337,6 +1468,18 @@ class WebIntake:
                 if self.active_drafts.get(directory.name, 0):
                     continue
                 draft = self._get(directory.name)
+                # The exclusive service lock proves that no previous service
+                # process can still execute an orphaned RUNNING reservation.
+                records = self._load_attempts(directory.name)
+                attempts_changed = self._expire_reserved(records)
+                for entry in records.values():
+                    if entry["state"] == "RUNNING":
+                        source = next((s for s in draft["sources"] if s["id"] == entry["source_id"]), None)
+                        audit = source["model_audit"] if source else {}
+                        entry["state"] = "COMMITTED" if audit.get("attempt_id") == entry["attempt_id"] else "FAILED"
+                        attempts_changed = True
+                if attempts_changed:
+                    self._save_attempts(directory.name, records)
                 changed = False
                 for p in directory.glob("upload.pending*"):
                     p.unlink(missing_ok=True)

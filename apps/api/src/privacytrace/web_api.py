@@ -39,6 +39,10 @@ class ExtractionInput(RevisionInput):
     attempt_id: str | None = Field(default=None, pattern=r"^[0-9a-f]{32}$")
 
 
+class ExtractionReservationInput(RevisionInput):
+    attempt_id: str = Field(pattern=r"^[0-9a-f]{32}$")
+
+
 def web_error(exc):
     if isinstance(exc, KeyError):
         return HTTPException(404, detail="DRAFT_NOT_FOUND")
@@ -172,6 +176,18 @@ def install_web_api(app, local_write):
     def fetch(draft_id: str, source_id: str, payload: RevisionInput, request: Request):
         draft_access(request, draft_id)
         return web_operation(lambda: service.fetch_source(draft_id, source_id, payload.revision))
+
+    @app.post("/api/v1/web/drafts/{draft_id}/sources/{source_id}/attempts")
+    def reserve_extraction(draft_id: str, source_id: str, payload: ExtractionReservationInput, request: Request):
+        draft_access(request, draft_id)
+        return web_operation(
+            lambda: service.reserve_extraction(draft_id, source_id, payload.revision, payload.attempt_id)
+        )
+
+    @app.get("/api/v1/web/drafts/{draft_id}/sources/{source_id}/attempts/{attempt_id}")
+    def extraction_attempt(draft_id: str, source_id: str, attempt_id: str, request: Request):
+        draft_access(request, draft_id)
+        return web_operation(lambda: service.extraction_attempt_status(draft_id, source_id, attempt_id))
 
     @app.get("/api/v1/web/drafts/{draft_id}/sources/{source_id}/extraction-status")
     def extraction_status(draft_id: str, source_id: str, request: Request):

@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$Serial,
     [string]$Adb = 'adb',
+    [switch]$Emulator,
     [string]$Receipt
 )
 $ErrorActionPreference = 'Stop'
@@ -30,6 +31,11 @@ try {
     function Invoke-ProbeAdb([string[]]$ProbeArguments) {
         $output = & $Adb -s $Serial @ProbeArguments 2>&1
         if ($LASTEXITCODE -ne 0) { throw 'ADB operation failed; no passing device receipt produced.' }
+        # MuMu's ADB can exit zero after an unsuccessful PackageManager install.
+        if ($ProbeArguments[0] -in @('install', 'install-multiple') -and
+            ($output -join "`n") -match '(?m)^\s*Failure\s*\[') {
+            throw 'APK install rejected; no passing device receipt produced.'
+        }
         return ($output -join "`n")
     }
     $paths = @(
@@ -74,7 +80,10 @@ try {
         schema = 'privacytrace-android-probe-device-v1'
         source_commit = $sourceCommit.Trim()
         source_dirty = $sourceChanges.Count -gt 0
-        emulator = (Invoke-ProbeAdb -ProbeArguments @('shell', 'getprop', 'ro.kernel.qemu')).Trim() -eq '1'
+        # A zero qemu property does not prove physical hardware (MuMu masks it).
+        # Explicit -Emulator records a host-verified emulator such as MuMu CLI.
+        emulator = if ($Emulator -or
+            (Invoke-ProbeAdb -ProbeArguments @('shell', 'getprop', 'ro.kernel.qemu')).Trim() -eq '1') { $true } else { $null }
         android_api = (Invoke-ProbeAdb -ProbeArguments @('shell', 'getprop', 'ro.build.version.sdk')).Trim()
         android_release = (Invoke-ProbeAdb -ProbeArguments @('shell', 'getprop', 'ro.build.version.release')).Trim()
         cases = @('single_self_app_uid', 'external_base_plus_installed_feature_app_uid')

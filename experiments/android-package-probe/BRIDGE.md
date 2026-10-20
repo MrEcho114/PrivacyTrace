@@ -1,5 +1,8 @@
 # Tauri Android 桥接实验（#71 部分交付）
 
+后续上传入口与新增能力协商见 [UPLOAD.md](UPLOAD.md)。本文下方保留先前只读桥接阶段的说明，
+不能用旧 APK 的运行证据代替新增上传命令的设备验证。
+
 本阶段复用已有读取核心，将本地调用贯穿 Vue → Tauri Rust command → Kotlin 插件 → PackageManager / APK 流。目录仍是独立实验，#72 的生产页面、服务端契约和远程上传均未接入。
 
 ## 调用边界

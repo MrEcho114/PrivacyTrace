@@ -18,6 +18,7 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
     private var worker = Executors.newSingleThreadExecutor()
     private val source = AndroidPackageSource(activity.applicationContext.packageManager)
     private val modelConfig = androidModelConfiguration(activity.applicationContext)
+    private val uploadSessions = AndroidUploadSessions(activity.applicationContext)
     private var disposed = false
     // These fields and all Invoke completion calls are confined to the UI thread.
     private var pending: Pending? = null
@@ -27,6 +28,9 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
         var reading = false
         var secret: CharArray? = null
         var healthCall: HttpsHealthCall? = null
+        var transport: AnalysisTransport? = null
+        var capabilities: UploadCapabilities? = null
+        var progress: AlertDialog? = null
     }
 
     private fun begin(invoke: Invoke): Pending? {
@@ -165,6 +169,10 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
     @Command
     fun inspectSelected(invoke: Invoke) = activity.runOnUiThread {
         val request = begin(invoke) ?: return@runOnUiThread
+        choose(request)
+    }
+
+    private fun choose(request: Pending) {
         request.reading = true
         worker.execute {
             try {
@@ -197,7 +205,7 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
         request.reading = true
         worker.execute {
             try {
-                val confirmed = PackageProbe(source).prepare(app.packageName)
+                val confirmed = PackageProbe(source, request.capabilities?.limits() ?: ProbeLimits()).prepare(app.packageName)
                 activity.runOnUiThread {
                     request.reading = false
                     if (pending !== request) return@runOnUiThread
@@ -214,15 +222,165 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
 
     private fun showConfirmation(request: Pending, app: VisibleApp, confirmed: Installation) {
         val parts = confirmed.parts.joinToString("\n") { "${it.splitName ?: "base"} · ${it.bytes} 字节" }
+        val remote = request.transport
         dialog = AlertDialog.Builder(activity)
-            .setTitle("确认本机读取")
+            .setTitle(if (remote == null) "确认本机读取" else "确认上传所选应用")
             .setMessage("${app.label}\n${app.packageName} · versionCode ${confirmed.versionCode}\n" +
                 "${confirmed.parts.size} 个包 · ${confirmed.parts.sumOf { it.bytes }} 字节\n$parts\n\n" +
-                "仅读取上述 base 和全部已安装 splits 的摘要；材料仅留本机，本实验不上传。安装变化后须重新确认。")
+                if (remote == null) "仅读取上述 base 和全部已安装 splits 的摘要；材料仅留本机，本实验不上传。安装变化后须重新确认。"
+                else "目标：${remote.origin}\n实例：${request.capabilities?.instanceId}\n" +
+                    "上传上限：${request.capabilities?.maxUpload} 字节（含打包开销）。\n" +
+                    "上传完整 base/全部已安装 splits，服务端长期保留至主动删除并受容量约束。" +
+                    "仅停止传输不会删除服务器可能已收到的材料；断连后请刷新确认。安装变化后须重新选择。")
             .setNegativeButton("取消") { _, _ -> cancelCurrent() }
             .setOnCancelListener { cancelCurrent() }
-            .setPositiveButton("开始读取") { _, _ -> read(request, confirmed) }
+            .setPositiveButton(if (remote == null) "开始读取" else "确认上传") { _, _ ->
+                if (remote == null) read(request, confirmed) else upload(request, confirmed)
+            }
             .show()
+    }
+
+    @Command
+    fun uploadSelected(invoke: Invoke) = activity.runOnUiThread { uploadCommand(invoke, "upload") }
+
+    @Command
+    fun refreshUpload(invoke: Invoke) = activity.runOnUiThread { uploadCommand(invoke, "refresh") }
+
+    @Command
+    fun deleteUpload(invoke: Invoke) = activity.runOnUiThread { uploadCommand(invoke, "delete") }
+
+    @Command
+    fun forgetUpload(invoke: Invoke) = activity.runOnUiThread { uploadCommand(invoke, "forget") }
+
+    private fun uploadCommand(invoke: Invoke, action: String) {
+        val request = begin(invoke) ?: return
+        dialog = uploadOriginDialog(activity, when (action) {
+            "upload" -> "选择上传实例"; "refresh" -> "刷新上传确认"
+            "forget" -> "清除本机访问材料"; else -> "删除远端材料"
+        }, submit = { address ->
+            dialog = null
+            if (pending !== request || request.operation.cancelled.get()) return@uploadOriginDialog
+            if (action == "forget") {
+                val origin = try { analysisOrigin(address) }
+                catch (error: ServerProbeException) { finish(request, failure=error.code); return@uploadOriginDialog }
+                dialog = AlertDialog.Builder(activity).setTitle("永久清除本机访问材料？")
+                    .setMessage("$origin\n仅清除本机访问材料，不访问服务器，不删除远端材料。" +
+                        "若远端删除未确认，材料可能仍被保留。清除后无法找回或再操作旧草稿。")
+                    .setNegativeButton("保留访问材料") { _, _ -> cancelCurrent() }
+                    .setOnCancelListener { cancelCurrent() }
+                    .setPositiveButton("仅清除本机") { _, _ ->
+                        if (pending === request && !request.operation.cancelled.get()) {
+                            try {
+                                uploadSessions.forget(origin)
+                                finish(request, payload=uploadPayload(UploadStatus(origin, "", "LOCAL_ACCESS_FORGOTTEN")))
+                            } catch (error: ServerProbeException) { finish(request, failure=error.code) }
+                        }
+                    }.show()
+                return@uploadOriginDialog
+            }
+            val transport = try { AnalysisTransport(address, uploadSessions, stage = { stage ->
+                activity.runOnUiThread { showTransferProgress(request, stage) }
+            }) }
+            catch (error: ServerProbeException) { finish(request, failure = error.code); return@uploadOriginDialog }
+            request.transport = transport
+            request.reading = true
+            worker.execute {
+                try {
+                    val caps = transport.capabilities()
+                    activity.runOnUiThread {
+                        if (pending !== request) return@runOnUiThread
+                        request.reading = false
+                        request.progress?.dismiss()
+                        request.progress = null
+                        dialog = null
+                        if (request.operation.cancelled.get()) finish(request, failure = "CANCELLED")
+                        else if (action == "upload") {
+                            request.capabilities = caps
+                            choose(request)
+                        } else if (action == "delete") {
+                            dialog = AlertDialog.Builder(activity).setTitle("主动删除远端材料？")
+                                .setMessage("${transport.origin}\n实例：${caps.instanceId}\n" +
+                                    "删除此实例当前草稿及关联分析。服务器确认后清除本机访问材料。")
+                                .setNegativeButton("取消") { _, _ -> cancelCurrent() }
+                                .setOnCancelListener { cancelCurrent() }
+                                .setPositiveButton("确认删除") { _, _ -> remoteAction(request, true) }.show()
+                        } else remoteAction(request, false)
+                    }
+                } catch (error: ServerProbeException) {
+                    activity.runOnUiThread { finish(request, failure = error.code) }
+                } catch (_: Exception) {
+                    activity.runOnUiThread { finish(request, failure = "UPLOAD_STORAGE_UNAVAILABLE") }
+                }
+            }
+        }, cancel = { cancelCurrent() })
+        dialog?.show()
+    }
+
+    private fun remoteAction(request: Pending, delete: Boolean) {
+        dialog = null
+        if (pending !== request || request.operation.cancelled.get()) return
+        request.reading = true
+        worker.execute {
+            try {
+                val remote = checkNotNull(request.transport)
+                val status = if (delete) remote.delete() else remote.refresh()
+                activity.runOnUiThread { finish(request, payload = uploadPayload(status)) }
+            } catch (error: ServerProbeException) {
+                activity.runOnUiThread { finish(request, failure = error.code) }
+            } catch (_: Exception) {
+                activity.runOnUiThread { finish(request, failure = "UPLOAD_STORAGE_UNAVAILABLE") }
+            }
+        }
+    }
+
+    private fun upload(request: Pending, confirmed: Installation) {
+        if (pending !== request || request.operation.cancelled.get()) return
+        dialog = null
+        request.reading = true
+        showTransferProgress(request, "PREPARING")
+        worker.execute {
+            try {
+                val transport = checkNotNull(request.transport)
+                val caps = checkNotNull(request.capabilities)
+                val status = UploadArchive.prepare(activity.applicationContext.cacheDir, source, confirmed, caps) {
+                    request.operation.cancelled.get()
+                }.use { archive -> transport.upload(archive, caps) }
+                activity.runOnUiThread { finish(request, payload = uploadPayload(status)) }
+            } catch (error: ProbeException) {
+                activity.runOnUiThread { finish(request, failure = error.failure.name) }
+            } catch (error: ServerProbeException) {
+                activity.runOnUiThread { finish(request, failure = error.code) }
+            } catch (_: Exception) {
+                activity.runOnUiThread { finish(request, failure = "UPLOAD_STORAGE_UNAVAILABLE") }
+            }
+        }
+    }
+
+    private fun uploadPayload(status: UploadStatus) = JSObject().apply {
+        put("origin", status.origin); put("draft", status.draft)
+        put("state", status.state); put("cleanupPending", status.cleanupPending)
+    }
+
+    private fun showTransferProgress(request: Pending, stage: String) {
+        if (pending !== request || !request.reading || request.operation.cancelled.get()) return
+        val message = when (stage) {
+            "CHECKING_INSTANCE" -> "正在核对实例与上传能力"
+            "PREPARING" -> "正在准备并复核完整安装包集合"
+            "CREATING_DRAFT" -> "正在创建本次草稿"
+            "PROTECTING_ACCESS" -> "正在加密保存本机访问材料"
+            "UPLOADING" -> "正在传输完整包集合"
+            "CONFIRMING" -> "正在读回并核对服务器确认"
+            "DELETING" -> "正在等待服务器删除确认"
+            else -> return
+        }
+        val progress = request.progress ?: AlertDialog.Builder(activity)
+            .setTitle("分析实例操作")
+            .setMessage(message)
+            .setNegativeButton("停止当前操作") { _, _ -> cancelCurrent() }
+            .setOnCancelListener { cancelCurrent() }.create().also {
+                request.progress = it; dialog = it; it.show()
+            }
+        progress.setMessage("$message\n停止传输不会自动删除服务器已收到的材料。")
     }
 
     private fun read(request: Pending, confirmed: Installation) {
@@ -250,6 +408,7 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
     private fun cancelCurrent() {
         gate.cancel()
         pending?.healthCall?.cancel()
+        pending?.transport?.cancel()
         pending?.secret?.fill('\u0000')
         dialog?.dismiss()
         dialog = null
@@ -262,6 +421,8 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
         request.secret?.fill('\u0000')
         request.secret = null
         request.healthCall = null
+        request.transport = null
+        request.progress = null
         pending = null
         dialog?.dismiss()
         dialog = null

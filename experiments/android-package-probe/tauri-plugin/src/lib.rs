@@ -21,6 +21,45 @@ pub struct ServerHealth {
     pub scope: String,
 }
 
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UploadStatus {
+    pub origin: String,
+    pub draft: String,
+    pub state: String,
+    pub cleanup_pending: bool,
+}
+
+async fn upload_command<R: Runtime>(app: tauri::AppHandle<R>, command: &'static str) -> Result<UploadStatus, String> {
+    #[cfg(target_os = "android")]
+    {
+        app.state::<NativeProbe<R>>().0.clone().run_mobile_plugin_async(command, ())
+            .await.map_err(native_error)
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = (app, command);
+        Err("ANDROID_ONLY".into())
+    }
+}
+
+#[tauri::command]
+async fn upload_selected<R: Runtime>(app: tauri::AppHandle<R>) -> Result<UploadStatus, String> {
+    upload_command(app, "uploadSelected").await
+}
+#[tauri::command]
+async fn refresh_upload<R: Runtime>(app: tauri::AppHandle<R>) -> Result<UploadStatus, String> {
+    upload_command(app, "refreshUpload").await
+}
+#[tauri::command]
+async fn delete_upload<R: Runtime>(app: tauri::AppHandle<R>) -> Result<UploadStatus, String> {
+    upload_command(app, "deleteUpload").await
+}
+#[tauri::command]
+async fn forget_upload<R: Runtime>(app: tauri::AppHandle<R>) -> Result<UploadStatus, String> {
+    upload_command(app, "forgetUpload").await
+}
+
 #[tauri::command]
 async fn check_server<R: Runtime>(app: tauri::AppHandle<R>) -> Result<ServerHealth, String> {
     #[cfg(target_os = "android")]
@@ -137,6 +176,10 @@ fn native_error(error: tauri::plugin::mobile::PluginInvokeError) -> String {
                 | "SERVER_TLS_REJECTED"
                 | "SERVER_TIMEOUT"
                 | "SERVER_UNREACHABLE" => return code,
+                "INSTANCE_MISMATCH" | "SERVER_INCOMPATIBLE" | "ACCESS_REJECTED"
+                | "UPLOAD_CONFLICT_REFRESH" | "EXISTING_UPLOAD_DELETE_FIRST"
+                | "UPLOAD_RECEIPT_MISMATCH" | "NO_SAVED_UPLOAD"
+                | "UPLOAD_STORAGE_UNAVAILABLE" | "UPLOAD_CLEANUP_FAILED" => return code,
                 _ => {}
             }
         }
@@ -172,7 +215,11 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             model_status,
             configure_model,
             clear_model,
-            check_server
+            check_server,
+            upload_selected,
+            refresh_upload,
+            delete_upload,
+            forget_upload
         ])
         .setup(|_app, _api| {
             #[cfg(target_os = "android")]

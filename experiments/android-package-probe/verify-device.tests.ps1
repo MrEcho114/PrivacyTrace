@@ -27,6 +27,11 @@ switch ($arguments[2]) {
     }
     'install' {
         if ($env:PT_PROBE_MOCK_MODE -eq 'install_failure') { exit 7 }
+        if ($env:PT_PROBE_MOCK_MODE -eq 'install_rejected_zero') {
+            'Success: streamed controlled bytes'
+            'Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: controlled signature mismatch]'
+            exit 0
+        }
         'Success'
         exit 0
     }
@@ -53,7 +58,10 @@ switch ($arguments[2]) {
         }
         if ($arguments[3] -eq 'getprop') {
             switch ($arguments[4]) {
-                'ro.kernel.qemu' { '1'; exit 0 }
+                'ro.kernel.qemu' {
+                    if ($env:PT_PROBE_MOCK_MODE -eq 'masked_emulator') { '0' } else { '1' }
+                    exit 0
+                }
                 'ro.build.version.sdk' { '34'; exit 0 }
                 'ro.build.version.release' {
                     if ($env:PT_PROBE_MOCK_MODE -eq 'destination_collision') {
@@ -72,11 +80,11 @@ exit 9
 function Assert-True([bool]$Condition, [string]$Message) {
     if (-not $Condition) { throw $Message }
 }
-function Invoke-ReceiptRun([string]$Mode, [bool]$ShouldPass) {
+function Invoke-ReceiptRun([string]$Mode, [bool]$ShouldPass, [bool]$Emulator = $false) {
     $env:PT_PROBE_MOCK_MODE = $Mode
     $failed = $false
     try {
-        $null = & $runner -Serial 'controlled-test-device' -Adb $mock -Receipt $receipt
+        $null = & $runner -Serial 'controlled-test-device' -Adb $mock -Receipt $receipt -Emulator:$Emulator
     } catch {
         $failed = $true
     }
@@ -121,6 +129,10 @@ try {
     Write-Host 'PASS stale receipt removed on ADB install failure'
 
     $null = Invoke-ReceiptRun 'success' $true
+    Invoke-ReceiptRun 'install_rejected_zero' $false
+    Write-Host 'PASS stale receipt removed on install rejection despite ADB exit zero'
+
+    $null = Invoke-ReceiptRun 'success' $true
     Invoke-ReceiptRun 'instrument_failure' $false
     Write-Host 'PASS stale receipt removed on instrumentation failure despite ADB exit zero'
 
@@ -159,7 +171,12 @@ try {
     Assert-True ($stdoutReceipt.result -eq 'PASS') 'Without -Receipt, stdout JSON must still work'
     Assert-True (-not (Test-Path -LiteralPath $receipt)) 'Without -Receipt, no file should be written'
     Write-Host 'PASS stdout-only mode preserved'
-    Write-Host 'PASS all 8 receipt regression scenarios'
+    $unknown = Invoke-ReceiptRun 'masked_emulator' $true
+    Assert-True ($null -eq $unknown.emulator) 'A zero qemu property must not assert physical hardware'
+    $emulated = Invoke-ReceiptRun 'masked_emulator' $true $true
+    Assert-True ($emulated.emulator -eq $true) 'Host-verified emulator must remain marked as emulator'
+    Write-Host 'PASS emulator identification is explicit and masked qemu is unknown'
+    Write-Host 'PASS all 11 receipt regression scenarios'
 } finally {
     foreach ($name in @('PT_PROBE_MOCK_MODE', 'PT_PROBE_MOCK_RELEASE', 'PT_PROBE_MOCK_RECEIPT')) {
         Remove-Item -Path "Env:$name" -ErrorAction SilentlyContinue

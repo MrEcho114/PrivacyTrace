@@ -55,3 +55,25 @@ export interface ServerHealth {
 export function checkServer(): Promise<ServerHealth> {
   return invoke('plugin:package-probe|check_server');
 }
+
+export interface UploadStatus {
+  origin: string;
+  draft: string;
+  state: 'SERVER_CONFIRMED' | 'NOT_CONFIRMED' | 'DELETED' | 'LOCAL_ACCESS_FORGOTTEN';
+  cleanupPending: boolean;
+}
+
+/** Native origin, application selection and upload consent; no caller input. */
+export function uploadSelected(): Promise<UploadStatus> {
+  return invoke('plugin:package-probe|upload_selected');
+}
+export function refreshUpload(): Promise<UploadStatus> {
+  return invoke('plugin:package-probe|refresh_upload');
+}
+export function deleteUpload(): Promise<UploadStatus> {
+  return invoke('plugin:package-probe|delete_upload');
+}
+/** Explicit warning: local revocation does not delete retained server material. */
+export function forgetUpload(): Promise<UploadStatus> {
+  return invoke('plugin:package-probe|forget_upload');
+}

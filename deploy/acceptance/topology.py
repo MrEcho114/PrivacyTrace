@@ -246,7 +246,7 @@ def declared_length_rejection(topology: Topology, path: str, size: int, token=""
     This measures declared-length rejection, not streamed-body or slow-client limits.
     """
     parsed = urllib.parse.urlsplit(topology.base_url)
-    context = ssl.create_default_context(cafile=str(topology.ca_file))
+    context = ssl.create_default_context(cafile=str(topology.ca_file) if topology.ca_file else None)
     conn = http.client.HTTPSConnection(parsed.hostname, parsed.port, context=context, timeout=15)
     if topology.connect_ip:
         raw = socket.create_connection((topology.connect_ip, parsed.port), 15)

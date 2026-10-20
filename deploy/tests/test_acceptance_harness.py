@@ -237,6 +237,36 @@ class TopologyEnvironmentTests(unittest.TestCase):
 
 
 class DeploymentRegressionTests(unittest.TestCase):
+    def test_metadata_inspections_cannot_replace_actual_scan_isolation_evidence(self):
+        from types import SimpleNamespace
+
+        from acceptance.r3_isolation import scan_examples
+
+        metadata = {
+            "error": None,
+            "receipt": {"image_id": "scanner"},
+            "result": {
+                "tools": {},
+                "package_file": {"package_name": "single"},
+                "apk_sha256": "hash",
+            },
+        }
+        fixtures = SimpleNamespace(single_package="single", single_sha256="hash", set_package="set")
+        with self.assertRaises(AssertionError):
+            scan_examples([metadata, metadata], "scanner", fixtures)
+
+    def test_declared_length_probe_uses_system_trust_when_custom_ca_is_absent(self):
+        from acceptance.topology import declared_length_rejection
+
+        topology = Topology("https://privacytrace.test", "privacytrace.test", "instance")
+        with (
+            patch("acceptance.topology.ssl.create_default_context") as context,
+            patch("acceptance.topology.http.client.HTTPSConnection") as connection,
+        ):
+            connection.return_value.getresponse.return_value.status = 413
+            self.assertEqual(declared_length_rejection(topology, "/upload", 1000), 413)
+        context.assert_called_once_with(cafile=None)
+
     def test_orphan_disappearing_during_inspection_is_not_a_drill_failure(self):
         from types import SimpleNamespace
 

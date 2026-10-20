@@ -9,6 +9,41 @@ from .provision import ROOT, Laboratory
 from .receipt import CheckRecorder, Receipt, read_source_sha
 
 
+def scan_examples(results, scanner_image, fixtures):
+    scans = [
+        item
+        for item in results
+        if item.get("error") is None
+        and item.get("receipt", {}).get("image_id") == scanner_image
+        and (item.get("result") or {}).get("tools", {}).get("ruleset")
+    ]
+    single = next(
+        (
+            item
+            for item in scans
+            if item["result"].get("package_name") == fixtures.single_package
+            and item["result"].get("apk_sha256") == fixtures.single_sha256
+            and not item["result"].get("package_set")
+        ),
+        None,
+    )
+    splits = next(
+        (
+            item
+            for item in scans
+            if item["result"].get("package_name") == fixtures.set_package
+            and item["result"].get("package_set", {}).get("split_count") == 2
+            and set(item["result"].get("package_set", {}).get("split_names", []))
+            == {"config.en", "feature_camera"}
+        ),
+        None,
+    )
+    assert single is not None and splits is not None, (
+        "full single-APK and split scan results required"
+    )
+    return [single, splits]
+
+
 def run():
     receipt = Receipt(scope="r3-actual-isolation", source_sha=read_source_sha(ROOT))
     scope = json.loads((ROOT / "docs/deployment/acceptance-scope.json").read_text())
@@ -27,12 +62,10 @@ def run():
             json.loads(row[0])
             for row in conn.execute("SELECT result FROM operations WHERE state='DONE'")
         ]
-    proofs = [
-        item["receipt"]
-        for item in results
-        if item.get("receipt") and item["receipt"].get("image_id") == lab.state["images"]["scanner"]
-    ]
-    assert len(proofs) >= 2, "no actual single-APK and split scan attestations"
+    from .r2_business_loop import Fixtures
+
+    examples = scan_examples(results, lab.state["images"]["scanner"], Fixtures.build())
+    proofs = [item["receipt"] for item in examples]
     for proof in proofs:
         isolation = proof["isolation"]
         assert proof["user"] == "65534:65534"
@@ -51,6 +84,8 @@ def run():
             scan_count=len(proofs),
             image_id=lab.state["images"]["scanner"],
             actual_inspect=proofs[0],
+            scan_request_ids=[item["request_id"] for item in examples],
+            scan_inputs=["synthetic single APK", "synthetic base + config.en + feature_camera"],
             api_worker_socket=False,
             scan_host_separate=False,
             credential_mounts=False,

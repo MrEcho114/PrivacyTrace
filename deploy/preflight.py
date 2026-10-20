@@ -380,7 +380,7 @@ def _build_synthetic_config():
                 "security_opt": ["no-new-privileges:true"],
                 "pids_limit": 128,
                 "mem_limit": 1073741824,
-                "networks": ["database"],
+                "networks": ["database", "control"],
                 "volumes": [
                     {"type": "volume", "source": "materials", "target": "/var/lib/privacytrace"},
                     {

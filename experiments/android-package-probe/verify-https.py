@@ -350,6 +350,15 @@ def verify(adb_path: str, serial: str, screenshots: Path | None = None) -> dict:
         if any(n.get("text") == "https://synthetic.test" for n in value.iter("node")):
             raise RuntimeError("Recreated origin input retained the old address")
         tap("HTTPS 分析服务根地址")
+        deadline = time.monotonic() + 5
+        while not re.search(
+            r"mInputShown=true\b", adb("shell", "dumpsys", "input_method")
+        ):
+            if time.monotonic() >= deadline:
+                raise RuntimeError("Large-font HTTPS keyboard was not shown")
+            time.sleep(0.1)
+        # Wait for an idle hierarchy after the keyboard animation before capturing.
+        wait("取消")
         screenshot("android34-https-large-font.png")
         tap("取消")
         wait("CANCELLED")

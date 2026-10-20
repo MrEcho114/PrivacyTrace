@@ -406,13 +406,26 @@ class Runner:
 
 class RunnerHandler(PrivateHandler):
     def do_GET(self):
-        if self.path == "/v1/health" and self.authorized() and not self.server.runner.faulted:
-            self.reply(
-                200,
-                {"version": 1, "status": "ready", "image_id": self.server.runner.config.image_id},
-            )
-        else:
+        if self.path != "/v1/health" or not self.authorized():
             self.reply(403, {"error": "RUNNER_REQUEST_REJECTED"})
+            return
+        if self.server.runner.faulted:
+            self.reply(503, {"error": "RUNNER_UNAVAILABLE"})
+            return
+        # A healthy scanner without a functioning material gateway cannot
+        # admit new work. Probe using the runner's own mTLS identity, not API
+        # credentials, and keep the downstream check within the API budget.
+        try:
+            gateway = self.server.runner.gateway.json("/v1/health", timeout=0.7)
+            if gateway != {"version": 1, "status": "ready"}:
+                raise RuntimeUnavailable("Material gateway is unavailable")
+        except (RuntimeUnavailable, PermissionError, OSError, ValueError, TypeError):
+            self.reply(503, {"error": "RUNNER_UNAVAILABLE"})
+            return
+        self.reply(
+            200,
+            {"version": 1, "status": "ready", "image_id": self.server.runner.config.image_id},
+        )
 
     def do_POST(self):
         try:

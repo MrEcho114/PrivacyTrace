@@ -10,9 +10,9 @@ from .durable_intake import DurableWebIntake, ensure_control_plane
 from .postgres_execution import LeaseLost, PostgresExecution
 from .postgres_outbox import _bounded, decode_message
 from .postgres_store import PostgresOperationUnavailable
-from .queue_runtime import TASK_NAME, BrokerConfig, create_celery_app
+from .queue_runtime import PROBE_TASK_NAME, TASK_NAME, BrokerConfig, create_celery_app
 from .runtime_tls import RuntimeUnavailable
-from .storage_factory import create_store
+from .storage_factory import create_store, resolve_redis_url
 
 _LOG = logging.getLogger(__name__)
 # Celery uses CRITICAL logging to suppress payload-bearing framework records.
@@ -44,7 +44,7 @@ def execute(message, config):
     if message["instance_id"] != config.instance_id:
         return
     ensure_control_plane()
-    store = intake = lease = None
+    store = intake = lease = busy = progress = None
     stopping, heartbeat_failed = Event(), Event()
     thread = None
     try:
@@ -57,11 +57,22 @@ def execute(message, config):
         if lease is None:
             _diagnostic("EXECUTION_NOT_ACQUIRED")
             return
+        from .runtime_health import BusyProgress
+
+        progress = BusyProgress()
+        if os.environ.get("PRIVACYTRACE_PUBLISH_HEALTH") == "1":
+            from .runtime_health import HealthPublisher
+
+            busy = HealthPublisher(config.url, config.instance_id, "busy")
 
         def heartbeat():
             while not stopping.wait(min(5, lease_seconds / 3)):
                 try:
                     execution.heartbeat(lease, lease_seconds=lease_seconds)
+                    # Renewing the lease is necessary but not sufficient:
+                    # progress must also have been recorded by a fenced stage commit.
+                    if busy and progress.fresh():
+                        busy.beat()
                 except LeaseLost:
                     _diagnostic("LEASE_LOST")
                     heartbeat_failed.set()
@@ -79,7 +90,7 @@ def execute(message, config):
         thread.start()
         intake = DurableWebIntake(store)
         try:
-            intake.execute(lease)
+            intake.execute(lease, on_fenced_stage=progress.stage_committed)
         except LeaseLost:
             _diagnostic("LEASE_LOST")
             return
@@ -123,6 +134,8 @@ def execute(message, config):
             except (ValueError, KeyError, OSError):
                 _diagnostic("TERMINAL_EVENT_UNAVAILABLE")
             intake.close()
+        if busy:
+            busy.close()
         if store:
             store.close()
 
@@ -157,9 +170,41 @@ def create_worker_app(config):
         except (ValueError, TypeError, KeyError):
             return
 
+    @app.task(
+        name=PROBE_TASK_NAME,
+        bind=True,
+        acks_late=True,
+        reject_on_worker_lost=True,
+        ignore_result=True,
+        max_retries=0,
+    )
+    def consumer_proof(self, *args, **kwargs):
+        request = self.request
+        canvas = any(
+            getattr(request, n, None) for n in ("callbacks", "errbacks", "chain", "chord")
+        )
+        for n in ("callbacks", "errbacks", "chain", "chord"):
+            setattr(request, n, None)
+        if (
+            canvas
+            or len(args) != 1
+            or kwargs
+            or os.environ.get("PRIVACYTRACE_PUBLISH_HEALTH") != "1"
+        ):
+            return
+        try:
+            from .runtime_health import acknowledge_challenge
+
+            challenge = args[0]
+            if type(challenge) is not dict or request.id != challenge.get("challenge_id"):
+                return
+            acknowledge_challenge(config.url, config.instance_id, challenge)
+        except (ValueError, OSError, TypeError):
+            return
+
     app.finalize()
     for name in list(app.tasks):
-        if name != TASK_NAME:
+        if name not in {TASK_NAME, PROBE_TASK_NAME}:
             del app.tasks[name]
     app.conf.update(
         worker_hijack_root_logger=False,
@@ -177,7 +222,7 @@ def main():
         if os.environ.get("PRIVACYTRACE_STORAGE") != "postgres":
             raise ValueError
         config = BrokerConfig(
-            os.environ["PRIVACYTRACE_BROKER_URL"], os.environ["PRIVACYTRACE_INSTANCE_ID"]
+            resolve_redis_url(), os.environ["PRIVACYTRACE_INSTANCE_ID"]
         )
         store = create_store(Path(os.environ["PRIVACYTRACE_STORE_ROOT"]))
         try:

@@ -19,6 +19,8 @@ EXACT = {
     "deploy/Dockerfile",
     "deploy/serve.py",
     "deploy/probe.py",
+    "deploy/bootstrap.py",
+    "deploy/runtime-contract.json",
     "deploy/audit_context.py",
     "deploy/Caddyfile",
     "deploy/Caddyfile.common",
@@ -55,8 +57,13 @@ def audit(root):
 
 
 if __name__ == "__main__":
-    try:
-        count = audit(Path(sys.argv[1]))
-    except (OSError, ValueError):
-        raise SystemExit("Deployment context rejected") from None
-    print(f"Audited {count} non-private build inputs")
+    context_path = Path(sys.argv[1]) if len(sys.argv) > 1 else None
+    if context_path is None:
+        print(f"Context audit ready; tracking {len(EXACT)} exact assets")
+    else:
+        try:
+            count = audit(context_path)
+        except (OSError, ValueError):
+            raise SystemExit("Deployment context rejected") from None
+        print(f"Audited {count} non-private build inputs")
+

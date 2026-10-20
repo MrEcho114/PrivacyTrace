@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 48 48">
+  <!-- Same vector as the native probe's drawable/probe_icon.xml. -->
+  <path fill="#214F42" d="M0 0h48v48H0z"/>
+  <path fill="#fff" d="M12 10h24v7H12zM12 20h24v7H12zM12 30h24v7H12z"/>
+</svg>

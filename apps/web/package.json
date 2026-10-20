@@ -10,7 +10,10 @@
     "test": "node --experimental-strip-types --test tests/*.test.ts tests/*.test.cjs",
     "preview": "vite preview --host 127.0.0.1"
   },
-  "dependencies": {"vue": "^3.5.0"},
+  "dependencies": {
+    "@tauri-apps/api": "2.12.4",
+    "vue": "^3.5.0"
+  },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.0",
     "typescript": "^5.9.0",

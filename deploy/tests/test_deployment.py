@@ -383,6 +383,15 @@ class SevenServiceTopologyTests(unittest.TestCase):
                 f"Service '{role}' must mount shared materials volume",
             )
 
+    def test_reclaim_timer_is_one_shot_and_alerts_on_failure(self):
+        units = DEPLOY.parent / "docs/deployment/systemd"
+        service = (units / "privacytrace-reclaim.service").read_text(encoding="utf-8")
+        timer = (units / "privacytrace-reclaim.timer").read_text(encoding="utf-8")
+        self.assertIn("--profile reclamation run --rm --no-deps reclaim", service)
+        self.assertIn("OnFailure=privacytrace-reclaim-failed.service", service)
+        self.assertIn("OnCalendar=*:0/30", timer)
+        self.assertNotIn("PRIVACYTRACE_DATABASE_URL=", service)
+
     def test_deletion_journal_uses_separate_named_volume(self):
         services = self.raw_config["services"]
         for role in ("api", "worker"):

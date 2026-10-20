@@ -1,0 +1,11 @@
+[Unit]
+Description=PrivacyTrace material reclamation every 30 minutes
+
+[Timer]
+OnCalendar=*:0/30
+Persistent=true
+RandomizedDelaySec=30s
+Unit=privacytrace-reclaim.service
+
+[Install]
+WantedBy=timers.target

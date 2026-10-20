@@ -59,3 +59,7 @@ docker compose --env-file /etc/privacytrace/deployment.env -f deploy/compose.yam
 `control` 现为 `internal: true`、禁用 IPv6 的隔离 IPv4 bridge，不允许 API/Worker 直接访问公网或扫描 VM 地址。指定 `PT_CONTROL_GATEWAY_IP` 为桥接网关私有 IP，`PT_RUNNER_URL=https://<PT_CONTROL_GATEWAY_IP>:8444`；只允许通过宿主机上最小权限的 **TCP 透传** relay 将该端口转发到唯一专用 Runner 的 mTLS 端口。Relay 不终止 TLS、不解密 APK 或任务资料；Runner 证书 SAN 必须与客户端连接使用的网关 IP 匹配。Relay 应限制来源为容器控制网、目的为经授权 Runner IP:8444，同时由宿主 INPUT 防火墙拒绝控制网到其他宿主端口。禁止将 control 改回普通具有缺省外部路由的 bridge，也不得将 Docker TCP API 转发。
 
 **停止条件：** 尚未在实际宿主配置和测试 relay/INPUT 白名单前，真实 Runner 全链路仍是 NOT_TESTED，不能以 docker compose config 通过替代。需要实际容器内到 relay 的 mTLS 连接、到公网/其他私网/宿主其他端口拒绝、IPv6 拒绝以及容器重启后的策略持久证据。
+
+## 受控回收 timer 模板
+
+`docs/deployment/systemd/` 包含 `privacytrace-reclaim.service`、`privacytrace-reclaim.timer`、`privacytrace-reclaim-failed.service` 示例。Operator 应在创建 `privacytrace-deploy` 专用账户、准备非敏感 env-file、固定部署工作目录和 Docker socket 权限边界后安装并审查这三份 unit；通过 `systemctl enable --now privacytrace-reclaim.timer` 开始计划任务。日志错误通过 syslog authpriv.err 标记，**真正的远端告警需要外部日志平台订阅，尚未验证**。Docker 管理权限接近宿主 root，不能授权不可信用户。timer 仅演示 30 分钟周期；未在本轮用户环境安装或启用。

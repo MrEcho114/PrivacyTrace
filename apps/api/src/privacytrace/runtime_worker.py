@@ -185,6 +185,7 @@ def create_worker_app(config):
             return
         try:
             from uuid import UUID
+
             from .runtime_health import HealthPublisher
 
             UUID(str(request.id))

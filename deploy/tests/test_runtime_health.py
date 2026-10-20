@@ -105,6 +105,26 @@ class RuntimeHealthTests(unittest.TestCase):
             }
             self.assertTrue(check_runtime_readiness(INSTANCE))
 
+    def test_gateway_unreachable_fails_closed_on_runner(self):
+        from privacytrace.runner_service import RunnerHandler
+        from privacytrace.runtime_tls import RuntimeUnavailable
+
+        handler = object.__new__(RunnerHandler)
+        handler.path = "/v1/health"
+        gateway = MagicMock()
+        gateway.json.side_effect = RuntimeUnavailable("private network unavailable")
+        handler.server = SimpleNamespace(
+            runner=SimpleNamespace(
+                gateway=gateway,
+                faulted=False,
+                config=SimpleNamespace(image_id="sha256:" + "a" * 64),
+            )
+        )
+        handler.authorized = MagicMock(return_value=True)
+        handler.reply = MagicMock()
+        handler.do_GET()
+        handler.reply.assert_called_once_with(503, {"error": "RUNNER_UNAVAILABLE"})
+
     def test_reader_requires_real_runner_status_and_image(self):
         env = {
             "PRIVACYTRACE_RUNNER_URL": "https://172.29.98.1:8444",

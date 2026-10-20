@@ -471,6 +471,47 @@ class ProductionProbeTests(unittest.IsolatedAsyncioTestCase):
         finally:
             release.set()
 
+    async def test_health_timeout_fails_closed_without_unbounded_threads(self):
+        import asyncio
+        import threading
+
+        entered = threading.Event()
+        released = threading.Event()
+
+        def blocked_db(*_args):
+            entered.set()
+            released.wait(timeout=6)
+            return True, "0080_05"
+
+        async def app(scope, receive, send):
+            await send({"type": "http.response.start", "status": 200, "headers": []})
+            await send({"type": "http.response.body", "body": b"ok"})
+
+        surface = ProductionSurface(app, "privacytrace.test")
+        try:
+            with (
+                patch("serve.check_database_readiness", side_effect=blocked_db),
+                patch("privacytrace.runtime_health.check_runtime_readiness", return_value=True),
+            ):
+                async with httpx.AsyncClient(
+                    transport=httpx.ASGITransport(app=surface, client=("127.0.0.1", 1234)),
+                    base_url="https://privacytrace.test",
+                ) as client:
+                    probe = asyncio.create_task(client.get("/_health/ready"))
+                    self.assertTrue(await asyncio.to_thread(entered.wait, 1))
+                    self.assertEqual((await probe).status_code, 503)
+                    self.assertTrue(surface._ready_slot.locked())
+                    self.assertEqual((await client.get("/_health/ready")).status_code, 503)
+                    released.set()
+                    for _ in range(50):
+                        if not surface._ready_slot.locked():
+                            break
+                        await asyncio.sleep(0.01)
+                    self.assertFalse(surface._ready_slot.locked())
+                    self.assertEqual((await client.get("/_health/ready")).status_code, 200)
+        finally:
+            released.set()
+
     async def test_production_readiness_probe_success_with_revision_0080_05(self):
         async def downstream(scope, receive, send):
             pass

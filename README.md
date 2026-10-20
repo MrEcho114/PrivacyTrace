@@ -158,11 +158,12 @@ uv run --project apps/api --locked --extra worker pytest apps/api/tests
 
 ## 人工智能工具使用与开源披露声明
 
-本项目遵循国家《生成式人工智能服务管理暂行办法》《人工智能生成合成内容标识办法》及配套国家标准《网络安全技术 人工智能生成合成内容标识方法》（GB 45438-2025）及高校学术规范要求，对人工智能工具的使用边界、贡献划分与合规标识作如下公开声明：
+本节是 **PrivacyTrace 项目自行编写的 AI 工具使用披露记录**，不是赛事官方统一表格，也不表示通过 GB 45438-2025 或其他法规的完整合规认证。项目参考相关规范改进信息披露，具体法定义务和申报要求须另行核对。
 
-- **AI 辅助范围界定**：在学生团队主导的核心架构、接口契约与设计规范约束下，部分底层工程代码（如前端 TypeScript 契约导出 `contracts.generated.ts`、后端 API 路由胶水层及基础测试用例骨架）借助 Google Gemini（Gemini 2.5 Pro / Gemini 3.8 Flash）与 OpenAI Codex 辅助生成。AI 不参与选题策划、立项论证、核心算法与判定规则制定。
-- **学生团队核心贡献与主体责任**：核心架构设计（Evidence 证据链追溯模型、Consistency Engine 六态判定状态机、Privacy Taxonomy 分类体系）、系统设计规范（红线措辞约束、Docker 隔离沙箱）、全量代码审查（逐行审查排查并发锁竞争等缺陷）及项目管理（13 个 Epic 拆解与 CI/CD 流水线）100% 由学生团队独立完成。文责与知识产权责任 100% 由学生团队独立承担。
-- **显式标识与溯源闭环**：自动生成代码头部标注 `[AI-Assisted / Generated Code]` 提示；Web 前端报告页脚标注技术驱动与校对说明；完整机器生成审计凭证（Provenance Receipts）与 CI 验证凭据详见 `docs/stages/s0-gemini-provenance.json`、`docs/stages/s1-gemini-provenance.json` 与 [`docs/ai-usage-disclosure.md`](docs/ai-usage-disclosure.md)。
+- **AI 辅助范围**：项目历史记录涉及 Google Gemini、OpenAI Codex 等工具，以及部分接口实现、数据契约导出和测试代码模板。具体工具型号、受影响文件、使用时间和人工修改范围需结合日志、PR 与 [披露记录](docs/ai-usage-disclosure.md) 核实；不能宣称 AI 仅参与某些环节而完全未涉及其他工作。
+- **学生贡献与责任**：团队参与项目的核心架构设计（Evidence／Consistency Engine／Taxonomy）、设计规范、代码审查及项目管理。各环节实际参与者和 AI 使用情况以可核验证据为准；Git 作者提交数不等于 AI／人工代码行比例，也不能证明某环节“100% 独立完成”。最终申报材料应由实际参赛成员确认并负责。
+- **标识与留痕**：类型契约生成文件含项目级 AI 使用提示，Web 报告页脚说明工程存在 AI 辅助；[S0 provenance](docs/stages/s0-gemini-provenance.json) 和 [S1 provenance](docs/stages/s1-gemini-provenance.json) 是阶段性记录，不能自动代表全项目的使用范围或审核完成状态。
+- **申报状态**：参赛学生名单与指导教师审核仍待实际确认；正式报名按赛事指南和报名系统执行，完整状态见 [披露记录](docs/ai-usage-disclosure.md) 与 [赛务清单](docs/competition-checklist.md)。
 
 ## Issue 认领与 Blocked 依赖说明
 

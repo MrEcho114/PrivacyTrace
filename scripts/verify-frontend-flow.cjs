@@ -203,6 +203,14 @@ const reportTableHeader = page => page.evaluate(() => {
 // absent and the selected row expands in place. Pin both sides so nobody renders both presentations.
 async function assertReportRowToggle(page, label) {
   const width = page.viewportSize().width
+  // Viewport resizing updates CSS immediately; matchMedia dispatch and Vue's
+  // conditional evidence render settle on a later frame. Assert that render,
+  // rather than reading an intermediate desktop DOM at the new mobile width.
+  await page.waitForFunction(narrow => {
+    const inline = document.querySelector('.comparison-table td.row-evidence')
+    const standalone = document.querySelector('section#example-evidence')
+    return narrow ? Boolean(inline) && !standalone : !inline && Boolean(standalone)
+  }, width <= design.mobileButton.maxWidth, { timeout: 5000 })
   const state = await page.evaluate(() => {
     const shown = element => Boolean(element) && getComputedStyle(element).display !== 'none' && element.getClientRects().length > 0
     const row = document.querySelector('.comparison-table td.row-evidence')

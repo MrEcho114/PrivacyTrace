@@ -62,9 +62,9 @@ def resolve_migration_url(secret_file=None):
 def validate_migrator_role(connection):
     """Assert role boundaries: must not be runtime user, must not be superuser or bypassrls."""
     role = connection.execute(sa.text("SELECT current_user")).scalar_one()
-    if role == "privacytrace_runtime":
+    if role != "privacytrace_migrator":
         raise ValueError(
-            "Migration bootstrap requires dedicated migrator credentials, not runtime credentials"
+            "Migration bootstrap requires dedicated privacytrace_migrator credentials, not runtime credentials"
         )
 
     flags = connection.execute(
@@ -73,7 +73,7 @@ def validate_migrator_role(connection):
             "FROM pg_roles WHERE rolname = current_user"
         )
     ).fetchone()
-    if flags and (flags[0] or flags[1]):
+    if not flags or any(flags):
         raise ValueError("Migration role must not possess superuser or bypassrls privileges")
     return role
 

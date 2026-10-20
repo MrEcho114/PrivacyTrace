@@ -1,8 +1,8 @@
 {
-  "status": "READY",
+  "status": "CONFIG_VALID_PENDING_DEPLOYMENT_VERIFICATION",
   "application_baseline": "a2e058a4868e2c55ab928179682ca7f9cd49caa5",
   "migration_packaged": "0080_05",
-  "production_enabled": true,
+  "production_enabled": false,
   "roles_pending": [],
   "handoff_required": [
     "Role commands, dependency lock, fixed JSON task schema and broker ACL",

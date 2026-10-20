@@ -581,6 +581,19 @@ class ContextAndPreflightTests(unittest.TestCase):
         config = _build_synthetic_config()
         validate(config)
 
+    def test_preflight_rejects_legacy_four_service_topology(self):
+        config = _build_synthetic_config()
+        for name in ("worker", "dispatcher", "gateway"):
+            config["services"].pop(name)
+        with self.assertRaisesRegex(ValueError, "Unexpected service topology"):
+            validate(config)
+
+    def test_preflight_rejects_unapproved_migration_service(self):
+        config = _build_synthetic_config()
+        config["services"]["migrate"] = copy.deepcopy(config["services"]["dispatcher"])
+        with self.assertRaises(ValueError):
+            validate(config)
+
     def test_preflight_mutation_attacks_are_rejected(self):
         base_config = _build_synthetic_config()
 

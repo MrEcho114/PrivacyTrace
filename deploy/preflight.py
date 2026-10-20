@@ -10,12 +10,12 @@ DIGEST = re.compile(r"[^\s]+@sha256:[0-9a-f]{64}$")
 ROOT = Path(__file__).resolve().parents[1]
 
 TOPOLOGY_7 = {"web", "api", "postgres", "redis", "worker", "dispatcher", "gateway"}
-TOPOLOGY_4 = {"web", "api", "postgres", "redis"}
+OPTIONAL_MIGRATE = {"migrate"}
 
 
 def validate(config):
     services = config["services"]
-    if set(services) not in (TOPOLOGY_7, TOPOLOGY_4):
+    if set(services) not in (TOPOLOGY_7, TOPOLOGY_7 | OPTIONAL_MIGRATE):
         raise ValueError("Unexpected service topology")
     volumes = {
         "web": {("certificates", "/data"), ("caddy_config", "/config")},
@@ -25,6 +25,7 @@ def validate(config):
         "worker": {("materials", "/var/lib/privacytrace")},
         "dispatcher": {("materials", "/var/lib/privacytrace")},
         "gateway": {("materials", "/var/lib/privacytrace")},
+        "migrate": set(),
     }
     for name, service in services.items():
         if not DIGEST.fullmatch(service["image"]):
@@ -116,6 +117,7 @@ def validate(config):
             {"runtime_database_url", "broker_url"},
             {"runtime_database_url", "runtime_broker_url"},
         ],
+        "migrate": [{"migration_database_url"}],
         "gateway": [
             {
                 "runtime_database_url",
@@ -133,6 +135,17 @@ def validate(config):
         if actual_secrets not in allowed:
             raise ValueError("Service secret privileges changed")
 
+    if "migrate" in services:
+        mig = services["migrate"]
+        if (
+            set(mig.get("networks", [])) != {"database"}
+            or mig.get("profiles") != ["migration"]
+            or mig.get("command") != ["/app/deploy/bootstrap.py"]
+            or mig.get("environment", {}).get("PRIVACYTRACE_MIGRATION_DATABASE_URL_FILE")
+            != "/run/secrets/migration_database_url"
+            or mig.get("restart", "no") != "no"
+        ):
+            raise ValueError("Migration role privilege or execution contract changed")
     env = services["api"].get("environment", {})
     if env.get("PT_DEPLOY_MODE") != "production" or env.get("PRIVACYTRACE_STORAGE") != "postgres":
         raise ValueError("Production must not silently use smoke or JSON storage")
@@ -294,13 +307,9 @@ def main():
     parser.add_argument("--config-only", action="store_true")
     args = parser.parse_args()
     if not args.env_file:
-        validate(_build_synthetic_config())
-        if not args.config_only:
-            raise SystemExit(
-                "Production BLOCKED: launch gates remain closed without authorization"
-            )
-        print("Deployment configuration valid; production gates remain closed")
-        return
+        raise SystemExit(
+            "Deployment preflight requires an explicit --env-file; synthetic validation is test-only"
+        )
     command = [
         "docker",
         "compose",

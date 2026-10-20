@@ -47,8 +47,8 @@ services:
       PRIVACYTRACE_DATABASE_URL_FILE: /run/secrets/runtime_database_url
       PRIVACYTRACE_STORE_ROOT: /var/lib/privacytrace/jobs
       PRIVACYTRACE_MATERIAL_KEY_FILE: /run/secrets/material_key
-      PRIVACYTRACE_RUNNER_URL: ${PT_RUNNER_URL:-https://127.0.0.1:8444}
-      PRIVACYTRACE_RUNNER_IMAGE_ID: ${PT_RUNNER_IMAGE_ID:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      PRIVACYTRACE_RUNNER_URL: ${PT_RUNNER_URL:?Explicit private Runner endpoint required}
+      PRIVACYTRACE_RUNNER_IMAGE_ID: ${PT_RUNNER_IMAGE_ID:?Explicit immutable Runner image required}
       PRIVACYTRACE_CONTROL_TLS_CA: /run/secrets/control_tls_ca
       PRIVACYTRACE_CONTROL_TLS_CERT: /run/secrets/control_tls_cert
       PRIVACYTRACE_CONTROL_TLS_KEY: /run/secrets/control_tls_key
@@ -94,6 +94,23 @@ services:
       interval: 10s
       timeout: 4s
       retries: 5
+
+  migrate:
+    <<: *restricted
+    # Explicit one-shot operator action; NOT part of the seven long-lived services.
+    profiles: [migration]
+    image: ${PT_API_IMAGE:?Set immutable PT_API_IMAGE}
+    user: "10001:10001"
+    command: ["/app/deploy/bootstrap.py"]
+    environment:
+      PRIVACYTRACE_MIGRATION_DATABASE_URL_FILE: /run/secrets/migration_database_url
+    networks: [database]
+    secrets: [migration_database_url]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m,uid=10001,gid=10001"]
+    mem_limit: 256m
+    cpus: 1
+    depends_on:
+      postgres: {condition: service_healthy}
 
   redis:
     <<: *restricted
@@ -150,8 +167,8 @@ services:
       PRIVACYTRACE_STORE_ROOT: /var/lib/privacytrace/jobs
       PRIVACYTRACE_MATERIAL_KEY_FILE: /run/secrets/material_key
       PRIVACYTRACE_LEASE_SECONDS: "60"
-      PRIVACYTRACE_RUNNER_URL: ${PT_RUNNER_URL:-https://127.0.0.1:8444}
-      PRIVACYTRACE_RUNNER_IMAGE_ID: ${PT_RUNNER_IMAGE_ID:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      PRIVACYTRACE_RUNNER_URL: ${PT_RUNNER_URL:?Explicit private Runner endpoint required}
+      PRIVACYTRACE_RUNNER_IMAGE_ID: ${PT_RUNNER_IMAGE_ID:?Explicit immutable Runner image required}
       PRIVACYTRACE_CONTROL_TLS_CA: /run/secrets/control_tls_ca
       PRIVACYTRACE_CONTROL_TLS_CERT: /run/secrets/control_tls_cert
       PRIVACYTRACE_CONTROL_TLS_KEY: /run/secrets/control_tls_key
@@ -189,7 +206,7 @@ services:
       PRIVACYTRACE_GATEWAY_TLS_CA: /run/secrets/gateway_tls_ca
       PRIVACYTRACE_GATEWAY_TLS_CERT: /run/secrets/gateway_tls_cert
       PRIVACYTRACE_GATEWAY_TLS_KEY: /run/secrets/gateway_tls_key
-      PRIVACYTRACE_GATEWAY_PEERS: ${PT_GATEWAY_PEERS:-0000000000000000000000000000000000000000000000000000000000000000}
+      PRIVACYTRACE_GATEWAY_PEERS: ${PT_GATEWAY_PEERS:?Set approved gateway TLS peer fingerprint(s)}
     networks: [database, control]
     secrets:
       - runtime_database_url
@@ -226,6 +243,8 @@ secrets:
     file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/postgres_password
   redis_config:
     file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/redis.conf
+  migration_database_url:
+    file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/migration_database_url
   runtime_broker_url:
     file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/runtime_broker_url
   material_key:

@@ -297,9 +297,9 @@ def main():
         validate(_build_synthetic_config())
         if not args.config_only:
             raise SystemExit(
-                "Production BLOCKED: deployment capability baseline only; production launch gates remain BLOCKED without explicit authorization"
+                "Production BLOCKED: launch gates remain closed without authorization"
             )
-        print("Deployment configuration valid; production gates remain closed without explicit authorization")
+        print("Deployment configuration valid; production gates remain closed")
         return
     command = [
         "docker",
@@ -320,9 +320,9 @@ def main():
         raise SystemExit("Deployment configuration rejected; inspect non-secret inputs locally")
     if not args.config_only:
         raise SystemExit(
-            "Production BLOCKED: deployment capability baseline only; production launch gates remain BLOCKED without explicit authorization"
+            "Production BLOCKED: launch gates remain closed without authorization"
         )
-    print("Deployment configuration valid; production gates remain closed without explicit authorization")
+    print("Deployment configuration valid; production gates remain closed")
 
 
 if __name__ == "__main__":

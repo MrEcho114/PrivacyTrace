@@ -497,10 +497,13 @@ for (const status of ['SUCCESS', 'PARTIAL']) test(`response lost, retry 409, the
     },
   })
   current = { ...h.stored(), sources: [{ ...h.stored().sources[0], status: 'manual',
-    text: '原句', model_audit: { status } }],
-    candidates: [{ id: 'checked', source_id: 'seed', excerpt: '原句', data_type: 'LOCATION', checked: true }] }
+    text: '原句', model_audit: { status } }] }
   h.state.file.value = { name: 'fixture.apk' }
   await h.state.prepare()
+  // Seed a checked candidate after the initial extraction, so the retry path
+  // must preserve user review state across the lost-response and 409 sequence.
+  current = { ...current, candidates: [{ id: 'checked', source_id: 'seed', excerpt: '原句', data_type: 'LOCATION', checked: true }] }
+  h.state.apply(current)
   await h.state.retryModel('seed') // A was committed, response lost
   assert.deepEqual([...h.state.failedSourceIds.value], ['seed'])
   await h.state.retryModel('seed') // B rejects with 409; must not overwrite A

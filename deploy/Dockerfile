@@ -10,7 +10,7 @@ WORKDIR /build
 COPY apps/api/pyproject.toml apps/api/uv.lock ./
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv UV_LINK_MODE=copy
 RUN --mount=type=bind,target=/context python /context/deploy/audit_context.py /context
-RUN uv sync --locked --extra runtime --no-dev --no-install-project --no-cache
+RUN uv sync --locked --extra worker --extra runtime --no-dev --no-install-project --no-cache
 
 FROM ${PYTHON_IMAGE} AS api
 ARG VCS_REF=unknown

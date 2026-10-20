@@ -12,7 +12,7 @@ from .postgres_outbox import _bounded, decode_message
 from .postgres_store import PostgresOperationUnavailable
 from .queue_runtime import TASK_NAME, BrokerConfig, create_celery_app
 from .runtime_tls import RuntimeUnavailable
-from .storage_factory import create_store
+from .storage_factory import create_store, resolve_redis_url
 
 _LOG = logging.getLogger(__name__)
 # Celery uses CRITICAL logging to suppress payload-bearing framework records.
@@ -177,7 +177,7 @@ def main():
         if os.environ.get("PRIVACYTRACE_STORAGE") != "postgres":
             raise ValueError
         config = BrokerConfig(
-            os.environ["PRIVACYTRACE_BROKER_URL"], os.environ["PRIVACYTRACE_INSTANCE_ID"]
+            resolve_redis_url(), os.environ["PRIVACYTRACE_INSTANCE_ID"]
         )
         store = create_store(Path(os.environ["PRIVACYTRACE_STORE_ROOT"]))
         try:

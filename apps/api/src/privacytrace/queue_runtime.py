@@ -199,13 +199,13 @@ def main():
     try:
         from .durable_intake import ensure_control_plane
         from .postgres_execution import PostgresExecution
-        from .storage_factory import create_store
+        from .storage_factory import create_store, resolve_redis_url
 
         ensure_control_plane()
         if os.environ.get("PRIVACYTRACE_STORAGE") != "postgres":
             raise ValueError("Durable dispatch requires PostgreSQL")
         store = create_store(Path(os.environ["PRIVACYTRACE_STORE_ROOT"]))
-        config = BrokerConfig(os.environ.get("PRIVACYTRACE_BROKER_URL"), store.instance_id)
+        config = BrokerConfig(resolve_redis_url(), store.instance_id)
         publisher = CeleryPublisher(config)
         dispatcher = OutboxDispatcher(store, publisher)
         while True:

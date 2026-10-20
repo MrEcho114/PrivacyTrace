@@ -76,6 +76,9 @@ class RuntimeMaterials:
         self._key = private_file(key_file, secret=True).read_bytes()
         if len(self._key) != 32:
             raise ValueError("Material signing key must contain exactly 32 private bytes")
+        # Fresh empty material volumes must be ready before the first upload.
+        # Fail startup if this private directory cannot be provisioned.
+        self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
 
     def readiness(self):
         """Check the real database and the read path of the controlled volume.

@@ -282,9 +282,11 @@ class SevenServiceTopologyTests(unittest.TestCase):
         expected = {"web", "api", "postgres", "redis", "worker", "dispatcher", "gateway"}
         long_lived = {name for name, spec in services.items() if not spec.get("profiles")}
         self.assertEqual(long_lived, expected)
-        self.assertEqual(set(services) - long_lived, {"migrate"})
+        self.assertEqual(set(services) - long_lived, {"migrate", "reclaim"})
         self.assertEqual(services["migrate"]["profiles"], ["migration"])
+        self.assertEqual(services["reclaim"]["profiles"], ["reclamation"])
         self.assertEqual(services["migrate"]["restart"], "no")
+        self.assertEqual(services["reclaim"]["restart"], "no")
 
     def test_all_seven_services_enforce_hardened_isolation(self):
         for name, service in self.raw_config["services"].items():
@@ -645,6 +647,53 @@ class ContextAndPreflightTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "agree on fixed Runner"):
             validate(bad)
+
+    def test_production_required_secrets_cannot_be_dropped(self):
+        config = _build_synthetic_config()
+        # Use the exact production secret contract, not historic smoke allowances.
+        expected = {
+            "api": {"runtime_database_url", "material_key", "control_tls_ca",
+                    "control_tls_cert", "control_tls_key"},
+            "dispatcher": {"runtime_database_url", "runtime_broker_url"},
+            "worker": {"runtime_database_url", "runtime_broker_url", "material_key",
+                       "control_tls_ca", "control_tls_cert", "control_tls_key"},
+            "gateway": {"runtime_database_url", "material_key", "gateway_tls_ca",
+                        "gateway_tls_cert", "gateway_tls_key"},
+        }
+        for role, secrets in expected.items():
+            config["services"][role]["secrets"] = [{"source": x} for x in sorted(secrets)]
+        validate(config)
+        for role, secrets in expected.items():
+            for removed in secrets:
+                mutated = copy.deepcopy(config)
+                mutated["services"][role]["secrets"] = [
+                    s for s in mutated["services"][role]["secrets"] if s["source"] != removed
+                ]
+                with self.subTest(role=role, missing=removed), self.assertRaises(ValueError):
+                    validate(mutated)
+
+    def test_reclamation_requires_one_shot_isolation(self):
+        config = _build_synthetic_config()
+        reclaim = copy.deepcopy(config["services"]["dispatcher"])
+        reclaim.update(
+            profiles=["reclamation"],
+            command=["-m", "privacytrace.material_lifecycle", "--once"],
+            environment={
+                "PRIVACYTRACE_DATABASE_URL_FILE": "/run/secrets/runtime_database_url"
+            },
+            secrets=[{"source": "runtime_database_url"}],
+        )
+        config["services"]["reclaim"] = reclaim
+        validate(config)
+        for field, replacement in (
+            ("profiles", []),
+            ("networks", ["edge"]),
+            ("command", ["-m", "privacytrace.queue_runtime"]),
+        ):
+            broken = copy.deepcopy(config)
+            broken["services"]["reclaim"][field] = replacement
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                validate(broken)
 
     def test_preflight_mutation_attacks_are_rejected(self):
         base_config = _build_synthetic_config()

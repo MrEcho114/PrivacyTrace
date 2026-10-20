@@ -12,12 +12,12 @@ DIGEST = re.compile(r"[^\s]+@sha256:[0-9a-f]{64}$")
 ROOT = Path(__file__).resolve().parents[1]
 
 TOPOLOGY_7 = {"web", "api", "postgres", "redis", "worker", "dispatcher", "gateway"}
-OPTIONAL_MIGRATE = {"migrate"}
+OPTIONAL_MAINTENANCE = {"migrate", "reclaim"}
 
 
 def validate(config):
     services = config["services"]
-    if set(services) not in (TOPOLOGY_7, TOPOLOGY_7 | OPTIONAL_MIGRATE):
+    if not TOPOLOGY_7.issubset(services) or set(services) - TOPOLOGY_7 - OPTIONAL_MAINTENANCE:
         raise ValueError("Unexpected service topology")
     volumes = {
         "web": {("certificates", "/data"), ("caddy_config", "/config")},
@@ -34,6 +34,7 @@ def validate(config):
         "dispatcher": {("materials", "/var/lib/privacytrace")},
         "gateway": {("materials", "/var/lib/privacytrace")},
         "migrate": set(),
+        "reclaim": {("materials", "/var/lib/privacytrace")},
     }
     for name, service in services.items():
         if not DIGEST.fullmatch(service["image"]):
@@ -96,45 +97,33 @@ def validate(config):
 
     valid_secret_sets = {
         "web": [set()],
-        "api": [
-            {"runtime_database_url"},
-            {
-                "runtime_database_url",
-                "material_key",
-                "control_tls_ca",
-                "control_tls_cert",
-                "control_tls_key",
-            },
-        ],
+        "api": [{
+            "runtime_database_url",
+            "material_key",
+            "control_tls_ca",
+            "control_tls_cert",
+            "control_tls_key",
+        }],
         "postgres": [{"postgres_password"}],
         "redis": [{"redis_config"}],
-        "dispatcher": [
-            {"runtime_database_url", "runtime_broker_url"},
-            {"runtime_database_url", "broker_url"},
-        ],
-        "worker": [
-            {
-                "runtime_database_url",
-                "runtime_broker_url",
-                "material_key",
-                "control_tls_ca",
-                "control_tls_cert",
-                "control_tls_key",
-            },
-            {"runtime_database_url", "broker_url"},
-            {"runtime_database_url", "runtime_broker_url"},
-        ],
+        "dispatcher": [{"runtime_database_url", "runtime_broker_url"}],
+        "worker": [{
+            "runtime_database_url",
+            "runtime_broker_url",
+            "material_key",
+            "control_tls_ca",
+            "control_tls_cert",
+            "control_tls_key",
+        }],
         "migrate": [{"migration_database_url"}],
-        "gateway": [
-            {
-                "runtime_database_url",
-                "material_key",
-                "gateway_tls_ca",
-                "gateway_tls_cert",
-                "gateway_tls_key",
-            },
-            {"runtime_database_url"},
-        ],
+        "reclaim": [{"runtime_database_url"}],
+        "gateway": [{
+            "runtime_database_url",
+            "material_key",
+            "gateway_tls_ca",
+            "gateway_tls_cert",
+            "gateway_tls_key",
+        }],
     }
     for name, service in services.items():
         actual_secrets = {s["source"] for s in service.get("secrets", [])}
@@ -190,6 +179,17 @@ def validate(config):
         ):
             raise ValueError("Independent deletion journal volume required")
 
+    if "reclaim" in services:
+        reclaim = services["reclaim"]
+        if (
+            reclaim.get("profiles") != ["reclamation"]
+            or set(reclaim.get("networks", [])) != {"database"}
+            or reclaim.get("command") != ["-m", "privacytrace.material_lifecycle", "--once"]
+            or reclaim.get("environment", {}).get("PRIVACYTRACE_DATABASE_URL_FILE")
+            != "/run/secrets/runtime_database_url"
+            or reclaim.get("restart", "no") != "no"
+        ):
+            raise ValueError("Reclamation execution privilege contract changed")
     if "migrate" in services:
         mig = services["migrate"]
         if (
@@ -303,7 +303,11 @@ def _build_synthetic_config():
                         "target": "/var/lib/privacytrace-deletions",
                     }
                 ],
-                "secrets": [{"source": "runtime_database_url"}],
+                "secrets": [
+                    {"source": x}
+                    for x in ("runtime_database_url", "material_key", "control_tls_ca",
+                              "control_tls_cert", "control_tls_key")
+                ],
                 "tmpfs": ["/tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001"],
                 "environment": {
                     "PT_DEPLOY_MODE": "production",
@@ -363,7 +367,11 @@ def _build_synthetic_config():
                         "target": "/var/lib/privacytrace-deletions",
                     }
                 ],
-                "secrets": [{"source": "runtime_database_url"}, {"source": "broker_url"}],
+                "secrets": [
+                    {"source": x}
+                    for x in ("runtime_database_url", "runtime_broker_url", "material_key",
+                              "control_tls_ca", "control_tls_cert", "control_tls_key")
+                ],
                 "environment": {
                     "PRIVACYTRACE_DELETION_JOURNAL_ROOT": "/var/lib/privacytrace-deletions",
                     "PRIVACYTRACE_RUNNER_URL": "https://10.77.0.9:8444",
@@ -383,7 +391,7 @@ def _build_synthetic_config():
                 "volumes": [
                     {"type": "volume", "source": "materials", "target": "/var/lib/privacytrace"}
                 ],
-                "secrets": [{"source": "runtime_database_url"}, {"source": "broker_url"}],
+                "secrets": [{"source": "runtime_database_url"}, {"source": "runtime_broker_url"}],
                 "tmpfs": ["/tmp:rw,noexec,nosuid,size=32m,uid=10001,gid=10001"],
             },
             "gateway": {
@@ -408,7 +416,11 @@ def _build_synthetic_config():
                 "volumes": [
                     {"type": "volume", "source": "materials", "target": "/var/lib/privacytrace"}
                 ],
-                "secrets": [{"source": "runtime_database_url"}],
+                "secrets": [
+                    {"source": x}
+                    for x in ("runtime_database_url", "material_key", "gateway_tls_ca",
+                              "gateway_tls_cert", "gateway_tls_key")
+                ],
                 "tmpfs": ["/tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001"],
             },
         },

@@ -115,6 +115,27 @@ services:
     depends_on:
       postgres: {condition: service_healthy}
 
+  reclaim:
+    <<: *restricted
+    # Operator/scheduler invoked one-shot; never deletes referenced retained material.
+    profiles: [reclamation]
+    image: ${PT_API_IMAGE:?Set immutable PT_API_IMAGE}
+    user: "10001:10001"
+    command: ["-m", "privacytrace.material_lifecycle", "--once"]
+    environment:
+      PRIVACYTRACE_STORAGE: postgres
+      PRIVACYTRACE_INSTANCE_ID: ${PT_INSTANCE_ID:?Set stable instance UUID}
+      PRIVACYTRACE_DATABASE_URL_FILE: /run/secrets/runtime_database_url
+      PRIVACYTRACE_STORE_ROOT: /var/lib/privacytrace/jobs
+    networks: [database]
+    secrets: [runtime_database_url]
+    volumes: [materials:/var/lib/privacytrace]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m,uid=10001,gid=10001"]
+    mem_limit: 256m
+    cpus: 1
+    depends_on:
+      postgres: {condition: service_healthy}
+
   redis:
     <<: *restricted
     image: redis:7.4.8-alpine@sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6

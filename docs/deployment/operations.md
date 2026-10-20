@@ -42,3 +42,14 @@ API/Worker 可以通过控制网络连接私有 Runner，但宿主机/VM 防火�
 ## 独立删除日志卷
 
 API 与 Worker 的 `PRIVACYTRACE_DELETION_JOURNAL_ROOT` 指向单独命名卷 `deletion_journal`，不同于任务材料卷 `materials`。日志必须独立做保全与恢复，且恢复旧快照时需重放删除记录，不能只恢复数据/材料后丢弃日志。不同卷不意味着物理独立备份或一致快照：这需要隔离环境另行验证。当前没有真实恢复演练收据。
+
+## 受控材料回收单次任务与调度（待部署验收）
+
+常驻七服务以外的 `reclaim` 仅在 `reclamation` profile 下可见；由受控宿主 systemd timer 在业务低峰周期性执行（建议每 30 分钟，实际按备份/任务负载设置），不以后台无限循环进程偷偷替代。仅在部署已完成数据库迁移且具备受限 runtime 角色后运行：
+
+```bash
+docker compose --env-file /etc/privacytrace/deployment.env -f deploy/compose.yaml \\
+  --profile reclamation run --rm reclaim
+```
+
+宿主调度必须设置 `flock` 或 systemd 单实例锁、有限超时和非零退出告警。失败时保留原有数据库指针和材料，下一次安全重试；不得对正常、未主动删除的作用域按年龄强行删材。生产执行周期、实际退出码、删除/非删除对象计数、异常孤儿恢复和脱敏日志需要在隔离部署中取得真实收据；此文档不代表已进行调度验收。

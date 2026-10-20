@@ -120,18 +120,32 @@ def run_bootstrap(migration_url):
             if missing:
                 raise RuntimeError("Migration schema missing required tables")
 
-            # 5. Verify RLS is enabled on all tables
-            rls_check = conn.execute(
+            # 5. Verify *business* RLS, not the Alembic metadata version table.
+            # Also reject unknown unprotected tables added to the application schema.
+            rows = conn.execute(
                 sa.text(
-                    "SELECT relname, relrowsecurity FROM pg_class c "
+                    "SELECT relname, relrowsecurity, relforcerowsecurity FROM pg_class c "
                     "JOIN pg_namespace n ON n.oid = c.relnamespace "
                     "WHERE n.nspname = :schema AND c.relkind = 'r'"
                 ),
                 {"schema": SCHEMA},
             ).fetchall()
-            for table_name, relrowsecurity in rls_check:
-                if not relrowsecurity:
-                    raise RuntimeError("Table does not enforce ROW LEVEL SECURITY")
+            actual = {name for name, _, _ in rows}
+            if actual != EXPECTED_TABLES | {"alembic_version"}:
+                raise RuntimeError("Unexpected PostgreSQL application schema tables")
+            if any(
+                not enabled or not forced
+                for name, enabled, forced in rows
+                if name in EXPECTED_TABLES
+            ):
+                raise RuntimeError("Business table requires enabled and forced ROW LEVEL SECURITY")
+            if not conn.execute(
+                sa.text(
+                    "SELECT has_table_privilege("
+                    "'privacytrace_runtime', 'privacytrace.alembic_version', 'SELECT')"
+                )
+            ).scalar_one():
+                raise RuntimeError("Runtime role needs migration revision read privilege")
 
             return {
                 "bootstrap": "success",

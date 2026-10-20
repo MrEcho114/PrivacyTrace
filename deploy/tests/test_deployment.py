@@ -594,6 +594,27 @@ class ContextAndPreflightTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate(config)
 
+    def test_preflight_rejects_loopback_runner_and_placeholder_image(self):
+        base = _build_synthetic_config()
+        for target, invalid in (
+            ("PRIVACYTRACE_RUNNER_URL", "https://127.0.0.1:8444"),
+            ("PRIVACYTRACE_RUNNER_URL", "http://10.77.0.9:8444"),
+            ("PRIVACYTRACE_RUNNER_IMAGE_ID", "sha256:" + "0" * 64),
+            ("PRIVACYTRACE_RUNNER_IMAGE_ID", "sha256:invalid"),
+        ):
+            bad = copy.deepcopy(base)
+            bad["services"]["worker"]["environment"][target] = invalid
+            with self.assertRaises(ValueError):
+                validate(bad)
+
+    def test_preflight_requires_runner_identity_agreement(self):
+        bad = _build_synthetic_config()
+        bad["services"]["api"]["environment"]["PRIVACYTRACE_RUNNER_URL"] = (
+            "https://10.77.0.11:8444"
+        )
+        with self.assertRaisesRegex(ValueError, "agree on fixed Runner"):
+            validate(bad)
+
     def test_preflight_mutation_attacks_are_rejected(self):
         base_config = _build_synthetic_config()
 

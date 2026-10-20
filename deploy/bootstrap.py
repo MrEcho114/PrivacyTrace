@@ -64,7 +64,8 @@ def validate_migrator_role(connection):
     role = connection.execute(sa.text("SELECT current_user")).scalar_one()
     if role != "privacytrace_migrator":
         raise ValueError(
-            "Migration bootstrap requires dedicated privacytrace_migrator credentials, not runtime credentials"
+            "Migration bootstrap requires dedicated privacytrace_migrator "
+            "credentials, not runtime credentials"
         )
 
     flags = connection.execute(

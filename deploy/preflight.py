@@ -1,10 +1,12 @@
 """Validate the rendered topology without printing its environment or secrets."""
 
 import argparse
+import ipaddress
 import json
 import re
 import subprocess
 from pathlib import Path
+from urllib.parse import urlsplit
 
 DIGEST = re.compile(r"[^\s]+@sha256:[0-9a-f]{64}$")
 ROOT = Path(__file__).resolve().parents[1]
@@ -147,6 +149,42 @@ def validate(config):
         ):
             raise ValueError("Migration role privilege or execution contract changed")
     env = services["api"].get("environment", {})
+    if "worker" in services:
+        worker_env = services["worker"].get("environment", {})
+        required_image = worker_env.get("PRIVACYTRACE_RUNNER_IMAGE_ID")
+        required_url = worker_env.get("PRIVACYTRACE_RUNNER_URL")
+        if (
+            required_image is None
+            or not re.fullmatch(r"sha256:[a-f0-9]{64}", required_image)
+            or required_image == "sha256:" + "0" * 64
+        ):
+            raise ValueError("Runner must use a real immutable image digest")
+        try:
+            endpoint = urlsplit(required_url)
+            ip = ipaddress.ip_address(endpoint.hostname)
+            if (
+                endpoint.scheme != "https"
+                or not ip.is_private
+                or ip.is_loopback
+                or ip.is_unspecified
+                or ip.is_link_local
+                or endpoint.port is None
+                or not 1 <= endpoint.port <= 65535
+                or endpoint.path not in {"", "/"}
+                or endpoint.query
+                or endpoint.fragment
+                or endpoint.username
+                or endpoint.password
+            ):
+                raise ValueError
+        except (ValueError, TypeError, AttributeError):
+            raise ValueError("Runner must use a non-loopback private HTTPS endpoint") from None
+        if (
+            env.get("PRIVACYTRACE_RUNNER_IMAGE_ID") != required_image
+            or env.get("PRIVACYTRACE_RUNNER_URL") != required_url
+        ):
+            raise ValueError("API and worker must agree on fixed Runner identity")
+
     if env.get("PT_DEPLOY_MODE") != "production" or env.get("PRIVACYTRACE_STORAGE") != "postgres":
         raise ValueError("Production must not silently use smoke or JSON storage")
     if (
@@ -214,6 +252,8 @@ def _build_synthetic_config():
                     "PRIVACYTRACE_STORAGE": "postgres",
                     "PRIVACYTRACE_MODE": "remote",
                     "PRIVACYTRACE_DATABASE_URL_FILE": "/run/secrets/runtime_database_url",
+                    "PRIVACYTRACE_RUNNER_URL": "https://10.77.0.9:8444",
+                    "PRIVACYTRACE_RUNNER_IMAGE_ID": "sha256:" + "a" * 64,
                 },
             },
             "postgres": {
@@ -260,6 +300,10 @@ def _build_synthetic_config():
                     {"type": "volume", "source": "materials", "target": "/var/lib/privacytrace"}
                 ],
                 "secrets": [{"source": "runtime_database_url"}, {"source": "broker_url"}],
+                "environment": {
+                    "PRIVACYTRACE_RUNNER_URL": "https://10.77.0.9:8444",
+                    "PRIVACYTRACE_RUNNER_IMAGE_ID": "sha256:" + "a" * 64,
+                },
                 "tmpfs": ["/tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001"],
             },
             "dispatcher": {
@@ -308,7 +352,8 @@ def main():
     args = parser.parse_args()
     if not args.env_file:
         raise SystemExit(
-            "Deployment preflight requires an explicit --env-file; synthetic validation is test-only"
+            "Deployment preflight requires an explicit --env-file; "
+            "synthetic validation is test-only"
         )
     command = [
         "docker",

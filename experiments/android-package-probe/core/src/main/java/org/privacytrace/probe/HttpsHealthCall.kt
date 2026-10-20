@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.net.ssl.SSLException
 import okhttp3.Authenticator
 import okhttp3.CookieJar
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Protocol
@@ -27,7 +28,7 @@ internal fun analysisOrigin(value: String): String = try {
     require(uri.port == -1 || uri.port in 1..65535)
     require(Regex(Regex.escape(host) + "(?::[0-9]{1,5})?", RegexOption.IGNORE_CASE).matches(uri.rawAuthority))
     val port = if (uri.port == -1 || uri.port == 443) "" else ":${uri.port}"
-    "https://${host.lowercase(Locale.ROOT)}$port/"
+    "https://${host.lowercase(Locale.ROOT)}$port/".toHttpUrl().toString()
 } catch (_: Exception) {
     throw ServerProbeException("INVALID_SERVER_ORIGIN")
 }

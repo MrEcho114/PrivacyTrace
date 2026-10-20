@@ -41,9 +41,9 @@ SERVER_TIMEOUT、SERVER_UNREACHABLE 和 CANCELLED，不包含平台异常、Loca
 cleartext 与备份继续关闭；网页 CSP 仍只允许本地 IPC，无外部网络来源。
 测试 CA 只在 test/androidTest 的内部 client 注入，不进入产品默认客户端、Manifest 或 JS 接口。
 
-原生构建命令见 [README](README.md)。58 项 JVM 包括既有 39 项、15 项真实 TLS socket 和
-4 项 DNS 等待/取消/饱和回归。Android instrumentation 另外在普通 UID 下执行 TLS15、DNS4、
-严格 JSON12；测试成功只说明临时私有 CA 接缝及系统信任的拒绝行为，不表示系统已信任该 CA。
+原生构建命令见 [README](README.md)。78 项 JVM 包括既有 39 项、15 项真实 TLS socket、
+4 项 DNS 等待/取消/饱和回归和 20 项严格 JSON 语法回归。Android instrumentation 另外在普通 UID 下
+执行 TLS15、DNS4、JSON20；测试成功只说明临时私有 CA 接缝及系统信任的拒绝行为，不表示系统已信任该 CA。
 
 构建原生/测试/Tauri APK 后，在仓库根运行（cryptography 使用 API 工作区既有依赖）：
 

@@ -27,8 +27,8 @@ class ProbeInstrumentation : Instrumentation() {
                     stage = "native_https_health"
                     HealthTlsCase.values().forEach { HealthTlsChecks.run(it) }
                     HealthDnsCase.values().forEach { HealthDnsChecks.run(it) }
-                    verifyHealthDocuments()
-                    output.putString("stream", "PASS: native HTTPS health TLS15 DNS4 JSON12 ordinary UID\n")
+                    HealthDocumentCase.values().forEach { HealthDocumentChecks.run(it) }
+                    output.putString("stream", "PASS: native HTTPS health TLS15 DNS4 JSON20 ordinary UID\n")
                     finish(Activity.RESULT_OK, output)
                     return
                 }

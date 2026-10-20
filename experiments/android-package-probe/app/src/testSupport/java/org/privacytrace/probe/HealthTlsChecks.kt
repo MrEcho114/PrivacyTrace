@@ -47,9 +47,11 @@ internal object HealthTlsChecks {
         if (case == HealthTlsCase.ORIGIN_VALIDATION) {
             check(analysisOrigin("HTTPS://EXAMPLE.TEST:443/") == "https://example.test/")
             check(analysisOrigin("https://example.test:8443") == "https://example.test:8443/")
+            check(analysisOrigin("https://[::1]:443/") == "https://[::1]/")
             listOf("http://example.test", "https://u:p@example.test", "https://example.test/path",
                 "https://example.test?token=x", "https://example.test#x", "https://example.test:",
-                "https://example.test:0", " https://example.test", "https://example.test/../").forEach {
+                "https://example.test:0", " https://example.test", "https://example.test/../",
+                "https://[fe80::1%25wlan0]/").forEach {
                 expect("INVALID_SERVER_ORIGIN") { HttpsHealthCall(it) }
             }
             return

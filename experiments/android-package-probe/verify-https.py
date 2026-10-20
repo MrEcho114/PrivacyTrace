@@ -142,15 +142,42 @@ def verify(adb_path: str, serial: str, screenshots: Path | None = None) -> dict:
                 check=True,
                 timeout=timeout,
             )
-        except subprocess.SubprocessError:
-            raise RuntimeError(f"HTTPS device command failed at {stage}") from None
+        except subprocess.SubprocessError as error:
+            operation = "/".join(args[:2])
+            raise RuntimeError(
+                f"HTTPS {operation} failed at {stage} ({type(error).__name__})"
+            ) from None
 
     def adb(*args: str, timeout: int = 30) -> str:
         return command(*args, timeout=timeout).stdout.decode("utf-8")
 
     def tree():
         try:
-            adb("shell", "uiautomator", "dump", DEVICE_XML)
+            # Configuration changes can temporarily expose no accessibility root.
+            # Retry only that explicit platform state; disconnects still fail.
+            for attempt in range(5):
+                dump = subprocess.run(
+                    [
+                        adb_path,
+                        "-s",
+                        serial,
+                        "shell",
+                        "uiautomator",
+                        "dump",
+                        DEVICE_XML,
+                    ],
+                    capture_output=True,
+                    timeout=30,
+                )
+                if dump.returncode == 0:
+                    break
+                unavailable = dump.stdout + dump.stderr
+                if attempt == 4 or not any(
+                    marker in unavailable.lower()
+                    for marker in (b"null root node", b"could not get idle state")
+                ):
+                    raise RuntimeError(f"HTTPS UI dump failed at {stage}")
+                time.sleep(0.4)
             return ET.fromstring(command("exec-out", "cat", DEVICE_XML).stdout)
         finally:
             subprocess.run(
@@ -164,8 +191,25 @@ def verify(adb_path: str, serial: str, screenshots: Path | None = None) -> dict:
         deadline = time.monotonic() + 20
         while time.monotonic() < deadline:
             value = tree()
-            if any(n.get("text") == text for n in value.iter("node")):
-                return value
+            limits = [
+                int(re.findall(r"\d+", n.get("bounds", ""))[1])
+                for n in value.iter("node")
+                if n.get("resource-id") == "android:id/navigationBarBackground"
+            ]
+            bottom_limit = min(limits, default=100000)
+            for node in value.iter("node"):
+                if node.get("text") != text:
+                    continue
+                bounds = list(map(int, re.findall(r"\d+", node.get("bounds", ""))))
+                if len(bounds) != 4:
+                    continue
+                left, top, right, bottom = bounds
+                if (
+                    right > left
+                    and bottom > top
+                    and (not scroll or bottom < bottom_limit - 16)
+                ):
+                    return value
             if scroll:
                 adb("shell", "input", "swipe", "250", "750", "250", "250", "200")
             time.sleep(0.1)
@@ -177,7 +221,7 @@ def verify(adb_path: str, serial: str, screenshots: Path | None = None) -> dict:
             raise RuntimeError("HTTPS control unavailable")
         left, top, right, bottom = map(int, bounds.groups())
         if right <= left or bottom <= top:
-            raise RuntimeError("HTTPS control outside viewport")
+            raise RuntimeError(f"HTTPS control outside viewport at {stage}")
         adb("shell", "input", "tap", str((left + right) // 2), str((top + bottom) // 2))
 
     def tap(text: str, scroll: bool = False):
@@ -245,7 +289,7 @@ def verify(adb_path: str, serial: str, screenshots: Path | None = None) -> dict:
         timeout=90,
     )
     if (
-        "PASS: native HTTPS health TLS15 DNS4 JSON12 ordinary UID" not in native
+        "PASS: native HTTPS health TLS15 DNS4 JSON20 ordinary UID" not in native
         or not re.search(r"(?m)^INSTRUMENTATION_CODE: -1\s*$", native)
     ):
         raise RuntimeError("Native HTTPS instrumentation did not pass")
@@ -334,7 +378,7 @@ def verify(adb_path: str, serial: str, screenshots: Path | None = None) -> dict:
             for name in [
                 "native_tls_15_real_socket_cases_test_only_ca",
                 "native_dns_4_bounded_wait_cancel_saturation_cases",
-                "android_strict_json_12_cases",
+                "android_strict_json_20_cases",
                 "bridge_native_input_cancel",
                 "bridge_http_origin_refused_before_connection",
                 "bridge_system_trust_rejects_private_certificate_before_http",

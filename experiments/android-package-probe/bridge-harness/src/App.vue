@@ -10,13 +10,14 @@ const modelMessage = ref('正在读取配置状态');
 const healthBusy = ref(false);
 const health = ref<ServerHealth | null>(null);
 const healthMessage = ref('尚未检查服务');
-const healthSection = ref<HTMLElement | null>(null);
 async function checkHealth() {
   if (busy.value) return;
   busy.value = true;
   healthBusy.value = true;
   health.value = null;
   healthMessage.value = '等待原生输入或服务响应';
+  await nextTick();
+  window.scrollTo(0, document.documentElement.scrollHeight);
   try {
     health.value = await checkServer();
     healthMessage.value = '收到健康响应（仅连通性）';
@@ -26,7 +27,7 @@ async function checkHealth() {
     busy.value = false;
     healthBusy.value = false;
     await nextTick();
-    healthSection.value?.scrollIntoView({ block: 'end' });
+    window.scrollTo(0, document.documentElement.scrollHeight);
   }
 }
 async function settings(action: () => Promise<ModelConfigStatus>) {
@@ -85,7 +86,7 @@ async function stop() {
       <p role="status">{{ modelMessage }}</p>
       <p v-if="model.endpoint" class="model-endpoint">{{ model.endpoint }}</p>
     </section>
-    <section ref="healthSection" aria-label="分析服务健康检查">
+    <section aria-label="分析服务健康检查">
       <h2>分析服务健康检查</h2>
       <p>仅访问原生窗口中输入的 HTTPS 服务健康接口，不上传材料或发送模型 Key。健康响应不代表兼容或允许上传。</p>
       <button :disabled="busy" @click="checkHealth">检查分析服务</button>

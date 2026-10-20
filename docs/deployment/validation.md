@@ -37,3 +37,9 @@ Node/Caddy/PostgreSQL/Redis 的 manifest 摘要于 2026-10-19 经 Docker 官方 
 | 并发 1 容量及无秘密 | 构建上下文 canary/文件白名单 | 硬件/受控 APK 耗时、峰值与拒绝行为实测 |
 
 Linux 镜像与受限 Compose 结果以实际运行收据为准；本机 Windows/WSL 与干净 Linux CI 分开记录，最终 CI 和镜像源码标签须绑定交付 SHA。本机权威检查如有跳过，在 PR 精确列出。Mock、配置渲染、HTTP/本地 CA HTTPS 合成 smoke、真实 DB/broker、专用扫描、真实外网是不同证据层级。#81 保持 open，未合并、未公网部署、未触发公网证书账户或修改 DNS。
+
+### 运行时 Readiness / Gateway / Consumer 的修复覆盖（PR #116）
+
+- 配置：API 与 Worker 必须恰好包含 `control` 网络，不允许意外加入 `edge`；静态验证在 Deployment Baseline 中执行。
+- 单元：覆盖事件循环不被慢数据库阻塞、探针同一时刻最多一个阻塞任务、Runner→Gateway mTLS 健康拒绝、Celery 健康任务的固定注册表及输入拒绝、正常消费挑战与活跃租约信号格式。
+- **NOT_TESTED in final topology**：真实 PostgreSQL/Redis/Celery 和专用 Runner/Gateway 停启故障注入、跨主机中继网络、双作用域 APK/splits 扫描、backup/replay 和硬件并发 1 容量。须绑定最终交付 SHA 复核，不从组件模拟验收推断。

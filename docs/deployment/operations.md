@@ -63,3 +63,9 @@ docker compose --env-file /etc/privacytrace/deployment.env -f deploy/compose.yam
 ## 受控回收 timer 模板
 
 `docs/deployment/systemd/` 包含 `privacytrace-reclaim.service`、`privacytrace-reclaim.timer`、`privacytrace-reclaim-failed.service` 示例。Operator 应在创建 `privacytrace-deploy` 专用账户、准备非敏感 env-file、固定部署工作目录和 Docker socket 权限边界后安装并审查这三份 unit；通过 `systemctl enable --now privacytrace-reclaim.timer` 开始计划任务。日志错误通过 syslog authpriv.err 标记，**真正的远端告警需要外部日志平台订阅，尚未验证**。Docker 管理权限接近宿主 root，不能授权不可信用户。timer 仅演示 30 分钟周期；未在本轮用户环境安装或启用。
+
+## 健康检查故障与证据分级
+
+`/_health/live` 只报告 API 进程存活。隔离运行时 `/_health/ready` 使用有界后台检查（最多一个运行中的探针任务、2.5 秒 API 等待预算）和短期 Redis 证明：Dispatcher 定期投递与真实队列一致的无载荷挑战，Consumer 实际处理后才更新证明。solo 扫描执行期间可使用成功续约的数据库租约 `busy` 证明。Runner `/v1/health` 使用 Runner 自身 mTLS 身份、0.7 秒超时核实 Material Gateway，不借用 API 的 Gateway 身份。Gateway 不可用时 Ready 退化为 503，而 Live 维持存活语义。
+
+必须在最终隔离环境证明：停止 Consumer 但保持 Redis 运行时 Challenge 证明到期、停止 Gateway 时 Runner 健康拒绝、模拟或真实慢 Redis/慢 TLS 不阻塞普通 API、恢复后 Ready 恢复、并发 1 长扫描时正常活跃租约不被误判。不可只依据 Mock 通过宣称完成 R2/R4。健康账户只授予特定实例 Dispatcher/Consumer/Busy 键的 TTL；任务投递和 Redis 写权限仅留给授权内部角色。后台线程超时后在真实 I/O 退出前仍占用检查槽，避免积压；故障期间就绪默认拒绝。

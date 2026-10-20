@@ -41,7 +41,7 @@ python deploy/preflight.py --env-file /etc/privacytrace/deployment.env
 
 代理只信任配置中的单一 Host，API smoke 强制 remote 模式、完整 Origin（scheme/host/port）相等，并拒绝所有写请求与非白名单资源。代理删除客户端 forwarding 头，Uvicorn 关闭 proxy-header 信任；smoke 共享单 API 限流预算，不提供按真实客户端 IP 的生产容量承诺。150 MB 代理上限及 API 既有更细限额不放宽；实际上传、分块超限和慢请求验收仍待运行时交接。Caddy 的 [反向代理行为](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy) 与 [请求体限制](https://caddyserver.com/docs/caddyfile/directives/request_body) 以官方文档为准。
 
-探针在 API 容器内执行：`probe.py live` 只判断当前 HTTP 进程；`probe.py ready` 检查 PostgreSQL 与迁移版本 `0080_05`，目前未覆盖 broker 与 Runner 心跳，因此只代表数据库就绪。网络内其他容器及公开代理无法读取内部 probe。生产 readiness 必须检查 DB/schema、broker/dispatcher 及 Runner freshness；不能把现有 `/api/v1/health` 固定 `ok` 当成就绪。当前无 Runner 心跳实现或假心跳文件。
+探针在 API 容器内执行：`probe.py live` 判断 HTTP 进程；`probe.py ready` 先验证 PostgreSQL 及迁移 `0080_05`，再于受限后台线程验证 Redis Dispatcher TTL、真实 Celery 消费挑战或活跃租约证明，并通过 Runner 的 mTLS `/v1/health` 确认固定镜像及 Runner→Material Gateway 认证健康。单一探针的异步等待预算为 2.5 秒，探针超时或检查槽已占用时返回 503，避免同步网络阻塞 API 事件循环。内部探针只允许容器 loopback 客户端；公网代理不可读取。当前实现为候选代码，跨宿主私网、中继、真实 Celery 与 Gateway 故障的实测证据仍待交付，不等同于 #81 总体验收。
 
 不启用请求 access log；Caddy runtime 日志丢弃，避免错误日志附带完整 URL/headers。保留容器退出码、外部探针和脱敏收据用于诊断；后续启用结构化日志之前必须验证 URL、capability、DB URL、模型 Key 和异常脱敏。Docker 本地日志有轮转上限。静态响应采用 no-store、no-referrer 与 CSP；不改变静态证据、UNKNOWN 或政策未复核语义。
 
@@ -74,7 +74,7 @@ API 镜像封装 `runtime-contract.json`。仅当它在独立审查后的发布�
 
 ## 真正运行时 Readiness 的最小证据
 
-API 单独挂载 `runtime_health_url` Redis 文件 Secret，应使用只读 ACL（仅允许两类健康键的 `TTL` 读取），不能拥有任务队列的写权限。Dispatcher 定期发送固定无载荷 Celery 探针；Worker 的 Consumer 实际处理后才更新消费证明，或在已取得并成功续约数据库执行租约时更新忙碌证明；API 检查 Dispatcher 心跳以及消费/忙碌证明的新鲜度；然后通过私网 mTLS 实时请求 Runner `/v1/health` 并对比固定镜像身份。Redis/进程/Runner 异常时 `/_health/ready` 返回 503，不影响 `/_health/live`。真实故障注入仍需隔离主机和证书，当前模拟测试不能充当完整执行收据。
+API 单独挂载 `runtime_health_url` Redis 文件 Secret，应使用只读 ACL（仅允许 Dispatcher、Consumer、Busy 三类健康键的 `TTL` 读取），不能拥有任务队列的写权限。Dispatcher 定期发送固定无载荷 Celery 探针；Worker 的 Consumer 实际处理后才更新消费证明，或在已取得并成功续约数据库执行租约时更新忙碌证明；API 检查 Dispatcher 心跳以及消费/忙碌证明的新鲜度；然后通过私网 mTLS 实时请求 Runner `/v1/health` 并对比固定镜像身份。Redis/进程/Runner 异常时 `/_health/ready` 返回 503，不影响 `/_health/live`。真实故障注入仍需隔离主机和证书，当前模拟测试不能充当完整执行收据。
 
 ### Consumer 真正消费证明
 

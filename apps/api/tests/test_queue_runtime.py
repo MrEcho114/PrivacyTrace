@@ -23,12 +23,34 @@ from privacytrace.postgres_outbox import PostgresOutbox
 from privacytrace.postgres_schema import outbox
 from privacytrace.postgres_store import PostgresJobStore
 from privacytrace.queue_runtime import (
+    PROBE_TASK_NAME,
     TASK_NAME,
     BrokerConfig,
     CeleryPublisher,
     OutboxDispatcher,
     QueueUnavailable,
 )
+
+
+def test_consumer_challenge_publishes_no_payload_on_same_instance_queue(monkeypatch):
+    from unittest.mock import MagicMock
+
+    from privacytrace import queue_runtime
+
+    instance = str(uuid4())
+    config = BrokerConfig("redis://u:p@127.0.0.1:1/15", instance)
+    app = MagicMock()
+    monkeypatch.setattr(queue_runtime, "create_celery_app", lambda _: app)
+    publisher = CeleryPublisher(config)
+    publisher.probe()
+    call = app.send_task.call_args
+    assert call.args == (PROBE_TASK_NAME,)
+    assert call.kwargs["args"] == [] and call.kwargs["kwargs"] == {}
+    assert call.kwargs["queue"] == config.queue
+    assert call.kwargs["routing_key"] == config.queue
+    assert call.kwargs["ignore_result"] is True
+    assert call.kwargs["retry"] is False
+    publisher.close()
 
 
 def free_port():

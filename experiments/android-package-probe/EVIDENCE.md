@@ -75,3 +75,22 @@
 - **失败保留：** 一次带截图预跑底层设备命令/解析中断，未输出成功 JSON；具体原因未定位，不归档失败截图为 PASS。并发根检查结束后，独占设备的干净源码完整重验通过；不推导自然竞争或任意系统回收恢复能力。
 - **权威入口：** `pwsh -NoProfile -File scripts/check.ps1` 再跑为 1409 passed / 77 skipped / 8 failed / 3 warnings；与合并整合前相同的八项隔离运行环境失败，本机缺固定 WSL/Docker 扫描环境。API/Web/check.sh/CI 无本轮差异，未放宽或过滤测试。远端 CI 仍须绑定新 head，旧 head 绿灯不替代新验证。
 - **审阅与边界：** 独立需求、代码及实际确认/拒绝/结果视觉审阅无阻塞意见。当前仅模拟器，旧收据保持原 SHA。受保护配置、真实 HTTPS/实例隔离/背压/断网恢复、生产 Web 整合与真机均为剩余事项；#71 保持 open，#90 合并继续暂停，不发布/部署。
+
+## 2026-10-20｜GitHub 恢复后补本机受保护配置
+
+同会话沿用户继续推进授权恢复，先回读唯一执行记录和相邻 owner。GitHub 已恢复，旧 head
+`a3df111` 的四项 CI 均 success，无需重跑。正常整合 main `a2e058a`（#80/#112 运行时源码
+已合入），只扩展本实验目录，不接管 #72/PR #110 的生产页面、#81 部署或公共接口。
+
+- **实现：** 原生输入 HTTPS 模型端点与 Key，平台 AndroidKeyStore AES-256/GCM 包装密钥、随机 IV、版本/端点 AAD、有限记录、AtomicFile 读回核对；服务 Key 不以明文落盘。端点是明文认证元数据，不把整个 envelope 称为密文。网页只收端点/状态，没有 Key 参数或 getter。改变端点必须新输入 Key，损坏/缺 alias 拒绝使用，删除需原生确认。
+- **取消与生命周期：** worker 制备密文，主线程检查原 pending/取消后提交；跨 Activity 共享锁串行化 Keystore 与文件，锁内再查取消。取消/销毁主动擦除排队输入，迟到制备不发布。共享原生控件禁止 View 保存、遮罩、无 Autofill type/value、清空结构字段、提示输入法不学习并设置 FLAG_SECURE；滚动表单与长度上限加一哨兵避免截短接受。
+- **回归：** 39 项 JVM（14 配置、20 读取/确认、5 门控）和 8 项 PowerShell 收据测试通过；原生四包、原生 lint、真实 Tauri x86_64 APK/Vue 类型和构建、Ruff 通过。桥接 lint 0 errors / 4 warnings，分别是两个版本提示、平台注解建议和实验文案提示。
+- **实际设备：** 干净源码 `6465f0e6889a01b7d436b325aa88712dd767f3c6` 的保护配置 18 项、Tauri 包读取 8 场景、普通 UID 两项 smoke 均通过，三份 JSON 的 source_dirty 均 false，APK 哈希一致；细节见[新增证据](evidence/README.md#2026-10-20本机受保护模型配置)。字号恢复、临时 XML 清除，测试合成配置删除；不截图密码窗口。
+- **失败与审阅：** 预跑发现单行设置覆盖密码遮罩，先由设备断言拒绝，再修正顺序并加入真实控件回归；一次宿主 smoke 相对收据路径解析失败，改显式路径后完整重跑，失败不作 PASS。独立需求、代码和实际非秘密状态截图审阅无剩余阻塞意见。
+- **权威入口：** 在已整合 #112 的当前树实跑 `pwsh -NoProfile -File scripts/check.ps1`：1471 passed / 199 skipped / 8 failed / 3 warnings。仍为既有八项隔离环境失败，Windows 缺固定 WSL/Docker 扫描环境；本 PR 的 API/Web/check/CI 与 main 无差异，未放宽或过滤测试。Ruff、研究包校验、schema 零差异、Web 53 项与生产构建随后单独通过。最终 head 的 Linux CI 由当前执行记录绑定，不用旧绿灯替代。
+
+实现与平台来源见 [PROTECTED-CONFIG.md](PROTECTED-CONFIG.md) 和
+[一手资料调查](PROTECTED-CONFIG-RESEARCH.md)。这些只是模拟器功能证据；完整结构/输入法/JS
+存储/全部日志出口、真机/OEM/硬件 Keystore/迁移、断电故障、真实模型与分析实例的材料去向、
+生产串行接线及网络恢复仍未验证。主线程的文件/Keystore 操作和锁等待可能卡顿，未测性能上限。
+不关闭 #71，PR #90 保持 Draft、合并暂停，不发布或部署。

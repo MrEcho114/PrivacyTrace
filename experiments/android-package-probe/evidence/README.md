@@ -62,3 +62,30 @@
 这是同一 AOSP Android 14/API 34/x86_64 模拟器的受控实验。真实自然重装竞争、
 任意系统进程回收/网络任务恢复、读取中取消时延、OEM/工作资料和真实手机仍未验收。
 受保护配置、生产页面和真实 HTTPS/实例隔离缺口见 [ACCEPTANCE.md](../ACCEPTANCE.md)。
+
+## 2026-10-20：本机受保护模型配置
+
+运行源码 `6465f0e6889a01b7d436b325aa88712dd767f3c6`，以下三份 JSON 均为
+`source_dirty=false`，APK 已在该干净提交重新构建，后续提交仅归档证据与说明。
+同一 AOSP Android 14/API 34/x86_64 专用模拟器、普通应用 UID，未使用 adb root。
+
+| 材料 | 证明的范围 |
+| --- | --- |
+| [android34-protected-model.json](android34-protected-model.json) | 18 项：真实 Keystore、不可导出的 AES 包装密钥、端点认证、篡改/缺密钥拒绝、不完整写入恢复、受控进程重启、遮罩控件无 Autofill type/value、原生取消、HOME/字号重建丢弃待输入、大字体键盘展开后取消、HTTP 拒绝、仅状态返回、改地址须新 Key、删除取消/确认及重启、本 UID logcat 不含合成 UI Key |
+| [android34-protected-bridge.json](android34-protected-bridge.json) | 本轮 Tauri APK 的既有 8 场景回归全部通过；确认后实际同版本重装拒绝、force-stop 后清空、字号重建恢复，最终 base/feature split 的 UI SHA 与构建产物相同 |
+| [android34-protected-smoke.json](android34-protected-smoke.json) | 本轮原生探针与测试 APK 的普通 UID 两项 smoke；本体单 APK 与跨 App base/feature split 的稳定摘要核对 |
+| [android34-protected-model-status.png](android34-protected-model-status.png) | 同一保护配置成功运行的非秘密状态页，只有 `.test` 端点及状态；密码窗口不截图，不关闭 FLAG_SECURE |
+
+复现见 [受保护配置](../PROTECTED-CONFIG.md)；设备 runner 使用固定合成值，结束后确认删除
+两个实验 app 的测试配置。39 项 JVM、8 项 PowerShell、原生四包/lint、实际 Tauri APK 与
+Vue 构建通过。桥接 lint 为 0 errors / 4 warnings；没有以更新依赖或关闭全局 lint 掩盖问题。
+
+预跑曾因 `setSingleLine` 覆盖密码变换而失败；修正顺序后，真实 Android 断言密码变换、
+保存状态关闭和超长输入哨兵，重新预跑与上述干净提交均通过。一次 smoke 宿主调用的相对收据
+目录解析失败，设备验证未启动；改为显式输出路径后单独重跑通过，不将前次失败算作 PASS。
+
+三份收据的 APK 哈希互相一致；系统字号已恢复 1.0，临时 UI XML 已清除。
+独立需求、代码和非秘密状态视觉审阅无阻塞发现。此处不证明完整 ViewStructure/Autofill 服务、
+IME、JS 存储或全部日志出口，也不证明硬件 Keystore、所有 OEM 备份/迁移、断电/fsync 故障持久性。
+真实模型/TLS/重定向、生产 #72 接线、HTTPS 上传/实例隔离/背压/恢复及真机仍未验收。
+#71 保持开放，PR #90 合并继续暂停。

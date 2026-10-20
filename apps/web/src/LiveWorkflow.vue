@@ -148,6 +148,7 @@ async function prepare() {
     }
     if (!value.sources.some(s => s.text?.trim() && s.status !== 'failed')) { go('import'); throw new Error('各份来源均未获得正文。请重试网址，或粘贴／导入政策文本。') }
     let failedExtraction = false
+    let recoveredExtraction = false
     for (const source of [...value.sources]) {
       if (!source.text?.trim() || source.status === 'failed' || preparedSources.has(source.id)) continue
       if (value.candidates.some(c => c.source_id === source.id)) { markExtraction(source.id, false); continue }
@@ -157,7 +158,10 @@ async function prepare() {
         if (extractionFailed(value, source.id)) {
           failedExtraction = true; markExtraction(source.id, true)
           notice.value = `${source.title || source.id}：候选提取未完成。可在候选页面重新提取或手动补充。`
-        } else markExtraction(source.id, false)
+        } else {
+          if (failedSourceIds.value.includes(source.id)) recoveredExtraction = true
+          markExtraction(source.id, false)
+        }
       } catch (cause) {
         assertActive(requestSignal)
         failedExtraction = true; markExtraction(source.id, true)
@@ -165,6 +169,7 @@ async function prepare() {
       }
     }
     needsPreparation = failedExtraction
+    if (!failedExtraction && recoveredExtraction) notice.value = '候选提取重试已完成；原句和语义仍需检查，全文及附件未复核。'
     go('candidates')
   })
 }
@@ -229,7 +234,7 @@ async function retrySource(id: string) {
       const failed = extractionFailed(value, id)
       markExtraction(id, failed)
       needsPreparation = failedSourceIds.value.length > 0
-      if (failed) notice.value = '来源已经重新获取，但候选提取仍未完成；可手动添加或重试。'
+      notice.value = failed ? '来源已经重新获取，但候选提取仍未完成；可手动添加或重试。' : '重新获取和候选提取已完成；候选仍需检查。'
     } catch (cause) {
       assertActive(requestSignal); markExtraction(id, true); needsPreparation = true
       notice.value = `${cause instanceof Error ? cause.message : '模型请求未完成'}；可手动添加候选或重试。`

@@ -6,7 +6,7 @@ import StatusTag from './components/StatusTag.vue'
 import ImportPage from './pages/ImportPage.vue'
 import CandidatePage from './pages/CandidatePage.vue'
 import { cancelJob, loadJob, loadTaxonomy } from './api'
-import { createDraft, discoverSources, displaySourceUrl, extractSource, getExtractionStatus, fetchSource, importExternal, readDraft, saveCandidates, startScan, uploadApk } from './liveApi'
+import { createDraft, discoverSources, displaySourceUrl, extractSource, reserveExtraction, getAttemptStatus, fetchSource, importExternal, readDraft, saveCandidates, startScan, uploadApk } from './liveApi'
 import type { LiveDraft } from './liveApi'
 import type { ExternalInput } from './policyAssist'
 import { quoteExists, sourceProvenanceLabel, sourceStatusLabel } from './workflow'
@@ -37,12 +37,19 @@ const preparedSources = new Set<string>()
 type PendingExtractionAttempt = { draftId: string; revision: number; attemptId: string }
 const maxPendingAttemptsPerSource = 16
 const pendingExtractionAttempts = new Map<string, PendingExtractionAttempt[]>()
-function startExtractionAttempt(value: LiveDraft, id: string): string {
+async function startExtractionAttempt(value: LiveDraft, id: string, requestSignal: AbortSignal): Promise<string> {
   const attempts = pendingExtractionAttempts.get(id) ?? []
   if (attempts.length >= maxPendingAttemptsPerSource) {
-    throw new Error('这份来源有多次尚未确认的提取操作。请先重新读取材料；不要重复执行模型请求。')
+    throw new Error('这份来源有多次尚未确认的提取操作。请先重新读取材料，对账后再尝试。')
   }
   const attemptId = crypto.randomUUID().replaceAll('-', '')
+  // Do not issue the paid /extract POST until registration is acknowledged.
+  // If reservation response is lost, no extract request was sent by this client.
+  const receipt = await reserveExtraction(value.id, id, value.revision, attemptId, requestSignal)
+  assertActive(requestSignal)
+  if (receipt.attempt_id !== attemptId || receipt.state !== 'RESERVED') {
+    throw new Error('服务器未确认本次提取登记，请重新读取材料。')
+  }
   pendingExtractionAttempts.set(id, [...attempts, { draftId: value.id, revision: value.revision, attemptId }])
   return attemptId
 }
@@ -139,29 +146,45 @@ async function importCollected(input: ExternalInput) {
     notice.value = incoming ? '收集结果已补入当前材料。来源、原句与收集状态分别保留，完整度未知、未复核。' : '已记录离线或未找到结果；尚未取得政策正文，可补充网址或正文。'
   })
 }
-// A lost HTTP response can leave the server still executing its model call.
+// Exact attempt receipts, not a transient active=false observation, authorize
+// releasing reservations after lost HTTP responses.
 async function assertSourceIdle(id: string, requestSignal: AbortSignal) {
   const pending = pendingExtractionAttempts.get(id)
   if (!draft.value || !pending?.length) return
-  const status = await getExtractionStatus(draft.value.id, id, requestSignal)
-  assertActive(requestSignal)
-  if (status.active) throw new Error('该来源仍在服务端提取。请稍后重新读取材料对账，暂勿重复请求模型。')
+  const unresolved: PendingExtractionAttempt[] = []
+  let committed = false
+  for (const attempt of pending) {
+    const receipt = await getAttemptStatus(attempt.draftId, id, attempt.attemptId, requestSignal)
+    assertActive(requestSignal)
+    if (receipt.attempt_id !== attempt.attemptId) throw new Error('服务器操作对账标识不一致。')
+    if (receipt.state === 'COMMITTED') committed = true
+    else if (receipt.state !== 'FAILED' && receipt.state !== 'EXPIRED') unresolved.push(attempt)
+  }
+  if (unresolved.length) {
+    pendingExtractionAttempts.set(id, unresolved)
+    throw new Error('该来源仍存在已登记或执行中的模型操作。请重新读取材料对账，勿重复发送。')
+  }
+  if (committed) throw new Error('已检测到服务器保存的提取结果。请先重新读取材料对账，避免重复付费请求。')
+  pendingExtractionAttempts.delete(id)
 }
 async function refreshMaterials() {
   await perform(async requestSignal => {
     if (!draft.value) return
-    // Observe activity before reading the persisted revision. An idle service
-    // followed by an unmodified audit means an uncertain attempt has ended.
-    const activity = new Map<string, boolean>()
-    for (const id of pendingExtractionAttempts.keys()) {
-      try {
-        const status = await getExtractionStatus(draft.value.id, id, requestSignal)
-        assertActive(requestSignal)
-        activity.set(id, status.active)
-      } catch (cause) {
-        assertActive(requestSignal)
-        // Old servers without the status endpoint remain conservative.
+    // Per-ID terminal receipts are the sole authority for retiring attempts.
+    const receipts = new Map<string, Map<string, string>>()
+    for (const [id, pending] of pendingExtractionAttempts) {
+      const statuses = new Map<string, string>()
+      for (const attempt of pending) {
+        try {
+          const status = await getAttemptStatus(attempt.draftId, id, attempt.attemptId, requestSignal)
+          assertActive(requestSignal)
+          if (status.attempt_id === attempt.attemptId) statuses.set(attempt.attemptId, status.state)
+        } catch (cause) {
+          assertActive(requestSignal)
+          // Unknown network results are not proof of FAILED / EXPIRED.
+        }
       }
+      receipts.set(id, statuses)
     }
     const value = await readDraft(draft.value.id, requestSignal)
     assertActive(requestSignal)
@@ -185,10 +208,11 @@ async function refreshMaterials() {
         markExtraction(source.id, false)
         if (matchedAttempt) pendingExtractionAttempts.delete(source.id)
       }
-      // Retire uncommitted attempts only when the service confirms this
-      // source has no active model call; never evict unconfirmed live attempts.
-      if (!matchedAttempt && pending?.length && activity.get(source.id) === false) {
-        pendingExtractionAttempts.delete(source.id)
+      if (!matchedAttempt && pending?.length) {
+        const status = receipts.get(source.id)
+        const keep = pending.filter(a => !['FAILED', 'EXPIRED'].includes(status?.get(a.attemptId) ?? ''))
+        if (keep.length) pendingExtractionAttempts.set(source.id, keep)
+        else pendingExtractionAttempts.delete(source.id)
       }
     }
     needsPreparation = failedSourceIds.value.length > 0 || value.sources.some(source => !preparedSources.has(source.id))
@@ -229,7 +253,7 @@ async function prepare() {
       }
       try {
         await assertSourceIdle(source.id, requestSignal)
-        const attemptId = startExtractionAttempt(value, source.id)
+        const attemptId = await startExtractionAttempt(value, source.id, requestSignal)
         value = await extractSource(value.id, source.id, value.revision, requestSignal, attemptId)
         assertActive(requestSignal); finishExtractionAttempt(value, source.id, attemptId); apply(value)
         if (extractionFailed(value, source.id)) {
@@ -301,6 +325,8 @@ async function retry() { await perform(async () => { if (!draft.value || !termin
 async function retrySource(id: string) {
   await perform(async requestSignal => {
     if (!draft.value) return
+    // Never mutate source evidence until all earlier extraction attempts are terminal.
+    await assertSourceIdle(id, requestSignal)
     const fetched = await fetchSource(draft.value.id, id, draft.value.revision, requestSignal)
     assertActive(requestSignal); apply(fetched)
     pendingExtractionAttempts.delete(id) // Fetch replaced the prior source audit.
@@ -308,7 +334,7 @@ async function retrySource(id: string) {
     if (!source || source.status === 'failed' || source.error_code) return
     try {
       await assertSourceIdle(id, requestSignal)
-      const attemptId = startExtractionAttempt(draft.value, id)
+      const attemptId = await startExtractionAttempt(draft.value, id, requestSignal)
       const value = await extractSource(draft.value.id, id, draft.value.revision, requestSignal, attemptId)
       assertActive(requestSignal); finishExtractionAttempt(value, id, attemptId); apply(value)
       const failed = extractionFailed(value, id)
@@ -326,7 +352,7 @@ async function retryModel(id: string) {
     if (!draft.value) return
     try {
       await assertSourceIdle(id, requestSignal)
-      const attemptId = startExtractionAttempt(draft.value, id)
+      const attemptId = await startExtractionAttempt(draft.value, id, requestSignal)
       const value = await extractSource(draft.value.id, id, draft.value.revision, requestSignal, attemptId)
       assertActive(requestSignal); finishExtractionAttempt(value, id, attemptId); apply(value)
       const failed = extractionFailed(value, id)

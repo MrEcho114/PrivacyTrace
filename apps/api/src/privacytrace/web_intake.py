@@ -829,6 +829,13 @@ class WebIntake:
             current = self._get(draft_id)
             if current["revision"] != revision or current["jobs"]:
                 raise ValueError("Input changed while capture was running")
+            records = self._load_attempts(draft_id)
+            self._expire_reserved(records)
+            if (draft_id, source_id) in self.active_extractions or any(
+                r["source_id"] == source_id and r["state"] in {"RESERVED", "RUNNING"}
+                for r in records.values()
+            ):
+                raise ExtractionInProgress("EXTRACTION_IN_PROGRESS")
             source = next(s for s in current["sources"] if s["id"] == source_id)
             if (
                 fetched["status"] == "failed" and source["status"] in {"manual", "ready"}

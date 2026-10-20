@@ -5,6 +5,7 @@ import hashlib
 import hmac
 import json
 import os
+import stat
 import re
 from datetime import timedelta
 from pathlib import Path
@@ -75,6 +76,37 @@ class RuntimeMaterials:
         self._key = private_file(key_file, secret=True).read_bytes()
         if len(self._key) != 32:
             raise ValueError("Material signing key must contain exactly 32 private bytes")
+
+    def readiness(self):
+        """Check the real database and the read path of the controlled volume.
+
+        No user materials or signed tickets are opened; a separate real fixture
+        test exercises authorized file access in the integration suite.
+        """
+        import sqlalchemy as sa
+
+        try:
+            with self.store.engine.connect() as connection:
+                connection.execute(
+                    sa.text("SELECT set_config('statement_timeout', '300ms', true)")
+                )
+                if connection.execute(sa.text("SELECT 1")).scalar_one() != 1:
+                    return False
+            if self.root.is_symlink():
+                return False
+            flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+            fd = os.open(self.root, flags)
+            try:
+                if not stat.S_ISDIR(os.fstat(fd).st_mode):
+                    return False
+                with os.scandir(fd) as entries:
+                    # Opening the directory stream proves listing is possible.
+                    next(entries, None)
+                return True
+            finally:
+                os.close(fd)
+        except (OSError, ValueError, TypeError, sa.exc.SQLAlchemyError):
+            return False
 
     @classmethod
     def from_env(cls, store):

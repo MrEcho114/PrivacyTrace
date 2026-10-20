@@ -105,6 +105,48 @@ class RuntimeHealthTests(unittest.TestCase):
             }
             self.assertTrue(check_runtime_readiness(INSTANCE))
 
+    def test_gateway_checks_material_and_database_readiness_before_ready(self):
+        from privacytrace.material_gateway import MaterialHandler
+
+        handler = object.__new__(MaterialHandler)
+        handler.path = "/v1/health"
+        handler.authorized = MagicMock(return_value=True)
+        materials = MagicMock()
+        handler.server = SimpleNamespace(materials=materials)
+        handler.reply = MagicMock()
+        materials.readiness.return_value = False
+        handler.do_GET()
+        handler.reply.assert_called_once_with(
+            503, {"error": "MATERIAL_GATEWAY_UNAVAILABLE"}
+        )
+        materials.readiness.return_value = True
+        handler.reply.reset_mock()
+        handler.do_GET()
+        handler.reply.assert_called_once_with(
+            200, {"version": 1, "status": "ready"}
+        )
+
+    def test_material_readiness_rejects_storage_and_database_failures(self):
+        import tempfile
+        from pathlib import Path
+
+        from privacytrace.runtime_materials import RuntimeMaterials
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            materials = object.__new__(RuntimeMaterials)
+            materials.root = root / "web"
+            store = MagicMock()
+            materials.store = store
+            # A configured real directory is needed, not just a path string.
+            self.assertFalse(materials.readiness())
+            materials.root.mkdir()
+            connection = store.engine.connect.return_value.__enter__.return_value
+            connection.execute.return_value.scalar_one.return_value = 1
+            self.assertTrue(materials.readiness())
+            connection.execute.side_effect = OSError("offline")
+            self.assertFalse(materials.readiness())
+
     def test_gateway_unreachable_fails_closed_on_runner(self):
         from privacytrace.runner_service import RunnerHandler
         from privacytrace.runtime_tls import RuntimeUnavailable

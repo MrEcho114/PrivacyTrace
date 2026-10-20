@@ -269,6 +269,70 @@ def test_extraction_attempt_id_commits_with_same_status_and_legacy_clients(tmp_p
         assert client.get(endpoint).json()["revision"] == draft["revision"]
 
 
+
+def test_concurrent_source_extraction_refuses_second_paid_request_and_releases_slot(
+    tmp_path, monkeypatch
+):
+    """Only one external model invocation may run per draft/source at a time."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from privacytrace import web_intake
+    from privacytrace.policy_llm_extractor import MockLLMClient
+
+    entered = threading.Event()
+    release = threading.Event()
+    calls = []
+    suggestions = [{"excerpt": "我们不会读取联系人。", "data_type": "CONTACTS"}]
+
+    def delayed_response(*args):
+        calls.append(1)
+        entered.set()
+        assert release.wait(12), "blocked extraction never released"
+        return json.dumps(suggestions, ensure_ascii=False)
+
+    monkeypatch.setattr(
+        web_intake, "UrllibLLMClient",
+        lambda **kw: MockLLMClient(delayed_response),
+    )
+    client = TestClient(create_app(tmp_path))
+    assert client.post("/api/v1/web/settings", headers=HEADERS, json={
+        "enabled": True, "api_base": "https://model.example/v1", "model": "mock",
+    }).status_code == 200
+    draft = new_draft(client)
+    endpoint = f"/api/v1/web/drafts/{draft['id']}"
+    extract_path = endpoint + "/sources/a/extract"
+    status_path = endpoint + "/sources/a/extraction-status"
+    assert client.get(status_path).json() == {
+        "active": False, "revision": draft["revision"],
+    }
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        initial = pool.submit(
+            client.post, extract_path, headers=HEADERS,
+            json={"revision": draft["revision"], "attempt_id": "a" * 32},
+        )
+        try:
+            assert entered.wait(8), "first extraction never entered model client"
+            assert client.get(status_path).json()["active"] is True
+            # An old client without attempt_id must be protected too.
+            duplicate = client.post(
+                extract_path, headers=HEADERS,
+                json={"revision": draft["revision"]},
+            )
+            assert duplicate.status_code == 409, duplicate.text
+            assert duplicate.json()["detail"] == "EXTRACTION_IN_PROGRESS"
+            assert len(calls) == 1
+            assert client.get(endpoint).json()["revision"] == draft["revision"]
+        finally:
+            release.set()
+        completed = initial.result(timeout=12)
+    assert completed.status_code == 200, completed.text
+    assert completed.json()["sources"][0]["model_audit"]["attempt_id"] == "a" * 32
+    assert client.get(status_path).json() == {
+        "active": False, "revision": draft["revision"] + 1,
+    }
+    assert len(calls) == 1
+
+
 def test_failed_extraction_audit_stores_attempt_without_leaking_secrets(tmp_path, monkeypatch):
     from privacytrace import web_intake
     from privacytrace.policy_llm_extractor import MockLLMClient

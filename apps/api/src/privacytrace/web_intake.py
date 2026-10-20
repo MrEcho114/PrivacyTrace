@@ -67,6 +67,10 @@ SOURCE_TYPE_CONFIRMATION_REQUIRED = "SOURCE_TYPE_CONFIRMATION_REQUIRED"
 RETRY_INPUT_UNAVAILABLE = "RETRY_INPUT_UNAVAILABLE"
 
 
+class ExtractionInProgress(ValueError):
+    """An extraction is already using this source's model lane."""
+
+
 class UploadTooLarge(ValueError):
     """APK upload exceeded the documented byte limit."""
 
@@ -169,6 +173,9 @@ class WebIntake:
         # Bound disk and Docker inspections across requests.
         self._inspection_slots = asyncio.Semaphore(2)
         self.active_drafts = {}
+        # Reserved under the store transaction; released after the model call.
+        # This single-host service never holds the storage lock during model I/O.
+        self.active_extractions = {}
         self.owner_fd = None
         self.root.mkdir(exist_ok=True, mode=0o700)
         self._safe(self.root)
@@ -837,9 +844,39 @@ class WebIntake:
             current["revision"] += 1
             return self._save(current)
 
+    @contextmanager
+    def _extraction_slot(self, draft_id, source_id, revision):
+        key = (draft_id, source_id)
+        with self.data_store._transaction():
+            draft = self._get(draft_id)
+            if draft["revision"] != revision or draft["jobs"]:
+                raise ValueError("Input version changed or already started")
+            if not any(source["id"] == source_id for source in draft["sources"]):
+                raise KeyError(source_id)
+            if key in self.active_extractions:
+                raise ExtractionInProgress("EXTRACTION_IN_PROGRESS")
+            self.active_extractions[key] = True
+        try:
+            yield
+        finally:
+            with self.data_store._transaction():
+                self.active_extractions.pop(key, None)
+
+    def extraction_status(self, draft_id, source_id):
+        """Observe this process's live execution without exposing policy or credentials."""
+        with self.data_store._transaction():
+            draft = self._get(draft_id)
+            if not any(source["id"] == source_id for source in draft["sources"]):
+                raise KeyError(source_id)
+            return {
+                "active": (draft_id, source_id) in self.active_extractions,
+                "revision": draft["revision"],
+            }
+
     def extract(self, draft_id, source_id, revision, attempt_id=None):
         with self._draft_activity(draft_id):
-            return self._extract(draft_id, source_id, revision, attempt_id)
+            with self._extraction_slot(draft_id, source_id, revision):
+                return self._extract(draft_id, source_id, revision, attempt_id)
 
     def _extract(self, draft_id, source_id, revision, attempt_id=None):
         if attempt_id is not None and (

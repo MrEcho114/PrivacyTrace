@@ -16,6 +16,7 @@ from .web_intake import (
     ISOLATED_INPUT_ERROR_CODES,
     SOURCE_TYPE_CONFIRMATION_REQUIRED,
     InspectionBusy,
+    ExtractionInProgress,
     UploadTimedOut,
     UploadTooLarge,
 )
@@ -45,6 +46,8 @@ def web_error(exc):
         return HTTPException(
             503, detail="INSPECTION_CAPACITY_BUSY", headers={"Retry-After": "15"}
         )
+    if isinstance(exc, ExtractionInProgress):
+        return HTTPException(409, detail="EXTRACTION_IN_PROGRESS", headers={"Retry-After": "2"})
     if isinstance(exc, PackageSetIntegrityError):
         return HTTPException(exc.http_status, detail=exc.code)
     if isinstance(exc, ScanError):
@@ -169,6 +172,11 @@ def install_web_api(app, local_write):
     def fetch(draft_id: str, source_id: str, payload: RevisionInput, request: Request):
         draft_access(request, draft_id)
         return web_operation(lambda: service.fetch_source(draft_id, source_id, payload.revision))
+
+    @app.get("/api/v1/web/drafts/{draft_id}/sources/{source_id}/extraction-status")
+    def extraction_status(draft_id: str, source_id: str, request: Request):
+        draft_access(request, draft_id)
+        return web_operation(lambda: service.extraction_status(draft_id, source_id))
 
     @app.post("/api/v1/web/drafts/{draft_id}/sources/{source_id}/extract")
     def extract(draft_id: str, source_id: str, payload: ExtractionInput, request: Request):

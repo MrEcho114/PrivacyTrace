@@ -19,7 +19,11 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = '17' }
-    sourceSets { main.java.srcDir '../core/src/main/java' }
+    sourceSets {
+        main.java.srcDir '../core/src/main/java'
+        test.java.srcDir 'src/testSupport/java'
+        androidTest.java.srcDir 'src/testSupport/java'
+    }
     lint {
         abortOnError = true
         warningsAsErrors = true
@@ -29,4 +33,11 @@ android {
     }
 }
 
-dependencies { testImplementation 'junit:junit:4.13.2' }
+dependencies {
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
+    testImplementation 'com.squareup.okhttp3:okhttp-tls:4.12.0'
+    androidTestImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
+    androidTestImplementation 'com.squareup.okhttp3:okhttp-tls:4.12.0'
+}

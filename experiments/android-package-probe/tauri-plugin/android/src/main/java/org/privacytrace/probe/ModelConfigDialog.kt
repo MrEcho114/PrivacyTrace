@@ -25,7 +25,7 @@ internal fun modelConfigDialog(
         if (Build.VERSION.SDK_INT >= 26) importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
     }
     body.addView(TextView(activity).apply {
-        text = "仅保存到本机。模型地址变化必须重新输入 Key；Key 不返回网页。本实验不联网。"
+        text = "仅保存到本机。模型地址变化必须重新输入 Key；Key 不返回网页。本实验不调用模型。"
     })
     val address = EditText(activity).apply {
         hint = "HTTPS 模型地址"

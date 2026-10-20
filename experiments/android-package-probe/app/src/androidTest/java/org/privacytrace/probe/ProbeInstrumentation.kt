@@ -23,6 +23,15 @@ class ProbeInstrumentation : Instrumentation() {
         try {
             check(android.os.Process.myUid() >= 10000)
             when (arguments.getString("mode")) {
+                "https_health" -> {
+                    stage = "native_https_health"
+                    HealthTlsCase.values().forEach { HealthTlsChecks.run(it) }
+                    HealthDnsCase.values().forEach { HealthDnsChecks.run(it) }
+                    verifyHealthDocuments()
+                    output.putString("stream", "PASS: native HTTPS health TLS15 DNS4 JSON12 ordinary UID\n")
+                    finish(Activity.RESULT_OK, output)
+                    return
+                }
                 "model_store" -> {
                     stage = "protected_model_store"
                     runOnMainSync {

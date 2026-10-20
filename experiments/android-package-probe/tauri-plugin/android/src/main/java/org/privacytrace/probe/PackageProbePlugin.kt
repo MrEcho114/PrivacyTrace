@@ -26,6 +26,7 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
     private class Pending(val invoke: Invoke, val operation: ProbeOperation) {
         var reading = false
         var secret: CharArray? = null
+        var healthCall: HttpsHealthCall? = null
     }
 
     private fun begin(invoke: Invoke): Pending? {
@@ -35,6 +36,44 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
             return null
         }
         return Pending(invoke, operation).also { pending = it }
+    }
+
+    @Command
+    fun checkServer(invoke: Invoke) = activity.runOnUiThread {
+        val request = begin(invoke) ?: return@runOnUiThread
+        dialog = serverHealthDialog(activity,
+            check = { address -> checkHealth(request, address) },
+            cancel = { cancelCurrent() })
+        dialog?.show()
+    }
+
+    private fun checkHealth(request: Pending, address: String) {
+        dialog = null
+        if (pending !== request || request.operation.cancelled.get()) return
+        val call = try { HttpsHealthCall(address) }
+        catch (error: ServerProbeException) {
+            finish(request, failure = error.code)
+            return
+        }
+        request.healthCall = call
+        request.reading = true
+        worker.execute {
+            try {
+                val health = decodeHealth(call.origin, call.execute())
+                activity.runOnUiThread {
+                    finish(request, payload = JSObject().apply {
+                        put("origin", health.origin)
+                        put("version", health.version)
+                        put("mode", health.mode)
+                        put("scope", "HEALTH_ONLY")
+                    })
+                }
+            } catch (error: ServerProbeException) {
+                activity.runOnUiThread { finish(request, failure = error.code) }
+            } catch (_: Exception) {
+                activity.runOnUiThread { finish(request, failure = "SERVER_UNREACHABLE") }
+            }
+        }
     }
 
     @Command
@@ -125,13 +164,7 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
 
     @Command
     fun inspectSelected(invoke: Invoke) = activity.runOnUiThread {
-        val operation = gate.begin()
-        if (operation == null) {
-            invoke.reject("BUSY_OR_INACTIVE", "BUSY_OR_INACTIVE")
-            return@runOnUiThread
-        }
-        val request = Pending(invoke, operation)
-        pending = request
+        val request = begin(invoke) ?: return@runOnUiThread
         request.reading = true
         worker.execute {
             try {
@@ -139,7 +172,7 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
                 activity.runOnUiThread {
                     request.reading = false
                     if (pending !== request) return@runOnUiThread
-                    if (operation.cancelled.get()) finish(request, failure = "CANCELLED")
+                    if (request.operation.cancelled.get()) finish(request, failure = "CANCELLED")
                     else if (apps.isEmpty()) finish(request, failure = "NOT_VISIBLE_OR_MISSING")
                     else {
                         dialog = AlertDialog.Builder(activity)
@@ -216,6 +249,7 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
 
     private fun cancelCurrent() {
         gate.cancel()
+        pending?.healthCall?.cancel()
         pending?.secret?.fill('\u0000')
         dialog?.dismiss()
         dialog = null
@@ -227,6 +261,7 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
         val accepted = gate.complete(request.operation)
         request.secret?.fill('\u0000')
         request.secret = null
+        request.healthCall = null
         pending = null
         dialog?.dismiss()
         dialog = null

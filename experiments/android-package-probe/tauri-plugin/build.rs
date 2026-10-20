@@ -5,6 +5,7 @@ fn main() {
         "model_status",
         "configure_model",
         "clear_model",
+        "check_server",
     ])
     .android_path("android")
     .build();

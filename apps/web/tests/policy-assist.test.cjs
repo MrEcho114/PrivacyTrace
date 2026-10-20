@@ -433,6 +433,44 @@ test('cancel ignores delayed response while explicit refresh recovers matching s
   assert.equal(attempts, 2, 'reconciliation must not call the model again')
 })
 
+
+test('matching source attempt does not clear another source failure', async () => {
+  let current, seedCalls = 0, otherCalls = 0
+  const h = harness({
+    async createDraft() { return current },
+    async uploadApk() { current = { ...current, uploaded: true }; return current },
+    async readDraft() { return current },
+    async extractSource(_draft, sourceId, _revision, _signal, attemptId) {
+      if (sourceId === 'seed') {
+        seedCalls++
+        if (seedCalls === 2) {
+          current = { ...current, revision: current.revision + 1,
+            sources: current.sources.map(s => s.id === 'seed'
+              ? { ...s, model_audit: { status: 'SUCCESS', attempt_id: attemptId } } : s) }
+          throw new Error('seed response lost after server commit')
+        }
+      } else {
+        otherCalls++
+        if (otherCalls === 2) throw new Error('other transport failed without commit')
+      }
+      return current
+    },
+  })
+  const initial = h.stored()
+  current = { ...initial, sources: [
+    { ...initial.sources[0], text: '来源一', status: 'manual', model_audit: { status: 'SUCCESS' } },
+    { ...initial.sources[0], id: 'other', title: '来源二', text: '来源二', status: 'manual', model_audit: { status: 'SUCCESS' } },
+  ] }
+  h.state.file.value = { name: 'fixture.apk' }; await h.state.prepare()
+  await h.state.retryModel('seed')
+  await h.state.retryModel('other')
+  assert.deepEqual([...h.state.failedSourceIds.value].sort(), ['other', 'seed'])
+  await h.state.refreshMaterials()
+  assert.deepEqual([...h.state.failedSourceIds.value], ['other'], 'only matched source should recover')
+  assert.equal(seedCalls, 2)
+  assert.equal(otherCalls, 2)
+})
+
 test('persisted failed extraction audit remains retryable after page restoration', async () => {
   let current, attempts = 0
   const h = harness({

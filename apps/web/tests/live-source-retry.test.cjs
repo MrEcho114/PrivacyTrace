@@ -4,6 +4,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const vm = require('node:vm')
 const { test } = require('node:test')
+const { randomUUID } = require('node:crypto')
 const { parse, compileScript } = require('@vue/compiler-sfc')
 const ts = require('typescript')
 const vue = require('vue')
@@ -24,7 +25,7 @@ for (const status of ['manual', 'ready']) {
         candidates: [{ id: 'retained', source_id: 'policy', excerpt: 'Retained policy text.' }],
       }
       const calls = []
-      const context = { exports: {}, AbortController, setTimeout, clearTimeout,
+      const context = { exports: {}, AbortController, setTimeout, clearTimeout, crypto: { randomUUID },
         localStorage: { setItem() {} },
         require(name) {
           if (name === 'vue') return { ...vue, onMounted() {}, onBeforeUnmount() {} }

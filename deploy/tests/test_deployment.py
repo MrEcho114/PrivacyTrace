@@ -439,7 +439,7 @@ class ProductionProbeTests(unittest.IsolatedAsyncioTestCase):
         began = threading.Event()
         release = threading.Event()
 
-        def slow_database(*_args):
+        def slow_database(*_args, **_kwargs):
             began.set()
             release.wait(timeout=1)
             return True, "0080_05"
@@ -478,7 +478,7 @@ class ProductionProbeTests(unittest.IsolatedAsyncioTestCase):
         entered = threading.Event()
         released = threading.Event()
 
-        def blocked_db(*_args):
+        def blocked_db(*_args, **_kwargs):
             entered.set()
             released.wait(timeout=6)
             return True, "0080_05"

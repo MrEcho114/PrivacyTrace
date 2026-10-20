@@ -172,6 +172,13 @@ class RuntimeHealthTests(unittest.TestCase):
         with patch("privacytrace.runtime_health.time.monotonic", return_value=282):
             self.assertFalse(progress.fresh())
 
+    def test_expired_end_to_end_deadline_rejects_without_io(self):
+        import time
+
+        with patch("privacytrace.runtime_health._connect") as factory:
+            self.assertFalse(check_runtime_readiness(INSTANCE, deadline=time.monotonic() - 1))
+            factory.assert_not_called()
+
     def test_reader_requires_real_runner_status_and_image(self):
         env = {
             "PRIVACYTRACE_RUNNER_URL": "https://172.29.98.1:8444",

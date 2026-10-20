@@ -8,6 +8,7 @@ import asyncio
 import ipaddress
 import json
 import os
+import time
 import re
 from pathlib import Path
 
@@ -142,7 +143,7 @@ class SmokeSurface:
         await send({"type": "http.response.body", "body": payload})
 
 
-def check_database_readiness(application=None) -> tuple[bool, str]:
+def check_database_readiness(application=None, *, deadline=None) -> tuple[bool, str]:
     try:
         store = None
         if application and hasattr(application, "state"):
@@ -158,8 +159,17 @@ def check_database_readiness(application=None) -> tuple[bool, str]:
             return False, "NO_POSTGRES_STORE"
         import sqlalchemy as sa
 
+        remaining = 2.5 if deadline is None else deadline - time.monotonic()
+        if remaining <= 0.05:
+            return False, "READINESS_DEADLINE_EXCEEDED"
         with store.engine.connect() as conn:
-            conn.execute(sa.text("SET LOCAL statement_timeout = '2s'"))
+            if deadline is not None and time.monotonic() >= deadline:
+                return False, "READINESS_DEADLINE_EXCEEDED"
+            milliseconds = max(50, min(500, int(remaining * 1000)))
+            conn.execute(
+                sa.text("SELECT set_config('statement_timeout', :duration, true)"),
+                {"duration": f"{milliseconds}ms"},
+            )
             versions = (
                 conn.execute(sa.text("SELECT version_num FROM privacytrace.alembic_version"))
                 .scalars()
@@ -179,13 +189,15 @@ class ProductionSurface:
         # An overdue network probe must not spawn an unbounded queue of threads.
         self._ready_slot = asyncio.Semaphore(1)
 
-    def _check_ready(self) -> bool:
-        ready, _ = check_database_readiness(self.application)
+    def _check_ready(self, deadline=None) -> bool:
+        ready, _ = check_database_readiness(self.application, deadline=deadline)
         if not ready:
             return False
         from privacytrace.runtime_health import check_runtime_readiness
 
-        return check_runtime_readiness(os.environ.get("PRIVACYTRACE_INSTANCE_ID", ""))
+        return check_runtime_readiness(
+            os.environ.get("PRIVACYTRACE_INSTANCE_ID", ""), deadline=deadline
+        )
 
     async def _bounded_ready(self) -> bool:
         if self._ready_slot.locked():
@@ -193,7 +205,8 @@ class ProductionSurface:
         await self._ready_slot.acquire()
         # Shielding keeps the slot occupied until the underlying bounded-I/O
         # check has actually stopped, even if the HTTP caller times out.
-        task = asyncio.create_task(asyncio.to_thread(self._check_ready))
+        deadline = time.monotonic() + 2.5
+        task = asyncio.create_task(asyncio.to_thread(self._check_ready, deadline))
         task.add_done_callback(lambda completed: self._ready_slot.release())
         try:
             return bool(await asyncio.wait_for(asyncio.shield(task), timeout=2.5))

@@ -12,12 +12,14 @@ CHALLENGE_SECONDS = 15
 PENDING_SECONDS = 20
 
 
-def _connect(url):
-    # Deployment/smoke unit tests do not install Celery's optional Redis transport.
-    # The actual worker/runtime image installs the locked runtime extra.
+def _connect(url, *, timeout=2):
+    # Runtime-only Redis import keeps synthetic deployment smoke independent.
     from redis import Redis
 
-    return Redis.from_url(url, socket_connect_timeout=2, socket_timeout=2)
+    return Redis.from_url(
+        url, socket_connect_timeout=timeout, socket_timeout=timeout,
+        retry_on_timeout=False,
+    )
 
 
 def health_key(instance_id, role):
@@ -146,8 +148,16 @@ class HealthPublisher:
         self.client.close()
 
 
-def check_runtime_readiness(instance_id):
+def check_runtime_readiness(instance_id, *, deadline=None):
     try:
+        if deadline is None:
+            deadline = time.monotonic() + 2.0
+
+        def remaining(cap):
+            left = deadline - time.monotonic()
+            if left <= 0.05:
+                raise TimeoutError("Readiness time budget exceeded")
+            return min(cap, left)
         # A dedicated GET/TTL-only Redis ACL account is used by the API.
         if os.environ.get("PRIVACYTRACE_HEALTH_REDIS_URL"):
             return False
@@ -158,28 +168,32 @@ def check_runtime_readiness(instance_id):
             return False
         for role in ("dispatcher", "consumer", "busy"):
             health_key(instance_id, role)
-        client = _connect(url)
+        client = _connect(url, timeout=remaining(0.25))
         try:
+            remaining(1.0)
             dispatcher_ttl = client.ttl(health_key(instance_id, "dispatcher"))
             if type(dispatcher_ttl) is not int or not 0 < dispatcher_ttl <= TTL_SECONDS:
                 return False
             # Consumption is proven by the fixed task on the actual queue.
             # A live PostgreSQL lease proves the solo worker is legitimately busy.
+            remaining(1.0)
             consumed = client.ttl(health_key(instance_id, "consumer"))
+            remaining(1.0)
             busy = client.ttl(health_key(instance_id, "busy"))
             if not any(type(v) is int and 0 < v <= TTL_SECONDS for v in (consumed, busy)):
                 return False
         finally:
             client.close()
+        runner_timeout = remaining(1.0)
         runner = PrivateClient(
             os.environ["PRIVACYTRACE_RUNNER_URL"],
             RuntimeTLS.from_env("PRIVACYTRACE_CONTROL_TLS"),
-            timeout=2,
+            timeout=runner_timeout,
         )
         return runner.json("/v1/health") == {
             "version": 1,
             "status": "ready",
             "image_id": os.environ["PRIVACYTRACE_RUNNER_IMAGE_ID"],
-        }
+        } and deadline - time.monotonic() > 0
     except Exception:  # Readiness never propagates secret-bearing connection errors.
         return False

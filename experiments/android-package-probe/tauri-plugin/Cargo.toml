@@ -1,0 +1,15 @@
+[package]
+name = "tauri-plugin-package-probe"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+publish = false
+links = "tauri-plugin-package-probe"
+description = "Local-only Android package selection and digest experiment"
+
+[dependencies]
+tauri = { version = "=2.12.4", default-features = false }
+serde = { version = "1", features = ["derive"] }
+
+[build-dependencies]
+tauri-plugin = { version = "=2.7.2", features = ["build"] }

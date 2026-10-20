@@ -1,0 +1,41 @@
+{
+  "schema": "privacytrace-protected-model-device-v1",
+  "source_commit": "6465f0e6889a01b7d436b325aa88712dd767f3c6",
+  "source_dirty": false,
+  "emulator": true,
+  "android_api": "34",
+  "artifacts_sha256": {
+    "bridge": "1e69ff6097e05bd9e1b79178432c94620d2368d79b09c872f626bdb116bdae18",
+    "probe": "b4adacb37ee7f329a2436098ef940a46174659e6d3949618dbe68fcfc4d10ff9",
+    "test": "7667a06545f751e989b360b654677e6af1e08247dbe0265a3c5b4882a5da451f"
+  },
+  "cases": {
+    "keystore_roundtrip_nonexportable_wrapping_key": "PASS",
+    "native_widget_no_autofill_type_or_value": "PASS",
+    "authenticated_endpoint_refusal": "PASS",
+    "tamper_and_missing_key_fail_closed": "PASS",
+    "incomplete_write_recovers_prior_record": "PASS",
+    "keystore_survives_forced_process_restart": "PASS",
+    "native_masked_input_cancel_no_save": "PASS",
+    "background_cancels_pending_secret_without_save": "PASS",
+    "font_recreation_discards_pending_secret": "PASS",
+    "large_font_keyboard_cancel_control": "PASS",
+    "insecure_endpoint_rejected": "PASS",
+    "native_only_key_input_and_metadata_bridge": "PASS",
+    "bridge_restart_authenticates_persisted_config": "PASS",
+    "endpoint_change_requires_new_key": "PASS",
+    "delete_confirmation_cancel": "PASS",
+    "corrupt_record_refused_by_bridge": "PASS",
+    "delete_and_restart_unconfigured": "PASS",
+    "synthetic_ui_keys_absent_from_own_uid_logcat": "PASS"
+  },
+  "unverified": [
+    "physical_devices",
+    "hardware_backing",
+    "all_oem_backup_paths",
+    "external_autofill_services_and_imes",
+    "complete_view_structure_and_js_storage_audit",
+    "real_model_requests",
+    "remote_analysis_upload"
+  ]
+}

@@ -1,0 +1,32 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'org.privacytrace.probe'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'org.privacytrace.probe'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '0.1-poc'
+        testInstrumentationRunner 'org.privacytrace.probe.ProbeInstrumentation'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = '17' }
+    sourceSets { main.java.srcDir '../core/src/main/java' }
+    lint {
+        abortOnError = true
+        warningsAsErrors = true
+        // Keep this historical API 34 platform harness stable beside the API 36 bridge.
+        // Installing a newer SDK must not turn its intentional target into a lint failure.
+        disable 'OldTargetApi'
+    }
+}
+
+dependencies { testImplementation 'junit:junit:4.13.2' }

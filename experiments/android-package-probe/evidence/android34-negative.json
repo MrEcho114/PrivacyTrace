@@ -1,0 +1,12 @@
+{
+  "schema": "privacytrace-android-probe-negative-v1",
+  "source_commit": "76e7a577e205c5b27f9273fa0ec2ff44712e550b",
+  "source_dirty": false,
+  "emulator": true,
+  "android_api": "34",
+  "case": "wrong_expected_apk_sha256",
+  "observed_stage": "artifact_hashes",
+  "observed_code": "EXPECTATION_FAILED",
+  "instrumentation_result_code": 0,
+  "rejection_verified": true
+}

@@ -42,7 +42,8 @@ internal class AnalysisTransport(address: String, private val sessions: UploadSe
     fun checkCancelled() { if (cancelled.get()) throw ServerProbeException("CANCELLED") }
 
     private fun exchange(path: String, method: String = "GET", session: UploadSession? = null,
-                         json: String? = null, file: File? = null): Map<String, Any?> {
+                         json: String? = null, file: File? = null,
+                         maxResponse: Int = 512 * 1024, allowDecimals: Boolean = false): Map<String, Any?> {
         checkCancelled()
         if (session != null && session.origin != origin) throw ServerProbeException("INSTANCE_MISMATCH")
         val body = if (file != null) file.asRequestBody("application/octet-stream".toMediaType())
@@ -71,7 +72,7 @@ internal class AnalysisTransport(address: String, private val sessions: UploadSe
                 val content = response.body ?: throw ServerProbeException("SERVER_RESPONSE_INVALID")
                 val type = content.contentType()
                 if (type?.type != "application" || type.subtype != "json") throw ServerProbeException("SERVER_RESPONSE_INVALID")
-                val max = 512 * 1024
+                val max = maxResponse
                 if (content.contentLength() > max) throw ServerProbeException("SERVER_RESPONSE_TOO_LARGE")
                 val output = ByteArrayOutputStream()
                 content.byteStream().use { input ->
@@ -84,7 +85,7 @@ internal class AnalysisTransport(address: String, private val sessions: UploadSe
                         if (output.size() > max) throw ServerProbeException("SERVER_RESPONSE_TOO_LARGE")
                     }
                 }
-                TransportJson.decode(output.toByteArray())
+                TransportJson.decode(output.toByteArray(), allowDecimals)
             }
         } catch (error: ServerProbeException) { throw error }
         catch (_: SSLException) { throw ServerProbeException(if (cancelled.get()) "CANCELLED" else "SERVER_TLS_REJECTED") }
@@ -159,6 +160,72 @@ internal class AnalysisTransport(address: String, private val sessions: UploadSe
     fun refresh(): UploadStatus {
         val caps = capabilities()
         return get(sessions.load(origin, caps.instanceId) ?: throw ServerProbeException("NO_SAVED_UPLOAD"))
+    }
+
+    // A fixed workflow vocabulary, bound to the native-selected instance and its
+    // protected draft. No caller-supplied URL, headers, token, or job identifier.
+    fun workflow(action: String, payload: String = "{}"): Map<String, Any?> {
+        if (action !in setOf("read", "taxonomy", "discover", "import", "candidates", "fetch", "extract", "start", "job", "report", "cancel-job", "retry-job")) {
+            throw ServerProbeException("WORKFLOW_INPUT_REJECTED")
+        }
+        if (payload.toByteArray(Charsets.UTF_8).size > 8 * 1024 * 1024) throw ServerProbeException("LIMIT_EXCEEDED")
+        val caps = capabilities()
+        val session = sessions.load(origin, caps.instanceId) ?: throw ServerProbeException("NO_SAVED_UPLOAD")
+        val path = "api/v1/web/drafts/${session.draft}"
+        fun request(route: String, method: String = "GET", body: String? = null) =
+            exchange(route, method, session, json = body, maxResponse = 8 * 1024 * 1024, allowDecimals = true)
+        val draft = request(path)
+        if (draft["id"] != session.draft || draft["uploaded"] != true) throw ServerProbeException("UPLOAD_RECEIPT_MISMATCH")
+        verifyReceipt(session, draft)
+        val input = TransportJson.decode(payload.toByteArray(Charsets.UTF_8), allowDecimals = true)
+        val revision = draft.number("revision")
+        val result = when (action) {
+            "read" -> draft
+            "taxonomy" -> request("api/v1/taxonomy")
+            "discover" -> request("$path/sources/discover", "POST", "{}")
+            "import" -> request("$path/import-external", "POST", payload)
+            "candidates" -> {
+                if (input.number("revision") != revision) throw ServerProbeException("WORKFLOW_CONFLICT_REFRESH")
+                request("$path/candidates", "POST", payload)
+            }
+            "fetch", "extract" -> {
+                val id = input.text("source")
+                val sources = draft["sources"] as? List<*> ?: throw ServerProbeException("SERVER_RESPONSE_INVALID")
+                if (!Regex("[A-Za-z0-9_.-]{1,100}").matches(id) || sources.none { (it as? Map<*, *>)?.get("id") == id }) {
+                    throw ServerProbeException("WORKFLOW_INPUT_REJECTED")
+                }
+                if (input.number("revision") != revision) throw ServerProbeException("WORKFLOW_CONFLICT_REFRESH")
+                request("$path/sources/$id/$action", "POST", "{\"revision\":$revision}")
+            }
+            "start" -> {
+                if (input.number("revision") != revision || !Regex("[a-f0-9]{32}").matches(input.text("request_id"))) {
+                    throw ServerProbeException("WORKFLOW_CONFLICT_REFRESH")
+                }
+                request("$path/start", "POST", payload)
+            }
+            "job", "report", "cancel-job", "retry-job" -> {
+                val jobs = draft["jobs"] as? List<*> ?: throw ServerProbeException("SERVER_RESPONSE_INVALID")
+                val job = (jobs.lastOrNull() as? Map<*, *>)?.get("job_id") as? String
+                    ?: throw ServerProbeException("WORKFLOW_NO_JOB")
+                if (!Regex("[a-f0-9]{32}").matches(job)) throw ServerProbeException("SERVER_RESPONSE_INVALID")
+                when (action) {
+                    "report" -> request("api/v1/jobs/$job/report")
+                    "cancel-job" -> request("api/v1/jobs/$job/cancel", "POST", "{}")
+                    "retry-job" -> request("api/v1/jobs/$job/retry", "POST", "{}")
+                    else -> request("api/v1/jobs/$job")
+                }
+            }
+            else -> throw ServerProbeException("WORKFLOW_INPUT_REJECTED")
+        }
+        fun safe(value: Any?): Any? = when (value) {
+            is Map<*, *> -> value.entries.filter { it.key !in setOf("capability_token", "token", "secret_token", "token_digest", "api_key", "authorization") }
+                .associate { it.key as String to safe(it.value) }
+            is List<*> -> value.map { safe(it) }
+            is String -> value.also { if (it.contains(session.token)) throw ServerProbeException("SERVER_RESPONSE_INVALID") }
+            else -> value
+        }
+        @Suppress("UNCHECKED_CAST")
+        return mapOf("origin" to origin, "draft" to session.draft, "data" to (safe(result) as Map<String, Any?>))
     }
 
     fun delete(): UploadStatus {

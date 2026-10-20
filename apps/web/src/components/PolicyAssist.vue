@@ -5,7 +5,7 @@ import UiField from './UiField.vue'
 import { collectionInstructions, confirmExternal, previewExternal } from '../policyAssist'
 import type { ExternalInput, ImportPreview } from '../policyAssist'
 import { sourceTypes } from '../workflow'
-defineProps<{ busy?: boolean; sourceCount: number }>()
+const props = defineProps<{ busy?: boolean; sourceCount: number; initialResult?: string }>()
 const emit = defineEmits<{ import: [ExternalInput] }>()
 const app = ref('')
 const prompt = ref('')
@@ -13,6 +13,7 @@ const raw = ref('')
 const preview = ref<ImportPreview | null>(null)
 const error = ref('')
 const message = ref('')
+watch(() => props.initialResult, value => { if (value) raw.value = value })
 watch(raw, () => { preview.value = null; error.value = ''; message.value = '' })
 watch(app, () => { prompt.value = ''; message.value = '' })
 async function copyInstructions() {

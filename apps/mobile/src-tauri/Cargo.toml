@@ -1,0 +1,17 @@
+[package]
+name = "privacytrace-mobile"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+publish = false
+
+[lib]
+name = "privacytrace_mobile"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "=2.7.3", default-features = false, features = [] }
+
+[dependencies]
+tauri = { version = "=2.12.4", features = [] }
+tauri-plugin-package-probe = { path = "../../../experiments/android-package-probe/tauri-plugin" }

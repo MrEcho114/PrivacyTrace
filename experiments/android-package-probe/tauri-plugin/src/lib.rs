@@ -30,6 +30,31 @@ pub struct UploadStatus {
     pub cleanup_pending: bool,
 }
 
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct JsonResult { pub json: String }
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct PolicyResult { pub text: String }
+
+#[tauri::command]
+async fn workflow<R: Runtime>(app: tauri::AppHandle<R>, action: String, payload: String) -> Result<JsonResult, String> {
+    #[cfg(target_os = "android")]
+    { app.state::<NativeProbe<R>>().0.clone().run_mobile_plugin_async("workflow", WorkflowArgs { action, payload }).await.map_err(native_error) }
+    #[cfg(not(target_os = "android"))]
+    { let _ = (app, action, payload); Err("ANDROID_ONLY".into()) }
+}
+#[derive(serde::Serialize)]
+struct WorkflowArgs { action: String, payload: String }
+
+#[tauri::command]
+async fn collect_policy<R: Runtime>(app: tauri::AppHandle<R>, model: String, prompt: String) -> Result<PolicyResult, String> {
+    #[cfg(target_os = "android")]
+    { app.state::<NativeProbe<R>>().0.clone().run_mobile_plugin_async("collectPolicy", CollectPolicyArgs { model, prompt }).await.map_err(native_error) }
+    #[cfg(not(target_os = "android"))]
+    { let _ = (app, model, prompt); Err("ANDROID_ONLY".into()) }
+}
+#[derive(serde::Serialize)]
+struct CollectPolicyArgs { model: String, prompt: String }
+
 async fn upload_command<R: Runtime>(app: tauri::AppHandle<R>, command: &'static str) -> Result<UploadStatus, String> {
     #[cfg(target_os = "android")]
     {
@@ -180,6 +205,10 @@ fn native_error(error: tauri::plugin::mobile::PluginInvokeError) -> String {
                 | "UPLOAD_CONFLICT_REFRESH" | "EXISTING_UPLOAD_DELETE_FIRST"
                 | "UPLOAD_RECEIPT_MISMATCH" | "NO_SAVED_UPLOAD"
                 | "UPLOAD_STORAGE_UNAVAILABLE" | "UPLOAD_CLEANUP_FAILED" => return code,
+                "WORKFLOW_INPUT_REJECTED" | "WORKFLOW_CONFLICT_REFRESH" | "WORKFLOW_NO_JOB"
+                | "INVALID_MODEL_REQUEST" | "MODEL_ANALYSIS_ORIGIN_REJECTED" | "MODEL_REDIRECT_REJECTED"
+                | "MODEL_BUSY" | "MODEL_REQUEST_REJECTED" | "MODEL_RESPONSE_INVALID" | "MODEL_RESPONSE_INCOMPLETE"
+                | "MODEL_TLS_REJECTED" | "MODEL_REQUEST_FAILED" => return code,
                 _ => {}
             }
         }
@@ -219,7 +248,9 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             upload_selected,
             refresh_upload,
             delete_upload,
-            forget_upload
+            forget_upload,
+            workflow,
+            collect_policy
         ])
         .setup(|_app, _api| {
             #[cfg(target_os = "android")]

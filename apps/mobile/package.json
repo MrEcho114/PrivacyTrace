@@ -1,0 +1,12 @@
+{
+  "name": "@privacytrace/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "web:build": "npm --prefix ../.. run build",
+    "android:prepare": "pwsh -NoProfile -File prepare-android.ps1",
+    "android:build": "tauri android build --debug",
+    "tauri": "tauri"
+  },
+  "devDependencies": { "@tauri-apps/cli": "2.12.3" }
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PrivacyTrace",
+  "version": "0.1.0",
+  "identifier": "org.privacytrace.mobile",
+  "build": { "beforeBuildCommand": "npm run web:build", "frontendDist": "../../web/dist" },
+  "app": {
+    "windows": [{ "label": "main", "title": "PrivacyTrace" }],
+    "security": { "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost; img-src 'self' data:; object-src 'none'; frame-src 'none'" }
+  },
+  "bundle": { "active": false },
+  "plugins": {}
+}

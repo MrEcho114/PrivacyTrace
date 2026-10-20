@@ -1,0 +1,59 @@
+# Run ONLY on the dedicated scan host/VM, separately from compose.yaml.
+# Runner's root is mounted at the SAME absolute path seen by its local daemon.
+name: privacytrace-scan
+services:
+  runner:
+    image: ${PT_RUNNER_SERVICE_IMAGE:?Set the immutable Runner registry digest}
+    user: "10001:10001"
+    group_add: ["${PT_DOCKER_GID:?Set the local Docker socket group ID}"]
+    network_mode: host
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 256
+    mem_limit: 1g
+    cpus: 2
+    init: true
+    restart: "no"
+    stop_grace_period: 200s
+    healthcheck: {disable: true}
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001"]
+    logging:
+      driver: local
+      options: {max-size: 10m, max-file: "3"}
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+      - type: bind
+        source: ${PT_RUNNER_ROOT:?Set a private absolute directory on this daemon host}
+        target: ${PT_RUNNER_ROOT:?Set the identical daemon-host path}
+    secrets: [runner_ca, runner_cert, runner_key, gateway_ca, gateway_cert, gateway_key]
+    environment:
+      PRIVACYTRACE_INSTANCE_ID: ${PT_INSTANCE_ID:?Set the control-plane instance UUID}
+      PRIVACYTRACE_RUNNER_IMAGE_ID: ${PT_SCAN_IMAGE_ID:?Set the loaded scanner sha256 image ID}
+      PRIVACYTRACE_RUNNER_ROOT: ${PT_RUNNER_ROOT:?Set a private absolute directory}
+      PRIVACYTRACE_RUNNER_TIMEOUT: "120"
+      PRIVACYTRACE_RUNNER_BIND: ${PT_RUNNER_PRIVATE_IP:?Set one private host interface}
+      PRIVACYTRACE_RUNNER_PORT: "8444"
+      PRIVACYTRACE_RUNNER_PEERS: ${PT_CONTROL_PEERS:?Set approved control leaf certificate fingerprints}
+      PRIVACYTRACE_RUNNER_TLS_CA: /run/secrets/runner_ca
+      PRIVACYTRACE_RUNNER_TLS_CERT: /run/secrets/runner_cert
+      PRIVACYTRACE_RUNNER_TLS_KEY: /run/secrets/runner_key
+      PRIVACYTRACE_GATEWAY_URL: ${PT_GATEWAY_URL:?Set the fixed private material gateway HTTPS endpoint}
+      PRIVACYTRACE_RUNNER_GATEWAY_TLS_CA: /run/secrets/gateway_ca
+      PRIVACYTRACE_RUNNER_GATEWAY_TLS_CERT: /run/secrets/gateway_cert
+      PRIVACYTRACE_RUNNER_GATEWAY_TLS_KEY: /run/secrets/gateway_key
+secrets:
+  runner_ca:
+    file: ${PT_RUNNER_SECRETS_DIR:?Set protected host files}/runner_ca.pem
+  runner_cert:
+    file: ${PT_RUNNER_SECRETS_DIR:?Set protected host files}/runner_cert.pem
+  runner_key:
+    file: ${PT_RUNNER_SECRETS_DIR:?Set protected host files}/runner_key.pem
+  gateway_ca:
+    file: ${PT_RUNNER_SECRETS_DIR:?Set protected host files}/gateway_ca.pem
+  gateway_cert:
+    file: ${PT_RUNNER_SECRETS_DIR:?Set protected host files}/gateway_cert.pem
+  gateway_key:
+    file: ${PT_RUNNER_SECRETS_DIR:?Set protected host files}/gateway_key.pem

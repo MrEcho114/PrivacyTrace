@@ -350,6 +350,89 @@ test('refresh accepts an explicit FAILED-to-SUCCESS status transition on a newer
   h.state.go('import'); await h.state.prepare()
   assert.equal(attempts, 1, 'a recovered source must not be re-extracted')
 })
+
+for (const status of ['SUCCESS', 'PARTIAL']) test(`committed same-status ${status} retry is recovered after a lost HTTP response`, async () => {
+  let current, attempts = 0, lastAttempt
+  const h = harness({
+    async createDraft() { return current },
+    async uploadApk() { current = { ...current, uploaded: true }; return current },
+    async readDraft() { return current },
+    async extractSource(_draft, _source, _revision, _signal, attemptId) {
+      attempts++; lastAttempt = attemptId
+      assert.match(attemptId, /^[0-9a-f]{32}$/)
+      if (attempts === 2) {
+        current = { ...current, revision: current.revision + 1,
+          sources: current.sources.map(s => ({ ...s, model_audit: { status, attempt_id: attemptId } })) }
+        throw new Error('response lost after server commit')
+      }
+      return current
+    },
+  })
+  current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual', model_audit: { status } }] }
+  h.state.file.value = { name: 'fixture.apk' }; await h.state.prepare()
+  assert.equal(attempts, 1)
+  current = { ...current, candidates: [{ id: 'checked', source_id: 'seed', excerpt: '正文', data_type: 'LOCATION', checked: true }] }
+  h.state.apply(current)
+  await h.state.retryModel('seed')
+  assert.deepEqual([...h.state.failedSourceIds.value], ['seed'])
+  await h.state.refreshMaterials()
+  assert.deepEqual([...h.state.failedSourceIds.value], [], 'matching committed success must recover without status change')
+  assert.equal(h.state.draft.value.sources[0].model_audit.attempt_id, lastAttempt)
+  assert.equal(h.workflow.candidates[0].checked, true)
+  h.state.go('import'); await h.state.prepare()
+  assert.equal(attempts, 2, 'recovering a committed attempt must not repeat model extraction')
+})
+
+test('mismatched committed attempt cannot clear newer local HTTP failure', async () => {
+  let current, attempts = 0
+  const h = harness({
+    async createDraft() { return current },
+    async uploadApk() { current = { ...current, uploaded: true }; return current },
+    async readDraft() { return current },
+    async extractSource() { attempts++; if (attempts === 2) throw new Error('transport failed'); return current },
+  })
+  current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual', model_audit: { status: 'SUCCESS' } }] }
+  h.state.file.value = { name: 'fixture.apk' }; await h.state.prepare()
+  await h.state.retryModel('seed')
+  current = { ...current, revision: current.revision + 1,
+    sources: current.sources.map(s => ({ ...s, model_audit: { status: 'PARTIAL', attempt_id: 'f'.repeat(32) } })) }
+  await h.state.refreshMaterials()
+  assert.deepEqual([...h.state.failedSourceIds.value], ['seed'], 'different tagged result must not erase the local failed attempt')
+  h.state.go('import'); await h.state.prepare()
+  assert.equal(attempts, 3, 'failed source must remain retryable')
+})
+
+test('cancel ignores delayed response while explicit refresh recovers matching same-status success', async () => {
+  let current, attempts = 0, release, started
+  const begun = new Promise(resolve => { started = resolve })
+  const h = harness({
+    async createDraft() { return current },
+    async uploadApk() { current = { ...current, uploaded: true }; return current },
+    async readDraft() { return current },
+    async extractSource(_draft, _source, _revision, _signal, attemptId) {
+      attempts++
+      if (attempts === 2) {
+        current = { ...current, revision: current.revision + 1,
+          sources: current.sources.map(s => ({ ...s, model_audit: { status: 'SUCCESS', attempt_id: attemptId } })) }
+        started()
+        return new Promise(resolve => { release = resolve })
+      }
+      return current
+    },
+  })
+  current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual', model_audit: { status: 'SUCCESS' } }] }
+  h.state.file.value = { name: 'fixture.apk' }; await h.state.prepare()
+  const pending = h.state.retryModel('seed'); await begun
+  h.state.cancelPreparation()
+  release(current); await pending
+  assert.equal(h.state.draft.value.revision, 1, 'a late response cannot apply itself')
+  await h.state.refreshMaterials()
+  assert.equal(h.state.draft.value.revision, 2)
+  assert.deepEqual([...h.state.failedSourceIds.value], [])
+  h.state.go('import'); await h.state.prepare()
+  assert.equal(attempts, 2, 'reconciliation must not call the model again')
+})
+
 test('persisted failed extraction audit remains retryable after page restoration', async () => {
   let current, attempts = 0
   const h = harness({

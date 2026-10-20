@@ -214,6 +214,76 @@ def test_reextraction_retains_checked_candidates_within_quota(tmp_path, monkeypa
     assert saved.status_code == 200
 
 
+
+def test_extraction_attempt_id_commits_with_same_status_and_legacy_clients(tmp_path, monkeypatch):
+    from privacytrace import web_intake
+    from privacytrace.policy_llm_extractor import MockLLMClient
+
+    suggestions = [{"excerpt": "我们不会读取联系人。", "data_type": "CONTACTS"}]
+    monkeypatch.setattr(
+        web_intake, "UrllibLLMClient",
+        lambda **kw: MockLLMClient(lambda *a: json.dumps(suggestions, ensure_ascii=False)),
+    )
+    client = TestClient(create_app(tmp_path))
+    client.post("/api/v1/web/settings", headers=HEADERS, json={
+        "enabled": True, "api_base": "http://127.0.0.1:9001/v1", "model": "test",
+    })
+    draft = new_draft(client)
+    endpoint = f"/api/v1/web/drafts/{draft['id']}"
+    extract_path = endpoint + "/sources/a/extract"
+    legacy = client.post(extract_path, headers=HEADERS, json={"revision": draft["revision"]})
+    assert legacy.status_code == 200, legacy.text
+    draft = legacy.json()
+    original_status = draft["sources"][0]["model_audit"]["status"]
+    assert original_status == "SUCCESS"
+    assert "attempt_id" not in draft["sources"][0]["model_audit"]
+    for attempt in ("a" * 32, "b" * 32):
+        old_revision = draft["revision"]
+        result = client.post(extract_path, headers=HEADERS, json={
+            "revision": old_revision, "attempt_id": attempt,
+        })
+        assert result.status_code == 200, result.text
+        draft = result.json()
+        assert draft["revision"] == old_revision + 1
+        assert draft["sources"][0]["model_audit"]["status"] == original_status
+        assert draft["sources"][0]["model_audit"]["attempt_id"] == attempt
+        assert client.get(endpoint).json()["sources"][0]["model_audit"]["attempt_id"] == attempt
+        assert draft["sources"][1]["model_audit"] == {}
+    for invalid in ("bad", "F" * 32, "g" * 32, "a" * 33, 1234):
+        bad = client.post(extract_path, headers=HEADERS, json={
+            "revision": draft["revision"], "attempt_id": invalid,
+        })
+        assert bad.status_code == 422, bad.text
+        assert bad.json()["detail"] == "INPUT_VALIDATION_FAILED"
+        assert client.get(endpoint).json()["revision"] == draft["revision"]
+
+
+def test_failed_extraction_audit_stores_attempt_without_leaking_secrets(tmp_path, monkeypatch):
+    from privacytrace import web_intake
+    from privacytrace.policy_llm_extractor import MockLLMClient
+
+    secret = "PRIVATE_LLM_RESPONSE_MARKER"
+    def failure(*args):
+        raise ValueError(secret)
+    monkeypatch.setattr(web_intake, "UrllibLLMClient", lambda **kw: MockLLMClient(failure))
+    client = TestClient(create_app(tmp_path))
+    client.post("/api/v1/web/settings", headers=HEADERS, json={
+        "enabled": True, "api_base": "https://model.example/v1", "model": "test",
+        "api_key": secret,
+    })
+    draft = new_draft(client)
+    endpoint = f"/api/v1/web/drafts/{draft['id']}"
+    attempt_id = "c" * 32
+    result = client.post(endpoint + "/sources/a/extract", headers=HEADERS, json={
+        "revision": draft["revision"], "attempt_id": attempt_id,
+    })
+    assert result.status_code == 200, result.text
+    audit = result.json()["sources"][0]["model_audit"]
+    assert audit["status"] == "FAILED"
+    assert audit["attempt_id"] == attempt_id
+    assert secret not in result.text and secret not in client.get(endpoint).text
+
+
 def test_model_error_cannot_echo_secret_into_draft_or_audit(tmp_path, monkeypatch):
     from privacytrace import web_intake
     from privacytrace.policy_llm_extractor import MockLLMClient

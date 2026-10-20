@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "checks": [
+    "bytes=20-39",
+    "bytes=250-",
+    "bytes=-7",
+    "bytes=252-999",
+    "invalid ranges 416",
+    "HEAD no body",
+    "empty file",
+    "junction escape denied",
+    "writes denied",
+    "linked asset root rejected",
+    "linked asset child rejected"
+  ]
+}

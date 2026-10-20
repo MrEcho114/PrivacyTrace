@@ -76,7 +76,21 @@ class JobStore:
             if path.is_symlink() or getattr(path, "is_junction", lambda: False)():
                 raise ValueError("Linked storage lock is not allowed")
             flags = os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
-            fd = os.open(path, flags, 0o600)
+            deadline = time.monotonic() + self.LOCK_TIMEOUT_SECONDS
+            # Opening for create is itself contended: concurrent first-touch of
+            # the same path raises a transient sharing violation (EACCES) on
+            # Windows. Retry that on the same budget as acquisition, so contention
+            # becomes a bounded wait instead of a bare PermissionError. Other
+            # errors stay fatal -- a missing directory should fail fast, not
+            # stall for the whole timeout.
+            while True:
+                try:
+                    fd = os.open(path, flags, 0o600)
+                    break
+                except PermissionError as exc:
+                    if time.monotonic() >= deadline:
+                        raise ValueError("Local job transaction lock unavailable") from exc
+                    time.sleep(0.02)
             acquired = False
             try:
                 info = os.fstat(fd)
@@ -87,7 +101,6 @@ class JobStore:
                     or (info.st_dev, info.st_ino) != (current.st_dev, current.st_ino)
                 ):
                     raise ValueError("Unsafe storage lock")
-                deadline = time.monotonic() + self.LOCK_TIMEOUT_SECONDS
                 while True:
                     try:
                         os.lseek(fd, 0, os.SEEK_SET)
@@ -137,7 +150,7 @@ class JobStore:
             raise ValueError("Symlink job files are not allowed")
         return path
 
-    def _load(self, job_id: str):
+    def _load(self, job_id: str, allow_tombstone: bool = False):
         path = self._path(job_id)
         if not path.exists():
             raise KeyError(job_id)
@@ -153,6 +166,8 @@ class JobStore:
         record = StoredJob.model_validate(migrate_record(payload))
         if record.job.id != job_id or (record.bundle and record.bundle.job != record.job):
             raise ValueError("Stored job identity mismatch")
+        if record.tombstone and not allow_tombstone:
+            raise KeyError(f"Job {job_id} has been deleted")
         return record
 
     def _write(self, record: StoredJob):
@@ -191,15 +206,26 @@ class JobStore:
             reviews=record.reviews,
         )
 
-    def save(self, bundle: EvaluationInput, metadata: dict, coverage: dict, tools: dict) -> Report:
+    def save(
+        self,
+        bundle: EvaluationInput,
+        metadata: dict,
+        coverage: dict,
+        tools: dict,
+        token_digest: str | None = None,
+    ) -> Report:
         with self._transaction():
             bundle = EvaluationInput.model_validate(bundle.model_dump())
             try:
-                existing = self._load(bundle.job.id)
+                existing = self._load(bundle.job.id, allow_tombstone=True)
+                if existing.tombstone:
+                    raise ValueError("Deleted job cannot be overwritten")
                 if existing.job.state == "CANCELLED":
                     raise ValueError("Cancelled job cannot be overwritten")
                 if existing.bundle is not None:
                     raise ValueError("Published job cannot be overwritten; create a new job")
+                if token_digest is None:
+                    token_digest = existing.token_digest
             except KeyError:
                 pass
             record = StoredJob(
@@ -208,29 +234,79 @@ class JobStore:
                 sample=SampleMetadata.model_validate(metadata),
                 coverage=ScanCoverage.model_validate(coverage),
                 tools=tools,
+                token_digest=token_digest,
             )
             report = self._report(record, DeliveryMode.LIVE_GENERATED)
             self._write(record)
             return report
 
-    def create_if_absent(self, job: AnalysisJob) -> AnalysisJob:
+    def create_if_absent(
+        self, job: AnalysisJob, token_digest: str | None = None
+    ) -> AnalysisJob:
         with self._transaction():
             path = self._path(job.id)
             if path.exists():
                 raise ValueError("Job already exists; choose a new job ID")
-            self._write(StoredJob(job=job))
+            self._write(StoredJob(job=job, token_digest=token_digest))
             return job
 
     def save_job(self, job: AnalysisJob) -> AnalysisJob:
         with self._transaction():
+            existing = None
             try:
-                existing = self._load(job.id)
+                existing = self._load(job.id, allow_tombstone=True)
+                if existing.tombstone:
+                    return existing.job
                 if existing.job.state == "CANCELLED" or existing.bundle is not None:
                     return existing.job
             except KeyError:
                 pass
-            self._write(StoredJob(job=job))
+            record = existing.model_copy(deep=True) if existing is not None else StoredJob(job=job)
+            record.job = job
+            self._write(record)
             return job
+
+    def create_retry(self, job: AnalysisJob, token_digest: str | None) -> AnalysisJob:
+        """Linearize retry creation against deletion under the job-store lock."""
+        with self._transaction():
+            original = self._load(job.retry_of)
+            if original.job.state not in {"FAILED", "CANCELLED"}:
+                raise ValueError("Only failed or cancelled jobs can be retried")
+            if original.token_digest != token_digest or self._path(job.id).exists():
+                raise ValueError("Retry access scope or identifier changed")
+            self._write(StoredJob(job=job, token_digest=token_digest))
+            return job
+
+    def get_token_digest(self, job_id: str) -> str | None:
+        with self._transaction():
+            record = self._load(job_id, allow_tombstone=True)
+            if record.tombstone:
+                raise KeyError(f"Job {job_id} is deleted")
+            return record.token_digest
+
+    def set_token_digest(self, job_id: str, token_digest: str) -> None:
+        with self._transaction():
+            record = self._load(job_id, allow_tombstone=True)
+            record.token_digest = token_digest
+            self._write(record)
+
+    def is_tombstoned(self, job_id: str) -> bool:
+        try:
+            path = self._path(job_id)
+            if not path.exists():
+                return False
+            payload = json.loads(path.read_bytes())
+            return bool(payload.get("tombstone", False))
+        except Exception:
+            return False
+
+    def delete(self, job_id: str) -> bool:
+        with self._transaction():
+            record = self._load(job_id, allow_tombstone=True)
+            record.tombstone = True
+            record.token_digest = None
+            self._write(record)
+            return True
 
     def get(self, job_id: str) -> AnalysisJob:
         with self._transaction():

@@ -1,0 +1,20 @@
+{
+  "notice": "合成示例；未实际联网，example.invalid 为无效域名。",
+  "collection": [
+    {"state": "RETRIEVED", "observed_at": "2026-10-16T00:00:00Z", "source": {"id": "web", "title": "合成开发者政策", "source_type": "OFFICIAL_WEB_POLICY", "url": "https://example.invalid/privacy", "text": "我们不会读取联系人。", "version": "UNKNOWN", "package_name": "", "version_code": null}},
+    {"state": "PROVIDED", "source": {"id": "sdk", "title": "用户提供的 SDK 政策", "source_type": "SDK_POLICY", "text": "The SDK accesses coarse location with permission."}},
+    {"state": "URL_ONLY", "source": {"id": "link", "title": "待访问候选网址", "url": "https://example.invalid/privacy", "text": ""}},
+    {"state": "OFFLINE", "source": null},
+    {"state": "NOT_FOUND", "source": null},
+    {"state": "UNAVAILABLE", "source": {"id": "failed", "title": "未取得正文", "url": "https://example.invalid/privacy", "text": ""}}
+  ],
+  "extraction": [
+    {"source_id": "a", "text": "我们不会读取联系人。", "candidates": [{"excerpt": "我们不会读取联系人。", "data_type": "CONTACTS", "polarity": "NEGATIVE", "subject": "HOST_APP", "action": "ACCESS"}], "accepted": 1},
+    {"source_id": "b", "text": "The SDK accesses coarse location with permission.", "candidates": [{"excerpt": "The SDK accesses coarse location with permission.", "data_type": "COARSE_LOCATION", "polarity": "AFFIRMATIVE", "condition": "with permission", "subject": "THIRD_PARTY", "action": "ACCESS"}], "accepted": 1},
+    {"source_id": "unknown", "text": "可能访问位置信息。", "candidates": [{"excerpt": "可能访问位置信息。", "data_type": "LOCATION", "polarity": "UNKNOWN", "subject": "UNKNOWN", "action": "UNKNOWN"}], "accepted": 1},
+    {"source_id": "wrong_quote", "text": "我们不会读取联系人。", "candidates": [{"excerpt": "我们会读取联系人。", "data_type": "CONTACTS"}], "accepted": 0},
+    {"source_id": "wrong_type", "text": "我们不会读取联系人。", "candidates": [{"excerpt": "我们不会读取联系人。", "data_type": "UNDEFINED_TYPE"}], "accepted": 0},
+    {"source_id": "repeated", "text": "读取联系人。读取联系人。", "candidates": [{"excerpt": "读取联系人。", "data_type": "CONTACTS"}], "accepted": 0},
+    {"source_id": "broken", "text": "我们不会读取联系人。", "response": "{invalid json", "accepted": 0}
+  ]
+}

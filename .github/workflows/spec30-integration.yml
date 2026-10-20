@@ -1,0 +1,81 @@
+name: Spec30 Integration
+
+on:
+  pull_request:
+    branches: ["main"]
+    types: [opened, reopened, synchronize]
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spec30-integration-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-browser-offline:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: spec30
+            artifact_prefix: spec30
+            name: six scenarios and independent offline replay
+          - suite: pt907
+            artifact_prefix: pt907
+            name: twelve controlled scenarios and browser evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout delivery commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24.17.0"
+
+      - name: Install locked API and frontend dependencies
+        run: |
+          set -euo pipefail
+          python3 -m venv .themasterplan/cache/spec30-tools
+          .themasterplan/cache/spec30-tools/bin/python -m pip install --disable-pip-version-check uv==0.11.23
+          echo "$PWD/.themasterplan/cache/spec30-tools/bin" >> "$GITHUB_PATH"
+          .themasterplan/cache/spec30-tools/bin/uv sync --project apps/api --locked --extra worker
+          npm ci
+
+      - name: Prepare existing browser acceptance version
+        run: |
+          set -euo pipefail
+          npm install --prefix tmp/spec30-browser --no-save --package-lock=false playwright@1.62.1
+          node tmp/spec30-browser/node_modules/playwright/cli.js install --with-deps chromium
+
+      - name: Run actual source, isolated scan, HTTP, browser and offline acceptance
+        run: uv run --project apps/api --locked --extra worker python scripts/validate-spec30.py --suite ${{ matrix.suite }} --output tmp/spec30-ci
+
+      - name: Upload version-bound evidence, including failures
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ matrix.artifact_prefix }}-integration-${{ github.event.pull_request.head.sha || github.sha }}
+          # Include only the existing controlled export, never the job store or APKs.
+          path: |
+            tmp/spec30-ci/integration-receipt.json
+            tmp/spec30-ci/build-a/build-receipt.json
+            tmp/spec30-ci/build-b/build-receipt.json
+            tmp/spec30-ci/evaluation/comparison.json
+            tmp/spec30-ci/evaluation/*.prediction.json
+            tmp/spec30-ci/evaluation/*.md
+            tmp/spec30-ci/browser-proof/
+            tmp/spec30-ci/offline-proof/
+            tmp/spec30-ci/offline/
+            tmp/spec30-ci/independent-offline.log
+          if-no-files-found: error
+          retention-days: 14

@@ -19,6 +19,23 @@ from .models import (
 )
 
 
+class PackageFileSummary(Model):
+    file_name: str = Field(min_length=1, max_length=255)
+    part: Literal["BASE", "SPLIT"]
+    split_name: str | None = Field(default=None, max_length=255)
+    sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    size_bytes: int = Field(ge=0)
+
+
+class PackageSetSummary(Model):
+    base_file: PackageFileSummary
+    splits: list[PackageFileSummary] = Field(default_factory=list, max_length=100)
+    files: list[PackageFileSummary] = Field(min_length=1, max_length=101)
+    total_size_bytes: int = Field(ge=0)
+    split_count: int = Field(ge=0)
+    split_names: list[str] = Field(default_factory=list, max_length=100)
+
+
 class SampleMetadata(Model):
     name: str = Field(min_length=1, max_length=200)
     package_name: str = Field(min_length=1, max_length=200)
@@ -27,6 +44,7 @@ class SampleMetadata(Model):
     apk_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     permissions: list[str] = Field(max_length=2000)
     dex_entries: list[str] = Field(max_length=1000)
+    package_set: PackageSetSummary | None = None
 
 
 class ScanCoverage(Model):
@@ -80,7 +98,7 @@ class Report(Model):
 
     @model_validator(mode="after")
     def validate_real_mode(self):
-        if self.job.input_mode != "APK":
+        if self.job.input_mode not in {"APK", "CONTROLLED_APK"}:
             raise ValueError("Non-demo reports require an APK job")
         if self.job.source_origin == "SYNTHETIC":
             raise ValueError("Non-demo reports cannot claim a synthetic sample")
@@ -98,13 +116,23 @@ class StoredJob(Model):
     coverage: ScanCoverage | None = None
     tools: dict[str, str] = Field(default_factory=dict)
     reviews: list[ReviewEvent] = Field(default_factory=list, max_length=1000)
+    token_digest: str | None = None
+    tombstone: bool = False
 
     @model_validator(mode="after")
     def validate_record(self):
-        if self.job.input_mode != "APK":
-            raise ValueError("Local persisted jobs require APK input mode")
-        if self.job.source_origin == "SYNTHETIC":
-            raise ValueError("Persisted jobs cannot claim a synthetic sample")
+        if self.tombstone:
+            return self
+        if self.bundle is not None:
+            if self.job.input_mode not in {"APK", "CONTROLLED_APK"}:
+                raise ValueError("Local persisted jobs require APK input mode")
+            if self.job.source_origin == "SYNTHETIC":
+                raise ValueError("Persisted jobs cannot claim a synthetic sample")
+        else:
+            if self.job.input_mode not in {"APK", "CONTROLLED_APK", "SYNTHETIC"}:
+                raise ValueError(
+                    "Local persisted jobs require APK, CONTROLLED_APK, or SYNTHETIC input mode"
+                )
         if self.job.created_at.tzinfo is None:
             raise ValueError("Job created_at requires a timezone")
         if self.bundle:

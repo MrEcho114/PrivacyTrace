@@ -1,18 +1,29 @@
 """Local persisted jobs, review audit events, and explicit synthetic demo API."""
 
+import json
 import os
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
+from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
-from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from .auth import SecuritySeam, generate_capability_token
+from .config import ServerConfig
 from .consistency import evaluate
-from .job_store import JobStore
-from .models import AnalysisJob, EvaluationInput, EvaluationResult
+from .middleware import (
+    JobWriteBoundsMiddleware,
+    RemoteTransportSecurityMiddleware,
+    install_log_redaction,
+)
+from .models import AnalysisJob, EvaluationInput, EvaluationResult, Evidence, SourceOrigin
 from .resources import ROOT, read_json, taxonomy
 from .runtime_models import JobsResponse, Report, ReviewRequest
+from .storage_factory import create_store
+from .web_api import install_web_api
+from .web_intake import WebIntake
 
 STORE_ROOT_ENV = "PRIVACYTRACE_STORE_ROOT"
 
@@ -42,32 +53,72 @@ def local_write(request: Request):
             raise HTTPException(status_code=403, detail="Cross-origin write rejected")
 
 
-def create_app(store_root: Path | None = None):
-    app = FastAPI(title="PrivacyTrace", version="0.1.0")
-    app.add_middleware(
-        TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]", "testserver"]
-    )
+def create_app(
+    store_root: Path | None = None,
+    mode: str | None = None,
+    config: ServerConfig | None = None,
+    allowed_hosts: list[str] | None = None,
+):
+    install_log_redaction()
+    if config is None:
+        config = ServerConfig.from_env(
+            store_root=store_root, mode=mode, allowed_hosts=allowed_hosts
+        )
+
+    @asynccontextmanager
+    async def lifespan(app):
+        app.state.web_intake.start_service()
+        try:
+            yield
+        finally:
+            try:
+                app.state.web_intake.close()
+            finally:
+                if getattr(app.state.job_store, "uses_postgres", False):
+                    app.state.job_store.close()
+
+    app = FastAPI(title="PrivacyTrace", version="0.1.0", lifespan=lifespan)
+    app.state.config = config
+
+    app.add_middleware(JobWriteBoundsMiddleware, config=config)
+    # Starlette wraps middleware in reverse registration order. Validate the
+    # transport and rate limit before reading or buffering any request body.
+    app.add_middleware(RemoteTransportSecurityMiddleware, config=config)
+
     # An explicit argument wins; the environment variable lets the acceptance
     # harness boot an isolated instance without touching the repository data dir.
     configured = store_root or (os.environ.get(STORE_ROOT_ENV) or None)
-    app.state.job_store = JobStore(Path(configured) if configured else ROOT / "data/jobs")
+    execution_mode = os.environ.get("PRIVACYTRACE_EXECUTION", "local")
+    if execution_mode not in {"local", "durable"}:
+        raise ValueError("Unknown execution mode")
+    if execution_mode == "durable" and not configured:
+        raise ValueError("Durable execution requires an explicit private store root")
+    app.state.job_store = create_store(Path(configured) if configured else ROOT / "data/jobs")
+    try:
+        if execution_mode == "durable":
+            from .durable_intake import DurableWebIntake, ensure_control_plane
 
-    @app.middleware("http")
-    async def bound_job_writes(request: Request, call_next):
-        if request.method == "POST" and request.url.path.startswith("/api/v1/jobs/"):
-            size = 0
-            chunks = []
-            async for chunk in request.stream():
-                size += len(chunk)
-                if size > 512 * 1024:
-                    return JSONResponse(status_code=413, content={"detail": "Request too large"})
-                chunks.append(chunk)
-            request._body = b"".join(chunks)
-        return await call_next(request)
+            if not getattr(app.state.job_store, "uses_postgres", False):
+                raise ValueError("Durable execution requires PostgreSQL")
+            ensure_control_plane()
+            app.state.web_intake = DurableWebIntake(app.state.job_store)
+        elif getattr(app.state.job_store, "uses_postgres", False):
+            from .postgres_intake import PostgresWebIntake
+
+            app.state.web_intake = PostgresWebIntake(app.state.job_store)
+        else:
+            app.state.web_intake = WebIntake(app.state.job_store)
+    except Exception:
+        if getattr(app.state.job_store, "uses_postgres", False):
+            app.state.job_store.close()
+        raise
+    app.state.security_seam = SecuritySeam(config, app.state.job_store)
+    install_web_api(app, local_write)
 
     @app.get("/api/v1/health")
     def health():
-        return {"status": "ok", "version": "0.1.0", "mode": "local-jobs"}
+        mode_val = "remote" if config.mode == "remote" else "local-jobs"
+        return {"status": "ok", "version": "0.1.0", "mode": mode_val}
 
     @app.get("/api/v1/taxonomy")
     def get_taxonomy():
@@ -75,7 +126,9 @@ def create_app(store_root: Path | None = None):
 
     @app.get("/api/v1/demo/report")
     def demo_report():
-        bundle = EvaluationInput.model_validate(read_json("samples/demo/evaluation-input.json"))
+        bundle = EvaluationInput.model_validate(
+            read_json("samples/demo/evaluation-input.json")
+        )
         return {
             "demo": True,
             "sample": {
@@ -96,7 +149,9 @@ def create_app(store_root: Path | None = None):
 
     @app.get("/api/v1/demo/evidence/{evidence_id}")
     def demo_evidence(evidence_id: str):
-        bundle = EvaluationInput.model_validate(read_json("samples/demo/evaluation-input.json"))
+        bundle = EvaluationInput.model_validate(
+            read_json("samples/demo/evaluation-input.json")
+        )
         for item in bundle.evidence:
             if item.id == evidence_id:
                 return item
@@ -104,29 +159,128 @@ def create_app(store_root: Path | None = None):
 
     @app.post("/api/v1/consistency/evaluate", response_model=EvaluationResult)
     def evaluate_evidence(bundle: EvaluationInput):
+        if bundle.job.input_mode == "CONTROLLED_APK":
+            raise HTTPException(
+                status_code=422,
+                detail="Controlled facts require the hash-verified controlled CLI",
+            )
         return evaluate(bundle)
 
+    if config.mode == "remote":
+        @app.post("/api/v1/jobs")
+        async def create_job(request: Request):
+            if execution_mode == "durable":
+                raise HTTPException(status_code=409, detail="APK_INTAKE_REQUIRED")
+            payload = {}
+            try:
+                body = await request.body()
+                if body:
+                    payload = json.loads(body)
+            except (ValueError, UnicodeError) as exc:
+                raise HTTPException(422, detail="INPUT_VALIDATION_FAILED") from exc
+            if not isinstance(payload, dict):
+                raise HTTPException(422, detail="INPUT_VALIDATION_FAILED")
+
+            token, digest = generate_capability_token()
+            job_id = str(uuid4())
+            input_mode = payload.get("input_mode", "APK")
+            sample_id = payload.get("sample_id", f"sample-{job_id[:8]}")
+            ruleset_ver = taxonomy()["version"]
+
+            if input_mode == "CONTROLLED_APK":
+                origin = SourceOrigin.CONTROLLED
+            elif input_mode == "SYNTHETIC":
+                origin = SourceOrigin.SYNTHETIC
+            else:
+                origin = SourceOrigin.REAL_SCAN
+
+            try:
+                job = AnalysisJob(
+                    id=job_id,
+                    sample_id=sample_id,
+                    package_name=f"org.privacytrace.{sample_id}",
+                    version_code=1,
+                    input_mode=input_mode,
+                    source_origin=origin,
+                    state="QUEUED",
+                    ruleset_version=ruleset_ver,
+                    created_at=datetime.now(timezone.utc),
+                )
+            except ValueError as exc:
+                raise HTTPException(422, detail="INPUT_VALIDATION_FAILED") from exc
+            operation(lambda: app.state.job_store.create_if_absent(job, token_digest=digest))
+            return {
+                "job_id": job.id,
+                "id": job.id,
+                "capability_token": token,
+                "token": token,
+                "secret_token": token,
+                "status": "PENDING",
+            }
+
     @app.get("/api/v1/jobs", response_model=JobsResponse)
-    def list_jobs():
+    def list_jobs(request: Request):
+        if config.mode == "remote":
+            app.state.security_seam.authorize_jobs_listing(request)
         return operation(lambda: JobsResponse(jobs=app.state.job_store.list()))
 
     @app.get("/api/v1/jobs/{job_id}", response_model=AnalysisJob)
-    def get_job(job_id: str):
+    def get_job(job_id: str, request: Request):
+        if config.mode == "remote":
+            app.state.security_seam.authorize_job_access(request, job_id, action="read")
         return operation(lambda: app.state.job_store.get(job_id))
 
     @app.get("/api/v1/jobs/{job_id}/report", response_model=Report)
-    def get_report(job_id: str):
+    def get_report(job_id: str, request: Request):
+        if config.mode == "remote":
+            app.state.security_seam.authorize_job_access(request, job_id, action="read")
         return operation(lambda: app.state.job_store.report(job_id))
+
+    @app.get("/api/v1/jobs/{job_id}/evidence/{evidence_id}", response_model=Evidence)
+    def get_job_evidence(job_id: str, evidence_id: str, request: Request):
+        if config.mode == "remote":
+            app.state.security_seam.authorize_job_access(request, job_id, action="read")
+        report = operation(lambda: app.state.job_store.report(job_id))
+        for item in report.evidence:
+            if item.id == evidence_id:
+                return item
+        raise HTTPException(status_code=404, detail="Evidence not found")
 
     @app.post("/api/v1/jobs/{job_id}/reviews", response_model=Report)
     def review(job_id: str, payload: ReviewRequest, request: Request):
-        local_write(request)
+        if config.mode == "remote":
+            app.state.security_seam.authorize_job_access(request, job_id, action="write")
+        else:
+            local_write(request)
         return operation(lambda: app.state.job_store.review(job_id, payload))
 
     @app.post("/api/v1/jobs/{job_id}/cancel", response_model=AnalysisJob)
     def cancel(job_id: str, request: Request):
-        local_write(request)
+        if config.mode == "remote":
+            app.state.security_seam.authorize_job_access(request, job_id, action="write")
+        else:
+            local_write(request)
         return operation(lambda: app.state.job_store.cancel(job_id))
+
+    @app.post("/api/v1/jobs/{job_id}/retry", response_model=AnalysisJob)
+    def retry_job(job_id: str, request: Request):
+        if config.mode == "remote":
+            app.state.security_seam.authorize_job_access(request, job_id, action="write")
+        else:
+            local_write(request)
+        try:
+            return operation(lambda: app.state.web_intake.retry(job_id))
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.delete("/api/v1/jobs/{job_id}")
+    def delete_job(job_id: str, request: Request):
+        if config.mode == "remote":
+            app.state.security_seam.authorize_job_access(request, job_id, action="delete")
+        else:
+            local_write(request)
+        operation(lambda: app.state.job_store.delete(job_id))
+        return {"status": "deleted", "job_id": job_id}
 
     return app
 

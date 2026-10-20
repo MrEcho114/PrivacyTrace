@@ -2,8 +2,9 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { cancelJob, loadJob, loadJobReport, loadJobs, loadReport, loadTaxonomy, submitReview } from './api'
 import { clampSdkPage, getSdkEvidence, sdkPageCount, sdkPageSlice } from './sdkEvidence'
-import type { AnalysisJob, DemoReport, Evidence, MatchStatus, PrivacyIssue, Report, ReportSource, Taxonomy } from './types'
-import { parseSource, serializeSource } from './types'
+import type { AnalysisJob, DemoReport, Evidence, MatchStatus, PrivacyIssue, Report, ReportSource, Taxonomy, WebSource } from './types'
+import { parseSource, serializeSource, sourceProvenanceLabel, sourceStatusLabel } from './types'
+const props = defineProps<{ initialJobId?: string }>()
 
 const report = ref<DemoReport | Report | null>(null)
 const taxonomy = ref<Taxonomy | null>(null)
@@ -38,12 +39,19 @@ const jobLabels: Record<AnalysisJob['state'], string> = {
 }
 const sourceLabels: Record<string, string> = {
   IN_APP_POLICY: 'App 内政策', STORE_POLICY: '应用商店', OFFICIAL_WEB_POLICY: '官网政策', SDK_POLICY: 'SDK 自有政策',
+  CONTROLLED_POLICY: '自建受控配对政策',
 }
 const kindLabels = { MANIFEST: '权限配置', API: 'API 字节码', SDK: 'SDK 特征', POLICY_DOCUMENT: '政策快照引用', POLICY_SENTENCE: '政策原句' }
 const label = (id: string) => taxonomy.value?.data_types.find(item => item.id === id)?.label ?? id
 const selectedEvidence = computed(() => report.value?.evidence.filter(item => selected.value?.evidence_ids.includes(item.id)) ?? [])
 const dataTypeCount = computed(() => new Set(report.value?.result.issues.map(i => i.data_type)).size)
 const realReport = computed(() => report.value && !report.value.demo ? report.value : null)
+const webSources = computed(() => {
+  try {
+    const value = JSON.parse(realReport.value?.tools.web_policy_sources ?? '[]')
+    return Array.isArray(value) ? value.filter(item => item && typeof item.title === 'string' && typeof item.status === 'string') as { title: string; status: NonNullable<WebSource['status']>; error_code?: string; captured_at?: string; sha256?: string; url?: string; final_url?: string; provenance?: string | null }[] : []
+  } catch { return [] }
+})
 // SDK attribution is reference material with its own access path: no issue cites
 // it, so without this panel those evidence records would be counted but unopenable.
 const sdkEvidence = computed(() => getSdkEvidence(realReport.value?.evidence ?? []))
@@ -54,6 +62,10 @@ const pagedSdkEvidence = computed(() => sdkPageSlice(sdkEvidence.value, sdkPage.
 watch(report, () => {
   sdkPage.value = 0
 })
+const controlledReport = computed(() => (realReport.value?.job ?? activeJob.value)?.input_mode === 'CONTROLLED_APK')
+const replayPage = typeof document !== 'undefined'
+  && document.querySelector('meta[name="privacytrace-presentation"]')?.getAttribute('content') === 'offline'
+const offlineReplay = computed(() => replayPage || realReport.value?.tools.presentation_mode === 'OFFLINE_REPLAY')
 // Candidate clauses are navigation aids, not evaluator-confirmed evidence or matches.
 // Candidate clauses pagination
 const CANDIDATE_PAGE_SIZE = 20
@@ -187,8 +199,12 @@ const sourceOptionPrefix = (origin?: string) => {
 }
 
 const sourceInfo = computed(() => {
-  if (!report.value) return null
-  const origin = report.value.demo ? 'SYNTHETIC' : report.value.job?.source_origin
+  if (!report.value && !activeJob.value) return null
+  const origin = report.value?.demo ? 'SYNTHETIC' : (report.value?.job ?? activeJob.value)?.source_origin
+  if (origin === 'CONTROLLED' && controlledReport.value) return {
+    type: origin, badge: '受控评测 · CONTROLLED', label: 'CONTROLLED_APK · 自建受控场景',
+    desc: '源码构建的测试 APK；政策事实仅适用于此受控场景，不代表真实应用政策已核验。候选由代理辅助整理。',
+  }
   if (!origin) {
     return { type: 'UNKNOWN', badge: '来源未标注', label: '来源未标注', desc: '报告缺少来源标注，无法判断该报告的真实性级别。' }
   }
@@ -263,7 +279,8 @@ async function reload(initial = false) {
     if (current !== requestId) return
     jobs.value = nextJobs.jobs
     taxonomy.value = nextTaxonomy
-    if (initial && jobs.value.length) source.value = { kind: 'job', id: jobs.value[0]!.id }
+    if (initial && props.initialJobId) source.value = { kind: 'job', id: props.initialJobId }
+    else if (initial && jobs.value.length) source.value = { kind: 'job', id: jobs.value[0]!.id }
     if (source.value.kind === 'demo') {
       const nextReport = await loadReport(signal)
       if (current === requestId) report.value = nextReport
@@ -338,7 +355,7 @@ async function review() {
     if (current !== requestId) return
     report.value = next
     selected.value = next.result.issues.find(item => item.id === selected.value?.id) ?? null
-    reviewMessage.value = '备注已保存，规则已重新计算。结论仍需团队核验，不代表合法性认定。'
+    reviewMessage.value = '备注已保存，规则已重新计算。'
   } catch (cause) { if (current === requestId) error.value = failure(cause) }
   finally { if (current === requestId) loading.value = false }
 }
@@ -357,17 +374,24 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
       <section class="source-picker">
         <label for="report-source">报告来源</label>
         <select id="report-source" v-model="selectedSourceKey" @change="reload()">
-          <option value="demo:synthetic">SYNTHETIC · 人工构造示例</option>
+          <option v-if="!offlineReplay" value="demo:synthetic">SYNTHETIC · 人工构造示例</option>
           <option v-for="job in jobs" :key="job.id" :value="`job:${job.id}`">
             {{ sourceOptionPrefix(job.source_origin) }}{{ job.package_name || job.sample_id }} · {{ job.id }} · {{ jobLabels[job.state] }}
           </option>
         </select>
         <p class="subtle">真实任务由 APK 扫描 CLI 创建；示例仅用于演示，不是实际应用的检测结果。</p>
       </section>
-      <aside class="demo-note"><strong>{{ sourceInfo?.label ?? (source.kind === 'demo' ? 'SYNTHETIC 示例' : '真实 APK 静态报告') }}</strong>
+      <details class="demo-note"><summary>分析范围与来源 · <strong>{{ sourceInfo?.label ?? (source.kind === 'demo' ? 'SYNTHETIC 示例' : '真实 APK 静态报告') }}</strong></summary>
         {{ sourceInfo?.desc ?? (source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。报告不保证覆盖反射、动态加载、原生代码或运行时行为。') }}
         六种状态只对照 DATA_TYPE_DISCLOSURE；“具体类型已声明”不代表目的、接收方、传输或时间范围全部一致，更不是合法性判断。
-      </aside>
+      </details>
+      <section v-if="webSources.length" class="coverage-card"><h2>输入来源状态</h2><p>失败来源保留；正文完整度未知、全文未复核、附件未检查。</p><ul><li v-for="(item, index) in webSources" :key="index"><strong>{{ item.title }}</strong> · {{ sourceStatusLabel(item.status) }} · {{ sourceProvenanceLabel(item.provenance) }}<span v-if="item.error_code"> · {{ item.error_code }}</span><p class="subtle">请求网址 {{ item.url || '手动输入' }} · 最终网址 {{ item.final_url || '未获取／手动输入' }}</p></li></ul></section><section v-if="realReport" class="report-provenance" aria-label="报告生成来源">
+        <strong>{{ offlineReplay ? 'OFFLINE REPLAY · 离线回放' : '存档报告查看 · PERSISTED REPLAY' }}</strong>
+        <p v-if="realReport.tools.analysis_generated_at">分析生成时点：{{ realReport.tools.analysis_generated_at }}。查看存档不代表重新扫描。</p>
+        <p v-else>记录创建时点：{{ realReport.job.created_at }}。未留存分析生成时点；来源以报告来源标识为准。</p>
+        <p v-if="offlineReplay">回放包生成时点：{{ realReport.tools.offline_package_built_at }}。回放只读，不执行 APK 分析。</p>
+        <p v-if="offlineReplay"><a href="/comparison.html" target="_blank" rel="noopener">查看六场景三方案比较与失败记录</a></p>
+      </section>
       <section v-if="activeJob" class="job-state" role="status">
         <strong>{{ jobLabels[activeJob.state] }}</strong> · {{ activeJob.id }} · {{ activeJob.state }}
         <button v-if="!terminal(activeJob)" :disabled="loading" @click="cancel">取消任务</button>
@@ -472,7 +496,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         <details class="provenance" :open="provenanceOpen" @toggle="provenanceToggle($event)"><summary>报告版本、权限与全部政策快照</summary>
           <p>任务 {{ report.job.id }} · 输入 {{ report.job.input_mode }} · 规则版本 {{ report.job.ruleset_version }} · 原生成时间：{{ formatTimestamp(report.job.created_at) || report.job.created_at }}</p>
           <template v-if="realReport">
-            <p v-for="(version, tool) in realReport.tools" :key="tool">{{ tool }}：{{ version }}</p>
+            <p v-for="(version, tool) in Object.fromEntries(Object.entries(realReport.tools).filter(([key]) => key !== 'web_policy_sources'))" :key="tool">{{ tool }}：{{ version }}</p>
             <p class="hash">DEX {{ (realReport.sample.dex_entries ?? []).join('、') || '无' }}</p>
             <details><summary>Android 权限（权限不等于已访问）</summary><ul><li v-for="permission in (realReport.sample.permissions ?? [])" :key="permission">{{ permission }}</li></ul></details>
           </template>
@@ -488,8 +512,8 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
             </details>
           </article>
         </details>
-        <section v-if="realReport" class="review-panel">
-          <h2>人工复核备注</h2><p class="subtle">记录谁在何时、因为什么做了复核。这里只保存备注并由纯规则重算，不自动把政策标为已复核，不修改候选声明。填写的身份未认证，最终仍需团队核验。</p>
+        <section v-if="realReport && !offlineReplay" class="review-panel">
+          <h2>人工复核备注</h2><p class="subtle">这里只保存备注并由纯规则重算，不自动把政策标为已复核，不修改候选声明。填写的身份未认证。</p>
           <form @submit.prevent="review">
             <label>复核人<input v-model="actor" required maxlength="100" /></label>
             <label>原因<input v-model="reason" required maxlength="1000" /></label>

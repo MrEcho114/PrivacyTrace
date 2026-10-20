@@ -40,8 +40,9 @@ def invoke(sample, monkeypatch, capsys, *args):
 class DockerBoundary:
     """A controlled OS process boundary, not an implementation/parser mock."""
 
-    def __init__(self, sample, fault=None, cleanup_fault=None):
+    def __init__(self, sample, fault=None, cleanup_fault=None, daemon_cgroup_default="private"):
         self.sample, self.fault, self.cleanup_fault = sample, fault, cleanup_fault
+        self.daemon_cgroup_default = daemon_cgroup_default
         self.created = False
         self.removed = False
         self.started = False
@@ -60,6 +61,10 @@ class DockerBoundary:
             return result(out=b"sha256:" + b"a" * 64)
         if "create" in args:
             self.created = True
+            self.cgroup_namespace = next(
+                (arg.split("=", 1)[1] for arg in args if arg.startswith("--cgroupns=")),
+                self.daemon_cgroup_default,
+            )
             self.name = args[args.index("--name") + 1]
             self.label = args[args.index("--label") + 1].split("=", 1)[1]
             self.mount = (
@@ -99,13 +104,14 @@ class DockerBoundary:
                 VolumesFrom=None,
                 PidMode="",
                 IpcMode="private",
-                CgroupnsMode="private",
+                CgroupnsMode=self.cgroup_namespace,
                 ShmSize=8388608,
                 Tmpfs={"/tmp": "rw,noexec,nosuid,nodev,size=16m,nr_inodes=4096"},
             )
             record = {
                 "Config": {"User": "65534:65534", "Labels": {"privacytrace.run": self.label}},
                 "HostConfig": host,
+                "State": {"Running": False, "OOMKilled": False, "ExitCode": 0},
                 "Mounts": [
                     {
                         "Destination": "/input/sample.apk",
@@ -149,6 +155,18 @@ class DockerBoundary:
         if self.fault == "cancel":
             (self.sample.parent / "cancel").touch()
         return Process()
+
+
+def test_host_daemon_default_still_produces_private_cgroup_isolation(tmp_path, monkeypatch, capsys):
+    sample = apk(tmp_path / "sample.apk")
+    boundary = DockerBoundary(sample, daemon_cgroup_default="host")
+    monkeypatch.setattr(subprocess, "run", boundary.run)
+    monkeypatch.setattr(subprocess, "Popen", boundary.popen)
+    code, record = invoke(sample, monkeypatch, capsys)
+    assert code == 0, record
+    proof = json.loads(Path(record["tools"]["isolation_receipt"]).read_bytes())
+    assert proof["host_config"]["CgroupnsMode"] == "private"
+    assert proof["input_removed"] and proof["cleanup_verified"]
 
 
 @pytest.mark.parametrize(

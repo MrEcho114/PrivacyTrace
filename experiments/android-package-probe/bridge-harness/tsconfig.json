@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "paths": { "@tauri-apps/api/*": ["./node_modules/@tauri-apps/api/*"] },
+    "strict": true,
+    "lib": ["ES2022", "DOM"],
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.vue", "../tauri-plugin/guest-js/**/*.ts"]
+}

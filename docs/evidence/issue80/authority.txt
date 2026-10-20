@@ -1,0 +1,314 @@
+Resolved 86 packages in 0.78ms
+Uninstalled 11 packages in 21ms
+ - amqp==5.4.1
+ - billiard==4.3.1
+ - celery==5.6.3
+ - click-didyoumean==0.3.1
+ - click-plugins==1.1.1.2
+ - click-repl==0.4.1
+ - kombu==5.6.2
+ - redis==6.4.0
+ - tzdata==2026.5
+ - tzlocal==5.4.4
+ - vine==5.1.0
+{
+  "ok": true,
+  "status": "OK",
+  "issues": []
+}
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from worker.Dockerfile
+#1 DONE 0.0s
+
+#1 [internal] load build definition from worker.Dockerfile
+#1 transferring dockerfile: 855B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for ghcr.io/astral-sh/uv:0.11.23@sha256:d0a0a753ab981624b49c97abc98821c1c09f4ca69d1ef5cee69c501be3d88479
+#2 DONE 1.6s
+
+#3 [internal] load metadata for docker.io/library/python:3.12.13-slim@sha256:229a2c5bfa27522db7815ea81f9bed70af17ccb9de9fc7ad142b1877b5830d36
+#3 DONE 2.3s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 299B done
+#4 DONE 0.0s
+
+#5 [uv 1/1] FROM ghcr.io/astral-sh/uv:0.11.23@sha256:d0a0a753ab981624b49c97abc98821c1c09f4ca69d1ef5cee69c501be3d88479
+#5 resolve ghcr.io/astral-sh/uv:0.11.23@sha256:d0a0a753ab981624b49c97abc98821c1c09f4ca69d1ef5cee69c501be3d88479 0.1s done
+#5 DONE 0.1s
+
+#6 [stage-1 1/8] FROM docker.io/library/python:3.12.13-slim@sha256:229a2c5bfa27522db7815ea81f9bed70af17ccb9de9fc7ad142b1877b5830d36
+#6 resolve docker.io/library/python:3.12.13-slim@sha256:229a2c5bfa27522db7815ea81f9bed70af17ccb9de9fc7ad142b1877b5830d36 0.1s done
+#6 DONE 0.1s
+
+#7 [internal] load build context
+#7 transferring context: 253.71kB done
+#7 DONE 0.0s
+
+#8 [stage-1 2/8] COPY --from=uv /uv /usr/local/bin/uv
+#8 CACHED
+
+#9 [stage-1 3/8] WORKDIR /app
+#9 CACHED
+
+#10 [stage-1 4/8] COPY apps/api/pyproject.toml apps/api/uv.lock /app/apps/api/
+#10 CACHED
+
+#11 [stage-1 5/8] COPY apps/api/src /app/apps/api/src
+#11 DONE 0.1s
+
+#12 [stage-1 6/8] COPY rules/taxonomy.v0.3.json /app/rules/taxonomy.v0.3.json
+#12 DONE 0.1s
+
+#13 [stage-1 7/8] COPY rules/sdk-signatures.v1.0.json /app/rules/sdk-signatures.v1.0.json
+#13 DONE 0.1s
+
+#14 [stage-1 8/8] RUN uv sync --project /app/apps/api --locked --extra worker --no-dev --no-cache
+#14 0.459 Using CPython 3.12.13 interpreter at: /usr/local/bin/python3
+#14 0.459 Creating virtual environment at: apps/api/.venv
+#14 0.467 Resolved 86 packages in 0.84ms
+#14 0.475    Building privacytrace-api @ file:///app/apps/api
+#14 0.791 Downloading cryptography (4.5MiB)
+#14 0.797 Downloading matplotlib (9.4MiB)
+#14 0.797 Downloading numpy (15.9MiB)
+#14 0.798 Downloading pygments (1.2MiB)
+#14 0.798 Downloading pydantic-core (2.0MiB)
+#14 0.798 Downloading kiwisolver (1.4MiB)
+#14 0.798 Downloading pillow (6.6MiB)
+#14 0.801 Downloading jedi (4.7MiB)
+#14 0.801 Downloading fonttools (5.1MiB)
+#14 0.801 Downloading networkx (2.0MiB)
+#14 0.801 Downloading lxml (5.0MiB)
+#14 0.803 Downloading psycopg-binary (5.0MiB)
+#14 0.804 Downloading sqlalchemy (4.5MiB)
+#14 1.008 Downloading frida (37.8MiB)
+#14 3.579       Built privacytrace-api @ file:///app/apps/api
+#14 3.961  Downloaded pygments
+#14 4.077  Downloaded kiwisolver
+#14 4.301  Downloaded pydantic-core
+#14 4.351  Downloaded networkx
+#14 4.897  Downloaded sqlalchemy
+#14 4.925  Downloaded cryptography
+#14 4.950  Downloaded jedi
+#14 4.976  Downloaded lxml
+#14 4.977  Downloaded psycopg-binary
+#14 4.984  Downloaded fonttools
+#14 5.146  Downloaded pillow
+#14 5.368  Downloaded matplotlib
+#14 5.645  Downloaded numpy
+#14 7.145  Downloaded frida
+#14 7.146 Prepared 63 packages in 6.67s
+#14 7.306 Installed 63 packages in 160ms
+#14 7.306  + alembic==1.20.0
+#14 7.306  + androguard==4.1.3
+#14 7.306  + annotated-doc==0.0.5
+#14 7.306  + annotated-types==0.8.0
+#14 7.306  + anyio==4.15.1
+#14 7.306  + apkinspector==1.3.7
+#14 7.306  + asn1crypto==1.5.1
+#14 7.306  + asttokens==3.0.2
+#14 7.306  + cffi==2.1.1
+#14 7.306  + click==8.5.0
+#14 7.306  + colorama==0.4.6
+#14 7.306  + contourpy==1.4.0
+#14 7.306  + cryptography==50.0.2
+#14 7.306  + cycler==0.12.1
+#14 7.306  + dataset==2.0.0
+#14 7.306  + executing==2.2.1
+#14 7.306  + fastapi==0.142.2
+#14 7.307  + fonttools==4.66.1
+#14 7.307  + frida==17.22.0
+#14 7.307  + h11==0.16.0
+#14 7.307  + idna==3.20
+#14 7.307  + ipython==9.17.1
+#14 7.307  + ipython-pygments-lexers==1.1.1
+#14 7.307  + jedi==0.20.0
+#14 7.307  + kiwisolver==1.5.1
+#14 7.307  + loguru==0.7.3
+#14 7.307  + lxml==6.1.3
+#14 7.307  + mako==1.4.3
+#14 7.307  + markupsafe==3.0.4
+#14 7.307  + matplotlib==3.11.2
+#14 7.307  + matplotlib-inline==0.2.2
+#14 7.307  + mutf8==1.1.0
+#14 7.307  + networkx==3.7
+#14 7.307  + numpy==2.5.3
+#14 7.307  + opentelemetry-api==1.45.0
+#14 7.307  + packaging==26.3
+#14 7.307  + parso==0.8.7
+#14 7.307  + pexpect==4.9.0
+#14 7.307  + pillow==12.3.0
+#14 7.307  + privacytrace-api==0.1.0 (from file:///app/apps/api)
+#14 7.307  + prompt-toolkit==3.0.53
+#14 7.307  + psutil==7.2.2
+#14 7.307  + psycopg==3.3.6
+#14 7.307  + psycopg-binary==3.3.6
+#14 7.307  + ptyprocess==0.7.0
+#14 7.307  + pure-eval==0.2.4
+#14 7.307  + pycparser==3.0
+#14 7.307  + pydantic==2.13.5
+#14 7.307  + pydantic-core==2.46.5
+#14 7.307  + pydot==4.0.1
+#14 7.307  + pygments==2.21.0
+#14 7.307  + pyparsing==3.3.3
+#14 7.307  + python-dateutil==2.9.0.post0
+#14 7.307  + pyyaml==6.0.3
+#14 7.307  + six==1.17.0
+#14 7.307  + sqlalchemy==2.1.3
+#14 7.307  + stack-data==0.6.3
+#14 7.307  + starlette==1.7.0
+#14 7.307  + traitlets==5.16.1
+#14 7.307  + typing-extensions==4.16.0
+#14 7.307  + typing-inspection==0.4.4
+#14 7.307  + uvicorn==0.54.0
+#14 7.307  + wcwidth==0.9.1
+#14 DONE 7.4s
+
+#15 exporting to image
+#15 exporting layers
+#15 exporting layers 9.0s done
+#15 exporting manifest sha256:8efd695272600efb2295445fac4f1bda49f973d91a6be3f8f7978be2c6e5e463 0.0s done
+#15 exporting config sha256:dc4d85f4a9e10b892f4d409eb9ce5cd27e98c523232a2a21358106e3492e6c30 0.0s done
+#15 exporting attestation manifest sha256:a3d0d4ff0421849efa1e02f958a2f5b7e1569363f3a69d01b72b608565d53c17 0.0s done
+#15 exporting manifest list sha256:18352aca1bd9bd75e51cd0a55907454725f51768b61fde886343f94203f63f6c
+#15 exporting manifest list sha256:18352aca1bd9bd75e51cd0a55907454725f51768b61fde886343f94203f63f6c 0.0s done
+#15 naming to docker.io/library/privacytrace-worker:s1 done
+#15 unpacking to docker.io/library/privacytrace-worker:s1
+#15 unpacking to docker.io/library/privacytrace-worker:s1 2.1s done
+#15 DONE 11.3s
+........................................................................ [  4%]
+........................................................................ [  8%]
+........................................................................ [ 13%]
+........................................................................ [ 17%]
+........................................................................ [ 21%]
+........................................................................ [ 26%]
+........................................................................ [ 30%]
+........................................................................ [ 34%]
+........................................................................ [ 39%]
+........................................................................ [ 43%]
+........................................................................ [ 47%]
+........................................................................ [ 52%]
+........................................................................ [ 56%]
+........................................................................ [ 60%]
+........................................................................ [ 65%]
+........................................................................ [ 69%]
+..........................sssssssssss................................... [ 73%]
+........................................................................ [ 78%]
+.....................ssss............................................... [ 82%]
+..........................................................s............. [ 86%]
+........................................................................ [ 91%]
+........................................................................ [ 95%]
+........................................................................ [ 99%]
+...                                                                      [100%]
+=============================== warnings summary ===============================
+apps/api/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  <repo>/apps/api/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_package_set_challenge.py::TestMaliciousAndDamagedZipArchives::test_duplicate_zip_entries
+tests/test_package_set_challenge.py::TestTransactionalIntakeRollbackAndZeroLeaks::test_rejection_mode_rolls_back_and_leaves_zero_leaks[duplicate_zip_entry-<lambda>-400-CORRUPTED_FILE]
+  /usr/lib/python3.12/zipfile/__init__.py:1620: UserWarning: Duplicate name: 'base.apk'
+    return self._open_to_write(zinfo, force_zip64=force_zip64)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1643 passed, 17 skipped, 3 warnings in 264.16s (0:04:24)
+All checks passed!
+verify-user-study-pack: root=<repo>
+rows: question-bank=14 answer-key=50 assignment=8 observations=72 (rehearsal-included=72)
+rehearsal rows: included in semantic verification
+issues: 0
+result: OK
+Updated input/result JSON Schemas and TypeScript contracts
+
+added 49 packages, and audited 51 packages in 1s
+
+6 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+> @privacytrace/web@0.1.0 test
+> node --experimental-strip-types --test tests/*.test.ts tests/*.test.cjs
+
+✔ R4 Edge Case: Job IDs serialization and parse round-trips (1.813412ms)
+✔ R4 Edge Case: Select option values are distinct with no collisions (0.163825ms)
+✔ R4 Edge Case: API routing for edge-case job IDs (19.442061ms)
+✔ R2 Security: Zero v-html and Zero innerHTML across entire web source (8.584547ms)
+✔ R2 Security: Strict CSP meta tag configured in index.html (0.546403ms)
+✔ R1 Boundary: sentenceContext handles negative offsets safely (0.297745ms)
+✔ R1 Boundary: sentenceContext handles inverted offsets safely (start > end) (0.141032ms)
+✔ R1 Boundary: sentenceContext handles massive out-of-bounds offsets (0.16841ms)
+✔ R1 Boundary: sentenceContext handles astral plane Unicode surrogate pairs correctly (0.164427ms)
+✔ R4 Source classification: demo envelope is always SYNTHETIC (0.36861ms)
+✔ R4 Source classification follows source_origin, not sample_id naming (0.14043ms)
+✔ R4 Source classification: missing or unknown origin is never silently mislabelled (0.116237ms)
+✔ R4 Every known origin maps to a distinct badge (0.148134ms)
+✔ R4 A real scan is LIVE_GENERATED when produced and PERSISTED_REPLAY when reloaded (0.110772ms)
+✔ R4 Delivery mode is independent of origin across all combinations (0.095825ms)
+✔ R4 Unknown delivery mode is reported, never assumed to be live (0.079891ms)
+✔ R4 Edge Case: Non-standard timestamp formats in created_at (11.303519ms)
+✔ R1 Boundary: Candidate pagination counts for 0, 1, 20, 21, 2000 claims (0.277232ms)
+✔ R3 Boundary: Error parsing handles XSS payloads and malformed inputs (0.166064ms)
+✔ manual source refresh failure preserves candidates (3.359209ms)
+✔ manual source refresh success extracts new text (1.177602ms)
+✔ ready source refresh failure preserves candidates (0.758726ms)
+✔ ready source refresh success extracts new text (0.724044ms)
+✔ start accepts an unchecked candidate and sends checked=false (7.486041ms)
+✔ empty job list loads the labelled synthetic example (3.455984ms)
+✔ initial selection loads the real job demo and submits review to its raw ID (1.034681ms)
+✔ initial selection loads the real job job-demo and submits review to its raw ID (0.825681ms)
+✔ initial selection loads the real job normal-job and submits review to its raw ID (0.741838ms)
+✔ manual switching keeps real demo job and synthetic example distinct (0.95974ms)
+✔ cancellation of a running job named demo targets the real job (0.990605ms)
+✔ candidate navigation is paginated and full artifacts are rendered once on demand (12.189693ms)
+✔ SDK evidence is rendered even when no issue cites it (1.298309ms)
+✔ only SDK records reach the SDK panel (1.117755ms)
+✔ zero SDK hits states the limit instead of implying the APK is clean (1.056004ms)
+✔ a large SDK result is paginated without losing or repeating entries (1.681435ms)
+✔ switching the report resets the SDK page but changing the issue does not (0.649914ms)
+✔ the panel stays visible when nothing was truncated (1.057764ms)
+✔ failed controlled source APK keeps its provenance without a report (0.651ms)
+✔ historical unknown and UI fixture reports do not claim an actual CLI scan (10.214794ms)
+✔ SDK evidence is selectable without any matching issue (0.959651ms)
+✔ only SDK evidence is selected from a mixed report (0.136615ms)
+✔ zero SDK hits is an empty selection, not an error (0.077646ms)
+✔ page count always offers at least one page (0.115018ms)
+✔ paging covers every entry exactly once (0.203267ms)
+✔ a page never exceeds the page size (1.639228ms)
+✔ an out-of-range page is clamped rather than returning nothing (0.252788ms)
+✔ an empty report yields one empty page, never an undefined page (0.116174ms)
+✔ selection preserves worker order so the panel matches the report (0.153969ms)
+✔ the panel renders only fields the worker already provides (0.149471ms)
+✔ sourceStatusLabels dictionary maps all statuses and marks url_only distinctly (0.521319ms)
+✔ App.vue genuinely renders url_only as "仅有链接，尚无正文" and does not claim body acquired (8.273491ms)
+✔ ReportSource namespace serialization and parsing (0.84013ms)
+✔ Disjoint namespace prevents routing collision for job named demo (21.395854ms)
+ℹ tests 53
+ℹ suites 0
+ℹ pass 53
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 494.574438
+
+> privacytrace@0.1.0 build
+> npm run build --workspace @privacytrace/web
+
+
+> @privacytrace/web@0.1.0 build
+> vue-tsc --noEmit && vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 42 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.61 kB │ gzip:  0.40 kB
+dist/assets/index-EB1yV4Lv.css   24.84 kB │ gzip:  5.83 kB
+dist/assets/index-EnrTDxw1.js   159.75 kB │ gzip: 57.69 kB
+✓ built in 738ms
+
+PrivacyTrace checks passed.

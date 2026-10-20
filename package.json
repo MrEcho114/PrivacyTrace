@@ -5,11 +5,18 @@
   "workspaces": ["apps/web"],
   "scripts": {
     "dev": "npm run dev --workspace @privacytrace/web",
+    "dev:start": "node scripts/frontend-preview.cjs start",
+    "dev:stop": "node scripts/frontend-preview.cjs stop",
+    "dev:status": "node scripts/frontend-preview.cjs status",
+    "check": "node scripts/frontend-preview.cjs check",
     "build": "npm run build --workspace @privacytrace/web",
     "typecheck": "npm run typecheck --workspace @privacytrace/web",
     "preview": "npm run preview --workspace @privacytrace/web",
     "fixtures:acceptance": "uv run --project apps/api python scripts/build_acceptance_fixtures.py",
-    "acceptance:browser": "node scripts/verify-browser-acceptance.cjs"
+    "acceptance:browser": "node scripts/verify-browser-acceptance.cjs",
+    "acceptance:frontend": "node scripts/verify-frontend-flow.cjs",
+    "acceptance:live": "node scripts/verify-live-flow.cjs",
+    "acceptance:preview": "node scripts/verify-frontend-preview.cjs"
   },
   "devDependencies": {
     "playwright": "^1.64.0"

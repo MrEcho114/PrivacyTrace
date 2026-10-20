@@ -1,0 +1,26 @@
+{
+  "schema": "privacytrace-android-probe-device-v1",
+  "source_commit": "3bf5138db8dac6c58133380330bfad26ec6dab4c",
+  "source_dirty": false,
+  "emulator": true,
+  "android_api": "34",
+  "android_release": "14",
+  "cases": [
+    "single_self_app_uid",
+    "external_base_plus_installed_feature_app_uid"
+  ],
+  "result": "PASS",
+  "apk_sha256": [
+    "6fe5e766a0d3ddfad0fa8ce837048afc7723bed29d9259022cd4d114f8ea55e7",
+    "f6f9b38ba6ce38db0f5a9c7fb3bf61795beeb68f75b9e8852dada38877e98ae1",
+    "6cea8e7d2012ba05fb7c46c7ce86cc05eefcd9509c69fe4983571e0aa272671b",
+    "55427556896fa1da51f4484ead7b9b27962a89f6bdd02d11c2d944da41c181a8"
+  ],
+  "unverified": [
+    "installation_update_race",
+    "unreadable_packages",
+    "oem_matrix",
+    "tauri_bridge",
+    "remote_upload"
+  ]
+}

@@ -14,7 +14,8 @@
         "input_mode": {
           "enum": [
             "SYNTHETIC",
-            "APK"
+            "APK",
+            "CONTROLLED_APK"
           ],
           "title": "Input Mode",
           "type": "string"
@@ -109,6 +110,18 @@
           ],
           "default": null,
           "title": "Error"
+        },
+        "retry_of": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retry Of"
         }
       },
       "required": [
@@ -332,6 +345,19 @@
             }
           ],
           "default": null
+        },
+        "package_split": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Package Split"
         }
       },
       "required": [
@@ -355,6 +381,107 @@
       ],
       "title": "MatchStatus",
       "type": "string"
+    },
+    "PackageFileSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "file_name": {
+          "maxLength": 255,
+          "minLength": 1,
+          "title": "File Name",
+          "type": "string"
+        },
+        "part": {
+          "enum": [
+            "BASE",
+            "SPLIT"
+          ],
+          "title": "Part",
+          "type": "string"
+        },
+        "split_name": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Split Name"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size_bytes": {
+          "minimum": 0,
+          "title": "Size Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "file_name",
+        "part",
+        "sha256",
+        "size_bytes"
+      ],
+      "title": "PackageFileSummary",
+      "type": "object"
+    },
+    "PackageSetSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "base_file": {
+          "$ref": "#/$defs/PackageFileSummary"
+        },
+        "splits": {
+          "items": {
+            "$ref": "#/$defs/PackageFileSummary"
+          },
+          "maxItems": 100,
+          "title": "Splits",
+          "type": "array"
+        },
+        "files": {
+          "items": {
+            "$ref": "#/$defs/PackageFileSummary"
+          },
+          "maxItems": 101,
+          "minItems": 1,
+          "title": "Files",
+          "type": "array"
+        },
+        "total_size_bytes": {
+          "minimum": 0,
+          "title": "Total Size Bytes",
+          "type": "integer"
+        },
+        "split_count": {
+          "minimum": 0,
+          "title": "Split Count",
+          "type": "integer"
+        },
+        "split_names": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Split Names",
+          "type": "array"
+        }
+      },
+      "required": [
+        "base_file",
+        "files",
+        "total_size_bytes",
+        "split_count"
+      ],
+      "title": "PackageSetSummary",
+      "type": "object"
     },
     "PolicyApplicability": {
       "additionalProperties": false,
@@ -642,7 +769,8 @@
         "IN_APP_POLICY",
         "STORE_POLICY",
         "OFFICIAL_WEB_POLICY",
-        "SDK_POLICY"
+        "SDK_POLICY",
+        "CONTROLLED_POLICY"
       ],
       "title": "PolicySource",
       "type": "string"
@@ -901,6 +1029,17 @@
           "maxItems": 1000,
           "title": "Dex Entries",
           "type": "array"
+        },
+        "package_set": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PackageSetSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [

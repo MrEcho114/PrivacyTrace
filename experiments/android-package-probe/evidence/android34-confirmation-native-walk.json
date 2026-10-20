@@ -1,0 +1,24 @@
+{
+  "schema": "privacytrace-native-confirmation-walk-v1",
+  "method": "host-driven native UI walkthrough; local operator helper is not shipped",
+  "source_commit": "3bf5138db8dac6c58133380330bfad26ec6dab4c",
+  "source_dirty": false,
+  "emulator": true,
+  "android_api": "34",
+  "fixture_sha256": {
+    "base": "6cea8e7d2012ba05fb7c46c7ce86cc05eefcd9509c69fe4983571e0aa272671b",
+    "split": "55427556896fa1da51f4484ead7b9b27962a89f6bdd02d11c2d944da41c181a8"
+  },
+  "probe_apk_sha256": "6fe5e766a0d3ddfad0fa8ce837048afc7723bed29d9259022cd4d114f8ea55e7",
+  "cases": {
+    "confirmed_set_metadata": "PASS",
+    "return_cancels": "PASS",
+    "system_back_cancels": "PASS",
+    "reselect_then_read_both_hashes": "PASS"
+  },
+  "unverified": [
+    "physical_devices",
+    "mid_stream_cancel_timing",
+    "remote_upload"
+  ]
+}

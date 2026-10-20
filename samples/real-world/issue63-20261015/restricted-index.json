@@ -1,0 +1,62 @@
+[
+  {
+    "index_id": "issue63-20261015/gkd-v1.12.1",
+    "sample_id": "gkd-v1.12.1",
+    "job_id": "issue63-gkd-v1-12-1-01",
+    "artifacts": {
+      "input_sha256": "edcc03be24bc54d44c04746b46e2e33244120638e2199450b4407195447466a6",
+      "policy_html_sha256": "729eea9813fdc239de4628c1595657b1612d7d2dd2be515b6040a8dabd3d46d2",
+      "policy_text_sha256": "fe52e2a775cee6231a7427c0f28ce5861d63c3eed4f1698d540ca9ac427f43fb",
+      "policy_capture_sha256": "ff6d96b86b00355244656497d5e2fccecaec4807d12e22914c47815ccf3639ed",
+      "stored_job_sha256": "3cbea450255559674fe721a346acc1bad89700c24a45d682236e37fe2fe12177",
+      "report_sha256": "c5a7681b53f9c7a68fef0b6d3ddbd1accdfdf4d08a3b4aa05a623859151ad077",
+      "isolation_receipt_sha256": "3c60721b14ae15b32d84a90dce30ea38df6e2a9d89fa188b4f7bbdd6904fd22d"
+    },
+    "custody": "Task private archive; ACL limited to local user, agent, SYSTEM and Administrators. Request by index ID; no filesystem path or temporary download token is public."
+  },
+  {
+    "index_id": "issue63-20261015/newpipe-v0.29.1",
+    "sample_id": "newpipe-v0.29.1",
+    "job_id": "issue63-newpipe-v0-29-1-01",
+    "artifacts": {
+      "input_sha256": "18447bfb1e06d113edc88df93f471827280de06f6f3d4dc42f56f28b9c1bab79",
+      "policy_html_sha256": "ec70803ad935f52833cb2a57ffacbc5eb6ddf629b09a0c7312b9cdbd285bbeaf",
+      "policy_text_sha256": "096fb3dd20527e9435b9e562fbe47b6e16786474b98c47801b1f8d9d32657c8c",
+      "policy_capture_sha256": "74c2d8c3e521954d7e532f2209ef10844fcaf4b7a4912ca76652c9237b086231",
+      "stored_job_sha256": "4fe484343596f0cd161d4135e22c847614025c5aa96ada098007d8b4cc081833",
+      "report_sha256": "856b315f3223b2f31365c0bb045bae43dc6d78ee03e948c68976d9fa9b683fe7",
+      "isolation_receipt_sha256": "a327832122a00e370f238e1da96db23cefcf769a1cfde86e47539745893fcabc"
+    },
+    "custody": "Task private archive; ACL limited to local user, agent, SYSTEM and Administrators. Request by index ID; no filesystem path or temporary download token is public."
+  },
+  {
+    "index_id": "issue63-20261015/k9mail-24.0",
+    "sample_id": "k9mail-24.0",
+    "job_id": "issue63-k9mail-24-0-01",
+    "artifacts": {
+      "input_sha256": "6b80ec681f0c882ca334f4d533778e6e50e814ee214db798d9e129a369a85af4",
+      "policy_html_sha256": "a26d48b94bd01b64a7bd4e84b0b8815d27e71c97dd3cb0225318bc6c85fa4fe9",
+      "policy_text_sha256": "26820ae2c2c9afc0df178ab2e0d5bfc5e308ccfc93249513c699108d8a343eac",
+      "policy_capture_sha256": "04d3c19e4070606c9d419156f3fe6a5b1a6dd525099fa3769f35656f2ef068ee",
+      "stored_job_sha256": "39ab362754c1236cb7328969b36f64d46babe557d014362b47fdc794d17f1fe3",
+      "report_sha256": "8608fd61c432e5345e8a75aa0572e8856aa1c0efb661044f3b4053a9670ca5f7",
+      "isolation_receipt_sha256": "ca4f6a92ea6a4a1f524e594c6810dc5364fbad0dce6619511a652fd2313de416"
+    },
+    "custody": "Task private archive; ACL limited to local user, agent, SYSTEM and Administrators. Request by index ID; no filesystem path or temporary download token is public."
+  },
+  {
+    "index_id": "issue63-20261015/telegram-current",
+    "sample_id": "telegram-current",
+    "job_id": "issue63-telegram-current-01",
+    "artifacts": {
+      "input_sha256": "b5830c8cc97905526fb81d762a5bf8def7ca56a4dfd96146436231c210c7d6e4",
+      "policy_html_sha256": "392f82ca21f59afba5ef0a6a49291a986b805f8c281c019a424aad98d56802d1",
+      "policy_text_sha256": "0a5e56897b73e1e132430e93da654360a18434f1f28ff81f1545c8b9119e9283",
+      "policy_capture_sha256": "de3bf64fb0ff9536447d357bbfd660b286c71930abc082a59ac48843224839b5",
+      "stored_job_sha256": "c6c6497bc5e21fd71d1159602dd304da8af48c444313bce1b1498b7dc5367a1e",
+      "report_sha256": null,
+      "isolation_receipt_sha256": "f34f9f0712eaa6ce9782e5c369fee2323fed266724c99d96c7b3fba3453e824e"
+    },
+    "custody": "Task private archive; ACL limited to local user, agent, SYSTEM and Administrators. Request by index ID; no filesystem path or temporary download token is public."
+  }
+]

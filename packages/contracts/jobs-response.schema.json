@@ -14,7 +14,8 @@
         "input_mode": {
           "enum": [
             "SYNTHETIC",
-            "APK"
+            "APK",
+            "CONTROLLED_APK"
           ],
           "title": "Input Mode",
           "type": "string"
@@ -109,6 +110,18 @@
           ],
           "default": null,
           "title": "Error"
+        },
+        "retry_of": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retry Of"
         }
       },
       "required": [

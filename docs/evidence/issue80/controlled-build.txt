@@ -1,0 +1,53 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from build.Dockerfile
+#1 transferring dockerfile: 925B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/python:3.12.13-slim@sha256:229a2c5bfa27522db7815ea81f9bed70af17ccb9de9fc7ad142b1877b5830d36
+#2 DONE 1.5s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/4] FROM docker.io/library/python:3.12.13-slim@sha256:229a2c5bfa27522db7815ea81f9bed70af17ccb9de9fc7ad142b1877b5830d36
+#4 resolve docker.io/library/python:3.12.13-slim@sha256:229a2c5bfa27522db7815ea81f9bed70af17ccb9de9fc7ad142b1877b5830d36 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 105B done
+#5 DONE 0.0s
+
+#6 [2/4] COPY jdk.tar.gz build-tools.zip platform.zip /archives/
+#6 CACHED
+
+#7 [3/4] RUN mkdir -p /opt/jdk /opt/sdk && tar -xzf /archives/jdk.tar.gz --strip-components=1 -C /opt/jdk
+#7 CACHED
+
+#8 [4/4] RUN python - <<'PY'
+#8 CACHED
+
+#9 exporting to image
+#9 exporting layers done
+#9 exporting manifest sha256:e171a21c83e9befeb42d4116223dfcff1b23ad63f6074aae083eda04eec5aeb0 done
+#9 exporting config sha256:4d6e6b615681558368ea741eb0bfd8cff672d974036cb22f32f7f9ddb9efc82d done
+#9 exporting attestation manifest sha256:0208928f0f166597871f5fdcd5d290313a64c68083435d83f5d9feb20db441cf 0.0s done
+#9 exporting manifest list sha256:649c4ba6ae1dafef94d5a324e96698deb7fe088822817dfdeba6ba561a39657b 0.0s done
+#9 naming to docker.io/library/privacytrace-controlled-builder:1
+#9 naming to docker.io/library/privacytrace-controlled-builder:1 done
+#9 unpacking to docker.io/library/privacytrace-controlled-builder:1 0.0s done
+#9 DONE 0.1s
+warning: [options] bootstrap class path not set in conjunction with -source 8
+1 warning
+warning: [options] bootstrap class path not set in conjunction with -source 8
+1 warning
+warning: [options] bootstrap class path not set in conjunction with -source 8
+1 warning
+warning: [options] bootstrap class path not set in conjunction with -source 8
+1 warning
+warning: [options] bootstrap class path not set in conjunction with -source 8
+1 warning
+warning: [options] bootstrap class path not set in conjunction with -source 8
+1 warning
+{"status": "BUILT", "builder_image": "sha256:649c4ba6ae1dafef94d5a324e96698deb7fe088822817dfdeba6ba561a39657b", "receipt": "<evidence>/controlled-source-20261019T130938Z/build-receipt.json"}

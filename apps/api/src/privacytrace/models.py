@@ -1,5 +1,6 @@
 """Facts, policy declarations, and contextual hints are separate typed records."""
 
+import re
 from datetime import datetime
 from enum import StrEnum
 from hashlib import sha256
@@ -17,6 +18,7 @@ class PolicySource(StrEnum):
     STORE_POLICY = "STORE_POLICY"
     OFFICIAL_WEB_POLICY = "OFFICIAL_WEB_POLICY"
     SDK_POLICY = "SDK_POLICY"
+    CONTROLLED_POLICY = "CONTROLLED_POLICY"
 
 
 class MatchStatus(StrEnum):
@@ -61,6 +63,7 @@ class Evidence(Model):
     start_offset: int | None = Field(default=None, ge=0, strict=True)
     end_offset: int | None = Field(default=None, ge=1, strict=True)
     api_call: ApiCall | None = None
+    package_split: str | None = Field(default=None, max_length=255)
 
     @model_validator(mode="after")
     def validate_kind_status(self):
@@ -86,6 +89,12 @@ class Evidence(Model):
             raise ValueError("API evidence requires structured api_call, not a kind label")
         if self.kind != "POLICY_DOCUMENT" and self.artifact_sha256 is not None:
             raise ValueError("Only document evidence references an artifact hash")
+        if is_policy and self.package_split is not None:
+            raise ValueError("Policy evidence must not reference a package split")
+        if self.package_split is not None:
+            if not re.fullmatch(r"^[a-zA-Z0-9_.-]+$", self.package_split):
+                msg = f"Evidence package_split '{self.package_split}' contains invalid characters"
+                raise ValueError(msg)
         return self
 
 
@@ -192,7 +201,7 @@ class DeliveryMode(StrEnum):
 class AnalysisJob(Model):
     id: str
     sample_id: str
-    input_mode: Literal["SYNTHETIC", "APK"]
+    input_mode: Literal["SYNTHETIC", "APK", "CONTROLLED_APK"]
     source_origin: SourceOrigin
     state: Literal[
         "QUEUED",
@@ -212,6 +221,13 @@ class AnalysisJob(Model):
     region: str | None = Field(default=None, min_length=1)
     product_scope: str | None = Field(default=None, min_length=1)
     error: str | None = None
+    retry_of: str | None = None
+
+    @model_validator(mode="after")
+    def validate_controlled_origin(self):
+        if self.input_mode == "CONTROLLED_APK" and self.source_origin != SourceOrigin.CONTROLLED:
+            raise ValueError("Controlled APK jobs require controlled provenance")
+        return self
 
 
 class EvaluationInput(Model):
@@ -257,6 +273,11 @@ class EvaluationInput(Model):
                         "API descriptor, context or ruleset does not match a trusted rule"
                     )
         for doc in self.policy_documents:
+            if (
+                doc.source_type == PolicySource.CONTROLLED_POLICY
+                and self.job.input_mode != "CONTROLLED_APK"
+            ):
+                raise ValueError("Controlled policy facts require a controlled APK job")
             snapshot = evidence.get(doc.evidence_id)
             if not snapshot or snapshot.kind != "POLICY_DOCUMENT" or snapshot.document_id != doc.id:
                 raise ValueError("A document requires its own snapshot evidence")

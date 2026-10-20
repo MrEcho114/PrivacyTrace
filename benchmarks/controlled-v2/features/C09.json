@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "scenario_id": "C09",
+  "package_name": "org.privacytrace.controlled.c09",
+  "policy_file": "C09.txt",
+  "policy_sha256": "445c6b2d4281830ab9c6908ee7dd377c49d130fe6f233e03d7b82e9946f214c0",
+  "scope_known": true,
+  "policy_complete": true,
+  "candidates": [
+    {
+      "excerpt": "第三方地图服务访问精确位置。",
+      "data_type": "PRECISE_LOCATION",
+      "polarity": "AFFIRMATIVE",
+      "subject": "THIRD_PARTY",
+      "action": "ACCESS"
+    }
+  ]
+}

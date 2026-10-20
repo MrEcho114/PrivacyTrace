@@ -167,6 +167,7 @@ def verify(adb_path: str, serial: str, screenshots: Path | None = None) -> dict:
                         DEVICE_XML,
                     ],
                     capture_output=True,
+                    check=False,
                     timeout=30,
                 )
                 if dump.returncode == 0:

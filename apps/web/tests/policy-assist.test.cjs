@@ -276,3 +276,21 @@ test('source-less audit does not consume another slot or modify existing candida
   assert.equal(h.state.draft.value.sources.length, 1)
   assert.equal(h.state.draft.value.external_imports.length, 1)
 })
+
+test('retrying source fetch clears the stale extraction-failure marker on success', async () => {
+  let current, attempts = 0
+  const h = harness({
+    async createDraft() { return current },
+    async uploadApk() { current = { ...current, uploaded: true }; return current },
+    async fetchSource() { return current },
+    async extractSource() { attempts++; if (attempts === 1) throw new Error('第一次提取失败'); return current },
+  })
+  current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual' }] }
+  h.state.file.value = { name: 'fixture.apk' }; await h.state.prepare()
+  assert.deepEqual([...h.state.failedSourceIds.value], ['seed'])
+  await h.state.retrySource('seed')
+  assert.equal(attempts, 2)
+  assert.deepEqual([...h.state.failedSourceIds.value], [])
+  assert.equal(h.state.error.value, '')
+  assert.equal(h.state.draft.value.sources[0].text, '正文')
+})

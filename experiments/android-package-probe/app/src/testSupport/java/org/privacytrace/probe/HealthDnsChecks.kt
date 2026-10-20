@@ -55,15 +55,27 @@ internal object HealthDnsChecks {
             if (case == HealthDnsCase.CANCEL_IN_FLIGHT) resolver.cancel()
             check(outcome.get(2, TimeUnit.SECONDS))
             val unexpectedLookup = AtomicBoolean(false)
-            try {
-                HealthDns(dns { unexpectedLookup.set(true); emptyList() }).lookup("other.test")
-                error("Expected occupied DNS slot refusal")
-            } catch (_: IOException) { check(!unexpectedLookup.get()) }
+            // Keep the OS-like task blocked across several caller deadlines. A burst
+            // must neither enqueue work nor create replacement resolver threads.
+            repeat(if (case == HealthDnsCase.TIMEOUT_AND_SATURATION) 5 else 1) {
+                repeat(16) {
+                    try {
+                        HealthDns(dns { unexpectedLookup.set(true); emptyList() }, 50).lookup("other.test")
+                        error("Expected occupied DNS slot refusal")
+                    } catch (_: InterruptedIOException) {
+                        error("Occupied DNS slot must refuse without waiting")
+                    } catch (_: IOException) { check(!unexpectedLookup.get()) }
+                }
+                check(!exited.await(100, TimeUnit.MILLISECONDS))
+            }
         } finally {
             release.countDown()
             resolver.cancel()
             caller.shutdownNow()
             check(exited.await(2, TimeUnit.SECONDS))
         }
+        // Releasing the underlying lookup must restore the shared worker slot.
+        // This checks a new resolver, not reuse of a permanently cancelled caller.
+        check(ready().single().isLoopbackAddress)
     }
 }

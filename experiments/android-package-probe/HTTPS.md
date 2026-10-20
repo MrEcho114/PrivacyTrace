@@ -45,6 +45,10 @@ cleartext 与备份继续关闭；网页 CSP 仍只允许本地 IPC，无外部�
 4 项 DNS 等待/取消/饱和回归和 20 项严格 JSON 语法回归。Android instrumentation 另外在普通 UID 下
 执行 TLS15、DNS4、JSON20；测试成功只说明临时私有 CA 接缝及系统信任的拒绝行为，不表示系统已信任该 CA。
 
+DNS 的 `TIMEOUT_AND_SATURATION` 回归将忽略中断的底层查询保留到调用方超时之后，
+跨五个 100 ms 等待窗口拒绝 80 次新查询；释放底层查询后，再验证新调用恢复。
+这是受控 JVM/设备共用用例，不代表任意系统 DNS 都会自行恢复，也不是长时间实机网络耐久验收。
+
 构建原生/测试/Tauri APK 后，在仓库根运行（cryptography 使用 API 工作区既有依赖）：
 
 ```powershell

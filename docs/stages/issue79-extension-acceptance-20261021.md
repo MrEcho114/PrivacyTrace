@@ -30,9 +30,14 @@
 | Web 类型检查与生产构建 | 54 modules，通过 |
 | `npm run acceptance:mobile` | PASS；1 次 start、0 浏览器 API 请求、0 page errors；390/1440 与大字号截图 |
 | 完整 `scripts/check.sh`（`PRIVACYTRACE_DOCKER_TESTS=1`，2026-10-21 本机） | API 1531 passed / 183 skipped；e2e 65 passed；Ruff、契约零差异、类型与生产构建通过；输出 `PrivacyTrace checks passed.` |
+| 远端 CI（Check workflow，Linux） | API 1535 passed / 179 skipped；e2e 65 passed；Web 111 passed；输出 `PrivacyTrace checks passed.` |
 | 镜像负向对照 | 改动生成镜像原文后入口测试失败；还原后通过 |
 
-跳过项按条件保留，未记为执行。
+跳过项按条件保留，未记为执行。本机与 Linux 的计数差异来自 Docker／平台条件，不把跳过项记为通过。
+
+## 交付与远端 CI
+
+PR [#122](https://github.com/MrEcho114/PrivacyTrace/pull/122)，base `main`。远端 Check、Browser Acceptance、Spec30 Integration 与 Deployment Baseline 以 PR head 绑定的运行结果为准；本机检查与远端 CI 分列，不用旧 head 的结果替代。
 
 ## 证据分层与未验项
 

@@ -33,6 +33,11 @@ class RevisionInput(Model):
     revision: int = Field(ge=1, strict=True)
 
 
+class ExtractionInput(RevisionInput):
+    # Optional for older clients; a correlation ID is not an authentication token.
+    attempt_id: str | None = Field(default=None, pattern=r"^[0-9a-f]{32}$")
+
+
 def web_error(exc):
     if isinstance(exc, KeyError):
         return HTTPException(404, detail="DRAFT_NOT_FOUND")
@@ -166,9 +171,11 @@ def install_web_api(app, local_write):
         return web_operation(lambda: service.fetch_source(draft_id, source_id, payload.revision))
 
     @app.post("/api/v1/web/drafts/{draft_id}/sources/{source_id}/extract")
-    def extract(draft_id: str, source_id: str, payload: RevisionInput, request: Request):
+    def extract(draft_id: str, source_id: str, payload: ExtractionInput, request: Request):
         draft_access(request, draft_id)
-        return web_operation(lambda: service.extract(draft_id, source_id, payload.revision))
+        return web_operation(
+            lambda: service.extract(draft_id, source_id, payload.revision, payload.attempt_id)
+        )
 
     @app.post("/api/v1/web/drafts/{draft_id}/candidates")
     def save(draft_id: str, payload: CandidateInput, request: Request):

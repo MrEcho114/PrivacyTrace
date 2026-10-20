@@ -47,7 +47,8 @@ export const createDraft = (input: DraftInput, signal: AbortSignal) => liveReque
 export const readDraft = (id: string, signal: AbortSignal) => liveRequest<LiveDraft>(`drafts/${id}`, signal)
 export const uploadApk = (id: string, file: File, signal: AbortSignal) => liveRequest<LiveDraft>(`drafts/${id}/apk`, signal, file)
 export const fetchSource = (id: string, source: string, revision: number, signal: AbortSignal) => liveRequest<LiveDraft>(`drafts/${id}/sources/${source}/fetch`, signal, { revision })
-export const extractSource = (id: string, source: string, revision: number, signal: AbortSignal) => liveRequest<LiveDraft>(`drafts/${id}/sources/${source}/extract`, signal, { revision })
+export const extractSource = (id: string, source: string, revision: number, signal: AbortSignal, attemptId?: string) =>
+  liveRequest<LiveDraft>(`drafts/${id}/sources/${source}/extract`, signal, { revision, ...(attemptId ? { attempt_id: attemptId } : {}) })
 export const saveCandidates = (id: string, input: CandidateInput, signal: AbortSignal) => liveRequest<LiveDraft>(`drafts/${id}/candidates`, signal, input)
 export const startScan = (id: string, input: StartInput, signal: AbortSignal) => liveRequest<AnalysisJob>(`drafts/${id}/start`, signal, input)
 export const importExternal = (id: string, input: ExternalInput, signal: AbortSignal) => liveRequest<LiveDraft>(`drafts/${id}/import-external`, signal, input)

@@ -3,6 +3,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const vm = require('node:vm')
 const { test } = require('node:test')
+const { randomUUID } = require('node:crypto')
 const { parse, compileScript } = require('@vue/compiler-sfc')
 const ts = require('typescript')
 const vue = require('vue')
@@ -52,7 +53,7 @@ function harness(api = {}, storage = '') {
   const workflow = { step: 'import', maxStep: 0, sources: [{ id: 'seed', title: '占位来源', type: 'OFFICIAL_WEB_POLICY', url: '', text: '', version: 'UNKNOWN', region: '', product: '', complete: false }], candidates: [], sourceId: 'seed' }
   const stored = () => ({ id: 'draft1', revision: 1, name: '受控材料', uploaded: false, jobs: [], sources: [{ id: 'seed', title: '占位来源', source_type: 'OFFICIAL_WEB_POLICY', url: '', text: '', version: 'UNKNOWN', region: '', product: '', package_name: '', version_code: null }], candidates: [] })
   // API mocks and component code share the browser's Error constructor.
-  const context = { exports: {}, Error, AbortController, setTimeout, clearTimeout, localStorage: { setItem() {}, getItem() { return storage } },
+  const context = { exports: {}, Error, AbortController, setTimeout, clearTimeout, crypto: { randomUUID }, localStorage: { setItem() {}, getItem() { return storage } },
     require(name) {
       if (name === 'vue') return { ...vue, onMounted(fn) { mounted.push(fn) }, onBeforeUnmount(fn) { callbacks.push(fn) }, nextTick() {} }
       if (name === './liveApi') return { async createDraft() { return stored() }, ...api }

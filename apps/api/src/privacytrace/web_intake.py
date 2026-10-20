@@ -837,11 +837,15 @@ class WebIntake:
             current["revision"] += 1
             return self._save(current)
 
-    def extract(self, draft_id, source_id, revision):
+    def extract(self, draft_id, source_id, revision, attempt_id=None):
         with self._draft_activity(draft_id):
-            return self._extract(draft_id, source_id, revision)
+            return self._extract(draft_id, source_id, revision, attempt_id)
 
-    def _extract(self, draft_id, source_id, revision):
+    def _extract(self, draft_id, source_id, revision, attempt_id=None):
+        if attempt_id is not None and (
+            not isinstance(attempt_id, str) or not re.fullmatch(r"[0-9a-f]{32}", attempt_id)
+        ):
+            raise ValueError("Invalid extraction attempt identifier")
         draft = self.get(draft_id)
         if draft["revision"] != revision or draft["jobs"]:
             raise ValueError("Input version changed or already started")
@@ -883,6 +887,10 @@ class WebIntake:
         result = PolicyLLMExtractor(extractor_config).extract_from_spans(text, spans)
         execution = build_llm_execution(result, extractor_config, text.encode(), [])
         audit = {k: v for k, v in execution.items() if type(v) in (str, int, bool)}
+        # Correlation is committed atomically with the source audit and candidates.
+        # A transport failure before commit never publishes a new attempt ID.
+        if attempt_id is not None:
+            audit["attempt_id"] = attempt_id
         with self.data_store._transaction():
             current = self._get(draft_id)
             if current["revision"] != revision or current["jobs"]:

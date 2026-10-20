@@ -31,6 +31,20 @@ const signal = controller.signal
 let activeRequest: AbortController | null = null
 let needsPreparation = true
 const preparedSources = new Set<string>()
+// Aborted responses can still correspond to committed server results.
+const pendingExtractionAttempts = new Map<string, { draftId: string; revision: number; attemptId: string }>()
+function startExtractionAttempt(value: LiveDraft, id: string): string {
+  const attemptId = crypto.randomUUID().replaceAll('-', '')
+  pendingExtractionAttempts.set(id, { draftId: value.id, revision: value.revision, attemptId })
+  return attemptId
+}
+function finishExtractionAttempt(value: LiveDraft, id: string, attemptId: string) {
+  const audit = value.sources.find(source => source.id === id)?.model_audit
+  if (audit?.attempt_id && audit.attempt_id !== attemptId) {
+    throw new Error('服务返回的候选提取审计与本次请求不匹配。请重新读取材料。')
+  }
+  pendingExtractionAttempts.delete(id)
+}
 const failedSourceIds = ref<string[]>([])
 function markExtraction(id: string, failed: boolean) {
   failedSourceIds.value = failed ? [...new Set([...failedSourceIds.value, id])] : failedSourceIds.value.filter(item => item !== id)
@@ -98,6 +112,7 @@ async function ensureDraft(requestSignal: AbortSignal): Promise<LiveDraft> {
   generation++; clearTimeout(timer); job.value = null; submissionId = ''; pendingRevision = null
   needsPreparation = true
   preparedSources.clear()
+  pendingExtractionAttempts.clear()
   failedSourceIds.value = []
   apply(value)
   return value
@@ -122,14 +137,20 @@ async function refreshMaterials() {
     for (const source of value.sources) {
       const audit = source.model_audit
       const previous = draft.value.sources.find(item => item.id === source.id)?.model_audit
-      if (audit?.status === 'FAILED') markExtraction(source.id, true)
-      // A newer draft revision plus a changed completion status confirms a new
-      // extraction on the existing WebIntake contract. Duration/token metadata
-      // can change without identifying a new attempt; do not clear local failures
-      // when an older SUCCESS/PARTIAL remains the same status.
-      else if ((audit?.status === 'SUCCESS' || audit?.status === 'PARTIAL') &&
-        value.revision > draft.value.revision && previous?.status !== audit.status) {
+      const pending = pendingExtractionAttempts.get(source.id)
+      const matchedAttempt = !!pending && pending.draftId === value.id &&
+        value.revision > pending.revision && audit?.attempt_id === pending.attemptId
+      // Preserve legacy untagged status transitions, but never trust a different
+      // tagged attempt or arbitrary duration/token metadata to clear a failure.
+      const statusTransition = value.revision > draft.value.revision && previous?.status !== audit?.status
+      const compatibleTransition = statusTransition && (!pending || !audit?.attempt_id)
+      if (audit?.status === 'FAILED') {
+        markExtraction(source.id, true)
+        if (matchedAttempt) pendingExtractionAttempts.delete(source.id)
+      } else if ((audit?.status === 'SUCCESS' || audit?.status === 'PARTIAL') &&
+        (matchedAttempt || compatibleTransition)) {
         markExtraction(source.id, false)
+        if (matchedAttempt) pendingExtractionAttempts.delete(source.id)
       }
     }
     needsPreparation = failedSourceIds.value.length > 0 || value.sources.some(source => !preparedSources.has(source.id))
@@ -169,8 +190,9 @@ async function prepare() {
         markExtraction(source.id, false); continue
       }
       try {
-        value = await extractSource(value.id, source.id, value.revision, requestSignal)
-        assertActive(requestSignal); apply(value)
+        const attemptId = startExtractionAttempt(value, source.id)
+        value = await extractSource(value.id, source.id, value.revision, requestSignal, attemptId)
+        assertActive(requestSignal); finishExtractionAttempt(value, source.id, attemptId); apply(value)
         if (extractionFailed(value, source.id)) {
           failedExtraction = true; markExtraction(source.id, true)
           notice.value = `${source.title || source.id}：候选提取未完成。可在候选页面重新提取或手动补充。`
@@ -242,11 +264,13 @@ async function retrySource(id: string) {
     if (!draft.value) return
     const fetched = await fetchSource(draft.value.id, id, draft.value.revision, requestSignal)
     assertActive(requestSignal); apply(fetched)
+    pendingExtractionAttempts.delete(id) // Fetch replaced the prior source audit.
     const source = draft.value.sources.find(s => s.id === id)
     if (!source || source.status === 'failed' || source.error_code) return
     try {
-      const value = await extractSource(draft.value.id, id, draft.value.revision, requestSignal)
-      assertActive(requestSignal); apply(value)
+      const attemptId = startExtractionAttempt(draft.value, id)
+      const value = await extractSource(draft.value.id, id, draft.value.revision, requestSignal, attemptId)
+      assertActive(requestSignal); finishExtractionAttempt(value, id, attemptId); apply(value)
       const failed = extractionFailed(value, id)
       markExtraction(id, failed)
       needsPreparation = failedSourceIds.value.length > 0
@@ -261,8 +285,9 @@ async function retryModel(id: string) {
   await perform(async requestSignal => {
     if (!draft.value) return
     try {
-      const value = await extractSource(draft.value.id, id, draft.value.revision, requestSignal)
-      assertActive(requestSignal); apply(value)
+      const attemptId = startExtractionAttempt(draft.value, id)
+      const value = await extractSource(draft.value.id, id, draft.value.revision, requestSignal, attemptId)
+      assertActive(requestSignal); finishExtractionAttempt(value, id, attemptId); apply(value)
       const failed = extractionFailed(value, id)
       markExtraction(id, failed)
       needsPreparation = failedSourceIds.value.length > 0
@@ -273,7 +298,7 @@ async function retryModel(id: string) {
     }
   })
 }
-function newInput() { const external = !!draft.value?.external_imports?.length; generation++; clearTimeout(timer); preparedSources.clear(); failedSourceIds.value = []; needsPreparation = true; draft.value = null; job.value = null; file.value = null; submissionId = ''; pendingRevision = null; try { localStorage.removeItem(storageKey) } catch { /* Memory state still resets. */ }; props.state.sources = sourceInput().map(s => ({ id: s.id, title: s.title, url: s.url ?? '', text: s.text ?? '', type: s.source_type ?? 'OFFICIAL_WEB_POLICY', status: 'manual', version: s.version ?? '', region: s.region ?? '', product: s.product ?? '', packageName: s.package_name ?? '', versionCode: s.version_code ?? undefined, complete: false })); props.state.candidates = []; error.value = ''; notice.value = external ? '已转为新的手动输入版本。原始外部来源、候选与收集审计仍保存在旧材料版本。请重新选择 APK。' : ''; go('import') }
+function newInput() { const external = !!draft.value?.external_imports?.length; generation++; clearTimeout(timer); preparedSources.clear(); pendingExtractionAttempts.clear(); failedSourceIds.value = []; needsPreparation = true; draft.value = null; job.value = null; file.value = null; submissionId = ''; pendingRevision = null; try { localStorage.removeItem(storageKey) } catch { /* Memory state still resets. */ }; props.state.sources = sourceInput().map(s => ({ id: s.id, title: s.title, url: s.url ?? '', text: s.text ?? '', type: s.source_type ?? 'OFFICIAL_WEB_POLICY', status: 'manual', version: s.version ?? '', region: s.region ?? '', product: s.product ?? '', packageName: s.package_name ?? '', versionCode: s.version_code ?? undefined, complete: false })); props.state.candidates = []; error.value = ''; notice.value = external ? '已转为新的手动输入版本。原始外部来源、候选与收集审计仍保存在旧材料版本。请重新选择 APK。' : ''; go('import') }
 onMounted(async () => {
   try { labels.value = Object.fromEntries((await loadTaxonomy(signal)).data_types.map(t => [t.id, t.label])) } catch { /* Editor can still show IDs while service is unavailable. */ }
   let id = ''

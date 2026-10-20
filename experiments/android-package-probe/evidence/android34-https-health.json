@@ -1,0 +1,33 @@
+{
+  "schema": "privacytrace-https-health-device-v1",
+  "source_commit": "6ad6eeb7d651cd7111efc7b2eac82424fdebe407",
+  "source_dirty": false,
+  "emulator": true,
+  "android_api": "34",
+  "artifacts_sha256": {
+    "bridge": "4dc4293879367d3472906bc5fe2158196f8314b25b86f3631228e6ebd94749cb",
+    "probe": "7134f27bdfa19c934dc686672e5b4ffd40131540e7a17c50d851c0b34fedfca7",
+    "test": "212d685e5aaa72de3ba0fb2bdf471a06f7c9e905728a3655e4b623bc5c3c424d"
+  },
+  "cases": {
+    "native_tls_15_real_socket_cases_test_only_ca": "PASS",
+    "native_dns_4_bounded_wait_cancel_saturation_cases": "PASS",
+    "android_strict_json_20_cases": "PASS",
+    "bridge_native_input_cancel": "PASS",
+    "bridge_http_origin_refused_before_connection": "PASS",
+    "bridge_system_trust_rejects_private_certificate_before_http": "PASS",
+    "bridge_inflight_cancel_no_http_or_retry": "PASS",
+    "bridge_background_cancel_no_http_or_retry": "PASS",
+    "bridge_late_callback_does_not_replace_new_error": "PASS",
+    "recreation_discards_origin_and_large_font_cancel_visible": "PASS"
+  },
+  "unverified": [
+    "physical_devices",
+    "public_system_trust_success",
+    "production_service",
+    "capability_negotiation",
+    "instance_credentials",
+    "analysis_upload",
+    "real_model_requests"
+  ]
+}

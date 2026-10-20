@@ -60,3 +60,5 @@ uv run --project apps/api python experiments/android-package-probe/verify-https.
 
 公网受系统信任证书的正向桥接、真实分析服务、能力协商、实例凭据、上传、真实模型和真机仍未验收。
 本轮不能关闭 #71，也不改变 #80/#81/#72/#73 的共享归属和生产门禁。
+
+实际干净源码收据、三个安装包哈希、回归与非秘密截图见 [本轮证据](evidence/README.md#2026-10-20只读原生-https-health)。

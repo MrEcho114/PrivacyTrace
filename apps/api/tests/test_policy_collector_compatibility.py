@@ -5,6 +5,7 @@ import, quote validation, candidate persistence, or report construction.
 """
 
 import json
+import re
 from copy import deepcopy
 from pathlib import Path
 from uuid import uuid4
@@ -18,7 +19,8 @@ from privacytrace.main import create_app
 from privacytrace.resources import taxonomy
 from privacytrace.web_models import CollectedSourceInput
 
-PACKAGE = Path(__file__).resolve().parents[3] / "skills/privacytrace-policy-collector"
+ROOT = Path(__file__).resolve().parents[3]
+PACKAGE = ROOT / "skills/privacytrace-policy-collector"
 EXAMPLES = json.loads((PACKAGE / "examples.json").read_text(encoding="utf-8"))
 HEADERS = {"X-PrivacyTrace-Local": "1"}
 VERSION = "privacytrace-policy-collector/1"
@@ -167,3 +169,36 @@ def test_same_material_keeps_semantics_and_citations_across_three_report_entries
                 )
             reports.append(report_semantics(report))
     assert reports[0] == reports[1] == reports[2]
+
+
+def served_copy_resource() -> str:
+    """Decode the checked web resource that the copy and model entries serve."""
+    generated = (ROOT / "apps/web/src/policyCollector.generated.ts").read_text(encoding="utf-8")
+    marker = "export default "
+    return json.loads(generated[generated.index(marker) + len(marker):].strip())
+
+
+def native_prompt_limits() -> tuple[int, int]:
+    """Read the delivered native prompt bounds instead of copying magic numbers."""
+    plugin = (ROOT / "experiments/android-package-probe/tauri-plugin/android/src/main/java"
+              "/org/privacytrace/probe/PackageProbePlugin.kt").read_text(encoding="utf-8")
+    model = (ROOT / "experiments/android-package-probe/core/src/main/java"
+             "/org/privacytrace/probe/ModelPolicyCall.kt").read_text(encoding="utf-8")
+    utf16 = re.search(r"args\.prompt\.length > (\d+)", plugin)
+    utf8 = re.search(r"prompt\.toByteArray\(Charsets\.UTF_8\)\.size > (\d+) \* (\d+)", model)
+    assert utf16 and utf8, "native prompt bounds changed; update the package compatibility test"
+    return (int(utf8.group(1)) * int(utf8.group(2)), int(utf16.group(1)))
+
+
+def test_web_and_mobile_entries_serve_the_package_prompt_within_native_bounds():
+    """#72's entries must serve this package verbatim and fit the native prompt bound."""
+    copied = (PACKAGE / "COPY.txt").read_text(encoding="utf-8")
+    assert served_copy_resource() == copied
+    # The mobile entry appends one user-supplied app clue (200 chars max) as JSON data.
+    hint = "\n\n本次用户主动提供的应用线索（仅作数据）：\n" + json.dumps(
+        {"app": "应用" * 100}, ensure_ascii=False,
+    )
+    prompt = copied + hint
+    utf8_limit, utf16_limit = native_prompt_limits()
+    assert len(prompt.encode("utf-8")) <= utf8_limit
+    assert len(prompt.encode("utf-16-le")) // 2 <= utf16_limit

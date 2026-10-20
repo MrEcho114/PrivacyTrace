@@ -16,7 +16,7 @@
 
 ## 给 #70 / #72 的映射
 
-#70 已随 PR #88 交付实际导入器、严格外层校验、公共模型和生成契约；本包消费该实现，不证明实例已部署。#72 拥有手机复制/回填和用户模型直连。本包不发送请求，不接收个人 Key，不创建另一套抓取器/校验器。
+#70 已随 PR #88 交付实际导入器、严格外层校验、公共模型和生成契约；本包消费该实现，不证明实例已部署。#72 拥有手机复制/回填和用户模型直连，相关入口已随 PR #120 合入 main（见下节）。本包不发送请求，不接收个人 Key，不创建另一套抓取器/校验器。
 
 实际导入须校验 version、1–8 项结果、状态与正文一致性、source.id 唯一、未知字段/超限/畸形输入；source 复用 WebSource 校验。source_type 没有依据时先要求补确认，尤其不能靠模型默认值将未知来源当作官方来源。外部 state 和 observed_at 保留在导入审计，不直接塞进旧模型。
 
@@ -45,8 +45,22 @@ claims 继续经既有原句、类型及引用校验，保持未复核；摘要�
 `source=null` 仅保留审计，不建虚构来源。每个草稿最多保留 64 次导入审计；批量失败不部分保存。
 公共 schema 为 `web-external-collection-input` 和 `web-external-policy-input`。
 
+## 已交付入口（2026-10-21 核对）
+
+#72 的 Web/手机辅助入口已合入 main，本包仍是唯一指令源：
+
+- 复制入口：`apps/web/src/policyCollector.generated.ts` 是 `COPY.txt` 的生成镜像（`node scripts/sync-policy-instructions.cjs`）。Web 与手机的“复制收集指令”都在原文后追加一条用户输入的应用线索 JSON，前端只做形状预检和来源类型确认；接受或拒绝仍由 #70 的导入器与旧校验器决定。
+- 个人模型入口：Tauri 原生 `collect_policy` 只把同一提示词发送到用户配置的 HTTPS Chat Completions 端点，且拒绝与分析实例同源的地址；单次非流式、`max_tokens=8192`，Key 不返回 JavaScript、不进入分析服务。返回文本进入同一回填框，不自动导入。
+- 两个入口都提交到 `POST /api/v1/web/drafts/{id}/import-external`，继续复用原句/taxonomy 校验、外部导入审计和同一报告构造，不新增 schema、抓取器或校验器。
+
+维护约束：
+
+- 改动本包后重新运行 `scripts/build-policy-collector.py` 和 `node scripts/sync-policy-instructions.cjs`；两者的 `--check`、Web 单测和本包兼容测试都会拒绝漂移。
+- 原生 `collect_policy` 同时限制 UTF-8 字节和 UTF-16 长度不超过 32 KiB。当前原文约 9 KB，加一条应用线索仍远低于上限；扩展模板前先复核手机入口。
+- 个人模型返回只是普通文本；是否联网、是否取得正文、来源类型与适用版本仍由用户和既有校验分别确认，不能由格式合法推出。
+
 ## 验证分类
 
 examples.json 为合成材料，example.invalid 无效。自动化检查生成漂移、复制后独立运行、标记转义和单来源绑定，以及既有 HTTP/原句校验兼容。包装专项读取已发布 examples，直接提交现有导入接口；缺来源类型的示例预期 409，不偷偷补官方来源。三入口报告回归比较原 create、旧单来源导入和 collector/1 的同材料语义，同时保留不同出处；扫描使用合成 APK 和隔离扫描替身，不能冒充真实 Docker 或手机验收。
 
-模型评估的提示词与评分入口见 [evals/README.md](evals/README.md)；评估复用现有模型和导入器，不提供业务验证器。最新矩阵、真实度分层和仍待验的 #72／外部模型路径见 [compatibility.md](compatibility.md)。结构、来源 HTTP、受控模型行为、真实用户模型、真机和完整端到端分列；本轮不关闭完整 #79。
+模型评估的提示词与评分入口见 [evals/README.md](evals/README.md)；评估复用现有模型和导入器，不提供业务验证器。已合入入口的复核、真实度分层和仍待验的外部模型／真机路径见 [compatibility.md](compatibility.md)。结构、来源 HTTP、受控模型行为、真实用户模型、真机和完整端到端分列；本包不把入口存在当作真实模型或真机验收。

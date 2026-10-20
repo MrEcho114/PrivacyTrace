@@ -1,6 +1,6 @@
 # PT-SRV-102 部署交付基线
 
-本目录对应 [Issue #81](https://github.com/MrEcho114/PrivacyTrace/issues/81)。当前可交付固定依赖的 API/静态前端镜像、受限配置和 Linux HTTP/本地 CA HTTPS 合成 smoke。**生产启动仍被代码明确拒绝；不得作为公网服务使用。** #80 的持久调度、专用 Runner、故障恢复尚未交接，不能通过挂 Docker socket 或启用 JSON 绕过。
+本目录对应 [Issue #81](https://github.com/MrEcho114/PrivacyTrace/issues/81)。当前已封装运行时组件和单次数据库迁移候选，但尚未完成 #81 六项真实部署验收。**生产 preflight 仍拒绝启动授权；不得直接用于公网发布。** #80 的运行时代码已合入 main，当前剩余是独立 Runner/网关实际装配、凭据与跨机联网、恢复和容量的最终部署验收。
 
 入口：[`deploy/Dockerfile`](../../deploy/Dockerfile)、[生产清单](../../deploy/compose.yaml)、[独立 smoke](../../deploy/compose.smoke.yaml)、[运行时交接契约](../../deploy/runtime-contract.json)、[恢复手册](operations.md)、[证据与兼容矩阵](validation.md)。没有修改应用业务、既有 worker 镜像、依赖锁、根 `.dockerignore` 或权威检查入口。
 
@@ -20,7 +20,7 @@ bash scripts/check.sh
 
 专项使用固定名 `privacytrace-smoke` 和 `privacytrace-deployment-infra-test` 临时 Compose 项目，最后删除对应容器/网络/卷。不要让其他服务复用这些名字；不要同时跑两份专项。只在 `127.0.0.1:18081` 暴露 HTTP，`Host: privacytrace.test`；随后叠加 `compose.tls-smoke.yaml`，在 loopback 18443 验证本地 CA HTTPS、证书信任、主机名与 SNI/Host 不一致拒绝。只复制 CA 公共证书给测试客户端，并实际 inspect 私钥存储为容器 tmpfs；不修改系统 trust store。另启动不发布端口的空 PostgreSQL 测试库及 Redis，检查文件秘密认证、非 root/只读根、数据卷/AOF 重建。密码为本次随机合成值，父目录私有；不使用生产材料或应用 schema。它们不是 #80 持久调度、备份恢复或 HTTPS→APK→报告验收。
 
-API runtime 只安装锁定的运行依赖，不安装 Androguard/pytest/Ruff/uv，不运行 APK。通过 `PYTHONPATH=/app/apps/api/src` 保留当前 `resources.ROOT` 预期目录；镜像带 active taxonomy、SDK signatures、明确的合成 demo JSON。前端由锁定 Node/npm 构建，Caddy 仅保存 dist、两份字体及许可证。依赖下载只发生于构建阶段。
+API 运行镜像现在包含锁定的 worker 和 runtime 依赖（含 Androguard 和 Celery），不包含开发测试工具/构建 uv；是否执行受控 APK 分析取决于专用隔离执行角色，API 不得挂载 Docker socket。通过 `PYTHONPATH=/app/apps/api/src` 保留当前 `resources.ROOT` 预期目录；镜像带 active taxonomy、SDK signatures、明确的合成 demo JSON。前端由锁定 Node/npm 构建，Caddy 仅保存 dist、两份字体及许可证。依赖下载只发生于构建阶段。
 
 Dockerfile 专用 `Dockerfile.dockerignore` 的优先级见 [Docker 官方说明](https://docs.docker.com/build/concepts/context/)。白名单不改变已有扫描 worker 的根构建上下文。实际 BuildKit context 在构建中再由 `audit_context.py` 检查；CI 在 data/private/.env 放无敏感值的 canary，确保它们不会进入 context。API 最终层没有构建工具或项目缓存，也不复制整个仓库。API 依赖用 [uv 的 locked sync](https://docs.astral.sh/uv/guides/integration/docker/)。
 
@@ -33,7 +33,7 @@ python deploy/preflight.py --env-file /etc/privacytrace/deployment.env --config-
 python deploy/preflight.py --env-file /etc/privacytrace/deployment.env
 ```
 
-第一个命令仅验证渲染清单，不打印环境或秘密；第二个命令无条件拒绝生产启动，直到 #80 集成提交替换该门禁。`docker compose config --quiet` 可单独检查语法；不把完整渲染结果写入公开日志。不要直接执行生产 `compose up`：即使绕过 preflight，API launcher 仍拒绝启动，健康依赖无法放行代理。
+第一个命令仅验证渲染清单，不打印环境或秘密；第二个命令继续明确拒绝无授权的生产启动；通过 --config-only 不代表真实部署已通过，不能绕过生产发布授权。`docker compose config --quiet` 可单独检查语法；不把完整渲染结果写入公开日志。不要绕过 preflight 直接执行生产 `compose up`：启动模式已具备 PostgreSQL 入口，但缺失隔离部署验收和显式上线授权时不允许暴露公网。
 
 生产设计：Caddy 唯一公开 80/443，容器内使用无特权端口 8080/8443；管理端点关闭。API 不发布端口，PostgreSQL/Redis 只在内部网络；Caddy 不加入数据库网络。API 也没有默认出站通路，后续政策抓取必须通过经 #80 交接的目的地白名单代理，不得开放任意 egress。Compose 不负责跨主机调度。
 
@@ -41,14 +41,47 @@ python deploy/preflight.py --env-file /etc/privacytrace/deployment.env
 
 代理只信任配置中的单一 Host，API smoke 强制 remote 模式、完整 Origin（scheme/host/port）相等，并拒绝所有写请求与非白名单资源。代理删除客户端 forwarding 头，Uvicorn 关闭 proxy-header 信任；smoke 共享单 API 限流预算，不提供按真实客户端 IP 的生产容量承诺。150 MB 代理上限及 API 既有更细限额不放宽；实际上传、分块超限和慢请求验收仍待运行时交接。Caddy 的 [反向代理行为](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy) 与 [请求体限制](https://caddyserver.com/docs/caddyfile/directives/request_body) 以官方文档为准。
 
-探针在 API 容器内执行：`probe.py live` 只判断当前 HTTP 进程；`probe.py ready` 返回失败。网络内其他容器及公开代理无法读取内部 probe。生产 readiness 必须检查 DB/schema、broker/dispatcher 及 Runner freshness；不能把现有 `/api/v1/health` 固定 `ok` 当成就绪。当前无 Runner 心跳实现或假心跳文件。
+探针在 API 容器内执行：`probe.py live` 判断 HTTP 进程；`probe.py ready` 先验证 PostgreSQL 及迁移 `0080_05`，再于受限后台线程验证 Redis Dispatcher TTL、真实 Celery 消费挑战或活跃租约证明，并通过 Runner 的 mTLS `/v1/health` 确认固定镜像及 Runner→Material Gateway 认证健康。单一探针的异步等待预算为 2.5 秒，探针超时或检查槽已占用时返回 503，避免同步网络阻塞 API 事件循环。内部探针只允许容器 loopback 客户端；公网代理不可读取。当前实现为候选代码，跨宿主私网、中继、真实 Celery 与 Gateway 故障的实测证据仍待交付，不等同于 #81 总体验收。
 
 不启用请求 access log；Caddy runtime 日志丢弃，避免错误日志附带完整 URL/headers。保留容器退出码、外部探针和脱敏收据用于诊断；后续启用结构化日志之前必须验证 URL、capability、DB URL、模型 Key 和异常脱敏。Docker 本地日志有轮转上限。静态响应采用 no-store、no-referrer 与 CSP；不改变静态证据、UNKNOWN 或政策未复核语义。
 
 ## Secrets 与下一步交接
 
-实际秘密在 checkout/镜像/context 之外的受保护宿主文件中。Compose secrets 是文件挂载，不是加密 vault。独立 `runtime_database_url` 仅授 API；`postgres_password` 仅授 DB；含认证及持久化配置的 `redis.conf` 仅授 Redis。迁移 URL 不授 API，模型 Key 不入任何服务。API 当前不消费 `_FILE`，生产门禁避免静默忽略配置；文件加载接缝与运行时 role 命令一起等待 #80 串行交接。
+实际秘密在 checkout/镜像/context 之外的受保护宿主文件中。Compose secrets 是文件挂载，不是加密 vault。独立 `runtime_database_url` 仅授 API；`postgres_password` 仅授 DB；含认证及持久化配置的 `redis.conf` 仅授 Redis。迁移 URL 不授 API，模型 Key 不入任何服务。API、dispatcher 和 worker 已支持相应数据库/Broker Secret-File 读取。迁移 Secret 只挂载给一次性 migrate 角色，不授 API 或扫描容器；实际权限和运行行为仍须隔离环境检查。
 
 Standalone Compose 文件 secret 的 uid/gid 不可假定会重映射。按实际容器 UID（API 10001、PostgreSQL 70、Redis 999）设置宿主文件所有者和只读权限，父目录禁止普通用户访问；不要在共享宿主运行未经信任的容器。Redis 配置需至少认证、`appendonly yes`、`appendfsync everysec`、`maxmemory-policy noeviction`、小于容器限额的 `maxmemory`，并由 #80 明确投递/消费 ACL。不能将密码放在命令行或普通消息内。DB bootstrap 超级用户只作空库初始化，应用和迁移使用独立角色；不能把 bootstrap URL 授 API。
 
-`runtime-contract.json` 列出尚未交付的 API dispatch、outbox publisher、Celery worker 和专用 Runner 角色。这里没有用 `sleep`、占位消费者或任意命令拼出可运行的假服务。收到 owner 提供的 role 命令、依赖锁、migration/protocol 版本、内部凭据和实际恢复收据后，先整合在一个受控候选提交，再开放生产启动。扫描主机或 VM 的安装、系统服务、固定扫描镜像摘要、内部 mTLS/认证和防火墙清单都须以实际 Runner 为准；当前契约是交接清单，不是安装完成证据。
+`runtime-contract.json` 为待真实部署验证的候选状态，不能将代码/模拟测试通过视作已授权上线。正式候选须取得独立 Runner/材料 Gateway/回收与恢复收据；当前没有以 sleep/占位消费者代替业务链路。扫描主机或 VM 的安装、系统服务、固定扫描镜像摘要、内部 mTLS/认证和防火墙清单都须以实际 Runner 为准；当前契约是交接清单，不是安装完成证据。
+
+## 单次迁移操作（受控隔离环境，非公网发布）
+
+在受保护目录中提供按容器 UID 可读的 `migration_database_url` 文件，DSN 使用事先由数据库管理员创建的 **privacytrace_migrator**（schema owner）账号。数据库管理员需独立创建 `privacytrace_runtime`，不给 SUPERUSER/BYPASSRLS/CREATEDB/CREATEROLE/SCHEMA CREATE 权限；Migration 角色也不得持有这些全局特权。首次配置和角色创建必须由授权 DBA 在隔离环境完成，不能将 postgres bootstrap 超级账号暴露给 API。
+
+```bash
+# 仅用于已授权的受控隔离部署演练。命令和秘密路径按实际环境调整。
+docker compose --env-file /etc/privacytrace/deployment.env -f deploy/compose.yaml up -d --wait postgres redis
+docker compose --env-file /etc/privacytrace/deployment.env -f deploy/compose.yaml --profile migration run --rm migrate
+# 仅在 migrate 返回 0 且角色/权限审查通过后，才启动七个常驻服务。
+```
+
+失败时保持业务入口关闭，不允许把迁移 URL 放进普通环境变量、Compose 渲染日志或 API/Worker Secret 列表。one-shot 迁移任务只属于 `migration` profile，默认七个常驻服务不包含迁移权限。详见 [操作手册](operations.md) 与 [验证矩阵](validation.md)。
+
+## 隔离验收启动门禁
+
+API 镜像封装 `runtime-contract.json`。仅当它在独立审查后的发布变更中同时声明 `production_enabled=true` 和 `status=PUBLIC_RELEASE_AUTHORIZED`，`PT_DEPLOY_MODE=production` 才能进入生产入口。当前值仍为 false，因此绕过 preflight 直接启动生产模式也会失败。
+
+隔离验收须显式采用 `PT_DEPLOY_MODE=isolated` 和 `PT_PUBLIC_BIND_IP=127.0.0.1`，Compose 80/443 只发布到回环地址。宿主 Docker 管理权限可以更改绑定，不属于进程内门禁能替代的可信边界；发布公网仍需独立变更审批与宿主访问策略。
+
+## 真正运行时 Readiness 的最小证据
+
+API 单独挂载 `runtime_health_url` Redis 文件 Secret，应使用只读 ACL（仅允许 Dispatcher、Consumer、Busy 三类健康键的 `TTL` 读取），不能拥有任务队列的写权限。Dispatcher 定期发送固定无载荷 Celery 探针；Worker 的 Consumer 实际处理后才更新消费证明，或在已取得并成功续约数据库执行租约时更新忙碌证明；API 检查 Dispatcher 心跳以及消费/忙碌证明的新鲜度；然后通过私网 mTLS 实时请求 Runner `/v1/health` 并对比固定镜像身份。Redis/进程/Runner 异常时 `/_health/ready` 返回 503，不影响 `/_health/live`。真实故障注入仍需隔离主机和证书，当前模拟测试不能充当完整执行收据。
+
+### Consumer 真正消费证明
+
+每 8 秒将 `privacytrace.health.v1` 无载荷任务发布至正常实例队列，Consumer 处理后才刷新 `consumer` TTL。扫描并发 1 时，执行中成功续约的 PostgreSQL lease 对应 `busy` TTL 证明，避免长扫描被错误视为停摆。Redis 健康只读 ACL 需允许 `dispatcher`、`consumer`、`busy` 键的 TTL，但不能拥有写队列权限。单纯进程/线程存活心跳不再允许使 API 返回就绪。真 Redis/Celery 卡死及恢复仍须隔离环境实测。
+
+### Challenge 有效期、积压与业务就绪契约（增量修复）
+
+Dispatcher 仅当实例队列没有积压且 Redis 原子设置了唯一的 `pt80:<instance>:health:pending` 待确认键时投递挑战；挑战任务包含版本、实例 ID、随机 challenge_id、签发秒时间戳，设置 15 秒 Celery expires（在消费端也执行独立时效校验），待确认键具有 20 秒 TTL。Consumer 必须在同一实例、同一 challenge_id 和有效期内，通过 Redis 原子脚本比较并删除 pending 后才更新 `consumer` 短期证明。连接中断时已有积压会阻止追加探针；恢复时旧挑战即使被运输层重投也不得刷新健康证明。健康键统一使用 `pt80:<instance>:health:*` 命名空间，与现有 Redis runtime 用户键 ACL 匹配；只读健康账号只允许对应键的 `TTL`，不得拥有任务入队和 SET 权限。
+
+实际业务忙碌状态仅在获取有效 Postgres lease 后，由经过 fence 保护并完成提交的真实阶段转换通知更新短期进度标记。续租线程需要同时满足租约成功续约、最近阶段进度仍在有界窗口内，才能继续刷新 busy TTL。180 秒无阶段推进会导致 busy 信号过期，而非持续虚假 Ready；单次 Runner scan 的预期上限须在真实硬件演练中确认。API health 总截止时间 2.5 秒，数据库 statement timeout 不大于 500ms，Redis 操作使用短超时，Runner mTLS 使用剩余预算且最大 1 秒。独立 Gateway health 检查只读取小型数据库查询和材料根目录可访问性，不打开用户 APK，真实材料读取仍由 R2 受控样本验证。

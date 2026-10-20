@@ -1,0 +1,18 @@
+[Unit]
+Description=PrivacyTrace isolated material reclamation
+Documentation=https://github.com/MrEcho114/PrivacyTrace/issues/81
+Requires=docker.service
+After=docker.service
+OnFailure=privacytrace-reclaim-failed.service
+
+[Service]
+Type=oneshot
+# Operator must create this dedicated account and grant controlled Docker access.
+User=privacytrace-deploy
+Group=privacytrace-deploy
+RuntimeDirectory=privacytrace-reclaim
+UMask=0077
+WorkingDirectory=/opt/privacytrace
+ExecStart=/usr/bin/flock -n /run/privacytrace-reclaim/reclaim.lock /usr/bin/docker compose --env-file /etc/privacytrace/deployment.env -f /opt/privacytrace/deploy/compose.yaml --profile reclamation run --rm --no-deps reclaim
+TimeoutStartSec=600
+NoNewPrivileges=true

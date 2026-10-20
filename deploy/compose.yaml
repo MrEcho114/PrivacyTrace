@@ -1,4 +1,4 @@
-# Deployment candidate, NOT production-ready. API fails closed until #80 handoff.
+# Deployment candidate, Linux Control Plane (Issue #81 / PT-SRV-102).
 # Run preflight.py before any `up`. Never put secrets in the env file.
 name: privacytrace
 
@@ -23,7 +23,7 @@ services:
       PT_PUBLIC_HOST: ${PT_PUBLIC_HOST:?Set a single DNS hostname}
       XDG_DATA_HOME: /data
       XDG_CONFIG_HOME: /config
-    ports: ["80:8080", "443:8443"]
+    ports: ["${PT_PUBLIC_BIND_IP:-127.0.0.1}:80:8080", "${PT_PUBLIC_BIND_IP:-127.0.0.1}:443:8443"]
     networks: [edge, api]
     volumes:
       - certificates:/data
@@ -39,15 +39,33 @@ services:
     image: ${PT_API_IMAGE:?Set immutable PT_API_IMAGE}
     user: "10001:10001"
     environment:
-      PT_DEPLOY_MODE: production
+      PT_DEPLOY_MODE: ${PT_DEPLOY_MODE:-isolated}
+      PT_PUBLIC_BIND_IP: ${PT_PUBLIC_BIND_IP:-127.0.0.1}
       PT_PUBLIC_HOST: ${PT_PUBLIC_HOST:?Set a single DNS hostname}
       PRIVACYTRACE_MODE: remote
       PRIVACYTRACE_STORAGE: postgres
       PRIVACYTRACE_INSTANCE_ID: ${PT_INSTANCE_ID:?Set stable instance UUID}
       PRIVACYTRACE_DATABASE_URL_FILE: /run/secrets/runtime_database_url
-    networks: [api, database]
-    secrets: [runtime_database_url]
-    volumes: [materials:/var/lib/privacytrace]
+      PRIVACYTRACE_HEALTH_REDIS_URL_FILE: /run/secrets/runtime_health_url
+      PRIVACYTRACE_STORE_ROOT: /var/lib/privacytrace/jobs
+      PRIVACYTRACE_DELETION_JOURNAL_ROOT: /var/lib/privacytrace-deletions
+      PRIVACYTRACE_MATERIAL_KEY_FILE: /run/secrets/material_key
+      PRIVACYTRACE_RUNNER_URL: ${PT_RUNNER_URL:?Explicit private Runner endpoint required}
+      PRIVACYTRACE_RUNNER_IMAGE_ID: ${PT_RUNNER_IMAGE_ID:?Explicit immutable Runner image required}
+      PRIVACYTRACE_CONTROL_TLS_CA: /run/secrets/control_tls_ca
+      PRIVACYTRACE_CONTROL_TLS_CERT: /run/secrets/control_tls_cert
+      PRIVACYTRACE_CONTROL_TLS_KEY: /run/secrets/control_tls_key
+    networks: [api, database, control]
+    secrets:
+      - runtime_database_url
+      - runtime_health_url
+      - material_key
+      - control_tls_ca
+      - control_tls_cert
+      - control_tls_key
+    volumes:
+      - materials:/var/lib/privacytrace
+      - deletion_journal:/var/lib/privacytrace-deletions
     tmpfs: ["/tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001"]
     mem_limit: 768m
     cpus: 1
@@ -83,11 +101,48 @@ services:
       timeout: 4s
       retries: 5
 
+  migrate:
+    <<: *restricted
+    # Explicit one-shot operator action; NOT part of the seven long-lived services.
+    profiles: [migration]
+    image: ${PT_API_IMAGE:?Set immutable PT_API_IMAGE}
+    user: "10001:10001"
+    command: ["/app/deploy/bootstrap.py"]
+    environment:
+      PRIVACYTRACE_MIGRATION_DATABASE_URL_FILE: /run/secrets/migration_database_url
+    networks: [database]
+    secrets: [migration_database_url]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m,uid=10001,gid=10001"]
+    mem_limit: 256m
+    cpus: 1
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  reclaim:
+    <<: *restricted
+    # Operator/scheduler invoked one-shot; never deletes referenced retained material.
+    profiles: [reclamation]
+    image: ${PT_API_IMAGE:?Set immutable PT_API_IMAGE}
+    user: "10001:10001"
+    command: ["-m", "privacytrace.material_lifecycle", "--once"]
+    environment:
+      PRIVACYTRACE_STORAGE: postgres
+      PRIVACYTRACE_INSTANCE_ID: ${PT_INSTANCE_ID:?Set stable instance UUID}
+      PRIVACYTRACE_DATABASE_URL_FILE: /run/secrets/runtime_database_url
+      PRIVACYTRACE_STORE_ROOT: /var/lib/privacytrace/jobs
+    networks: [database]
+    secrets: [runtime_database_url]
+    volumes: [materials:/var/lib/privacytrace]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m,uid=10001,gid=10001"]
+    mem_limit: 256m
+    cpus: 1
+    depends_on:
+      postgres: {condition: service_healthy}
+
   redis:
     <<: *restricted
     image: redis:7.4.8-alpine@sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6
     user: "999:999"
-    # Private config includes requirepass/ACL; no credential in argv or env.
     command: [redis-server, /run/secrets/redis_config]
     networks: [database]
     secrets: [redis_config]
@@ -96,17 +151,128 @@ services:
     mem_limit: 256m
     cpus: 1
     healthcheck:
-      # Authentication is deliberately not put on a process command line.
-      # Redis returns NOAUTH only when it is listening with authentication on.
       test: [CMD-SHELL, "redis-cli ping 2>/dev/null | grep -q '^NOAUTH'"]
       interval: 10s
       timeout: 4s
       retries: 5
 
+  dispatcher:
+    <<: *restricted
+    image: ${PT_API_IMAGE:?Set immutable PT_API_IMAGE}
+    user: "10001:10001"
+    command: ["-m", "privacytrace.queue_runtime"]
+    environment:
+      PRIVACYTRACE_STORAGE: postgres
+      PRIVACYTRACE_INSTANCE_ID: ${PT_INSTANCE_ID:?Set stable instance UUID}
+      PRIVACYTRACE_DATABASE_URL_FILE: /run/secrets/runtime_database_url
+      PRIVACYTRACE_BROKER_URL_FILE: /run/secrets/runtime_broker_url
+      PRIVACYTRACE_PUBLISH_HEALTH: "1"
+      PRIVACYTRACE_STORE_ROOT: /var/lib/privacytrace/jobs
+    networks: [database]
+    secrets:
+      - runtime_database_url
+      - runtime_broker_url
+    volumes: [materials:/var/lib/privacytrace]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m,uid=10001,gid=10001"]
+    mem_limit: 256m
+    cpus: 1
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+
+  worker:
+    <<: *restricted
+    image: ${PT_API_IMAGE:?Set immutable PT_API_IMAGE}
+    user: "10001:10001"
+    command: ["-m", "privacytrace.runtime_worker"]
+    environment:
+      PRIVACYTRACE_STORAGE: postgres
+      PRIVACYTRACE_INSTANCE_ID: ${PT_INSTANCE_ID:?Set stable instance UUID}
+      PRIVACYTRACE_DATABASE_URL_FILE: /run/secrets/runtime_database_url
+      PRIVACYTRACE_BROKER_URL_FILE: /run/secrets/runtime_broker_url
+      PRIVACYTRACE_PUBLISH_HEALTH: "1"
+      PRIVACYTRACE_STORE_ROOT: /var/lib/privacytrace/jobs
+      PRIVACYTRACE_DELETION_JOURNAL_ROOT: /var/lib/privacytrace-deletions
+      PRIVACYTRACE_MATERIAL_KEY_FILE: /run/secrets/material_key
+      PRIVACYTRACE_LEASE_SECONDS: "60"
+      PRIVACYTRACE_RUNNER_URL: ${PT_RUNNER_URL:?Explicit private Runner endpoint required}
+      PRIVACYTRACE_RUNNER_IMAGE_ID: ${PT_RUNNER_IMAGE_ID:?Explicit immutable Runner image required}
+      PRIVACYTRACE_CONTROL_TLS_CA: /run/secrets/control_tls_ca
+      PRIVACYTRACE_CONTROL_TLS_CERT: /run/secrets/control_tls_cert
+      PRIVACYTRACE_CONTROL_TLS_KEY: /run/secrets/control_tls_key
+    networks: [database, control]
+    secrets:
+      - runtime_database_url
+      - runtime_broker_url
+      - material_key
+      - control_tls_ca
+      - control_tls_cert
+      - control_tls_key
+    volumes:
+      - materials:/var/lib/privacytrace
+      - deletion_journal:/var/lib/privacytrace-deletions
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001"]
+    mem_limit: 768m
+    cpus: 1
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+
+  gateway:
+    <<: *restricted
+    image: ${PT_API_IMAGE:?Set immutable PT_API_IMAGE}
+    user: "10001:10001"
+    command: ["-m", "privacytrace.material_gateway"]
+    environment:
+      PRIVACYTRACE_STORAGE: postgres
+      PRIVACYTRACE_INSTANCE_ID: ${PT_INSTANCE_ID:?Set stable instance UUID}
+      PRIVACYTRACE_DATABASE_URL_FILE: /run/secrets/runtime_database_url
+      PRIVACYTRACE_STORE_ROOT: /var/lib/privacytrace/jobs
+      PRIVACYTRACE_MATERIAL_KEY_FILE: /run/secrets/material_key
+      PRIVACYTRACE_GATEWAY_BIND: ${PT_GATEWAY_CONTAINER_IP:?Set private gateway container IP}
+      PRIVACYTRACE_GATEWAY_PORT: "8443"
+      PRIVACYTRACE_GATEWAY_TLS_CA: /run/secrets/gateway_tls_ca
+      PRIVACYTRACE_GATEWAY_TLS_CERT: /run/secrets/gateway_tls_cert
+      PRIVACYTRACE_GATEWAY_TLS_KEY: /run/secrets/gateway_tls_key
+      PRIVACYTRACE_GATEWAY_PEERS: ${PT_GATEWAY_PEERS:?Set approved gateway TLS peer fingerprint(s)}
+    networks:
+      database: {}
+      control:
+        ipv4_address: ${PT_GATEWAY_CONTAINER_IP:?Set private gateway container IP}
+    ports:
+      - "${PT_GATEWAY_HOST_IP:?Set private gateway host interface}:8443:8443"
+    secrets:
+      - runtime_database_url
+      - material_key
+      - gateway_tls_ca
+      - gateway_tls_cert
+      - gateway_tls_key
+    volumes: [materials:/var/lib/privacytrace]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m,uid=10001,gid=10001"]
+    mem_limit: 256m
+    cpus: 1
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres: {condition: service_healthy}
+
 networks:
   edge: {}
   api: {internal: true}
   database: {internal: true}
+  control:
+    # No container default route to the Internet. The host must provide a
+    # restricted TCP relay at its bridge gateway IP for the dedicated mTLS Runner.
+    internal: true
+    enable_ipv6: false
+    ipam:
+      config:
+        - subnet: ${PT_CONTROL_SUBNET:?Set private Docker control subnet}
+          gateway: ${PT_CONTROL_GATEWAY_IP:?Set private host relay bridge IP}
 
 volumes:
   certificates: {}
@@ -114,6 +280,7 @@ volumes:
   materials: {}
   database: {}
   broker: {}
+  deletion_journal: {}
 
 secrets:
   runtime_database_url:
@@ -122,3 +289,23 @@ secrets:
     file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/postgres_password
   redis_config:
     file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/redis.conf
+  migration_database_url:
+    file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/migration_database_url
+  runtime_broker_url:
+    file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/runtime_broker_url
+  runtime_health_url:
+    file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/runtime_health_url
+  material_key:
+    file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/material.key
+  control_tls_ca:
+    file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/control_ca.pem
+  control_tls_cert:
+    file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/control_cert.pem
+  control_tls_key:
+    file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/control_key.pem
+  gateway_tls_ca:
+    file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/gateway_ca.pem
+  gateway_tls_cert:
+    file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/gateway_cert.pem
+  gateway_tls_key:
+    file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/gateway_key.pem

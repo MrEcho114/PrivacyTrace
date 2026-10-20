@@ -58,6 +58,13 @@ def topology_tests(directory):
         f"PT_WEB_IMAGE=example.invalid/web@sha256:{digest}\n"
         "PT_PUBLIC_HOST=privacytrace.test\n"
         "PT_INSTANCE_ID=0163a8b5-3eed-481a-bfb0-31fd3fe523dc\n"
+        "PT_RUNNER_URL=https://172.29.98.1:8444\n"
+        "PT_RUNNER_IMAGE_ID=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+        "PT_GATEWAY_PEERS=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n"
+        "PT_GATEWAY_CONTAINER_IP=172.29.98.10\n"
+        "PT_CONTROL_SUBNET=172.29.98.0/24\n"
+        "PT_CONTROL_GATEWAY_IP=172.29.98.1\n"
+        "PT_GATEWAY_HOST_IP=10.77.0.10\n"
         f"PT_SECRETS_DIR={directory.as_posix()}\n",
         encoding="utf-8",
     )

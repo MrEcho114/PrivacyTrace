@@ -27,7 +27,7 @@ jobs:
         run: |
           python3 -m venv .themasterplan/cache/deploy-tools
           .themasterplan/cache/deploy-tools/bin/pip install --disable-pip-version-check uv==0.11.23
-          .themasterplan/cache/deploy-tools/bin/uv sync --project apps/api --locked --extra worker
+          .themasterplan/cache/deploy-tools/bin/uv sync --project apps/api --locked --extra worker --extra runtime
       - name: Deployment behavior and lint
         run: |
           apps/api/.venv/bin/python -m unittest discover -s deploy/tests -v

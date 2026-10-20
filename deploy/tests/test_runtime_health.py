@@ -13,6 +13,7 @@ INSTANCE = "0163a8b5-3eed-481a-bfb0-31fd3fe523dc"
 class RuntimeHealthTests(unittest.TestCase):
     def test_role_heartbeat_has_ttl_and_canonical_instance(self):
         with patch("privacytrace.runtime_health._connect") as creator:
+            creator.return_value.set.return_value = True
             sender = HealthPublisher("redis://127.0.0.1:6379/0", INSTANCE, "dispatcher")
             self.assertTrue(sender.beat())
             creator.return_value.set.assert_called_once_with(

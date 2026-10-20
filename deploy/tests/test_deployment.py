@@ -14,7 +14,9 @@ import yaml
 DEPLOY = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(DEPLOY))
 from audit_context import audit  # noqa: E402
-from bootstrap import resolve_migration_url, validate_migrator_role  # noqa: E402
+from bootstrap import (  # noqa: E402
+    EXPECTED_TABLES, resolve_migration_url, run_bootstrap, validate_migrator_role,
+)
 from preflight import _build_synthetic_config, validate  # noqa: E402
 from privacytrace.storage_factory import (  # noqa: E402
     create_store,
@@ -792,6 +794,45 @@ class ContextAndPreflightTests(unittest.TestCase):
 
 
 class DatabaseBootstrapTests(unittest.TestCase):
+    def test_bootstrap_exempts_version_table_but_enforces_business_rls(self):
+        def check_rows(rows):
+            connection = MagicMock()
+            result = MagicMock()
+
+            def execute(sql, params=None):
+                statement = str(sql)
+                value = MagicMock()
+                if "SELECT version_num" in statement:
+                    value.scalar_one_or_none.return_value = "0080_05"
+                elif "SELECT tablename" in statement:
+                    value.scalars.return_value.all.return_value = list(EXPECTED_TABLES)
+                elif "SELECT relname, relrowsecurity" in statement:
+                    value.fetchall.return_value = rows
+                elif "has_table_privilege" in statement:
+                    value.scalar_one.return_value = True
+                return value
+
+            connection.execute.side_effect = execute
+            connection.__enter__.return_value = connection
+            engine = MagicMock()
+            engine.connect.return_value = connection
+            with (
+                patch("bootstrap.sa.create_engine", return_value=engine),
+                patch("bootstrap.command.upgrade"),
+                patch("bootstrap.validate_migrator_role", return_value="privacytrace_migrator"),
+                patch("privacytrace.durable_intake.ensure_control_plane"),
+            ):
+                return run_bootstrap("postgresql+psycopg://local-fixture")
+
+        healthy = [(name, True, True) for name in EXPECTED_TABLES]
+        self.assertEqual(
+            check_rows(healthy + [("alembic_version", False, False)])["revision"], "0080_05"
+        )
+        name = sorted(EXPECTED_TABLES)[0]
+        invalid = [(n, True, n != name) for n in EXPECTED_TABLES]
+        with self.assertRaisesRegex(RuntimeError, "forced ROW LEVEL SECURITY"):
+            check_rows(invalid + [("alembic_version", False, False)])
+
     def test_resolve_migration_url_from_file_and_env(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             file_path = Path(temp_dir) / "migration_url"

@@ -94,6 +94,8 @@ async function main() {
     await page.screenshot({ path: path.join(output, 'report-390.png'), fullPage: true })
     await page.getByRole('button', { name: '恢复当前实例材料', exact: true }).click()
     await page.getByRole('button', { name: '查看报告', exact: true }).waitFor()
+    await page.getByRole('button', { name: '查看报告', exact: true }).click()
+    await page.getByRole('heading', { name: '手机端验收示例', exact: true }).waitFor()
     const ledger = await page.evaluate(() => globalThis.mobileCalls)
     const save = ledger.find(call => call.method === 'workflow' && call.args.action === 'candidates')
     assert.equal(JSON.parse(save.args.payload).candidates[0].checked, false)

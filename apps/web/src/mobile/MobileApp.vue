@@ -49,9 +49,9 @@ onBeforeUnmount(() => { void flow.stop() })
       </section>
       <CandidatePage v-if="context && state.step === 'candidates'" :state="state" :busy="busy" :type-labels="labels" @back="state.step = 'import'" @next="flow.begin" @persist-candidates="flow.save" />
       <section v-if="context && state.step === 'progress'" class="material-panel">
-        <h2>{{ stages[job?.state ?? 'QUEUED'] }}</h2><p class="hash">{{ job?.id }}</p><p v-if="job?.error" class="error-text">本次分析未完成，可刷新状态或重试为新分析。</p>
+        <h2>{{ job ? stages[job.state] : '任务状态暂不可用' }}</h2><p class="hash">{{ job?.id }}</p><p v-if="job?.error" class="error-text">本次分析未完成，可刷新状态或重试为新分析。</p>
         <ol class="stage-list"><li v-for="event in draft?.jobs.find(r => r.job_id === job?.id)?.events" :key="event.at + event.state"><strong>{{ stages[event.state] ?? event.state }}</strong><span>{{ event.at }}</span></li></ol>
-        <div class="source-actions"><UiButton :disabled="busy" @click="flow.poll">刷新进度</UiButton><UiButton v-if="!terminal" :disabled="busy" @click="flow.control('cancel-job')">取消分析</UiButton><UiButton v-if="terminal && job?.state !== 'SUCCEEDED'" :disabled="busy" @click="flow.control('retry-job')">重试为新的分析</UiButton><UiButton v-if="job?.state === 'SUCCEEDED'" variant="primary" :disabled="busy" @click="flow.openReport">查看报告</UiButton></div>
+        <div class="source-actions"><UiButton :disabled="busy" @click="flow.poll">刷新进度</UiButton><UiButton v-if="job && !terminal" :disabled="busy" @click="flow.control('cancel-job')">取消分析</UiButton><UiButton v-if="terminal && job?.state !== 'SUCCEEDED'" :disabled="busy" @click="flow.control('retry-job')">重试为新的分析</UiButton><UiButton v-if="job?.state === 'SUCCEEDED'" variant="primary" :disabled="busy" @click="flow.openReport">查看报告</UiButton></div>
       </section>
       <div v-if="state.step === 'report' && report && taxonomy" class="mobile-report"><ExistingReports :key="report.job.id" :snapshot="{ report, taxonomy }" /></div>
     </main>

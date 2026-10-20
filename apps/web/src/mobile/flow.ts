@@ -59,7 +59,11 @@ export function createMobileFlow(bridge: MobileBridge) {
       const restored = await request<LiveDraft>('read')
       apply(restored)
       taxonomy.value = await request<Taxonomy>('taxonomy')
-      if (restored.jobs.length) { job.value = await request<AnalysisJob>('job'); state.step = 'progress' }
+      if (restored.jobs.length) {
+        state.step = 'progress'
+        try { job.value = await request<AnalysisJob>('job') }
+        catch { check(); notice.value = '材料已恢复，历史任务暂未读到。请刷新进度重试；未创建新的分析。' }
+      }
     })
   }
   async function refresh() { await run(async request => { apply(await request<LiveDraft>('read')); notice.value = '已读取服务保存的材料。' }) }
@@ -73,7 +77,14 @@ export function createMobileFlow(bridge: MobileBridge) {
         await request('discover'); value = await request<LiveDraft>('read'); apply(value)
       }
       for (const source of [...value.sources]) {
-        if (!source.text?.trim() && source.url) { value = await request<LiveDraft>('fetch', { source: source.id, revision: value.revision }); apply(value) }
+        if (!source.text?.trim() && source.url) {
+          try { value = await request<LiveDraft>('fetch', { source: source.id, revision: value.revision }); apply(value) }
+          catch {
+            check(); notice.value = '部分政策抓取未完成。可返回补充材料，也可继续分析；未取得的正文和缺证据状态仍保留。'
+            // A lost response may already have advanced the server revision.
+            try { value = await request<LiveDraft>('read'); apply(value) } catch { check() }
+          }
+        }
       }
       for (const source of [...value.sources]) {
         if (!source.text?.trim() || source.status === 'failed' || value.candidates.some(c => c.source_id === source.id)) continue

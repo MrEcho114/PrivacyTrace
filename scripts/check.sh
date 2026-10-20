@@ -30,7 +30,7 @@ PY
 fi
 uv run --project apps/api --locked --extra worker pytest apps/api/tests -q -p no:cacheprovider
 uv run --project apps/api --locked --extra worker pytest tests/e2e -q -p no:cacheprovider
-uv run --project apps/api --locked --extra worker ruff check apps/api/src apps/api/tests scripts/export-schema.py scripts/verify_workflow.py scripts/build-dataset.py scripts/metrics-user-study.py scripts/validate-trace.py scripts/verify-run-ledger.py scripts/generate-synthetic-pt907.py scripts/verify-user-study-pack.py
+uv run --project apps/api --locked --extra worker ruff check apps/api/src apps/api/tests scripts/export-schema.py scripts/verify_workflow.py scripts/build-dataset.py scripts/metrics-user-study.py scripts/validate-trace.py scripts/verify-run-ledger.py scripts/generate-synthetic-pt907.py scripts/verify-user-study-pack.py scripts/controlled/location_reference.py scripts/verify-controlled-locations.py
 # deploy/ and tests/e2e/ have no pyproject.toml above them, so name the repo
 # config explicitly; otherwise Ruff applies whatever config it falls back to.
 uv run --project apps/api --locked --extra worker ruff check --config apps/api/pyproject.toml deploy tests/e2e

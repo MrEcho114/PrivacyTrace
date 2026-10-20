@@ -56,7 +56,13 @@ function harness(api = {}, storage = '') {
   const context = { exports: {}, Error, AbortController, setTimeout, clearTimeout, crypto: { randomUUID }, localStorage: { setItem() {}, getItem() { return storage } },
     require(name) {
       if (name === 'vue') return { ...vue, onMounted(fn) { mounted.push(fn) }, onBeforeUnmount(fn) { callbacks.push(fn) }, nextTick() {} }
-      if (name === './liveApi') return { async createDraft() { return stored() }, async getExtractionStatus() { return { active: false, revision: 1 } }, ...api }
+      if (name === './liveApi') return {
+        async createDraft() { return stored() },
+        async getExtractionStatus() { return { active: false, revision: 1 } },
+        async reserveExtraction(_draft, _source, revision, id) { return { attempt_id: id, state: 'RESERVED', revision } },
+        async getAttemptStatus(_draft, _source, id) { return { attempt_id: id, state: 'RUNNING', revision: 1 } },
+        ...api,
+      }
       if (name === './api') return { async loadTaxonomy() { return { data_types: [] } } }
       if (name === './workflow' || name.endsWith('.vue')) return {}
       throw new Error(name)

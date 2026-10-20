@@ -239,6 +239,11 @@ def test_extraction_attempt_id_commits_with_same_status_and_legacy_clients(tmp_p
     assert "attempt_id" not in draft["sources"][0]["model_audit"]
     for attempt in ("a" * 32, "b" * 32):
         old_revision = draft["revision"]
+        reserve = client.post(endpoint + "/sources/a/attempts", headers=HEADERS, json={
+            "revision": old_revision, "attempt_id": attempt,
+        })
+        assert reserve.status_code == 200, reserve.text
+        assert reserve.json()["state"] == "RESERVED"
         result = client.post(extract_path, headers=HEADERS, json={
             "revision": old_revision, "attempt_id": attempt,
         })
@@ -247,6 +252,7 @@ def test_extraction_attempt_id_commits_with_same_status_and_legacy_clients(tmp_p
         assert draft["revision"] == old_revision + 1
         assert draft["sources"][0]["model_audit"]["status"] == original_status
         assert draft["sources"][0]["model_audit"]["attempt_id"] == attempt
+        assert client.get(endpoint + "/sources/a/attempts/" + attempt).json()["state"] == "COMMITTED"
         assert client.get(endpoint).json()["sources"][0]["model_audit"]["attempt_id"] == attempt
         assert draft["sources"][1]["model_audit"] == {}
         if attempt == "a" * 32:
@@ -306,6 +312,10 @@ def test_concurrent_source_extraction_refuses_second_paid_request_and_releases_s
     assert client.get(status_path).json() == {
         "active": False, "revision": draft["revision"],
     }
+    reserve = client.post(endpoint + "/sources/a/attempts", headers=HEADERS, json={
+        "revision": draft["revision"], "attempt_id": "a" * 32,
+    })
+    assert reserve.status_code == 200, reserve.text
     with ThreadPoolExecutor(max_workers=2) as pool:
         initial = pool.submit(
             client.post, extract_path, headers=HEADERS,
@@ -334,6 +344,96 @@ def test_concurrent_source_extraction_refuses_second_paid_request_and_releases_s
     assert len(calls) == 1
 
 
+
+def test_reserved_attempt_remains_visible_before_delayed_execution_and_late_expired_post_is_rejected(
+    tmp_path, monkeypatch
+):
+    from privacytrace import web_intake
+    from privacytrace.policy_llm_extractor import MockLLMClient
+
+    calls = []
+    monkeypatch.setattr(
+        web_intake, "UrllibLLMClient",
+        lambda **kw: MockLLMClient(lambda *a: calls.append(1) or "[]"),
+    )
+    app = create_app(tmp_path)
+    client = TestClient(app)
+    assert client.post("/api/v1/web/settings", headers=HEADERS, json={
+        "enabled": True, "api_base": "http://127.0.0.1:9011/v1", "model": "test",
+    }).status_code == 200
+    draft = new_draft(client)
+    path = f"/api/v1/web/drafts/{draft['id']}/sources/a"
+    revision = draft["revision"]
+    attempt = "e" * 32
+    reserve = client.post(path + "/attempts", headers=HEADERS, json={
+        "revision": revision, "attempt_id": attempt,
+    })
+    assert reserve.status_code == 200
+    assert reserve.json()["state"] == "RESERVED"
+    assert client.get(path + "/extraction-status").json()["active"] is False
+    assert client.get(path + "/attempts/" + attempt).json()["state"] == "RESERVED"
+    assert len(calls) == 0
+    # The model POST arrives only after registration and multiple idle reads.
+    result = client.post(path + "/extract", headers=HEADERS, json={
+        "revision": revision, "attempt_id": attempt,
+    })
+    assert result.status_code == 200, result.text
+    assert len(calls) == 1
+    assert client.get(path + "/attempts/" + attempt).json()["state"] == "COMMITTED"
+    assert client.post(path + "/extract", headers=HEADERS, json={
+        "revision": revision, "attempt_id": attempt,
+    }).status_code == 409
+    assert len(calls) == 1
+
+    # A separate reserved attempt expires while no model POST has been sent.
+    later = "f" * 32
+    next_revision = result.json()["revision"]
+    app.state.web_intake.ATTEMPT_RESERVATION_SECONDS = -1
+    assert client.post(path + "/attempts", headers=HEADERS, json={
+        "revision": next_revision, "attempt_id": later,
+    }).status_code == 200
+    assert client.get(path + "/attempts/" + later).json()["state"] == "EXPIRED"
+    late = client.post(path + "/extract", headers=HEADERS, json={
+        "revision": next_revision, "attempt_id": later,
+    })
+    assert late.status_code == 409
+    assert len(calls) == 1
+
+
+def test_reserved_attempt_blocks_legacy_and_source_fetch_and_terminal_failure_frees_lane(
+    tmp_path
+):
+    app = create_app(tmp_path)
+    client = TestClient(app)
+    draft = new_draft(client)
+    path = f"/api/v1/web/drafts/{draft['id']}/sources/a"
+    attempt = "c" * 32
+    reserve = client.post(path + "/attempts", headers=HEADERS, json={
+        "revision": draft["revision"], "attempt_id": attempt,
+    })
+    assert reserve.status_code == 200
+    assert client.post(path + "/attempts", headers=HEADERS, json={
+        "revision": draft["revision"], "attempt_id": "d" * 32,
+    }).status_code == 409
+    assert client.post(path + "/extract", headers=HEADERS, json={
+        "revision": draft["revision"],
+    }).status_code == 409
+    # The existing /fetch endpoint must not mutate an outstanding reservation.
+    assert client.post(path + "/fetch", headers=HEADERS, json={
+        "revision": draft["revision"],
+    }).status_code == 409
+    app.state.web_intake.ATTEMPT_RESERVATION_SECONDS = -1
+    # Preserve terminal EXPIRED on next status check after advancing expiry
+    records = app.state.web_intake._load_attempts(draft["id"])
+    records[attempt]["expires_at"] = 0
+    app.state.web_intake._save_attempts(draft["id"], records)
+    assert client.get(path + "/attempts/" + attempt).json()["state"] == "EXPIRED"
+    assert client.post(path + "/attempts", headers=HEADERS, json={
+        "revision": draft["revision"], "attempt_id": "d" * 32,
+    }).status_code == 200
+    assert client.get(path + "/attempts/" + attempt).json()["state"] == "EXPIRED"
+
+
 def test_failed_extraction_audit_stores_attempt_without_leaking_secrets(tmp_path, monkeypatch):
     from privacytrace import web_intake
     from privacytrace.policy_llm_extractor import MockLLMClient
@@ -350,6 +450,9 @@ def test_failed_extraction_audit_stores_attempt_without_leaking_secrets(tmp_path
     draft = new_draft(client)
     endpoint = f"/api/v1/web/drafts/{draft['id']}"
     attempt_id = "c" * 32
+    assert client.post(endpoint + "/sources/a/attempts", headers=HEADERS, json={
+        "revision": draft["revision"], "attempt_id": attempt_id,
+    }).status_code == 200
     result = client.post(endpoint + "/sources/a/extract", headers=HEADERS, json={
         "revision": draft["revision"], "attempt_id": attempt_id,
     })

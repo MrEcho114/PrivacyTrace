@@ -160,22 +160,35 @@ class CeleryPublisher:
             raise QueueUnavailable("Runtime broker unavailable") from None
 
     def probe(self):
-        # A fixed no-payload task on the real consumer queue.
+        from .runtime_health import issue_challenge, release_challenge
+
         try:
+            challenge = issue_challenge(
+                self.config.url, self.config.instance_id, self.config.key_prefix + self.config.queue
+            )
+            if challenge is None:
+                return False
             self.app.send_task(
                 PROBE_TASK_NAME,
-                args=[],
+                args=[challenge],
                 kwargs={},
-                task_id=str(uuid4()),
+                task_id=challenge["challenge_id"],
                 queue=self.config.queue,
                 routing_key=self.config.queue,
                 serializer="json",
                 retry=False,
                 ignore_result=True,
-                argsrepr="()",
+                expires=15,
+                argsrepr="(fixed health challenge)",
                 kwargsrepr="{}",
             )
+            return True
         except Exception:
+            if "challenge" in locals() and challenge:
+                try:
+                    release_challenge(self.config.url, challenge)
+                except Exception:
+                    pass
             raise QueueUnavailable("Runtime health probe unavailable") from None
 
     def close(self):

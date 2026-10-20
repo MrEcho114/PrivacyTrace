@@ -1,11 +1,14 @@
 """Short-lived Redis role heartbeats and bounded dedicated mTLS runner health."""
 import os
-from uuid import UUID
+import time
+from uuid import UUID, uuid4
 
 from .runtime_tls import PrivateClient, RuntimeTLS
 from .storage_factory import resolve_secret
 
 TTL_SECONDS = 20
+CHALLENGE_SECONDS = 15
+PENDING_SECONDS = 20
 
 
 def _connect(url):
@@ -21,6 +24,85 @@ def health_key(instance_id, role):
     if instance != instance_id or role not in {"dispatcher", "consumer", "busy"}:
         raise ValueError("Invalid runtime health identity")
     return f"privacytrace:health:{instance}:{role}"
+
+
+
+def pending_key(instance_id):
+    instance = str(UUID(instance_id))
+    if instance != instance_id:
+        raise ValueError("Invalid health challenge identity")
+    return f"pt80:{instance}:health:pending"
+
+
+def issue_challenge(broker_url, instance_id, broker_queue_key):
+    """At most one probe can wait on the same real queue; never flood offline Redis."""
+    client = _connect(broker_url)
+    try:
+        # Kombu uses the fixed global_keyprefix; never inspect/delete job bodies.
+        if client.llen(broker_queue_key) != 0:
+            return None
+        issued_at, challenge_id = int(time.time()), str(uuid4())
+        value = f"{challenge_id}:{issued_at}"
+        if client.set(pending_key(instance_id), value, ex=PENDING_SECONDS, nx=True) is not True:
+            return None
+        return {"version": 1, "instance_id": instance_id,
+                "challenge_id": challenge_id, "issued_at": issued_at}
+    finally:
+        client.close()
+
+
+_RELEASE = """
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+  redis.call('DEL', KEYS[1])
+  return 1
+end
+return 0
+"""
+_ACK = """
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+  redis.call('DEL', KEYS[1])
+  redis.call('SET', KEYS[2], 'alive', 'EX', ARGV[2])
+  return 1
+end
+return 0
+"""
+
+
+def release_challenge(broker_url, challenge):
+    client = _connect(broker_url)
+    try:
+        return client.eval(
+            _RELEASE, 1, pending_key(challenge["instance_id"]),
+            f"{challenge['challenge_id']}:{challenge['issued_at']}",
+        ) == 1
+    finally:
+        client.close()
+
+
+def acknowledge_challenge(broker_url, instance_id, challenge):
+    """Aged, replayed, cross-instance, or unsolicited challenges cannot refresh Ready."""
+    try:
+        if (
+            type(challenge) is not dict
+            or set(challenge) != {"version", "instance_id", "challenge_id", "issued_at"}
+            or type(challenge["version"]) is not int
+            or challenge["version"] != 1
+            or challenge["instance_id"] != instance_id
+            or type(challenge["issued_at"]) is not int
+            or str(UUID(challenge["challenge_id"])) != challenge["challenge_id"]
+            or not 0 <= time.time() - challenge["issued_at"] <= CHALLENGE_SECONDS
+        ):
+            return False
+        client = _connect(broker_url)
+        try:
+            return client.eval(
+                _ACK, 2, pending_key(instance_id), health_key(instance_id, "consumer"),
+                f"{challenge['challenge_id']}:{challenge['issued_at']}", TTL_SECONDS,
+            ) == 1
+        finally:
+            client.close()
+    except (ValueError, KeyError, TypeError, OSError):
+        return False
 
 
 class HealthPublisher:

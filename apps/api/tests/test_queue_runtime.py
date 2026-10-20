@@ -32,23 +32,28 @@ from privacytrace.queue_runtime import (
 )
 
 
-def test_consumer_challenge_publishes_no_payload_on_same_instance_queue(monkeypatch):
+def test_consumer_challenge_publishes_expiring_fixed_payload_on_same_queue(monkeypatch):
     from unittest.mock import MagicMock
 
-    from privacytrace import queue_runtime
+    from privacytrace import queue_runtime, runtime_health
 
     instance = str(uuid4())
     config = BrokerConfig("redis://u:p@127.0.0.1:1/15", instance)
     app = MagicMock()
+    challenge = {"version": 1, "instance_id": instance,
+                 "challenge_id": str(uuid4()), "issued_at": 12345}
     monkeypatch.setattr(queue_runtime, "create_celery_app", lambda _: app)
+    monkeypatch.setattr(runtime_health, "issue_challenge", lambda *args: challenge)
     publisher = CeleryPublisher(config)
-    publisher.probe()
+    assert publisher.probe() is True
     call = app.send_task.call_args
     assert call.args == (PROBE_TASK_NAME,)
-    assert call.kwargs["args"] == [] and call.kwargs["kwargs"] == {}
+    assert call.kwargs["args"] == [challenge] and call.kwargs["kwargs"] == {}
+    assert call.kwargs["task_id"] == challenge["challenge_id"]
     assert call.kwargs["queue"] == config.queue
     assert call.kwargs["routing_key"] == config.queue
     assert call.kwargs["ignore_result"] is True
+    assert call.kwargs["expires"] == 15
     assert call.kwargs["retry"] is False
     publisher.close()
 

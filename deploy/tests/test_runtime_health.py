@@ -125,6 +125,37 @@ class RuntimeHealthTests(unittest.TestCase):
         handler.do_GET()
         handler.reply.assert_called_once_with(503, {"error": "RUNNER_UNAVAILABLE"})
 
+    def test_challenge_replay_expiration_and_instance_binding(self):
+        import time
+        from uuid import uuid4
+
+        from privacytrace.runtime_health import acknowledge_challenge
+
+        challenge = {
+            "version": 1, "instance_id": INSTANCE, "challenge_id": str(uuid4()),
+            "issued_at": int(time.time()),
+        }
+        with patch("privacytrace.runtime_health._connect") as factory:
+            factory.return_value.eval.side_effect = [1, 0]
+            self.assertTrue(acknowledge_challenge("redis://unused", INSTANCE, challenge))
+            self.assertFalse(acknowledge_challenge("redis://unused", INSTANCE, challenge))
+            self.assertEqual(factory.return_value.eval.call_count, 2)
+            self.assertFalse(acknowledge_challenge(
+                "redis://unused", INSTANCE, {**challenge, "issued_at": challenge["issued_at"] - 30}
+            ))
+            self.assertFalse(acknowledge_challenge(
+                "redis://unused", str(uuid4()), challenge
+            ))
+            self.assertEqual(factory.return_value.eval.call_count, 2)
+
+    def test_offline_backlog_blocks_new_challenge(self):
+        from privacytrace.runtime_health import issue_challenge
+
+        with patch("privacytrace.runtime_health._connect") as factory:
+            factory.return_value.llen.return_value = 1
+            self.assertIsNone(issue_challenge("redis://unused", INSTANCE, "queue"))
+            factory.return_value.set.assert_not_called()
+
     def test_reader_requires_real_runner_status_and_image(self):
         env = {
             "PRIVACYTRACE_RUNNER_URL": "https://172.29.98.1:8444",

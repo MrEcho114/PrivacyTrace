@@ -54,40 +54,37 @@ def test_worker_registry_contains_only_fixed_json_task_and_rejects_embedded_canv
         app.close()
 
 
-def test_consumer_proof_executes_only_on_real_fixed_celery_task(monkeypatch):
+def test_consumer_proof_rejects_invalid_canvas_and_only_accepts_current_challenge(monkeypatch):
     from privacytrace import runtime_health
 
     instance = str(uuid4())
     app = create_worker_app(BrokerConfig("redis://u:p@127.0.0.1:1/15", instance))
-    events = []
+    accepted = []
 
-    class Writer:
-        def __init__(self, url, instance_id, role):
-            assert instance_id == instance and role == "consumer"
-            events.append("opened")
-
-        def beat(self):
-            events.append("consumed")
-
-        def close(self):
-            events.append("closed")
+    def approve(url, instance_id, challenge):
+        accepted.append((instance_id, challenge))
+        return True
 
     monkeypatch.setenv("PRIVACYTRACE_PUBLISH_HEALTH", "1")
-    monkeypatch.setattr(runtime_health, "HealthPublisher", Writer)
+    monkeypatch.setattr(runtime_health, "acknowledge_challenge", approve)
     task = app.tasks[PROBE_TASK_NAME]
+    challenge = {"version": 1, "instance_id": instance, "challenge_id": str(uuid4()),
+                 "issued_at": 12345}
     try:
-        task.push_request(id=str(uuid4()), callbacks=[{"task": "unknown"}])
+        task.push_request(id=challenge["challenge_id"], callbacks=[{"task": "unknown"}])
         try:
-            task.run()
-            assert events == []
+            task.run(challenge)
+            assert accepted == []
+            assert task.request.callbacks is None
         finally:
             task.pop_request()
-        task.push_request(id=str(uuid4()))
+        task.push_request(id=challenge["challenge_id"])
         try:
-            task.run(payload="untrusted")
-            assert events == []
+            task.run(challenge, payload="untrusted")
             task.run()
-            assert events == ["opened", "consumed", "closed"]
+            assert accepted == []
+            task.run(challenge)
+            assert accepted == [(instance, challenge)]
         finally:
             task.pop_request()
     finally:

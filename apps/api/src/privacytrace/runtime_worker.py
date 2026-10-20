@@ -181,19 +181,20 @@ def create_worker_app(config):
         )
         for n in ("callbacks", "errbacks", "chain", "chord"):
             setattr(request, n, None)
-        if canvas or args or kwargs or os.environ.get("PRIVACYTRACE_PUBLISH_HEALTH") != "1":
+        if (
+            canvas
+            or len(args) != 1
+            or kwargs
+            or os.environ.get("PRIVACYTRACE_PUBLISH_HEALTH") != "1"
+        ):
             return
         try:
-            from uuid import UUID
+            from .runtime_health import acknowledge_challenge
 
-            from .runtime_health import HealthPublisher
-
-            UUID(str(request.id))
-            writer = HealthPublisher(config.url, config.instance_id, "consumer")
-            try:
-                writer.beat()
-            finally:
-                writer.close()
+            challenge = args[0]
+            if type(challenge) is not dict or request.id != challenge.get("challenge_id"):
+                return
+            acknowledge_challenge(config.url, config.instance_id, challenge)
         except (ValueError, OSError, TypeError):
             return
 

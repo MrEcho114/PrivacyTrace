@@ -35,6 +35,52 @@ test('R2 Security: Strict CSP meta tag configured in index.html', () => {
   assert(!html.includes("'unsafe-eval'"), "CSP must NOT allow 'unsafe-eval'")
 })
 
+test('R3 Compliance: Explicit AI disclosure is rendered in App.vue footer', () => {
+  const appVuePath = path.join(srcDir, 'App.vue')
+  const content = fs.readFileSync(appVuePath, 'utf-8')
+  assert(content.includes('ai-disclosure'), 'App.vue must contain ai-disclosure class')
+  assert(content.includes('Consistency Engine'), 'App.vue footer must cite Consistency Engine')
+  assert(content.includes('AI 辅助生成'), 'App.vue footer must cite AI 辅助生成')
+})
+
+test('R3 Compliance: contracts.generated.ts contains explicit AI-assisted header', () => {
+  const contractsPath = path.join(srcDir, 'contracts.generated.ts')
+  const content = fs.readFileSync(contractsPath, 'utf-8')
+  assert(content.includes('[AI-Assisted / Generated Code]'), 'contracts.generated.ts must include explicit AI-Assisted header')
+  assert(content.includes('scripts/export-schema.py'), 'contracts.generated.ts must cite generator script')
+})
+
+test('R3 Compliance: README.md contains explicit AI disclosure section and national standard citation', () => {
+  const repoRoot = path.resolve(__dirname, '../../..')
+  const readmePath = path.join(repoRoot, 'README.md')
+  assert(fs.existsSync(readmePath), 'README.md must exist at repo root')
+  const content = fs.readFileSync(readmePath, 'utf-8')
+  assert(content.includes('## 人工智能工具使用与开源披露声明'), 'README.md must contain AI disclosure section')
+  assert(content.includes('GB 45438-2025'), 'README.md must cite GB 45438-2025 standard')
+  assert(content.includes('docs/ai-usage-disclosure.md'), 'README.md must link to docs/ai-usage-disclosure.md')
+})
+
+test('R3 Compliance: docs/ai-usage-disclosure.md exists, cites GB 45438-2025, and has valid relative file links', () => {
+  const repoRoot = path.resolve(__dirname, '../../..')
+  const docPath = path.join(repoRoot, 'docs/ai-usage-disclosure.md')
+  assert(fs.existsSync(docPath), 'docs/ai-usage-disclosure.md must exist')
+  const content = fs.readFileSync(docPath, 'utf-8')
+  assert(content.includes('GB 45438-2025'), 'Disclosure doc must cite GB 45438-2025')
+  assert(content.includes('s0-gemini-provenance.json'), 'Disclosure doc must cite s0-gemini-provenance.json')
+  assert(content.includes('s1-gemini-provenance.json'), 'Disclosure doc must cite s1-gemini-provenance.json')
+
+  const baseDir = path.dirname(docPath)
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g
+  let match: RegExpExecArray | null
+  while ((match = linkRegex.exec(content)) !== null) {
+    const url = match[2]
+    if (!url.startsWith('http')) {
+      const resolved = path.resolve(baseDir, url)
+      assert(fs.existsSync(resolved), `Link target in disclosure doc does not exist: ${url} -> ${resolved}`)
+    }
+  }
+})
+
 // ---------------------------------------------------------------------------
 // 2. sentenceContext Pure Logic & Boundary Analysis
 // ---------------------------------------------------------------------------

@@ -104,9 +104,18 @@ uv run --project apps/api --locked --extra worker pytest apps/api/tests
 # Linux: PRIVACYTRACE_DOCKER_TESTS=1 uv run --project apps/api --locked --extra worker pytest apps/api/tests
 ```
 
+## 人工智能工具使用与开源披露声明
+
+本项目遵循国家《生成式人工智能服务管理暂行办法》《人工智能生成合成内容标识办法》及配套国家标准《网络安全技术 人工智能生成合成内容标识方法》（GB 45438-2025）及高校学术规范要求，对人工智能工具的使用边界、贡献划分与合规标识作如下公开声明：
+
+- **AI 辅助范围界定**：在学生团队主导的核心架构、接口契约与设计规范约束下，部分底层工程代码（如前端 TypeScript 契约导出 `contracts.generated.ts`、后端 API 路由胶水层及基础测试用例骨架）借助 Google Gemini（Gemini 2.5 Pro / Gemini 3.8 Flash）与 OpenAI Codex 辅助生成。AI 不参与选题策划、立项论证、核心算法与判定规则制定。
+- **学生团队核心贡献与主体责任**：核心架构设计（Evidence 证据链追溯模型、Consistency Engine 六态判定状态机、Privacy Taxonomy 分类体系）、系统设计规范（红线措辞约束、Docker 隔离沙箱）、全量代码审查（逐行审查排查并发锁竞争等缺陷）及项目管理（13 个 Epic 拆解与 CI/CD 流水线）100% 由学生团队独立完成。文责与知识产权责任 100% 由学生团队独立承担。
+- **显式标识与溯源闭环**：自动生成代码头部标注 `[AI-Assisted / Generated Code]` 提示；Web 前端报告页脚标注技术驱动与校对说明；完整机器生成审计凭证（Provenance Receipts）与 CI 验证凭据详见 `docs/stages/s0-gemini-provenance.json`、`docs/stages/s1-gemini-provenance.json` 与 [`docs/ai-usage-disclosure.md`](docs/ai-usage-disclosure.md)。
+
 ## 项目状态与相关文档
 
 - 阶段状态：`ACCEPTED_BY_USER`，强制双人验收表已撤销；政策未复核/提取不完整仍保留，不等于合法或安全。
 - 技术报告：详细交付与边界说明见 [`docs/stages/s1-report.md`](docs/stages/s1-report.md)。
 - 竞赛材料：赛务对照见 [`docs/competition-checklist.md`](docs/competition-checklist.md)。
+- 合规披露：人工智能工具使用与生成内容披露表见 [`docs/ai-usage-disclosure.md`](docs/ai-usage-disclosure.md)。
 - 依赖许可：依赖库 Androguard 遵循 [Apache-2.0 许可证](https://raw.githubusercontent.com/androguard/androguard/v4.1.3/LICENCE-2.0)。本项目源代码许可待团队最终确定。

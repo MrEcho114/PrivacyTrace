@@ -65,3 +65,9 @@ docker compose --env-file /etc/privacytrace/deployment.env -f deploy/compose.yam
 ```
 
 失败时保持业务入口关闭，不允许把迁移 URL 放进普通环境变量、Compose 渲染日志或 API/Worker Secret 列表。one-shot 迁移任务只属于 `migration` profile，默认七个常驻服务不包含迁移权限。详见 [操作手册](operations.md) 与 [验证矩阵](validation.md)。
+
+## 隔离验收启动门禁
+
+API 镜像封装 `runtime-contract.json`。仅当它在独立审查后的发布变更中同时声明 `production_enabled=true` 和 `status=PUBLIC_RELEASE_AUTHORIZED`，`PT_DEPLOY_MODE=production` 才能进入生产入口。当前值仍为 false，因此绕过 preflight 直接启动生产模式也会失败。
+
+隔离验收须显式采用 `PT_DEPLOY_MODE=isolated` 和 `PT_PUBLIC_BIND_IP=127.0.0.1`，Compose 80/443 只发布到回环地址。宿主 Docker 管理权限可以更改绑定，不属于进程内门禁能替代的可信边界；发布公网仍需独立变更审批与宿主访问策略。

@@ -23,7 +23,7 @@ services:
       PT_PUBLIC_HOST: ${PT_PUBLIC_HOST:?Set a single DNS hostname}
       XDG_DATA_HOME: /data
       XDG_CONFIG_HOME: /config
-    ports: ["80:8080", "443:8443"]
+    ports: ["${PT_PUBLIC_BIND_IP:-127.0.0.1}:80:8080", "${PT_PUBLIC_BIND_IP:-127.0.0.1}:443:8443"]
     networks: [edge, api]
     volumes:
       - certificates:/data
@@ -39,7 +39,8 @@ services:
     image: ${PT_API_IMAGE:?Set immutable PT_API_IMAGE}
     user: "10001:10001"
     environment:
-      PT_DEPLOY_MODE: production
+      PT_DEPLOY_MODE: ${PT_DEPLOY_MODE:-isolated}
+      PT_PUBLIC_BIND_IP: ${PT_PUBLIC_BIND_IP:-127.0.0.1}
       PT_PUBLIC_HOST: ${PT_PUBLIC_HOST:?Set a single DNS hostname}
       PRIVACYTRACE_MODE: remote
       PRIVACYTRACE_STORAGE: postgres

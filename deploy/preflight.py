@@ -70,6 +70,13 @@ def validate(config):
     ports = services["web"].get("ports", [])
     if {(int(p["published"]), p["target"]) for p in ports} != {(80, 8080), (443, 8443)}:
         raise ValueError("Only HTTPS and certificate-validation ports may be published")
+    api_env = services["api"].get("environment", {})
+    if (
+        api_env.get("PT_DEPLOY_MODE") != "isolated"
+        or api_env.get("PT_PUBLIC_BIND_IP") != "127.0.0.1"
+        or any(p.get("host_ip") != "127.0.0.1" for p in ports)
+    ):
+        raise ValueError("Public release blocked: isolated proxy must use loopback")
     for name in ("api", "database"):
         if not config["networks"][name].get("internal"):
             raise ValueError("Internal networks must not have default external egress")
@@ -238,7 +245,7 @@ def validate(config):
         ):
             raise ValueError("API and worker must agree on fixed Runner identity")
 
-    if env.get("PT_DEPLOY_MODE") != "production" or env.get("PRIVACYTRACE_STORAGE") != "postgres":
+    if env.get("PT_DEPLOY_MODE") != "isolated" or env.get("PRIVACYTRACE_STORAGE") != "postgres":
         raise ValueError("Production must not silently use smoke or JSON storage")
     if (
         env.get("PRIVACYTRACE_MODE") != "remote"
@@ -276,8 +283,8 @@ def _build_synthetic_config():
                 "pids_limit": 128,
                 "mem_limit": 268435456,
                 "ports": [
-                    {"published": "80", "target": 8080},
-                    {"published": "443", "target": 8443},
+                    {"published": "80", "target": 8080, "host_ip": "127.0.0.1"},
+                    {"published": "443", "target": 8443, "host_ip": "127.0.0.1"},
                 ],
                 "networks": ["edge", "api"],
                 "volumes": [
@@ -310,7 +317,8 @@ def _build_synthetic_config():
                 ],
                 "tmpfs": ["/tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001"],
                 "environment": {
-                    "PT_DEPLOY_MODE": "production",
+                    "PT_DEPLOY_MODE": "isolated",
+                    "PT_PUBLIC_BIND_IP": "127.0.0.1",
                     "PRIVACYTRACE_STORAGE": "postgres",
                     "PRIVACYTRACE_MODE": "remote",
                     "PRIVACYTRACE_DATABASE_URL_FILE": "/run/secrets/runtime_database_url",

@@ -20,6 +20,7 @@ EXACT = {
     "deploy/serve.py",
     "deploy/probe.py",
     "deploy/bootstrap.py",
+    "deploy/runtime-contract.json",
     "deploy/audit_context.py",
     "deploy/Caddyfile",
     "deploy/Caddyfile.common",

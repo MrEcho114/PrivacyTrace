@@ -4,6 +4,7 @@ The smoke surface serves synthetic, read-only resources. It cannot accept work
 and must never be used as the production runtime or as a scanning receipt.
 """
 
+import ipaddress
 import json
 import os
 import re
@@ -47,6 +48,25 @@ def configure():
         return host
 
     if mode == "production":
+        try:
+            contract = json.loads(
+                Path(__file__).with_name("runtime-contract.json").read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError, TypeError):
+            raise RuntimeError("PT-SRV-102: release authorization unavailable") from None
+        if (
+            contract.get("production_enabled") is not True
+            or contract.get("status") != "PUBLIC_RELEASE_AUTHORIZED"
+        ):
+            raise RuntimeError("PT-SRV-102: public production launch not authorized")
+    elif mode == "isolated":
+        try:
+            bind = ipaddress.ip_address(os.environ["PT_PUBLIC_BIND_IP"])
+        except (ValueError, KeyError):
+            raise RuntimeError("PT-SRV-102: isolated mode requires loopback bind") from None
+        if not bind.is_loopback or bind.version != 4:
+            raise RuntimeError("PT-SRV-102: isolated mode requires loopback bind")
+    if mode in {"production", "isolated"}:
         if any(
             os.environ.get(key)
             for key in (

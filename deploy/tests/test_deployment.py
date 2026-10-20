@@ -74,7 +74,7 @@ class StartupTests(unittest.TestCase):
                     self.assertIn(",uid=", mount)
                     self.assertIn(",gid=", mount)
 
-    def test_production_configure_success_with_secret_file(self):
+    def test_isolated_configure_success_with_secret_file(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             secret_file = Path(temp_dir) / "runtime_database_url"
             secret_file.write_text(
@@ -84,7 +84,8 @@ class StartupTests(unittest.TestCase):
             with patch.dict(
                 os.environ,
                 {
-                    "PT_DEPLOY_MODE": "production",
+                    "PT_DEPLOY_MODE": "isolated",
+                    "PT_PUBLIC_BIND_IP": "127.0.0.1",
                     "PT_PUBLIC_HOST": "privacytrace.test",
                     "PRIVACYTRACE_STORAGE": "postgres",
                     "PRIVACYTRACE_INSTANCE_ID": "0163a8b5-3eed-481a-bfb0-31fd3fe523dc",
@@ -97,6 +98,23 @@ class StartupTests(unittest.TestCase):
                 self.assertEqual(os.environ["PRIVACYTRACE_MODE"], "remote")
                 self.assertEqual(os.environ["PRIVACYTRACE_STORAGE"], "postgres")
                 self.assertEqual(os.environ["PRIVACYTRACE_ALLOWED_HOSTS"], "privacytrace.test")
+
+    def test_public_production_is_blocked_at_real_server_entry(self):
+        with patch.dict(
+            os.environ,
+            {"PT_DEPLOY_MODE": "production", "PT_PUBLIC_HOST": "privacytrace.test"},
+            clear=True,
+        ), self.assertRaisesRegex(RuntimeError, "not authorized"):
+            configure()
+
+    def test_isolated_requires_actual_loopback_interface(self):
+        for bad in ("0.0.0.0", "10.7.0.9", "::1", "bad"):
+            with patch.dict(
+                os.environ,
+                {"PT_DEPLOY_MODE": "isolated", "PT_PUBLIC_BIND_IP": bad},
+                clear=True,
+            ), self.assertRaisesRegex(RuntimeError, "loopback"):
+                configure()
 
     def test_production_configure_rejects_missing_instance_id_or_invalid_host(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -600,6 +618,15 @@ class ContextAndPreflightTests(unittest.TestCase):
     def test_preflight_validates_seven_services_cleanly(self):
         config = _build_synthetic_config()
         validate(config)
+
+    def test_preflight_rejects_public_ports_and_mode_override(self):
+        base = _build_synthetic_config()
+        for mode, bind in (("production", "127.0.0.1"), ("isolated", "0.0.0.0")):
+            cfg = copy.deepcopy(base)
+            cfg["services"]["api"]["environment"]["PT_DEPLOY_MODE"] = mode
+            cfg["services"]["web"]["ports"][0]["host_ip"] = bind
+            with self.assertRaises(ValueError):
+                validate(cfg)
 
     def test_preflight_rejects_legacy_four_service_topology(self):
         config = _build_synthetic_config()

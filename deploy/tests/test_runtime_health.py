@@ -12,7 +12,7 @@ INSTANCE = "0163a8b5-3eed-481a-bfb0-31fd3fe523dc"
 
 class RuntimeHealthTests(unittest.TestCase):
     def test_role_heartbeat_has_ttl_and_canonical_instance(self):
-        with patch("privacytrace.runtime_health.Redis.from_url") as creator:
+        with patch("privacytrace.runtime_health._connect") as creator:
             sender = HealthPublisher("redis://127.0.0.1:6379/0", INSTANCE, "dispatcher")
             self.assertTrue(sender.beat())
             creator.return_value.set.assert_called_once_with(
@@ -28,7 +28,7 @@ class RuntimeHealthTests(unittest.TestCase):
         with (
             patch.dict(os.environ, {}, clear=True),
             patch("privacytrace.runtime_health.resolve_secret", return_value="redis://test"),
-            patch("privacytrace.runtime_health.Redis.from_url") as client,
+            patch("privacytrace.runtime_health._connect") as client,
         ):
             client.return_value.ttl.side_effect = [12, -2]
             self.assertFalse(check_runtime_readiness(INSTANCE))
@@ -41,7 +41,7 @@ class RuntimeHealthTests(unittest.TestCase):
         with (
             patch.dict(os.environ, env, clear=True),
             patch("privacytrace.runtime_health.resolve_secret", return_value="redis://test"),
-            patch("privacytrace.runtime_health.Redis.from_url") as client,
+            patch("privacytrace.runtime_health._connect") as client,
             patch("privacytrace.runtime_health.RuntimeTLS.from_env"),
             patch("privacytrace.runtime_health.PrivateClient") as runner,
         ):

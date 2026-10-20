@@ -2,12 +2,18 @@
 import os
 from uuid import UUID
 
-from redis import Redis, RedisError
-
-from .runtime_tls import PrivateClient, RuntimeTLS, RuntimeUnavailable
+from .runtime_tls import PrivateClient, RuntimeTLS
 from .storage_factory import resolve_secret
 
 TTL_SECONDS = 20
+
+
+def _connect(url):
+    # Deployment/smoke unit tests do not install Celery's optional Redis transport.
+    # The actual worker/runtime image installs the locked runtime extra.
+    from redis import Redis
+
+    return Redis.from_url(url, socket_connect_timeout=2, socket_timeout=2)
 
 
 def health_key(instance_id, role):
@@ -20,12 +26,12 @@ def health_key(instance_id, role):
 class HealthPublisher:
     def __init__(self, broker_url, instance_id, role):
         self.key = health_key(instance_id, role)
-        self.client = Redis.from_url(broker_url, socket_connect_timeout=2, socket_timeout=2)
+        self.client = _connect(broker_url)
 
     def beat(self):
         try:
             return self.client.set(self.key, b"alive", ex=TTL_SECONDS) is True
-        except (RedisError, OSError, ValueError):
+        except Exception:  # Fail closed; no exception may reveal a Redis credential.
             return False
 
     def close(self):
@@ -44,7 +50,7 @@ def check_runtime_readiness(instance_id):
             return False
         for role in ("worker", "dispatcher"):
             health_key(instance_id, role)
-        client = Redis.from_url(url, socket_connect_timeout=2, socket_timeout=2)
+        client = _connect(url)
         try:
             for role in ("worker", "dispatcher"):
                 remaining = client.ttl(health_key(instance_id, role))
@@ -62,8 +68,5 @@ def check_runtime_readiness(instance_id):
             "status": "ready",
             "image_id": os.environ["PRIVACYTRACE_RUNNER_IMAGE_ID"],
         }
-    except (
-        RedisError, RuntimeUnavailable, OSError, KeyError, ValueError, TypeError,
-        AttributeError,
-    ):
+    except Exception:  # Readiness never propagates secret-bearing connection errors.
         return False

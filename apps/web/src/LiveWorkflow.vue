@@ -34,7 +34,8 @@ const preparedSources = new Set<string>()
 const failedSourceIds = ref<string[]>([])
 function markExtraction(id: string, failed: boolean) {
   failedSourceIds.value = failed ? [...new Set([...failedSourceIds.value, id])] : failedSourceIds.value.filter(item => item !== id)
-  if (!failed) preparedSources.add(id)
+  if (failed) preparedSources.delete(id)
+  else preparedSources.add(id)
 }
 function extractionFailed(value: LiveDraft, id: string): boolean {
   return value.sources.find(source => source.id === id)?.model_audit?.status === 'FAILED'
@@ -118,7 +119,15 @@ async function refreshMaterials() {
     if (!draft.value) return
     const value = await readDraft(draft.value.id, requestSignal)
     assertActive(requestSignal)
-    if (value.sources.some(source => !preparedSources.has(source.id))) needsPreparation = true
+    for (const source of value.sources) {
+      const audit = source.model_audit
+      const previous = draft.value.sources.find(item => item.id === source.id)?.model_audit
+      if (audit?.status === 'FAILED') markExtraction(source.id, true)
+      // An unchanged successful audit may predate the latest failed HTTP retry.
+      else if ((audit?.status === 'SUCCESS' || audit?.status === 'PARTIAL') &&
+        Object.keys({ ...previous, ...audit }).some(key => previous?.[key] !== audit[key])) markExtraction(source.id, false)
+    }
+    needsPreparation = failedSourceIds.value.length > 0 || value.sources.some(source => !preparedSources.has(source.id))
     apply(value)
     notice.value = '已重新读取服务保存的材料。'
   })
@@ -151,7 +160,9 @@ async function prepare() {
     let recoveredExtraction = false
     for (const source of [...value.sources]) {
       if (!source.text?.trim() || source.status === 'failed' || preparedSources.has(source.id)) continue
-      if (value.candidates.some(c => c.source_id === source.id)) { markExtraction(source.id, false); continue }
+      if (value.candidates.some(c => c.source_id === source.id) && !failedSourceIds.value.includes(source.id) && !extractionFailed(value, source.id)) {
+        markExtraction(source.id, false); continue
+      }
       try {
         value = await extractSource(value.id, source.id, value.revision, requestSignal)
         assertActive(requestSignal); apply(value)

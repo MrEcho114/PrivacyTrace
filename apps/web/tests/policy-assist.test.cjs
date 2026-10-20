@@ -51,7 +51,8 @@ function harness(api = {}, storage = '') {
   const mounted = []
   const workflow = { step: 'import', maxStep: 0, sources: [{ id: 'seed', title: '占位来源', type: 'OFFICIAL_WEB_POLICY', url: '', text: '', version: 'UNKNOWN', region: '', product: '', complete: false }], candidates: [], sourceId: 'seed' }
   const stored = () => ({ id: 'draft1', revision: 1, name: '受控材料', uploaded: false, jobs: [], sources: [{ id: 'seed', title: '占位来源', source_type: 'OFFICIAL_WEB_POLICY', url: '', text: '', version: 'UNKNOWN', region: '', product: '', package_name: '', version_code: null }], candidates: [] })
-  const context = { exports: {}, AbortController, setTimeout, clearTimeout, localStorage: { setItem() {}, getItem() { return storage } },
+  // API mocks and component code share the browser's Error constructor.
+  const context = { exports: {}, Error, AbortController, setTimeout, clearTimeout, localStorage: { setItem() {}, getItem() { return storage } },
     require(name) {
       if (name === 'vue') return { ...vue, onMounted(fn) { mounted.push(fn) }, onBeforeUnmount(fn) { callbacks.push(fn) }, nextTick() {} }
       if (name === './liveApi') return { async createDraft() { return stored() }, ...api }
@@ -183,14 +184,16 @@ test('failed automatic extraction remains retryable without replacing the draft'
   h.state.file.value = { name: 'fixture.apk' }
   await h.state.prepare()
   assert.equal(h.workflow.step, 'candidates')
-  // The harness crosses VM realms, where instanceof Error may normalize the
-  // original message. Assert the actionable retry guidance, not error wording.
+  // The shared Error constructor keeps mock failures equivalent to browser API failures.
+  assert.match(h.state.notice.value, /模型暂时不可用/)
   assert.match(h.state.notice.value, /候选页面重新提取或手动补充/)
   assert.deepEqual([...h.state.failedSourceIds.value], ['seed'])
   assert.equal(h.state.draft.value.id, 'draft1')
   h.state.go('import'); await h.state.prepare()
   assert.equal(attempts, 2)
   assert.deepEqual([...h.state.failedSourceIds.value], [])
+  assert.match(h.state.notice.value, /重试已完成/)
+  assert.doesNotMatch(h.state.notice.value, /模型暂时不可用/)
   h.state.go('import'); await h.state.prepare()
   assert.equal(attempts, 2, 'a successfully retried source must not re-extract')
 })
@@ -210,6 +213,83 @@ test('explicit per-source retry clears failure without regenerating unrelated ca
   assert.equal(h.state.error.value, '')
   assert.equal(h.state.draft.value.sources[0].text, '原文')
   assert.match(h.state.notice.value, /已完成/)
+})
+
+for (const withCandidate of [false, true]) test(`a failed re-extraction can be prepared again with saved candidates=${withCandidate}`, async () => {
+  let current, attempts = 0
+  const h = harness({
+    async createDraft() { return current },
+    async uploadApk() { current = { ...current, uploaded: true }; return current },
+    async extractSource() { attempts++; if (attempts === 2) throw new Error('重新提取失败'); return current },
+  })
+  current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual' }] }
+  h.state.file.value = { name: 'fixture.apk' }; await h.state.prepare()
+  assert.equal(attempts, 1)
+  if (withCandidate) {
+    current = { ...current, candidates: [{ id: 'saved', source_id: 'seed', excerpt: '正文', data_type: 'LOCATION', checked: true }] }
+    h.state.apply(current)
+  }
+  await h.state.retryModel('seed')
+  assert.match(h.state.error.value, /重新提取失败/)
+  assert.deepEqual([...h.state.failedSourceIds.value], ['seed'])
+  h.state.go('import'); await h.state.prepare()
+  assert.equal(attempts, 3, 'a failed source must no longer be considered successfully prepared')
+  assert.deepEqual([...h.state.failedSourceIds.value], [])
+  assert.equal(h.state.draft.value.id, 'draft1')
+  if (withCandidate) assert.equal(h.workflow.candidates[0].checked, true)
+})
+
+for (const status of ['FAILED', 'SUCCESS', 'PARTIAL', 'UNKNOWN']) test(`refresh reconciles explicit ${status} extraction audit after cancellation`, async () => {
+  let current, attempts = 0, release, started
+  const begun = new Promise(resolve => { started = resolve })
+  const h = harness({
+    async createDraft() { return current },
+    async uploadApk() { current = { ...current, uploaded: true }; return current },
+    async readDraft() { return current },
+    extractSource() {
+      attempts++
+      if (attempts === 1) throw new Error('初次提取失败')
+      if (attempts === 2) {
+        current = { ...current, revision: 2, sources: current.sources.map(s => ({ ...s, model_audit: { status } })) }
+        started()
+        return new Promise(resolve => { release = resolve })
+      }
+      return { ...current, sources: current.sources.map(s => ({ ...s, model_audit: { status: 'SUCCESS' } })) }
+    },
+  })
+  current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual' }] }
+  h.state.file.value = { name: 'fixture.apk' }; await h.state.prepare()
+  h.state.go('import')
+  const pending = h.state.prepare(); await begun
+  h.state.cancelPreparation(); release(current); await pending
+  assert.equal(h.state.draft.value.revision, 1, 'cancelled response must stay ignored')
+  await h.state.refreshMaterials()
+  const completed = status === 'SUCCESS' || status === 'PARTIAL'
+  assert.deepEqual([...h.state.failedSourceIds.value], completed ? [] : ['seed'])
+  await h.state.prepare()
+  assert.equal(attempts, completed ? 2 : 3, 'only explicit completion suppresses another extraction')
+})
+
+test('refresh restores a newly persisted failure but stale success cannot clear a local failure', async () => {
+  let current, attempts = 0
+  const h = harness({
+    async createDraft() { return current },
+    async uploadApk() { current = { ...current, uploaded: true }; return current },
+    async readDraft() { return current },
+    async extractSource() { attempts++; if (attempts === 2) throw new Error('HTTP failure'); return current },
+  })
+  current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual', model_audit: { status: 'SUCCESS' } }] }
+  h.state.file.value = { name: 'fixture.apk' }; await h.state.prepare()
+  await h.state.retryModel('seed')
+  await h.state.refreshMaterials()
+  assert.deepEqual([...h.state.failedSourceIds.value], ['seed'], 'an unchanged old SUCCESS audit is not a new successful retry')
+  await h.state.retryModel('seed')
+  assert.deepEqual([...h.state.failedSourceIds.value], [])
+  current = { ...current, revision: 2, sources: current.sources.map(s => ({ ...s, model_audit: { status: 'FAILED' } })) }
+  await h.state.refreshMaterials()
+  assert.deepEqual([...h.state.failedSourceIds.value], ['seed'])
+  h.state.go('import'); await h.state.prepare()
+  assert.equal(attempts, 4, 'persisted FAILED must make a previously prepared source retryable')
 })
 
 test('persisted failed extraction audit remains retryable after page restoration', async () => {
@@ -295,4 +375,5 @@ test('retrying source fetch clears the stale extraction-failure marker on succes
   assert.deepEqual([...h.state.failedSourceIds.value], [])
   assert.equal(h.state.error.value, '')
   assert.equal(h.state.draft.value.sources[0].text, '正文')
+  assert.match(h.state.notice.value, /重新获取和候选提取已完成/)
 })

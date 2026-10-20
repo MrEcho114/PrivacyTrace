@@ -61,6 +61,9 @@ def web_error(exc):
     allowed = {
         "MODEL_NOT_CONFIGURED", "MODEL_CONFIGURATION_INCOMPLETE",
         SOURCE_TYPE_CONFIRMATION_REQUIRED,
+        # The client must be able to tell a spent attempt history from a
+        # stale revision, so these stay distinct from the generic rejection.
+        "EXTRACTION_ATTEMPT_QUOTA_REACHED", "EXTRACTION_ATTEMPT_NOT_RESERVED",
     }
     code = str(exc) if str(exc) in allowed else "INPUT_OR_VERSION_REJECTED"
     return HTTPException(409, detail=code)
@@ -194,11 +197,6 @@ def install_web_api(app, local_write):
         return web_operation(
             lambda: service.extraction_attempt_status(draft_id, source_id, attempt_id)
         )
-
-    @app.get("/api/v1/web/drafts/{draft_id}/sources/{source_id}/extraction-status")
-    def extraction_status(draft_id: str, source_id: str, request: Request):
-        draft_access(request, draft_id)
-        return web_operation(lambda: service.extraction_status(draft_id, source_id))
 
     @app.post("/api/v1/web/drafts/{draft_id}/sources/{source_id}/extract")
     def extract(draft_id: str, source_id: str, payload: ExtractionInput, request: Request):

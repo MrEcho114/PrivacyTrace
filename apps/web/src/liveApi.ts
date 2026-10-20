@@ -29,6 +29,9 @@ const messages: Record<string, string> = {
   DRAFT_NOT_FOUND: '本机材料记录不存在，请重新导入。',
   INPUT_VALIDATION_FAILED: '输入格式不符合要求，请检查来源、原句和字段。',
   SOURCE_TYPE_CONFIRMATION_REQUIRED: '请先确认每份来源的类型，未知来源不能自动当作官网政策。',
+  EXTRACTION_IN_PROGRESS: '该来源已有一次模型提取在执行或等待确认。请稍候重新读取材料，不要重复发送付费请求。',
+  EXTRACTION_ATTEMPT_QUOTA_REACHED: '这份来源的操作记录已达上限。请新建材料版本后继续。',
+  EXTRACTION_ATTEMPT_NOT_RESERVED: '本次提取登记已失效或已过期。请重新读取材料后再试。',
 }
 export async function liveRequest<T>(path: string, signal: AbortSignal, body?: object | File): Promise<T> {
   const response = await fetch('/api/v1/web/' + path, {
@@ -53,8 +56,6 @@ export const reserveExtraction = (id: string, source: string, revision: number, 
   liveRequest<ExtractionReceipt>(`drafts/${id}/sources/${source}/attempts`, signal, { revision, attempt_id: attemptId })
 export const getAttemptStatus = (id: string, source: string, attemptId: string, signal: AbortSignal) =>
   liveRequest<ExtractionReceipt>(`drafts/${id}/sources/${source}/attempts/${attemptId}`, signal)
-export const getExtractionStatus = (id: string, source: string, signal: AbortSignal) =>
-  liveRequest<{ active: boolean; revision: number }>(`drafts/${id}/sources/${source}/extraction-status`, signal)
 export const extractSource = (id: string, source: string, revision: number, signal: AbortSignal, attemptId?: string) =>
   liveRequest<LiveDraft>(`drafts/${id}/sources/${source}/extract`, signal, { revision, ...(attemptId ? { attempt_id: attemptId } : {}) })
 export const saveCandidates = (id: string, input: CandidateInput, signal: AbortSignal) => liveRequest<LiveDraft>(`drafts/${id}/candidates`, signal, input)

@@ -58,7 +58,6 @@ function harness(api = {}, storage = '') {
       if (name === 'vue') return { ...vue, onMounted(fn) { mounted.push(fn) }, onBeforeUnmount(fn) { callbacks.push(fn) }, nextTick() {} }
       if (name === './liveApi') return {
         async createDraft() { return stored() },
-        async getExtractionStatus() { return { active: false, revision: 1 } },
         async reserveExtraction(_draft, _source, revision, id) { return { attempt_id: id, state: 'RESERVED', revision } },
         async getAttemptStatus(_draft, _source, id) { return { attempt_id: id, state: 'FAILED', revision: 1 } },
         ...api,
@@ -487,7 +486,6 @@ for (const status of ['SUCCESS', 'PARTIAL']) test(`registered response lost then
     async createDraft() { return current },
     async uploadApk() { current = { ...current, uploaded: true }; return current },
     async readDraft() { return current },
-    async getExtractionStatus() { return { active: false, revision: current.revision } },
     async getAttemptStatus(_draft, _source, id) {
       return { attempt_id: id, state: 'COMMITTED', revision: current.revision }
     },
@@ -523,7 +521,6 @@ test('delayed registered operation stays RESERVED after active=false and commits
     async createDraft() { return current },
     async uploadApk() { current = { ...current, uploaded: true }; return current },
     async readDraft() { return current },
-    async getExtractionStatus() { return { active: false, revision: current.revision } },
     async getAttemptStatus(_draft, _source, id) {
       return { attempt_id: id, state, revision: current.revision }
     },
@@ -618,7 +615,7 @@ test('RUNNING receipt after response loss blocks duplicate request until COMMITT
   assert.equal(calls, 2)
 })
 
-test('sixteen failed confirmed attempts do not exhaust the local pending queue', async () => {
+test('a confirmed FAILED receipt frees the single pending slot for the next retry', async () => {
   let current, calls = 0
   const h = harness({
     async createDraft() { return current },
@@ -629,19 +626,62 @@ test('sixteen failed confirmed attempts do not exhaust the local pending queue',
     },
     async extractSource() {
       calls++
-      if (calls === 1) return current
       throw new Error('service confirmed no commit')
     },
   })
   current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual',
     model_audit: { status: 'SUCCESS' } }] }
   h.state.file.value = { name: 'fixture.apk' }; await h.state.prepare()
-  for (let index = 0; index < 16; index++) await h.state.retryModel('seed')
-  assert.equal(calls, 17, 'each explicitly retried operation reaches the model once')
-  await h.state.refreshMaterials()
+  const prepared = calls
+  for (let index = 0; index < 3; index++) await h.state.retryModel('seed')
+  assert.equal(calls, prepared + 3, 'each explicitly retried operation reaches the model exactly once')
   assert.deepEqual([...h.state.failedSourceIds.value], ['seed'])
+})
+
+test('a rejected or unconfirmed registration never reaches the paid extraction endpoint', async () => {
+  for (const receipt of [new Error('registration rejected'), { attempt_id: 'f'.repeat(32), state: 'RUNNING', revision: 1 }]) {
+    let current, extracts = 0
+    const h = harness({
+      async createDraft() { return current },
+      async uploadApk() { current = { ...current, uploaded: true }; return current },
+      async readDraft() { return current },
+      async reserveExtraction() {
+        if (receipt instanceof Error) throw receipt
+        return { ...receipt }
+      },
+      async extractSource() { extracts++; return current },
+    })
+    current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual',
+      model_audit: { status: 'SUCCESS' } }] }
+    h.state.file.value = { name: 'fixture.apk' }; await h.state.prepare()
+    await h.state.retryModel('seed')
+    assert.equal(extracts, 0, 'no paid model request without an acknowledged RESERVED receipt')
+    assert.deepEqual([...h.state.failedSourceIds.value], ['seed'])
+  }
+})
+
+test('an unconfirmed attempt blocks the next paid call instead of being discarded', async () => {
+  let current, extracts = 0
+  const h = harness({
+    async createDraft() { return current },
+    async uploadApk() { current = { ...current, uploaded: true }; return current },
+    async readDraft() { return current },
+    async getAttemptStatus(_draft, _source, id) {
+      return { attempt_id: id, state: 'RESERVED', revision: current.revision }
+    },
+    async extractSource() {
+      extracts++
+      throw new Error('seed response lost after reservation')
+    },
+  })
+  current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual',
+    model_audit: { status: 'SUCCESS' } }] }
+  h.state.file.value = { name: 'fixture.apk' }; await h.state.prepare()
   await h.state.retryModel('seed')
-  assert.equal(calls, 18, 'confirmed terminal receipts free the queue')
+  await h.state.retryModel('seed')
+  assert.equal(extracts, 1, 'a still-unconfirmed attempt must not be traded for another paid call')
+  assert.match(h.state.error.value, /仍存在已登记或执行中/)
+  assert.deepEqual([...h.state.failedSourceIds.value], ['seed'])
 })
 
 test('persisted failed extraction audit remains retryable after page restoration', async () => {

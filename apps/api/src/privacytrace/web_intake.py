@@ -821,6 +821,10 @@ class WebIntake:
         source = next((s for s in draft["sources"] if s["id"] == source_id), None)
         if source is None:
             raise KeyError(source_id)
+        # Refuse before the network capture: an outstanding extraction owns this
+        # source's lane, and a fetch must not replace the audit it may commit.
+        with self.data_store._transaction():
+            self._assert_lane_free(draft_id, source_id)
         try:
             fetched = fetch_policy(source["url"])
         except FetchError as exc:
@@ -829,13 +833,8 @@ class WebIntake:
             current = self._get(draft_id)
             if current["revision"] != revision or current["jobs"]:
                 raise ValueError("Input changed while capture was running")
-            records = self._load_attempts(draft_id)
-            self._expire_reserved(records)
-            if (draft_id, source_id) in self.active_extractions or any(
-                r["source_id"] == source_id and r["state"] in {"RESERVED", "RUNNING"}
-                for r in records.values()
-            ):
-                raise ExtractionInProgress("EXTRACTION_IN_PROGRESS")
+            # A reservation may have arrived while the capture was in flight.
+            self._assert_lane_free(draft_id, source_id)
             source = next(s for s in current["sources"] if s["id"] == source_id)
             if (
                 fetched["status"] == "failed" and source["status"] in {"manual", "ready"}
@@ -876,6 +875,22 @@ class WebIntake:
                 entry["state"] = "EXPIRED"
                 changed = True
         return changed
+
+    def _lane_busy(self, records, draft_id, source_id):
+        """One lane per source: a live or still-reserved attempt owns it."""
+        if (draft_id, source_id) in self.active_extractions:
+            return True
+        return any(
+            r["source_id"] == source_id and r["state"] in {"RESERVED", "RUNNING"}
+            for r in records.values()
+        )
+
+    def _assert_lane_free(self, draft_id, source_id):
+        """Caller holds the storage transaction."""
+        records = self._load_attempts(draft_id)
+        self._expire_reserved(records)
+        if self._lane_busy(records, draft_id, source_id):
+            raise ExtractionInProgress("EXTRACTION_IN_PROGRESS")
 
     def reserve_extraction(self, draft_id, source_id, revision, attempt_id):
         """Acknowledgement must precede the client sending a paid extraction."""
@@ -999,17 +1014,6 @@ class WebIntake:
         finally:
             with self.data_store._transaction():
                 self.active_extractions.pop(key, None)
-
-    def extraction_status(self, draft_id, source_id):
-        """Observe this process's live execution without exposing policy or credentials."""
-        with self.data_store._transaction():
-            draft = self._get(draft_id)
-            if not any(source["id"] == source_id for source in draft["sources"]):
-                raise KeyError(source_id)
-            return {
-                "active": (draft_id, source_id) in self.active_extractions,
-                "revision": draft["revision"],
-            }
 
     def extract(self, draft_id, source_id, revision, attempt_id=None):
         with self._draft_activity(draft_id):

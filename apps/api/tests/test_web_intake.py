@@ -309,10 +309,6 @@ def test_concurrent_source_extraction_refuses_second_paid_request_and_releases_s
     draft = new_draft(client)
     endpoint = f"/api/v1/web/drafts/{draft['id']}"
     extract_path = endpoint + "/sources/a/extract"
-    status_path = endpoint + "/sources/a/extraction-status"
-    assert client.get(status_path).json() == {
-        "active": False, "revision": draft["revision"],
-    }
     reserve = client.post(endpoint + "/sources/a/attempts", headers=HEADERS, json={
         "revision": draft["revision"], "attempt_id": "a" * 32,
     })
@@ -324,7 +320,6 @@ def test_concurrent_source_extraction_refuses_second_paid_request_and_releases_s
         )
         try:
             assert entered.wait(8), "first extraction never entered model client"
-            assert client.get(status_path).json()["active"] is True
             # An old client without attempt_id must be protected too.
             duplicate = client.post(
                 extract_path, headers=HEADERS,
@@ -339,9 +334,10 @@ def test_concurrent_source_extraction_refuses_second_paid_request_and_releases_s
         completed = initial.result(timeout=12)
     assert completed.status_code == 200, completed.text
     assert completed.json()["sources"][0]["model_audit"]["attempt_id"] == "a" * 32
-    assert client.get(status_path).json() == {
-        "active": False, "revision": draft["revision"] + 1,
-    }
+    # The lane is released: a fresh attempt may reserve against the new revision.
+    assert client.post(endpoint + "/sources/a/attempts", headers=HEADERS, json={
+        "revision": completed.json()["revision"], "attempt_id": "b" * 32,
+    }).status_code == 200
     assert len(calls) == 1
 
 
@@ -371,7 +367,6 @@ def test_delayed_reserved_attempt_and_late_expired_post_rejected(
     })
     assert reserve.status_code == 200
     assert reserve.json()["state"] == "RESERVED"
-    assert client.get(path + "/extraction-status").json()["active"] is False
     assert client.get(path + "/attempts/" + attempt).json()["state"] == "RESERVED"
     assert len(calls) == 0
     # The model POST arrives only after registration and multiple idle reads.
@@ -433,6 +428,63 @@ def test_reserved_attempt_blocks_legacy_and_source_fetch_and_terminal_failure_fr
         "revision": draft["revision"], "attempt_id": "d" * 32,
     }).status_code == 200
     assert client.get(path + "/attempts/" + attempt).json()["state"] == "EXPIRED"
+
+
+def test_attempt_quota_and_unreserved_attempt_report_their_own_codes(tmp_path):
+    """A spent attempt history is not the same failure as a stale revision."""
+    app = create_app(tmp_path)
+    client = TestClient(app)
+    draft = new_draft(client)
+    path = f"/api/v1/web/drafts/{draft['id']}/sources/a"
+    service = app.state.web_intake
+    service.MAX_ATTEMPT_RECORDS_PER_SOURCE = 1
+    assert client.post(path + "/attempts", headers=HEADERS, json={
+        "revision": draft["revision"], "attempt_id": "a" * 32,
+    }).status_code == 200
+    service.ATTEMPT_RESERVATION_SECONDS = -1
+    records = service._load_attempts(draft["id"])
+    records["a" * 32]["expires_at"] = 0
+    service._save_attempts(draft["id"], records)
+    exhausted = client.post(path + "/attempts", headers=HEADERS, json={
+        "revision": draft["revision"], "attempt_id": "b" * 32,
+    })
+    assert exhausted.status_code == 409, exhausted.text
+    assert exhausted.json()["detail"] == "EXTRACTION_ATTEMPT_QUOTA_REACHED"
+    unreserved = client.post(path + "/extract", headers=HEADERS, json={
+        "revision": draft["revision"], "attempt_id": "c" * 32,
+    })
+    assert unreserved.status_code == 409, unreserved.text
+    assert unreserved.json()["detail"] == "EXTRACTION_ATTEMPT_NOT_RESERVED"
+
+
+def test_startup_recovers_interrupted_running_attempt_from_its_audit(tmp_path):
+    """A killed process leaves RUNNING behind; the audit decides COMMITTED or FAILED."""
+    client = TestClient(create_app(tmp_path))
+    draft = new_draft(client)
+    app = client.app
+    service = app.state.web_intake
+    committed, failed = "a" * 32, "b" * 32
+    service._save_attempts(draft["id"], {
+        committed: {
+            "attempt_id": committed, "source_id": "a", "revision": draft["revision"],
+            "state": "RUNNING", "created_at": 0, "expires_at": 0,
+        },
+        failed: {
+            "attempt_id": failed, "source_id": "b", "revision": draft["revision"],
+            "state": "RUNNING", "created_at": 0, "expires_at": 0,
+        },
+    })
+    with service.data_store._transaction():
+        current = service._get(draft["id"])
+        current["sources"][0]["model_audit"] = {"status": "SUCCESS", "attempt_id": committed}
+        # The committed audit is already on disk when the process dies; only
+        # current.json needs the record, no new revision snapshot is produced.
+        service._write_private(service.directory(draft["id"]) / "current.json", current)
+    service.close()
+    service.start_service()
+    records = service._load_attempts(draft["id"])
+    assert records[committed]["state"] == "COMMITTED"
+    assert records[failed]["state"] == "FAILED"
 
 
 def test_failed_extraction_audit_stores_attempt_without_leaking_secrets(tmp_path, monkeypatch):

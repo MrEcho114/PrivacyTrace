@@ -32,16 +32,13 @@ let activeRequest: AbortController | null = null
 let needsPreparation = true
 const preparedSources = new Set<string>()
 // A transport failure or cancellation may occur after the server committed.
- // Keep unresolved attempts until their audit is reconciled. A rejected retry
- // must never erase the earlier attempt that could have committed.
+// Keep the one unresolved attempt until its own receipt is reconciled; a
+// rejected retry must never erase an attempt that could have committed.
 type PendingExtractionAttempt = { draftId: string; revision: number; attemptId: string }
-const maxPendingAttemptsPerSource = 16
-const pendingExtractionAttempts = new Map<string, PendingExtractionAttempt[]>()
+// Registration happens before the paid request and assertSourceIdle refuses a
+// second attempt while one is unresolved, so one slot per source is sufficient.
+const pendingExtractionAttempts = new Map<string, PendingExtractionAttempt>()
 async function startExtractionAttempt(value: LiveDraft, id: string, requestSignal: AbortSignal): Promise<string> {
-  const attempts = pendingExtractionAttempts.get(id) ?? []
-  if (attempts.length >= maxPendingAttemptsPerSource) {
-    throw new Error('这份来源有多次尚未确认的提取操作。请先重新读取材料，对账后再尝试。')
-  }
   const attemptId = crypto.randomUUID().replaceAll('-', '')
   // Do not issue the paid /extract POST until registration is acknowledged.
   // If reservation response is lost, no extract request was sent by this client.
@@ -50,7 +47,7 @@ async function startExtractionAttempt(value: LiveDraft, id: string, requestSigna
   if (receipt.attempt_id !== attemptId || receipt.state !== 'RESERVED') {
     throw new Error('服务器未确认本次提取登记，请重新读取材料。')
   }
-  pendingExtractionAttempts.set(id, [...attempts, { draftId: value.id, revision: value.revision, attemptId }])
+  pendingExtractionAttempts.set(id, { draftId: value.id, revision: value.revision, attemptId })
   return attemptId
 }
 function finishExtractionAttempt(value: LiveDraft, id: string, attemptId: string) {
@@ -58,9 +55,9 @@ function finishExtractionAttempt(value: LiveDraft, id: string, attemptId: string
   if (audit?.attempt_id && audit.attempt_id !== attemptId) {
     throw new Error('服务返回的候选提取审计与本次请求不匹配。请重新读取材料。')
   }
-  // A direct response carries a committed result; older unresolved attempts
-  // cannot supersede this source's newest committed audit.
-  pendingExtractionAttempts.delete(id)
+  // Retire only the attempt this response proves committed; an older
+  // unresolved attempt must stay until its own receipt is terminal.
+  if (pendingExtractionAttempts.get(id)?.attemptId === attemptId) pendingExtractionAttempts.delete(id)
 }
 const failedSourceIds = ref<string[]>([])
 function markExtraction(id: string, failed: boolean) {
@@ -147,44 +144,35 @@ async function importCollected(input: ExternalInput) {
   })
 }
 // Exact attempt receipts, not a transient active=false observation, authorize
-// releasing reservations after lost HTTP responses.
+// releasing a reservation after a lost HTTP response.
 async function assertSourceIdle(id: string, requestSignal: AbortSignal) {
   const pending = pendingExtractionAttempts.get(id)
-  if (!draft.value || !pending?.length) return
-  const unresolved: PendingExtractionAttempt[] = []
-  let committed = false
-  for (const attempt of pending) {
-    const receipt = await getAttemptStatus(attempt.draftId, id, attempt.attemptId, requestSignal)
-    assertActive(requestSignal)
-    if (receipt.attempt_id !== attempt.attemptId) throw new Error('服务器操作对账标识不一致。')
-    if (receipt.state === 'COMMITTED') committed = true
-    else if (receipt.state !== 'FAILED' && receipt.state !== 'EXPIRED') unresolved.push(attempt)
+  if (!draft.value || !pending) return
+  const receipt = await getAttemptStatus(pending.draftId, id, pending.attemptId, requestSignal)
+  assertActive(requestSignal)
+  if (receipt.attempt_id !== pending.attemptId) throw new Error('服务器操作对账标识不一致。')
+  if (receipt.state === 'COMMITTED') {
+    throw new Error('已检测到服务器保存的提取结果。请先重新读取材料对账，避免重复付费请求。')
   }
-  if (unresolved.length) {
-    pendingExtractionAttempts.set(id, unresolved)
+  if (receipt.state !== 'FAILED' && receipt.state !== 'EXPIRED') {
     throw new Error('该来源仍存在已登记或执行中的模型操作。请重新读取材料对账，勿重复发送。')
   }
-  if (committed) throw new Error('已检测到服务器保存的提取结果。请先重新读取材料对账，避免重复付费请求。')
   pendingExtractionAttempts.delete(id)
 }
 async function refreshMaterials() {
   await perform(async requestSignal => {
     if (!draft.value) return
-    // Per-ID terminal receipts are the sole authority for retiring attempts.
-    const receipts = new Map<string, Map<string, string>>()
+    // A per-attempt terminal receipt is the sole authority for retiring it.
+    const receipts = new Map<string, string>()
     for (const [id, pending] of pendingExtractionAttempts) {
-      const statuses = new Map<string, string>()
-      for (const attempt of pending) {
-        try {
-          const status = await getAttemptStatus(attempt.draftId, id, attempt.attemptId, requestSignal)
-          assertActive(requestSignal)
-          if (status.attempt_id === attempt.attemptId) statuses.set(attempt.attemptId, status.state)
-        } catch (cause) {
-          assertActive(requestSignal)
-          // Unknown network results are not proof of FAILED / EXPIRED.
-        }
+      try {
+        const status = await getAttemptStatus(pending.draftId, id, pending.attemptId, requestSignal)
+        assertActive(requestSignal)
+        if (status.attempt_id === pending.attemptId) receipts.set(id, status.state)
+      } catch (cause) {
+        assertActive(requestSignal)
+        // Unknown network results are not proof of FAILED / EXPIRED.
       }
-      receipts.set(id, statuses)
     }
     const value = await readDraft(draft.value.id, requestSignal)
     assertActive(requestSignal)
@@ -192,10 +180,9 @@ async function refreshMaterials() {
       const audit = source.model_audit
       const previous = draft.value.sources.find(item => item.id === source.id)?.model_audit
       const pending = pendingExtractionAttempts.get(source.id)
-      const matchedAttempt = pending?.some(attempt =>
-        attempt.draftId === value.id && value.revision > attempt.revision &&
-        audit?.attempt_id === attempt.attemptId
-      ) ?? false
+      const matchedAttempt = !!pending &&
+        pending.draftId === value.id && value.revision > pending.revision &&
+        audit?.attempt_id === pending.attemptId
       // Preserve legacy untagged status transitions, but never trust a different
       // tagged attempt or arbitrary duration/token metadata to clear a failure.
       const statusTransition = value.revision > draft.value.revision && previous?.status !== audit?.status
@@ -208,11 +195,9 @@ async function refreshMaterials() {
         markExtraction(source.id, false)
         if (matchedAttempt) pendingExtractionAttempts.delete(source.id)
       }
-      if (!matchedAttempt && pending?.length) {
-        const status = receipts.get(source.id)
-        const keep = pending.filter(a => !['FAILED', 'EXPIRED'].includes(status?.get(a.attemptId) ?? ''))
-        if (keep.length) pendingExtractionAttempts.set(source.id, keep)
-        else pendingExtractionAttempts.delete(source.id)
+      if (!matchedAttempt && pending) {
+        const state = receipts.get(source.id) ?? ''
+        if (state === 'FAILED' || state === 'EXPIRED') pendingExtractionAttempts.delete(source.id)
       }
     }
     needsPreparation = failedSourceIds.value.length > 0 || value.sources.some(source => !preparedSources.has(source.id))

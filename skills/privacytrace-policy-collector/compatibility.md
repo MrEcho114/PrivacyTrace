@@ -49,3 +49,29 @@ uv run --project apps/api --locked --extra worker pytest apps/api/tests/test_pol
 - #72 手机复制回填、个人 Key 直达模型、真实设备及 #80/#81 部署端到端：未验。仍由对应 owner 实施，#79 不修改共享实现，也不是 #73 主链路关闭的硬前置。
 
 本轮交付到 PR／CI；#79 保持 Open。后续关闭需真实扩展入口和约定来源／模型／手机证据，不能以本矩阵、PR #84/#88 或旧 CI 替代。
+
+## 2026-10-21 更新：已合入入口复核
+
+上一节记录的是 2026-10-19 的事实。其后 [PR #120](https://github.com/MrEcho114/PrivacyTrace/pull/120) 合入 main `19c9ebff7452d4b16e323eda26d0d032a42e5888`，#72 已关闭；#71、#80、#81 也已交付。本节只补充对已合入入口的核对，不改变协议、示例、评分或此前的证据分层。
+
+入口与实际动作：
+
+- 复制入口：Web/手机的“复制收集指令”直接提供本包 `COPY.txt` 的生成镜像 `apps/web/src/policyCollector.generated.ts`，只在末尾追加一条用户输入的应用线索；前端只做形状预检和来源类型确认。
+- 个人模型入口：手机原生 `collect_policy` 把同一提示词发到用户配置的非分析同源 HTTPS 端点；Key 不返回 JavaScript、不进入分析服务，返回文本仍需回填并确认来源类型。
+- 两个入口都提交既有 `import-external`（collector/1），复用原句/taxonomy 校验、外部导入审计和同一报告构造。
+
+2026-10-21 在 main `19c9ebf` 上的复核：
+
+| 检查 | 实际结果 |
+| --- | --- |
+| `scripts/build-policy-collector.py --check` | current |
+| 包装、导入、三入口同报告专项 | 85 passed（本轮新增结构与镜像检查） |
+| Web 单测（含 `COPY.txt` 与生成镜像一致性） | 111 passed |
+| Web 类型检查与生产构建 | 54 modules，通过 |
+| `npm run acceptance:mobile` | PASS；生产 Vue + native bridge 替身，1 次 start、0 浏览器 API 请求，390/1440 与大字号截图 |
+| 完整 `scripts/check.sh`（`PRIVACYTRACE_DOCKER_TESTS=1`） | API 1531 passed / 183 skipped；e2e 65 passed；Web 111 passed；Ruff、契约、类型与构建通过 |
+| 本机真实网页抓取 | 本机直连 HTTPS 超时（环境仅通过本地代理访问外网，抓取按安全策略直连已验证地址）；按 UNAVAILABLE 记录，未称取得正文 |
+
+仍未验证：实际个人模型端点／付费调用、第三方网页聊天复制粘贴、#72 真机与完整 Tauri IPC、完整 APK 扫描及部署组合；这些属于 #72／#73 的验收项，不由本包或本节替代。原生 32 KiB 提示词上限和具体模型协议兼容性未实测。
+
+本节新增的自动检查只覆盖包装结构、相对链接、入口镜像和原生提示词上限；结论限于“已合入入口消费同一包”，不升级任何政策复核状态，也不把桥接替身走查当作真机证据。

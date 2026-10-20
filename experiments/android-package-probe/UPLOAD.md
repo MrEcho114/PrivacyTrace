@@ -70,6 +70,9 @@ TLS 请求中的完整 ZIP 字节；Keystore 用例验证跨对象重开、实�
 `:app:assembleDebugAndroidTest :fixture:assembleDebug :fixture_feature:assembleDebug` 后，
 先运行 `verify-device.ps1` 安装并核对受控 fixture，再调用 instrumentation：
 
+宿主已确认是 MuMu 等模拟器时，运行 `verify-device.ps1` 加 `-Emulator`。
+部分模拟器的 `ro.kernel.qemu` 为 0；该值只产生未知环境，不作为物理设备证明。
+
 ```text
 adb -s <测试设备> shell am instrument -r -w -e mode upload_transport
   -e expectedBaseSha256 <fixture-base-sha256> -e expectedSplitSha256 <fixture-split-sha256>

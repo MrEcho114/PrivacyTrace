@@ -60,7 +60,7 @@ function harness(api = {}, storage = '') {
         async createDraft() { return stored() },
         async getExtractionStatus() { return { active: false, revision: 1 } },
         async reserveExtraction(_draft, _source, revision, id) { return { attempt_id: id, state: 'RESERVED', revision } },
-        async getAttemptStatus(_draft, _source, id) { return { attempt_id: id, state: 'RUNNING', revision: 1 } },
+        async getAttemptStatus(_draft, _source, id) { return { attempt_id: id, state: 'FAILED', revision: 1 } },
         ...api,
       }
       if (name === './api') return { async loadTaxonomy() { return { data_types: [] } } }
@@ -395,6 +395,9 @@ test('mismatched committed attempt cannot clear newer local HTTP failure', async
     async createDraft() { return current },
     async uploadApk() { current = { ...current, uploaded: true }; return current },
     async readDraft() { return current },
+    async getAttemptStatus(_draft, _source, id) {
+      return { attempt_id: id, state: 'RUNNING', revision: current.revision }
+    },
     async extractSource() { attempts++; if (attempts === 2) throw new Error('transport failed'); return current },
   })
   current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual', model_audit: { status: 'SUCCESS' } }] }

@@ -171,7 +171,7 @@ def create_worker_app(config):
 
 
 def main():
-    app = None
+    app = pulse = pulse_stop = pulse_thread = None
     try:
         ensure_control_plane()
         if os.environ.get("PRIVACYTRACE_STORAGE") != "postgres":
@@ -188,6 +188,19 @@ def main():
         finally:
             store.close()
         app = create_worker_app(config)
+        if os.environ.get("PRIVACYTRACE_PUBLISH_HEALTH") == "1":
+            from .runtime_health import HealthPublisher
+
+            pulse = HealthPublisher(config.url, config.instance_id, "worker")
+            pulse_stop = Event()
+
+            def heartbeat():
+                while not pulse_stop.is_set():
+                    pulse.beat()
+                    pulse_stop.wait(5)
+
+            pulse_thread = Thread(target=heartbeat, name="runtime-health", daemon=True)
+            pulse_thread.start()
         worker = app.Worker(
             pool="solo",
             concurrency=1,
@@ -206,6 +219,12 @@ def main():
         print('{"error":"RUNTIME_WORKER_UNAVAILABLE"}')
         return 1
     finally:
+        if pulse_stop:
+            pulse_stop.set()
+        if pulse_thread:
+            pulse_thread.join(timeout=3)
+        if pulse:
+            pulse.close()
         if app:
             app.close()
 

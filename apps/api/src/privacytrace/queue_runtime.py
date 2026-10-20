@@ -195,10 +195,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args()
-    store = publisher = None
+    store = publisher = heartbeat = None
     try:
         from .durable_intake import ensure_control_plane
         from .postgres_execution import PostgresExecution
+        from .runtime_health import HealthPublisher
         from .storage_factory import create_store, resolve_redis_url
 
         ensure_control_plane()
@@ -208,7 +209,11 @@ def main():
         config = BrokerConfig(resolve_redis_url(), store.instance_id)
         publisher = CeleryPublisher(config)
         dispatcher = OutboxDispatcher(store, publisher)
+        if os.environ.get("PRIVACYTRACE_PUBLISH_HEALTH") == "1":
+            heartbeat = HealthPublisher(config.url, store.instance_id, "dispatcher")
         while True:
+            if heartbeat:
+                heartbeat.beat()
             PostgresExecution(store).recover()
             result = dispatcher.once()
             if args.once:
@@ -221,6 +226,8 @@ def main():
     except KeyboardInterrupt:
         return 0
     finally:
+        if heartbeat:
+            heartbeat.close()
         if publisher:
             publisher.close()
         if store:

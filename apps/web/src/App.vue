@@ -532,7 +532,10 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           </details>
         </section>
       </template>
-      <footer>PrivacyTrace · 每条结论保留证据来源，推断与声明单独记录。</footer>
+      <footer>
+        <p>PrivacyTrace · 每条结论保留证据来源，推断与声明单独记录。</p>
+        <p class="subtle ai-disclosure">报告的隐私核验结果由 Consistency Engine 输出；部分工程代码使用 AI 辅助，范围和核实状态见仓库披露记录。</p>
+      </footer>
     </main>
   </div>
 </template>
@@ -546,4 +549,5 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
 .job-error-card .error-detail { margin-top: 6px; font-size: 12px; }
 .policy-jump-btn { margin-top: 10px; font-size: 12px; padding: 6px 10px; display: inline-block; }
 .origin-timestamp { font-size: 12px; color: #52665a; margin-top: 4px; }
+.ai-disclosure { margin-top: 4px; font-size: 12px; color: #7d8d81; }
 </style>

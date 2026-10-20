@@ -156,6 +156,15 @@ uv run --project apps/api --locked --extra worker pytest apps/api/tests
 # Linux: PRIVACYTRACE_DOCKER_TESTS=1 uv run --project apps/api --locked --extra worker pytest apps/api/tests
 ```
 
+## 人工智能工具使用与开源披露声明
+
+本节是 **PrivacyTrace 项目自行编写的 AI 工具使用披露记录**，不是赛事官方统一表格，也不表示通过 GB 45438-2025 或其他法规的完整合规认证。项目参考相关规范改进信息披露，具体法定义务和申报要求须另行核对。
+
+- **AI 辅助范围**：项目历史记录涉及 Google Gemini、OpenAI Codex 等工具，以及部分接口实现、数据契约导出和测试代码模板。具体工具型号、受影响文件、使用时间和人工修改范围需结合日志、PR 与 [披露记录](docs/ai-usage-disclosure.md) 核实；不能宣称 AI 仅参与某些环节而完全未涉及其他工作。
+- **学生贡献与责任**：团队参与项目的核心架构设计（Evidence／Consistency Engine／Taxonomy）、设计规范、代码审查及项目管理。各环节实际参与者和 AI 使用情况以可核验证据为准；Git 作者提交数不等于 AI／人工代码行比例，也不能证明某环节“100% 独立完成”。最终申报材料应由实际参赛成员确认并负责。
+- **标识与留痕**：类型契约生成文件含项目级 AI 使用提示，Web 报告页脚说明工程存在 AI 辅助；[S0 provenance](docs/stages/s0-gemini-provenance.json) 和 [S1 provenance](docs/stages/s1-gemini-provenance.json) 是阶段性记录，不能自动代表全项目的使用范围或审核完成状态。
+- **申报状态**：参赛学生名单与指导教师审核仍待实际确认；正式报名按赛事指南和报名系统执行，完整状态见 [披露记录](docs/ai-usage-disclosure.md) 与 [赛务清单](docs/competition-checklist.md)。
+
 ## Issue 认领与 Blocked 依赖说明
 
 > **Blocked ≠ 禁止认领，也不等于整张 Issue 无法开始。** GitHub 的 `Blocked` / `blocked by` 表示存在待满足的任务依赖，通常影响某些集成步骤或最终验收，而不是对组员设置认领或开发权限限制。
@@ -179,6 +188,7 @@ uv run --project apps/api --locked --extra worker pytest apps/api/tests
 - **服务端与部署基线**：[API 容器与服务实施方案](docs/planning/api-docker-20261016.md)、[PT-SRV-102 部署交付基线](docs/deployment/README.md)（对应 [Issue #81](https://github.com/MrEcho114/PrivacyTrace/issues/81)，仅含 stage-only 容器与本地 smoke 验证，生产启动保持拦截）。
 - **评测扩展与参与者研究**：[PR #76](https://github.com/MrEcho114/PrivacyTrace/pull/76)、[理解测试准备包 #62](https://github.com/MrEcho114/PrivacyTrace/issues/62)、[真实研究 #65](https://github.com/MrEcho114/PrivacyTrace/issues/65)。
 - **竞赛材料与提交**：[最新指南 #74](https://github.com/MrEcho114/PrivacyTrace/issues/74)、[提交追踪 #107](https://github.com/MrEcho114/PrivacyTrace/issues/107)。仓库内旧版 [赛务核对清单](docs/competition-checklist.md) 仅作为历史文件，不作为本届最新规则来源。
+- **合规披露**：人工智能工具使用与生成内容披露表见 [`docs/ai-usage-disclosure.md`](docs/ai-usage-disclosure.md)。
 - **Android 规划与验收准备**：[功能规格 #68](https://github.com/MrEcho114/PrivacyTrace/issues/68)（拟用 Tauri 2 + 现有 Vue 前端，经认证的远程 FastAPI 服务与 Docker Worker；不在手机上直接运行分析引擎）、[PT-MOB-301 验收准备包](docs/acceptance/issue73/README.md)（对应 [#73](https://github.com/MrEcho114/PrivacyTrace/issues/73)，仅完成前置准备，未生成正式客户端）。
 - **依赖与许可**：依赖的 Androguard 遵循 [Apache-2.0](https://raw.githubusercontent.com/androguard/androguard/v4.1.3/LICENCE-2.0)。本项目源代码许可仍待团队确定；未经授权的商业 APK、完整政策、私人日志与身份信息不进入公开交付包。
 

@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseSource, serializeSource, type ReportSource } from '../src/types.ts'
+import { parse, compileTemplate } from 'vue/compiler-sfc'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const srcDir = path.resolve(__dirname, '../src')
@@ -33,6 +34,82 @@ test('R2 Security: Strict CSP meta tag configured in index.html', () => {
   assert(html.includes("default-src 'self'"), "CSP must enforce default-src 'self'")
   assert(html.includes("script-src 'self'"), "CSP must enforce script-src 'self'")
   assert(!html.includes("'unsafe-eval'"), "CSP must NOT allow 'unsafe-eval'")
+})
+
+test('R3 Disclosure: footer compiles with a visible project-level AI usage statement', () => {
+  const appVuePath = path.join(srcDir, 'App.vue')
+  const source = fs.readFileSync(appVuePath, 'utf-8')
+  const parsed = parse(source, { filename: appVuePath })
+  assert.strictEqual(parsed.errors.length, 0, 'App.vue SFC parse should succeed')
+  assert(parsed.descriptor.template, 'App.vue must provide a template')
+  const template = parsed.descriptor.template.content
+  assert.match(template, /<footer>[\s\S]*?class="subtle ai-disclosure"[\s\S]*?<\/footer>/)
+  assert.match(template, /部分工程代码使用 AI 辅助/)
+  assert.match(template, /范围和核实状态见仓库披露记录/)
+  const compiled = compileTemplate({
+    source: template,
+    filename: appVuePath,
+    id: 'privacytrace-disclosure-test',
+    compilerOptions: { expressionPlugins: ['typescript'] },
+  })
+  assert.deepStrictEqual(compiled.errors, [], 'Vue footer should compile without errors')
+  assert(compiled.code.includes('ai-disclosure'), 'Compiled template must include AI disclosure')
+  assert(compiled.code.includes('部分工程代码使用 AI 辅助'), 'Compiled template must include disclosure text')
+})
+
+test('R3 Disclosure: generated TS contract header matches the Python generator text', () => {
+  const repoRoot = path.resolve(__dirname, '../../..')
+  const typescript = fs.readFileSync(path.join(srcDir, 'contracts.generated.ts'), 'utf-8')
+  const generator = fs.readFileSync(path.join(repoRoot, 'scripts/export-schema.py'), 'utf-8')
+  const headerLines = typescript.slice(0, typescript.indexOf(' */') + 3).split('\n')
+  assert(headerLines.length >= 7, 'Expected full generated file header')
+  for (const line of headerLines) {
+    assert(generator.includes(JSON.stringify(line)), `Generated header line differs from generator: ${line}`)
+  }
+  assert(typescript.includes('[AI-Assisted / Generated Code]'))
+  assert(typescript.includes('Schema export does not establish per-line AI authorship'))
+})
+
+test('R3 Disclosure: README describes documented use without assigning unverified percentages', () => {
+  const repoRoot = path.resolve(__dirname, '../../..')
+  const readme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf-8')
+  assert(readme.includes('## 人工智能工具使用与开源披露声明'))
+  assert(readme.includes('GB 45438-2025'))
+  assert(readme.includes('docs/ai-usage-disclosure.md'))
+  assert(readme.includes('Git 作者提交数不等于 AI／人工代码行比例'))
+  assert(!readme.includes('100% 由学生团队独立完成'))
+})
+
+test('R3 Disclosure: pending signatures, registration boundary and file links remain consistent', () => {
+  const repoRoot = path.resolve(__dirname, '../../..')
+  const docPath = path.join(repoRoot, 'docs/ai-usage-disclosure.md')
+  const doc = fs.readFileSync(docPath, 'utf-8')
+  const checklist = fs.readFileSync(path.join(repoRoot, 'docs/competition-checklist.md'), 'utf-8')
+  assert(doc.includes('GB 45438-2025'))
+  assert(doc.includes('s0-gemini-provenance.json'))
+  assert(doc.includes('s1-gemini-provenance.json'))
+  assert(doc.includes('项目内部披露材料'))
+  assert(doc.includes('实际报名参赛学生'))
+  assert(doc.includes('每队学生不超过 **5 人**'))
+  assert(doc.includes('**状态：待审核'))
+  assert(doc.includes('学生签署记录／日期：**待签署／待填写**'))
+  assert(!doc.includes('本作品指导教师团队已对该项目'))
+  assert(!doc.includes('| **参赛团队成员** |'))
+  assert(!doc.includes('| **代码实现工作量（按代码行统计）** |'))
+  assert(checklist.includes('实际参赛学生名单'))
+  assert(checklist.includes('待审核／待签署'))
+  assert(checklist.includes('项目内部 AI 工具使用披露草稿已编制'))
+
+  const baseDir = path.dirname(docPath)
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g
+  let match: RegExpExecArray | null
+  while ((match = linkRegex.exec(doc)) !== null) {
+    const url = match[2]
+    if (!url.startsWith('http')) {
+      const resolved = path.resolve(baseDir, url)
+      assert(fs.existsSync(resolved), `Link target in disclosure doc does not exist: ${url} -> ${resolved}`)
+    }
+  }
 })
 
 // ---------------------------------------------------------------------------

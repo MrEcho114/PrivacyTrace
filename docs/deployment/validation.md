@@ -4,16 +4,16 @@
 
 | 组件 | 当前固定基线 | 状态 |
 | --- | --- | --- |
-| 应用源 | main `e2313e19cd9e43b30aad2044ccf6624e929511cd` | #69/#70、PostgreSQL 第一阶段已合入 |
+| 应用源 | main 基线 `a2e058a4868e2c55ab928179682ca7f9cd49caa5` + PR #116 修复候选 | 具体证据应绑定最终 PR HEAD，不以旧版本作为合格证明 |
 | Python | `3.12.13-slim@sha256:229a2c5bfa27522db7815ea81f9bed70af17ccb9de9fc7ad142b1877b5830d36` | 与既有扫描基础镜像一致 |
 | uv | `0.11.23@sha256:d0a0a753ab981624b49c97abc98821c1c09f4ca69d1ef5cee69c501be3d88479` | 仅构建阶段；apps/api/uv.lock 不变 |
 | Node | `24.17.0-bookworm-slim@sha256:862263c612aa437e3037674b85419622a9d93bff80aa1eee5398dfe686375532` | 仅构建阶段；package-lock.json 不变 |
 | Caddy | `2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d` | 静态/代理 runtime |
 | PostgreSQL | `17.9-alpine@sha256:c7526c0f6c3f30260a563d7bcf8ad778effac59a44f8ffa86678c35418338609` | 空测试库认证/卷重建；非 #80 应用存储验收 |
 | Redis | `7.4.8-alpine@sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6` | 合成认证/AOF 哨兵重建；投递角色/ACL 待 #80 |
-| migration | 已打包 `0080_01` | 最终 runtime migration head 待 #80 |
+| migration | 已打包 `0080_05` | 一次性 migrate profile 已装配；真实空库迁移与角色权限仍待执行 |
 | API/Web registry digest | 未发布 | CI 记录本地构建 image ID；不可冒称 registry digest |
-| 编排/outbox/Runner/扫描 digest 与协议 | 未交接 | 生产入口 BLOCKED |
+| 编排/outbox/Runner/扫描 digest 与协议 | #80 运行时组件已在 main | 独立 Runner 配置/容器内私网通信与完整部署验收仍待复核；公网发布 BLOCKED |
 
 Node/Caddy/PostgreSQL/Redis 的 manifest 摘要于 2026-10-19 经 Docker 官方 registry 读取；Python/uv 复用仓库既有固定摘要。Linux CI 的实际拉取/构建结果绑定候选 SHA。更新必须重新审查兼容矩阵并跑专项，不能只改 tag。当前单 Linux Docker 测试不代表多架构验证。
 

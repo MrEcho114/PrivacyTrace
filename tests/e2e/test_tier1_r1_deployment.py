@@ -164,74 +164,9 @@ def test_f6_preflight_validator_contract():
     """F6: Preflight validator must validate image digests, network boundaries, and volume rules."""
     import preflight
 
-    # Minimal compliant config
-    valid_config = {
-        "services": {
-            "web": {
-                "image": "caddy:2.10.2@sha256:" + "0" * 64,
-                "read_only": True,
-                "cap_drop": ["ALL"],
-                "security_opt": ["no-new-privileges:true"],
-                "user": "10001:10001",
-                "pids_limit": 128,
-                "mem_limit": "256m",
-                "ports": [{"published": "80", "target": 8080}, {"published": "443", "target": 8443}],
-                "networks": ["edge", "api"],
-                "volumes": [
-                    {"type": "volume", "source": "certificates", "target": "/data"},
-                    {"type": "volume", "source": "caddy_config", "target": "/config"},
-                ],
-                "secrets": [],
-            },
-            "api": {
-                "image": "privacytrace-api@sha256:" + "1" * 64,
-                "read_only": True,
-                "cap_drop": ["ALL"],
-                "security_opt": ["no-new-privileges:true"],
-                "user": "10001:10001",
-                "pids_limit": 128,
-                "mem_limit": "768m",
-                "networks": ["api", "database"],
-                "volumes": [{"type": "volume", "source": "materials", "target": "/var/lib/privacytrace"}],
-                "secrets": [{"source": "runtime_database_url"}],
-                "environment": {
-                    "PT_DEPLOY_MODE": "production",
-                    "PRIVACYTRACE_STORAGE": "postgres",
-                    "PRIVACYTRACE_MODE": "remote",
-                    "PRIVACYTRACE_DATABASE_URL_FILE": "/run/secrets/runtime_database_url",
-                },
-            },
-            "postgres": {
-                "image": "postgres:17@sha256:" + "2" * 64,
-                "read_only": True,
-                "cap_drop": ["ALL"],
-                "security_opt": ["no-new-privileges:true"],
-                "user": "70:70",
-                "pids_limit": 128,
-                "mem_limit": "768m",
-                "networks": ["database"],
-                "volumes": [{"type": "volume", "source": "database", "target": "/var/lib/postgresql/data"}],
-                "secrets": [{"source": "postgres_password"}],
-            },
-            "redis": {
-                "image": "redis:7@sha256:" + "3" * 64,
-                "read_only": True,
-                "cap_drop": ["ALL"],
-                "security_opt": ["no-new-privileges:true"],
-                "user": "999:999",
-                "pids_limit": 128,
-                "mem_limit": "256m",
-                "networks": ["database"],
-                "volumes": [{"type": "volume", "source": "broker", "target": "/data"}],
-                "secrets": [{"source": "redis_config"}],
-            },
-        },
-        "networks": {
-            "edge": {},
-            "api": {"internal": True},
-            "database": {"internal": True},
-        },
-    }
+    # The production preflight now requires all seven long-lived services.
+    # Do not preserve the superseded four-service fixture as a passing baseline.
+    valid_config = preflight._build_synthetic_config()
 
     # Should not raise exception
     preflight.validate(valid_config)

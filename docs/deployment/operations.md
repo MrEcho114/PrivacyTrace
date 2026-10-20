@@ -1,13 +1,13 @@
 # 运维、备份与回滚
 
-当前生产入口关闭。以下是完成 #80 交接后必须演练的步骤和停止条件，不是已执行收据。任何实际公网流量、DNS、证书账户、镜像发布另需授权。
+当前仍处于隔离候选验证阶段。以下是利用已合入 #80 运行时组件需要实际演练的步骤和停止条件，不是已执行收据。任何实际公网流量、DNS、证书账户、镜像发布另需授权。
 
 ## 首次部署顺序
 
 1. 锁定同一候选源码 SHA、API/Web/编排/Runner/扫描镜像 registry digests、DB 迁移版本及协议版本；核对 [兼容矩阵](validation.md)。确认 #80 的单 APK 和 #70 的完整 split 业务可以共用该组合。
 2. 独立扫描主机或 VM 上安装 owner 交接的 Runner。daemon 只允许该主机内部控制，防火墙拒绝公网 Docker API；APK 容器无网络、凭据或其他任务材料，固定镜像、非 root、只读根、drop ALL、资源/时间限制须有实际 inspect。不得将扫描主机根目录共享给 API 或用 Compose 冒充跨主机编排。
 3. 在控制面建立保护目录和按 UID 初始化的命名卷。秘密独立备份，环境文件只含非敏感引用。检查总盘量、剩余空间、inode、备份窗口与证书卷；不能靠应用文件字节配额代表全盘容量。
-4. DB 空库初始化后，由独立 operator 建立运行时/迁移角色。当前已打包 `apps/api/alembic.ini` 和 `0080_01`；实际生产采用哪个迁移 head 由 #80 交接决定。停止接收任务后，用只持有 migration 文件秘密的单次进程升级；全局只能一个迁移执行者。该角色不常驻 API，API 启动不自动跑迁移，不默认退回 JSON。
+4. DB 空库初始化后，由独立 operator 建立运行时/迁移角色。当前打包 `apps/api/alembic.ini` 和 migration head `0080_05`；隔离环境必须先创建 `privacytrace_runtime` / `privacytrace_migrator` 独立角色，使用 `docker compose --profile migration run --rm migrate` 单次执行并核对 RLS/权限。停止接收任务后，用只持有 migration 文件秘密的单次进程升级；全局只能一个迁移执行者。该角色不常驻 API，API 启动不自动跑迁移，不默认退回 JSON。
 5. 依次启 DB/broker、投递器/编排、Runner、API，验证真正依赖 readiness 与 heartbeat；最后启代理及经授权的证书配置。`service_healthy` 只排序启动，不能替代断线重连、重投和 fencing。
 6. 初始扫描并发 1，完成两个独立作用域的单 APK/base+splits、跨作用域/跨实例拒绝、取消/删除/迟到结果、重启重投/孤儿回收与容量测试后再评估放量。失败停止入口并保留脱敏证据，不承诺未经测量的用户数。
 

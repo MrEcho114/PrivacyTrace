@@ -1,3 +1,5 @@
+> **测试层级说明（2026-10-20 / PR #116）：** 当前 65 项新测试以模拟、TestClient、代码/配置静态断言和组件验证为主，不等同于实装 Docker Compose、真实 PostgreSQL/Redis/Celery/独立 Runner 业务端到端、备份故障及实际硬件容量的全链路验收。上述真实场景均标记 **NOT_TESTED**，直到最终 HEAD 提交可复核实跑收据。测试套件本身通过不应被描述为 Issue #81 六项总体验收全部通过。
+
 # PrivacyTrace Issue #81 (PT-SRV-102) E2E Test Infrastructure Specification
 
 **Document Version:** 1.0.0  

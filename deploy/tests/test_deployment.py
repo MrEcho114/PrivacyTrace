@@ -278,13 +278,13 @@ class SevenServiceTopologyTests(unittest.TestCase):
         self.raw_config = yaml.safe_load(self.compose_path.read_text(encoding="utf-8"))
 
     def test_compose_defines_exact_seven_services(self):
-        services = set(self.raw_config["services"])
+        services = self.raw_config["services"]
         expected = {"web", "api", "postgres", "redis", "worker", "dispatcher", "gateway"}
-        self.assertEqual(
-            services,
-            expected,
-            f"Compose must define exactly the 7 control plane services: {expected}",
-        )
+        long_lived = {name for name, spec in services.items() if not spec.get("profiles")}
+        self.assertEqual(long_lived, expected)
+        self.assertEqual(set(services) - long_lived, {"migrate"})
+        self.assertEqual(services["migrate"]["profiles"], ["migration"])
+        self.assertEqual(services["migrate"]["restart"], "no")
 
     def test_all_seven_services_enforce_hardened_isolation(self):
         for name, service in self.raw_config["services"].items():

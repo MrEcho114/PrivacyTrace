@@ -27,6 +27,11 @@ switch ($arguments[2]) {
     }
     'install' {
         if ($env:PT_PROBE_MOCK_MODE -eq 'install_failure') { exit 7 }
+        if ($env:PT_PROBE_MOCK_MODE -eq 'install_rejected_zero') {
+            'Success: streamed controlled bytes'
+            'Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: controlled signature mismatch]'
+            exit 0
+        }
         'Success'
         exit 0
     }
@@ -121,6 +126,10 @@ try {
     Write-Host 'PASS stale receipt removed on ADB install failure'
 
     $null = Invoke-ReceiptRun 'success' $true
+    Invoke-ReceiptRun 'install_rejected_zero' $false
+    Write-Host 'PASS stale receipt removed on install rejection despite ADB exit zero'
+
+    $null = Invoke-ReceiptRun 'success' $true
     Invoke-ReceiptRun 'instrument_failure' $false
     Write-Host 'PASS stale receipt removed on instrumentation failure despite ADB exit zero'
 
@@ -159,7 +168,7 @@ try {
     Assert-True ($stdoutReceipt.result -eq 'PASS') 'Without -Receipt, stdout JSON must still work'
     Assert-True (-not (Test-Path -LiteralPath $receipt)) 'Without -Receipt, no file should be written'
     Write-Host 'PASS stdout-only mode preserved'
-    Write-Host 'PASS all 8 receipt regression scenarios'
+    Write-Host 'PASS all 9 receipt regression scenarios'
 } finally {
     foreach ($name in @('PT_PROBE_MOCK_MODE', 'PT_PROBE_MOCK_RELEASE', 'PT_PROBE_MOCK_RECEIPT')) {
         Remove-Item -Path "Env:$name" -ErrorAction SilentlyContinue

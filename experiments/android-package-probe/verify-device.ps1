@@ -30,6 +30,11 @@ try {
     function Invoke-ProbeAdb([string[]]$ProbeArguments) {
         $output = & $Adb -s $Serial @ProbeArguments 2>&1
         if ($LASTEXITCODE -ne 0) { throw 'ADB operation failed; no passing device receipt produced.' }
+        # MuMu's ADB can exit zero after an unsuccessful PackageManager install.
+        if ($ProbeArguments[0] -in @('install', 'install-multiple') -and
+            ($output -join "`n") -match '(?m)^\s*Failure\s*\[') {
+            throw 'APK install rejected; no passing device receipt produced.'
+        }
         return ($output -join "`n")
     }
     $paths = @(

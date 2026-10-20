@@ -261,9 +261,14 @@ networks:
   api: {internal: true}
   database: {internal: true}
   control:
+    # No container default route to the Internet. The host must provide a
+    # restricted TCP relay at its bridge gateway IP for the dedicated mTLS Runner.
+    internal: true
+    enable_ipv6: false
     ipam:
       config:
         - subnet: ${PT_CONTROL_SUBNET:?Set private Docker control subnet}
+          gateway: ${PT_CONTROL_GATEWAY_IP:?Set private host relay bridge IP}
 
 volumes:
   certificates: {}

@@ -53,3 +53,9 @@ docker compose --env-file /etc/privacytrace/deployment.env -f deploy/compose.yam
 ```
 
 宿主调度必须设置 `flock` 或 systemd 单实例锁、有限超时和非零退出告警。失败时保留原有数据库指针和材料，下一次安全重试；不得对正常、未主动删除的作用域按年龄强行删材。生产执行周期、实际退出码、删除/非删除对象计数、异常孤儿恢复和脱敏日志需要在隔离部署中取得真实收据；此文档不代表已进行调度验收。
+
+## 隔离 Control 桥接网与专用 Runner 中继（尚待实测）
+
+`control` 现为 `internal: true`、禁用 IPv6 的隔离 IPv4 bridge，不允许 API/Worker 直接访问公网或扫描 VM 地址。指定 `PT_CONTROL_GATEWAY_IP` 为桥接网关私有 IP，`PT_RUNNER_URL=https://<PT_CONTROL_GATEWAY_IP>:8444`；只允许通过宿主机上最小权限的 **TCP 透传** relay 将该端口转发到唯一专用 Runner 的 mTLS 端口。Relay 不终止 TLS、不解密 APK 或任务资料；Runner 证书 SAN 必须与客户端连接使用的网关 IP 匹配。Relay 应限制来源为容器控制网、目的为经授权 Runner IP:8444，同时由宿主 INPUT 防火墙拒绝控制网到其他宿主端口。禁止将 control 改回普通具有缺省外部路由的 bridge，也不得将 Docker TCP API 转发。
+
+**停止条件：** 尚未在实际宿主配置和测试 relay/INPUT 白名单前，真实 Runner 全链路仍是 NOT_TESTED，不能以 docker compose config 通过替代。需要实际容器内到 relay 的 mTLS 连接、到公网/其他私网/宿主其他端口拒绝、IPv6 拒绝以及容器重启后的策略持久证据。

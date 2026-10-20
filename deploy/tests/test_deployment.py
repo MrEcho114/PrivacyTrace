@@ -154,7 +154,8 @@ class StartupTests(unittest.TestCase):
         with patch.dict(
             os.environ,
             {
-                "PT_DEPLOY_MODE": "production",
+                "PT_DEPLOY_MODE": "isolated",
+                "PT_PUBLIC_BIND_IP": "127.0.0.1",
                 "PT_PUBLIC_HOST": "privacytrace.test",
                 "PRIVACYTRACE_STORAGE": "postgres",
                 "PRIVACYTRACE_INSTANCE_ID": "0163a8b5-3eed-481a-bfb0-31fd3fe523dc",
@@ -400,6 +401,9 @@ class SevenServiceTopologyTests(unittest.TestCase):
         self.assertFalse(
             networks["edge"].get("internal", False), "Network 'edge' must be external bridge"
         )
+        self.assertTrue(networks["control"].get("internal"))
+        self.assertFalse(networks["control"].get("enable_ipv6", True))
+        self.assertIn("PT_CONTROL_GATEWAY_IP", str(networks["control"]["ipam"]))
 
         services = self.raw_config["services"]
         self.assertNotIn(
@@ -641,6 +645,20 @@ class ContextAndPreflightTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate(config)
 
+    def test_control_network_rejects_external_routing_and_nonrelay_runner(self):
+        base = _build_synthetic_config()
+        for mutation in (
+            lambda c: c["networks"]["control"].update(internal=False),
+            lambda c: c["networks"]["control"].update(enable_ipv6=True),
+            lambda c: c["services"]["worker"]["environment"].update(
+                PRIVACYTRACE_RUNNER_URL="https://10.77.0.9:8444"
+            ),
+        ):
+            bad = copy.deepcopy(base)
+            mutation(bad)
+            with self.assertRaises(ValueError):
+                validate(bad)
+
     def test_preflight_rejects_loopback_runner_and_placeholder_image(self):
         base = _build_synthetic_config()
         for target, invalid in (
@@ -670,7 +688,7 @@ class ContextAndPreflightTests(unittest.TestCase):
     def test_preflight_requires_runner_identity_agreement(self):
         bad = _build_synthetic_config()
         bad["services"]["api"]["environment"]["PRIVACYTRACE_RUNNER_URL"] = (
-            "https://10.77.0.11:8444"
+            "https://172.29.98.2:8444"
         )
         with self.assertRaisesRegex(ValueError, "agree on fixed Runner"):
             validate(bad)

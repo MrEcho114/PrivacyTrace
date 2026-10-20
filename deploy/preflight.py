@@ -138,6 +138,9 @@ def validate(config):
         if actual_secrets not in allowed:
             raise ValueError("Service secret privileges changed")
 
+    control = config["networks"].get("control", {})
+    if control.get("internal") is not True or control.get("enable_ipv6") is not False:
+        raise ValueError("Runner control bridge must block default external egress")
     if "gateway" in services:
         gateway = services["gateway"]
         gateway_env = gateway.get("environment", {})
@@ -149,6 +152,9 @@ def validate(config):
             container_ip = ipaddress.ip_address(
                 gateway["networks"]["control"]["ipv4_address"]
             )
+            relay_ip = ipaddress.ip_address(
+                config["networks"]["control"]["ipam"]["config"][0]["gateway"]
+            )
             binds = gateway.get("ports", [])
             if len(binds) != 1:
                 raise ValueError
@@ -158,6 +164,10 @@ def validate(config):
                 subnet.version != 4
                 or not subnet.is_private
                 or container_ip not in subnet
+                or relay_ip not in subnet
+                or relay_ip == container_ip
+                or relay_ip == subnet.network_address
+                or relay_ip == subnet.broadcast_address
                 or container_ip == subnet.network_address
                 or container_ip == subnet.broadcast_address
                 or gateway_env.get("PRIVACYTRACE_GATEWAY_BIND") != str(container_ip)
@@ -228,8 +238,8 @@ def validate(config):
                 or ip.is_loopback
                 or ip.is_unspecified
                 or ip.is_link_local
-                or endpoint.port is None
-                or not 1 <= endpoint.port <= 65535
+                or endpoint.port != 8444
+                or endpoint.hostname != str(relay_ip)
                 or endpoint.path not in {"", "/"}
                 or endpoint.query
                 or endpoint.fragment
@@ -323,7 +333,7 @@ def _build_synthetic_config():
                     "PRIVACYTRACE_MODE": "remote",
                     "PRIVACYTRACE_DATABASE_URL_FILE": "/run/secrets/runtime_database_url",
                     "PRIVACYTRACE_DELETION_JOURNAL_ROOT": "/var/lib/privacytrace-deletions",
-                    "PRIVACYTRACE_RUNNER_URL": "https://10.77.0.9:8444",
+                    "PRIVACYTRACE_RUNNER_URL": "https://172.29.98.1:8444",
                     "PRIVACYTRACE_RUNNER_IMAGE_ID": "sha256:" + "a" * 64,
                 },
             },
@@ -382,7 +392,7 @@ def _build_synthetic_config():
                 ],
                 "environment": {
                     "PRIVACYTRACE_DELETION_JOURNAL_ROOT": "/var/lib/privacytrace-deletions",
-                    "PRIVACYTRACE_RUNNER_URL": "https://10.77.0.9:8444",
+                    "PRIVACYTRACE_RUNNER_URL": "https://172.29.98.1:8444",
                     "PRIVACYTRACE_RUNNER_IMAGE_ID": "sha256:" + "a" * 64,
                 },
                 "tmpfs": ["/tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001"],
@@ -436,7 +446,13 @@ def _build_synthetic_config():
             "edge": {},
             "api": {"internal": True},
             "database": {"internal": True},
-            "control": {"ipam": {"config": [{"subnet": "172.29.98.0/24"}]}},
+            "control": {
+                "internal": True,
+                "enable_ipv6": False,
+                "ipam": {
+                    "config": [{"subnet": "172.29.98.0/24", "gateway": "172.29.98.1"}]
+                },
+            },
         },
     }
 

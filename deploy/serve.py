@@ -8,8 +8,8 @@ import asyncio
 import ipaddress
 import json
 import os
-import time
 import re
+import time
 from pathlib import Path
 
 from privacytrace.storage_factory import resolve_database_url

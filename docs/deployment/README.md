@@ -79,3 +79,9 @@ API 单独挂载 `runtime_health_url` Redis 文件 Secret，应使用只读 ACL�
 ### Consumer 真正消费证明
 
 每 8 秒将 `privacytrace.health.v1` 无载荷任务发布至正常实例队列，Consumer 处理后才刷新 `consumer` TTL。扫描并发 1 时，执行中成功续约的 PostgreSQL lease 对应 `busy` TTL 证明，避免长扫描被错误视为停摆。Redis 健康只读 ACL 需允许 `dispatcher`、`consumer`、`busy` 键的 TTL，但不能拥有写队列权限。单纯进程/线程存活心跳不再允许使 API 返回就绪。真 Redis/Celery 卡死及恢复仍须隔离环境实测。
+
+### Challenge 有效期、积压与业务就绪契约（增量修复）
+
+Dispatcher 仅当实例队列没有积压且 Redis 原子设置了唯一的 `pt80:<instance>:health:pending` 待确认键时投递挑战；挑战任务包含版本、实例 ID、随机 challenge_id、签发秒时间戳，设置 15 秒 Celery expires（在消费端也执行独立时效校验），待确认键具有 20 秒 TTL。Consumer 必须在同一实例、同一 challenge_id 和有效期内，通过 Redis 原子脚本比较并删除 pending 后才更新 `consumer` 短期证明。连接中断时已有积压会阻止追加探针；恢复时旧挑战即使被运输层重投也不得刷新健康证明。健康键统一使用 `pt80:<instance>:health:*` 命名空间，与现有 Redis runtime 用户键 ACL 匹配；只读健康账号只允许对应键的 `TTL`，不得拥有任务入队和 SET 权限。
+
+实际业务忙碌状态仅在获取有效 Postgres lease 后，由经过 fence 保护并完成提交的真实阶段转换通知更新短期进度标记。续租线程需要同时满足租约成功续约、最近阶段进度仍在有界窗口内，才能继续刷新 busy TTL。180 秒无阶段推进会导致 busy 信号过期，而非持续虚假 Ready；单次 Runner scan 的预期上限须在真实硬件演练中确认。API health 总截止时间 2.5 秒，数据库 statement timeout 不大于 500ms，Redis 操作使用短超时，Runner mTLS 使用剩余预算且最大 1 秒。独立 Gateway health 检查只读取小型数据库查询和材料根目录可访问性，不打开用户 APK，真实材料读取仍由 R2 受控样本验证。

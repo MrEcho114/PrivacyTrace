@@ -26,7 +26,7 @@ def health_key(instance_id, role):
     instance = str(UUID(instance_id))
     if instance != instance_id or role not in {"dispatcher", "consumer", "busy"}:
         raise ValueError("Invalid runtime health identity")
-    return f"privacytrace:health:{instance}:{role}"
+    return f"pt80:{instance}:health:{role}"
 
 
 

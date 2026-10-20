@@ -69,3 +69,7 @@ docker compose --env-file /etc/privacytrace/deployment.env -f deploy/compose.yam
 `/_health/live` 只报告 API 进程存活。隔离运行时 `/_health/ready` 使用有界后台检查（最多一个运行中的探针任务、2.5 秒 API 等待预算）和短期 Redis 证明：Dispatcher 定期投递与真实队列一致的无载荷挑战，Consumer 实际处理后才更新证明。solo 扫描执行期间可使用成功续约的数据库租约 `busy` 证明。Runner `/v1/health` 使用 Runner 自身 mTLS 身份、0.7 秒超时核实 Material Gateway，不借用 API 的 Gateway 身份。Gateway 不可用时 Ready 退化为 503，而 Live 维持存活语义。
 
 必须在最终隔离环境证明：停止 Consumer 但保持 Redis 运行时 Challenge 证明到期、停止 Gateway 时 Runner 健康拒绝、模拟或真实慢 Redis/慢 TLS 不阻塞普通 API、恢复后 Ready 恢复、并发 1 长扫描时正常活跃租约不被误判。不可只依据 Mock 通过宣称完成 R2/R4。健康账户只授予特定实例 Dispatcher/Consumer/Busy 键的 TTL；任务投递和 Redis 写权限仅留给授权内部角色。后台线程超时后在真实 I/O 退出前仍占用检查槽，避免积压；故障期间就绪默认拒绝。
+
+### 最新健康挑战运维边界
+
+Redis ACL：runtime 授权写入的键与真实 Kombu 队列属于 `pt80:<instance>:*`；API 单独的 health Redis 用户只能读取 `pt80:<instance>:health:{dispatcher,consumer,busy}` 的 TTL，不能修改任务/待确认/消费键。真实 Redis 健康挑战测试须在隔离实例验证队列空时唯一 pending、Consumer 实际消费、过期后不恢复就绪及恢复后新挑战有效。单纯 Redis Task 函数 mock 不足以确认 Celery 消费。Gateway 业务就绪调用 DB SELECT 1 和受控材料目录 fd/scandir 可读性，并强制为 mTLS 私网请求；该检查不能证明任意单个用户材料已获授权，仍需双作用域完整 R2 验收。

@@ -58,6 +58,68 @@ def test_consumer_challenge_publishes_expiring_fixed_payload_on_same_queue(monke
     publisher.close()
 
 
+def test_health_challenge_with_real_redis_and_solo_celery_consumer(tmp_path):
+    """Real subprocess Redis + Celery, isolated from application PostgreSQL.
+
+    This is opt-in and exercises actual queue consumption, not task.run().
+    """
+    if os.environ.get("PRIVACYTRACE_REDIS_TESTS") != "1":
+        pytest.skip("Opt in to isolated real Redis and Celery runtime tests")
+    assert shutil.which("redis-server"), "redis-server required"
+    instance = str(uuid4())
+    broker = RedisProcess(tmp_path / "health_redis", instance)
+    worker = publisher = None
+    try:
+        broker.start()
+        publisher = CeleryPublisher(broker.config)
+        assert publisher.probe() is True
+        # No consumer: only one task may accumulate on the real business queue.
+        assert publisher.probe() is False
+        assert len(broker.entries()) == 1
+        from privacytrace.runtime_health import health_key
+
+        worker_code = """
+import sys
+from privacytrace.queue_runtime import BrokerConfig
+from privacytrace.runtime_worker import create_worker_app
+app=create_worker_app(BrokerConfig(sys.argv[1],sys.argv[2]))
+worker=app.Worker(pool="solo",concurrency=1,queues=[app.conf.task_default_queue],
+                  quiet=True,without_mingle=True,without_gossip=True,
+                  without_heartbeat=True,loglevel="CRITICAL")
+worker.start()
+"""
+        env = dict(os.environ, PRIVACYTRACE_PUBLISH_HEALTH="1")
+        worker = subprocess.Popen(
+            [sys.executable, "-B", "-c", worker_code, broker.config.url, instance],
+            env=env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        deadline = time.monotonic() + 15
+        while time.monotonic() < deadline:
+            if worker.poll() is not None:
+                pytest.fail("Real solo Celery consumer exited before processing challenge")
+            if broker.client.ttl(health_key(instance, "consumer")) > 0:
+                break
+            time.sleep(0.1)
+        else:
+            pytest.fail("Real solo Celery consumer did not confirm queued challenge")
+        assert broker.client.ttl(health_key(instance, "consumer")) > 0
+        # A second probe can be issued only after the first has been consumed.
+        assert publisher.probe() is True
+    finally:
+        if worker is not None:
+            worker.terminate()
+            try:
+                worker.wait(timeout=8)
+            except subprocess.TimeoutExpired:
+                worker.kill()
+                worker.wait(timeout=5)
+        if publisher is not None:
+            publisher.close()
+        broker.close()
+
+
 def free_port():
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))

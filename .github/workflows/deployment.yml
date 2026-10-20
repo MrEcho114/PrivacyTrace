@@ -32,6 +32,11 @@ jobs:
         run: |
           apps/api/.venv/bin/python -m unittest discover -s deploy/tests -v
           apps/api/.venv/bin/ruff check --config apps/api/pyproject.toml deploy
+      - name: Real Redis and Celery health challenge regression
+        run: |
+          command -v redis-server
+          PRIVACYTRACE_REDIS_TESTS=1 apps/api/.venv/bin/python -m pytest             apps/api/tests/test_queue_runtime.py -k test_health_challenge_with_real_redis_and_solo_celery_consumer -q
+
       - name: Clean builds with negative context canaries
         run: |
           mkdir -p data samples/private

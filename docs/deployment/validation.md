@@ -43,3 +43,7 @@ Linux 镜像与受限 Compose 结果以实际运行收据为准；本机 Windows
 - 配置：API 与 Worker 必须恰好包含 `control` 网络，不允许意外加入 `edge`；静态验证在 Deployment Baseline 中执行。
 - 单元：覆盖事件循环不被慢数据库阻塞、探针同一时刻最多一个阻塞任务、Runner→Gateway mTLS 健康拒绝、Celery 健康任务的固定注册表及输入拒绝、正常消费挑战与活跃租约信号格式。
 - **NOT_TESTED in final topology**：真实 PostgreSQL/Redis/Celery 和专用 Runner/Gateway 停启故障注入、跨主机中继网络、双作用域 APK/splits 扫描、backup/replay 和硬件并发 1 容量。须绑定最终交付 SHA 复核，不从组件模拟验收推断。
+
+### 本轮真实组件专项 / 分层记录
+
+Deployment Baseline 新增测试独立启动 Redis server 和 solo Celery Consumer，必须见到真实同队列挑战与 Consumer TTL 确认；没有 Redis 依赖就失败，不将自动跳过作为成功。仍须在最终隔离 Linux 主机执行 PostgreSQL 租约与 Runner/Gateway 跨机 mTLS、授权材料、恢复与硬件容量收据。业务进度窗口、探针队列限制及 2.5 秒端到端健康预算是当前代码候选限制，需按最终 SHA 实测验证。

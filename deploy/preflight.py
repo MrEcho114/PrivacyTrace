@@ -295,7 +295,11 @@ def main():
     args = parser.parse_args()
     if not args.env_file:
         validate(_build_synthetic_config())
-        print("Deployment configuration valid and production unblocked")
+        if not args.config_only:
+            raise SystemExit(
+                "Production BLOCKED: deployment capability baseline only; production launch gates remain BLOCKED without explicit authorization"
+            )
+        print("Deployment configuration valid; production gates remain closed without explicit authorization")
         return
     command = [
         "docker",
@@ -314,7 +318,11 @@ def main():
     except (OSError, subprocess.SubprocessError, ValueError, KeyError, TypeError):
         # Render errors may contain env values; do not echo stderr or exception text.
         raise SystemExit("Deployment configuration rejected; inspect non-secret inputs locally")
-    print("Deployment configuration valid and production unblocked")
+    if not args.config_only:
+        raise SystemExit(
+            "Production BLOCKED: deployment capability baseline only; production launch gates remain BLOCKED without explicit authorization"
+        )
+    print("Deployment configuration valid; production gates remain closed without explicit authorization")
 
 
 if __name__ == "__main__":

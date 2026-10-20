@@ -1,7 +1,8 @@
 """Role heartbeat and mTLS health checks use synthetic clients, not a real runner."""
 import os
 import unittest
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 from privacytrace.runtime_health import (
     HealthPublisher,
@@ -35,6 +36,41 @@ class RuntimeHealthTests(unittest.TestCase):
         ):
             client.return_value.ttl.side_effect = [12, -2]
             self.assertFalse(check_runtime_readiness(INSTANCE))
+
+    def test_runner_gateway_failure_and_recovery_change_health(self):
+        from privacytrace.runner_service import RunnerHandler
+
+        gateway = MagicMock()
+        runner = SimpleNamespace(
+            gateway=gateway,
+            faulted=False,
+            config=SimpleNamespace(image_id="sha256:" + "a" * 64),
+        )
+        handler = object.__new__(RunnerHandler)
+        handler.path = "/v1/health"
+        handler.server = SimpleNamespace(runner=runner)
+        handler.authorized = MagicMock(return_value=True)
+        handler.reply = MagicMock()
+
+        for failure in (
+            PermissionError("wrong certificate"),
+            {"version": 1, "status": "unavailable"},
+        ):
+            gateway.json.reset_mock()
+            handler.reply.reset_mock()
+            gateway.json.side_effect = failure if isinstance(failure, Exception) else None
+            gateway.json.return_value = failure
+            handler.do_GET()
+            handler.reply.assert_called_once_with(503, {"error": "RUNNER_UNAVAILABLE"})
+            gateway.json.assert_called_once_with("/v1/health", timeout=0.7)
+
+        gateway.json.side_effect = None
+        gateway.json.return_value = {"version": 1, "status": "ready"}
+        handler.reply.reset_mock()
+        handler.do_GET()
+        handler.reply.assert_called_once_with(
+            200, {"version": 1, "status": "ready", "image_id": runner.config.image_id}
+        )
 
     def test_reader_requires_real_runner_status_and_image(self):
         env = {

@@ -119,7 +119,11 @@ class PrivateClient:
         )
         self.timeout = timeout
 
-    def open(self, path, *, data=None, ticket=None):
+    def open(self, path, *, data=None, ticket=None, timeout=None):
+        if timeout is not None and (
+            type(timeout) not in (int, float) or not 0 < timeout <= self.timeout
+        ):
+            raise ValueError("Invalid private operation deadline")
         if path not in {"/v1/run", "/v1/material", "/v1/permit", "/v1/health"}:
             raise ValueError("Unknown private runtime operation")
         headers = {"Accept": "application/json"}
@@ -142,7 +146,7 @@ class PrivateClient:
             headers["Content-Type"] = "application/json"
         request = Request(self.endpoint + path, data=raw, headers=headers)
         try:
-            return self.opener.open(request, timeout=self.timeout)
+            return self.opener.open(request, timeout=self.timeout if timeout is None else timeout)
         except HTTPError as exc:
             status = exc.code
             exc.close()
@@ -152,11 +156,12 @@ class PrivateClient:
         except (URLError, OSError, TimeoutError, ssl.SSLError):
             raise RuntimeUnavailable("Private runtime unavailable") from None
 
-    def json(self, path, *, data=None, ticket=None):
+    def json(self, path, *, data=None, ticket=None, timeout=None):
         try:
-            with self.open(path, data=data, ticket=ticket) as response:
+            effective_timeout = self.timeout if timeout is None else timeout
+            with self.open(path, data=data, ticket=ticket, timeout=timeout) as response:
                 chunks, count = [], 0
-                deadline = time.monotonic() + self.timeout
+                deadline = time.monotonic() + effective_timeout
                 while block := response.read1(min(65536, MAX_JSON + 1 - count)):
                     count += len(block)
                     if count > MAX_JSON or time.monotonic() >= deadline:

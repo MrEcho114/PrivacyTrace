@@ -44,6 +44,9 @@ def check_infrastructure():
         "PT_RUNNER_URL=https://10.77.0.9:8444\n"
         "PT_RUNNER_IMAGE_ID=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
         "PT_GATEWAY_PEERS=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n"
+        "PT_GATEWAY_CONTAINER_IP=172.29.98.10\n"
+        "PT_CONTROL_SUBNET=172.29.98.0/24\n"
+        "PT_GATEWAY_HOST_IP=10.77.0.10\n"
             f"PT_SECRETS_DIR={directory.as_posix()}\n",
             encoding="utf-8",
         )

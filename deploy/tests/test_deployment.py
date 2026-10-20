@@ -308,7 +308,7 @@ class SevenServiceTopologyTests(unittest.TestCase):
                 user.split(":")[0], {"0", "root"}, f"Service '{name}' must not run as root"
             )
 
-    def test_only_web_publishes_ports(self):
+    def test_only_public_web_and_private_mtls_gateway_publish_ports(self):
         for name, service in self.raw_config["services"].items():
             ports = service.get("ports", [])
             if name == "web":
@@ -319,6 +319,10 @@ class SevenServiceTopologyTests(unittest.TestCase):
                 self.assertTrue(
                     any("80" in p for p in published) and any("443" in p for p in published)
                 )
+            elif name == "gateway":
+                self.assertEqual(len(ports), 1)
+                self.assertIn("PT_GATEWAY_HOST_IP", str(ports[0]))
+                self.assertIn(":8443:8443", str(ports[0]))
             else:
                 self.assertEqual(ports, [], f"Internal service '{name}' must not publish ports")
 
@@ -604,6 +608,19 @@ class ContextAndPreflightTests(unittest.TestCase):
         ):
             bad = copy.deepcopy(base)
             bad["services"]["worker"]["environment"][target] = invalid
+            with self.assertRaises(ValueError):
+                validate(bad)
+
+    def test_preflight_rejects_public_gateway_or_bad_container_bind(self):
+        base = _build_synthetic_config()
+        for host, bind in (
+            ("0.0.0.0", "172.29.98.10"),
+            ("10.77.0.10", "0.0.0.0"),
+            ("127.0.0.1", "172.29.98.10"),
+        ):
+            bad = copy.deepcopy(base)
+            bad["services"]["gateway"]["ports"][0]["host_ip"] = host
+            bad["services"]["gateway"]["environment"]["PRIVACYTRACE_GATEWAY_BIND"] = bind
             with self.assertRaises(ValueError):
                 validate(bad)
 

@@ -48,7 +48,7 @@ def validate(config):
             or not service.get("mem_limit")
         ):
             raise ValueError("Container isolation contract violated")
-        if name != "web" and service.get("ports"):
+        if name not in {"web", "gateway"} and service.get("ports"):
             raise ValueError("Only the HTTPS proxy may publish ports")
         if any(not mount.startswith("/") for mount in service.get("tmpfs", [])):
             raise ValueError("Tmpfs options must not become separate mount paths")
@@ -83,10 +83,9 @@ def validate(config):
         {"database", "control"},
     ):
         raise ValueError("Worker network boundary changed")
-    if "gateway" in services and set(services["gateway"]["networks"]) not in (
-        {"database"},
-        {"database", "control"},
-    ):
+    if "gateway" in services and set(services["gateway"]["networks"]) != {
+        "database", "control"
+    }:
         raise ValueError("Gateway network boundary changed")
 
     valid_secret_sets = {
@@ -136,6 +135,47 @@ def validate(config):
         allowed = valid_secret_sets.get(name, [set()])
         if actual_secrets not in allowed:
             raise ValueError("Service secret privileges changed")
+
+    if "gateway" in services:
+        gateway = services["gateway"]
+        gateway_env = gateway.get("environment", {})
+        try:
+            subnet = ipaddress.ip_network(
+                config["networks"]["control"]["ipam"]["config"][0]["subnet"],
+                strict=True,
+            )
+            container_ip = ipaddress.ip_address(
+                gateway["networks"]["control"]["ipv4_address"]
+            )
+            binds = gateway.get("ports", [])
+            if len(binds) != 1:
+                raise ValueError
+            published = binds[0]
+            host_ip = ipaddress.ip_address(published["host_ip"])
+            if (
+                subnet.version != 4
+                or not subnet.is_private
+                or container_ip not in subnet
+                or container_ip == subnet.network_address
+                or container_ip == subnet.broadcast_address
+                or gateway_env.get("PRIVACYTRACE_GATEWAY_BIND") != str(container_ip)
+                or not host_ip.is_private
+                or host_ip.is_loopback
+                or host_ip.is_link_local
+                or host_ip.is_unspecified
+                or int(published["published"]) != 8443
+                or int(published["target"]) != 8443
+                or published.get("protocol", "tcp") != "tcp"
+            ):
+                raise ValueError
+        except (KeyError, ValueError, TypeError, IndexError, AttributeError):
+            raise ValueError("Gateway must bind only a routed private mTLS interface") from None
+        peers = gateway_env.get("PRIVACYTRACE_GATEWAY_PEERS", "")
+        parts = peers.split(",")
+        if not parts or any(
+            not re.fullmatch(r"[a-f0-9]{64}", v) or v == "0" * 64 for v in parts
+        ):
+            raise ValueError("Explicit non-placeholder gateway TLS peers required")
 
     if "migrate" in services:
         mig = services["migrate"]
@@ -241,7 +281,7 @@ def _build_synthetic_config():
                 "security_opt": ["no-new-privileges:true"],
                 "pids_limit": 128,
                 "mem_limit": 805306368,
-                "networks": ["api", "database"],
+                "networks": ["api", "database", "control"],
                 "volumes": [
                     {"type": "volume", "source": "materials", "target": "/var/lib/privacytrace"}
                 ],
@@ -329,7 +369,17 @@ def _build_synthetic_config():
                 "security_opt": ["no-new-privileges:true"],
                 "pids_limit": 128,
                 "mem_limit": 536870912,
-                "networks": ["database"],
+                "networks": {
+                    "database": {},
+                    "control": {"ipv4_address": "172.29.98.10"},
+                },
+                "ports": [
+                    {"host_ip": "10.77.0.10", "published": "8443", "target": 8443}
+                ],
+                "environment": {
+                    "PRIVACYTRACE_GATEWAY_BIND": "172.29.98.10",
+                    "PRIVACYTRACE_GATEWAY_PEERS": "b" * 64,
+                },
                 "volumes": [
                     {"type": "volume", "source": "materials", "target": "/var/lib/privacytrace"}
                 ],
@@ -341,6 +391,7 @@ def _build_synthetic_config():
             "edge": {},
             "api": {"internal": True},
             "database": {"internal": True},
+            "control": {"ipam": {"config": [{"subnet": "172.29.98.0/24"}]}},
         },
     }
 

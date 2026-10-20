@@ -14,18 +14,14 @@ Covers:
 
 from __future__ import annotations
 
-import os
 import re
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 import yaml
 from fastapi.testclient import TestClient
-
 from privacytrace.main import create_app
-from privacytrace.postgres_schema import REVISION, SCHEMA, metadata, scopes, jobs, documents
-from privacytrace.resources import read_json, taxonomy
+from privacytrace.postgres_schema import REVISION, SCHEMA, metadata, scopes
 
 ROOT = Path(__file__).resolve().parents[2]
 DEPLOY_DIR = ROOT / "deploy"
@@ -49,8 +45,12 @@ def test_f1_compose_service_topology():
     # Verify edge and internal network segregation
     networks = content.get("networks", {})
     assert "edge" in networks, "edge network must exist"
-    assert "api" in networks and networks["api"].get("internal") is True, "api network must be internal"
-    assert "database" in networks and networks["database"].get("internal") is True, "database network must be internal"
+    assert "api" in networks and networks["api"].get("internal") is True, (
+        "api network must be internal"
+    )
+    assert "database" in networks and networks["database"].get("internal") is True, (
+        "database network must be internal"
+    )
 
     # Only web may join edge network; api must not join edge
     assert "edge" in services["web"].get("networks", []), "web must join edge network"
@@ -69,7 +69,9 @@ def test_f2_immutable_image_digests():
         image_val = svc.get("image", "")
         # Either exact digest or mandatory environment variable with ? guard
         if "@sha256:" in image_val:
-            assert DIGEST_REGEX.fullmatch(image_val), f"Service {name} image '{image_val}' invalid digest format"
+            assert DIGEST_REGEX.fullmatch(image_val), (
+                f"Service {name} image '{image_val}' invalid digest format"
+            )
         else:
             assert "${" in image_val and ":?" in image_val, (
                 f"Service {name} image must use immutable digest or mandatory variable guard"
@@ -101,7 +103,7 @@ def test_f3_database_migration_packaging():
 # F4: Container Security Hardening
 # ---------------------------------------------------------------------------
 def test_f4_container_security_hardening():
-    """F4: Container services must enforce read-only root, non-root user, cap_drop ALL, no-new-privileges."""
+    """F4: Services enforce read-only root, non-root, cap_drop ALL, no-new-privileges."""
     content = yaml.safe_load(COMPOSE_FILE.read_text(encoding="utf-8"))
     services = content.get("services", {})
 
@@ -119,7 +121,9 @@ def test_f4_container_security_hardening():
 
         # non-root user check
         user = svc.get("user", "")
-        assert user and user not in ("0", "root", "0:0"), f"Service {name} must specify non-root user"
+        assert user and user not in ("0", "root", "0:0"), (
+            f"Service {name} must specify non-root user"
+        )
 
         # pids_limit and mem_limit checks
         assert svc.get("pids_limit") is not None, f"Service {name} must declare pids_limit"
@@ -136,13 +140,20 @@ def test_f5_file_mounted_secret_ingestion(tmp_path):
     api_env = api_svc.get("environment", {})
 
     # Inlined plaintext check in compose.yaml
-    assert "PRIVACYTRACE_DATABASE_URL" not in api_env, "Database URL must not be inlined in environment"
-    assert "PRIVACYTRACE_DATABASE_URL_FILE" in api_env, "PRIVACYTRACE_DATABASE_URL_FILE must be configured"
+    assert "PRIVACYTRACE_DATABASE_URL" not in api_env, (
+        "Database URL must not be inlined in environment"
+    )
+    assert "PRIVACYTRACE_DATABASE_URL_FILE" in api_env, (
+        "PRIVACYTRACE_DATABASE_URL_FILE must be configured"
+    )
     assert api_env["PRIVACYTRACE_DATABASE_URL_FILE"] == "/run/secrets/runtime_database_url"
-    assert "runtime_database_url" in api_svc.get("secrets", []), "runtime_database_url must be listed under secrets"
+    assert "runtime_database_url" in api_svc.get("secrets", []), (
+        "runtime_database_url must be listed under secrets"
+    )
 
     # Preflight validation must reject inline database URLs
     import preflight
+
     bad_config = {
         "services": {
             "api": {
@@ -152,7 +163,7 @@ def test_f5_file_mounted_secret_ingestion(tmp_path):
             }
         }
     }
-    # When passed bad config, preflight validate detects either unexpected topology or inlined secret
+    # Bad config is rejected as either unexpected topology or an inlined secret
     with pytest.raises(ValueError):
         preflight.validate(bad_config)
 
@@ -207,7 +218,7 @@ def test_f7_single_run_migration_bootstrap():
 # F8: Liveness & Readiness Probes
 # ---------------------------------------------------------------------------
 def test_f8_liveness_readiness_probes(tmp_path):
-    """F8: Liveness probe returns 200; readiness probe checks dependencies; remote probe rejected."""
+    """F8: Live returns 200; ready checks dependencies; a remote peer is rejected."""
     app = create_app(store_root=tmp_path, mode="remote")
     client = TestClient(app, base_url="http://127.0.0.1:8000")
 

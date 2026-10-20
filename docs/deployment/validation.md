@@ -46,4 +46,8 @@ Linux 镜像与受限 Compose 结果以实际运行收据为准；本机 Windows
 
 ### 本轮真实组件专项 / 分层记录
 
-Deployment Baseline 新增测试独立启动 Redis server 和 solo Celery Consumer，必须见到真实同队列挑战与 Consumer TTL 确认；没有 Redis 依赖就失败，不将自动跳过作为成功。仍须在最终隔离 Linux 主机执行 PostgreSQL 租约与 Runner/Gateway 跨机 mTLS、授权材料、恢复与硬件容量收据。业务进度窗口、探针队列限制及 2.5 秒端到端健康预算是当前代码候选限制，需按最终 SHA 实测验证。
+Deployment Baseline 新增测试独立启动 Redis server 和 solo Celery Consumer，必须见到真实同队列挑战与 Consumer TTL 确认；CI 步骤会断言输出包含 `1 passed`，因此 `pytest.skip` 不会被当作成功（本地手动运行仍需 `PRIVACYTRACE_REDIS_TESTS=1`，否则该用例自行跳过，属本地而非 CI 结论）。仍须在最终隔离 Linux 主机执行 PostgreSQL 租约与 Runner/Gateway 跨机 mTLS、授权材料、恢复与硬件容量收据。业务进度窗口、探针队列限制及 2.5 秒端到端健康预算是当前代码候选限制，需按最终 SHA 实测验证。
+
+### 部署验收套件（tests/e2e）
+
+`tests/e2e/` 由 `scripts/check.sh` 与 Deployment Baseline 的 “Deployment acceptance suite” 步骤实际执行，不是只放在仓库里的自证材料。该套件以 TestClient、合成 APK、配置静态断言和受控组件为主，**不**代表七服务真实启动、真实 HTTPS→Runner→报告或硬件容量；这些仍按上表记为 NOT_TESTED。Ruff 与测试均覆盖 `tests/e2e`，新增用例必须同时通过两者。

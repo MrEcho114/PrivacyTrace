@@ -1,37 +1,33 @@
 """Tier 3: Cross-Feature Pairwise Combinations & Failure Cascade Stress Tests.
 
 Pairwise Interaction Combinations:
-1. Splits + Broker Retry: Base+splits intake during Redis broker outage; verified outbox backoff & subsequent delivery.
-2. Outbox Fencing + Worker Crash: Monotonic fence invalidates stale worker trying to commit late results after recovery.
-3. Capability Token + Rate Limiting: Sliding-window rate limit on authenticated requests without leaking tokens in 429 response.
-4. Runner Sandboxing + Material Revocation: Scope deletion mid-scan revokes HMAC material ticket and prevents report commit.
-5. Deletion Journal Replay + Backup Restore: Atomic backup restoration accompanied by deletions.jsonl replay to prevent resurrection.
-6. Multi-Service Secret Rotation: Hot rotation of database credentials file without dropping in-flight leases or tasks.
+1. Splits + Broker Retry: base+splits intake during a broker outage,
+   then outbox backoff and later delivery.
+2. Outbox Fencing + Worker Crash: the monotonic fence invalidates a
+   stale worker's late commit after recovery.
+3. Capability Token + Rate Limiting: authenticated requests are
+   rate-limited without leaking the token in a 429 response.
+4. Runner Sandboxing + Material Revocation: deleting a scope mid-scan
+   revokes its HMAC ticket and blocks the report commit.
+5. Deletion Journal Replay + Backup Restore: a restore replays
+   deletions.jsonl so deleted material cannot come back.
+6. Multi-Service Secret Rotation: the database credential file rotates
+   in place without dropping in-flight leases or tasks.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
-import os
 import time
-from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
-
-from apk_fixture_builder import package_set_archive
-from privacytrace.auth import generate_capability_token
 from privacytrace.deletion_journal import DeletionJournal
 from privacytrace.main import create_app
-from privacytrace.models import AnalysisJob, SourceOrigin
-from privacytrace.package_set import validate_package_set
-from privacytrace.postgres_execution import ExecutionLease, LeaseLost, PostgresExecution
-from privacytrace.postgres_outbox import MAX_ATTEMPTS, PostgresOutbox
-from privacytrace.runtime_backup import MAGIC
+from privacytrace.postgres_execution import LeaseLost
 from privacytrace.runtime_materials import encode, ticket_claims
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -41,14 +37,17 @@ ROOT = Path(__file__).resolve().parents[2]
 # Combination 1: Splits + Broker Retry
 # ---------------------------------------------------------------------------
 def test_combination_1_splits_and_broker_retry(tmp_path, split_package_set_factory):
-    """Combination 1: Base+splits intake queued during broker downtime; retried cleanly when broker recovers."""
+    """Combination 1: base+splits intake queues during broker downtime, then retries."""
     app = create_app(store_root=tmp_path, mode="remote")
     client = TestClient(app, base_url="http://testserver")
 
     # Create draft
     draft_resp = client.post(
         "/api/v1/web/drafts",
-        json={"name": "Splits Broker Test", "sources": [{"id": "s1", "title": "P", "text": "Policy"}]},
+        json={
+            "name": "Splits Broker Test",
+            "sources": [{"id": "s1", "title": "P", "text": "Policy"}],
+        },
     ).json()
     draft_id = draft_resp["id"]
     token = draft_resp.get("token") or draft_resp.get("capability_token")
@@ -60,7 +59,9 @@ def test_combination_1_splits_and_broker_retry(tmp_path, split_package_set_facto
         version_code="10",
         split_names=["config.en", "feature_location"],
     )
-    upload_resp = client.post(f"/api/v1/web/drafts/{draft_id}/package-set", content=pkg_set, headers=headers)
+    upload_resp = client.post(
+        f"/api/v1/web/drafts/{draft_id}/package-set", content=pkg_set, headers=headers
+    )
     assert upload_resp.status_code == 200
 
     # Simulate broker connection failure on first 2 publish attempts, then recovery
@@ -96,15 +97,27 @@ def test_combination_1_splits_and_broker_retry(tmp_path, split_package_set_facto
 # Combination 2: Outbox Fencing + Worker Crash Race
 # ---------------------------------------------------------------------------
 def test_combination_2_outbox_fencing_and_worker_crash():
-    """Combination 2: Worker A acquires fence=1; Worker A halts; Worker B recovers fence=2; Worker A late commit rejected."""
+    """Combination 2: A holds fence=1 and halts; B recovers at fence=2; A is fenced."""
     job_id = uuid4().hex
     inst_id = str(uuid4())
 
     # Worker A acquires lease
-    lease_a = {"job_id": job_id, "instance_id": inst_id, "owner": str(uuid4()), "fence": 1, "attempt": 1}
+    lease_a = {
+        "job_id": job_id,
+        "instance_id": inst_id,
+        "owner": str(uuid4()),
+        "fence": 1,
+        "attempt": 1,
+    }
 
     # Worker A simulated crash: lease expires; Worker B performs recovery and acquires lease
-    lease_b = {"job_id": job_id, "instance_id": inst_id, "owner": str(uuid4()), "fence": 2, "attempt": 2}
+    lease_b = {
+        "job_id": job_id,
+        "instance_id": inst_id,
+        "owner": str(uuid4()),
+        "fence": 2,
+        "attempt": 2,
+    }
 
     # Database state now records current_fence = 2, current_owner = lease_b['owner']
     current_db_fence = 2
@@ -112,7 +125,9 @@ def test_combination_2_outbox_fencing_and_worker_crash():
 
     def try_commit(lease):
         if lease["fence"] != current_db_fence or lease["owner"] != current_db_owner:
-            raise LeaseLost(f"Lease lost: current fence is {current_db_fence}, worker fence is {lease['fence']}")
+            raise LeaseLost(
+                f"Lease lost: current fence is {current_db_fence}, worker fence is {lease['fence']}"
+            )
         return "COMMITTED"
 
     # Worker A wakes up and attempts late commit
@@ -127,7 +142,7 @@ def test_combination_2_outbox_fencing_and_worker_crash():
 # Combination 3: Capability Token Scoping + Rate Limiting
 # ---------------------------------------------------------------------------
 def test_combination_3_capability_token_and_rate_limit(tmp_path, monkeypatch):
-    """Combination 3: Authenticated requests are subject to rate limiting without leaking token in 429."""
+    """Combination 3: Rate limiting applies without leaking the token in 429."""
     monkeypatch.setenv("PRIVACYTRACE_RATE_LIMIT", "4")
     app = create_app(store_root=tmp_path, mode="remote")
     client = TestClient(app, base_url="http://testserver")
@@ -160,8 +175,7 @@ def test_combination_3_capability_token_and_rate_limit(tmp_path, monkeypatch):
 # Combination 4: Scanner Sandboxing + Material Revocation Mid-Flight
 # ---------------------------------------------------------------------------
 def test_combination_4_scanner_sandboxing_and_material_revocation(tmp_path):
-    """Combination 4: Scope deletion during analysis revokes HMAC permit ticket and aborts scan result commit."""
-    key = b"m" * 32
+    """Combination 4: Deleting a scope mid-scan revokes the permit and aborts commit."""
     inst_id = str(uuid4())
     mat_id = str(uuid4())
     owner_id = str(uuid4())
@@ -202,14 +216,17 @@ def test_combination_4_scanner_sandboxing_and_material_revocation(tmp_path):
 # Combination 5: Deletion Journal Replay + Backup Restore + Active Leases
 # ---------------------------------------------------------------------------
 def test_combination_5_deletion_replay_and_backup_restore(tmp_path):
-    """Combination 5: Restoring backup applies external deletion journal, preventing data resurrection."""
+    """Combination 5: A restore applies the deletion journal and blocks resurrection."""
     key = b"d" * 32
     inst_id = str(uuid4())
     journal_dir = tmp_path / "deletions_root"
     journal = DeletionJournal(journal_dir, inst_id, key)
 
     # 1. State at backup time: Draft A and Draft B exist
-    db_state = {"draft_a": {"name": "Draft A", "tombstone": False}, "draft_b": {"name": "Draft B", "tombstone": False}}
+    db_state = {
+        "draft_a": {"name": "Draft A", "tombstone": False},
+        "draft_b": {"name": "Draft B", "tombstone": False},
+    }
 
     # 2. Backup taken (contains Draft A and Draft B)
     backup_snapshot = dict(db_state)

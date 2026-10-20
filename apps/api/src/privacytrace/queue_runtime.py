@@ -13,7 +13,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from .postgres_outbox import PostgresOutbox, decode_message
 

@@ -893,6 +893,12 @@ class ContextAndPreflightTests(unittest.TestCase):
                 PRIVACYTRACE_DATABASE_URL="postgresql://user:pass@host/db"
             ),
             lambda c: c["services"].pop("gateway"),
+            # The dispatcher must keep the shared materials volume; an empty
+            # volume list is not an acceptable deployment shape.
+            lambda c: c["services"]["dispatcher"].update(volumes=[]),
+            # A gateway publishing on a public interface breaks the private
+            # control-plane boundary.
+            lambda c: c["services"]["gateway"]["ports"][0].update(host_ip="0.0.0.0"),
         ]
 
         for mutation in mutations:
@@ -936,6 +942,17 @@ class DatabaseBootstrapTests(unittest.TestCase):
         self.assertEqual(
             check_rows(healthy + [("alembic_version", False, False)])["revision"], "0080_05"
         )
+        # A forward migration may add tables, but never an unprotected one.
+        self.assertEqual(
+            check_rows(healthy + [("future_table", True, True), ("alembic_version", False, False)])[
+                "revision"
+            ],
+            "0080_05",
+        )
+        with self.assertRaisesRegex(RuntimeError, "forced ROW LEVEL SECURITY"):
+            check_rows(
+                healthy + [("future_table", True, False), ("alembic_version", False, False)]
+            )
         name = sorted(EXPECTED_TABLES)[0]
         invalid = [(n, True, n != name) for n in EXPECTED_TABLES]
         with self.assertRaisesRegex(RuntimeError, "forced ROW LEVEL SECURITY"):

@@ -5,8 +5,8 @@ import hashlib
 import hmac
 import json
 import os
-import stat
 import re
+import stat
 from datetime import timedelta
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -86,8 +86,6 @@ class RuntimeMaterials:
         No user materials or signed tickets are opened; a separate real fixture
         test exercises authorized file access in the integration suite.
         """
-        import sqlalchemy as sa
-
         try:
             with self.store.engine.connect() as connection:
                 connection.execute(
@@ -97,17 +95,27 @@ class RuntimeMaterials:
                     return False
             if self.root.is_symlink():
                 return False
-            flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
-            fd = os.open(self.root, flags)
-            try:
-                if not stat.S_ISDIR(os.fstat(fd).st_mode):
-                    return False
-                with os.scandir(fd) as entries:
-                    # Opening the directory stream proves listing is possible.
-                    next(entries, None)
-                return True
-            finally:
-                os.close(fd)
+            # lstat proves the entry itself is a real directory without
+            # following links; it works on hosts without O_DIRECTORY.
+            info = os.lstat(self.root)
+            if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
+                return False
+            if hasattr(os, "O_DIRECTORY"):
+                flags = os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0)
+                fd = os.open(self.root, flags)
+                try:
+                    if not stat.S_ISDIR(os.fstat(fd).st_mode):
+                        return False
+                    with os.scandir(fd) as entries:
+                        # Opening the directory stream proves listing is possible.
+                        next(entries, None)
+                    return True
+                finally:
+                    os.close(fd)
+            # Windows has no O_DIRECTORY; listing the path proves it is readable.
+            with os.scandir(self.root) as entries:
+                next(entries, None)
+            return True
         except (OSError, ValueError, TypeError, sa.exc.SQLAlchemyError):
             return False
 

@@ -18,19 +18,15 @@ import json
 import time
 import zipfile
 from pathlib import Path
-from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
+from apk_fixture_builder import package_set_archive
 from fastapi.testclient import TestClient
-
-from apk_fixture_builder import apk_bytes, package_set_archive
-from privacytrace.auth import SecuritySeam
 from privacytrace.main import create_app
 from privacytrace.package_set import (
     MAX_EXPANDED_ZIP,
     MAX_FILE_SIZE,
-    MAX_PACKAGE_SET_SIZE,
     MAX_SINGLE_ZIP_ENTRY,
     MAX_ZIP_ENTRIES,
     PackageFile,
@@ -87,7 +83,10 @@ def test_tier2_empty_split_apk_rejection(tmp_path, synthetic_apk_factory):
 
     draft_resp = client.post(
         "/api/v1/web/drafts",
-        json={"name": "Empty Split Test", "sources": [{"id": "s1", "title": "P", "text": "Policy"}]},
+        json={
+            "name": "Empty Split Test",
+            "sources": [{"id": "s1", "title": "P", "text": "Policy"}],
+        },
     ).json()
     draft_id = draft_resp["id"]
     token = draft_resp.get("token") or draft_resp.get("capability_token")
@@ -149,7 +148,9 @@ def test_tier2_package_set_split_count_limits():
     ]
     with pytest.raises(PackageSetIntegrityError) as exc_info:
         validate_package_set([base_file, *splits_101])
-    assert exc_info.value.code == "PACKAGE_SET_TOO_LARGE" or "maximum" in exc_info.value.detail.lower()
+    assert (
+        exc_info.value.code == "PACKAGE_SET_TOO_LARGE" or "maximum" in exc_info.value.detail.lower()
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -181,8 +182,9 @@ def test_tier2_execution_timeouts():
     assert MAX_EXECUTION_SECONDS == 300
 
     # Test expired ticket rejection
-    from privacytrace.runtime_materials import encode
     import hmac
+
+    from privacytrace.runtime_materials import encode
 
     key = b"k" * 32
     past_expiry = int(time.time()) - 1  # Expired
@@ -219,7 +221,7 @@ def test_tier2_execution_timeouts():
     ],
 )
 def test_tier2_malformed_capability_tokens(tmp_path, malformed_token):
-    """Tier 2: Malformed capability tokens must be rejected with HTTP 400 or 401 without 500 error."""
+    """Tier 2: Malformed tokens are rejected with 400/401, never a 500."""
     app = create_app(store_root=tmp_path, mode="remote")
     client = TestClient(app, base_url="http://testserver")
 
@@ -239,7 +241,7 @@ def test_tier2_malformed_capability_tokens(tmp_path, malformed_token):
     "bad_host",
     [
         "evil.com, evil2.com",  # Multiple comma-separated hosts
-        "::1",                  # Unbracketed IPv6
+        "::1",  # Unbracketed IPv6
         "attacker.internal:badport",
         "user:pass@legit.com",  # Userinfo in host
     ],

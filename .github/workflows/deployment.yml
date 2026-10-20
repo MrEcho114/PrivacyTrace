@@ -37,7 +37,16 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq redis-server
           command -v redis-server
-          PRIVACYTRACE_REDIS_TESTS=1 apps/api/.venv/bin/python -m pytest             apps/api/tests/test_queue_runtime.py -k test_health_challenge_with_real_redis_and_solo_celery_consumer -q
+          out=$(PRIVACYTRACE_REDIS_TESTS=1 apps/api/.venv/bin/python -m pytest \
+            apps/api/tests/test_queue_runtime.py \
+            -k test_health_challenge_with_real_redis_and_solo_celery_consumer \
+            -q -p no:cacheprovider --no-header)
+          printf '%s\n' "$out"
+          # An opt-in test that silently skips must not count as a pass.
+          grep -q '1 passed' <<<"$out"
+      - name: Deployment acceptance suite
+        run: |
+          apps/api/.venv/bin/python -m pytest tests/e2e -q -p no:cacheprovider
 
       - name: Clean builds with negative context canaries
         run: |

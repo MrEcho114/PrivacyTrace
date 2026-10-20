@@ -9,15 +9,9 @@ Provides:
 
 from __future__ import annotations
 
-import io
-import json
-import os
 import sys
-import tempfile
-import zipfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
-from uuid import uuid4
+from typing import List, Optional
 
 import pytest
 
@@ -31,14 +25,13 @@ for p in (str(API_SRC), str(API_TESTS), str(DEPLOY_DIR), str(ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from apk_fixture_builder import apk_bytes, package_set_archive, dex
-from privacytrace.auth import generate_capability_token
-from privacytrace.package_set import PackagePart, SplitDependencies, PackageFile
+from apk_fixture_builder import apk_bytes, package_set_archive  # noqa: E402
+from privacytrace.auth import generate_capability_token  # noqa: E402
 
 
 @pytest.fixture
 def synthetic_apk_factory():
-    """Factory fixture generating valid binary Android APKs with configurable permissions and packages."""
+    """Factory fixture generating valid binary Android APKs with configurable manifest fields."""
 
     def _create(
         package_name: str = "org.privacytrace.testapp",
@@ -96,7 +89,11 @@ def split_package_set_factory(synthetic_apk_factory):
         apks = {"base.apk": base_apk}
         for sname in split_names:
             is_feature = sname.startswith("feature_")
-            perm = "android.permission.CAMERA" if "camera" in sname else "android.permission.ACCESS_FINE_LOCATION"
+            perm = (
+                "android.permission.CAMERA"
+                if "camera" in sname
+                else "android.permission.ACCESS_FINE_LOCATION"
+            )
             apks[f"{sname}.apk"] = synthetic_apk_factory(
                 package_name=package_name,
                 version_code=version_code,

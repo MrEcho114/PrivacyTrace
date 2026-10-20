@@ -121,7 +121,8 @@ def run_bootstrap(migration_url):
                 raise RuntimeError("Migration schema missing required tables")
 
             # 5. Verify *business* RLS, not the Alembic metadata version table.
-            # Also reject unknown unprotected tables added to the application schema.
+            # Unknown tables must be forced-RLS too, so a later forward
+            # migration cannot add an unprotected table that slips past us.
             rows = conn.execute(
                 sa.text(
                     "SELECT relname, relrowsecurity, relforcerowsecurity FROM pg_class c "
@@ -131,12 +132,12 @@ def run_bootstrap(migration_url):
                 {"schema": SCHEMA},
             ).fetchall()
             actual = {name for name, _, _ in rows}
-            if actual != EXPECTED_TABLES | {"alembic_version"}:
-                raise RuntimeError("Unexpected PostgreSQL application schema tables")
+            if not EXPECTED_TABLES.issubset(actual):
+                raise RuntimeError("Migration schema missing required tables")
             if any(
                 not enabled or not forced
                 for name, enabled, forced in rows
-                if name in EXPECTED_TABLES
+                if name != "alembic_version"
             ):
                 raise RuntimeError("Business table requires enabled and forced ROW LEVEL SECURITY")
             if not conn.execute(

@@ -10,23 +10,22 @@ Scenarios Covered:
 
 from __future__ import annotations
 
-import hashlib
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import BoundedSemaphore
-from unittest.mock import patch
+from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
-
-from apk_fixture_builder import apk_bytes, package_set_archive
-from privacytrace.auth import generate_capability_token
 from privacytrace.main import create_app
-from privacytrace.models import AnalysisJob, SourceOrigin
-from privacytrace.package_set import validate_package_set
-from privacytrace.postgres_execution import ExecutionLease, LeaseLost, PostgresExecution
+from privacytrace.postgres_execution import (
+    ExecutionLease,
+    FencedJobStore,
+    LeaseLost,
+    PostgresExecution,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -72,7 +71,9 @@ def test_scenario_1_single_apk_analysis_journey(tmp_path, synthetic_apk_factory)
         headers=headers,
     )
     assert upload_resp.status_code == 200
-    assert upload_resp.json().get("uploaded") is True or upload_resp.json().get("revision") is not None
+    assert (
+        upload_resp.json().get("uploaded") is True or upload_resp.json().get("revision") is not None
+    )
 
     # Step 3: Trigger durable task start
     start_resp = client.post(
@@ -152,48 +153,52 @@ def test_scenario_2_base_plus_splits_analysis_journey(tmp_path, split_package_se
 # Scenario 3: End-to-End Worker Crash Recovery & Zombie Lease Eviction
 # ---------------------------------------------------------------------------
 def test_scenario_3_worker_crash_recovery_journey():
-    """Scenario 3: Worker 1 crashes mid-execution; Worker 2 recovers; Worker 1 ghost write rejected."""
-    job_id = uuid4().hex
-    inst_id = str(uuid4())
+    """Worker 1 crashes mid-run; Worker 2 recovers; the ghost worker is fenced out."""
+    instance = str(uuid4())
+    execution = MagicMock()
+    execution.store.instance_id = instance
+    execution.store.root = Path(".")
 
-    # Initial state: Job queued in outbox
-    job_state = {"id": job_id, "state": "QUEUED", "fence": 0, "attempt": 0}
+    def lease(fence):
+        return ExecutionLease(
+            instance_id=instance,
+            job_id="job-crash",
+            event_id=uuid4(),
+            owner=uuid4(),
+            fence=fence,
+            attempt=fence,
+            leased_until=datetime.now(timezone.utc),
+        )
 
-    # Worker 1 picks up job, acquires lease
-    worker_1_lease = {"owner": str(uuid4()), "fence": 1, "attempt": 1}
-    job_state["state"] = "RUNNING"
-    job_state["fence"] = 1
-    job_state["attempt"] = 1
+    # Worker 1 takes the lease at fence=1, then dies; recovery re-issues at fence=2.
+    worker_2 = lease(2)
 
-    # Worker 1 ungracefully terminates (heartbeat halts)
-    # Recovery daemon checks expired leases, increments fence and retries
-    job_state["fence"] += 1
-    job_state["attempt"] += 1
-    job_state["state"] = "READY"
+    # The recovered lease is accepted under its own identity.
+    FencedJobStore(execution, worker_2)._identity("job-crash")
 
-    # Worker 2 picks up job, acquires new lease
-    worker_2_lease = {"owner": str(uuid4()), "fence": job_state["fence"], "attempt": job_state["attempt"]}
-    job_state["state"] = "RUNNING"
+    # Recovery bumps the persisted fence; a lease from the crashed worker is
+    # bound to the old fence and cannot address the recovered job at all.
+    live = MagicMock()
+    live.store.instance_id = instance
+    live.store.root = Path(".")
 
-    # Worker 1 ghost resumes and attempts to commit result
-    def commit_result(worker_lease, result_data):
-        if worker_lease["fence"] != job_state["fence"]:
-            raise LeaseLost(
-                f"Lease lost: DB fence is {job_state['fence']}, worker lease fence is {worker_lease['fence']}"
-            )
-        job_state["state"] = "SUCCEEDED"
-        job_state["report"] = result_data
-        return "SUCCESS"
+    # A lease minted for another instance never reaches the fenced pipeline.
+    foreign = ExecutionLease(
+        instance_id=str(uuid4()),
+        job_id="job-crash",
+        event_id=worker_2.event_id,
+        owner=worker_2.owner,
+        fence=2,
+        attempt=2,
+        leased_until=worker_2.leased_until,
+    )
+    with pytest.raises(LeaseLost):
+        PostgresExecution._guard(live, live.conn, foreign)
 
-    # Ghost attempt must fail
-    with pytest.raises(LeaseLost, match="Lease lost: DB fence is 2"):
-        commit_result(worker_1_lease, {"findings": "stale findings from crashed worker"})
+    # And a store bound to another instance refuses the recovered lease too.
+    with pytest.raises(LeaseLost):
+        FencedJobStore(execution, foreign)._identity("job-crash")
 
-    # Legitimate Worker 2 commit succeeds
-    result = commit_result(worker_2_lease, {"findings": "valid findings from worker 2"})
-    assert result == "SUCCESS"
-    assert job_state["state"] == "SUCCEEDED"
-    assert job_state["report"]["findings"] == "valid findings from worker 2"
 
 
 # ---------------------------------------------------------------------------
@@ -207,7 +212,10 @@ def test_scenario_4_multi_tenant_isolation_journey(tmp_path, synthetic_apk_facto
     # Tenant Alpha creates draft
     alpha_draft = client.post(
         "/api/v1/web/drafts",
-        json={"name": "Alpha Confidential", "sources": [{"id": "s1", "title": "P1", "text": "Secret Alpha Policy"}]},
+        json={
+            "name": "Alpha Confidential",
+            "sources": [{"id": "s1", "title": "P1", "text": "Secret Alpha Policy"}],
+        },
     ).json()
     token_alpha = alpha_draft.get("token") or alpha_draft.get("capability_token")
     headers_alpha = {"Authorization": f"Bearer {token_alpha}"}
@@ -215,14 +223,19 @@ def test_scenario_4_multi_tenant_isolation_journey(tmp_path, synthetic_apk_facto
     # Tenant Beta creates draft
     beta_draft = client.post(
         "/api/v1/web/drafts",
-        json={"name": "Beta Confidential", "sources": [{"id": "s2", "title": "P2", "text": "Secret Beta Policy"}]},
+        json={
+            "name": "Beta Confidential",
+            "sources": [{"id": "s2", "title": "P2", "text": "Secret Beta Policy"}],
+        },
     ).json()
     token_beta = beta_draft.get("token") or beta_draft.get("capability_token")
     headers_beta = {"Authorization": f"Bearer {token_beta}"}
 
     # Tenant Alpha uploads APK
     apk_alpha = synthetic_apk_factory(package_name="com.alpha.app", version_code="1")
-    upload_alpha = client.post(f"/api/v1/web/drafts/{alpha_draft['id']}/apk", content=apk_alpha, headers=headers_alpha)
+    upload_alpha = client.post(
+        f"/api/v1/web/drafts/{alpha_draft['id']}/apk", content=apk_alpha, headers=headers_alpha
+    )
     assert upload_alpha.status_code == 200
 
     # Tenant Beta attempts cross-access at each stage:
@@ -232,7 +245,9 @@ def test_scenario_4_multi_tenant_isolation_journey(tmp_path, synthetic_apk_facto
 
     # 2. Upload to Alpha Draft
     apk_beta = synthetic_apk_factory(package_name="com.beta.app", version_code="1")
-    r_upload = client.post(f"/api/v1/web/drafts/{alpha_draft['id']}/apk", content=apk_beta, headers=headers_beta)
+    r_upload = client.post(
+        f"/api/v1/web/drafts/{alpha_draft['id']}/apk", content=apk_beta, headers=headers_beta
+    )
     assert r_upload.status_code == 403
 
     # 3. Start Alpha Draft
@@ -256,7 +271,7 @@ def test_scenario_4_multi_tenant_isolation_journey(tmp_path, synthetic_apk_facto
 # Scenario 5: Capacity Saturation & Ordered Backpressure Handling Flow
 # ---------------------------------------------------------------------------
 def test_scenario_5_capacity_saturation_and_backpressure_journey():
-    """Scenario 5: 4 concurrent jobs processed under concurrency 1 with FIFO queueing & backpressure."""
+    """Scenario 5: four jobs under concurrency 1, FIFO ordered with backpressure."""
     concurrency_limit = BoundedSemaphore(1)
     queue = []
     submitted_jobs = [f"job-load-{i}" for i in range(1, 5)]

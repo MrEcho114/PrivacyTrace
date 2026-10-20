@@ -147,6 +147,29 @@ class RuntimeHealthTests(unittest.TestCase):
             connection.execute.side_effect = OSError("offline")
             self.assertFalse(materials.readiness())
 
+    def test_material_readiness_rejects_symlinked_material_root(self):
+        import tempfile
+        from pathlib import Path
+
+        from privacytrace.runtime_materials import RuntimeMaterials
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            real = root / "real"
+            real.mkdir()
+            link = root / "linked"
+            try:
+                link.symlink_to(real, target_is_directory=True)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlinks unavailable on this host")
+            materials = object.__new__(RuntimeMaterials)
+            materials.root = link
+            store = MagicMock()
+            connection = store.engine.connect.return_value.__enter__.return_value
+            connection.execute.return_value.scalar_one.return_value = 1
+            materials.store = store
+            self.assertFalse(materials.readiness())
+
     def test_gateway_unreachable_fails_closed_on_runner(self):
         from privacytrace.runner_service import RunnerHandler
         from privacytrace.runtime_tls import RuntimeUnavailable

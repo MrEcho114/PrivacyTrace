@@ -1,4 +1,4 @@
-"""Tier 1: Feature Coverage Tests for R4: Capacity Benchmarking, Telemetry & Redaction (Features F33 - F39).
+"""Tier 1: R4 capacity, telemetry and redaction (Features F33 - F39).
 
 Covers:
 - F33: Controlled Capacity Benchmarking (Concurrency 1)
@@ -12,14 +12,10 @@ Covers:
 
 from __future__ import annotations
 
-import io
 import logging
-from threading import BoundedSemaphore
 import time
 from pathlib import Path
-from uuid import uuid4
-
-import pytest
+from threading import BoundedSemaphore
 
 from privacytrace.middleware import TokenRedactionFilter, redact_log_value
 
@@ -51,7 +47,14 @@ def test_f33_controlled_capacity_concurrency_one():
 def test_f34_execution_timing_telemetry():
     """F34: Execution phases record wall-clock timings (intake, dispatch, worker, scan, eval)."""
     telemetry = {}
-    phases = ["intake", "outbox_claim", "worker_lease", "scanner_run", "consistency_eval", "db_commit"]
+    phases = [
+        "intake",
+        "outbox_claim",
+        "worker_lease",
+        "scanner_run",
+        "consistency_eval",
+        "db_commit",
+    ]
 
     start = time.perf_counter()
     for phase in phases:
@@ -118,7 +121,11 @@ def test_f36_queue_and_backpressure_behavior():
 
     assert len(processed) == 3
     # Latency should be monotonic since jobs were queued in order
-    assert processed[0]["queue_latency_s"] <= processed[1]["queue_latency_s"] <= processed[2]["queue_latency_s"]
+    assert (
+        processed[0]["queue_latency_s"]
+        <= processed[1]["queue_latency_s"]
+        <= processed[2]["queue_latency_s"]
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -180,7 +187,7 @@ def test_f38_token_redaction_in_logs():
 # F39: Comprehensive Redaction Audit
 # ---------------------------------------------------------------------------
 def test_f39_comprehensive_redaction_audit():
-    """F39: Audit checks verify that no private APK, credentials, or private host paths are emitted."""
+    """F39: Audits find no private APK, credentials or private host paths."""
     sensitive_markers = [
         "PRIVATE_KEY-----",
         "postgres://secret:password@",

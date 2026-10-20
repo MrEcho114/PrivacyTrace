@@ -1,4 +1,4 @@
-"""Tier 1: Feature Coverage Tests for R3: Isolation Safeguards, Fault Injection & Operations (Features F20 - F32).
+"""Tier 1: R3 isolation, fault injection and operations (Features F20 - F32).
 
 Covers:
 - F20: Control Plane Docker Prohibition
@@ -22,7 +22,6 @@ import hashlib
 import hmac
 import json
 import os
-import ssl
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,23 +29,21 @@ from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import pytest
-
 from privacytrace.deletion_journal import DeletionJournal
 from privacytrace.durable_intake import ensure_control_plane
 from privacytrace.models import AnalysisJob, SourceOrigin
 from privacytrace.postgres_execution import (
     MAX_EXECUTION_SECONDS,
     MAX_EXECUTIONS,
-    PostgresExecution,
+    ExecutionLease,
+    FencedJobStore,
+    LeaseLost,
 )
-from privacytrace.postgres_outbox import MAX_ATTEMPTS, PostgresOutbox
+from privacytrace.postgres_outbox import MAX_ATTEMPTS
 from privacytrace.runner_service import RunnerConfig
 from privacytrace.runtime_backup import MAGIC
-from privacytrace.runtime_materials import TICKET_KEYS, decode, encode, ticket_claims
+from privacytrace.runtime_materials import encode, ticket_claims
 from privacytrace.runtime_tls import (
-    PrivateClient,
-    RuntimeTLS,
-    json_value,
     private_endpoint,
 )
 
@@ -94,13 +91,22 @@ def test_f21_dedicated_scan_plane_isolation(tmp_path):
 # F22: Scanner Container Sandboxing
 # ---------------------------------------------------------------------------
 def test_f22_scanner_container_sandboxing():
-    """F22: Ephemeral scanner container specifications: docker_prefix uses unix socket."""
+    """F22: The scanner daemon cannot be redirected away from the local socket."""
     from privacytrace.isolated_scan import docker_prefix
 
     prefix = docker_prefix()
     assert isinstance(prefix, list)
     assert any("docker" in str(arg) for arg in prefix)
-    assert any("--host=unix:///var/run/docker.sock" in str(arg) for arg in prefix)
+    # A user config or environment must not redirect APKs to a remote daemon.
+    for scrubbed in (
+        "DOCKER_HOST",
+        "DOCKER_CONTEXT",
+        "DOCKER_TLS_VERIFY",
+        "DOCKER_CERT_PATH",
+        "DOCKER_CONFIG",
+    ):
+        assert scrubbed in prefix, f"{scrubbed} must be cleared before docker runs"
+    assert "--host=unix:///var/run/docker.sock" in prefix
 
 
 # ---------------------------------------------------------------------------
@@ -165,7 +171,7 @@ def test_f24_short_lived_hmac_tickets():
 # F25: Outbox Finite Retry & Late Discard
 # ---------------------------------------------------------------------------
 def test_f25_outbox_finite_retry_late_discard():
-    """F25: Outbox retries up to MAX_ATTEMPTS (5) with exponential backoff and drops late messages."""
+    """F25: Outbox retries to MAX_ATTEMPTS, then drops late messages."""
     assert MAX_ATTEMPTS == 5
 
     # Exponential backoff formula verification: min(60, 2**(attempt - 1))
@@ -181,10 +187,39 @@ def test_f26_fenced_lease_execution():
     assert MAX_EXECUTION_SECONDS == 300
     assert MAX_EXECUTIONS == 3
 
-    # Simulated split-brain check: lease with fence=1 rejected when fence=2 committed
-    current_fence = 2
-    stale_worker_fence = 1
-    assert stale_worker_fence < current_fence, "Stale worker fence must be detected as outdated"
+    # A worker holding another instance's lease must be rejected by the fence.
+    instance = str(uuid4())
+    execution = MagicMock()
+    execution.store.instance_id = instance
+    execution.store.root = Path(".")
+
+    lease = ExecutionLease(
+        instance_id=instance,
+        job_id="job-1",
+        event_id=uuid4(),
+        owner=uuid4(),
+        fence=2,
+        attempt=1,
+        leased_until=datetime.now(timezone.utc),
+    )
+    fenced = FencedJobStore(execution, lease)
+
+    # Same lease identity is accepted; a stale/foreign one is refused.
+    fenced._identity("job-1")
+    with pytest.raises(LeaseLost):
+        fenced._identity("job-2")
+
+    stale = ExecutionLease(
+        instance_id=str(uuid4()),
+        job_id="job-1",
+        event_id=lease.event_id,
+        owner=lease.owner,
+        fence=1,
+        attempt=1,
+        leased_until=lease.leased_until,
+    )
+    with pytest.raises(LeaseLost):
+        FencedJobStore(execution, stale)._identity("job-1")
 
 
 # ---------------------------------------------------------------------------
@@ -231,15 +266,32 @@ def test_f28_orphan_container_cleanup():
 # ---------------------------------------------------------------------------
 def test_f29_consistent_backup_restore():
     """F29: Atomic backup container format uses PTBACKUP1 magic header and HMAC validation."""
-    assert MAGIC == b"PTBACKUP1\n"
-    assert len(MAGIC) == 10
+    import io
+
+    from privacytrace.runtime_backup import RuntimeBackup
+
+    backup = object.__new__(RuntimeBackup)
+    backup._key = b"k" * 32
+
+    # A foreign container is rejected before any manifest bytes are trusted.
+    with pytest.raises(ValueError, match="Unsupported backup format"):
+        backup._read(io.BytesIO(b"NOTBACKUP\n" + b"\x00" * 8))
+
+    # A plausible header with an absurd manifest length is rejected.
+    with pytest.raises(ValueError, match="Invalid backup manifest size"):
+        backup._read(io.BytesIO(MAGIC + (2**63).to_bytes(8, "big")))
+
+    # A well-formed header whose signature does not verify is rejected.
+    forged = b'{"version":1}' + b"\x00" * 32
+    with pytest.raises(ValueError, match="Backup authentication rejected"):
+        backup._read(io.BytesIO(MAGIC + len(forged[:12]).to_bytes(8, "big") + forged))
 
 
 # ---------------------------------------------------------------------------
 # F30: Deletion Journal Replay
 # ---------------------------------------------------------------------------
 def test_f30_deletion_journal_replay(tmp_path):
-    """F30: Deletion journal records HMAC-chained deletion intents and prevents data resurrection."""
+    """F30: The deletion journal HMAC-chains intents and blocks resurrection."""
     key = b"k" * 32
     instance_id = str(uuid4())
     journal_dir = tmp_path / "deletions_root"
@@ -262,8 +314,21 @@ def test_f30_deletion_journal_replay(tmp_path):
 # ---------------------------------------------------------------------------
 def test_f31_service_update_and_rollback():
     """F31: Database migration head is forward-only, and schema revisions are documented."""
+    from alembic.config import Config
+    from alembic.script import ScriptDirectory
     from privacytrace.postgres_schema import REVISION
-    assert REVISION == "0080_05"
+
+    root = Path(__file__).resolve().parents[2]
+    script = ScriptDirectory.from_config(Config(str(root / "apps/api/alembic.ini")))
+
+    heads = script.get_heads()
+    assert heads == [REVISION], f"Packaged migration head {heads} != runtime {REVISION}"
+
+    # Every revision has exactly one down_revision, so the chain is linear
+    # and a rollback target is always unambiguous.
+    for revision in script.walk_revisions():
+        assert revision.down_revision is None or isinstance(revision.down_revision, str)
+        assert not isinstance(revision.down_revision, tuple), "Branching migration history"
 
 
 # ---------------------------------------------------------------------------

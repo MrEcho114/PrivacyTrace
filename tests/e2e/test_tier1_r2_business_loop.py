@@ -1,4 +1,4 @@
-"""Tier 1: Feature Coverage Tests for R2: Dual-Scope HTTPS Business Pipeline & Splits (Features F10 - F19).
+"""Tier 1: R2 dual-scope HTTPS business pipeline and splits (Features F10 - F19).
 
 Covers:
 - F10: Caddy HTTPS Reverse Proxy (Header stripping, SNI, HSTS)
@@ -16,16 +16,13 @@ Covers:
 from __future__ import annotations
 
 import hashlib
-import json
 import os
 import re
 from pathlib import Path
 from unittest.mock import patch
 from uuid import uuid4
 
-import pytest
 from fastapi.testclient import TestClient
-
 from privacytrace.auth import generate_capability_token
 from privacytrace.main import create_app
 from privacytrace.package_set import MAX_FILE_SIZE, MAX_PACKAGE_SET_SIZE
@@ -44,10 +41,14 @@ def test_f10_caddy_https_reverse_proxy(tmp_path):
     caddy_text = caddy_file.read_text(encoding="utf-8")
 
     common_caddy = ROOT / "deploy" / "Caddyfile.common"
-    text_to_check = caddy_text + (common_caddy.read_text(encoding="utf-8") if common_caddy.exists() else "")
+    text_to_check = caddy_text + (
+        common_caddy.read_text(encoding="utf-8") if common_caddy.exists() else ""
+    )
 
     assert "header_up -X-Forwarded-For" in text_to_check or "X-Forwarded-For" in text_to_check
-    assert "150MB" in text_to_check or "150M" in text_to_check, "150MB request body limit must be set in Caddy"
+    assert "150MB" in text_to_check or "150M" in text_to_check, (
+        "150MB request body limit must be set in Caddy"
+    )
 
     # API middleware rejects untrusted proxy headers when peer is not a trusted proxy
     with patch.dict(os.environ, {"PRIVACYTRACE_TRUSTED_PROXIES": "192.168.200.1/32"}):
@@ -62,7 +63,7 @@ def test_f10_caddy_https_reverse_proxy(tmp_path):
 # F11: Capability Token Lifecycle
 # ---------------------------------------------------------------------------
 def test_f11_capability_token_lifecycle(tmp_path):
-    """F11: Capability tokens are generated anonymously, hashed via SHA-256, and rejected in query params."""
+    """F11: Tokens are issued anonymously, stored hashed, and rejected as query params."""
     token, digest = generate_capability_token()
     assert TOKEN_REGEX.fullmatch(token), f"Token '{token}' does not match pattern"
     assert hashlib.sha256(token.encode("ascii")).hexdigest() == digest
@@ -118,7 +119,9 @@ def test_f12_https_e2e_pipeline_execution(tmp_path, synthetic_apk_factory):
     apk = synthetic_apk_factory(permission="android.permission.CAMERA")
     upload_resp = client.post(f"/api/v1/web/drafts/{draft_id}/apk", content=apk, headers=headers)
     assert upload_resp.status_code == 200
-    assert upload_resp.json().get("uploaded") is True or upload_resp.json().get("revision") is not None
+    assert (
+        upload_resp.json().get("uploaded") is True or upload_resp.json().get("revision") is not None
+    )
 
     # 3. Start task
     start_resp = client.post(
@@ -181,7 +184,9 @@ def test_f14_base_splits_analysis_flow(tmp_path, split_package_set_factory):
         "/api/v1/web/drafts",
         json={
             "name": "Split Package Set Test",
-            "sources": [{"id": "s1", "title": "Policy", "text": "We do not use camera or location."}],
+            "sources": [
+                {"id": "s1", "title": "Policy", "text": "We do not use camera or location."}
+            ],
         },
     )
     assert draft_resp.status_code == 200
@@ -240,6 +245,13 @@ def test_f15_cross_scope_and_instance_isolation(tmp_path):
         headers={"Authorization": f"Bearer {token_a}"},
     )
     assert cross_delete.status_code == 403
+
+    # Scope B must still be readable by its own token after the cross attempts.
+    own_read = client.get(
+        f"/api/v1/web/drafts/{resp_b['id']}",
+        headers={"Authorization": f"Bearer {token_b}"},
+    )
+    assert own_read.status_code == 200
 
     # Unauthenticated access must receive 401
     unauth = client.get(f"/api/v1/web/drafts/{resp_b['id']}")
@@ -322,7 +334,7 @@ def test_f18_rate_limiting_and_retry_after(tmp_path, monkeypatch):
 # F19: Malicious Source & CIDR Protection
 # ---------------------------------------------------------------------------
 def test_f19_malicious_source_cidr_protection(tmp_path, monkeypatch):
-    """F19: X-Forwarded-For is traversed right-to-left against trusted proxy CIDRs; untrusted rejected."""
+    """F19: X-Forwarded-For walks back across trusted proxy CIDRs only."""
     monkeypatch.setenv("PRIVACYTRACE_TRUSTED_PROXIES", "10.0.0.0/8,127.0.0.1/32")
     app = create_app(store_root=tmp_path, mode="remote")
     client = TestClient(app, base_url="http://testserver")

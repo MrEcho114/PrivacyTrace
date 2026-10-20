@@ -1,11 +1,12 @@
 """Deployment behavior and regressions; no APK or external model inputs."""
 
+import copy
 import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import httpx
 import yaml
@@ -13,7 +14,14 @@ import yaml
 DEPLOY = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(DEPLOY))
 from audit_context import audit  # noqa: E402
-from serve import SmokeSurface, configure, create_app  # noqa: E402
+from bootstrap import resolve_migration_url, validate_migrator_role  # noqa: E402
+from preflight import _build_synthetic_config, validate  # noqa: E402
+from privacytrace.storage_factory import (  # noqa: E402
+    create_store,
+    resolve_redis_url,
+)
+from probe import probe  # noqa: E402
+from serve import ProductionSurface, SmokeSurface, configure, create_app  # noqa: E402
 
 
 class PackagedResourceTests(unittest.TestCase):
@@ -66,14 +74,77 @@ class StartupTests(unittest.TestCase):
                     self.assertIn(",uid=", mount)
                     self.assertIn(",gid=", mount)
 
-    def test_production_refuses_even_when_runtime_variables_are_present(self):
+    def test_production_configure_success_with_secret_file(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            secret_file = Path(temp_dir) / "runtime_database_url"
+            secret_file.write_text(
+                "postgresql+psycopg://privacytrace_runtime:pass@127.0.0.1:5432/privacytrace_test\n"
+            )
+
+            with patch.dict(
+                os.environ,
+                {
+                    "PT_DEPLOY_MODE": "production",
+                    "PT_PUBLIC_HOST": "privacytrace.test",
+                    "PRIVACYTRACE_STORAGE": "postgres",
+                    "PRIVACYTRACE_INSTANCE_ID": "0163a8b5-3eed-481a-bfb0-31fd3fe523dc",
+                    "PRIVACYTRACE_DATABASE_URL_FILE": str(secret_file),
+                },
+                clear=True,
+            ):
+                host = configure()
+                self.assertEqual(host, "privacytrace.test")
+                self.assertEqual(os.environ["PRIVACYTRACE_MODE"], "remote")
+                self.assertEqual(os.environ["PRIVACYTRACE_STORAGE"], "postgres")
+                self.assertEqual(os.environ["PRIVACYTRACE_ALLOWED_HOSTS"], "privacytrace.test")
+
+    def test_production_configure_rejects_missing_instance_id_or_invalid_host(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            secret_file = Path(temp_dir) / "runtime_database_url"
+            secret_file.write_text(
+                "postgresql+psycopg://privacytrace_runtime:pass@127.0.0.1:5432/privacytrace_test\n"
+            )
+
+            with patch.dict(
+                os.environ,
+                {
+                    "PT_DEPLOY_MODE": "production",
+                    "PT_PUBLIC_HOST": "privacytrace.test",
+                    "PRIVACYTRACE_STORAGE": "postgres",
+                    "PRIVACYTRACE_DATABASE_URL_FILE": str(secret_file),
+                },
+                clear=True,
+            ), self.assertRaises(RuntimeError):
+                configure()
+
+            for bad_host in ("*", "privacytrace.test:8000", "evil\nnewline"):
+                with patch.dict(
+                    os.environ,
+                    {
+                        "PT_DEPLOY_MODE": "production",
+                        "PT_PUBLIC_HOST": bad_host,
+                        "PRIVACYTRACE_STORAGE": "postgres",
+                        "PRIVACYTRACE_INSTANCE_ID": "0163a8b5-3eed-481a-bfb0-31fd3fe523dc",
+                        "PRIVACYTRACE_DATABASE_URL_FILE": str(secret_file),
+                    },
+                    clear=True,
+                ):
+                    with self.assertRaises(RuntimeError):
+                        configure()
+
+    def test_production_configure_rejects_inlined_plaintext_database_url(self):
         with patch.dict(
             os.environ,
-            {"PT_DEPLOY_MODE": "production", "PRIVACYTRACE_STORAGE": "postgres"},
+            {
+                "PT_DEPLOY_MODE": "production",
+                "PT_PUBLIC_HOST": "privacytrace.test",
+                "PRIVACYTRACE_STORAGE": "postgres",
+                "PRIVACYTRACE_INSTANCE_ID": "0163a8b5-3eed-481a-bfb0-31fd3fe523dc",
+                "PRIVACYTRACE_DATABASE_URL": "postgresql+psycopg://user:pass@host/db",
+            },
             clear=True,
-        ):
-            with self.assertRaisesRegex(RuntimeError, "pending #80"):
-                configure()
+        ), self.assertRaisesRegex(RuntimeError, "Do not inline secret database URLs"):
+            configure()
 
     def test_missing_or_misspelled_mode_cannot_enable_smoke(self):
         for env in ({}, {"PT_DEPLOY_MODE": "smkoe"}):
@@ -199,6 +270,403 @@ class ContextTests(unittest.TestCase):
             (root / "rules").mkdir()
             (root / "rules/taxonomy.v0.3.json").write_text("{}")
             self.assertEqual(audit(root), 1)
+
+
+class SevenServiceTopologyTests(unittest.TestCase):
+    def setUp(self):
+        self.compose_path = DEPLOY / "compose.yaml"
+        self.raw_config = yaml.safe_load(self.compose_path.read_text(encoding="utf-8"))
+
+    def test_compose_defines_exact_seven_services(self):
+        services = set(self.raw_config["services"])
+        expected = {"web", "api", "postgres", "redis", "worker", "dispatcher", "gateway"}
+        self.assertEqual(
+            services,
+            expected,
+            f"Compose must define exactly the 7 control plane services: {expected}",
+        )
+
+    def test_all_seven_services_enforce_hardened_isolation(self):
+        for name, service in self.raw_config["services"].items():
+            self.assertTrue(service.get("read_only"), f"Service '{name}' must have read_only: true")
+            self.assertEqual(
+                service.get("cap_drop"), ["ALL"], f"Service '{name}' must have cap_drop: [ALL]"
+            )
+            self.assertIn(
+                "no-new-privileges:true",
+                service.get("security_opt", []),
+                f"Service '{name}' must enforce no-new-privileges",
+            )
+            self.assertTrue(service.get("init"), f"Service '{name}' must enable init process")
+            self.assertLessEqual(
+                service.get("pids_limit", 999), 128, f"Service '{name}' pids_limit must be <= 128"
+            )
+
+            user = str(service.get("user", ""))
+            self.assertTrue(user, f"Service '{name}' must declare explicit non-root user")
+            self.assertNotIn(
+                user.split(":")[0], {"0", "root"}, f"Service '{name}' must not run as root"
+            )
+
+    def test_only_web_publishes_ports(self):
+        for name, service in self.raw_config["services"].items():
+            ports = service.get("ports", [])
+            if name == "web":
+                published = set(
+                    p if isinstance(p, str) else f"{p.get('published')}:{p.get('target')}"
+                    for p in ports
+                )
+                self.assertTrue(
+                    any("80" in p for p in published) and any("443" in p for p in published)
+                )
+            else:
+                self.assertEqual(ports, [], f"Internal service '{name}' must not publish ports")
+
+    def test_zero_docker_socket_and_no_host_binds(self):
+        for name, service in self.raw_config["services"].items():
+            for v in service.get("volumes", []):
+                v_str = v if isinstance(v, str) else f"{v.get('source')}:{v.get('target')}"
+                self.assertNotIn(
+                    "docker.sock", v_str, f"Service '{name}' must not mount docker.sock"
+                )
+                if isinstance(v, dict):
+                    self.assertEqual(
+                        v.get("type", "volume"),
+                        "volume",
+                        f"Service '{name}' must not use host bind mounts",
+                    )
+                elif isinstance(v, str):
+                    self.assertFalse(
+                        v.startswith(("/", ".")),
+                        f"Service '{name}' volume {v} must be a named volume, not host path",
+                    )
+
+    def test_materials_volume_shared_correctly(self):
+        services = self.raw_config["services"]
+        for role in ("api", "worker", "dispatcher", "gateway"):
+            vols = [
+                v if isinstance(v, str) else v.get("source")
+                for v in services[role].get("volumes", [])
+            ]
+            self.assertTrue(
+                any("materials" in str(v) for v in vols),
+                f"Service '{role}' must mount shared materials volume",
+            )
+
+    def test_network_isolation_boundaries(self):
+        networks = self.raw_config["networks"]
+        self.assertTrue(networks["api"].get("internal"), "Network 'api' must be internal: true")
+        self.assertTrue(
+            networks["database"].get("internal"), "Network 'database' must be internal: true"
+        )
+        self.assertFalse(
+            networks["edge"].get("internal", False), "Network 'edge' must be external bridge"
+        )
+
+        services = self.raw_config["services"]
+        self.assertNotIn(
+            "database", services["web"]["networks"], "Web proxy must NEVER join database network"
+        )
+        self.assertIn("database", services["postgres"]["networks"])
+        self.assertIn("database", services["redis"]["networks"])
+        self.assertIn("database", services["worker"]["networks"])
+        self.assertIn("database", services["dispatcher"]["networks"])
+        self.assertIn("database", services["gateway"]["networks"])
+
+
+class ProductionProbeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_production_readiness_probe_success_with_revision_0080_05(self):
+        async def downstream(scope, receive, send):
+            pass
+
+        with patch("serve.check_database_readiness", return_value=(True, "0080_05")):
+            surface = ProductionSurface(downstream, "privacytrace.test")
+            client = httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=surface, client=("127.0.0.1", 1234)),
+                base_url="https://privacytrace.test",
+            )
+            async with client:
+                res_live = await client.get("/_health/live")
+                self.assertEqual(res_live.status_code, 200)
+                self.assertEqual(res_live.json(), {"status": "live"})
+
+                res_ready = await client.get("/_health/ready")
+                self.assertEqual(res_ready.status_code, 200)
+                self.assertEqual(res_ready.json(), {"status": "ready"})
+
+    async def test_production_readiness_probe_fails_when_db_down_or_unmigrated(self):
+        async def downstream(scope, receive, send):
+            pass
+
+        with patch("serve.check_database_readiness", return_value=(False, "DB_CONNECTION_ERROR")):
+            surface = ProductionSurface(downstream, "privacytrace.test")
+            client = httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=surface, client=("127.0.0.1", 1234)),
+                base_url="https://privacytrace.test",
+            )
+            async with client:
+                res = await client.get("/_health/ready")
+                self.assertEqual(res.status_code, 503)
+                self.assertEqual(res.json(), {"status": "unavailable"})
+
+        with patch("serve.check_database_readiness", return_value=(False, "REVISION_MISMATCH")):
+            surface = ProductionSurface(downstream, "privacytrace.test")
+            client = httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=surface, client=("127.0.0.1", 1234)),
+                base_url="https://privacytrace.test",
+            )
+            async with client:
+                res = await client.get("/_health/ready")
+                self.assertEqual(res.status_code, 503)
+                self.assertEqual(res.json(), {"status": "unavailable"})
+
+    async def test_probe_denied_for_remote_peer_ip(self):
+        async def downstream(scope, receive, send):
+            pass
+
+        surface = ProductionSurface(downstream, "privacytrace.test")
+        client = httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=surface, client=("192.168.10.5", 1234)),
+            base_url="https://privacytrace.test",
+        )
+        async with client:
+            self.assertEqual((await client.get("/_health/live")).status_code, 404)
+            self.assertEqual((await client.get("/_health/ready")).status_code, 404)
+
+    def test_probe_cli_script_returns_appropriate_exit_codes(self):
+        self.assertEqual(probe("unknown_kind"), 2)
+        with patch.dict(os.environ, {"PT_API_PORT": "59999"}):
+            self.assertEqual(probe("live"), 1)
+            self.assertEqual(probe("ready"), 1)
+
+
+class SecretFileResolutionTests(unittest.TestCase):
+    def test_storage_factory_resolves_database_url_from_file(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            secret_file = Path(temp_dir) / "runtime_db_secret"
+            test_dsn = "postgresql+psycopg://privacytrace_runtime:supersecret@127.0.0.1:5432/privacytrace_test\n"
+            secret_file.write_text(test_dsn, encoding="utf-8")
+
+            with (
+                patch.dict(
+                    os.environ,
+                    {
+                        "PRIVACYTRACE_STORAGE": "postgres",
+                        "PRIVACYTRACE_INSTANCE_ID": "0163a8b5-3eed-481a-bfb0-31fd3fe523dc",
+                        "PRIVACYTRACE_DATABASE_URL_FILE": str(secret_file),
+                    },
+                    clear=True,
+                ),
+                patch("privacytrace.postgres_store.PostgresJobStore") as mock_store,
+            ):
+                create_store(Path(temp_dir))
+                mock_store.assert_called_once()
+                args, _ = mock_store.call_args
+                self.assertEqual(args[0], test_dsn.strip())
+                self.assertEqual(args[1], "0163a8b5-3eed-481a-bfb0-31fd3fe523dc")
+
+    def test_storage_factory_rejects_missing_or_empty_database_url_file(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch.dict(
+                os.environ,
+                {
+                    "PRIVACYTRACE_STORAGE": "postgres",
+                    "PRIVACYTRACE_INSTANCE_ID": "0163a8b5-3eed-481a-bfb0-31fd3fe523dc",
+                    "PRIVACYTRACE_DATABASE_URL_FILE": str(Path(temp_dir) / "nonexistent"),
+                },
+                clear=True,
+            ):
+                with self.assertRaises(ValueError):
+                    create_store(Path(temp_dir))
+
+            empty_file = Path(temp_dir) / "empty"
+            empty_file.write_text("   \n\t", encoding="utf-8")
+            with patch.dict(
+                os.environ,
+                {
+                    "PRIVACYTRACE_STORAGE": "postgres",
+                    "PRIVACYTRACE_INSTANCE_ID": "0163a8b5-3eed-481a-bfb0-31fd3fe523dc",
+                    "PRIVACYTRACE_DATABASE_URL_FILE": str(empty_file),
+                },
+                clear=True,
+            ), self.assertRaises(ValueError):
+                create_store(Path(temp_dir))
+
+    def test_resolve_redis_url_from_file_and_env(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            secret_file = Path(temp_dir) / "redis_secret"
+            secret_file.write_text("redis://:redispass@127.0.0.1:6379/1\n", encoding="utf-8")
+
+            with patch.dict(
+                os.environ, {"PRIVACYTRACE_REDIS_URL_FILE": str(secret_file)}, clear=True
+            ):
+                self.assertEqual(resolve_redis_url(), "redis://:redispass@127.0.0.1:6379/1")
+
+            with patch.dict(
+                os.environ, {"PRIVACYTRACE_BROKER_URL_FILE": str(secret_file)}, clear=True
+            ):
+                self.assertEqual(resolve_redis_url(), "redis://:redispass@127.0.0.1:6379/1")
+
+            with patch.dict(
+                os.environ,
+                {"PRIVACYTRACE_REDIS_URL": "redis://:direct@127.0.0.1:6379/0"},
+                clear=True,
+            ):
+                self.assertEqual(resolve_redis_url(), "redis://:direct@127.0.0.1:6379/0")
+
+    def test_storage_factory_direct_env_url(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with (
+                patch.dict(
+                    os.environ,
+                    {
+                        "PRIVACYTRACE_STORAGE": "postgres",
+                        "PRIVACYTRACE_INSTANCE_ID": "0163a8b5-3eed-481a-bfb0-31fd3fe523dc",
+                        "PRIVACYTRACE_DATABASE_URL": "postgresql+psycopg://user:pass@localhost/db",
+                    },
+                    clear=True,
+                ),
+                patch("privacytrace.postgres_store.PostgresJobStore") as mock_store,
+            ):
+                create_store(Path(temp_dir))
+                mock_store.assert_called_once()
+                args, _ = mock_store.call_args
+                self.assertEqual(args[0], "postgresql+psycopg://user:pass@localhost/db")
+
+
+class ContextAndPreflightTests(unittest.TestCase):
+    def test_audit_context_accepts_clean_layout_including_bootstrap(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            for path_str in (
+                "package.json",
+                "package-lock.json",
+                "apps/api/pyproject.toml",
+                "apps/api/uv.lock",
+                "apps/api/alembic.ini",
+                "apps/web/package.json",
+                "apps/web/index.html",
+                "apps/web/tsconfig.json",
+                "apps/web/vite.config.ts",
+                "rules/taxonomy.v0.3.json",
+                "rules/sdk-signatures.v1.0.json",
+                "samples/demo/evaluation-input.json",
+                "deploy/Dockerfile",
+                "deploy/serve.py",
+                "deploy/probe.py",
+                "deploy/bootstrap.py",
+                "deploy/audit_context.py",
+                "deploy/Caddyfile",
+                "deploy/Caddyfile.common",
+                "apps/web/public/fonts/NotoSansSC-Variable.woff2",
+                "apps/web/public/fonts/NotoSerifSC-Variable.woff2",
+                "apps/web/public/fonts/licenses/NotoSansSC-OFL.txt",
+                "apps/web/public/fonts/licenses/NotoSerifSC-OFL.txt",
+            ):
+                p = root / path_str
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_text("{}", encoding="utf-8")
+
+            (root / "apps/api/src/privacytrace").mkdir(parents=True, exist_ok=True)
+            (root / "apps/api/src/privacytrace/main.py").write_text("# code", encoding="utf-8")
+            (root / "apps/api/migrations").mkdir(parents=True, exist_ok=True)
+            (root / "apps/api/migrations/env.py").write_text("# code", encoding="utf-8")
+            (root / "apps/web/src").mkdir(parents=True, exist_ok=True)
+            (root / "apps/web/src/App.vue").write_text("<template />", encoding="utf-8")
+
+            count = audit(root)
+            self.assertGreater(count, 20)
+
+    def test_preflight_validates_seven_services_cleanly(self):
+        config = _build_synthetic_config()
+        validate(config)
+
+    def test_preflight_mutation_attacks_are_rejected(self):
+        base_config = _build_synthetic_config()
+
+        mutations = [
+            lambda c: c["services"]["api"].update(ports=[{"published": "8000", "target": 8000}]),
+            lambda c: c["services"]["worker"].update(
+                volumes=[
+                    {
+                        "type": "bind",
+                        "source": "/var/run/docker.sock",
+                        "target": "/var/run/docker.sock",
+                    }
+                ]
+            ),
+            lambda c: c["services"]["dispatcher"].update(user="0:0"),
+            lambda c: c["services"]["gateway"].update(read_only=False),
+            lambda c: c["services"]["api"].update(image="example.invalid/api:latest"),
+            lambda c: c["networks"]["database"].update(internal=False),
+            lambda c: c["services"]["web"]["networks"].append("database"),
+            lambda c: c["services"]["api"]["environment"].update(
+                PRIVACYTRACE_DATABASE_URL="postgresql://user:pass@host/db"
+            ),
+            lambda c: c["services"].pop("gateway"),
+        ]
+
+        for mutation in mutations:
+            bad = copy.deepcopy(base_config)
+            mutation(bad)
+            with self.assertRaises(ValueError, msg="Unsafe deployment configuration was accepted"):
+                validate(bad)
+
+
+class DatabaseBootstrapTests(unittest.TestCase):
+    def test_resolve_migration_url_from_file_and_env(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = Path(temp_dir) / "migration_url"
+            file_path.write_text(
+                "postgresql+psycopg://privacytrace_migrator:pass@127.0.0.1:5432/privacytrace_test\n"
+            )
+
+            self.assertEqual(
+                resolve_migration_url(file_path),
+                "postgresql+psycopg://privacytrace_migrator:pass@127.0.0.1:5432/privacytrace_test",
+            )
+
+            with patch.dict(
+                os.environ, {"PRIVACYTRACE_MIGRATION_DATABASE_URL_FILE": str(file_path)}, clear=True
+            ):
+                self.assertEqual(
+                    resolve_migration_url(),
+                    "postgresql+psycopg://privacytrace_migrator:pass@127.0.0.1:5432/privacytrace_test",
+                )
+
+            with patch.dict(
+                os.environ,
+                {
+                    "PRIVACYTRACE_MIGRATION_DATABASE_URL": "postgresql+psycopg://privacytrace_migrator:pass2@127.0.0.1:5432/test"
+                },
+                clear=True,
+            ):
+                self.assertEqual(
+                    resolve_migration_url(),
+                    "postgresql+psycopg://privacytrace_migrator:pass2@127.0.0.1:5432/test",
+                )
+
+    def test_resolve_migration_url_rejects_missing(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with self.assertRaises(ValueError):
+                resolve_migration_url()
+
+    def test_validate_migrator_role_rejects_runtime_user(self):
+        mock_conn = MagicMock()
+        mock_conn.execute.return_value.scalar_one.return_value = "privacytrace_runtime"
+
+        with self.assertRaisesRegex(ValueError, "not runtime credentials"):
+            validate_migrator_role(mock_conn)
+
+    def test_validate_migrator_role_rejects_superuser_or_bypassrls(self):
+        mock_conn = MagicMock()
+        mock_conn.execute.side_effect = [
+            MagicMock(scalar_one=MagicMock(return_value="privacytrace_migrator")),
+            MagicMock(fetchone=MagicMock(return_value=(True, False, False, False))),
+        ]
+
+        with self.assertRaisesRegex(ValueError, "must not possess superuser"):
+            validate_migrator_role(mock_conn)
 
 
 if __name__ == "__main__":

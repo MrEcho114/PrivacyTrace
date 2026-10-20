@@ -6,43 +6,76 @@ and must never be used as the production runtime or as a scanning receipt.
 
 import json
 import os
+import re
 from pathlib import Path
+
+from privacytrace.storage_factory import resolve_database_url
 
 READ_PATHS = {"/api/v1/health", "/api/v1/taxonomy", "/api/v1/demo/report"}
 
 
 def configure():
-    if os.environ.get("PT_DEPLOY_MODE", "production") != "smoke":
-        raise RuntimeError("PT-SRV-102: production blocked pending #80 runtime integration")
-    # Do not allow smoke to open a real database or consume real credentials.
-    if os.environ.get("PRIVACYTRACE_STORAGE", "json") != "json":
-        raise RuntimeError("PT-SRV-102: smoke requires disposable JSON storage")
-    if any(
-        os.environ.get(key)
-        for key in (
-            "PRIVACYTRACE_DATABASE_URL",
-            "PRIVACYTRACE_MIGRATION_DATABASE_URL",
-            "PRIVACYTRACE_DATABASE_URL_FILE",
-            "PRIVACYTRACE_LLM_API_KEY",
-        )
-    ):
-        raise RuntimeError("PT-SRV-102: smoke must not receive application secrets")
+    mode = os.environ.get("PT_DEPLOY_MODE", "production")
     host = os.environ.get("PT_PUBLIC_HOST", "privacytrace.test")
     # A single DNS hostname only; never accept wildcards, ports or Caddy syntax.
-    import re
-
     if not re.fullmatch(r"(?=.{1,253}$)[a-z0-9]+(?:[.-][a-z0-9]+)*", host):
         raise RuntimeError("PT-SRV-102: a single lowercase DNS hostname is required")
-    os.environ.update(
-        {
-            "PRIVACYTRACE_MODE": "remote",
-            "PRIVACYTRACE_STORAGE": "json",
-            "PRIVACYTRACE_ALLOWED_HOSTS": host,
-            "PRIVACYTRACE_TRUSTED_PROXIES": "",
-            "PRIVACYTRACE_LLM_ENABLED": "0",
-        }
-    )
-    return host
+
+    if mode == "smoke":
+        # Do not allow smoke to open a real database or consume real credentials.
+        if os.environ.get("PRIVACYTRACE_STORAGE", "json") != "json":
+            raise RuntimeError("PT-SRV-102: smoke requires disposable JSON storage")
+        if any(
+            os.environ.get(key)
+            for key in (
+                "PRIVACYTRACE_DATABASE_URL",
+                "PRIVACYTRACE_MIGRATION_DATABASE_URL",
+                "PRIVACYTRACE_DATABASE_URL_FILE",
+                "PRIVACYTRACE_LLM_API_KEY",
+            )
+        ):
+            raise RuntimeError("PT-SRV-102: smoke must not receive application secrets")
+        os.environ.update(
+            {
+                "PRIVACYTRACE_MODE": "remote",
+                "PRIVACYTRACE_STORAGE": "json",
+                "PRIVACYTRACE_ALLOWED_HOSTS": host,
+                "PRIVACYTRACE_TRUSTED_PROXIES": "",
+                "PRIVACYTRACE_LLM_ENABLED": "0",
+            }
+        )
+        return host
+
+    if mode == "production":
+        if any(
+            os.environ.get(key)
+            for key in (
+                "PRIVACYTRACE_DATABASE_URL",
+                "PRIVACYTRACE_MIGRATION_DATABASE_URL",
+            )
+        ):
+            raise RuntimeError("PT-SRV-102: Do not inline secret database URLs")
+        if os.environ.get("PRIVACYTRACE_STORAGE") != "postgres":
+            raise RuntimeError("PT-SRV-102: production requires PostgreSQL storage")
+        if not os.environ.get("PRIVACYTRACE_INSTANCE_ID"):
+            raise RuntimeError("PT-SRV-102: production requires a stable instance UUID")
+        db_url = resolve_database_url()
+        if not db_url:
+            raise RuntimeError("PT-SRV-102: production requires database URL or secret file")
+        os.environ.update(
+            {
+                "PRIVACYTRACE_MODE": "remote",
+                "PRIVACYTRACE_STORAGE": "postgres",
+                "PRIVACYTRACE_EXECUTION": "durable",
+                "PRIVACYTRACE_ALLOWED_HOSTS": host,
+            }
+        )
+        os.environ.setdefault("PRIVACYTRACE_STORE_ROOT", "/var/lib/privacytrace")
+        os.environ.setdefault("PRIVACYTRACE_LLM_ENABLED", "0")
+        os.environ.setdefault("PRIVACYTRACE_TRUSTED_PROXIES", "")
+        return host
+
+    raise RuntimeError(f"PT-SRV-102: invalid PT_DEPLOY_MODE '{mode}'")
 
 
 class SmokeSurface:
@@ -88,7 +121,79 @@ class SmokeSurface:
         await send({"type": "http.response.body", "body": payload})
 
 
+def check_database_readiness(application=None) -> tuple[bool, str]:
+    try:
+        store = None
+        if application and hasattr(application, "state"):
+            store = getattr(application.state, "job_store", None)
+        if store is None:
+            try:
+                from privacytrace.main import app
+
+                store = getattr(app.state, "job_store", None)
+            except Exception:
+                pass
+        if not store or not getattr(store, "uses_postgres", False):
+            return False, "NO_POSTGRES_STORE"
+        import sqlalchemy as sa
+
+        with store.engine.connect() as conn:
+            conn.execute(sa.text("SET LOCAL statement_timeout = '2s'"))
+            versions = (
+                conn.execute(sa.text("SELECT version_num FROM privacytrace.alembic_version"))
+                .scalars()
+                .all()
+            )
+            if versions == ["0080_05"]:
+                return True, "0080_05"
+            return False, f"REVISION_MISMATCH_{versions}"
+    except Exception as exc:
+        return False, type(exc).__name__
+
+
+class ProductionSurface:
+    def __init__(self, application, host):
+        self.application = application
+        self.host = host
+
+    def _check_ready(self) -> bool:
+        ready, _ = check_database_readiness(self.application)
+        return ready
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.application(scope, receive, send)
+            return
+        path = scope["path"]
+        if path in {"/_health/live", "/_health/ready"}:
+            peer = (scope.get("client") or ("", 0))[0]
+            if peer not in {"127.0.0.1", "::1"}:
+                code, body = 404, {"detail": "Not found"}
+            elif path.endswith("/live"):
+                code, body = 200, {"status": "live"}
+            else:
+                ready = self._check_ready()
+                code = 200 if ready else 503
+                body = {"status": "ready" if ready else "unavailable"}
+            payload = json.dumps(body).encode()
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": code,
+                    "headers": [
+                        (b"content-type", b"application/json"),
+                        (b"cache-control", b"no-store"),
+                    ],
+                }
+            )
+            await send({"type": "http.response.body", "body": payload})
+            return
+
+        await self.application(scope, receive, send)
+
+
 def create_app():
+    deploy_mode = os.environ.get("PT_DEPLOY_MODE", "production")
     host = configure()
     from privacytrace.main import app
     from privacytrace.resources import read_json, sdk_signatures, taxonomy
@@ -99,7 +204,9 @@ def create_app():
     read_json("samples/demo/evaluation-input.json")
     root = Path(os.environ["PRIVACYTRACE_STORE_ROOT"])
     root.mkdir(parents=True, exist_ok=True)
-    return SmokeSurface(app, host)
+    if deploy_mode == "smoke":
+        return SmokeSurface(app, host)
+    return ProductionSurface(app, host)
 
 
 if __name__ == "__main__":

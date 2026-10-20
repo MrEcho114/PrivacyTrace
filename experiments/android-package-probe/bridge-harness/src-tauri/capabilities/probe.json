@@ -3,5 +3,5 @@
   "description": "Only the bundled main window can select and read a local application.",
   "windows": ["main"],
   "platforms": ["android"],
-  "permissions": ["package-probe:allow-inspect-selected", "package-probe:allow-cancel"]
+  "permissions": ["package-probe:allow-inspect-selected", "package-probe:allow-cancel", "package-probe:allow-model-status", "package-probe:allow-configure-model", "package-probe:allow-clear-model"]
 }

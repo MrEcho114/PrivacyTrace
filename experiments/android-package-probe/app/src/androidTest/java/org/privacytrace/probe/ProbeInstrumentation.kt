@@ -22,6 +22,42 @@ class ProbeInstrumentation : Instrumentation() {
         var stage = "arguments"
         try {
             check(android.os.Process.myUid() >= 10000)
+            when (arguments.getString("mode")) {
+                "model_store" -> {
+                    stage = "protected_model_store"
+                    runOnMainSync {
+                        val input = protectedKeyInput(targetContext)
+                        input.setText("synthetic-widget-only-key")
+                        check(input.transformationMethod is android.text.method.PasswordTransformationMethod)
+                        check(!input.isSaveEnabled && !input.isSaveFromParentEnabled)
+                        input.setText("x".repeat(ModelConfiguration.MAX_KEY + 2))
+                        check(input.text.length == ModelConfiguration.MAX_KEY + 1)
+                        if (android.os.Build.VERSION.SDK_INT >= 26) {
+                            check(input.autofillType == android.view.View.AUTOFILL_TYPE_NONE)
+                            check(input.autofillValue == null)
+                        }
+                        input.text.clear()
+                    }
+                    verifyModelStore(targetContext)
+                    output.putString("stream", "PASS: protected model store roundtrip endpoint tamper missing-key interrupted-write delete\n")
+                    finish(Activity.RESULT_OK, output)
+                    return
+                }
+                "model_store_seed" -> {
+                    stage = "protected_model_seed"
+                    seedModelStore(targetContext)
+                    output.putString("stream", "PASS: protected model store seeded\n")
+                    finish(Activity.RESULT_OK, output)
+                    return
+                }
+                "model_store_reopen" -> {
+                    stage = "protected_model_reopen"
+                    verifyReopenedModelStore(targetContext)
+                    output.putString("stream", "PASS: protected model store reopened and cleared\n")
+                    finish(Activity.RESULT_OK, output)
+                    return
+                }
+            }
             if (arguments.getString("mode") == "update_race") {
                 stage = "installation_update"
                 val failure = verifyInstallationUpdate()

@@ -23,3 +23,23 @@ export function inspectSelected(): Promise<ProbeResult> {
 export function cancel(): Promise<void> {
   return invoke('plugin:package-probe|cancel');
 }
+
+export interface ModelConfigStatus {
+  configured: boolean;
+  endpoint: string | null;
+}
+
+/** Only non-secret authenticated status crosses the bridge. */
+export function modelStatus(): Promise<ModelConfigStatus> {
+  return invoke('plugin:package-probe|model_status');
+}
+
+/** Endpoint and Key are entered in Android; JavaScript supplies neither. */
+export function configureModel(): Promise<ModelConfigStatus> {
+  return invoke('plugin:package-probe|configure_model');
+}
+
+/** Requires explicit native confirmation. */
+export function clearModel(): Promise<ModelConfigStatus> {
+  return invoke('plugin:package-probe|clear_model');
+}

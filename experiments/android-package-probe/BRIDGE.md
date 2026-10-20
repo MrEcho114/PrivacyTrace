@@ -52,7 +52,12 @@ python experiments/android-package-probe/verify-bridge.py --serial '<专用模�
 
 可选字号用例要求进程保持不变、新 Vue 页面出现、原生选择器可再次打开，随后在恢复字号后完成同一 split 集合读取。未指定选项时该项明确为 NOT_RUN；它不改变普通手机上的系统字号。主验证命令和旧平台证据仍见 [README](README.md) 与 [evidence/](evidence/)。实际 Tauri APK 构建和模拟器运行结果应另附当轮记录，不以 JVM 或原生 Activity 截图代替桥接证明。
 
-后续正式接线仍需与 #72 owner 串行整合；受保护配置、实例能力、HTTPS 传输/服务端确认、后台传输、真实手机和完整 #71 验收尚未由本实验覆盖。
+追加的 `modelStatus()`、`configureModel()`、`clearModel()` 均为无参数、逐项授权命令，
+使用同一个原生操作门控。配置命令在原生窗口接收 Key，Rust/网页返回类型仅为
+`{ configured, endpoint }`；没有 Key getter 或 JS Key 参数。受保护配置的存储、取消与
+设备测试边界详见 [PROTECTED-CONFIG.md](PROTECTED-CONFIG.md)。
+
+后续正式接线仍需与 #72 owner 串行整合；实例能力、HTTPS 传输/服务端确认、后台传输、真实手机和完整 #71 验收尚未由本实验覆盖。
 逐项缺口和前置归属见 [ACCEPTANCE.md](ACCEPTANCE.md)；本次确认元数据不等于远程上传的目标实例和保留规则确认。
 
 接口依据：[Tauri mobile plugin](https://v2.tauri.app/develop/plugins/develop-mobile/)、[插件权限](https://v2.tauri.app/develop/plugins/#command-permissions)、[移动工具链](https://v2.tauri.app/start/prerequisites/#configure-for-mobile-targets)。本轮使用的实际接口也对照了固定 `tauri-v2.12.4` 标签下的 [Plugin.kt](https://github.com/tauri-apps/tauri/blob/tauri-v2.12.4/crates/tauri/mobile/android/src/main/java/app/tauri/plugin/Plugin.kt) 与 [Rust mobile API](https://github.com/tauri-apps/tauri/blob/tauri-v2.12.4/crates/tauri/src/plugin/mobile.rs)。

@@ -7,6 +7,49 @@ use tauri::{Manager, plugin::PluginHandle};
 #[cfg(target_os = "android")]
 struct NativeProbe<R: Runtime>(PluginHandle<R>);
 
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct ModelConfigStatus {
+    pub configured: bool,
+    pub endpoint: Option<String>,
+}
+
+async fn model_command<R: Runtime>(
+    app: tauri::AppHandle<R>,
+    command: &'static str,
+) -> Result<ModelConfigStatus, String> {
+    #[cfg(target_os = "android")]
+    {
+        app.state::<NativeProbe<R>>()
+            .0
+            .clone()
+            .run_mobile_plugin_async(command, ())
+            .await
+            .map_err(native_error)
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = (app, command);
+        Err("ANDROID_ONLY".into())
+    }
+}
+
+#[tauri::command]
+async fn model_status<R: Runtime>(app: tauri::AppHandle<R>) -> Result<ModelConfigStatus, String> {
+    model_command(app, "modelStatus").await
+}
+
+#[tauri::command]
+async fn configure_model<R: Runtime>(
+    app: tauri::AppHandle<R>,
+) -> Result<ModelConfigStatus, String> {
+    model_command(app, "configureModel").await
+}
+
+#[tauri::command]
+async fn clear_model<R: Runtime>(app: tauri::AppHandle<R>) -> Result<ModelConfigStatus, String> {
+    model_command(app, "clearModel").await
+}
+
 // No input can name a package or path. Selection and confirmation happen natively.
 #[tauri::command]
 async fn inspect_selected<R: Runtime>(app: tauri::AppHandle<R>) -> Result<ProbeResult, String> {
@@ -56,6 +99,9 @@ fn native_error(error: tauri::plugin::mobile::PluginInvokeError) -> String {
                 | "CANCELLED" => {
                     return code;
                 }
+                "INVALID_MODEL_CONFIG" | "MODEL_CONFIG_UNAVAILABLE" | "MODEL_ENDPOINT_MISMATCH" => {
+                    return code;
+                }
                 _ => {}
             }
         }
@@ -85,7 +131,13 @@ pub struct ProbeResult {
 
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("package-probe")
-        .invoke_handler(tauri::generate_handler![inspect_selected, cancel])
+        .invoke_handler(tauri::generate_handler![
+            inspect_selected,
+            cancel,
+            model_status,
+            configure_model,
+            clear_model
+        ])
         .setup(|_app, _api| {
             #[cfg(target_os = "android")]
             {

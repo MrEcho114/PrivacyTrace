@@ -7,3 +7,18 @@ commands.allow = ["inspect_selected"]
 identifier = "allow-cancel"
 description = "Cancels this plugin's current local read or picker."
 commands.allow = ["cancel"]
+
+[[permission]]
+identifier = "allow-model-status"
+description = "Returns authenticated non-secret native model configuration status."
+commands.allow = ["model_status"]
+
+[[permission]]
+identifier = "allow-configure-model"
+description = "Opens native protected configuration; accepts no secret from JavaScript."
+commands.allow = ["configure_model"]
+
+[[permission]]
+identifier = "allow-clear-model"
+description = "Asks for native confirmation before deleting the local model configuration."
+commands.allow = ["clear_model"]

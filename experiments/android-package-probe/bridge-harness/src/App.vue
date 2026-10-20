@@ -1,10 +1,26 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { cancel, inspectSelected, type ProbeResult } from '../../tauri-plugin/guest-js/index';
+import { onMounted, ref } from 'vue';
+import { cancel, inspectSelected, modelStatus, configureModel, clearModel, type ProbeResult, type ModelConfigStatus } from '../../tauri-plugin/guest-js/index';
 
 const busy = ref(false);
 const status = ref('尚未读取');
 const result = ref<ProbeResult | null>(null);
+const model = ref<ModelConfigStatus>({ configured: false, endpoint: null });
+const modelMessage = ref('正在读取配置状态');
+async function settings(action: () => Promise<ModelConfigStatus>) {
+  if (busy.value) return;
+  busy.value = true;
+  try {
+    model.value = await action();
+    modelMessage.value = model.value.configured ? '模型已配置（仅本机）' : '未配置模型';
+  } catch (error) {
+    modelMessage.value = typeof error === 'string' ? error : 'NATIVE_PROBE_FAILED';
+    if (modelMessage.value !== 'CANCELLED' && modelMessage.value !== 'INVALID_MODEL_CONFIG') {
+      model.value = { configured: false, endpoint: null };
+    }
+  } finally { busy.value = false; }
+}
+onMounted(() => settings(modelStatus));
 async function read() {
   if (busy.value) return;
   busy.value = true;
@@ -39,6 +55,14 @@ async function stop() {
         <h3>{{ part.splitName ?? 'base' }} · {{ part.bytes }} 字节</h3><code>{{ part.sha256 }}</code>
       </article>
     </section>
+    <section aria-label="本机模型配置">
+      <h2>本机模型配置</h2>
+      <p>Key 在原生窗口输入并加密保存，不返回网页。本实验不调用模型。</p>
+      <button :disabled="busy" @click="settings(configureModel)">设置模型配置</button>
+      <button :disabled="busy" @click="settings(clearModel)">删除模型配置</button>
+      <p role="status">{{ modelMessage }}</p>
+      <p v-if="model.endpoint" class="model-endpoint">{{ model.endpoint }}</p>
+    </section>
   </main>
 </template>
 
@@ -48,4 +72,5 @@ main { padding: 1.25rem; max-width: 40rem; margin: auto; }
 h1 { font-size: 1.5rem; } h2, h3 { font-size: 1rem; overflow-wrap: anywhere; }
 button { font: inherit; padding: .6rem; margin: .25rem .4rem .25rem 0; min-height: 3rem; }
 code { display: block; overflow-wrap: anywhere; user-select: text; }
+.model-endpoint { overflow-wrap: anywhere; }
 </style>

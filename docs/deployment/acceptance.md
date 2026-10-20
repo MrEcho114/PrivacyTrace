@@ -12,7 +12,7 @@
 
 2026-10-20 本机 WSL 的候选演练已实际跑通 HTTPS 单 APK/base+splits 至报告、跨 scope 拒绝、无认证拒绝、代理超限拒绝、限流，以及备份后删除→新数据库/材料卷恢复→独立删除日志重放、数据库/Broker/mTLS 凭据轮换、历史版本升级回滚。它们属于提交前候选演练，不能替代最终交付 SHA 的 CI。
 
-最终新增完整 R1–R6 组合尚待 CI；本机 ENOSPC 演练仍失败，不能将 Issue 标为全部通过。新增故障和容量测量也须以最终 CI 收据为准。
+提交 `75e16bf` 的 [Linux CI](https://github.com/MrEcho114/PrivacyTrace/actions/runs/39453478442) 已完整运行：R1、R2、R3、R5、R6 通过，R4 两项失败。ENOSPC 材料路径修复已在本机与该 CI 通过；R5 四项全部通过。失败原因是故障演练遗漏 Compose 继承角色，以及暂停 consumer 早于 Runner 请求发出。后续修复增加受控延迟的真实扫描器、角色覆盖与孤儿容器 inspect 竞争处理；容量表改为扫描容器峰值，consumer 峰值单列。最终验收仍以最新交付 SHA 的完整 CI 收据为准。
 
 独立扫描主机/VM、跨机防火墙及持久化验证经用户明确授权跳过，记录见 [acceptance-scope.json](acceptance-scope.json) 与其中的 Issue 评论。状态为 `WAIVED_BY_USER`，不伪记为 PASS。此次没有公网部署、DNS/ACME、镜像发布、合并或关闭 Issue。
 

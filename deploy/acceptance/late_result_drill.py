@@ -22,29 +22,51 @@ def _row(lab, job_id):
 
 
 def drill(lab, topology):
+    from .fault_drill import _boot, _owned_scanners, scanner_override
+    from .provision import execute
+
+    original = json.loads((lab.root / "laboratory.json").read_text())
+    tag = "privacytrace-delayed-scan:" + lab.project
+    base = "privacytrace-delay-base:" + lab.project
+    execute(["docker", "tag", lab.state["images"]["api"], base])
+    context = lab.root / "delayed-scan-build"
+    context.mkdir(mode=0o700, exist_ok=True)
+    # Delay the actual parser, so pausing the consumer cannot race ahead of
+    # sending its Runner request. The result still comes from apk_worker.
+    (context / "Dockerfile").write_text(
+        f"FROM {base}\nUSER 65534:65534\nHEALTHCHECK NONE\nENTRYPOINT "
+        + json.dumps(
+            [
+                "/opt/venv/bin/python",
+                "-c",
+                "import time,runpy;time.sleep(5);"
+                "runpy.run_module('privacytrace.apk_worker',run_name='__main__')",
+            ]
+        )
+        + "\n"
+    )
+    execute(["docker", "build", "--network=none", "-t", tag, str(context)])
+    image = execute(["docker", "image", "inspect", tag, "--format", "{{.Id}}"])
     fixture = Fixtures.build()
     scope = create_scope(topology, "late-result-canary", "Synthetic cancellation policy.")
     assert upload_apk(topology, scope, fixture.single_apk).status == 200
     database = lab.root / "runner/requests.sqlite"
     with sqlite3.connect(f"file:{database}?mode=ro", uri=True) as conn:
         watermark = conn.execute("SELECT coalesce(max(rowid),0) FROM operations").fetchone()[0]
-    runner_paused = worker_paused = False
+    worker_paused = False
     try:
-        lab.run("pause", "runner")
-        runner_paused = True
+        _boot(lab, scanner_override(original, image))
         assert start_job(topology, scope).status == 200 and scope.job_id
         deadline = time.monotonic() + 20
         while time.monotonic() < deadline:
             active = _row(lab, scope.job_id)
-            if active["state"] == "RUNNING":
+            if active["state"] == "RUNNING" and _owned_scanners(lab):
                 break
             time.sleep(0.05)
         else:
-            raise AssertionError("real consumer did not acquire a lease")
+            raise AssertionError("real consumer did not start the controlled delayed scanner")
         lab.run("pause", "worker")
         worker_paused = True
-        lab.run("unpause", "runner")
-        runner_paused = False
         deadline = time.monotonic() + 20
         result = None
         while time.monotonic() < deadline:
@@ -85,8 +107,6 @@ def drill(lab, topology):
             "runner_isolation": result["receipt"],
         }
     finally:
-        if runner_paused:
-            lab.run("unpause", "runner")
         if worker_paused:
             lab.run("unpause", "worker")
-        lab.ready()
+        _boot(lab, original)

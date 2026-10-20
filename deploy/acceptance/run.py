@@ -5,9 +5,8 @@ Usage::
     uv run --project apps/api --locked --extra worker \\
         python deploy/acceptance/run.py --only r2,r4,r5,r6 --receipt-dir tmp/acceptance
 
-With no topology configured every collector records SKIP/NOT_TESTED, the process
-exits 0, and the summary states in one line that this round produced no real
-evidence. A FAIL exits non-zero so CI can gate on it.
+Without a topology the required deployment checks remain incomplete and exit 2.
+A FAIL exits 1; only complete required evidence permits exit 0.
 
 The module is also importable: :func:`main` takes an argument list and returns an
 exit code, which keeps the unit tests free of subprocess use.
@@ -185,7 +184,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="append",
         default=None,
         metavar="r2,r4,r5,r6",
-        help="collectors to run (comma separated or repeated); default: all four",
+        help="collectors to run (comma separated or repeated); default: all six",
     )
     parser.add_argument(
         "--receipt-dir",

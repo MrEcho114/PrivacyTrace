@@ -236,5 +236,69 @@ class TopologyEnvironmentTests(unittest.TestCase):
         )
 
 
+class DeploymentRegressionTests(unittest.TestCase):
+    def test_orphan_disappearing_during_inspection_is_not_a_drill_failure(self):
+        from types import SimpleNamespace
+
+        from acceptance.fault_drill import _owned_scanners
+
+        disappeared = RuntimeError("deployment command failed")
+        disappeared.stderr = "error: no such object: removed-container\n"
+        disappeared.stdout = "[]"
+        with patch(
+            "acceptance.fault_drill.execute", side_effect=["removed-container", disappeared]
+        ):
+            self.assertEqual(_owned_scanners(SimpleNamespace(root=Path("/owned"))), [])
+
+    def test_orphan_inspection_does_not_hide_daemon_failures(self):
+        from types import SimpleNamespace
+
+        from acceptance.fault_drill import _owned_scanners
+
+        unavailable = RuntimeError("daemon unavailable")
+        unavailable.stderr = "Cannot connect to the Docker daemon"
+        with patch("acceptance.fault_drill.execute", side_effect=["container", unavailable]):
+            with self.assertRaises(RuntimeError):
+                _owned_scanners(SimpleNamespace(root=Path("/owned")))
+
+    def test_fault_override_handles_roles_inherited_from_base_compose(self):
+        from acceptance.fault_drill import scanner_override
+
+        original = {"services": {"runner": {"environment": {"EXISTING": "preserved"}}}}
+        candidate = scanner_override(original, "sha256:controlled")
+        self.assertNotIn("api", original["services"])
+        self.assertNotIn("worker", original["services"])
+        for role in ("api", "worker", "runner"):
+            self.assertEqual(
+                candidate["services"][role]["environment"]["PRIVACYTRACE_RUNNER_IMAGE_ID"],
+                "sha256:controlled",
+            )
+        self.assertEqual(candidate["services"]["runner"]["environment"]["EXISTING"], "preserved")
+
+    def test_capacity_table_uses_scanner_memory_instead_of_consumer_memory(self):
+        from types import SimpleNamespace
+        from unittest.mock import MagicMock
+
+        from acceptance.receipt import CheckRecorder
+
+        sample = r6_capacity_audit.CapacitySample("concurrency_1_single_apk", peak_memory_bytes=20)
+        check = CheckRecorder("memory", "sample").pass_("observed")
+        sampler = MagicMock()
+        sampler.__enter__.return_value = sampler
+        sampler.result.return_value = {"scanner_sampled_peak_memory_bytes": 900}
+        with (
+            patch.dict(os.environ, {"PT_ACCEPTANCE_LAB_STATE": "/var/tmp/owned"}),
+            patch("acceptance.provision.Laboratory"),
+            patch("acceptance.metrics.Sampler", return_value=sampler),
+            patch.object(r6_capacity_audit, "_measure_round", return_value=(check, sample)),
+        ):
+            result, measured = r6_capacity_audit._measure(
+                SimpleNamespace(allow_writes=True), sample.scale, repetitions=3, budget_s=20
+            )
+        self.assertEqual(measured.peak_memory_bytes, 900)
+        self.assertEqual(result.detail["table"]["peak_memory_bytes"], 900)
+        self.assertEqual(result.detail["worker_peak_memory_bytes"], 20)
+
+
 if __name__ == "__main__":
     unittest.main()

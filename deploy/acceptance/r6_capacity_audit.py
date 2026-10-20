@@ -282,9 +282,23 @@ def _measure(topology, scale, *, repetitions, budget_s):
         check, sample = _measure_round(topology, scale, repetitions=repetitions, budget_s=budget_s)
     metrics = sampler.result()
     check.detail["scanner_and_disk_sampling"] = metrics
+    if sample is not None:
+        check.detail["worker_peak_memory_bytes"] = sample.peak_memory_bytes
+        sample.peak_memory_bytes = metrics["scanner_sampled_peak_memory_bytes"]
+        check.detail["table"] = sample.medians()
     if check.status == "PASS" and not metrics["scanner_sampled_peak_memory_bytes"]:
         check.status = "FAIL"
         check.notes = "scanner memory was not observed during the actual run"
+    from .receipt import digest_of
+
+    check.result_digest = digest_of(
+        {
+            "command": check.command,
+            "status": check.status,
+            "notes": check.notes,
+            "observations": check.detail,
+        }
+    )
     return check, sample
 
 

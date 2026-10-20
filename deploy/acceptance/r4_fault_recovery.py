@@ -117,13 +117,13 @@ RESTART_STEPS = (
     FaultStep("r4.restart.api", "docker compose restart api", ("restart", "api"), "api"),
     FaultStep(
         "r4.restart.redis",
-        "docker compose restart redis; ready must fail",
+        "docker compose restart redis; readiness must recover",
         ("restart", "redis"),
         "redis",
     ),
     FaultStep(
         "r4.restart.worker",
-        "docker compose restart worker (dispatcher/outbox survive)",
+        "docker compose restart worker; readiness must recover",
         ("restart", "worker"),
         "worker",
     ),
@@ -157,13 +157,16 @@ def _inject_step(topology: Topology, step: FaultStep) -> Check:
         before = _sample(topology, "before injection")
     except TopologyUnavailable as error:
         return recorder.skip(f"topology unreachable before injection: {error}")
+    if (before.live, before.health, before.ready) != (200, 200, 200):
+        return recorder.fail("baseline was not healthy", before=before.as_dict())
     try:
         compose_output(topology, *step.compose_arguments, timeout=180)
     except TopologyUnavailable as error:
         return recorder.skip(f"injection command unavailable: {error}")
     degraded: Observation | None = None
     try:
-        # Sample quickly: the fault window is what proves the probe is real.
+        # A completed restart can be healthy already. This observation does not
+        # prove degradation; explicit stop/start drills assert that separately.
         degraded = _sample(topology, "after injection")
     except TopologyUnavailable:
         degraded = Observation(
@@ -237,7 +240,7 @@ def _broker_outage(topology: Topology) -> Check:
 def _heartbeat_loss(topology: Topology) -> Check:
     recorder = CheckRecorder(
         "r4.runner_heartbeat_loss",
-        "stop runner (external host) -> lease/busy signal must lapse -> no permanent RUNNING",
+        "stop laboratory runner -> readiness 503 -> restart -> readiness 200",
         ticket=TICKET,
     )
     if not topology.allow_destructive:

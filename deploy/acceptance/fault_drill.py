@@ -46,9 +46,18 @@ def _owned_scanners(lab):
         return []
     from pathlib import Path
 
+    try:
+        inspected = execute(["docker", "inspect", *identifiers])
+    except RuntimeError as error:
+        # Runner can remove an orphan between `ps` and `inspect`. Docker still
+        # emits JSON for surviving IDs; only missing-object errors are benign.
+        errors = getattr(error, "stderr", "").lower().splitlines()
+        if not errors or any(not line.startswith("error: no such object:") for line in errors):
+            raise
+        inspected = error.stdout
     return [
         item["Id"]
-        for item in json.loads(execute(["docker", "inspect", *identifiers]))
+        for item in json.loads(inspected)
         if any(Path(m["Source"]).is_relative_to(lab.root / "runner") for m in item["Mounts"])
     ]
 
@@ -58,6 +67,16 @@ def _boot(lab, config):
     lab.run("stop", "runner", *SERVICES)
     lab.run("up", "-d", "--no-deps", "--force-recreate", "runner", *SERVICES)
     lab.ready()
+
+
+def scanner_override(original, image):
+    """Add role overrides even when those roles exist only in the base Compose."""
+    config = copy.deepcopy(original)
+    for role in ("api", "worker", "runner"):
+        config["services"].setdefault(role, {}).setdefault("environment", {})[
+            "PRIVACYTRACE_RUNNER_IMAGE_ID"
+        ] = image
+    return config
 
 
 def drill(lab, topology):
@@ -100,12 +119,8 @@ def drill(lab, topology):
             scope = create_scope(topology, "controlled-" + fault, "Synthetic fault policy.")
             assert upload_apk(topology, scope, fixture.single_apk).status == 200
             watermark = _watermark(lab)
-            config = copy.deepcopy(original)
             image = images["timeout" if fault == "orphan" else fault]
-            for role in ("api", "worker", "runner"):
-                config["services"][role].setdefault("environment", {})[
-                    "PRIVACYTRACE_RUNNER_IMAGE_ID"
-                ] = image
+            config = scanner_override(original, image)
             config["services"]["runner"]["environment"]["PRIVACYTRACE_RUNNER_TIMEOUT"] = (
                 "180" if fault == "orphan" else "2" if fault == "timeout" else "20"
             )

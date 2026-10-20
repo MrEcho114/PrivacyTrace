@@ -21,11 +21,8 @@ try {
     $manifestPath = Join-Path $androidRoot 'app/src/main/AndroidManifest.xml'
     [xml]$manifest = [IO.File]::ReadAllText($manifestPath)
     $androidNamespace = 'http://schemas.android.com/apk/res/android'
-    foreach ($permission in @($manifest.manifest.'uses-permission')) {
-        if ($null -ne $permission -and $permission.GetAttribute('name', $androidNamespace) -eq 'android.permission.INTERNET') {
-            [void]$manifest.manifest.RemoveChild($permission)
-        }
-    }
+    # The health-only phase needs INTERNET; the native plugin also declares it.
+    # Cleartext remains disabled and no WebView network capability is added.
     [void]$manifest.manifest.application.SetAttribute('allowBackup', $androidNamespace, 'false')
     $manifest.Save($manifestPath)
 
@@ -37,5 +34,5 @@ try {
     $checksum = '9c0f7faeeb306cb14e4279a3e084ca6b596894089a0638e68a07c945a32c9e14'
     $wrapper = [regex]::Replace($wrapper, '(?m)^distributionSha256Sum=.*\r?\n?', '')
     [IO.File]::WriteAllText($wrapperPath, $wrapper.TrimEnd() + "`ndistributionSha256Sum=$checksum`n")
-    Write-Output 'Prepared isolated local-only Android bridge harness (API 36).'
+    Write-Output 'Prepared isolated Android bridge harness with native HTTPS health (API 36).'
 } finally { Pop-Location }

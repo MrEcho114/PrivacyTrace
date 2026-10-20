@@ -13,6 +13,32 @@ pub struct ModelConfigStatus {
     pub endpoint: Option<String>,
 }
 
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct ServerHealth {
+    pub origin: String,
+    pub version: String,
+    pub mode: String,
+    pub scope: String,
+}
+
+#[tauri::command]
+async fn check_server<R: Runtime>(app: tauri::AppHandle<R>) -> Result<ServerHealth, String> {
+    #[cfg(target_os = "android")]
+    {
+        app.state::<NativeProbe<R>>()
+            .0
+            .clone()
+            .run_mobile_plugin_async("checkServer", ())
+            .await
+            .map_err(native_error)
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = app;
+        Err("ANDROID_ONLY".into())
+    }
+}
+
 async fn model_command<R: Runtime>(
     app: tauri::AppHandle<R>,
     command: &'static str,
@@ -102,6 +128,15 @@ fn native_error(error: tauri::plugin::mobile::PluginInvokeError) -> String {
                 "INVALID_MODEL_CONFIG" | "MODEL_CONFIG_UNAVAILABLE" | "MODEL_ENDPOINT_MISMATCH" => {
                     return code;
                 }
+                "INVALID_SERVER_ORIGIN"
+                | "SERVER_REDIRECT_REJECTED"
+                | "SERVER_BUSY"
+                | "SERVER_REJECTED"
+                | "SERVER_RESPONSE_INVALID"
+                | "SERVER_RESPONSE_TOO_LARGE"
+                | "SERVER_TLS_REJECTED"
+                | "SERVER_TIMEOUT"
+                | "SERVER_UNREACHABLE" => return code,
                 _ => {}
             }
         }
@@ -136,7 +171,8 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             cancel,
             model_status,
             configure_model,
-            clear_model
+            clear_model,
+            check_server
         ])
         .setup(|_app, _api| {
             #[cfg(target_os = "android")]

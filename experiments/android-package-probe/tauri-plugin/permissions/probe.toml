@@ -5,7 +5,7 @@ commands.allow = ["inspect_selected"]
 
 [[permission]]
 identifier = "allow-cancel"
-description = "Cancels this plugin's current local read or picker."
+description = "Cancels this plugin's current native operation or dialog."
 commands.allow = ["cancel"]
 
 [[permission]]
@@ -22,3 +22,8 @@ commands.allow = ["configure_model"]
 identifier = "allow-clear-model"
 description = "Asks for native confirmation before deleting the local model configuration."
 commands.allow = ["clear_model"]
+
+[[permission]]
+identifier = "allow-check-server"
+description = "Opens native origin input and performs only the fixed HTTPS health GET."
+commands.allow = ["check_server"]

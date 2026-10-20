@@ -19,7 +19,7 @@ export function inspectSelected(): Promise<ProbeResult> {
   return invoke('plugin:package-probe|inspect_selected');
 }
 
-/** Cooperative cancellation. The read promise rejects; it never returns partial digests. */
+/** Cancels the active native operation; no partial result is returned. */
 export function cancel(): Promise<void> {
   return invoke('plugin:package-probe|cancel');
 }
@@ -42,4 +42,16 @@ export function configureModel(): Promise<ModelConfigStatus> {
 /** Requires explicit native confirmation. */
 export function clearModel(): Promise<ModelConfigStatus> {
   return invoke('plugin:package-probe|clear_model');
+}
+
+export interface ServerHealth {
+  origin: string;
+  version: string;
+  mode: 'remote' | 'local-jobs';
+  scope: 'HEALTH_ONLY';
+}
+
+/** Native origin input; no URL, headers, credentials, or trust override from JavaScript. */
+export function checkServer(): Promise<ServerHealth> {
+  return invoke('plugin:package-probe|check_server');
 }

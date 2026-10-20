@@ -17,7 +17,7 @@
 
 ## 隔离验证壳
 
-`bridge-harness/` 是 Vue 3 / TypeScript 的最小实验壳，用于验证实际桥接和用户选择；它不是产品页面或新的报告实现。打包本地资源，CSP 不允许外部请求，Android 准备脚本移除模板的 INTERNET 权限、关闭备份和 cleartext。APK、生成的 Android 工程、Rust target、node_modules 及本机配置均忽略。
+`bridge-harness/` 是 Vue 3 / TypeScript 的最小实验壳，用于验证实际桥接和用户选择；它不是产品页面或新的报告实现。打包本地资源，CSP 不允许网页外部请求；本轮原生 health 需要 INTERNET，准备脚本保留该权限、关闭备份和 cleartext。APK、生成的 Android 工程、Rust target、node_modules 及本机配置均忽略。
 
 固定版本和依赖见 `package-lock.json` / `src-tauri/Cargo.lock`。Tauri CLI 2.12.3、Rust Tauri / JS API 2.12.4，Android 编译/目标 API 36，minSdk 24；Gradle 9.6.1 的官方分发校验和由准备脚本固定。模板的 AGP/Kotlin 版本由固定 CLI 生成。构建版本不代表真机、商店准入或最低系统范围已验收。
 
@@ -57,7 +57,12 @@ python experiments/android-package-probe/verify-bridge.py --serial '<专用模�
 `{ configured, endpoint }`；没有 Key getter 或 JS Key 参数。受保护配置的存储、取消与
 设备测试边界详见 [PROTECTED-CONFIG.md](PROTECTED-CONFIG.md)。
 
-后续正式接线仍需与 #72 owner 串行整合；实例能力、HTTPS 传输/服务端确认、后台传输、真实手机和完整 #71 验收尚未由本实验覆盖。
+新增无参数 `checkServer()` 仅打开原生服务 origin 输入，固定 GET `/api/v1/health`，返回
+`{ origin, version, mode, scope: 'HEALTH_ONLY' }` 或白名单错误；没有请求路径、凭据或信任绕过参数。
+取消共用同一门控并主动取消网络/DNS 等待；原始 body 不跨桥，地址不保存。
+详见 [HTTPS.md](HTTPS.md)；成功只说明本次 health 响应，不能推导上传兼容或生产 ready。
+
+后续正式接线仍需与 #72 owner 串行整合；实例能力、上传传输/服务端确认、后台传输、真实手机和完整 #71 验收尚未由本实验覆盖。
 逐项缺口和前置归属见 [ACCEPTANCE.md](ACCEPTANCE.md)；本次确认元数据不等于远程上传的目标实例和保留规则确认。
 
 接口依据：[Tauri mobile plugin](https://v2.tauri.app/develop/plugins/develop-mobile/)、[插件权限](https://v2.tauri.app/develop/plugins/#command-permissions)、[移动工具链](https://v2.tauri.app/start/prerequisites/#configure-for-mobile-targets)。本轮使用的实际接口也对照了固定 `tauri-v2.12.4` 标签下的 [Plugin.kt](https://github.com/tauri-apps/tauri/blob/tauri-v2.12.4/crates/tauri/mobile/android/src/main/java/app/tauri/plugin/Plugin.kt) 与 [Rust mobile API](https://github.com/tauri-apps/tauri/blob/tauri-v2.12.4/crates/tauri/src/plugin/mobile.rs)。

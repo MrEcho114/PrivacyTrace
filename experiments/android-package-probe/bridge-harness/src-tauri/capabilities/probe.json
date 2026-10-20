@@ -1,7 +1,7 @@
 {
   "identifier": "local-probe",
-  "description": "Only the bundled main window can select and read a local application.",
+  "description": "Only the bundled main window can open the experiment's native operations.",
   "windows": ["main"],
   "platforms": ["android"],
-  "permissions": ["package-probe:allow-inspect-selected", "package-probe:allow-cancel", "package-probe:allow-model-status", "package-probe:allow-configure-model", "package-probe:allow-clear-model"]
+  "permissions": ["package-probe:allow-inspect-selected", "package-probe:allow-cancel", "package-probe:allow-model-status", "package-probe:allow-configure-model", "package-probe:allow-clear-model", "package-probe:allow-check-server"]
 }

@@ -89,3 +89,49 @@ Vue 构建通过。桥接 lint 为 0 errors / 4 warnings；没有以更新依赖
 IME、JS 存储或全部日志出口，也不证明硬件 Keystore、所有 OEM 备份/迁移、断电/fsync 故障持久性。
 真实模型/TLS/重定向、生产 #72 接线、HTTPS 上传/实例隔离/背压/恢复及真机仍未验收。
 #71 保持开放，PR #90 合并继续暂停。
+
+## 2026-10-20：只读原生 HTTPS health
+
+本轮是 PR #90 合入 main `104f34d` 后的独立部分交付。HTTPS、桥接与 smoke
+收据绑定干净源码 `6ad6eeb7d651cd7111efc7b2eac82424fdebe407`；配置回归绑定
+`13d142c489d3d64286a517ffe13800d70661415a`。两者之间只修改 HTTPS 验证脚本的
+键盘稳定等待，产品源码和三个安装包哈希一致；不倒改配置收据的来源。
+本次归档提交仅增加证据及说明。仍为 AOSP Android 14/API 34/x86_64 专用模拟器、普通应用 UID，无 root。
+
+| 材料 | 证明的范围 |
+| --- | --- |
+| [android34-https-health.json](android34-https-health.json) | 原生 TLS15、DNS4、严格 JSON20；实际 Vue/Rust/Kotlin 输入取消、HTTP 连接前拒绝、默认系统信任拒绝私有证书且无 HTTP、握手中取消与 HOME、旧回调不覆盖新操作、字号重建丢弃地址与大字体键盘下取消 |
+| [android34-https-model-regression.json](android34-https-model-regression.json) | 新增网络能力后的既有 18 项受保护配置回归；仅使用合成 Key，不调用模型，结束后删除配置 |
+| [android34-https-bridge-regression.json](android34-https-bridge-regression.json) | 既有 8 项真实桥接、确认后同版本重装拒绝、进程重启清空及字号重建恢复，最终两份包 SHA 与构建产物一致 |
+| [android34-https-smoke.json](android34-https-smoke.json) | 新产物的两项普通 UID 读取 smoke：本体单 APK 与跨 App base/feature split |
+| [android34-https-native-origin.png](android34-https-native-origin.png) | 无地址、凭据或清单的原生窗口，显示只读范围及取消/检查操作 |
+| [android34-https-tls-rejected.png](android34-https-tls-rejected.png) | 默认系统信任拒绝临时私有证书后的固定错误；状态和按钮完整位于系统导航栏上方 |
+| [android34-https-large-font.png](android34-https-large-font.png) | 1.3 字号、键盘完整展开时，说明/输入/取消/只读检查均可见；截图前断言 IME shown 并等待界面稳定 |
+
+78 项 JVM、8 项 PowerShell 收据回归、原生四包/lint、Tauri x86_64 APK 与 Vue 类型/构建通过。
+桥接 lint 0 errors / 8 warnings（依赖版本提示、既有 API/文本提示及实验窗口文本提示），没有关闭检查。
+合并 Manifest 新增 INTERNET；无广泛存储或 QUERY_ALL_PACKAGES，备份和 cleartext 仍关闭。
+独立 Standards、Spec 与实际截图视觉审阅无剩余必须修复。
+
+审阅发现的 scoped IPv6 构造异常及 Android JsonReader 宽松语法已修复并增加回归。
+预跑曾遇到系统栏遮挡、零面积控件及界面读取命令间歇失败；修复布局和
+验证等待后完整重跑。早期键盘动画截图未归档；这里只保存稳定界面与成功收据。
+所有收据均 `source_dirty=false`，系统字号已恢复，临时 XML、TLS listener 和临时私钥已清理。
+
+根部 Windows 权威入口实际为 **8 failed / 1471 passed / 199 skipped / 3 warnings**，
+失败位于既有隔离扫描/包集合运行时用例；未改 API 或绕过这些检查，不将其称为全通过。
+其后 API lint/契约/准备包、Web53 与类型/构建单独通过；最终远端 Linux 检查由本 PR head CI 另行证明。
+
+TLS 正向测试只在内部 test/androidTest client 信任当次生成的 CA；产品客户端没有信任绕过，
+真实桥接只证明拒绝该私有证书，不证明公网系统信任正向访问。health 没有能力/实例身份/
+限额/保留规则契约；成功不能推导兼容或上传许可。真实服务、能力协商、实例凭据、上传、
+真实模型、后台恢复、生产 #72 接线、#80/#81/#73 组合及真机/OEM 仍未验收，#71 保持开放。
+
+## 2026-10-20：PR #117 接手复审
+
+[本轮审查与对照](pr117-review-20261020.md)记录 DNS 持续饱和/恢复回归、两项负对照、
+固定 main 与新源码的 Windows 完整入口通过，以及独立 Standards / Spec 二次复审。
+[MuMu API35 收据](mumu35-https-review.json)绑定干净源码 `0d32936` 和实际安装包哈希：
+普通应用 UID 的 TLS15 / DNS4 / JSON20 通过，本轮没有重跑 Tauri UI 或真机。
+公网系统信任正向访问按用户明确要求跳过，**不阻塞修复、复审、CI 或交付**。
+上节原轮八项 Windows 失败与 Android34 收据属于历史，不改写其结果或来源 SHA。

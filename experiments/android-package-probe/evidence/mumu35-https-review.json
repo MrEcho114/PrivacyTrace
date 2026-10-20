@@ -1,0 +1,28 @@
+{
+  "schema": "privacytrace-pr117-native-review-v1",
+  "source_commit": "0d32936d1206378e0453292c2eb6bd87ea23f76d",
+  "source_dirty": false,
+  "emulator": true,
+  "environment": "User-authorized MuMu Player; loopback ADB forwarding from its VM configuration",
+  "android_api": "35",
+  "abi": "x86_64",
+  "ordinary_app_uid_asserted": true,
+  "artifacts_sha256": {
+    "probe": "4d8858106cf3c968063ac9e57a843379de73ec99b1d4b516ef083b2d5b83a935",
+    "test": "1cabf8ef0cd2c794cbfe464c3a6044e80761b58346e474280bc9d9d0f8186b21"
+  },
+  "cases": {
+    "native_tls_15_real_socket_test_only_ca": "PASS",
+    "native_dns_4_including_80_saturation_refusals_and_recovery": "PASS",
+    "native_strict_json_20": "PASS"
+  },
+  "public_https": "SKIPPED_BY_USER_NON_BLOCKING",
+  "not_run_in_this_receipt": [
+    "Tauri Vue/Rust/Kotlin UI",
+    "physical_devices",
+    "production_service",
+    "capability_negotiation",
+    "instance_credentials",
+    "analysis_upload"
+  ]
+}

@@ -106,6 +106,7 @@ def validate(config):
         "web": [set()],
         "api": [{
             "runtime_database_url",
+            "runtime_health_url",
             "material_key",
             "control_tls_ca",
             "control_tls_cert",
@@ -189,6 +190,13 @@ def validate(config):
         ):
             raise ValueError("Explicit non-placeholder gateway TLS peers required")
 
+    if services["api"].get("environment", {}).get("PRIVACYTRACE_HEALTH_REDIS_URL_FILE") != (
+        "/run/secrets/runtime_health_url"
+    ):
+        raise ValueError("Read-only Redis health secret must use its own file")
+    for role in ("dispatcher", "worker"):
+        if services[role].get("environment", {}).get("PRIVACYTRACE_PUBLISH_HEALTH") != "1":
+            raise ValueError("Runtime process heartbeat required")
     for role in ("api", "worker"):
         if (
             services[role].get("environment", {}).get("PRIVACYTRACE_DELETION_JOURNAL_ROOT")
@@ -322,7 +330,8 @@ def _build_synthetic_config():
                 ],
                 "secrets": [
                     {"source": x}
-                    for x in ("runtime_database_url", "material_key", "control_tls_ca",
+                    for x in ("runtime_database_url", "runtime_health_url", "material_key",
+                              "control_tls_ca",
                               "control_tls_cert", "control_tls_key")
                 ],
                 "tmpfs": ["/tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001"],
@@ -332,6 +341,7 @@ def _build_synthetic_config():
                     "PRIVACYTRACE_STORAGE": "postgres",
                     "PRIVACYTRACE_MODE": "remote",
                     "PRIVACYTRACE_DATABASE_URL_FILE": "/run/secrets/runtime_database_url",
+                    "PRIVACYTRACE_HEALTH_REDIS_URL_FILE": "/run/secrets/runtime_health_url",
                     "PRIVACYTRACE_DELETION_JOURNAL_ROOT": "/var/lib/privacytrace-deletions",
                     "PRIVACYTRACE_RUNNER_URL": "https://172.29.98.1:8444",
                     "PRIVACYTRACE_RUNNER_IMAGE_ID": "sha256:" + "a" * 64,
@@ -392,6 +402,7 @@ def _build_synthetic_config():
                 ],
                 "environment": {
                     "PRIVACYTRACE_DELETION_JOURNAL_ROOT": "/var/lib/privacytrace-deletions",
+                    "PRIVACYTRACE_PUBLISH_HEALTH": "1",
                     "PRIVACYTRACE_RUNNER_URL": "https://172.29.98.1:8444",
                     "PRIVACYTRACE_RUNNER_IMAGE_ID": "sha256:" + "a" * 64,
                 },
@@ -410,6 +421,7 @@ def _build_synthetic_config():
                     {"type": "volume", "source": "materials", "target": "/var/lib/privacytrace"}
                 ],
                 "secrets": [{"source": "runtime_database_url"}, {"source": "runtime_broker_url"}],
+                "environment": {"PRIVACYTRACE_PUBLISH_HEALTH": "1"},
                 "tmpfs": ["/tmp:rw,noexec,nosuid,size=32m,uid=10001,gid=10001"],
             },
             "gateway": {

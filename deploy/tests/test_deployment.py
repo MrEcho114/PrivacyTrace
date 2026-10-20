@@ -421,7 +421,10 @@ class ProductionProbeTests(unittest.IsolatedAsyncioTestCase):
         async def downstream(scope, receive, send):
             pass
 
-        with patch("serve.check_database_readiness", return_value=(True, "0080_05")):
+        with (
+            patch("serve.check_database_readiness", return_value=(True, "0080_05")),
+            patch("privacytrace.runtime_health.check_runtime_readiness", return_value=True),
+        ):
             surface = ProductionSurface(downstream, "privacytrace.test")
             client = httpx.AsyncClient(
                 transport=httpx.ASGITransport(app=surface, client=("127.0.0.1", 1234)),
@@ -435,6 +438,22 @@ class ProductionProbeTests(unittest.IsolatedAsyncioTestCase):
                 res_ready = await client.get("/_health/ready")
                 self.assertEqual(res_ready.status_code, 200)
                 self.assertEqual(res_ready.json(), {"status": "ready"})
+
+    async def test_readiness_degrades_without_live_worker_and_runner(self):
+        async def downstream(scope, receive, send):
+            pass
+
+        with (
+            patch("serve.check_database_readiness", return_value=(True, "0080_05")),
+            patch("privacytrace.runtime_health.check_runtime_readiness", return_value=False),
+        ):
+            surface = ProductionSurface(downstream, "privacytrace.test")
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=surface, client=("127.0.0.1", 1234)),
+                base_url="https://privacytrace.test",
+            ) as client:
+                self.assertEqual((await client.get("/_health/ready")).status_code, 503)
+                self.assertEqual((await client.get("/_health/live")).status_code, 200)
 
     async def test_production_readiness_probe_fails_when_db_down_or_unmigrated(self):
         async def downstream(scope, receive, send):
@@ -697,7 +716,7 @@ class ContextAndPreflightTests(unittest.TestCase):
         config = _build_synthetic_config()
         # Use the exact production secret contract, not historic smoke allowances.
         expected = {
-            "api": {"runtime_database_url", "material_key", "control_tls_ca",
+            "api": {"runtime_database_url", "runtime_health_url", "material_key", "control_tls_ca",
                     "control_tls_cert", "control_tls_key"},
             "dispatcher": {"runtime_database_url", "runtime_broker_url"},
             "worker": {"runtime_database_url", "runtime_broker_url", "material_key",

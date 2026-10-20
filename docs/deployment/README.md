@@ -71,3 +71,7 @@ docker compose --env-file /etc/privacytrace/deployment.env -f deploy/compose.yam
 API 镜像封装 `runtime-contract.json`。仅当它在独立审查后的发布变更中同时声明 `production_enabled=true` 和 `status=PUBLIC_RELEASE_AUTHORIZED`，`PT_DEPLOY_MODE=production` 才能进入生产入口。当前值仍为 false，因此绕过 preflight 直接启动生产模式也会失败。
 
 隔离验收须显式采用 `PT_DEPLOY_MODE=isolated` 和 `PT_PUBLIC_BIND_IP=127.0.0.1`，Compose 80/443 只发布到回环地址。宿主 Docker 管理权限可以更改绑定，不属于进程内门禁能替代的可信边界；发布公网仍需独立变更审批与宿主访问策略。
+
+## 真正运行时 Readiness 的最小证据
+
+API 单独挂载 `runtime_health_url` Redis 文件 Secret，应使用只读 ACL（仅允许两类健康键的 `TTL` 读取），不能拥有任务队列的写权限。Dispatcher/Worker 使用既有 Broker 身份持续写入该实例的短期 TTL 健康键，API 要求两者均新鲜；然后通过私网 mTLS 实时请求 Runner `/v1/health` 并对比固定镜像身份。Redis/进程/Runner 异常时 `/_health/ready` 返回 503，不影响 `/_health/live`。真实故障注入仍需隔离主机和证书，当前模拟测试不能充当完整执行收据。

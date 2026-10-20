@@ -178,7 +178,11 @@ class ProductionSurface:
 
     def _check_ready(self) -> bool:
         ready, _ = check_database_readiness(self.application)
-        return ready
+        if not ready:
+            return False
+        from privacytrace.runtime_health import check_runtime_readiness
+
+        return check_runtime_readiness(os.environ.get("PRIVACYTRACE_INSTANCE_ID", ""))
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":

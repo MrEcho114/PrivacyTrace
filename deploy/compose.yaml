@@ -46,6 +46,7 @@ services:
       PRIVACYTRACE_STORAGE: postgres
       PRIVACYTRACE_INSTANCE_ID: ${PT_INSTANCE_ID:?Set stable instance UUID}
       PRIVACYTRACE_DATABASE_URL_FILE: /run/secrets/runtime_database_url
+      PRIVACYTRACE_HEALTH_REDIS_URL_FILE: /run/secrets/runtime_health_url
       PRIVACYTRACE_STORE_ROOT: /var/lib/privacytrace/jobs
       PRIVACYTRACE_DELETION_JOURNAL_ROOT: /var/lib/privacytrace-deletions
       PRIVACYTRACE_MATERIAL_KEY_FILE: /run/secrets/material_key
@@ -57,6 +58,7 @@ services:
     networks: [api, database, control]
     secrets:
       - runtime_database_url
+      - runtime_health_url
       - material_key
       - control_tls_ca
       - control_tls_cert
@@ -164,6 +166,7 @@ services:
       PRIVACYTRACE_INSTANCE_ID: ${PT_INSTANCE_ID:?Set stable instance UUID}
       PRIVACYTRACE_DATABASE_URL_FILE: /run/secrets/runtime_database_url
       PRIVACYTRACE_BROKER_URL_FILE: /run/secrets/runtime_broker_url
+      PRIVACYTRACE_PUBLISH_HEALTH: "1"
       PRIVACYTRACE_STORE_ROOT: /var/lib/privacytrace/jobs
     networks: [database]
     secrets:
@@ -189,6 +192,7 @@ services:
       PRIVACYTRACE_INSTANCE_ID: ${PT_INSTANCE_ID:?Set stable instance UUID}
       PRIVACYTRACE_DATABASE_URL_FILE: /run/secrets/runtime_database_url
       PRIVACYTRACE_BROKER_URL_FILE: /run/secrets/runtime_broker_url
+      PRIVACYTRACE_PUBLISH_HEALTH: "1"
       PRIVACYTRACE_STORE_ROOT: /var/lib/privacytrace/jobs
       PRIVACYTRACE_DELETION_JOURNAL_ROOT: /var/lib/privacytrace-deletions
       PRIVACYTRACE_MATERIAL_KEY_FILE: /run/secrets/material_key
@@ -289,6 +293,8 @@ secrets:
     file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/migration_database_url
   runtime_broker_url:
     file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/runtime_broker_url
+  runtime_health_url:
+    file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/runtime_health_url
   material_key:
     file: ${PT_SECRETS_DIR:?Set protected absolute secrets directory}/material.key
   control_tls_ca:

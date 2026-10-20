@@ -85,6 +85,7 @@ p { line-height: 1.7; }
 .field-pair .ui-field { margin: 0 0 16px; }
 .source-body summary { padding: 8px 0; font-size: 0.8125rem; color: var(--muted); cursor: pointer; }
 .source-summary-meta { float: right; margin-left: 16px; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.source-body > summary::after { content: ''; display: block; clear: both; }
 .policy-panel .ui-field { margin: 12px 0; }
 .policy-panel .field-pair .ui-field { margin-bottom: 0; }
 .source-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

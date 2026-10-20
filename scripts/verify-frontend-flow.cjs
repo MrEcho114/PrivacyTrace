@@ -474,7 +474,7 @@ async function main() {
       }
       if (!ready) throw new Error('Frontend startup timed out: ' + serverLog)
     }
-    browser = await chromium.launch({ headless: true })
+    browser = await chromium.launch({ headless: true, executablePath: process.env.PRIVACYTRACE_CHROMIUM || undefined })
     const inputRegressions = await verifyInputRecovery(browser, origin)
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
     const errors = []; const requests = []
@@ -496,7 +496,7 @@ async function main() {
     await page.getByRole('alert').filter({ hasText: '文件格式不支持' }).waitFor()
     await page.locator('input[accept=".apk"]').setInputFiles({ name: 'example.apk', mimeType: 'application/octet-stream', buffer: Buffer.from('synthetic name only; never scanned') })
     await page.getByText('example.apk', { exact: true }).waitFor()
-    assert.equal(await page.getByRole('button', { name: '获取政策并检查候选', exact: true }).isDisabled(), true)
+    assert.equal(await page.getByRole('button', { name: '获取政策并检查候选', exact: true }).isDisabled(), false, 'an APK can start automatic policy discovery without a manually supplied source')
     await page.locator('.apk-panel').getByRole('button', { name: '体验示例', exact: true }).click()
     await page.evaluate(() => document.fonts.ready)
     await page.getByLabel('政策网址', { exact: true }).first().fill('https://example.com/' + 'a'.repeat(1800))

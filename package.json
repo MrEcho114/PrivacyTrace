@@ -14,7 +14,7 @@
     "preview": "npm run preview --workspace @privacytrace/web",
     "fixtures:acceptance": "uv run --project apps/api python scripts/build_acceptance_fixtures.py",
     "acceptance:browser": "node scripts/verify-browser-acceptance.cjs",
-    "acceptance:frontend": "node scripts/verify-frontend-flow.cjs",
+    "acceptance:frontend": "node scripts/verify-frontend-flow.cjs && node scripts/verify-policy-assist.cjs",
     "acceptance:live": "node scripts/verify-live-flow.cjs",
     "acceptance:preview": "node scripts/verify-frontend-preview.cjs"
   },

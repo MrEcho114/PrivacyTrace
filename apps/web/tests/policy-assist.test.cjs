@@ -171,3 +171,108 @@ for (const mode of ['new source', 'null source', 'cancel then refresh']) test(`$
   assert.equal(h.state.error.value, '')
   assert.deepEqual(extracted, mode === 'null source' ? ['seed'] : ['seed', 'new'])
 })
+
+test('failed automatic extraction remains retryable without replacing the draft', async () => {
+  let current, attempts = 0
+  const h = harness({
+    async createDraft() { return current },
+    async uploadApk() { current = { ...current, uploaded: true }; return current },
+    async extractSource() { attempts++; if (attempts === 1) throw new Error('模型暂时不可用'); return current },
+  })
+  current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual' }] }
+  h.state.file.value = { name: 'fixture.apk' }
+  await h.state.prepare()
+  assert.equal(h.workflow.step, 'candidates')
+  assert.match(h.state.notice.value, /模型暂时不可用/)
+  assert.deepEqual([...h.state.failedSourceIds.value], ['seed'])
+  assert.equal(h.state.draft.value.id, 'draft1')
+  h.state.go('import'); await h.state.prepare()
+  assert.equal(attempts, 2)
+  assert.deepEqual([...h.state.failedSourceIds.value], [])
+  h.state.go('import'); await h.state.prepare()
+  assert.equal(attempts, 2, 'a successfully retried source must not re-extract')
+})
+
+test('explicit per-source retry clears failure without regenerating unrelated candidates', async () => {
+  let current, attempts = 0
+  const h = harness({
+    async createDraft() { return current },
+    async uploadApk() { current = { ...current, uploaded: true }; return current },
+    async extractSource() { attempts++; if (attempts === 1) throw new Error('模型不可用'); return current },
+  })
+  current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '原文', status: 'manual' }] }
+  h.state.file.value = { name: 'fixture.apk' }; await h.state.prepare()
+  await h.state.retryModel('seed')
+  assert.equal(attempts, 2)
+  assert.deepEqual([...h.state.failedSourceIds.value], [])
+  assert.equal(h.state.error.value, '')
+  assert.equal(h.state.draft.value.sources[0].text, '原文')
+  assert.match(h.state.notice.value, /已完成/)
+})
+
+test('persisted failed extraction audit remains retryable after page restoration', async () => {
+  let current, attempts = 0
+  const h = harness({
+    async readDraft() { return current },
+    async extractSource() {
+      attempts++
+      current = { ...current, sources: current.sources.map(s => ({ ...s, model_audit: { status: 'SUCCEEDED' } })) }
+      return current
+    },
+  }, 'a'.repeat(32))
+  current = { ...h.stored(), uploaded: true, sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual', model_audit: { status: 'FAILED' } }] }
+  await h.mount()
+  assert.equal(h.workflow.step, 'candidates')
+  assert.deepEqual([...h.state.failedSourceIds.value], ['seed'])
+  h.state.go('import'); await h.state.prepare()
+  assert.equal(attempts, 1)
+  assert.deepEqual([...h.state.failedSourceIds.value], [])
+})
+
+test('cancelled extraction must not mark sources as failed or accept late responses', async () => {
+  let current, resolve, started
+  const begun = new Promise(done => { started = done })
+  const h = harness({
+    async createDraft() { return current },
+    async uploadApk() { current = { ...current, uploaded: true }; return current },
+    extractSource() { started(); return new Promise(done => { resolve = done }) },
+  })
+  current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual' }] }
+  h.state.file.value = { name: 'fixture.apk' }
+  const pending = h.state.prepare(); await begun
+  h.state.cancelPreparation()
+  resolve({ ...current, revision: 9, sources: [] })
+  await pending
+  assert.equal(h.state.draft.value.revision, 1)
+  assert.deepEqual([...h.state.failedSourceIds.value], [])
+  assert.equal(h.workflow.step, 'import')
+})
+
+test('seven appended sources fill the eight-slot draft; eight fail before creating it', async () => {
+  const incoming = count => ({ version: 'privacytrace-policy-collector/1', results: Array.from({ length: count }, (_, index) => ({ state: 'PROVIDED', source: { id: 'ext-' + index, title: '外部 ' + index, source_type: 'SDK_POLICY', text: '原句' } })) })
+  let imports = 0
+  const h = harness({
+    async importExternal(_id, input) {
+      imports++
+      return { ...h.stored(), revision: 2, sources: [...h.stored().sources, ...input.results.map(result => ({ ...result.source, status: 'manual' }))] }
+    },
+  })
+  await h.state.importCollected(incoming(7))
+  assert.equal(imports, 1)
+  assert.equal(h.state.draft.value.sources.length, 8)
+  let creates = 0, rejected = 0
+  const blocked = harness({ async createDraft() { creates++; return blocked.stored() }, async importExternal() { rejected++; return blocked.stored() } })
+  await blocked.state.importCollected(incoming(8))
+  assert.match(blocked.state.error.value, /最多 8 份来源/)
+  assert.equal(creates, 0, 'capacity errors must not create a stray draft')
+  assert.equal(rejected, 0)
+  assert.equal(blocked.workflow.sources.length, 1)
+})
+
+test('source-less audit does not consume another slot or modify existing candidates', async () => {
+  const h = harness({ async importExternal() { return { ...h.stored(), revision: 2, external_imports: [{ results: [{ state: 'OFFLINE', source_id: null }] }] } } })
+  await h.state.importCollected({ version: 'privacytrace-policy-collector/1', results: [{ state: 'OFFLINE', source: null }] })
+  assert.equal(h.state.error.value, '')
+  assert.equal(h.state.draft.value.sources.length, 1)
+  assert.equal(h.state.draft.value.external_imports.length, 1)
+})

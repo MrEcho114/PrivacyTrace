@@ -15,8 +15,8 @@ from .package_set import PackageSetIntegrityError
 from .web_intake import (
     ISOLATED_INPUT_ERROR_CODES,
     SOURCE_TYPE_CONFIRMATION_REQUIRED,
-    InspectionBusy,
     ExtractionInProgress,
+    InspectionBusy,
     UploadTimedOut,
     UploadTooLarge,
 )

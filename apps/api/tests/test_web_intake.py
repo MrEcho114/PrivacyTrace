@@ -249,6 +249,17 @@ def test_extraction_attempt_id_commits_with_same_status_and_legacy_clients(tmp_p
         assert draft["sources"][0]["model_audit"]["attempt_id"] == attempt
         assert client.get(endpoint).json()["sources"][0]["model_audit"]["attempt_id"] == attempt
         assert draft["sources"][1]["model_audit"] == {}
+        if attempt == "a" * 32:
+            # A committed at old_revision+1. B's stale request must reject with
+            # 409 without replacing A's same-status audit or advancing revision.
+            rejected = client.post(extract_path, headers=HEADERS, json={
+                "revision": old_revision, "attempt_id": "d" * 32,
+            })
+            assert rejected.status_code == 409, rejected.text
+            persisted = client.get(endpoint).json()
+            assert persisted["revision"] == draft["revision"]
+            assert persisted["sources"][0]["model_audit"]["attempt_id"] == attempt
+            assert persisted["sources"][0]["model_audit"]["status"] == original_status
     for invalid in ("bad", "F" * 32, "g" * 32, "a" * 33, 1234):
         bad = client.post(extract_path, headers=HEADERS, json={
             "revision": draft["revision"], "attempt_id": invalid,

@@ -63,6 +63,8 @@ def test_health_challenge_with_real_redis_and_solo_celery_consumer(tmp_path):
 
     This is opt-in and exercises actual queue consumption, not task.run().
     """
+    import sys
+
     if os.environ.get("PRIVACYTRACE_REDIS_TESTS") != "1":
         pytest.skip("Opt in to isolated real Redis and Celery runtime tests")
     assert shutil.which("redis-server"), "redis-server required"

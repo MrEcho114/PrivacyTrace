@@ -129,6 +129,12 @@ def install_web_api(app, local_write):
         draft_access(request, draft_id)
         return web_operation(lambda: service.get(draft_id))
 
+    if hasattr(service, "delete_draft"):
+        @app.delete("/api/v1/web/drafts/{draft_id}")
+        def delete_draft(draft_id: str, request: Request):
+            draft_access(request, draft_id)
+            return web_operation(lambda: service.delete_draft(draft_id))
+
     async def upload_material(draft_id: str, request: Request, *, expect_package_set: bool):
         draft_access(request, draft_id)
         try:

@@ -70,6 +70,7 @@ def run(
     package_set=None,
     job_store=None,
     expected_apk_sha256=None,
+    scanner=None,
 ):
     store = job_store if job_store is not None else JobStore(store_dir or ROOT / "data" / "jobs")
     job = existing_job or AnalysisJob(
@@ -121,11 +122,13 @@ def run(
         except (ValueError, OSError, KeyError, TypeError) as exc:
             raise ScanError("POLICY_INPUT_INVALID", "Policy capture failed validation") from exc
         transition("STATIC_ANALYSIS")
+        # Trusted runtime injection; HTTP input cannot choose this callable.
+        scan = scan_isolated if scanner is None else scanner
         if package_set is not None or (hasattr(apk, "is_dir") and apk.is_dir()):
             packages_dir = apk if apk.is_dir() else apk.parent / "packages"
-            scanned = scan_isolated(packages_dir, timeout=timeout, cancelled=cancelled)
+            scanned = scan(packages_dir, timeout=timeout, cancelled=cancelled)
         else:
-            scanned = scan_isolated(apk, timeout=timeout, cancelled=cancelled)
+            scanned = scan(apk, timeout=timeout, cancelled=cancelled)
         if expected_apk_sha256 is not None and scanned["apk_sha256"] != expected_apk_sha256:
             raise ScanError("INPUT_DIGEST_MISMATCH", "Scanned APK differs from registered input")
         if package_set is not None and not registered_package_set_matches(scanned, package_set):

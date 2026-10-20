@@ -165,7 +165,7 @@ class WebIntake:
     INSPECTION_BUDGET_SECONDS = 600
     UPLOAD_TIMEOUT_SECONDS = 180
     ATTEMPT_RESERVATION_SECONDS = 120
-    MAX_ATTEMPT_RECORDS_PER_SOURCE = 64
+    MAX_ATTEMPT_RECORDS_PER_SOURCE = 512
 
     def __init__(self, store):
         self.store = store
@@ -900,15 +900,11 @@ class WebIntake:
                 if changed:
                     self._save_attempts(draft_id, records)
                 raise ExtractionInProgress("EXTRACTION_IN_PROGRESS")
-            by_source = sorted(
-                (r for r in records.values() if r["source_id"] == source_id),
-                key=lambda r: r["created_at"],
-            )
-            evict_count = max(0, len(by_source) - self.MAX_ATTEMPT_RECORDS_PER_SOURCE + 1)
-            for record in by_source[:evict_count]:
-                if record["state"] not in {"COMMITTED", "FAILED", "EXPIRED"}:
-                    raise ExtractionInProgress("EXTRACTION_IN_PROGRESS")
-                del records[record["attempt_id"]]
+            # Never evict completed IDs: a repeated ID must never become
+            # valid again. Draft TTL bounds the history on disk.
+            count = sum(r["source_id"] == source_id for r in records.values())
+            if count >= self.MAX_ATTEMPT_RECORDS_PER_SOURCE:
+                raise ValueError("EXTRACTION_ATTEMPT_QUOTA_REACHED")
             entry = {
                 "attempt_id": attempt_id, "source_id": source_id, "revision": revision,
                 "state": "RESERVED", "created_at": time.time(),

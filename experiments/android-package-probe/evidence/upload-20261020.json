@@ -1,0 +1,31 @@
+{
+  "schema": "privacytrace-android-upload-contract-v1",
+  "source_commit": "648c985b84a2a613e963467a1818308cd6b57e29",
+  "source_dirty": false,
+  "environment": "MuMu Android 15 / API 35 / x86_64 emulator",
+  "emulator": true,
+  "result": "PASS",
+  "platform_cases": [
+    "single_self_app_uid",
+    "external_base_plus_installed_feature_app_uid"
+  ],
+  "upload_contract_cases": 13,
+  "protected_upload_access": "PASS",
+  "installed_fixture_split_wire_hashes": "PASS",
+  "apk_sha256": [
+    "92120c6f138bb00d3e03c8cd7937b0276978858654e6447f493d790e3ffbb566",
+    "9fadbbfc9617d877acc7a2d8cb09e05c41d7dfdc958b0573bddcadf5037dcd8a",
+    "91caf858791793ec68ede6d0fbb124ff4add99862bebb66fad2c35fb15b648b2",
+    "0cdb1dff48ff1dd5370472c4d71be3a5b869426298059dd8dcb217208e31637d"
+  ],
+  "server": "test-only TLS MockWebServer with ephemeral private CA",
+  "unverified": [
+    "complete_tauri_apk",
+    "production_web_integration",
+    "actual_durable_api_runner_topology",
+    "public_https",
+    "background_network_recovery",
+    "physical_hardware",
+    "oem_matrix"
+  ]
+}

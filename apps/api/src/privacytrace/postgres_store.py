@@ -12,8 +12,12 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
 
 from .job_store import JobStore
-from .postgres_schema import REVISION, SCHEMA, audit, documents, jobs, scopes
+from .postgres_schema import REVISION, SCHEMA, audit, deletions, documents, executions, jobs, scopes
 from .runtime_models import StoredJob
+
+
+class PostgresOperationUnavailable(ValueError):
+    """Sanitized SQL/connection failure; uncertain writes must be read back."""
 
 
 class PostgresJobStore(JobStore):
@@ -27,8 +31,11 @@ class PostgresJobStore(JobStore):
 
     uses_postgres = True
 
-    def __init__(self, url: str, instance_id: str, root: Path):
+    def __init__(self, url: str, instance_id: str, root: Path, *, recovery=False):
         self._local = local()
+        self._allow_restore = recovery
+        self.deletion_journal = None
+        self.cleanup_after_delete = None
         try:
             self.instance_id = str(UUID(instance_id))
             parsed = sa.engine.make_url(url)
@@ -50,6 +57,17 @@ class PostgresJobStore(JobStore):
         self.root = Path(root).absolute() / "instances" / self.instance_id
         self._safe_root()
         self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
+        try:
+            self._check_restore()
+        except Exception:
+            self.engine.dispose()
+            raise
+
+    def _check_restore(self):
+        self._safe_root()
+        marker = self.root / ".restore-in-progress"
+        if not self._allow_restore and (marker.exists() or marker.is_symlink()):
+            raise PostgresOperationUnavailable("Instance recovery is not complete")
 
     def _check_runtime(self):
         try:
@@ -86,6 +104,7 @@ class PostgresJobStore(JobStore):
 
     @contextmanager
     def _transaction(self):
+        self._check_restore()
         active = getattr(self._local, "connection", None)
         if active is not None:
             yield active
@@ -102,6 +121,7 @@ class PostgresJobStore(JobStore):
                     sa.text("SELECT pg_advisory_xact_lock(hashtextextended(:instance, 80))"),
                     {"instance": self.instance_id},
                 )
+                self._check_restore()
                 self._local.connection = conn
                 try:
                     yield conn
@@ -109,7 +129,9 @@ class PostgresJobStore(JobStore):
                     self._local.connection = None
         except SQLAlchemyError:
             # Neither a DSN, SQL parameters, policy text nor capability goes into errors.
-            raise ValueError("PostgreSQL storage rejected the operation") from None
+            raise PostgresOperationUnavailable(
+                "PostgreSQL storage rejected the operation"
+            ) from None
 
     def _scope(self, scope_id):
         return (
@@ -185,6 +207,8 @@ class PostgresJobStore(JobStore):
         ):
             raise ValueError("Scope is unavailable")
         if previous is None:
+            if self.deletion_journal is not None:
+                self.deletion_journal.require_admission_capacity()
             count = self._local.connection.execute(
                 sa.select(sa.func.count())
                 .select_from(scopes)
@@ -198,6 +222,8 @@ class PostgresJobStore(JobStore):
                 raise ValueError("Job record limit reached")
         action = "JOB_WRITE"
         if record.tombstone:
+            if self.deletion_journal is not None:
+                self._record_deletion(self.deletion_journal.append("JOB", record.job.id))
             # Online deletion revokes credentials and removes report/policy/review content.
             record = StoredJob(job=record.job, tombstone=True)
             action = "JOB_DELETE"
@@ -230,6 +256,26 @@ class PostgresJobStore(JobStore):
             )
         )
         self._audit(record.job.id, action)
+        if record.tombstone or record.job.state == "CANCELLED":
+            # Same transaction and instance lock as revocation: no late heartbeat
+            # or report can retain a pre-cancellation execution token.
+            self._local.connection.execute(
+                executions.update()
+                .where(
+                    executions.c.instance_id == self.instance_id,
+                    executions.c.job_id == record.job.id,
+                    executions.c.state != "REVOKED",
+                )
+                .values(
+                    state="REVOKED",
+                    fence=executions.c.fence + 1,
+                    owner=None,
+                    leased_until=None,
+                    started_at=None,
+                    result_sha256=None,
+                    last_error_code="JOB_UNAVAILABLE",
+                )
+            )
 
     def create_if_absent(self, job, token_digest=None):
         with self._transaction():
@@ -237,6 +283,55 @@ class PostgresJobStore(JobStore):
                 raise ValueError("Job already exists; choose a new job ID")
             self._write(StoredJob(job=job, token_digest=token_digest))
             return job
+
+    def create_retry(self, job, token_digest):
+        with self._transaction():
+            original = self._load(job.retry_of)
+            if original.job.state not in {"FAILED", "CANCELLED"}:
+                raise ValueError("Only failed or cancelled jobs can be retried")
+            if original.token_digest != token_digest or self._scope(job.id) is not None:
+                raise ValueError("Retry access scope or identifier changed")
+            self._write(StoredJob(job=job, token_digest=token_digest))
+            return job
+
+    def _record_deletion(self, intent):
+        conn = self._local.connection
+        previous = (
+            conn.execute(
+                sa.select(deletions).where(
+                    deletions.c.instance_id == self.instance_id,
+                    deletions.c.kind == intent["kind"],
+                    deletions.c.scope_id == intent["scope_id"],
+                )
+            )
+            .mappings()
+            .one_or_none()
+        )
+        if previous is not None:
+            if previous["sequence"] != intent["sequence"] or previous["mac"] != intent["mac"]:
+                raise ValueError("Deletion replay checkpoint mismatch")
+            return
+        conn.execute(
+            deletions.insert().values(
+                instance_id=self.instance_id,
+                kind=intent["kind"],
+                scope_id=intent["scope_id"],
+                sequence=intent["sequence"],
+                mac=intent["mac"],
+            )
+        )
+
+    def delete(self, job_id):
+        standalone = getattr(self._local, "connection", None) is None
+        result = super().delete(job_id)
+        if standalone and self.cleanup_after_delete is not None:
+            try:
+                self.cleanup_after_delete()
+            except (ValueError, OSError):
+                # Revocation is already durable. Retained pointers / unreferenced
+                # files are retried by the separate collector, never resurrected.
+                pass
+        return result
 
     def list(self):
         with self._transaction() as conn:
@@ -292,6 +387,8 @@ class PostgresJobStore(JobStore):
         with self._transaction() as conn:
             scope_id = key.split("/")[0] if "/" in key else None
             if scope_id and self._scope(scope_id) is None:
+                if self.deletion_journal is not None:
+                    self.deletion_journal.require_admission_capacity()
                 self._digest(token_digest)
                 conn.execute(
                     scopes.insert().values(

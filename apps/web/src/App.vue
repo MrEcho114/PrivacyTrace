@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { cancelJob, loadJob, loadJobReport, loadJobs, loadReport, loadTaxonomy, submitReview } from './api'
+import { cancelJob, deleteJob, isNotFoundFor, jobPath, jobReportPath, loadJob, loadJobReport, loadJobs, loadReport, loadTaxonomy, retryJob, submitReview } from './api'
 import { clampSdkPage, getSdkEvidence, sdkPageCount, sdkPageSlice } from './sdkEvidence'
-import type { AnalysisJob, DemoReport, Evidence, MatchStatus, PrivacyIssue, Report, ReportSource, Taxonomy } from './types'
-import { parseSource, serializeSource } from './types'
+import type { AnalysisJob, DemoReport, Evidence, MatchStatus, PrivacyIssue, Report, ReportSource, Taxonomy, WebSource } from './types'
+import { parseSource, serializeSource, sourceProvenanceLabel, sourceStatusLabel } from './types'
 const props = defineProps<{ initialJobId?: string }>()
 
 const report = ref<DemoReport | Report | null>(null)
 const taxonomy = ref<Taxonomy | null>(null)
 const jobs = ref<AnalysisJob[]>([])
 const activeJob = ref<AnalysisJob | null>(null)
+// Deleting is irreversible locally, so removed ids are remembered: a late poll or
+// a stale 404 response must never put the deleted job back on screen.
+const removedJobIds = ref<string[]>([])
+const confirmDelete = ref(false)
+const jobMessage = ref('')
 const source = ref<ReportSource>({ kind: 'demo' })
 const selectedSourceKey = computed({
   get: () => serializeSource(source.value),
@@ -18,6 +23,14 @@ const selectedSourceKey = computed({
   },
 })
 const selected = ref<PrivacyIssue | null>(null)
+function selectIssue(issue: PrivacyIssue) {
+  selected.value = issue
+  void nextTick(() => {
+    const panel = document.getElementById('evidence-panel')
+    panel?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    panel?.focus({ preventScroll: true })
+  })
+}
 const loading = ref(false)
 const error = ref('')
 const reviewMessage = ref('')
@@ -49,7 +62,7 @@ const realReport = computed(() => report.value && !report.value.demo ? report.va
 const webSources = computed(() => {
   try {
     const value = JSON.parse(realReport.value?.tools.web_policy_sources ?? '[]')
-    return Array.isArray(value) ? value.filter(item => item && typeof item.title === 'string' && typeof item.status === 'string') as { title: string; status: string; error_code?: string; captured_at?: string; sha256?: string; url?: string; final_url?: string }[] : []
+    return Array.isArray(value) ? value.filter(item => item && typeof item.title === 'string' && typeof item.status === 'string') as { title: string; status: NonNullable<WebSource['status']>; error_code?: string; captured_at?: string; sha256?: string; url?: string; final_url?: string; provenance?: string | null }[] : []
   } catch { return [] }
 })
 // SDK attribution is reference material with its own access path: no issue cites
@@ -268,16 +281,18 @@ function failure(cause: unknown) {
 }
 async function reload(initial = false) {
   const { current, signal } = beginRequest()
+  if (source.value.kind === 'job' && removedJobIds.value.includes(source.value.id)) source.value = { kind: 'demo' }
   loading.value = true
   error.value = ''
   reviewMessage.value = ''
   report.value = null
   selected.value = null
   activeJob.value = null
+  confirmDelete.value = false
   try {
     const [nextJobs, nextTaxonomy] = await Promise.all([loadJobs(signal), loadTaxonomy(signal)])
     if (current !== requestId) return
-    jobs.value = nextJobs.jobs
+    jobs.value = nextJobs.jobs.filter(job => !removedJobIds.value.includes(job.id))
     taxonomy.value = nextTaxonomy
     if (initial && props.initialJobId) source.value = { kind: 'job', id: props.initialJobId }
     else if (initial && jobs.value.length) source.value = { kind: 'job', id: jobs.value[0]!.id }
@@ -296,7 +311,20 @@ async function reload(initial = false) {
       else if (!terminal(job)) timer = setTimeout(() => { void reload() }, 1500)
     }
   } catch (cause) {
-    if (current === requestId) error.value = failure(cause)
+    if (current !== requestId) return
+    const wantedId = source.value.kind === 'job' ? source.value.id : ''
+    if (wantedId && isNotFoundFor(cause, jobPath(wantedId))) {
+      // Only a 404 for the job entity itself proves the record is gone. A
+      // missing report (or a taxonomy/list failure) must not hide a live job.
+      removedJobIds.value = [...removedJobIds.value, wantedId]
+      jobs.value = jobs.value.filter(job => job.id !== wantedId)
+      source.value = { kind: 'demo' }
+      error.value = '任务已删除，界面已移除该任务。'
+    } else if (wantedId && isNotFoundFor(cause, jobReportPath(wantedId))) {
+      error.value = '任务仍存在，但报告不可用（可能尚未生成或已被移除），可稍后重试。'
+    } else {
+      error.value = failure(cause)
+    }
   } finally {
     if (current === requestId) loading.value = false
   }
@@ -335,6 +363,73 @@ async function cancel() {
         error.value = failure(cause)
       }
     }
+  } finally {
+    if (current === requestId) loading.value = false
+  }
+}
+// A retry is a NEW analysis (issue story 12): the returned job has its own id and
+// the original record stays readable from the report source list.
+async function retryTerminal() {
+  const job = activeJob.value
+  if (!job) return
+  const { current, signal } = beginRequest()
+  loading.value = true
+  error.value = ''
+  jobMessage.value = ''
+  confirmDelete.value = false
+  try {
+    const fresh = await retryJob(job.id, signal)
+    if (current !== requestId) return
+    jobMessage.value = `已创建新的分析任务 ${fresh.id}，这是新的分析，不是原任务的重新打开；原任务 ${job.id} 的记录仍保留，可在报告来源中查看。`
+    source.value = { kind: 'job', id: fresh.id }
+    activeJob.value = fresh
+    report.value = null
+    selected.value = null
+    void reload()
+  } catch (cause) {
+    if (current === requestId) error.value = failure(cause)
+  } finally {
+    if (current === requestId) loading.value = false
+  }
+}
+function forgetJob(id: string) {
+  clearTimeout(timer)
+  removedJobIds.value = [...removedJobIds.value, id]
+  confirmDelete.value = false
+  jobs.value = jobs.value.filter(item => item.id !== id)
+  activeJob.value = null
+  report.value = null
+  selected.value = null
+  if (source.value.kind === 'job' && source.value.id === id) {
+    const next = jobs.value[0]
+    source.value = next ? { kind: 'job', id: next.id } : { kind: 'demo' }
+  }
+}
+async function removeJob() {
+  const job = activeJob.value
+  if (!job) return
+  const id = job.id
+  const { current, signal } = beginRequest()
+  loading.value = true
+  error.value = ''
+  jobMessage.value = ''
+  try {
+    const result = await deleteJob(id, signal)
+    if (current !== requestId) return
+    forgetJob(id)
+    jobMessage.value = `任务 ${result.job_id} 已从本机记录中删除，原始材料与分析结果不可恢复。`
+    void reload()
+  } catch (cause) {
+    if (current !== requestId) return
+    const message = cause instanceof Error ? cause.message : ''
+    if (message === '任务已删除。') {
+      // Already deleted (double click or another tab): finish the local removal.
+      forgetJob(id)
+      jobMessage.value = '任务已删除。'
+      void reload()
+      return
+    }
+    error.value = failure(cause)
   } finally {
     if (current === requestId) loading.value = false
   }
@@ -385,7 +480,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         {{ sourceInfo?.desc ?? (source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。报告不保证覆盖反射、动态加载、原生代码或运行时行为。') }}
         六种状态只对照 DATA_TYPE_DISCLOSURE；“具体类型已声明”不代表目的、接收方、传输或时间范围全部一致，更不是合法性判断。
       </details>
-      <section v-if="webSources.length" class="coverage-card"><h2>输入来源状态</h2><p>失败来源保留；正文完整度未知、全文未复核、附件未检查。</p><ul><li v-for="(item, index) in webSources" :key="index"><strong>{{ item.title }}</strong> · {{ item.status === 'failed' ? '来源获取失败' : item.status === 'empty' ? '无正文' : item.status === 'manual' ? '手动补入' : '已获取正文' }}<span v-if="item.error_code"> · {{ item.error_code }}</span><p class="subtle">请求网址 {{ item.url || '手动输入' }} · 最终网址 {{ item.final_url || '未获取／手动输入' }}</p></li></ul></section><section v-if="realReport" class="report-provenance" aria-label="报告生成来源">
+      <section v-if="webSources.length" class="coverage-card"><h2>输入来源状态</h2><p>失败来源保留；正文完整度未知、全文未复核、附件未检查。</p><ul><li v-for="(item, index) in webSources" :key="index"><strong>{{ item.title }}</strong> · {{ sourceStatusLabel(item.status) }} · {{ sourceProvenanceLabel(item.provenance) }}<span v-if="item.error_code"> · {{ item.error_code }}</span><p class="subtle">请求网址 {{ item.url || '手动输入' }} · 最终网址 {{ item.final_url || '未获取／手动输入' }}</p></li></ul></section><section v-if="realReport" class="report-provenance" aria-label="报告生成来源">
         <strong>{{ offlineReplay ? 'OFFLINE REPLAY · 离线回放' : '存档报告查看 · PERSISTED REPLAY' }}</strong>
         <p v-if="realReport.tools.analysis_generated_at">分析生成时点：{{ realReport.tools.analysis_generated_at }}。查看存档不代表重新扫描。</p>
         <p v-else>记录创建时点：{{ realReport.job.created_at }}。未留存分析生成时点；来源以报告来源标识为准。</p>
@@ -400,8 +495,20 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           <p class="error-msg">{{ parsedJobError.message }}</p>
           <p v-if="parsedJobError.primary_error" class="error-detail subtle">根因：{{ parsedJobError.primary_error }}</p>
         </div>
-        <p v-if="activeJob.state === 'FAILED' || activeJob.state === 'CANCELLED'">本任务没有可展示的成功报告。请检查输入后重新运行 CLI。</p>
+        <p v-if="activeJob.state === 'FAILED' || activeJob.state === 'CANCELLED'">本任务没有可展示的成功报告。可以重试为一次新的分析，或删除这条本机记录。</p>
+        <!-- Destructive actions stay terminal-only: deleting a running job would leave a tombstone
+             while the worker may still be writing. Running jobs keep the cancel button above. -->
+        <div v-if="terminal(activeJob)" class="job-terminal-actions">
+          <button v-if="activeJob.state === 'FAILED' || activeJob.state === 'CANCELLED'" data-testid="retry-job" :disabled="loading" @click="retryTerminal">重试为新的分析</button>
+          <button v-if="!confirmDelete" data-testid="delete-job" :disabled="loading" @click="confirmDelete = true">删除任务</button>
+          <template v-else>
+            <button data-testid="delete-confirm" :disabled="loading" @click="removeJob">确认删除</button>
+            <button :disabled="loading" @click="confirmDelete = false">取消删除</button>
+          </template>
+        </div>
+        <p v-if="confirmDelete && terminal(activeJob)" class="job-delete-warning" role="alert">删除会一并移除本机保存的这条任务记录与报告，事后不可恢复，也不会保留原任务的分析结果。</p>
       </section>
+      <p v-if="jobMessage" class="notice" role="status">{{ jobMessage }}</p>
       <section v-if="loading && !report" class="state" role="status">正在加载… <button @click="controller?.abort()">停止本次请求</button></section>
       <section v-if="error" class="state error" role="alert">{{ error }} <button @click="reload()">重试</button></section>
       <template v-if="report">
@@ -430,11 +537,13 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         <div class="metrics"><div><strong>{{ dataTypeCount }}</strong><span>涉及的数据类型</span></div><div><strong>{{ report.policy_documents.length }}</strong><span>独立政策来源</span></div><div><strong>{{ report.evidence.length }}</strong><span>可查看的证据</span></div></div>
         <section class="report-section">
           <div class="section-heading"><h2>隐私声明对照</h2><span class="subtle">点开结论后，直接查看代码定位与原句</span></div>
-          <div class="table-scroll"><table><thead><tr><th>隐私数据</th><th>政策来源</th><th>当前结论</th><th>依据</th></tr></thead><tbody>
-            <tr v-for="issue in report.result.issues" :key="issue.id"><td class="type-cell">{{ label(issue.data_type) }}</td><td>{{ documentLabels(issue.policy_document_ids) }}</td><td><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></td><td><button class="evidence-button" :aria-expanded="selected?.id === issue.id" aria-controls="evidence-panel" @click="selected = issue">查看 {{ issue.evidence_ids.length }} 条证据 →</button></td></tr>
+          <!-- Narrow screens stack each row as a card; the explicit table roles keep the grid
+               semantics that display:flex/block would otherwise drop. -->
+          <div class="table-scroll"><table class="report-table" role="table"><thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">隐私数据</th><th scope="col" role="columnheader">政策来源</th><th scope="col" role="columnheader">当前结论</th><th scope="col" role="columnheader">依据</th></tr></thead><tbody role="rowgroup">
+            <tr v-for="issue in report.result.issues" :key="issue.id" role="row"><td class="type-cell" role="cell" data-label="隐私数据">{{ label(issue.data_type) }}</td><td role="cell" data-label="政策来源">{{ documentLabels(issue.policy_document_ids) }}</td><td role="cell" data-label="当前结论"><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></td><td role="cell" data-label="依据"><button class="evidence-button" :aria-expanded="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue)">查看 {{ issue.evidence_ids.length }} 条证据 →</button></td></tr>
           </tbody></table></div><p v-if="!report.result.issues.length" class="subtle">未产生对照项不等于没有隐私访问，请查看权限与扫描覆盖。</p>
         </section>
-        <section v-if="selected" id="evidence-panel" class="evidence-panel" aria-live="polite">
+        <section v-if="selected" id="evidence-panel" class="evidence-panel" tabindex="-1" aria-live="polite">
           <div class="section-heading"><h2>{{ label(selected.data_type) }} · {{ statusLabels[selected.status] }}</h2><button @click="selected = null">收起</button></div>
           <p class="explanation">{{ selected.explanation }}</p>
           <p v-if="selected.status === 'NOT_DECLARED'" class="demo-note">“未找到声明”依赖适用版本、完整正文、提取成功、全文复核和附件齐全。下面保留完整政策及这些状态；缺少其中任一项时不能据此断言违规。</p>
@@ -532,13 +641,19 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           </details>
         </section>
       </template>
-      <footer>PrivacyTrace · 每条结论保留证据来源，推断与声明单独记录。</footer>
+      <footer>
+        <p>PrivacyTrace · 每条结论保留证据来源，推断与声明单独记录。</p>
+        <p class="subtle ai-disclosure">报告的隐私核验结果由 Consistency Engine 输出；部分工程代码使用 AI 辅助，范围和核实状态见仓库披露记录。</p>
+      </footer>
     </main>
   </div>
 </template>
 
 <style scoped>
-.candidate-nav { display: flex; align-items: center; gap: 12px; margin: 12px 0; font-size: 13px; }
+.candidate-nav { display: flex; align-items: center; gap: 12px; margin: 12px 0; font-size: 0.8125rem; }
+.job-terminal-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.job-terminal-actions button { margin-left: 0; }
+.job-delete-warning { color: var(--error); margin: 8px 0 0; }
 .candidate-nav button { padding: 4px 10px; font-size: 12px; }
 .job-error-card { background: #fff1ed; border: 1px solid #f4c7bb; border-radius: 8px; padding: 14px; margin-top: 12px; }
 .job-error-card .error-code { font-weight: bold; color: #a33215; display: inline-block; margin-bottom: 6px; font-size: 13px; }
@@ -546,4 +661,5 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
 .job-error-card .error-detail { margin-top: 6px; font-size: 12px; }
 .policy-jump-btn { margin-top: 10px; font-size: 12px; padding: 6px 10px; display: inline-block; }
 .origin-timestamp { font-size: 12px; color: #52665a; margin-top: 4px; }
+.ai-disclosure { margin-top: 4px; font-size: 12px; color: #7d8d81; }
 </style>

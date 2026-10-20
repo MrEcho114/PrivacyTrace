@@ -456,8 +456,11 @@ class JobWriteBoundsMiddleware(BaseHTTPMiddleware):
                         status_code=exc.status_code, content={"detail": exc.detail}
                     )
 
-            apk = (request.method == "POST" and path.startswith("/api/v1/web/drafts/")
-                   and path.endswith("/apk"))
+            apk = (
+                request.method == "POST"
+                and path.startswith("/api/v1/web/drafts/")
+                and (path.endswith("/apk") or path.endswith("/package-set"))
+            )
             draft = path == "/api/v1/web/drafts" or path.startswith("/api/v1/web/drafts/")
             if apk:
                 limit, detail = self.config.max_apk_body_bytes, "UPLOAD_TOO_LARGE"

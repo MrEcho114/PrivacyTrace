@@ -13,6 +13,46 @@ from .policy_intake import TEAM_REVIEW_GATE, load_policy
 from .resources import taxonomy
 
 
+def registered_package_set_matches(scanned, registered):
+    """Validate complete immutable APK-set identity before any report is stored."""
+    if not isinstance(registered, dict) or not isinstance(scanned, dict):
+        return False
+    observed = scanned.get("package_set")
+    if not isinstance(observed, dict):
+        return False
+    if (
+        scanned.get("package_name") != registered.get("package_name")
+        or scanned.get("version_code") != registered.get("version_code")
+        or scanned.get("version_name") != registered.get("version_name")
+    ):
+        return False
+    expected = [registered.get("base"), *(registered.get("splits") or [])]
+    actual = observed.get("files")
+    if not isinstance(actual, list) or len(actual) != len(expected):
+        return False
+
+    def index(items):
+        indexed = {}
+        for entry in items:
+            if not isinstance(entry, dict):
+                return None
+            name = entry.get("file_name")
+            if not isinstance(name, str) or not name or name in indexed:
+                return None
+            indexed[name] = tuple(
+                entry.get(key) for key in ("part", "split_name", "sha256", "size_bytes")
+            )
+        return indexed
+
+    expected_files, actual_files = index(expected), index(actual)
+    return (
+        expected_files is not None
+        and expected_files == actual_files
+        and observed.get("total_size_bytes") == registered.get("total_size_bytes")
+        and observed.get("split_count") == len(registered.get("splits") or [])
+    )
+
+
 def run(
     apk,
     policy,
@@ -27,8 +67,10 @@ def run(
     existing_job=None,
     on_stage=None,
     extra_tools=None,
+    package_set=None,
     job_store=None,
     expected_apk_sha256=None,
+    scanner=None,
 ):
     store = job_store if job_store is not None else JobStore(store_dir or ROOT / "data" / "jobs")
     job = existing_job or AnalysisJob(
@@ -65,7 +107,8 @@ def run(
         transition("INTAKE")
         if not name.strip() or len(name) > 200 or not 1 <= timeout <= 180:
             raise ScanError("INVALID_ARGUMENT", "Name or timeout outside allowed range")
-        validate_input(apk)
+        if not (hasattr(apk, "is_dir") and apk.is_dir()):
+            validate_input(apk)
         try:
             captures = captured_policies if captured_policies is not None else [load_policy(policy)]
             if not captures:
@@ -79,9 +122,19 @@ def run(
         except (ValueError, OSError, KeyError, TypeError) as exc:
             raise ScanError("POLICY_INPUT_INVALID", "Policy capture failed validation") from exc
         transition("STATIC_ANALYSIS")
-        scanned = scan_isolated(apk, timeout=timeout, cancelled=cancelled)
+        # Trusted runtime injection; HTTP input cannot choose this callable.
+        scan = scan_isolated if scanner is None else scanner
+        if package_set is not None or (hasattr(apk, "is_dir") and apk.is_dir()):
+            packages_dir = apk if apk.is_dir() else apk.parent / "packages"
+            scanned = scan(packages_dir, timeout=timeout, cancelled=cancelled)
+        else:
+            scanned = scan(apk, timeout=timeout, cancelled=cancelled)
         if expected_apk_sha256 is not None and scanned["apk_sha256"] != expected_apk_sha256:
             raise ScanError("INPUT_DIGEST_MISMATCH", "Scanned APK differs from registered input")
+        if package_set is not None and not registered_package_set_matches(scanned, package_set):
+            raise ScanError(
+                "INPUT_DIGEST_MISMATCH", "Scanned APK set differs from registered input"
+            )
         if controlled and (
             scanned["apk_sha256"] != controlled["apk_sha256"]
             or scanned["package_name"] != controlled["package_name"]
@@ -116,6 +169,8 @@ def run(
             )
         }
         metadata["name"] = name
+        if "package_set" in scanned and scanned["package_set"] is not None:
+            metadata["package_set"] = scanned["package_set"]
         coverage = {**scanned["coverage"]}
         coverage["status"] = coverage.pop("completeness")
         tools = {

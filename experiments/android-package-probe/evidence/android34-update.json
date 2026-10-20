@@ -1,0 +1,18 @@
+{
+  "schema": "privacytrace-android-probe-update-v1",
+  "source_commit": "76e7a577e205c5b27f9273fa0ec2ff44712e550b",
+  "source_dirty": false,
+  "emulator": true,
+  "android_api": "34",
+  "before_version": 1,
+  "after_version": 2,
+  "result": "PASS",
+  "rejection": "UNREADABLE",
+  "scheduling": "test-only pause after actual installation snapshot; actual package replacement",
+  "unverified": [
+    "unscheduled_race_timing",
+    "physical_devices",
+    "tauri_bridge",
+    "remote_upload"
+  ]
+}

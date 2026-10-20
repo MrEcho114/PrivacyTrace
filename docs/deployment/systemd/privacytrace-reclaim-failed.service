@@ -1,0 +1,6 @@
+[Unit]
+Description=Log failure of PrivacyTrace material reclamation
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/logger --priority authpriv.err --tag privacytrace "Material reclamation failed; inspect privacytrace-reclaim.service"

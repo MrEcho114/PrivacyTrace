@@ -1,5 +1,5 @@
 import type {
-  AnalysisJob, EvaluationResult, Evidence, PolicyDocument, PrivacyBehavior,
+  AnalysisJob, EvaluationResult, Evidence, PolicyDocument, PrivacyBehavior, WebSource,
 } from './contracts.generated'
 
 export type * from './contracts.generated'
@@ -44,4 +44,29 @@ export function parseSource(val: string): ReportSource {
     return { kind: 'job', id: val.slice(4) }
   }
   return { kind: 'job', id: val }
+}
+
+export type SourceStatus = NonNullable<WebSource['status']>
+
+export const sourceStatusLabels: Record<NonNullable<WebSource['status']>, string> = {
+  ready: '已获取网页正文',
+  failed: '来源获取失败',
+  manual: '手动补入正文',
+  empty: '尚无正文',
+  url_only: '仅有链接，尚无正文',
+}
+
+export function sourceStatusLabel(status: string | null | undefined): string {
+  return (status && sourceStatusLabels[status as SourceStatus]) || '未知状态'
+}
+
+const sourceProvenanceLabels: Record<string, string> = {
+  MANIFEST_METADATA: 'Manifest 发现',
+  EXTERNAL_CHAT_EXPORT: '外部导入',
+  DIRECT_WEB_FETCH: '后端抓取',
+  MANUAL_INPUT: '手动输入',
+}
+
+export function sourceProvenanceLabel(provenance: string | null | undefined): string {
+  return (provenance && sourceProvenanceLabels[provenance]) || '出处未标注'
 }

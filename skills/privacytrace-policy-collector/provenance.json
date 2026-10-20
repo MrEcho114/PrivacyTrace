@@ -1,18 +1,18 @@
 {
   "hash_encoding": "UTF-8/LF",
   "output_sha256": {
-    "COPY.txt": "774e9477c6fd386ca03e0b3b7d9bdd84d94bdb8d8915ed4fed2ae755cd3cfe2b",
-    "SKILL.md": "38e4762256ca0c86d34c0364f5cb181048fc418219037e1a3535e58448092238",
+    "COPY.txt": "993c6b0cc416596588f14e3f369f670c08fa41b43a5a5b0615d8acfb8403fbf5",
+    "SKILL.md": "7e847ceab7f9f8afe4bcb1291866fdb8d26bc490c4a0099241a23b64af3a801f",
     "scripts/prepare-extraction.py": "37ae0c0098a0124fa3bc4a2481b15b6074e40f6402a4226d6cee0f708ec4a61f"
   },
   "prompt_version": "1.0.0",
   "ruleset_version": "0.3.0",
   "source_sha256": {
-    "apps/api/src/privacytrace/models.py": "0b8751ffd8ff98cbcef1a251a7c6b98922ab9460de28a0f7e436b6005117587f",
+    "apps/api/src/privacytrace/models.py": "45242dcd8552e40aeb4c6bbb289438b5de619746a47b3ab6a0c2b99e758301b8",
     "apps/api/src/privacytrace/policy_llm_extractor.py": "04bbc7fb104fa2022189c1cdf607922730bf6e2b27a20f35af69fa6f9d61c9c5",
-    "apps/api/src/privacytrace/web_models.py": "935d3cda52355601bc6737be62a95909045532a1f7ca818728d3bdf035a0f9e6",
+    "apps/api/src/privacytrace/web_models.py": "ab7f093260132f39272e47a89e2aa6b1b91765c0c0ef0b4f9d130bdcb3793542",
     "rules/taxonomy.v0.3.json": "e63297c70dcb3ec67b797e315fdfe469d617296b7bd51084a5ed8e950f513951"
   },
-  "template_sha256": "097048f371a82cf9134337dd237f68e1ac9471f336dadf30501b718aac12ea82",
+  "template_sha256": "28e66abe1d7159d298a1dd9a67f7cfa27df3c0e4c0ff03bb63b7a93e7f043b30",
   "version": "privacytrace-policy-collector/1"
 }

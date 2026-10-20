@@ -43,7 +43,7 @@ test('R3 Disclosure: footer compiles with a visible project-level AI usage state
   assert.strictEqual(parsed.errors.length, 0, 'App.vue SFC parse should succeed')
   assert(parsed.descriptor.template, 'App.vue must provide a template')
   const template = parsed.descriptor.template.content
-  assert.match(template, /<footer>[\\s\\S]*?class="subtle ai-disclosure"[\\s\\S]*?<\\/footer>/)
+  assert.match(template, /<footer>[\s\S]*?class="subtle ai-disclosure"[\s\S]*?<\/footer>/)
   assert.match(template, /部分工程代码使用 AI 辅助/)
   assert.match(template, /范围和核实状态见仓库披露记录/)
   const compiled = compileTemplate({
@@ -61,7 +61,7 @@ test('R3 Disclosure: generated TS contract header matches the Python generator t
   const repoRoot = path.resolve(__dirname, '../../..')
   const typescript = fs.readFileSync(path.join(srcDir, 'contracts.generated.ts'), 'utf-8')
   const generator = fs.readFileSync(path.join(repoRoot, 'scripts/export-schema.py'), 'utf-8')
-  const headerLines = typescript.slice(0, typescript.indexOf(' */') + 3).split('\\n')
+  const headerLines = typescript.slice(0, typescript.indexOf(' */') + 3).split('\n')
   assert(headerLines.length >= 7, 'Expected full generated file header')
   for (const line of headerLines) {
     assert(generator.includes(JSON.stringify(line)), `Generated header line differs from generator: ${line}`)
@@ -101,7 +101,7 @@ test('R3 Disclosure: pending signatures, registration boundary and file links re
   assert(checklist.includes('项目内部 AI 工具使用披露草稿已编制'))
 
   const baseDir = path.dirname(docPath)
-  const linkRegex = /\\[([^\\]]+)\\]\\(([^)]+)\\)/g
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g
   let match: RegExpExecArray | null
   while ((match = linkRegex.exec(doc)) !== null) {
     const url = match[2]

@@ -59,6 +59,10 @@ internal class AnalysisTransport(address: String, private val sessions: UploadSe
                 checkCancelled()
                 when {
                     response.code in 300..399 -> throw ServerProbeException("SERVER_REDIRECT_REJECTED")
+                    // The default client interceptor already refuses these before
+                    // OkHttp can follow Retry-After; keep the mapping explicit for
+                    // any client injected through the internal seam.
+                    response.code == 429 || response.code == 503 -> throw ServerProbeException("SERVER_BUSY")
                     response.code == 413 -> throw ServerProbeException("LIMIT_EXCEEDED")
                     response.code in setOf(401, 403) -> throw ServerProbeException("ACCESS_REJECTED")
                     response.code == 409 -> throw ServerProbeException("UPLOAD_CONFLICT_REFRESH")
@@ -134,7 +138,20 @@ internal class AnalysisTransport(address: String, private val sessions: UploadSe
         }
         checkCancelled()
         stage("UPLOADING")
-        val response = exchange("api/v1/web/drafts/${session.draft}/package-set", "POST", session, file=archive.file)
+        val response = try {
+            exchange("api/v1/web/drafts/${session.draft}/package-set", "POST", session, file=archive.file)
+        } catch (error: ServerProbeException) {
+            // A lost response leaves the transfer result unknown; never guess a
+            // local success. The v1 endpoint commits `uploaded` atomically and
+            // rejects a second package-set for that draft, so a retry can never
+            // persist two sets. When that rejection surfaces, reconcile by the
+            // same read-only GET used everywhere else.
+            if (error.code == "UPLOAD_CONFLICT_REFRESH") {
+                val current = get(session)
+                if (current.state == "SERVER_CONFIRMED") return current
+            }
+            throw error
+        }
         verifyReceipt(session, response)
         return get(session) // Fresh server readback, never a local success guess.
     }
@@ -150,6 +167,15 @@ internal class AnalysisTransport(address: String, private val sessions: UploadSe
         stage("DELETING")
         val response = exchange("api/v1/web/drafts/${session.draft}", "DELETE", session)
         if (response["deleted"] != true || response["cleanup_pending"] !is Boolean) throw ServerProbeException("SERVER_RESPONSE_INVALID")
+        // The v1 tombstone receipt has no target identifier. Identity is bound by
+        // the authenticated same-origin request: exact draft path plus the
+        // capability token stored against this instance UUID. A compatible
+        // server that does return one of these fields must match this draft;
+        // otherwise local access is retained for reconciliation.
+        for (key in listOf("id", "draft_id")) {
+            val returned = response[key] ?: continue
+            if (returned != session.draft) throw ServerProbeException("SERVER_RESPONSE_INVALID")
+        }
         // Once an explicit DELETE receipt has been validated, local revocation
         // finishes even if UI cancellation races with this small commit.
         sessions.clear(origin, caps.instanceId)

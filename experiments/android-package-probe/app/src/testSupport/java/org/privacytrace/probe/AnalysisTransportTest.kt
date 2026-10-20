@@ -179,6 +179,45 @@ class AnalysisTransportTest {
             assertEquals(3, f.server.requestCount); assertEquals(0, other.server.requestCount)
         } }
     }
+    @Test fun busyMappingDoesNotDependOnInjectedClientInterceptor() {
+        HealthTlsFixture().use { f ->
+            // The internal seam accepts any client; status mapping must stay in
+            // AnalysisTransport instead of relying only on the default interceptor.
+            val plain = f.client.newBuilder().apply { networkInterceptors().clear() }.build()
+            f.server.enqueue(f.json().setResponseCode(429))
+            expect("SERVER_BUSY") { AnalysisTransport(f.origin, Sessions(), plain).capabilities() }
+            assertEquals(1, f.server.requestCount)
+        }
+    }
+    @Test fun conflictingReplayReconcilesServerState() = archive { archive, _, _ ->
+        HealthTlsFixture().use { f ->
+            val sessions = Sessions().apply {
+                value = UploadSession(f.origin, instance, draft, token, archive.result.localSetSha256)
+            }
+            f.server.enqueue(f.json(capabilities()))
+            f.server.enqueue(f.json("""{"id":"$draft","uploaded":false}"""))
+            f.server.enqueue(f.json().setResponseCode(409))
+            f.server.enqueue(f.json(receipt(archive.result)))
+            val status = AnalysisTransport(f.origin, sessions, f.client).upload(archive, caps)
+            assertEquals("SERVER_CONFIRMED", status.state)
+            assertEquals(4, f.server.requestCount)
+            val requests = (1..4).map { checkNotNull(f.server.takeRequest(2, TimeUnit.SECONDS)) }
+            assertEquals(listOf("GET", "GET", "POST", "GET"), requests.map { it.method })
+            assertEquals(1, requests.count { it.path!!.endsWith("package-set") })
+            assertNotNull(sessions.value)
+        }
+    }
+    @Test fun deleteReceiptForAnotherDraftRetainsAccess() {
+        HealthTlsFixture().use { f ->
+            val sessions = Sessions().apply {
+                value = UploadSession(f.origin, instance, draft, token, "f".repeat(64))
+            }
+            f.server.enqueue(f.json(capabilities()))
+            f.server.enqueue(f.json("""{"id":"${"b".repeat(32)}","deleted":true,"cleanup_pending":false}"""))
+            expect("SERVER_RESPONSE_INVALID") { AnalysisTransport(f.origin, sessions, f.client).delete() }
+            assertNotNull(sessions.value)
+        }
+    }
     @Test fun deleteWaitsForServerAcknowledgement() {
         HealthTlsFixture().use { f ->
             val sessions = Sessions().apply { value = UploadSession(f.origin, instance, draft, token, "f".repeat(64)) }

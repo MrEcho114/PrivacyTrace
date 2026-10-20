@@ -46,7 +46,15 @@ jobs:
           grep -q '1 passed' <<<"$out"
       - name: Deployment acceptance suite
         run: |
-          apps/api/.venv/bin/python -m pytest tests/e2e -q -p no:cacheprovider
+          # Package-set flows call the isolated Docker scanner, so build the
+          # fixed image first; without it those cases would silently skip and
+          # the suite would stop covering the upload path it exists to cover.
+          docker build --file apps/api/worker.Dockerfile --tag privacytrace-worker:s1 .
+          out=$(PRIVACYTRACE_DOCKER_TESTS=1 apps/api/.venv/bin/python -m pytest \
+            tests/e2e -q -p no:cacheprovider --no-header)
+          printf '%s\n' "$out"
+          # A skipped Docker-dependent case is not a passing upload path.
+          ! grep -q ' skipped' <<<"$out"
 
       - name: Clean builds with negative context canaries
         run: |

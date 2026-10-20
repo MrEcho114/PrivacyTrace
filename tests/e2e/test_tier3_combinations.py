@@ -36,7 +36,9 @@ ROOT = Path(__file__).resolve().parents[2]
 # ---------------------------------------------------------------------------
 # Combination 1: Splits + Broker Retry
 # ---------------------------------------------------------------------------
-def test_combination_1_splits_and_broker_retry(tmp_path, split_package_set_factory):
+def test_combination_1_splits_and_broker_retry(
+    tmp_path, split_package_set_factory, real_scan_image
+):
     """Combination 1: base+splits intake queues during broker downtime, then retries."""
     app = create_app(store_root=tmp_path, mode="remote")
     client = TestClient(app, base_url="http://testserver")

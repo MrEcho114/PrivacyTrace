@@ -95,7 +95,9 @@ def test_scenario_1_single_apk_analysis_journey(tmp_path, synthetic_apk_factory)
 # ---------------------------------------------------------------------------
 # Scenario 2: Realistic Base + Feature Splits Multi-Package Analysis
 # ---------------------------------------------------------------------------
-def test_scenario_2_base_plus_splits_analysis_journey(tmp_path, split_package_set_factory):
+def test_scenario_2_base_plus_splits_analysis_journey(
+    tmp_path, split_package_set_factory, real_scan_image
+):
     """Scenario 2: Complete Base + Splits package set intake and split attribution flow."""
     app = create_app(store_root=tmp_path, mode="remote")
     client = TestClient(app, base_url="http://testserver")
@@ -198,7 +200,6 @@ def test_scenario_3_worker_crash_recovery_journey():
     # And a store bound to another instance refuses the recovered lease too.
     with pytest.raises(LeaseLost):
         FencedJobStore(execution, foreign)._identity("job-crash")
-
 
 
 # ---------------------------------------------------------------------------

@@ -9,6 +9,7 @@ Provides:
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 from typing import List, Optional
@@ -111,3 +112,32 @@ def split_package_set_factory(synthetic_apk_factory):
 def test_capability_token():
     """Generates a valid capability token tuple (plaintext, sha256_digest)."""
     return generate_capability_token()
+
+
+SCAN_IMAGE = "privacytrace-worker:s1"
+
+
+def _scan_image_available():
+    """True when the fixed scan image the API shells out to actually exists."""
+    if os.environ.get("PRIVACYTRACE_DOCKER_TESTS") != "1":
+        return False
+    from privacytrace.isolated_scan import command, docker_prefix
+
+    try:
+        command([*docker_prefix(), "image", "inspect", SCAN_IMAGE, "--format", "{{.Id}}"])
+    except Exception:
+        return False
+    return True
+
+
+@pytest.fixture
+def real_scan_image():
+    """Gate package-set upload flows on the real image; they cannot run without it.
+
+    These paths call the isolated Docker scanner, so a test that runs without
+    the image would assert on a 503 rather than on its own subject. The suite
+    never fakes this boundary: it either has the image or states it did not run.
+    """
+    if not _scan_image_available():
+        pytest.skip(f"Real {SCAN_IMAGE} scan image required; run with PRIVACYTRACE_DOCKER_TESTS=1")
+    return SCAN_IMAGE

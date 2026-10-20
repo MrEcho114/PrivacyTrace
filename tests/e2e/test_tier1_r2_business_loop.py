@@ -175,7 +175,7 @@ def test_f13_single_apk_analysis_flow(tmp_path, synthetic_apk_factory):
 # ---------------------------------------------------------------------------
 # F14: Base + Splits Analysis Flow
 # ---------------------------------------------------------------------------
-def test_f14_base_splits_analysis_flow(tmp_path, split_package_set_factory):
+def test_f14_base_splits_analysis_flow(tmp_path, split_package_set_factory, real_scan_image):
     """F14: Verify Base + Splits package-set upload, validation, and split detection."""
     app = create_app(store_root=tmp_path, mode="remote")
     client = TestClient(app, base_url="http://testserver")

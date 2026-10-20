@@ -72,7 +72,7 @@ def test_tier2_exact_150mb_boundary_and_overrun(tmp_path):
 # ---------------------------------------------------------------------------
 # 2. Empty Split APK & Corrupted Package Sets
 # ---------------------------------------------------------------------------
-def test_tier2_empty_split_apk_rejection(tmp_path, synthetic_apk_factory):
+def test_tier2_empty_split_apk_rejection(tmp_path, synthetic_apk_factory, real_scan_image):
     """Tier 2: Package set containing a 0-byte split APK is rejected with 400 Bad Request."""
     base_apk = synthetic_apk_factory(package_name="org.privacytrace.emptytest", version_code="1")
     # Empty split APK

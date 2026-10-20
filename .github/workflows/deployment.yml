@@ -34,6 +34,8 @@ jobs:
           apps/api/.venv/bin/ruff check --config apps/api/pyproject.toml deploy
       - name: Real Redis and Celery health challenge regression
         run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq redis-server
           command -v redis-server
           PRIVACYTRACE_REDIS_TESTS=1 apps/api/.venv/bin/python -m pytest             apps/api/tests/test_queue_runtime.py -k test_health_challenge_with_real_redis_and_solo_celery_consumer -q
 

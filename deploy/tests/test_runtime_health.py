@@ -4,7 +4,9 @@ import unittest
 from unittest.mock import patch
 
 from privacytrace.runtime_health import (
-    HealthPublisher, check_runtime_readiness, health_key,
+    HealthPublisher,
+    check_runtime_readiness,
+    health_key,
 )
 
 INSTANCE = "0163a8b5-3eed-481a-bfb0-31fd3fe523dc"

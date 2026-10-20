@@ -15,7 +15,10 @@ DEPLOY = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(DEPLOY))
 from audit_context import audit  # noqa: E402
 from bootstrap import (  # noqa: E402
-    EXPECTED_TABLES, resolve_migration_url, run_bootstrap, validate_migrator_role,
+    EXPECTED_TABLES,
+    resolve_migration_url,
+    run_bootstrap,
+    validate_migrator_role,
 )
 from preflight import _build_synthetic_config, validate  # noqa: E402
 from privacytrace.storage_factory import (  # noqa: E402
@@ -797,7 +800,6 @@ class DatabaseBootstrapTests(unittest.TestCase):
     def test_bootstrap_exempts_version_table_but_enforces_business_rls(self):
         def check_rows(rows):
             connection = MagicMock()
-            result = MagicMock()
 
             def execute(sql, params=None):
                 statement = str(sql)

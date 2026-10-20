@@ -114,9 +114,10 @@ async def run_intake_worker(operation, *args):
     return result
 
 
-def inspect_uploaded_package(path, *, timeout=120):
+def inspect_uploaded_package(path, *, timeout=120, inspector=None):
     try:
-        metadata = inspect_package_isolated(path, timeout=timeout)
+        inspect = inspect_package_isolated if inspector is None else inspector
+        metadata = inspect(path, timeout=timeout)
     except ScanError as exc:
         # Structured worker input errors keep their 4xx identity; timeout,
         # isolation and invalid-output codes stay 503.
@@ -551,8 +552,7 @@ class WebIntake:
     async def _upload_reserved(self, draft_id, request, expect_package_set: bool = False):
         with self._draft_activity(draft_id):
             directory = self.directory(draft_id)
-            pending = self._safe(directory / "upload.pending")
-            staging_packages = self._safe(directory / f"packages.pending.{uuid4().hex}")
+            pending, staging_packages = self._upload_paths(directory)
             fd = None
             owns_pending = False
             try:
@@ -611,7 +611,7 @@ class WebIntake:
             return inspection_timeout(inspection_deadline)
 
         def inspect_within_budget(path):
-            package = inspect_uploaded_package(path, timeout=remaining_timeout())
+            package = self._inspect_package(path, timeout=remaining_timeout())
             remaining_timeout()
             return package
 
@@ -649,25 +649,24 @@ class WebIntake:
                     ])
 
                 remaining_timeout()
-                target_packages = self._safe(directory / "packages")
-                if target_packages.exists():
-                    shutil.rmtree(target_packages)
-                remaining_timeout()
-                os.replace(staging_packages, target_packages)
-                published_packages = True
-
-                # Keep the legacy path without charging the base APK's bytes twice.
-                base_path = target_packages / package_set.base.file_name
-                input_apk = self._safe(directory / "input.apk")
-                if base_path.exists():
-                    remaining_timeout()
-                    os.link(base_path, input_apk)
-                    published_apk = True
-
                 with self.data_store._transaction():
                     draft = self._get(draft_id)
                     if draft["uploaded"] or draft["jobs"]:
                         raise ValueError(ALREADY_UPLOADED)
+                    self._before_publish_upload(draft_id)
+                    target_packages = self._safe(directory / "packages")
+                    if target_packages.exists():
+                        shutil.rmtree(target_packages)
+                    remaining_timeout()
+                    os.replace(staging_packages, target_packages)
+                    published_packages = True
+                    # Retain the existing base hardlink and package-set identity.
+                    base_path = target_packages / package_set.base.file_name
+                    input_apk = self._safe(directory / "input.apk")
+                    if base_path.exists():
+                        os.link(base_path, input_apk)
+                        published_apk = True
+                    self._after_publish_upload(directory)
                     remaining_timeout()
 
                     rollback_draft = deepcopy(draft)
@@ -681,15 +680,16 @@ class WebIntake:
                     )
                     return self._save(draft)
             else:
-                input_apk = self._safe(directory / "input.apk")
-                remaining_timeout()
-                os.replace(pending, input_apk)
-                published_apk = True
-
                 with self.data_store._transaction():
                     draft = self._get(draft_id)
                     if draft["uploaded"] or draft["jobs"]:
                         raise ValueError(ALREADY_UPLOADED)
+                    self._before_publish_upload(draft_id)
+                    input_apk = self._safe(directory / "input.apk")
+                    remaining_timeout()
+                    os.replace(pending, input_apk)
+                    published_apk = True
+                    self._after_publish_upload(directory)
                     remaining_timeout()
                     rollback_draft = deepcopy(draft)
                     rollback_revision = draft["revision"] + 1
@@ -704,10 +704,15 @@ class WebIntake:
             # The DB transaction may have rolled back, while rename/copy already
             # published bytes on the private volume. Only remove files owned by
             # this request; never touch an existing upload reservation.
-            if published_apk:
-                self._safe(directory / "input.apk").unlink(missing_ok=True)
-            if published_packages:
-                shutil.rmtree(self._safe(directory / "packages"), ignore_errors=True)
+            try:
+                with self.data_store._transaction():
+                    if self._may_remove_published(draft_id):
+                        if published_apk:
+                            self._safe(directory / "input.apk").unlink(missing_ok=True)
+                        if published_packages:
+                            shutil.rmtree(self._safe(directory / "packages"), ignore_errors=True)
+            except (ValueError, OSError, KeyError):
+                pass  # Unknown COMMIT outcome: retain bytes for ledger-based recovery.
             if rollback_draft is not None:
                 with self.data_store._transaction():
                     snapshot = self._safe(directory / f"revision-{rollback_revision}.json")
@@ -724,6 +729,23 @@ class WebIntake:
                         snapshot.unlink(missing_ok=True)
             raise
 
+
+    def _inspect_package(self, path, *, timeout=120):
+        return inspect_uploaded_package(path, timeout=timeout)
+
+    def _upload_paths(self, directory):
+        return (self._safe(directory / "upload.pending"),
+                self._safe(directory / f"packages.pending.{uuid4().hex}"))
+
+    def _before_publish_upload(self, draft_id):
+        return
+
+    def _after_publish_upload(self, directory):
+        return
+
+    def _may_remove_published(self, draft_id):
+        return (not getattr(self.store, "uses_postgres", False)
+                or not self._get(draft_id)["uploaded"])
 
     def _settings(self, private=False):
         path = self._safe(self.root / "model.json")
@@ -1240,6 +1262,8 @@ class WebIntake:
 
     def start_service(self):
         with self.data_store._transaction():
+            if self._safe(self.root / "durable-runtime.json").exists():
+                raise ValueError("This root requires the durable runtime")
             if self.owner_fd is not None:
                 return
             path = self._safe(self.root / "service.lock")
@@ -1260,6 +1284,10 @@ class WebIntake:
                 os.close(fd)
                 raise ValueError("Another web intake process owns this store") from exc
             self.owner_fd = fd
+            if self._safe(self.root / "durable-runtime.json").exists():
+                self.owner_fd = None
+                os.close(fd)
+                raise ValueError("This root requires the durable runtime")
             for directory in self._draft_directories():
                 if self.active_drafts.get(directory.name, 0):
                     continue
@@ -1409,7 +1437,7 @@ class WebIntake:
             run["events"].append({"state": state, "at": now()})
             self._write_private(self.directory(draft_id) / "current.json", draft)
 
-    def _run(self, draft, job, captures):
+    def _execute(self, draft, job, captures, *, job_store=None, scanner=None, on_stage=None):
         self._normalize_source_origins(draft)
         source_receipts = [
             {
@@ -1438,26 +1466,34 @@ class WebIntake:
                 if receipt[field]:
                     receipt[field + "_sha256"] = hashlib.sha256(receipt[field].encode()).hexdigest()
                     receipt[field] = display_url(receipt[field])
+        return pipeline.run(
+            self.directory(draft["id"]) / "input.apk",
+            None,
+            draft["name"],
+            store_dir=self.store.root,
+            job_store=self.store if job_store is None else job_store,
+            captured_policies=captures,
+            expected_apk_sha256=draft["apk_sha256"],
+            existing_job=job,
+            on_stage=(
+                on_stage
+                if on_stage is not None
+                else lambda stage: self._event(draft["id"], job.id, stage)
+            ),
+            scanner=scanner,
+            extra_tools={
+                "web_input_revision": str(draft["revision"]),
+                "web_policy_sources": json.dumps(source_receipts, ensure_ascii=False),
+                "web_external_imports": json.dumps(
+                    draft.get("external_imports", []), ensure_ascii=False
+                ),
+            },
+            package_set=draft.get("package_set"),
+        )
+
+    def _run(self, draft, job, captures):
         try:
-            pipeline.run(
-                self.directory(draft["id"]) / "input.apk",
-                None,
-                draft["name"],
-                store_dir=self.store.root,
-                job_store=self.store,
-                captured_policies=captures,
-                expected_apk_sha256=draft["apk_sha256"],
-                existing_job=job,
-                on_stage=lambda stage: self._event(draft["id"], job.id, stage),
-                extra_tools={
-                    "web_input_revision": str(draft["revision"]),
-                    "web_policy_sources": json.dumps(source_receipts, ensure_ascii=False),
-                    "web_external_imports": json.dumps(
-                        draft.get("external_imports", []), ensure_ascii=False
-                    ),
-                },
-                package_set=draft.get("package_set"),
-            )
+            self._execute(draft, job, captures)
         except Exception:
             # Do not expose raw policy text, local paths, response bodies or credentials.
             job.state = "FAILED"

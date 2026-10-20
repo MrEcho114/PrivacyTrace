@@ -1,0 +1,117 @@
+{
+  "record_kind": "PREPARATION_SNAPSHOT",
+  "issue": 73,
+  "captured_at_utc": "2026-10-19T15:17:32Z",
+  "main_commit": "90aaa2ccc2a537f5f6480085744eb3a44816cb22",
+  "execution_record": "https://github.com/MrEcho114/PrivacyTrace/issues/73#issuecomment-6270680123",
+  "final_acceptance_ready": false,
+  "scenario_results_recorded": 0,
+  "direct_blockers": [
+    {
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/81",
+      "state": "OPEN",
+      "number": 81,
+      "artifact_status": "DEPLOYMENT_BASELINE_MERGED_RUNTIME_PENDING"
+    },
+    {
+      "url": "https://github.com/MrEcho114/PrivacyTrace/issues/72",
+      "state": "OPEN",
+      "number": 72,
+      "artifact_status": "MOBILE_UI_CANDIDATE_ONLY"
+    }
+  ],
+  "nonblocking_extension": {
+    "result": "NOT_RUN",
+    "required_for_main_acceptance": false,
+    "number": 79
+  },
+  "upstream": [
+    {
+      "state": "MERGED",
+      "url": "https://github.com/MrEcho114/PrivacyTrace/pull/109",
+      "merge_commit": "90aaa2ccc2a537f5f6480085744eb3a44816cb22",
+      "issue": 81,
+      "pr": 109,
+      "evidence_scope": "Linux images, restricted configuration, synthetic HTTP/local-CA HTTPS and infrastructure smoke; production still blocked",
+      "head_commit": "c9ec6f77aeb7dfa9c2e2f5228c088a4985776c36"
+    },
+    {
+      "state": "OPEN",
+      "url": "https://github.com/MrEcho114/PrivacyTrace/pull/112",
+      "merge_commit": null,
+      "issue": 80,
+      "pr": 112,
+      "evidence_scope": "Runtime candidate; not integrated into this main baseline",
+      "head_commit": "ba46cc22a40dd45390f5e28e11a707371b3a887a"
+    },
+    {
+      "state": "OPEN",
+      "url": "https://github.com/MrEcho114/PrivacyTrace/pull/90",
+      "merge_commit": null,
+      "issue": 71,
+      "pr": 90,
+      "evidence_scope": "Isolated package-read and bridge PoC; production upload not connected",
+      "head_commit": "48b28c251985f2840ad1bad7c9922e8d2ade6868"
+    },
+    {
+      "state": "OPEN",
+      "url": "https://github.com/MrEcho114/PrivacyTrace/pull/110",
+      "merge_commit": null,
+      "issue": 72,
+      "pr": 110,
+      "evidence_scope": "Narrow-screen Web UI candidate; not the complete mobile workflow",
+      "head_commit": "55db27c438d6f7b8dcdd6adfe18b946cf74b2247"
+    }
+  ],
+  "source_identity": {
+    "api_package_version": "0.1.0",
+    "sdk_signatures_version": "1.0.0",
+    "source_sha256": {
+      "rules/taxonomy.v0.3.json": "e63297c70dcb3ec67b797e315fdfe469d617296b7bd51084a5ed8e950f513951",
+      "rules/sdk-signatures.v1.0.json": "f4987d328ac7b6697cd3fd92c4f6327cfdeea84566ad6e9934c8aa5bc14150e4",
+      "apps/api/uv.lock": "b62be0abee526d92a1eb16350b806770dd72bc1ad2aeb81fefd583d5664fa6c6",
+      "package-lock.json": "5bf78f336c997ecdc171acdd54e1dfdc1843f63da40d35de4bbc4f63e4b0f1e1",
+      "apps/api/migrations/versions/0080_01_storage.py": "bf99a8c4471857b833f55a6b75b12e6948b210e9d287e6ec85d0262394ec2f88",
+      "deploy/runtime-contract.json": "61be32eb91c49bd63d7f41cbbb743b089eb3d9bb38b806c09ad49c91752aca81",
+      "deploy/compose.yaml": "fc0d7f9b9802207a0ad6ada6b084fc8818ef8a23a006b4d48d46ed3047910eb2",
+      "benchmarks/controlled/toolchain.lock.json": "4e5cabb9bb489727e80a147008a5f3828c81ea8556508ac873936f1440213805",
+      "benchmarks/controlled/artifacts.lock.json": "e2c2c41738bbdaf5681ab7656a8d90cdf5922c2b7513880b3bdf123b27ae57ee",
+      "benchmarks/controlled/inputs.lock.json": "32f7a4bbd9a73d261f2d0e2100f31a0b6b38f51ace363841ac06415336295c87"
+    },
+    "contract_sha256": {
+      "packages/contracts/evaluation-input.schema.json": "d70239c36fa5b1ec791e297bc61d64ae0713e55a9194a05b9ea913a298b438cd",
+      "packages/contracts/evaluation-result.schema.json": "ecab4389ac09ec7bd52ba6ae3663c8c334a4b112c2d227007ff58c2c0642118c",
+      "packages/contracts/jobs-response.schema.json": "82ee4e240ccb3bf2c300d3c96bed64770c22424343bb17d2b8ce395bfae4e2d1",
+      "packages/contracts/report.schema.json": "6c0ebca11914a20a5af6a10f5fd8ec36ed464b9ba9cea8196476484c62c65740",
+      "packages/contracts/review-request.schema.json": "05cbe796d835402160a7edb13d2768ad5a293ab675cc9fc6f8b0451d5eb115bc",
+      "packages/contracts/sdk-signatures.schema.json": "f0f607af3ac76cda711c5aea9fbb31d62334e2cd712a90071eb14d46c069ccd3",
+      "packages/contracts/web-candidate-input.schema.json": "fb179178f12e6d0b6cb8f15dfec1833477e22f671ed297a5a36497f1ec36cd7c",
+      "packages/contracts/web-draft-input.schema.json": "bf40bbbf144686a960365fce01b99858a974adea0b3a0ccf11bc6f26561304d6",
+      "packages/contracts/web-external-collection-input.schema.json": "6effa36c5a25859b6ce483ec5509046985b96f46b2f8f64b5175057e570d3259",
+      "packages/contracts/web-external-policy-input.schema.json": "ab205fc0c138d0d73f7650b34c50031f28ac9fa20ec1de7e5baab676b3da7b46",
+      "packages/contracts/web-model-settings.schema.json": "0e92f4dbc14eda1dd6e4349f807f42c2e76cb22d29fd90b5375ac68450884138",
+      "packages/contracts/web-start-input.schema.json": "f1b0a06dfc8bd3f299184ac7f9906e2c23463bdfe89c56e63e518b2030f72d93"
+    },
+    "packaged_migration_revision": "0080_01",
+    "ruleset_version": "0.3.0",
+    "contract_identity": "SHA256 of exact checked-out LF bytes, not a claimed protocol release"
+  },
+  "pending_runtime": {
+    "self_hosted_https_instance": null,
+    "api_registry_digest": null,
+    "runner_registry_digest": null,
+    "web_registry_digest": null,
+    "orchestration_registry_digest": null,
+    "celery_version": null,
+    "device_inventory": null,
+    "redis_runtime_config_sha256": null,
+    "deployed_migration_revision": null,
+    "scan_registry_digest": null,
+    "production_enabled": false,
+    "official_https_instance": null,
+    "runner_protocol_version": null,
+    "android_client_build_sha256": null
+  },
+  "evidence_scope": "Source and tracker snapshot only; no #73 end-to-end execution or store approval",
+  "refresh_required_before_execution": true
+}

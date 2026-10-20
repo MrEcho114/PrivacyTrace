@@ -1,0 +1,24 @@
+{
+  "schema": "privacytrace-tauri-bridge-device-v1",
+  "source_commit": "44e5258f364897474192dd8ddabf39974da9d193",
+  "source_dirty": false,
+  "emulator": true,
+  "android_sdk": "34",
+  "artifacts_sha256": {
+    "bridge": "79016c53c31f28ec4574be53cb97c5d1f18d24573fcdaff58de33c73d7c49b53",
+    "fixture_base": "6cea8e7d2012ba05fb7c46c7ce86cc05eefcd9509c69fe4983571e0aa272671b",
+    "fixture_split": "55427556896fa1da51f4484ead7b9b27962a89f6bdd02d11c2d944da41c181a8"
+  },
+  "cases": {
+    "native_picker_cancel": "PASS",
+    "native_confirmation_cancel": "PASS",
+    "pause_confirmation_resume_rejected": "PASS",
+    "vue_rust_kotlin_selected_split_hashes_after_cancel": "PASS",
+    "font_scale_activity_recreation_recovery": "PASS"
+  },
+  "limits": [
+    "self-built fixture only",
+    "no remote upload",
+    "no mid-stream cancellation timing claim"
+  ]
+}

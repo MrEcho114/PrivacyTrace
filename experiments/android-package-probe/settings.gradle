@@ -1,0 +1,10 @@
+pluginManagement {
+    repositories { google(); mavenCentral(); gradlePluginPortal() }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories { google(); mavenCentral() }
+}
+rootProject.name = 'PrivacyTracePackageProbe'
+include ':app', ':fixture', ':fixture_feature'
+project(':fixture_feature').projectDir = file('fixture-feature')

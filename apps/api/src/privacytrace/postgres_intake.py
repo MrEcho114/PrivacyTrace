@@ -6,6 +6,7 @@ import os
 import stat
 from uuid import uuid4
 
+from .deletion_journal import fsync_directory
 from .policy_intake import read_safe
 from .web_intake import WebIntake
 
@@ -78,6 +79,7 @@ class PostgresWebIntake(WebIntake):
                 handle.write(raw)
                 handle.flush()
                 os.fsync(handle.fileno())
+            fsync_directory(self.materials)
             self.store.save_document(
                 key,
                 reference,

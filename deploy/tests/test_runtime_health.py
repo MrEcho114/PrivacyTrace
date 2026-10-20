@@ -34,7 +34,7 @@ class RuntimeHealthTests(unittest.TestCase):
             patch("privacytrace.runtime_health.resolve_secret", return_value="redis://test"),
             patch("privacytrace.runtime_health._connect") as client,
         ):
-            client.return_value.ttl.side_effect = [12, -2]
+            client.return_value.ttl.side_effect = [12, -2, -2]
             self.assertFalse(check_runtime_readiness(INSTANCE))
 
     def test_runner_gateway_failure_and_recovery_change_health(self):
@@ -84,12 +84,12 @@ class RuntimeHealthTests(unittest.TestCase):
             patch("privacytrace.runtime_health.RuntimeTLS.from_env"),
             patch("privacytrace.runtime_health.PrivateClient") as runner,
         ):
-            client.return_value.ttl.side_effect = [12, 12]
+            client.return_value.ttl.side_effect = [12, 12, -2]
             runner.return_value.json.return_value = {
                 "version": 1, "status": "ready", "image_id": env["PRIVACYTRACE_RUNNER_IMAGE_ID"],
             }
             self.assertTrue(check_runtime_readiness(INSTANCE))
-            client.return_value.ttl.side_effect = [12, 12]
+            client.return_value.ttl.side_effect = [12, -2, 12]
             runner.return_value.json.return_value["image_id"] = "sha256:" + "b" * 64
             self.assertFalse(check_runtime_readiness(INSTANCE))
 

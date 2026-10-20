@@ -10,7 +10,7 @@ from .durable_intake import DurableWebIntake, ensure_control_plane
 from .postgres_execution import LeaseLost, PostgresExecution
 from .postgres_outbox import _bounded, decode_message
 from .postgres_store import PostgresOperationUnavailable
-from .queue_runtime import TASK_NAME, BrokerConfig, create_celery_app
+from .queue_runtime import PROBE_TASK_NAME, TASK_NAME, BrokerConfig, create_celery_app
 from .runtime_tls import RuntimeUnavailable
 from .storage_factory import create_store, resolve_redis_url
 
@@ -44,7 +44,7 @@ def execute(message, config):
     if message["instance_id"] != config.instance_id:
         return
     ensure_control_plane()
-    store = intake = lease = None
+    store = intake = lease = busy = None
     stopping, heartbeat_failed = Event(), Event()
     thread = None
     try:
@@ -57,11 +57,18 @@ def execute(message, config):
         if lease is None:
             _diagnostic("EXECUTION_NOT_ACQUIRED")
             return
+        if os.environ.get("PRIVACYTRACE_PUBLISH_HEALTH") == "1":
+            from .runtime_health import HealthPublisher
+
+            busy = HealthPublisher(config.url, config.instance_id, "busy")
+            busy.beat()
 
         def heartbeat():
             while not stopping.wait(min(5, lease_seconds / 3)):
                 try:
                     execution.heartbeat(lease, lease_seconds=lease_seconds)
+                    if busy:
+                        busy.beat()
                 except LeaseLost:
                     _diagnostic("LEASE_LOST")
                     heartbeat_failed.set()
@@ -123,6 +130,8 @@ def execute(message, config):
             except (ValueError, KeyError, OSError):
                 _diagnostic("TERMINAL_EVENT_UNAVAILABLE")
             intake.close()
+        if busy:
+            busy.close()
         if store:
             store.close()
 
@@ -157,9 +166,39 @@ def create_worker_app(config):
         except (ValueError, TypeError, KeyError):
             return
 
+    @app.task(
+        name=PROBE_TASK_NAME,
+        bind=True,
+        acks_late=True,
+        reject_on_worker_lost=True,
+        ignore_result=True,
+        max_retries=0,
+    )
+    def consumer_proof(self, *args, **kwargs):
+        request = self.request
+        canvas = any(
+            getattr(request, n, None) for n in ("callbacks", "errbacks", "chain", "chord")
+        )
+        for n in ("callbacks", "errbacks", "chain", "chord"):
+            setattr(request, n, None)
+        if canvas or args or kwargs or os.environ.get("PRIVACYTRACE_PUBLISH_HEALTH") != "1":
+            return
+        try:
+            from uuid import UUID
+            from .runtime_health import HealthPublisher
+
+            UUID(str(request.id))
+            writer = HealthPublisher(config.url, config.instance_id, "consumer")
+            try:
+                writer.beat()
+            finally:
+                writer.close()
+        except (ValueError, OSError, TypeError):
+            return
+
     app.finalize()
     for name in list(app.tasks):
-        if name != TASK_NAME:
+        if name not in {TASK_NAME, PROBE_TASK_NAME}:
             del app.tasks[name]
     app.conf.update(
         worker_hijack_root_logger=False,
@@ -171,7 +210,7 @@ def create_worker_app(config):
 
 
 def main():
-    app = pulse = pulse_stop = pulse_thread = None
+    app = None
     try:
         ensure_control_plane()
         if os.environ.get("PRIVACYTRACE_STORAGE") != "postgres":
@@ -188,19 +227,6 @@ def main():
         finally:
             store.close()
         app = create_worker_app(config)
-        if os.environ.get("PRIVACYTRACE_PUBLISH_HEALTH") == "1":
-            from .runtime_health import HealthPublisher
-
-            pulse = HealthPublisher(config.url, config.instance_id, "worker")
-            pulse_stop = Event()
-
-            def heartbeat():
-                while not pulse_stop.is_set():
-                    pulse.beat()
-                    pulse_stop.wait(5)
-
-            pulse_thread = Thread(target=heartbeat, name="runtime-health", daemon=True)
-            pulse_thread.start()
         worker = app.Worker(
             pool="solo",
             concurrency=1,
@@ -219,12 +245,6 @@ def main():
         print('{"error":"RUNTIME_WORKER_UNAVAILABLE"}')
         return 1
     finally:
-        if pulse_stop:
-            pulse_stop.set()
-        if pulse_thread:
-            pulse_thread.join(timeout=3)
-        if pulse:
-            pulse.close()
         if app:
             app.close()
 

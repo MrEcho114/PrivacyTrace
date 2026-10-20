@@ -18,7 +18,7 @@ def _connect(url):
 
 def health_key(instance_id, role):
     instance = str(UUID(instance_id))
-    if instance != instance_id or role not in {"worker", "dispatcher"}:
+    if instance != instance_id or role not in {"dispatcher", "consumer", "busy"}:
         raise ValueError("Invalid runtime health identity")
     return f"privacytrace:health:{instance}:{role}"
 
@@ -48,14 +48,19 @@ def check_runtime_readiness(instance_id):
         )
         if not url:
             return False
-        for role in ("worker", "dispatcher"):
+        for role in ("dispatcher", "consumer", "busy"):
             health_key(instance_id, role)
         client = _connect(url)
         try:
-            for role in ("worker", "dispatcher"):
-                remaining = client.ttl(health_key(instance_id, role))
-                if type(remaining) is not int or not 0 < remaining <= TTL_SECONDS:
-                    return False
+            dispatcher_ttl = client.ttl(health_key(instance_id, "dispatcher"))
+            if type(dispatcher_ttl) is not int or not 0 < dispatcher_ttl <= TTL_SECONDS:
+                return False
+            # Consumption is proven by the fixed task on the actual queue.
+            # A live PostgreSQL lease proves the solo worker is legitimately busy.
+            consumed = client.ttl(health_key(instance_id, "consumer"))
+            busy = client.ttl(health_key(instance_id, "busy"))
+            if not any(type(v) is int and 0 < v <= TTL_SECONDS for v in (consumed, busy)):
+                return False
         finally:
             client.close()
         runner = PrivateClient(

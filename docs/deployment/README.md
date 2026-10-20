@@ -74,4 +74,8 @@ API 镜像封装 `runtime-contract.json`。仅当它在独立审查后的发布�
 
 ## 真正运行时 Readiness 的最小证据
 
-API 单独挂载 `runtime_health_url` Redis 文件 Secret，应使用只读 ACL（仅允许两类健康键的 `TTL` 读取），不能拥有任务队列的写权限。Dispatcher/Worker 使用既有 Broker 身份持续写入该实例的短期 TTL 健康键，API 要求两者均新鲜；然后通过私网 mTLS 实时请求 Runner `/v1/health` 并对比固定镜像身份。Redis/进程/Runner 异常时 `/_health/ready` 返回 503，不影响 `/_health/live`。真实故障注入仍需隔离主机和证书，当前模拟测试不能充当完整执行收据。
+API 单独挂载 `runtime_health_url` Redis 文件 Secret，应使用只读 ACL（仅允许两类健康键的 `TTL` 读取），不能拥有任务队列的写权限。Dispatcher 定期发送固定无载荷 Celery 探针；Worker 的 Consumer 实际处理后才更新消费证明，或在已取得并成功续约数据库执行租约时更新忙碌证明；API 检查 Dispatcher 心跳以及消费/忙碌证明的新鲜度；然后通过私网 mTLS 实时请求 Runner `/v1/health` 并对比固定镜像身份。Redis/进程/Runner 异常时 `/_health/ready` 返回 503，不影响 `/_health/live`。真实故障注入仍需隔离主机和证书，当前模拟测试不能充当完整执行收据。
+
+### Consumer 真正消费证明
+
+每 8 秒将 `privacytrace.health.v1` 无载荷任务发布至正常实例队列，Consumer 处理后才刷新 `consumer` TTL。扫描并发 1 时，执行中成功续约的 PostgreSQL lease 对应 `busy` TTL 证明，避免长扫描被错误视为停摆。Redis 健康只读 ACL 需允许 `dispatcher`、`consumer`、`busy` 键的 TTL，但不能拥有写队列权限。单纯进程/线程存活心跳不再允许使 API 返回就绪。真 Redis/Celery 卡死及恢复仍须隔离环境实测。

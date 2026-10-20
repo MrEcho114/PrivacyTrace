@@ -13,11 +13,12 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from .postgres_outbox import PostgresOutbox, decode_message
 
 TASK_NAME = "privacytrace.execute.v1"
+PROBE_TASK_NAME = "privacytrace.health.v1"
 
 
 class QueueUnavailable(RuntimeError):
@@ -93,7 +94,10 @@ def create_celery_app(config):
                 durable=True,
             ),
         ),
-        task_routes={TASK_NAME: {"queue": config.queue, "routing_key": config.queue}},
+        task_routes={
+            n: {"queue": config.queue, "routing_key": config.queue}
+            for n in (TASK_NAME, PROBE_TASK_NAME)
+        },
         task_create_missing_queues=False,
         task_protocol=2,
         task_publish_retry=False,
@@ -155,6 +159,25 @@ class CeleryPublisher:
         except (KombuError, RedisError, OSError):
             raise QueueUnavailable("Runtime broker unavailable") from None
 
+    def probe(self):
+        # A fixed no-payload task on the real consumer queue.
+        try:
+            self.app.send_task(
+                PROBE_TASK_NAME,
+                args=[],
+                kwargs={},
+                task_id=str(uuid4()),
+                queue=self.config.queue,
+                routing_key=self.config.queue,
+                serializer="json",
+                retry=False,
+                ignore_result=True,
+                argsrepr="()",
+                kwargsrepr="{}",
+            )
+        except Exception:
+            raise QueueUnavailable("Runtime health probe unavailable") from None
+
     def close(self):
         self.app.close()
 
@@ -196,6 +219,7 @@ def main():
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args()
     store = publisher = heartbeat = None
+    last_probe = 0.0
     try:
         from .durable_intake import ensure_control_plane
         from .postgres_execution import PostgresExecution
@@ -214,6 +238,12 @@ def main():
         while True:
             if heartbeat:
                 heartbeat.beat()
+                if not args.once and time.monotonic() - last_probe >= 8:
+                    try:
+                        publisher.probe()
+                    except QueueUnavailable:
+                        pass
+                    last_probe = time.monotonic()
             PostgresExecution(store).recover()
             result = dispatcher.once()
             if args.once:

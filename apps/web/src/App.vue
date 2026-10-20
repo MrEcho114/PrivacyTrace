@@ -534,7 +534,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
       </template>
       <footer>
         <p>PrivacyTrace · 每条结论保留证据来源，推断与声明单独记录。</p>
-        <p class="subtle ai-disclosure">报告呈现的隐私分析逻辑由团队自研 Consistency Engine 驱动；基础工程代码经 AI 辅助生成与人工严格校对。</p>
+        <p class="subtle ai-disclosure">报告的隐私核验结果由 Consistency Engine 输出；部分工程代码使用 AI 辅助，范围和核实状态见仓库披露记录。</p>
       </footer>
     </main>
   </div>

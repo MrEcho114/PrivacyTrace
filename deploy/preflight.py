@@ -80,10 +80,7 @@ def validate(config):
     for name in ("api", "database"):
         if not config["networks"][name].get("internal"):
             raise ValueError("Internal networks must not have default external egress")
-    if set(services["api"]["networks"]) not in (
-        {"api", "database"},
-        {"api", "database", "control"},
-    ):
+    if set(services["api"]["networks"]) != {"api", "database", "control"}:
         raise ValueError("API network boundary changed")
     if set(services["web"]["networks"]) != {"edge", "api"}:
         raise ValueError("Proxy must not join the database network")
@@ -92,10 +89,7 @@ def validate(config):
             raise ValueError("Database or broker network boundary changed")
     if "dispatcher" in services and set(services["dispatcher"]["networks"]) != {"database"}:
         raise ValueError("Dispatcher network boundary changed")
-    if "worker" in services and set(services["worker"]["networks"]) not in (
-        {"database"},
-        {"database", "control"},
-    ):
+    if set(services["worker"]["networks"]) != {"database", "control"}:
         raise ValueError("Worker network boundary changed")
     if "gateway" in services and set(services["gateway"]["networks"]) != {
         "database", "control"

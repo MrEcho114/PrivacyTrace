@@ -678,6 +678,22 @@ class ContextAndPreflightTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate(config)
 
+    def test_runtime_roles_require_exact_control_network(self):
+        base = _build_synthetic_config()
+        for role in ("api", "worker"):
+            for mutation in ("remove_control", "add_edge", "remove_database"):
+                invalid = copy.deepcopy(base)
+                networks = invalid["services"][role]["networks"]
+                if mutation == "remove_control":
+                    networks.remove("control")
+                elif mutation == "add_edge":
+                    networks.append("edge")
+                else:
+                    networks.remove("database")
+                with self.subTest(role=role, mutation=mutation):
+                    with self.assertRaisesRegex(ValueError, "network boundary changed"):
+                        validate(invalid)
+
     def test_control_network_rejects_external_routing_and_nonrelay_runner(self):
         base = _build_synthetic_config()
         for mutation in (

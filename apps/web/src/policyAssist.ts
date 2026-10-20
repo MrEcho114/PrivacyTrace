@@ -1,4 +1,5 @@
-import instructions from '../../../skills/privacytrace-policy-collector/COPY.txt?raw'
+// This checked build resource mirrors #79; the container copies only apps/web.
+import instructions from './policyCollector.generated'
 import type { ExternalPolicyCollectionInput, ExternalPolicyExportInput } from './contracts.generated'
 import { sourceTypes } from './workflow'
 import type { SourceType } from './workflow'

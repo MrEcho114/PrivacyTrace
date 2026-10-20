@@ -6,7 +6,7 @@ import StatusTag from '../components/StatusTag.vue'
 import { copy } from '../copy'
 import { dataTypes, quoteExists, sourceTypes } from '../workflow'
 import type { Candidate, Workflow } from '../workflow'
-const props = defineProps<{ state: Workflow; busy?: boolean; typeLabels?: Record<string, string> }>()
+const props = defineProps<{ state: Workflow; busy?: boolean; typeLabels?: Record<string, string>; failedSourceIds?: string[] }>()
 const emit = defineEmits<{ back: []; next: []; retrySource: [string]; retryModel: [string]; persistCandidates: [] }>()
 const editorTypes = computed(() => props.state.example ? dataTypes : props.typeLabels ?? {})
 const candidateLimit = computed(() => props.state.example ? 100 : 800)
@@ -32,6 +32,7 @@ function onTabsKeydown(event: KeyboardEvent) {
 const chosen = computed(() => props.state.candidates.find(item => item.id === chosenId.value))
 const source = computed(() => props.state.sources.find(item => item.id === props.state.sourceId))
 const candidates = computed(() => props.state.candidates.filter(item => item.sourceId === props.state.sourceId))
+const extractionUnavailable = computed(() => !!source.value && (props.failedSourceIds?.includes(source.value.id) || source.value.modelAudit?.status === 'FAILED'))
 const quoteValid = computed(() => !!chosen.value && quoteExists(chosen.value, props.state.sources))
 const quoteError = computed(() => {
   if (quoteValid.value) return ''
@@ -78,6 +79,7 @@ function editQuote() { if (chosen.value) chosen.value.startOffset = undefined; e
   <div>
     <div class="page-heading"><h1 id="page-title" tabindex="-1">{{ copy.candidateTitle }}</h1><p>{{ copy.candidateHelp }}</p></div>
     <div class="source-tabs" role="group" aria-label="政策来源"><button v-for="item in state.sources" :key="item.id" :aria-pressed="item.id === state.sourceId" :class="{ selected: item.id === state.sourceId }" @click="state.sourceId = item.id">{{ item.title || '未命名来源' }}<span v-if="item.status === 'failed'"> · 获取失败</span></button></div>
+    <p v-if="!state.example && extractionUnavailable" class="notice" role="status">当前来源的候选提取未完成，正文与已有候选仍保留。可在“政策原文”中选择“重新提取候选”，或手动添加；此状态不代表政策未声明。</p>
     <div v-if="source" class="mobile-panel-tabs" role="tablist" aria-label="检查候选视图" @keydown="onTabsKeydown">
       <button id="tab-original" type="button" role="tab" aria-controls="panel-original" :aria-selected="mobileTab === 'original'" :tabindex="mobileTab === 'original' ? 0 : -1" :class="{ selected: mobileTab === 'original' }" @click="mobileTab = 'original'">政策原文</button>
       <button id="tab-candidates" type="button" role="tab" aria-controls="panel-candidates" :aria-selected="mobileTab === 'candidates'" :tabindex="mobileTab === 'candidates' ? 0 : -1" :class="{ selected: mobileTab === 'candidates' }" @click="mobileTab = 'candidates'">候选声明 {{ candidates.length }}</button>

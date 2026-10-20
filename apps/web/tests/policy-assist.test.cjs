@@ -292,6 +292,63 @@ test('refresh restores a newly persisted failure but stale success cannot clear 
   assert.equal(attempts, 4, 'persisted FAILED must make a previously prepared source retryable')
 })
 
+for (const status of ['SUCCESS', 'PARTIAL']) test(`refresh must not treat ${status} audit metadata as a new extraction`, async () => {
+  let current, attempts = 0
+  const h = harness({
+    async createDraft() { return current },
+    async uploadApk() { current = { ...current, uploaded: true }; return current },
+    async readDraft() { return current },
+    async extractSource() { attempts++; if (attempts === 2) throw new Error('HTTP retry failed'); return current },
+  })
+  current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual', model_audit: { status, duration_ms: 4 } }] }
+  h.state.file.value = { name: 'fixture.apk' }; await h.state.prepare()
+  assert.equal(attempts, 1)
+  await h.state.retryModel('seed')
+  assert.deepEqual([...h.state.failedSourceIds.value], ['seed'])
+  // An unrelated draft revision and changed audit telemetry are NOT an extraction attempt ID.
+  current = { ...current, revision: current.revision + 1, sources: current.sources.map(s => ({ ...s, model_audit: { ...s.model_audit, duration_ms: 999, total_tokens: 42 } })) }
+  await h.state.refreshMaterials()
+  assert.deepEqual([...h.state.failedSourceIds.value], ['seed'], 'stale success with changed telemetry must retain the latest local failure')
+  h.state.go('import'); await h.state.prepare()
+  assert.equal(attempts, 3, 'the failed source must remain retryable')
+  assert.deepEqual([...h.state.failedSourceIds.value], [])
+})
+
+test('refresh cannot accept a new success status without a newer draft revision', async () => {
+  let current, attempts = 0
+  const h = harness({
+    async createDraft() { return current },
+    async uploadApk() { current = { ...current, uploaded: true }; return current },
+    async readDraft() { return current },
+    async extractSource() { attempts++; if (attempts === 1) throw new Error('HTTP request failed'); return current },
+  })
+  current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual', model_audit: { status: 'FAILED' } }] }
+  h.state.file.value = { name: 'fixture.apk' }; await h.state.prepare()
+  assert.deepEqual([...h.state.failedSourceIds.value], ['seed'])
+  current = { ...current, sources: current.sources.map(s => ({ ...s, model_audit: { status: 'SUCCESS' } })) }
+  await h.state.refreshMaterials()
+  assert.deepEqual([...h.state.failedSourceIds.value], ['seed'], 'a status change without a committed revision is not proof of success')
+  h.state.go('import'); await h.state.prepare()
+  assert.equal(attempts, 2)
+})
+
+test('refresh accepts an explicit FAILED-to-SUCCESS status transition on a newer revision', async () => {
+  let current, attempts = 0
+  const h = harness({
+    async createDraft() { return current },
+    async uploadApk() { current = { ...current, uploaded: true }; return current },
+    async readDraft() { return current },
+    async extractSource() { attempts++; if (attempts === 1) throw new Error('HTTP response lost'); return current },
+  })
+  current = { ...h.stored(), sources: [{ ...h.stored().sources[0], text: '正文', status: 'manual', model_audit: { status: 'FAILED' } }] }
+  h.state.file.value = { name: 'fixture.apk' }; await h.state.prepare()
+  assert.deepEqual([...h.state.failedSourceIds.value], ['seed'])
+  current = { ...current, revision: current.revision + 1, sources: current.sources.map(s => ({ ...s, model_audit: { status: 'SUCCESS' } })) }
+  await h.state.refreshMaterials()
+  assert.deepEqual([...h.state.failedSourceIds.value], [], 'a new persisted completion should recover the source')
+  h.state.go('import'); await h.state.prepare()
+  assert.equal(attempts, 1, 'a recovered source must not be re-extracted')
+})
 test('persisted failed extraction audit remains retryable after page restoration', async () => {
   let current, attempts = 0
   const h = harness({

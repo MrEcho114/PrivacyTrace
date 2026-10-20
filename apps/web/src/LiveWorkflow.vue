@@ -123,9 +123,14 @@ async function refreshMaterials() {
       const audit = source.model_audit
       const previous = draft.value.sources.find(item => item.id === source.id)?.model_audit
       if (audit?.status === 'FAILED') markExtraction(source.id, true)
-      // An unchanged successful audit may predate the latest failed HTTP retry.
+      // A newer draft revision plus a changed completion status confirms a new
+      // extraction on the existing WebIntake contract. Duration/token metadata
+      // can change without identifying a new attempt; do not clear local failures
+      // when an older SUCCESS/PARTIAL remains the same status.
       else if ((audit?.status === 'SUCCESS' || audit?.status === 'PARTIAL') &&
-        Object.keys({ ...previous, ...audit }).some(key => previous?.[key] !== audit[key])) markExtraction(source.id, false)
+        value.revision > draft.value.revision && previous?.status !== audit.status) {
+        markExtraction(source.id, false)
+      }
     }
     needsPreparation = failedSourceIds.value.length > 0 || value.sources.some(source => !preparedSources.has(source.id))
     apply(value)

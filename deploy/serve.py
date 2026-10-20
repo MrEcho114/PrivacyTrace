@@ -4,6 +4,7 @@ The smoke surface serves synthetic, read-only resources. It cannot accept work
 and must never be used as the production runtime or as a scanning receipt.
 """
 
+import asyncio
 import ipaddress
 import json
 import os
@@ -175,6 +176,8 @@ class ProductionSurface:
     def __init__(self, application, host):
         self.application = application
         self.host = host
+        # An overdue network probe must not spawn an unbounded queue of threads.
+        self._ready_slot = asyncio.Semaphore(1)
 
     def _check_ready(self) -> bool:
         ready, _ = check_database_readiness(self.application)
@@ -183,6 +186,21 @@ class ProductionSurface:
         from privacytrace.runtime_health import check_runtime_readiness
 
         return check_runtime_readiness(os.environ.get("PRIVACYTRACE_INSTANCE_ID", ""))
+
+    async def _bounded_ready(self) -> bool:
+        if self._ready_slot.locked():
+            return False
+        await self._ready_slot.acquire()
+        # Shielding keeps the slot occupied until the underlying bounded-I/O
+        # check has actually stopped, even if the HTTP caller times out.
+        task = asyncio.create_task(asyncio.to_thread(self._check_ready))
+        task.add_done_callback(lambda completed: self._ready_slot.release())
+        try:
+            return bool(await asyncio.wait_for(asyncio.shield(task), timeout=2.5))
+        except (asyncio.TimeoutError, asyncio.CancelledError):
+            return False
+        except Exception:
+            return False
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -196,7 +214,7 @@ class ProductionSurface:
             elif path.endswith("/live"):
                 code, body = 200, {"status": "live"}
             else:
-                ready = self._check_ready()
+                ready = await self._bounded_ready()
                 code = 200 if ready else 503
                 body = {"status": "ready" if ready else "unavailable"}
             payload = json.dumps(body).encode()

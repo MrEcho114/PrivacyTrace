@@ -431,6 +431,46 @@ class SevenServiceTopologyTests(unittest.TestCase):
 
 
 class ProductionProbeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_slow_ready_probe_does_not_block_ordinary_api_traffic(self):
+        import asyncio
+        import threading
+        import time
+
+        began = threading.Event()
+        release = threading.Event()
+
+        def slow_database(*_args):
+            began.set()
+            release.wait(timeout=1)
+            return True, "0080_05"
+
+        async def downstream(scope, receive, send):
+            await send({"type": "http.response.start", "status": 200, "headers": []})
+            await send({"type": "http.response.body", "body": b"ok"})
+
+        surface = ProductionSurface(downstream, "privacytrace.test")
+        try:
+            with (
+                patch("serve.check_database_readiness", side_effect=slow_database),
+                patch("privacytrace.runtime_health.check_runtime_readiness", return_value=True),
+            ):
+                async with httpx.AsyncClient(
+                    transport=httpx.ASGITransport(app=surface, client=("127.0.0.1", 1234)),
+                    base_url="https://privacytrace.test",
+                ) as client:
+                    pending = asyncio.create_task(client.get("/_health/ready"))
+                    self.assertTrue(await asyncio.to_thread(began.wait, 1))
+                    start = time.monotonic()
+                    self.assertEqual((await client.get("/api/v1/health")).status_code, 200)
+                    self.assertLess(time.monotonic() - start, 0.5)
+                    # A second concurrent probe refuses admission without
+                    # creating a second blocking database probe.
+                    self.assertEqual((await client.get("/_health/ready")).status_code, 503)
+                    release.set()
+                    self.assertEqual((await pending).status_code, 200)
+        finally:
+            release.set()
+
     async def test_production_readiness_probe_success_with_revision_0080_05(self):
         async def downstream(scope, receive, send):
             pass

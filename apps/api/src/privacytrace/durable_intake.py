@@ -327,7 +327,7 @@ class DurableWebIntake(PostgresWebIntake):
                 raise ValueError("Runtime input identity mismatch")
             return snapshot
 
-    def execute(self, lease):
+    def execute(self, lease, *, on_fenced_stage=None):
         execution = PostgresExecution(self.store)
         execution.checkpoint(lease)
         snapshot = self.input_snapshot(lease.job_id)
@@ -339,6 +339,9 @@ class DurableWebIntake(PostgresWebIntake):
             with execution.fenced_store(lease)._transaction() as conn:
                 execution._guard(conn, lease)
                 self._event(draft["id"], job.id, stage)
+            # Never acknowledge a stage until its fenced DB transaction commits.
+            if on_fenced_stage is not None:
+                on_fenced_stage()
 
         return self._execute(
             draft,

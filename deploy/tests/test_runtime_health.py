@@ -156,6 +156,22 @@ class RuntimeHealthTests(unittest.TestCase):
             self.assertIsNone(issue_challenge("redis://unused", INSTANCE, "queue"))
             factory.return_value.set.assert_not_called()
 
+    def test_busy_progress_requires_real_fenced_stage_and_expires_when_stalled(self):
+        from privacytrace.runtime_health import BusyProgress
+
+        progress = BusyProgress()
+        self.assertFalse(progress.fresh())
+        with patch("privacytrace.runtime_health.time.monotonic", return_value=100):
+            progress.stage_committed()
+            self.assertTrue(progress.fresh())
+        with patch("privacytrace.runtime_health.time.monotonic", return_value=279):
+            self.assertTrue(progress.fresh())
+        with patch("privacytrace.runtime_health.time.monotonic", return_value=281):
+            self.assertFalse(progress.fresh())
+        # Background lease heartbeats do not call stage_committed().
+        with patch("privacytrace.runtime_health.time.monotonic", return_value=282):
+            self.assertFalse(progress.fresh())
+
     def test_reader_requires_real_runner_status_and_image(self):
         env = {
             "PRIVACYTRACE_RUNNER_URL": "https://172.29.98.1:8444",

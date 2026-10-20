@@ -1,6 +1,7 @@
 """Short-lived Redis role heartbeats and bounded dedicated mTLS runner health."""
 import os
 import time
+from threading import Lock
 from uuid import UUID, uuid4
 
 from .runtime_tls import PrivateClient, RuntimeTLS
@@ -103,6 +104,31 @@ def acknowledge_challenge(broker_url, instance_id, challenge):
             client.close()
     except (ValueError, KeyError, TypeError, OSError):
         return False
+
+
+
+class BusyProgress:
+    """Only fenced, committed business-stage transitions extend busy readiness.
+
+    The runner scan has a bounded execution timeout; a stuck pipeline cannot
+    indefinitely extend this proof using only independent lease renewals.
+    """
+
+    MAX_STAGE_AGE = 180
+
+    def __init__(self):
+        self._lock = Lock()
+        self._last = None
+
+    def stage_committed(self):
+        with self._lock:
+            self._last = time.monotonic()
+
+    def fresh(self):
+        with self._lock:
+            return self._last is not None and 0 <= time.monotonic() - self._last <= (
+                self.MAX_STAGE_AGE
+            )
 
 
 class HealthPublisher:

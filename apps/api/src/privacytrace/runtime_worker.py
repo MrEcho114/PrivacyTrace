@@ -44,7 +44,7 @@ def execute(message, config):
     if message["instance_id"] != config.instance_id:
         return
     ensure_control_plane()
-    store = intake = lease = busy = None
+    store = intake = lease = busy = progress = None
     stopping, heartbeat_failed = Event(), Event()
     thread = None
     try:
@@ -57,17 +57,21 @@ def execute(message, config):
         if lease is None:
             _diagnostic("EXECUTION_NOT_ACQUIRED")
             return
+        from .runtime_health import BusyProgress
+
+        progress = BusyProgress()
         if os.environ.get("PRIVACYTRACE_PUBLISH_HEALTH") == "1":
             from .runtime_health import HealthPublisher
 
             busy = HealthPublisher(config.url, config.instance_id, "busy")
-            busy.beat()
 
         def heartbeat():
             while not stopping.wait(min(5, lease_seconds / 3)):
                 try:
                     execution.heartbeat(lease, lease_seconds=lease_seconds)
-                    if busy:
+                    # Renewing the lease is necessary but not sufficient:
+                    # progress must also have been recorded by a fenced stage commit.
+                    if busy and progress.fresh():
                         busy.beat()
                 except LeaseLost:
                     _diagnostic("LEASE_LOST")
@@ -86,7 +90,7 @@ def execute(message, config):
         thread.start()
         intake = DurableWebIntake(store)
         try:
-            intake.execute(lease)
+            intake.execute(lease, on_fenced_stage=progress.stage_committed)
         except LeaseLost:
             _diagnostic("LEASE_LOST")
             return

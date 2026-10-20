@@ -297,6 +297,7 @@ def test_concurrent_source_extraction_refuses_second_paid_request_and_releases_s
     client = TestClient(create_app(tmp_path))
     assert client.post("/api/v1/web/settings", headers=HEADERS, json={
         "enabled": True, "api_base": "https://model.example/v1", "model": "mock",
+        "api_key": "test-only-mock-model-key",
     }).status_code == 200
     draft = new_draft(client)
     endpoint = f"/api/v1/web/drafts/{draft['id']}"

@@ -1,17 +1,17 @@
 # PrivacyTrace
 
-PrivacyTrace 是一个面向普通 Android 用户的应用隐私对照工具。它读取 APK 里的隐私相关静态线索，并与隐私政策文本进行对照，让用户可以查看这些线索在代码与政策原文中的具体位置。工具目前只对照敏感数据类型是否提及，不证明应用实际上收集或传输了数据。
+PrivacyTrace 是一个面向普通 Android 用户的应用隐私对照工具。它读取 APK 里的隐私相关静态线索，并与隐私政策文本对照，让用户可以查看这些线索在代码与政策原文中的具体位置。工具目前只对照敏感数据类型是否提及，不证明应用实际上收集或传输了数据。
 
 ## 现在能用到什么
 
 - **查看演示报告**：不需要 APK、Docker 或模型 API Key，即可通过浏览器体验固定样例的代码线索、政策原句和证据定位。演示数据不代表真实 App 的扫描结果，演示模式不保存复核备注。
-- **分析真实 APK**：在本机 Web 工作台上传 APK、添加多个隐私政策来源、确认政策候选，再由 Docker 隔离 Worker 执行静态分析；也支持宿主 CLI。可以查看持久化作业、报告和人工复核备注。
+- **分析真实 APK**：在本机 Web 工作台上传 APK、添加多个隐私政策来源、确认政策候选，再由 Docker 隔离 Worker 执行静态分析；也可通过宿主 CLI 运行。支持查看已持久化的作业、报告和人工复核备注。
 - **对照隐私声明**：分开呈现权限能力、DEX 敏感调用线索、政策文本、候选声明与证据不足状态；政策候选可由人工整理或可选模型辅助，但不会由模型直接给出最终事实判定。
-- **运行受控评测与离线回放**：主线已包含六个自建源码场景、冻结真值、三方案公平比较和只读离线报告包，详见 [受控评测说明](benchmarks/controlled/README.md)。离线回放不等于离线重新扫描任意 APK。
+- **运行受控评测与离线回放**：主线已包含六个自建源码场景、冻结真值、三方案比较和只读离线报告包，详见 [受控评测说明](benchmarks/controlled/README.md)。离线回放不等于离线重新扫描任意 APK。
 
 ## 技术架构
 
-| 层次 | 已使用技术 | 职责 |
+| 层次 | 技术栈 | 职责 |
 | --- | --- | --- |
 | Web 前端 | Vue 3、TypeScript、Vite | APK 与政策材料工作台、任务状态、报告和证据下钻 |
 | API 与规则 | Python、FastAPI、Pydantic | 输入与政策处理、作业管理、静态证据对照及报告模型 |
@@ -22,20 +22,20 @@ PrivacyTrace 是一个面向普通 Android 用户的应用隐私对照工具。�
 
 后续公网多用户服务拟保留现有前后端，采用 API 容器、PostgreSQL、Celery/Redis 与独立扫描执行边界，继续免登录并按任务保护访问。详见 [可行性与实施方案](docs/planning/api-docker-20261016.md)；目前只完成方案与工单调整，尚无可部署的公网服务。
 
-## 项目进度（2026-10-16 快照）
+## 项目进度（2026-10-19 快照）
 
 以下为已验收交付与尚未完成工作的区分；工单状态会继续变化，以链接中的 GitHub 记录为准。
 
 | 阶段 | 状态 | 已交付／剩余事项 |
 | --- | --- | --- |
 | [S0 · 规则与数据契约](https://github.com/MrEcho114/PrivacyTrace/issues/2) | 已完成 | 长政策切片、静态证据与声明对照基线已进入主线 |
-| [S1 · 真实 APK 分析闭环](https://github.com/MrEcho114/PrivacyTrace/issues/3) | 已完成 | 隔离扫描、作业存储、Web 报告与证据下钻 |
+| [S1 · 真实 APK 分析](https://github.com/MrEcho114/PrivacyTrace/issues/3) | 已完成 | 隔离扫描、作业存储、Web 报告与证据下钻 |
 | [S2 · 六场景受控评测](https://github.com/MrEcho114/PrivacyTrace/issues/4) | 已完成 | C01–C06 源码构建、三方案比较、浏览器验收与误差说明 |
-| [S3 · 竞赛交付](https://github.com/MrEcho114/PrivacyTrace/issues/5) | 进行中 | [#18](https://github.com/MrEcho114/PrivacyTrace/issues/18) 内部断网交付验收和 [#19](https://github.com/MrEcho114/PrivacyTrace/issues/19) 材料工单已关闭；[#107](https://github.com/MrEcho114/PrivacyTrace/issues/107) 正式平台提交与回执仍待完成 |
+| [S3 · 竞赛交付](https://github.com/MrEcho114/PrivacyTrace/issues/5) | 内部交付完成 | [#18](https://github.com/MrEcho114/PrivacyTrace/issues/18) 内部断网交付验收、[#19](https://github.com/MrEcho114/PrivacyTrace/issues/19) 材料工单与 [#5](https://github.com/MrEcho114/PrivacyTrace/issues/5) 内部交付已关闭；[#107](https://github.com/MrEcho114/PrivacyTrace/issues/107) 正式平台提交与回执仍待完成 |
 | [P1 · 扩展实验](https://github.com/MrEcho114/PrivacyTrace/issues/6) | 部分完成 | [#62](https://github.com/MrEcho114/PrivacyTrace/issues/62) 测试准备包、[#63](https://github.com/MrEcho114/PrivacyTrace/issues/63) 样本归档已完成；[#64](https://github.com/MrEcho114/PrivacyTrace/issues/64) 十二场景候选待合并，[#65](https://github.com/MrEcho114/PrivacyTrace/issues/65) 真实参与者测试待开展 |
 | [Android 客户端](https://github.com/MrEcho114/PrivacyTrace/issues/68) | 规格阶段 | [#69–#73](https://github.com/MrEcho114/PrivacyTrace/issues/69) 已拆分远程认证、API 契约、客户端与真机验收任务；**尚无可交付 Android 客户端** |
 
-**赛事交付边界**：内部通过验收的离线包不代表已公开发布或已在竞赛平台正式提交。参赛材料与当前要求以 [赛事指南 Issue #74](https://github.com/MrEcho114/PrivacyTrace/issues/74)、[正式提交 Issue #107](https://github.com/MrEcho114/PrivacyTrace/issues/107) 和官方通知为准；唯一采用全国截止时间 2026-10-23 23:59:59，本项目不存在校内提交或校内收件环节。
+**赛事交付边界**：内部通过验收的离线包不代表已公开发布或已在竞赛平台正式提交。参赛材料与当前要求以 [赛事指南 Issue #74](https://github.com/MrEcho114/PrivacyTrace/issues/74)、[正式提交 Issue #107](https://github.com/MrEcho114/PrivacyTrace/issues/107) 和官方通知为准；统一以全国截止时间 2026-10-23 23:59:59 为准，本项目不存在校内提交或校内收件环节。
 
 ### 评测结果的适用范围
 
@@ -116,9 +116,9 @@ uv run --project apps/api --locked --extra worker python -m privacytrace.pipelin
 - **覆盖语义**：COMPLETE 仅表示所支持 DEX 范围处理完成；行为识别始终是有限规则静态分析，未命中规则不代表没有隐私行为。
 - **分析边界**：
   - 清单中的权限声明仅代表应用申请了对应能力，不代表实际发生调用；代码中存在调用线索，也不作合法性、安全性或实际数据收集判定。
-  - 对加壳应用、Native 库（so）、反射、动态加载、Flutter 及混合开发（hybrid）应用覆盖不保证。
+  - 对加壳应用、Native 库（.so）、反射、动态加载、Flutter 及混合开发（hybrid）应用不保证覆盖。
   - 生产分析容器内不含 JADX 反编译引擎，使用字节码兜底（`UNAVAILABLE_BYTECODE_FALLBACK`）。
-  - 无大模型自动生成政策，无动态沙箱抓包与用户行为实验。
+  - 不使用大模型自动生成政策，也不包含动态沙箱抓包或用户行为实验。
 - **存储与安全边界**：
   - 本地作业存储于 `data/jobs` JSON 文件，SQLite 模式暂未接入运行时。
   - 扫描器 APK 运行副本默认在退出后删除，仅保留受限隔离收据；累计预算默认 1 GiB，复制前跨进程预留。网页上传的原文件和输入版本另留在本机，供恢复与重试，限额见 [真实流程说明](docs/design/issue-44-live-workflow.md)。历史文件不自动删除，失败与崩溃残留需人工核对处理。配置、访问权限与清理边界见 [运行时保留策略](docs/stages/s1-runtime-retention.md)。
@@ -159,7 +159,7 @@ uv run --project apps/api --locked --extra worker pytest apps/api/tests
 
 > **Blocked ≠ 禁止认领，也不等于整张 Issue 无法开始。** GitHub 的 `Blocked` / `blocked by` 表示存在待满足的任务依赖，通常影响某些集成步骤或最终验收，而不是对组员设置认领或开发权限限制。
 
-- **可以认领**：对感兴趣且未明确由其他成员负责的 Issue，可先在评论区留言说明认领意向、GitHub 用户名及计划负责的范围，请维护者确认分工。无法自行设置 Assignees，通常是仓库权限或界面能力限制，与是否 Blocked 无关；由有权限的维护者分配即可。已有负责人时先沟通，避免重复实施。
+- **可以认领**：对感兴趣且未明确由其他成员负责的 Issue，可先在评论区留言说明认领意向、GitHub 用户名及计划负责的范围，请维护者确认分工。无法自行设置 Assignee 通常因仓库权限限制，与是否 Blocked 无关，由维护者分配即可。已有负责人时先沟通，避免重复工作。
 - **可以提前开展不受依赖影响的工作**：需求澄清、设计、独立模块实现、测试用例、测试环境与文档准备等，只要不依赖尚未交付的接口或产物，就不需要等 Blocked 消失。
 - **受依赖约束的部分应等待或使用明确约定的契约**：涉及真实上游产物的联调、端到端验证、最终验收/关闭，不得在前置条件未满足时宣称完成；使用 Mock 或临时桩应明确记录，不能当作真实集成通过。
 - **先查看依赖的具体范围**：阅读 Issue 正文及 GitHub Dependencies 的 `blocked by` 关系，判断阻塞的是整个实现、某个子功能，还是最终集成/验收；不明确时在该 Issue 评论询问维护者，不要仅凭一个 Blocked 标记放弃认领。
@@ -174,12 +174,12 @@ uv run --project apps/api --locked --extra worker pytest apps/api/tests
 ## 项目状态与相关文档
 
 - **使用与受控评测**：[六场景说明](benchmarks/controlled/README.md)、[真实 Web 工作流设计](docs/design/issue-44-live-workflow.md)。
-- **核心技术验收**：[S1 技术报告](docs/stages/s1-report.md)、[S2 阶段记录](https://github.com/MrEcho114/PrivacyTrace/issues/4)、[S3 阶段记录](https://github.com/MrEcho114/PrivacyTrace/issues/5)。
+- **核心技术验收**：[S1 技术报告](docs/stages/s1-report.md)、[S2 阶段记录](https://github.com/MrEcho114/PrivacyTrace/issues/4)、[S3 阶段记录](https://github.com/MrEcho114/PrivacyTrace/issues/5)（含 [S3 内部交付](docs/stages/s3-internal-delivery-20261019.md)）。
 - **评测扩展与参与者研究**：[PR #76](https://github.com/MrEcho114/PrivacyTrace/pull/76)、[理解测试准备包 #62](https://github.com/MrEcho114/PrivacyTrace/issues/62)、[真实研究 #65](https://github.com/MrEcho114/PrivacyTrace/issues/65)。
 - **竞赛材料与提交**：[最新指南 #74](https://github.com/MrEcho114/PrivacyTrace/issues/74)、[提交追踪 #107](https://github.com/MrEcho114/PrivacyTrace/issues/107)。仓库内旧版 [赛务核对清单](docs/competition-checklist.md) 仅作为历史文件，不作为本届最新规则来源。
 - **Android 后续规划**：[功能规格 #68](https://github.com/MrEcho114/PrivacyTrace/issues/68)（拟用 Tauri 2 + 现有 Vue 前端，经认证的远程 FastAPI 服务与 Docker Worker；不在手机上直接运行分析引擎）。
-- **依赖与许可**：使用的 Androguard 遵循 [Apache-2.0](https://raw.githubusercontent.com/androguard/androguard/v4.1.3/LICENCE-2.0)。本项目源代码许可仍待团队确定；未经授权的商业 APK、完整政策、私人日志与身份信息不进入公开交付包。
+- **依赖与许可**：依赖的 Androguard 遵循 [Apache-2.0](https://raw.githubusercontent.com/androguard/androguard/v4.1.3/LICENCE-2.0)。本项目源代码许可仍待团队确定；未经授权的商业 APK、完整政策、私人日志与身份信息不进入公开交付包。
 
 ## 安全声明
 
-本工具提供 **静态证据与声明之间的辅助对照**，不对应用是否安全、是否违法或是否发生真实数据收集作出结论。仅在有权处理的样本上执行扫描；不要将目前的无远程认证 API 绑定到公网。
+本工具提供静态证据与声明之间的辅助对照，不对应用是否安全、是否违法或是否发生真实数据收集作出结论。仅在有权处理的样本上执行扫描；请勿将当前未配备远程认证的 API 直接绑定到公网。

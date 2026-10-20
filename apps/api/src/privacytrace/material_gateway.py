@@ -14,7 +14,10 @@ class MaterialHandler(PrivateHandler):
                 self.reply(403, {"error": "RUNTIME_PEER_REJECTED"})
                 return
             if self.path == "/v1/health":
-                self.reply(200, {"version": 1, "status": "ready"})
+                if not self.server.materials.readiness():
+                    self.reply(503, {"error": "MATERIAL_GATEWAY_UNAVAILABLE"})
+                else:
+                    self.reply(200, {"version": 1, "status": "ready"})
                 return
             if self.path not in {"/v1/material", "/v1/permit"}:
                 self.reply(404, {"error": "UNKNOWN_RUNTIME_OPERATION"})

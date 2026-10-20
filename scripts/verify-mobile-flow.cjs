@@ -39,12 +39,13 @@ async function main() {
       const job = { ...reportFixture.job, id: 'b'.repeat(32), state: 'QUEUED' }
       const draft = { id: context.draft, name: 'com.example.mobile.ok', uploaded: true, revision: 1, apk_sha256: 'a'.repeat(64), sources: [], candidates: [], jobs: [] }
       const ledger = globalThis.mobileCalls = []
-      let configured = false
+      let configured = false, jobReads = 0
       globalThis.__TAURI_INTERNALS__ = { invoke: async (command, args = {}) => {
         const method = command.split('|')[1]; ledger.push({ method, args })
         if (method === 'model_status') return { configured, endpoint: configured ? 'https://model.example/v1/chat/completions' : null }
         if (method === 'configure_model') { configured = true; return { configured, endpoint: 'https://model.example/v1/chat/completions' } }
-        if (method === 'upload_selected' || method === 'refresh_upload') return context
+        if (method === 'upload_selected') return context
+        if (method === 'refresh_upload') { jobReads = 0; job.state = 'STATIC_ANALYSIS'; return context }
         if (method === 'cancel') return
         if (method === 'collect_policy') return { text: JSON.stringify({ version: 'privacytrace-policy-collector/1', results: [{ state: 'PROVIDED', source: { id: 'policy', title: '受控政策', source_type: 'OFFICIAL_WEB_POLICY', text: policySentence } }] }) }
         if (method !== 'workflow') throw new Error('Unexpected native method ' + method)
@@ -54,8 +55,12 @@ async function main() {
         else if (action === 'import') { draft.sources.push(...input.results.map(item => ({ ...item.source, status: 'manual', version: 'UNKNOWN', provenance: 'EXTERNAL_CHAT_EXPORT' }))); draft.revision++ }
         else if (action === 'extract') { draft.candidates = [{ id: 'candidate', source_id: 'policy', excerpt: policySentence, data_type: 'LOCATION', polarity: 'AFFIRMATIVE', subject: 'HOST_APP', checked: false, action: 'ACCESS' }]; draft.revision++ }
         else if (action === 'candidates') { draft.candidates = input.candidates; draft.revision++ }
-        else if (action === 'start') { draft.jobs.push({ job_id: job.id, request_id: input.request_id, revision: draft.revision, events: [{ state: 'QUEUED', at: '2026-10-20T00:00:00Z' }] }); data = job }
-        else if (action === 'job') { job.state = 'SUCCEEDED'; data = job }
+        else if (action === 'start') {
+          draft.jobs.push({ job_id: job.id, request_id: input.request_id, revision: draft.revision, events: [{ state: 'QUEUED', at: '2026-10-20T00:00:00Z' }] })
+          draft.revision++
+          throw new Error('Simulated response loss after accepted start')
+        }
+        else if (action === 'job') { job.state = ++jobReads === 1 ? 'STATIC_ANALYSIS' : 'SUCCEEDED'; data = job }
         else if (action === 'report') { data = { ...reportFixture, job, demo: false, result: { ...reportFixture.result, job_id: job.id } } }
         else if (action !== 'read') throw new Error('Unexpected workflow action ' + action)
         return { json: JSON.stringify({ origin: context.origin, draft: context.draft, data }) }
@@ -99,11 +104,12 @@ async function main() {
     const ledger = await page.evaluate(() => globalThis.mobileCalls)
     const save = ledger.find(call => call.method === 'workflow' && call.args.action === 'candidates')
     assert.equal(JSON.parse(save.args.payload).candidates[0].checked, false)
+    assert.equal(ledger.filter(call => call.method === 'workflow' && call.args.action === 'start').length, 1, 'lost start response and running-job restore must not submit another analysis')
     assert(ledger.some(call => call.method === 'workflow' && call.args.action === 'report'))
     assert.deepEqual(api, [], 'native snapshot report must not use browser HTTP credentials')
     assert.deepEqual(errors, [])
     fs.writeFileSync(path.join(output, 'walkthrough.json'), JSON.stringify({ result: 'PASS', scope: 'production Vue with mocked native bridge; no APK scan, paid model, or Android UI execution', ledger, browser_api_requests: api, page_errors: errors }, null, 2))
-    console.log('Mobile development walkthrough passed: upload → model/JSON → prepare → unchecked candidates → analysis → evidence report → restore; zero browser API requests.')
+    console.log('Mobile development walkthrough passed: accepted start response lost → read/recover existing job → automatic progress → evidence report → running-job restore with automatic progress; exactly one start, zero browser API requests.')
   } finally {
     await browser?.close()
     if ((await stopChildren([child])).length) throw new Error('Owned Vite did not stop')

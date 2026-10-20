@@ -49,6 +49,7 @@ export function createMobileFlow(bridge: MobileBridge) {
     await bridge.cancel().catch(() => {})
   }
   async function select(restore = false) {
+    const current = generation
     await run(async (request, check) => {
       const selected = await (restore ? bridge.restore() : bridge.upload())
       check()
@@ -65,6 +66,7 @@ export function createMobileFlow(bridge: MobileBridge) {
         catch { check(); notice.value = '材料已恢复，历史任务暂未读到。请刷新进度重试；未创建新的分析。' }
       }
     })
+    if (current === generation && job.value && !terminal()) timer = setTimeout(poll, 1500)
   }
   async function refresh() { await run(async request => { apply(await request<LiveDraft>('read')); notice.value = '已读取服务保存的材料。' }) }
   async function importCollected(input: ExternalInput) {
@@ -106,13 +108,27 @@ export function createMobileFlow(bridge: MobileBridge) {
   async function save() { await run(async request => { if (draft.value) apply(await request<LiveDraft>('candidates', { revision: draft.value.revision, candidates: state.candidates.map(encode) })) }) }
   async function begin() {
     const current = generation
-    await run(async request => {
+    await run(async (request, check) => {
       if (!draft.value) return
+      const recover = async (latest: LiveDraft) => {
+        if (!latest.jobs.length) { draft.value = latest; return false }
+        apply(latest)
+        state.step = 'progress'
+        job.value = await request<AnalysisJob>('job')
+        pendingStart = null
+        return true
+      }
+      // Reconcile server state before every submission, including after remount.
+      if (await recover(await request<LiveDraft>('read'))) return
       if (!pendingStart) {
         apply(await request<LiveDraft>('candidates', { revision: draft.value.revision, candidates: state.candidates.map(encode) }))
         pendingStart = { revision: draft.value.revision, request_id: crypto.randomUUID().replaceAll('-', '') }
       }
-      job.value = await request<AnalysisJob>('start', pendingStart)
+      try { job.value = await request<AnalysisJob>('start', pendingStart) }
+      catch (cause) {
+        check()
+        if (!await recover(await request<LiveDraft>('read'))) throw cause
+      }
       state.step = 'progress'
     })
     if (current === generation && job.value && !terminal()) timer = setTimeout(poll, 1500)

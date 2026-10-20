@@ -12,7 +12,7 @@ pytest.importorskip("celery", reason="Install runtime extra for Celery protocol 
 
 from privacytrace.postgres_execution import LeaseLost  # noqa: E402
 from privacytrace.postgres_store import PostgresOperationUnavailable  # noqa: E402
-from privacytrace.queue_runtime import TASK_NAME, BrokerConfig  # noqa: E402
+from privacytrace.queue_runtime import PROBE_TASK_NAME, TASK_NAME, BrokerConfig  # noqa: E402
 from privacytrace.runtime_worker import create_worker_app  # noqa: E402
 
 
@@ -32,7 +32,7 @@ def test_worker_registry_contains_only_fixed_json_task_and_rejects_embedded_canv
         "event_id": str(uuid4()),
     }
     try:
-        assert set(app.tasks) == {TASK_NAME}
+        assert set(app.tasks) == {TASK_NAME, PROBE_TASK_NAME}
         assert app.conf.accept_content == ["json"] and not app.conf.worker_enable_remote_control
         assert app.conf.result_backend is None
         task.push_request(id=event["event_id"], callbacks=[{"task": "untrusted.task"}])
@@ -54,6 +54,43 @@ def test_worker_registry_contains_only_fixed_json_task_and_rejects_embedded_canv
         app.close()
 
 
+def test_consumer_proof_rejects_invalid_canvas_and_only_accepts_current_challenge(monkeypatch):
+    from privacytrace import runtime_health
+
+    instance = str(uuid4())
+    app = create_worker_app(BrokerConfig("redis://u:p@127.0.0.1:1/15", instance))
+    accepted = []
+
+    def approve(url, instance_id, challenge):
+        accepted.append((instance_id, challenge))
+        return True
+
+    monkeypatch.setenv("PRIVACYTRACE_PUBLISH_HEALTH", "1")
+    monkeypatch.setattr(runtime_health, "acknowledge_challenge", approve)
+    task = app.tasks[PROBE_TASK_NAME]
+    challenge = {"version": 1, "instance_id": instance, "challenge_id": str(uuid4()),
+                 "issued_at": 12345}
+    try:
+        task.push_request(id=challenge["challenge_id"], callbacks=[{"task": "unknown"}])
+        try:
+            task.run(challenge)
+            assert accepted == []
+            assert task.request.callbacks is None
+        finally:
+            task.pop_request()
+        task.push_request(id=challenge["challenge_id"])
+        try:
+            task.run(challenge, payload="untrusted")
+            task.run()
+            assert accepted == []
+            task.run(challenge)
+            assert accepted == [(instance, challenge)]
+        finally:
+            task.pop_request()
+    finally:
+        app.close()
+
+
 def test_actual_celery_worker_constructor_accepts_redacted_logging_without_broker_io():
     child = subprocess.run(
         [
@@ -67,7 +104,7 @@ from privacytrace.queue_runtime import BrokerConfig
 app=create_worker_app(BrokerConfig('redis://u:p@127.0.0.1:1/15',str(uuid4())))
 worker=app.Worker(pool='solo',concurrency=1,queues=[app.conf.task_default_queue],quiet=True,
                  without_mingle=True,without_gossip=True,without_heartbeat=True,loglevel='CRITICAL')
-assert set(app.tasks)=={'privacytrace.execute.v1'}
+assert set(app.tasks)=={'privacytrace.execute.v1','privacytrace.health.v1'}
 app.close()
 print('CONSTRUCTED')
 """,

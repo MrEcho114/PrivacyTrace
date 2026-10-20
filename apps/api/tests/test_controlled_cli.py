@@ -36,7 +36,8 @@ def test_controlled_cli_rejects_expected_answers_as_input(tmp_path):
     assert not (tmp_path / "jobs").exists()
 
 
-def test_missing_artifacts_preserve_every_scenario_and_baseline_denominator(tmp_path):
+@pytest.mark.parametrize("suite,count", [("spec30", 6), ("pt907", 12)])
+def test_missing_artifacts_preserve_every_scenario_and_baseline_denominator(tmp_path, suite, count):
     output = tmp_path / "comparison"
     result = subprocess.run(
         [
@@ -44,6 +45,7 @@ def test_missing_artifacts_preserve_every_scenario_and_baseline_denominator(tmp_
             "-m",
             "privacytrace.benchmark",
             "run",
+            "--suite", suite,
             "--artifacts",
             str(tmp_path / "missing"),
             "--output",
@@ -55,12 +57,15 @@ def test_missing_artifacts_preserve_every_scenario_and_baseline_denominator(tmp_
     )
     assert result.returncode == 1
     summary = json.loads(result.stdout)
-    assert summary["six_scenarios_passed"] is False
+    assert summary["scenarios_passed"] is False
+    assert summary["six_scenarios_passed"] is summary["scenarios_passed"]
     comparison = json.loads((output / "comparison.json").read_bytes())
-    assert len(comparison["rows"]) == 18
+    assert summary["scenario_count"] == count
+    assert "six_scenarios_passed" in summary["deprecated_fields"]
+    assert len(comparison["rows"]) == count * 3
     for counts in comparison["summaries"].values():
-        assert counts["total"] == 6
-        assert counts["failures"] == 6
+        assert counts["total"] == count
+        assert counts["failures"] == count
         assert counts["predicted"] == 0
     assert all(row["actual"] is None and row["errors"] for row in comparison["rows"])
 

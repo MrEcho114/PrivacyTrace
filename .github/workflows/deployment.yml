@@ -27,11 +27,35 @@ jobs:
         run: |
           python3 -m venv .themasterplan/cache/deploy-tools
           .themasterplan/cache/deploy-tools/bin/pip install --disable-pip-version-check uv==0.11.23
-          .themasterplan/cache/deploy-tools/bin/uv sync --project apps/api --locked --extra worker
+          .themasterplan/cache/deploy-tools/bin/uv sync --project apps/api --locked --extra worker --extra runtime
       - name: Deployment behavior and lint
         run: |
           apps/api/.venv/bin/python -m unittest discover -s deploy/tests -v
           apps/api/.venv/bin/ruff check --config apps/api/pyproject.toml deploy
+      - name: Real Redis and Celery health challenge regression
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq redis-server
+          command -v redis-server
+          out=$(PRIVACYTRACE_REDIS_TESTS=1 apps/api/.venv/bin/python -m pytest \
+            apps/api/tests/test_queue_runtime.py \
+            -k test_health_challenge_with_real_redis_and_solo_celery_consumer \
+            -q -p no:cacheprovider --no-header)
+          printf '%s\n' "$out"
+          # An opt-in test that silently skips must not count as a pass.
+          grep -q '1 passed' <<<"$out"
+      - name: Deployment acceptance suite
+        run: |
+          # Package-set flows call the isolated Docker scanner, so build the
+          # fixed image first; without it those cases would silently skip and
+          # the suite would stop covering the upload path it exists to cover.
+          docker build --file apps/api/worker.Dockerfile --tag privacytrace-worker:s1 .
+          out=$(PRIVACYTRACE_DOCKER_TESTS=1 apps/api/.venv/bin/python -m pytest \
+            tests/e2e -q -p no:cacheprovider --no-header)
+          printf '%s\n' "$out"
+          # A skipped Docker-dependent case is not a passing upload path.
+          ! grep -q ' skipped' <<<"$out"
+
       - name: Clean builds with negative context canaries
         run: |
           mkdir -p data samples/private

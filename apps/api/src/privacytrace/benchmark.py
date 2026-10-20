@@ -2,7 +2,6 @@
 
 import argparse
 import json
-import re
 import subprocess
 import sys
 import time
@@ -12,6 +11,7 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
+from .benchmark_locations import REFERENCE, expected_calls, load_reference, locator
 from .controlled import SUITE, SUITES, analyze, scenario_ids
 from .isolated_scan import docker_prefix
 from .job_store import JobStore
@@ -177,15 +177,15 @@ def predict(features, artifacts, store_dir, timeout, suite=SUITE):
     return record
 
 
-def api_locators_match(api, scenario, label):
+def api_locators_match(api, scenario, label, apk_hash, reference):
     """Independent frozen mapping/location check, for either shared or referenced APIs."""
     rules = taxonomy()
-    expected_caller = label.get("caller_descriptor", (
-        "Lorg/privacytrace/controlled/" + scenario.lower()
-        + "/MainActivity;->readLocation(Landroid/location/LocationManager;)"
-        "Landroid/location/Location;"
-    ))
-    return len(api) == label["api_count"] and all(
+    calls = expected_calls(reference, scenario, label, apk_hash)
+    if calls is None or len(api) != len(calls):
+        return False
+    if sorted(item["locator"] for item in api) != sorted(locator(apk_hash, call) for call in calls):
+        return False
+    return all(
         item["api_call"]["target_descriptor"] == label["target_descriptor"]
         and item["api_call"]["ruleset_version"] == rules["version"]
         and item["api_call"]["context"] == label.get("target_context", {"provider": "gps"})
@@ -196,15 +196,14 @@ def api_locators_match(api, scenario, label):
             and rule["context"] == item["api_call"]["context"]
             for rule in rules["api_mappings"]
         )
-        and "caller=" + expected_caller + ";" in item["locator"]
-        and (re.search(r"offset_bytes=\d+;", item["locator"]) is not None
-             if "caller_descriptor" in label else "offset_bytes=4;" in item["locator"])
-        and item["source"] == "classes.dex"
+        and any(item["source"] == call["dex"]
+                and item["locator"] == locator(apk_hash, call) for call in calls)
         for item in api
     )
 
 
 def score(records, truth):
+    reference = load_reference()
     rows = []
     summaries = {
         scheme: {
@@ -235,7 +234,8 @@ def score(records, truth):
             actual = statuses[0] if len(statuses) == 1 else None
             success = bool(record and record["analysis"]["status"] == "SUCCEEDED")
             api = record.get("api_evidence", []) if record else []
-            located = api_locators_match(api, scenario, label)
+            apk_hash = (record or {}).get("apk_sha256")
+            located = api_locators_match(api, scenario, label, apk_hash, reference)
             locators = {item["id"]: item for item in (record or {}).get("evidence_locators", [])}
             refs = sorted({ref for item in matching for ref in item["evidence_ids"]})
             refs_exist = bool(matching and refs) and all(ref in locators for ref in refs)
@@ -244,7 +244,8 @@ def score(records, truth):
             # No sensitive invoke is expected in capability-only cases (C01).
             # Verify that absence in the shared scan; it is not a scheme API locator success.
             scheme_located = (
-                success and refs_exist and api_locators_match(referenced_api, scenario, label)
+                success and refs_exist and api_locators_match(
+                    referenced_api, scenario, label, apk_hash, reference)
                 if label["api_count"] else None
             )
             policy_validation = record.get("policy_span_validation", {}) if record else {}
@@ -341,6 +342,8 @@ def comparison_markdown(result):
              "One target per source scenario; failures and abstentions remain in the denominator.",
              "Shared scanner evidence, scheme-referenced API locators and status agreement "
              "are separate. Scheme API locators are N/A when the frozen target has no invoke.", "",
+             "Exact byte callsites are checked against a separately versioned Android dexdump "
+             "reference bound to the APK/DEX, caller, target and source-reviewed context.", "",
              "| Scheme | Total | Status agreement | Failures | Abstentions | "
              "Shared scanner | Scheme API locators (applicable) | API N/A | "
              "Shared policy spans | Complete DEX | Truncated |",
@@ -439,15 +442,24 @@ def run_benchmark(artifacts, output, timeout, blocked_error=None, *, suite=SUITE
         ROOT / SDK_SIGNATURE_FILES[ACTIVE_SDK_SIGNATURES_VERSION],
         ROOT / "scripts/build-controlled-apks.py",
         ROOT / "scripts/controlled/compile.py",
+        ROOT / "scripts/controlled/location_reference.py",
+        ROOT / "scripts/verify-controlled-locations.py",
         ROOT / "scripts/validate-spec30.py",
         ROOT / "scripts/verify-controlled-browser.cjs",
     ]
+    location_reference = load_reference()
     result = {
         "implementation_hashes": {
             path.relative_to(ROOT).as_posix(): digest(read_safe(path))
             for path in implementation_files
         },
-        "schema_version": 2,
+        "schema_version": 3,
+        "api_location_reference": {
+            "version": location_reference["reference_version"],
+            "sha256": digest(read_safe(REFERENCE)),
+            "path": REFERENCE.relative_to(ROOT).as_posix(),
+            "limitations": location_reference["limitations"],
+        },
         "suite": next(name for name, path in SUITES.items() if path == suite),
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "truth_sha256": digest(truth_raw),
@@ -484,9 +496,11 @@ def run_benchmark(artifacts, output, timeout, blocked_error=None, *, suite=SUITE
     )
     return {
         "status": "COMPARED",
-        "six_scenarios_passed": passed,
-        "scenario_count": len(scenarios),
         "scenarios_passed": passed,
+        "scenario_count": len(scenarios),
+        # Deprecated alias retained identically for both suites until a breaking CLI version.
+        "six_scenarios_passed": passed,
+        "deprecated_fields": {"six_scenarios_passed": "Use scenarios_passed; see scenario_count"},
         "summaries": summaries,
         "comparison": str(output / "comparison.json"),
     }
@@ -528,7 +542,7 @@ def main():
     return (
         0
         if (
-            output.get("six_scenarios_passed")
+            output.get("scenarios_passed")
             or output.get("analysis", {}).get("status") == "SUCCEEDED"
         )
         else 1

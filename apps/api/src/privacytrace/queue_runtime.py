@@ -18,6 +18,7 @@ from uuid import UUID
 from .postgres_outbox import PostgresOutbox, decode_message
 
 TASK_NAME = "privacytrace.execute.v1"
+PROBE_TASK_NAME = "privacytrace.health.v1"
 
 
 class QueueUnavailable(RuntimeError):
@@ -93,7 +94,10 @@ def create_celery_app(config):
                 durable=True,
             ),
         ),
-        task_routes={TASK_NAME: {"queue": config.queue, "routing_key": config.queue}},
+        task_routes={
+            n: {"queue": config.queue, "routing_key": config.queue}
+            for n in (TASK_NAME, PROBE_TASK_NAME)
+        },
         task_create_missing_queues=False,
         task_protocol=2,
         task_publish_retry=False,
@@ -155,6 +159,38 @@ class CeleryPublisher:
         except (KombuError, RedisError, OSError):
             raise QueueUnavailable("Runtime broker unavailable") from None
 
+    def probe(self):
+        from .runtime_health import issue_challenge, release_challenge
+
+        try:
+            challenge = issue_challenge(
+                self.config.url, self.config.instance_id, self.config.key_prefix + self.config.queue
+            )
+            if challenge is None:
+                return False
+            self.app.send_task(
+                PROBE_TASK_NAME,
+                args=[challenge],
+                kwargs={},
+                task_id=challenge["challenge_id"],
+                queue=self.config.queue,
+                routing_key=self.config.queue,
+                serializer="json",
+                retry=False,
+                ignore_result=True,
+                expires=15,
+                argsrepr="(fixed health challenge)",
+                kwargsrepr="{}",
+            )
+            return True
+        except Exception:
+            if "challenge" in locals() and challenge:
+                try:
+                    release_challenge(self.config.url, challenge)
+                except Exception:
+                    pass
+            raise QueueUnavailable("Runtime health probe unavailable") from None
+
     def close(self):
         self.app.close()
 
@@ -195,20 +231,32 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args()
-    store = publisher = None
+    store = publisher = heartbeat = None
+    last_probe = 0.0
     try:
         from .durable_intake import ensure_control_plane
         from .postgres_execution import PostgresExecution
-        from .storage_factory import create_store
+        from .runtime_health import HealthPublisher
+        from .storage_factory import create_store, resolve_redis_url
 
         ensure_control_plane()
         if os.environ.get("PRIVACYTRACE_STORAGE") != "postgres":
             raise ValueError("Durable dispatch requires PostgreSQL")
         store = create_store(Path(os.environ["PRIVACYTRACE_STORE_ROOT"]))
-        config = BrokerConfig(os.environ.get("PRIVACYTRACE_BROKER_URL"), store.instance_id)
+        config = BrokerConfig(resolve_redis_url(), store.instance_id)
         publisher = CeleryPublisher(config)
         dispatcher = OutboxDispatcher(store, publisher)
+        if os.environ.get("PRIVACYTRACE_PUBLISH_HEALTH") == "1":
+            heartbeat = HealthPublisher(config.url, store.instance_id, "dispatcher")
         while True:
+            if heartbeat:
+                heartbeat.beat()
+                if not args.once and time.monotonic() - last_probe >= 8:
+                    try:
+                        publisher.probe()
+                    except QueueUnavailable:
+                        pass
+                    last_probe = time.monotonic()
             PostgresExecution(store).recover()
             result = dispatcher.once()
             if args.once:
@@ -221,6 +269,8 @@ def main():
     except KeyboardInterrupt:
         return 0
     finally:
+        if heartbeat:
+            heartbeat.close()
         if publisher:
             publisher.close()
         if store:

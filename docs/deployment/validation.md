@@ -4,16 +4,16 @@
 
 | 组件 | 当前固定基线 | 状态 |
 | --- | --- | --- |
-| 应用源 | main `e2313e19cd9e43b30aad2044ccf6624e929511cd` | #69/#70、PostgreSQL 第一阶段已合入 |
+| 应用源 | main 基线 `a2e058a4868e2c55ab928179682ca7f9cd49caa5` + PR #116 修复候选 | 具体证据应绑定最终 PR HEAD，不以旧版本作为合格证明 |
 | Python | `3.12.13-slim@sha256:229a2c5bfa27522db7815ea81f9bed70af17ccb9de9fc7ad142b1877b5830d36` | 与既有扫描基础镜像一致 |
 | uv | `0.11.23@sha256:d0a0a753ab981624b49c97abc98821c1c09f4ca69d1ef5cee69c501be3d88479` | 仅构建阶段；apps/api/uv.lock 不变 |
 | Node | `24.17.0-bookworm-slim@sha256:862263c612aa437e3037674b85419622a9d93bff80aa1eee5398dfe686375532` | 仅构建阶段；package-lock.json 不变 |
 | Caddy | `2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d` | 静态/代理 runtime |
 | PostgreSQL | `17.9-alpine@sha256:c7526c0f6c3f30260a563d7bcf8ad778effac59a44f8ffa86678c35418338609` | 空测试库认证/卷重建；非 #80 应用存储验收 |
 | Redis | `7.4.8-alpine@sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6` | 合成认证/AOF 哨兵重建；投递角色/ACL 待 #80 |
-| migration | 已打包 `0080_01` | 最终 runtime migration head 待 #80 |
+| migration | 已打包 `0080_05` | 一次性 migrate profile 已装配；真实空库迁移与角色权限仍待执行 |
 | API/Web registry digest | 未发布 | CI 记录本地构建 image ID；不可冒称 registry digest |
-| 编排/outbox/Runner/扫描 digest 与协议 | 未交接 | 生产入口 BLOCKED |
+| 编排/outbox/Runner/扫描 digest 与协议 | #80 运行时组件已在 main | 独立 Runner 配置/容器内私网通信与完整部署验收仍待复核；公网发布 BLOCKED |
 
 Node/Caddy/PostgreSQL/Redis 的 manifest 摘要于 2026-10-19 经 Docker 官方 registry 读取；Python/uv 复用仓库既有固定摘要。Linux CI 的实际拉取/构建结果绑定候选 SHA。更新必须重新审查兼容矩阵并跑专项，不能只改 tag。当前单 Linux Docker 测试不代表多架构验证。
 
@@ -37,3 +37,17 @@ Node/Caddy/PostgreSQL/Redis 的 manifest 摘要于 2026-10-19 经 Docker 官方 
 | 并发 1 容量及无秘密 | 构建上下文 canary/文件白名单 | 硬件/受控 APK 耗时、峰值与拒绝行为实测 |
 
 Linux 镜像与受限 Compose 结果以实际运行收据为准；本机 Windows/WSL 与干净 Linux CI 分开记录，最终 CI 和镜像源码标签须绑定交付 SHA。本机权威检查如有跳过，在 PR 精确列出。Mock、配置渲染、HTTP/本地 CA HTTPS 合成 smoke、真实 DB/broker、专用扫描、真实外网是不同证据层级。#81 保持 open，未合并、未公网部署、未触发公网证书账户或修改 DNS。
+
+### 运行时 Readiness / Gateway / Consumer 的修复覆盖（PR #116）
+
+- 配置：API 与 Worker 必须恰好包含 `control` 网络，不允许意外加入 `edge`；静态验证在 Deployment Baseline 中执行。
+- 单元：覆盖事件循环不被慢数据库阻塞、探针同一时刻最多一个阻塞任务、Runner→Gateway mTLS 健康拒绝、Celery 健康任务的固定注册表及输入拒绝、正常消费挑战与活跃租约信号格式。
+- **NOT_TESTED in final topology**：真实 PostgreSQL/Redis/Celery 和专用 Runner/Gateway 停启故障注入、跨主机中继网络、双作用域 APK/splits 扫描、backup/replay 和硬件并发 1 容量。须绑定最终交付 SHA 复核，不从组件模拟验收推断。
+
+### 本轮真实组件专项 / 分层记录
+
+Deployment Baseline 新增测试独立启动 Redis server 和 solo Celery Consumer，必须见到真实同队列挑战与 Consumer TTL 确认；CI 步骤会断言输出包含 `1 passed`，因此 `pytest.skip` 不会被当作成功（本地手动运行仍需 `PRIVACYTRACE_REDIS_TESTS=1`，否则该用例自行跳过，属本地而非 CI 结论）。仍须在最终隔离 Linux 主机执行 PostgreSQL 租约与 Runner/Gateway 跨机 mTLS、授权材料、恢复与硬件容量收据。业务进度窗口、探针队列限制及 2.5 秒端到端健康预算是当前代码候选限制，需按最终 SHA 实测验证。
+
+### 部署验收套件（tests/e2e）
+
+`tests/e2e/` 由 `scripts/check.sh` 与 Deployment Baseline 的 “Deployment acceptance suite” 步骤实际执行，不是只放在仓库里的自证材料。该套件以 TestClient、合成 APK、配置静态断言和受控组件为主，**不**代表七服务真实启动、真实 HTTPS→Runner→报告或硬件容量；这些仍按上表记为 NOT_TESTED。Ruff 与测试均覆盖 `tests/e2e`，新增用例必须同时通过两者。

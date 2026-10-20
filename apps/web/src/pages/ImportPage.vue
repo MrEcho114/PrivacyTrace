@@ -4,11 +4,13 @@ import UiButton from '../components/UiButton.vue'
 import UiField from '../components/UiField.vue'
 import StatusTag from '../components/StatusTag.vue'
 import UiIcon from '../components/UiIcon.vue'
+import PolicyAssist from '../components/PolicyAssist.vue'
+import type { ExternalInput } from '../policyAssist'
 import { copy } from '../copy'
 import { emptySource, sourceProvenanceLabel, sourceStatusLabel, sourceTypes } from '../workflow'
 import type { PolicySource, Workflow } from '../workflow'
 const props = defineProps<{ state: Workflow; busy?: boolean; uploadedName?: string }>()
-const emit = defineEmits<{ example: []; next: []; file: [File]; dirty: [] }>()
+const emit = defineEmits<{ example: []; next: []; file: [File]; dirty: []; import: [ExternalInput] }>()
 const file = ref<File | null>(null)
 const fileError = ref('')
 const dropActive = ref(false)
@@ -16,7 +18,7 @@ const filePicker = ref<HTMLInputElement | null>(null)
 const textErrors = ref<Record<string, string>>({})
 const textReads = new Map<string, symbol>()
 onBeforeUnmount(() => textReads.clear())
-const canContinue = computed(() => props.state.example ? props.state.sources.some(source => source.text.trim() && source.status !== 'failed') : !!(file.value || props.uploadedName) && props.state.sources.some(source => source.text.trim() || source.url.trim()))
+const canContinue = computed(() => props.state.example ? props.state.sources.some(source => source.text.trim() && source.status !== 'failed') : !!(file.value || props.uploadedName))
 function acceptFile(selected?: File) {
   if (!selected) return
   fileError.value = ''
@@ -100,6 +102,7 @@ function onTextInput(source: PolicySource) {
           <div class="source-notes"><span>{{ copy.sourceScopeUnknown }}</span><span>{{ copy.attachmentsUnknown }}</span></div>
         </article>
         <UiButton :disabled="state.sources.length >= 8" @click="addSource">添加政策来源</UiButton>
+        <PolicyAssist v-if="!state.example" :busy="busy" :source-count="state.sources.length" @import="emit('import', $event)" />
       </section>
     </div>
     <div class="flow-footer"><p>{{ state.example ? copy.storageHelp : "继续后会在本机保存输入快照，获取缺少正文的网页，并请求已配置模型提供候选。失败来源会保留。" }}</p><UiButton variant="primary" :disabled="!canContinue || busy" :busy="busy" @click="emit('next')">{{ state.example ? copy.nextCandidates : "获取政策并检查候选" }}<UiIcon name="arrow-right" /></UiButton></div>

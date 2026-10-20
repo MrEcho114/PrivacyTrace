@@ -1,5 +1,6 @@
 import type { AnalysisJob } from './types'
 import type { WebCandidate, WebSource, DraftInput, CandidateInput, StartInput, ModelSettings } from './contracts.generated'
+import type { ExternalInput } from './policyAssist'
 
 export type ModelStatus = Omit<ModelSettings, 'api_key'> & { key_configured: boolean; max_apk_bytes: number }
 export function displaySourceUrl(value: string | null | undefined): string {
@@ -17,6 +18,7 @@ export type LiveDraft = {
   id: string; revision: number; name: string; uploaded: boolean; apk_sha256: string | null
   sources: WebSource[]; candidates: WebCandidate[]
   jobs: { job_id: string; request_id: string; revision: number; events: { state: string; at: string }[] }[]
+  external_imports?: { version: string; results: { state: string; source_id: string | null }[] }[]
 }
 const messages: Record<string, string> = {
   MODEL_NOT_CONFIGURED: '模型尚未配置。请打开项目设置，或手动添加候选。',
@@ -26,6 +28,7 @@ const messages: Record<string, string> = {
   UPLOAD_TOO_LARGE: 'APK 超过 150 MiB，请选择更小的文件。',
   DRAFT_NOT_FOUND: '本机材料记录不存在，请重新导入。',
   INPUT_VALIDATION_FAILED: '输入格式不符合要求，请检查来源、原句和字段。',
+  SOURCE_TYPE_CONFIRMATION_REQUIRED: '请先确认每份来源的类型，未知来源不能自动当作官网政策。',
 }
 export async function liveRequest<T>(path: string, signal: AbortSignal, body?: object | File): Promise<T> {
   const response = await fetch('/api/v1/web/' + path, {
@@ -47,3 +50,5 @@ export const fetchSource = (id: string, source: string, revision: number, signal
 export const extractSource = (id: string, source: string, revision: number, signal: AbortSignal) => liveRequest<LiveDraft>(`drafts/${id}/sources/${source}/extract`, signal, { revision })
 export const saveCandidates = (id: string, input: CandidateInput, signal: AbortSignal) => liveRequest<LiveDraft>(`drafts/${id}/candidates`, signal, input)
 export const startScan = (id: string, input: StartInput, signal: AbortSignal) => liveRequest<AnalysisJob>(`drafts/${id}/start`, signal, input)
+export const importExternal = (id: string, input: ExternalInput, signal: AbortSignal) => liveRequest<LiveDraft>(`drafts/${id}/import-external`, signal, input)
+export const discoverSources = (id: string, signal: AbortSignal) => liveRequest<{ sources: WebSource[]; limitations: string[] }>(`drafts/${id}/sources/discover`, signal, {})

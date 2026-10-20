@@ -31,7 +31,7 @@ const sdkEvidenceCode = ts.transpileModule(
 const sdkEvidenceExports = {}
 vm.runInNewContext(sdkEvidenceCode, { exports: sdkEvidenceExports })
 
-function mount(jobs = [], fixture = null) {
+function mount(jobs = [], fixture = null, overrides = {}) {
   const requests = []
   const report = id => fixture ?? ({ demo: false, job: { id }, result: { issues: [] } })
   const api = {
@@ -42,6 +42,10 @@ function mount(jobs = [], fixture = null) {
     loadJobReport: async id => { requests.push(['report', id]); return report(id) },
     cancelJob: async id => { requests.push(['cancel', id]); return { id, state: 'CANCELLED' } },
     submitReview: async id => { requests.push(['review', id]); return report(id) },
+    jobPath: id => `/api/v1/jobs/${encodeURIComponent(id)}`,
+    jobReportPath: id => `/api/v1/jobs/${encodeURIComponent(id)}/report`,
+    isNotFoundFor: (cause, path) => cause instanceof Error && cause.status === 404 && cause.path === path,
+    ...overrides,
   }
   let unmount
   const context = {
@@ -58,6 +62,13 @@ function mount(jobs = [], fixture = null) {
   vm.runInNewContext(javascript, context, { filename: file })
   const state = context.exports.default.setup({}, { expose() {} })
   return { state, requests, unmount: () => unmount() }
+}
+
+function http404(path) {
+  const failure = new Error('服务返回 404，请确认后端正在运行。')
+  failure.status = 404
+  failure.path = path
+  return failure
 }
 
 test('empty job list loads the labelled synthetic example', async () => {
@@ -103,6 +114,57 @@ test('cancellation of a running job named demo targets the real job', async () =
     assert.equal(state.activeJob.value.state, 'CANCELLED')
     assert.deepEqual(requests, [['job', 'demo'], ['cancel', 'demo']])
   } finally { unmount() }
+})
+
+test('a 404 from the job entity removes it and falls back to the synthetic example', async () => {
+  const { state } = mount([{ id: 'gone', state: 'SUCCEEDED' }], null, {
+    loadJob: async () => { throw http404('/api/v1/jobs/gone') },
+  })
+  await state.reload(true)
+  assert.equal(state.source.value.kind, 'demo')
+  assert.deepEqual(state.jobs.value, [])
+  assert.deepEqual(Array.from(state.removedJobIds.value), ['gone'])
+  assert.equal(state.error.value, '任务已删除，界面已移除该任务。')
+})
+
+test('a missing report keeps the job and its list entry visible', async () => {
+  const job = { id: 'kept', state: 'SUCCEEDED' }
+  const { state } = mount([job], null, {
+    loadJobReport: async () => { throw http404('/api/v1/jobs/kept/report') },
+  })
+  await state.reload(true)
+  assert.equal(state.source.value.kind, 'job')
+  assert.deepEqual(state.jobs.value.map(item => item.id), ['kept'])
+  assert.equal(state.activeJob.value.id, 'kept')
+  assert.equal(state.report.value, null)
+  assert.deepEqual(Array.from(state.removedJobIds.value), [])
+  assert.match(state.error.value, /报告不可用/)
+})
+
+for (const [label, override] of [
+  ['job list', { loadJobs: async () => { throw http404('/api/v1/jobs') } }],
+  ['taxonomy', { loadTaxonomy: async () => { throw http404('/api/v1/taxonomy') } }],
+]) {
+  test(`a 404 from the ${label} does not remove the selected job`, async () => {
+    const job = { id: 'kept', state: 'SUCCEEDED' }
+    const { state } = mount([job], null, override)
+    state.jobs.value = [job]
+    state.source.value = { kind: 'job', id: 'kept' }
+    await state.reload()
+    assert.deepEqual(state.jobs.value.map(item => item.id), ['kept'])
+    assert.equal(state.source.value.kind, 'job')
+    assert.deepEqual(Array.from(state.removedJobIds.value), [])
+    assert.match(state.error.value, /请求失败|服务返回 404/)
+  })
+}
+
+test('a removed job stays hidden when a stale list still contains it', async () => {
+  const job = { id: 'deleted', state: 'SUCCEEDED' }
+  const { state } = mount([job])
+  state.removedJobIds.value = ['deleted']
+  await state.reload()
+  assert.deepEqual(state.jobs.value, [])
+  assert.equal(state.source.value.kind, 'demo')
 })
 
 const templateCode = compileTemplate({

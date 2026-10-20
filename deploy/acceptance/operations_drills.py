@@ -167,8 +167,11 @@ def disk_full(lab, topology):
         assert upload_apk(topology, target, fixture.single_apk).status == 200
         digest = lab.python(
             "import os,hashlib;from pathlib import Path;"
-            f"p=Path(os.environ['PRIVACYTRACE_STORE_ROOT'])/'web'/{keep.draft_id!r}/'input.apk';"
-            "print(hashlib.sha256(p.read_bytes()).hexdigest())"
+            "from privacytrace.storage_factory import create_store;"
+            "from privacytrace.postgres_intake import PostgresWebIntake;"
+            "s=create_store(Path(os.environ['PRIVACYTRACE_STORE_ROOT']));i=PostgresWebIntake(s);"
+            f"p=i.directory({keep.draft_id!r})/'input.apk';"
+            "print(hashlib.sha256(p.read_bytes()).hexdigest());i.close();s.close()"
         )
         assert digest == fixture.single_sha256
         assert not cleanup_created_scopes()

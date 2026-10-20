@@ -297,7 +297,11 @@ def _build_synthetic_config():
                 "networks": ["api", "database", "control"],
                 "volumes": [
                     {"type": "volume", "source": "materials", "target": "/var/lib/privacytrace"},
-                    {"type": "volume", "source": "deletion_journal", "target": "/var/lib/privacytrace-deletions"}
+                    {
+                        "type": "volume",
+                        "source": "deletion_journal",
+                        "target": "/var/lib/privacytrace-deletions",
+                    }
                 ],
                 "secrets": [{"source": "runtime_database_url"}],
                 "tmpfs": ["/tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001"],
@@ -353,7 +357,11 @@ def _build_synthetic_config():
                 "networks": ["database"],
                 "volumes": [
                     {"type": "volume", "source": "materials", "target": "/var/lib/privacytrace"},
-                    {"type": "volume", "source": "deletion_journal", "target": "/var/lib/privacytrace-deletions"}
+                    {
+                        "type": "volume",
+                        "source": "deletion_journal",
+                        "target": "/var/lib/privacytrace-deletions",
+                    }
                 ],
                 "secrets": [{"source": "runtime_database_url"}, {"source": "broker_url"}],
                 "environment": {

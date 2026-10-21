@@ -55,3 +55,28 @@ export PATH="$PWD/$bindir:$PATH"
 或统一改用 `uv` 自带安装器（`python -m uv` 不可用时不引导）。
 
 - **处理状态**：**待修**（本次未提修复 PR；修复属共享入口文件 `scripts/check.sh`，按协作约定应由该文件 owner 串行整合，不在本票直接修改）
+
+## BUG-136-02 静态演示版引用包内不存在的字体文件（2026-10-21）
+
+- **编号**：BUG-136-02
+- **严重程度**：低（不影响功能与布局，视觉差异已在包内说明中声明）
+- **类别**：**交付包缺陷**（HTML 引用了未随包提供的资源）
+- **被测版本**：交付包 `SHA-256 6ba1fbde366fb6acc8ff3054313c7177f43141d08620cf228c9f82b1e9e46967`（源码 `ffadeb06`）
+- **关联场景**：交付包离线回放（R03 配套）
+- **前置条件**：以 `file://` 打开 `01_作品及成果文件/demo-web/demo.html`
+- **最短复现**：
+
+```text
+打开 01_作品及成果文件/demo-web/demo.html
+控制台：Failed to load resource: net::ERR_FILE_NOT_FOUND   ×2
+Network：fonts/NotoSansSC-Variable.woff2    -> 404
+         fonts/NotoSerifSC-Variable.woff2   -> 404
+```
+
+- **预期结果**：页面引用的字体文件随包提供，或 HTML 不引用包外资源
+- **实际结果**：`demo-web/` 下只有 `assets/`（`index-*.css`、`index-*.js`），**无 `fonts/` 目录**；两个字体请求 404，浏览器回退到系统字体
+- **脱敏证据**：`evidence/demo-offline-receipt.json` 的 `failed_requests` 中两条 `declared-font-fallback`
+- **影响**：功能、布局与可读性不受影响；`说明.txt` 末尾已声明字体回退，属已知差异。但"HTML 引用包内不存在的文件"是包完整性瑕疵，评审逐项核对资源时会看到 404
+- **复现次数**：3（三次离线验证结果一致）
+- **建议修复**：打包时把构建产物的 `fonts/` 一并复制进 `demo-web/`；或在 `demo.html` 中移除这两个 `@font-face` 引用。修复后应删除 `verify-demo-offline.cjs` 的 `declared-font-fallback` 白名单，使该规则收紧为零
+- **处理状态**：**待修**（属交付包打包流程，不在本票直接修改；已在本记录中如实登记）

@@ -96,10 +96,14 @@ const record = (name, pass, observed) => checks.push({ name, status: pass ? 'PAS
 
   page.on('requestfailed', r => {
     const u = r.url();
+    const protocol = protocolOf(u);
+    const relPath = relPathOf(u);
     failedRequests.push({
-      url: u,
-      protocol: protocolOf(u),
-      path: relPathOf(u),
+      // file: 协议的 URL 归一为 `file:<包内相对路径>`：保留协议、路径与错误码供核验，
+      // 不含本机盘符；http(s) 保留原始 URL，避免影响对外部请求的审计。
+      url: protocol === 'file:' ? `file:${relPath}` : u,
+      protocol,
+      path: relPath,
       error: (r.failure() || {}).errorText || 'UNKNOWN',
     });
   });

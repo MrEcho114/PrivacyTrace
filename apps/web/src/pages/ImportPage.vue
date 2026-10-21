@@ -9,7 +9,7 @@ import type { ExternalInput } from '../policyAssist'
 import { copy } from '../copy'
 import { emptySource, sourceProvenanceLabel, sourceStatusLabel, sourceTypes } from '../workflow'
 import type { PolicySource, Workflow } from '../workflow'
-const props = defineProps<{ state: Workflow; busy?: boolean; uploadedName?: string }>()
+const props = defineProps<{ state: Workflow; busy?: boolean; error?: string; uploadedName?: string }>()
 const emit = defineEmits<{ example: []; next: []; file: [File]; dirty: []; import: [ExternalInput] }>()
 const file = ref<File | null>(null)
 const fileError = ref('')
@@ -73,7 +73,7 @@ function onTextInput(source: PolicySource) {
 <template>
   <div>
     <div class="page-heading"><h1 id="page-title" tabindex="-1">{{ copy.importTitle }}</h1><p>{{ copy.importDescription }}</p></div>
-    <div class="import-grid" :inert="busy || undefined" @input="!state.example && emit('dirty')" @change="!state.example && emit('dirty')">
+    <div class="import-grid" :inert="busy || undefined" :aria-busy="busy || undefined" @input="!state.example && emit('dirty')" @change="!state.example && emit('dirty')">
       <section class="material-panel apk-panel"><div class="panel-heading"><h2>APK 文件</h2><StatusTag>本机</StatusTag></div>
         <div class="file-drop" :class="{ 'drag-active': dropActive }" @dragover.prevent="dropActive = true" @dragleave="dropActive = false" @drop.prevent="drop">
           <span class="file-glyph" aria-hidden="true"><UiIcon name="file" /><span>APK</span></span>
@@ -81,10 +81,10 @@ function onTextInput(source: PolicySource) {
           <span v-if="file" class="field-help">{{ (file.size / 1024 / 1024).toFixed(2) }} MB · 尚未上传</span>
           <span v-else-if="state.example" class="field-help">固定示例名称 · 无 APK 文件</span>
           <span v-else class="field-help">拖放到这里，或选择文件</span>
-          <input ref="filePicker" class="sr-only" type="file" accept=".apk" aria-label="选择 APK 文件" @change="acceptFile(($event.target as HTMLInputElement).files?.[0])" />
+          <input ref="filePicker" class="sr-only" type="file" accept=".apk" aria-label="选择 APK 文件" :aria-invalid="fileError ? true : undefined" :aria-describedby="fileError ? 'apk-file-error' : undefined" @change="acceptFile(($event.target as HTMLInputElement).files?.[0])" />
           <UiButton @click="filePicker?.click()">选择 APK</UiButton>
         </div>
-        <p v-if="fileError" class="error-text" role="alert">{{ fileError }}</p><p class="field-help">{{ state.example ? copy.apkHelp : "继续后会上传到本机服务，仅在受限 Docker 中解析。上限 150 MiB。本机材料保留以便恢复和重试。" }}</p>
+        <p v-if="fileError" id="apk-file-error" class="error-text" role="alert">{{ fileError }}</p><p class="field-help">{{ state.example ? copy.apkHelp : "继续后会上传到本机服务，仅在受限 Docker 中解析。上限 150 MiB。本机材料保留以便恢复和重试。" }}</p>
         <div class="example-entry"><h3>先看一次对照</h3><p class="field-help">{{ copy.demoHelp }}</p><UiButton @click="emit('example')">{{ copy.tryDemo }}<UiIcon name="arrow-right" /></UiButton></div>
       </section>
       <section class="material-panel policy-panel"><div class="panel-heading"><h2>政策来源</h2><span class="field-help">{{ state.sources.length }} 份来源</span></div>
@@ -105,6 +105,10 @@ function onTextInput(source: PolicySource) {
         <PolicyAssist v-if="!state.example" :busy="busy" :source-count="state.sources.length" @import="emit('import', $event)" />
       </section>
     </div>
+    <p v-if="error" class="error-text" role="alert">{{ error }}</p>
     <div class="flow-footer"><p>{{ state.example ? copy.storageHelp : "继续后会在本机保存输入快照，获取缺少正文的网页，并请求已配置模型提供候选。失败来源会保留。" }}</p><UiButton variant="primary" :disabled="!canContinue || busy" :busy="busy" @click="emit('next')">{{ state.example ? copy.nextCandidates : "获取政策并检查候选" }}<UiIcon name="arrow-right" /></UiButton></div>
   </div>
 </template>
+<style scoped>
+.file-drop:focus-within { outline: 2px solid var(--navy); outline-offset: 3px; }
+</style>

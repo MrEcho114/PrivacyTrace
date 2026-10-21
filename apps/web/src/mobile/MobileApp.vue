@@ -21,8 +21,9 @@ onBeforeUnmount(() => { void flow.stop() })
 </script>
 <template>
   <div class="mobile-workspace">
+    <a class="skip-link" href="#workspace-content">跳到内容</a>
     <header class="workspace-bar"><span class="workspace-brand"><span aria-hidden="true" class="brand-mark">P</span>PrivacyTrace</span><span class="workspace-purpose">静态证据与政策对照</span></header>
-    <main id="workspace-content" class="mobile-content">
+    <main id="workspace-content" class="mobile-content" tabindex="-1">
       <div class="page-heading"><h1 id="page-title" tabindex="-1">{{ state.step === 'progress' ? '分析进度' : state.step === 'report' ? '对照报告' : '应用与政策' }}</h1><p>选择应用后，在系统窗口确认目标服务和上传范围。静态线索不证明实际采集。</p></div>
       <section class="material-panel">
         <div class="panel-heading"><h2>{{ context ? '当前分析材料' : '选择要对照的应用' }}</h2><span v-if="draft" class="field-help">材料版本 {{ draft.revision }}</span></div>
@@ -30,7 +31,7 @@ onBeforeUnmount(() => { void flow.stop() })
         <p v-else class="field-help">仅上传主动选择的应用及其完整安装包集合。服务端长期保留至主动删除。</p>
         <div class="source-actions"><UiButton variant="primary" :disabled="busy" @click="flow.select()">选择应用并上传</UiButton><UiButton :disabled="busy" @click="flow.select(true)">恢复当前实例材料</UiButton><UiButton v-if="context" :disabled="busy" variant="quiet" @click="flow.remove">删除远端材料</UiButton></div>
       </section>
-      <p v-if="busy" class="notice" role="status">正在处理当前请求。<UiButton variant="quiet" @click="flow.stop">停止本次请求</UiButton></p>
+      <div v-if="busy" class="notice busy-notice"><span role="status">正在处理当前请求。</span><UiButton variant="quiet" @click="flow.stop">停止本次请求</UiButton></div>
       <p v-if="error" class="error-text" role="alert">{{ error }}</p><p v-if="notice" class="notice" role="status">{{ notice }}</p>
       <section v-if="context && state.step === 'import'" class="material-panel">
         <div class="panel-heading"><h2>政策来源</h2><UiButton :disabled="busy" variant="quiet" @click="flow.refresh">重新读取材料</UiButton></div>
@@ -48,8 +49,8 @@ onBeforeUnmount(() => { void flow.stop() })
         <div class="flow-footer"><UiButton variant="primary" :disabled="busy" @click="flow.prepare">自动准备政策并继续</UiButton><span class="field-help">不强制配置个人模型或逐条检查候选。</span></div>
       </section>
       <CandidatePage v-if="context && state.step === 'candidates'" :state="state" :busy="busy" :type-labels="labels" @back="state.step = 'import'" @next="flow.begin" @persist-candidates="flow.save" />
-      <section v-if="context && state.step === 'progress'" class="material-panel">
-        <h2>{{ job ? stages[job.state] : '任务状态暂不可用' }}</h2><p class="hash">{{ job?.id }}</p><p v-if="job?.error" class="error-text">本次分析未完成，可刷新状态或重试为新分析。</p>
+      <section v-if="context && state.step === 'progress'" class="material-panel" :aria-busy="busy || undefined">
+        <div role="status"><h2>{{ job ? stages[job.state] : '任务状态暂不可用' }}</h2></div><p class="hash">{{ job?.id }}</p><p v-if="job?.error" class="error-text" role="alert">本次分析未完成，可刷新状态或重试为新分析。</p>
         <ol class="stage-list"><li v-for="event in draft?.jobs.find(r => r.job_id === job?.id)?.events" :key="event.at + event.state"><strong>{{ stages[event.state] ?? event.state }}</strong><span>{{ event.at }}</span></li></ol>
         <div class="source-actions"><UiButton :disabled="busy" @click="flow.poll">刷新进度</UiButton><UiButton v-if="job && !terminal" :disabled="busy" @click="flow.control('cancel-job')">取消分析</UiButton><UiButton v-if="terminal && job?.state !== 'SUCCEEDED'" :disabled="busy" @click="flow.control('retry-job')">重试为新的分析</UiButton><UiButton v-if="job?.state === 'SUCCEEDED'" variant="primary" :disabled="busy" @click="flow.openReport">查看报告</UiButton></div>
       </section>
@@ -59,6 +60,7 @@ onBeforeUnmount(() => { void flow.stop() })
 </template>
 <style scoped>
 .mobile-content { width: min(100%, 72rem); margin: auto; padding: 1.5rem; box-sizing: border-box; }
+.busy-notice { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; }
 .mobile-field { display: grid; gap: .4rem; margin: 1rem 0; }
 .policy-reading { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 24rem; overflow: auto; }
 .hash { overflow-wrap: anywhere; }

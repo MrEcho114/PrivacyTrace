@@ -15,6 +15,22 @@ const activeJob = ref<AnalysisJob | null>(null)
 const removedJobIds = ref<string[]>([])
 const confirmDelete = ref(false)
 const jobMessage = ref('')
+// Blocking loads replace the visible source; in-place refreshes keep the report,
+// selection and reading position while polling or when the user asks to refresh.
+const loading = ref(false)
+const refreshing = ref(false)
+let refreshToken = 0
+const jobAnnouncement = ref('')
+const jobStateEl = ref<HTMLElement | null>(null)
+const jobMessageEl = ref<HTMLElement | null>(null)
+const errorEl = ref<HTMLElement | null>(null)
+const cancelJobEl = ref<HTMLButtonElement | null>(null)
+const retryJobEl = ref<HTMLButtonElement | null>(null)
+const deleteTriggerEl = ref<HTMLButtonElement | null>(null)
+const confirmDeleteEl = ref<HTMLButtonElement | null>(null)
+const evidenceTrigger = ref<HTMLElement | null>(null)
+const reviewSubmitEl = ref<HTMLButtonElement | null>(null)
+let lastAnnouncedJob = ''
 const source = ref<ReportSource>({ kind: 'demo' })
 const selectedSourceKey = computed({
   get: () => serializeSource(source.value),
@@ -23,7 +39,8 @@ const selectedSourceKey = computed({
   },
 })
 const selected = ref<PrivacyIssue | null>(null)
-function selectIssue(issue: PrivacyIssue) {
+function selectIssue(issue: PrivacyIssue, event: Event) {
+  evidenceTrigger.value = event.currentTarget as HTMLElement
   selected.value = issue
   void nextTick(() => {
     const panel = document.getElementById('evidence-panel')
@@ -31,8 +48,31 @@ function selectIssue(issue: PrivacyIssue) {
     panel?.focus({ preventScroll: true })
   })
 }
-const loading = ref(false)
+function closeEvidence() {
+  const trigger = evidenceTrigger.value
+  selected.value = null
+  void nextTick(() => {
+    const target = trigger?.isConnected ? trigger : document.getElementById('page-title')
+    target?.focus()
+  })
+}
 const error = ref('')
+const refreshEl = ref<HTMLButtonElement | null>(null)
+watch(error, (value, oldValue) => {
+  if (typeof document === 'undefined') return
+  if (value) {
+    void nextTick(() => {
+      if (document.activeElement === document.body) errorEl.value?.focus({ preventScroll: true })
+    })
+  } else if (oldValue) {
+    void nextTick(() => {
+      if (document.activeElement !== document.body) return
+      const refresh = refreshEl.value
+      const target = refresh?.isConnected && !refresh.disabled ? refresh : document.getElementById('page-title')
+      target?.focus({ preventScroll: true })
+    })
+  }
+})
 const reviewMessage = ref('')
 const actor = ref('')
 const reason = ref('')
@@ -71,8 +111,9 @@ const sdkEvidence = computed(() => getSdkEvidence(realReport.value?.evidence ?? 
 const sdkPage = ref(0)
 const sdkPageTotal = computed(() => sdkPageCount(sdkEvidence.value.length))
 const pagedSdkEvidence = computed(() => sdkPageSlice(sdkEvidence.value, sdkPage.value))
-// Only a report switch resets the page; changing the selected issue must not move it.
-watch(report, () => {
+// Only a report switch resets the page; an in-place refresh and changing the
+// selected issue must not move it.
+watch(() => report.value?.job?.id, () => {
   sdkPage.value = 0
 })
 const controlledReport = computed(() => (realReport.value?.job ?? activeJob.value)?.input_mode === 'CONTROLLED_APK')
@@ -88,7 +129,7 @@ const candidateClaims = computed(() => {
   return realReport.value.policy_claims.filter(claim => claim.data_type === selected.value?.data_type)
 })
 const candidatePageCount = computed(() => Math.ceil(candidateClaims.value.length / CANDIDATE_PAGE_SIZE))
-watch([selected, report], () => {
+watch([() => selected.value?.id, () => report.value?.job?.id], () => {
   candidatePage.value = 0
   openedPolicyId.value = null
   provenanceOpen.value = false
@@ -112,7 +153,10 @@ const openPolicy = (id: string) => {
   provenanceOpen.value = true
   openedPolicyId.value = id
   void nextTick(() => {
-    if (typeof document !== 'undefined') document.getElementById('policy-' + id)?.scrollIntoView()
+    if (typeof document === 'undefined') return
+    const target = document.getElementById('policy-' + id)
+    target?.scrollIntoView()
+    target?.focus({ preventScroll: true })
   })
 }
 const provenanceToggle = (event: Event) => {
@@ -270,6 +314,9 @@ const parsedJobError = computed<ParsedJobError | null>(() => {
   }
 })
 
+function focusedOn(element: HTMLElement | null | undefined): boolean {
+  return typeof document !== 'undefined' && !!element && document.activeElement === element
+}
 function beginRequest() {
   controller?.abort()
   clearTimeout(timer)
@@ -279,17 +326,71 @@ function beginRequest() {
 function failure(cause: unknown) {
   return cause instanceof Error && cause.name === 'AbortError' ? '请求已取消，可以重试。' : cause instanceof Error ? cause.message : '请求失败，请重试。'
 }
-async function reload(initial = false) {
+function focusIfLost(element: Element | null | undefined, fallback: HTMLElement | null | undefined) {
+  if (typeof document === 'undefined' || !element) return
+  void nextTick(() => {
+    if (element.isConnected || document.activeElement !== document.body) return
+    const target = fallback?.isConnected ? fallback : document.getElementById('page-title')
+    target?.focus({ preventScroll: true })
+  })
+}
+function applyJob(job: AnalysisJob) {
+  const active = typeof document !== 'undefined' ? document.activeElement : null
+  const key = `${job.id}:${job.state}`
+  const changed = !!lastAnnouncedJob && lastAnnouncedJob !== key && lastAnnouncedJob.startsWith(job.id + ':')
+  activeJob.value = job
+  if (changed) jobAnnouncement.value = `任务状态更新：${jobLabels[job.state]}（${job.state}）`
+  lastAnnouncedJob = key
+  focusIfLost(active, jobStateEl.value)
+}
+function applyReport(next: DemoReport | Report, preserveSelection: boolean) {
+  const previousIssueId = preserveSelection ? selected.value?.id : null
+  const panelHadFocus = typeof document !== 'undefined' && !!document.getElementById('evidence-panel')?.contains(document.activeElement)
+  const active = typeof document !== 'undefined' ? document.activeElement : null
+  report.value = next
+  selected.value = previousIssueId ? next.result.issues.find(item => item.id === previousIssueId) ?? null : null
+  if (!selected.value && panelHadFocus) {
+    void nextTick(() => {
+      const target = evidenceTrigger.value?.isConnected ? evidenceTrigger.value : document.getElementById('page-title')
+      target?.focus({ preventScroll: true })
+    })
+  } else if (active && panelHadFocus) {
+    void nextTick(() => {
+      if (active.isConnected || document.activeElement !== document.body) return
+      document.getElementById('evidence-panel')?.focus({ preventScroll: true })
+    })
+  }
+}
+function schedulePoll(delay = 1500) {
+  clearTimeout(timer)
+  timer = setTimeout(() => { void loadData(false, 'refresh') }, delay)
+}
+// "replace" is for a source switch or first paint: the old source's report must
+// not stay visible under a new source label. "refresh" updates the current
+// source in place so polling never unmounts the job card, closes evidence, or
+// announces the temporary loading state on every tick.
+async function loadData(initial = false, mode: 'replace' | 'refresh' = 'replace') {
   if (props.snapshot) return
-  const { current, signal } = beginRequest()
+  const replace = mode === 'replace'
+  let token = 0
   if (source.value.kind === 'job' && removedJobIds.value.includes(source.value.id)) source.value = { kind: 'demo' }
-  loading.value = true
-  error.value = ''
-  reviewMessage.value = ''
-  report.value = null
-  selected.value = null
-  activeJob.value = null
-  confirmDelete.value = false
+  if (replace) {
+    refreshToken += 1
+    refreshing.value = false
+    loading.value = true
+    error.value = ''
+    reviewMessage.value = ''
+    report.value = null
+    selected.value = null
+    activeJob.value = null
+    confirmDelete.value = false
+    jobAnnouncement.value = ''
+    lastAnnouncedJob = ''
+  } else {
+    token = ++refreshToken
+    refreshing.value = true
+  }
+  const { current, signal } = beginRequest()
   try {
     const [nextJobs, nextTaxonomy] = await Promise.all([loadJobs(signal), loadTaxonomy(signal)])
     if (current !== requestId) return
@@ -299,18 +400,20 @@ async function reload(initial = false) {
     else if (initial && jobs.value.length) source.value = { kind: 'job', id: jobs.value[0]!.id }
     if (source.value.kind === 'demo') {
       const nextReport = await loadReport(signal)
-      if (current === requestId) report.value = nextReport
+      if (current === requestId) applyReport(nextReport, !replace)
     }
     else {
       const job = await loadJob(source.value.id, signal)
       if (current !== requestId) return
-      activeJob.value = job
+      applyJob(job)
       if (job.state === 'SUCCEEDED') {
         const nextReport = await loadJobReport(job.id, signal)
-        if (current === requestId) report.value = nextReport
+        if (current === requestId) applyReport(nextReport, !replace)
       }
-      else if (!terminal(job)) timer = setTimeout(() => { void reload() }, 1500)
+      else if (!terminal(job)) schedulePoll()
+      else { report.value = null; selected.value = null }
     }
+    error.value = ''
   } catch (cause) {
     if (current !== requestId) return
     const wantedId = source.value.kind === 'job' ? source.value.id : ''
@@ -320,24 +423,58 @@ async function reload(initial = false) {
       removedJobIds.value = [...removedJobIds.value, wantedId]
       jobs.value = jobs.value.filter(job => job.id !== wantedId)
       source.value = { kind: 'demo' }
+      activeJob.value = null
+      report.value = null
+      selected.value = null
+      lastAnnouncedJob = ''
       error.value = '任务已删除，界面已移除该任务。'
+      // Load the fallback example under the same request, without clearing the
+      // explanation of why the selected job disappeared.
+      try {
+        const fallback = await loadReport(signal)
+        if (current !== requestId) return
+        report.value = fallback; selected.value = null
+        error.value = '任务已删除，界面已移除该任务。'
+      } catch { /* keep the removal message; the user can retry */ }
     } else if (wantedId && isNotFoundFor(cause, jobReportPath(wantedId))) {
       error.value = '任务仍存在，但报告不可用（可能尚未生成或已被移除），可稍后重试。'
     } else {
       error.value = failure(cause)
+      if (!replace && activeJob.value && !terminal(activeJob.value)) schedulePoll(3000)
     }
   } finally {
     if (current === requestId) loading.value = false
+    if (!replace && token === refreshToken) refreshing.value = false
   }
 }
+function refreshData() { if (refreshing.value) return; void loadData(false, 'refresh') }
+function retryLoad() {
+  const trigger = typeof document !== 'undefined' ? document.activeElement as HTMLElement | null : null
+  const request = report.value || activeJob.value ? loadData(false, 'refresh') : loadData(false, 'replace')
+  void request.finally(() => {
+    if (typeof document === 'undefined') return
+    if (!trigger || trigger.isConnected || document.activeElement !== document.body) return
+    const refresh = refreshEl.value
+    const target = refresh?.isConnected && !refresh.disabled ? refresh : document.getElementById('page-title')
+    target?.focus({ preventScroll: true })
+  })
+}
+function switchSource() { void loadData(false, 'replace') }
+// Kept as the explicit "replace the source" entry used by the unit tests and
+// by callers that must not preserve the previous report.
+function reload(initial = false) { return loadData(initial, 'replace') }
+
 async function cancel() {
   if (!activeJob.value || terminal(activeJob.value)) return
+  const restoreFocus = focusedOn(cancelJobEl.value)
   const id = activeJob.value.id
   const { current, signal } = beginRequest()
   loading.value = true
   try {
     const job = await cancelJob(id, signal)
-    if (current === requestId) { activeJob.value = job; report.value = null }
+    if (current !== requestId) return
+    applyJob(job); report.value = null
+    if (restoreFocus) void nextTick(() => jobStateEl.value?.focus({ preventScroll: true }))
   } catch (cause) {
     if (current === requestId) {
       const msg = cause instanceof Error ? cause.message : String(cause)
@@ -348,14 +485,14 @@ async function cancel() {
         try {
           const latest = await loadJob(id, signal)
           if (current !== requestId) return
-          activeJob.value = latest
+          applyJob(latest)
           if (latest.state === 'SUCCEEDED') {
             report.value = await loadJobReport(latest.id, signal)
             if (current === requestId) error.value = ''
           } else if (!terminal(latest)) {
             // Still running after a rejected cancel: resume polling.
             error.value = ''
-            timer = setTimeout(() => { void reload() }, 1500)
+            schedulePoll()
           } else {
             report.value = null
           }
@@ -365,7 +502,13 @@ async function cancel() {
       }
     }
   } finally {
-    if (current === requestId) loading.value = false
+    if (current === requestId) {
+      loading.value = false
+      if (restoreFocus) void nextTick(() => {
+        if (cancelJobEl.value) cancelJobEl.value.focus({ preventScroll: true })
+        else jobStateEl.value?.focus({ preventScroll: true })
+      })
+    }
   }
 }
 // A retry is a NEW analysis (issue story 12): the returned job has its own id and
@@ -373,6 +516,7 @@ async function cancel() {
 async function retryTerminal() {
   const job = activeJob.value
   if (!job) return
+  const restoreFocus = focusedOn(retryJobEl.value)
   const { current, signal } = beginRequest()
   loading.value = true
   error.value = ''
@@ -383,14 +527,21 @@ async function retryTerminal() {
     if (current !== requestId) return
     jobMessage.value = `已创建新的分析任务 ${fresh.id}，这是新的分析，不是原任务的重新打开；原任务 ${job.id} 的记录仍保留，可在报告来源中查看。`
     source.value = { kind: 'job', id: fresh.id }
-    activeJob.value = fresh
+    applyJob(fresh)
     report.value = null
     selected.value = null
-    void reload()
+    void loadData(false, 'refresh')
+    if (restoreFocus) void nextTick(() => jobStateEl.value?.focus({ preventScroll: true }))
   } catch (cause) {
     if (current === requestId) error.value = failure(cause)
   } finally {
-    if (current === requestId) loading.value = false
+    if (current === requestId) {
+      loading.value = false
+      if (restoreFocus) void nextTick(() => {
+        if (retryJobEl.value) retryJobEl.value.focus({ preventScroll: true })
+        else jobStateEl.value?.focus({ preventScroll: true })
+      })
+    }
   }
 }
 function forgetJob(id: string) {
@@ -401,6 +552,8 @@ function forgetJob(id: string) {
   activeJob.value = null
   report.value = null
   selected.value = null
+  lastAnnouncedJob = ''
+  jobAnnouncement.value = ''
   if (source.value.kind === 'job' && source.value.id === id) {
     const next = jobs.value[0]
     source.value = next ? { kind: 'job', id: next.id } : { kind: 'demo' }
@@ -419,7 +572,8 @@ async function removeJob() {
     if (current !== requestId) return
     forgetJob(id)
     jobMessage.value = `任务 ${result.job_id} 已从本机记录中删除，原始材料与分析结果不可恢复。`
-    void reload()
+    void nextTick(() => jobMessageEl.value?.focus({ preventScroll: true }))
+    void loadData(false, 'replace')
   } catch (cause) {
     if (current !== requestId) return
     const message = cause instanceof Error ? cause.message : ''
@@ -427,16 +581,30 @@ async function removeJob() {
       // Already deleted (double click or another tab): finish the local removal.
       forgetJob(id)
       jobMessage.value = '任务已删除。'
-      void reload()
+      void nextTick(() => jobMessageEl.value?.focus({ preventScroll: true }))
+      void loadData(false, 'replace')
       return
     }
     error.value = failure(cause)
   } finally {
-    if (current === requestId) loading.value = false
+    if (current === requestId) {
+      loading.value = false
+      if (confirmDelete.value) void nextTick(() => confirmDeleteEl.value?.focus({ preventScroll: true }))
+    }
   }
+}
+function askDelete() {
+  confirmDelete.value = true
+  void nextTick(() => confirmDeleteEl.value?.focus({ preventScroll: true }))
+}
+function cancelDelete() {
+  if (!confirmDelete.value) return
+  confirmDelete.value = false
+  void nextTick(() => deleteTriggerEl.value?.focus({ preventScroll: true }))
 }
 async function review() {
   if (!realReport.value) return
+  const restoreFocus = focusedOn(reviewSubmitEl.value)
   const id = realReport.value.job.id
   const { current, signal } = beginRequest()
   loading.value = true
@@ -449,17 +617,21 @@ async function review() {
       note: note.value.trim(),
     }, signal)
     if (current !== requestId) return
-    report.value = next
-    selected.value = next.result.issues.find(item => item.id === selected.value?.id) ?? null
+    applyReport(next, true)
     reviewMessage.value = '备注已保存，规则已重新计算。'
   } catch (cause) { if (current === requestId) error.value = failure(cause) }
-  finally { if (current === requestId) loading.value = false }
+  finally {
+    if (current === requestId) {
+      loading.value = false
+      if (restoreFocus) void nextTick(() => reviewSubmitEl.value?.focus({ preventScroll: true }))
+    }
+  }
 }
 onMounted(() => {
   if (props.snapshot) {
     report.value = props.snapshot.report; taxonomy.value = props.snapshot.taxonomy
     source.value = { kind: 'job', id: props.snapshot.report.job.id }
-  } else void reload(true)
+  } else void loadData(true, 'replace')
 })
 onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
 </script>
@@ -470,11 +642,11 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
     <main>
       <section class="intro">
         <div><p class="eyebrow">APP 隐私体检 · 本地报告</p><h1>看懂隐私，从证据开始。</h1><p class="lead">查看程序中的潜在隐私访问，与不同来源的政策逐一对照。</p></div>
-        <button v-if="!snapshot" class="primary" :disabled="loading" @click="reload()">刷新任务与报告</button>
+        <button v-if="!snapshot" ref="refreshEl" class="primary" :disabled="loading" :aria-busy="refreshing || undefined" @click="refreshData">刷新任务与报告</button>
       </section>
       <section v-if="!snapshot" class="source-picker">
         <label for="report-source">报告来源</label>
-        <select id="report-source" v-model="selectedSourceKey" @change="reload()">
+        <select id="report-source" v-model="selectedSourceKey" @change="switchSource">
           <option v-if="!offlineReplay" value="demo:synthetic">SYNTHETIC · 人工构造示例</option>
           <option v-for="job in jobs" :key="job.id" :value="`job:${job.id}`">
             {{ sourceOptionPrefix(job.source_origin) }}{{ job.package_name || job.sample_id }} · {{ job.id }} · {{ jobLabels[job.state] }}
@@ -493,9 +665,10 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         <p v-if="offlineReplay">回放包生成时点：{{ realReport.tools.offline_package_built_at }}。回放只读，不执行 APK 分析。</p>
         <p v-if="offlineReplay"><a href="/comparison.html" target="_blank" rel="noopener">查看六场景三方案比较与失败记录</a></p>
       </section>
-      <section v-if="activeJob" class="job-state" role="status">
+      <p id="job-announcement" class="sr-only" role="status">{{ jobAnnouncement }}</p>
+      <section v-if="activeJob" ref="jobStateEl" class="job-state" tabindex="-1" :aria-busy="(refreshing || loading) || undefined">
         <strong>{{ jobLabels[activeJob.state] }}</strong> · {{ activeJob.id }} · {{ activeJob.state }}
-        <button v-if="!terminal(activeJob)" :disabled="loading" @click="cancel">取消任务</button>
+        <button v-if="!terminal(activeJob)" ref="cancelJobEl" :disabled="loading" @click="cancel">取消任务</button>
         <div v-if="parsedJobError" class="job-error-card" role="alert">
           <span class="error-code">错误码：{{ parsedJobError.code }}</span>
           <p class="error-msg">{{ parsedJobError.message }}</p>
@@ -504,19 +677,19 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         <p v-if="activeJob.state === 'FAILED' || activeJob.state === 'CANCELLED'">本任务没有可展示的成功报告。可以重试为一次新的分析，或删除这条本机记录。</p>
         <!-- Destructive actions stay terminal-only: deleting a running job would leave a tombstone
              while the worker may still be writing. Running jobs keep the cancel button above. -->
-        <div v-if="terminal(activeJob)" class="job-terminal-actions">
-          <button v-if="activeJob.state === 'FAILED' || activeJob.state === 'CANCELLED'" data-testid="retry-job" :disabled="loading" @click="retryTerminal">重试为新的分析</button>
-          <button v-if="!confirmDelete" data-testid="delete-job" :disabled="loading" @click="confirmDelete = true">删除任务</button>
-          <template v-else>
-            <button data-testid="delete-confirm" :disabled="loading" @click="removeJob">确认删除</button>
-            <button :disabled="loading" @click="confirmDelete = false">取消删除</button>
-          </template>
+        <div v-if="terminal(activeJob)" class="job-terminal-actions" @keydown.esc="cancelDelete">
+          <button v-if="activeJob.state === 'FAILED' || activeJob.state === 'CANCELLED'" ref="retryJobEl" data-testid="retry-job" :disabled="loading" @click="retryTerminal">重试为新的分析</button>
+          <button v-if="!confirmDelete" ref="deleteTriggerEl" data-testid="delete-job" :disabled="loading" @click="askDelete">删除任务</button>
+          <span v-else class="job-delete-confirm" role="group" aria-label="删除任务确认" aria-describedby="job-delete-warning">
+            <button ref="confirmDeleteEl" data-testid="delete-confirm" :disabled="loading" @click="removeJob">确认删除</button>
+            <button :disabled="loading" @click="cancelDelete">取消删除</button>
+          </span>
         </div>
-        <p v-if="confirmDelete && terminal(activeJob)" class="job-delete-warning" role="alert">删除会一并移除本机保存的这条任务记录与报告，事后不可恢复，也不会保留原任务的分析结果。</p>
+        <p v-if="confirmDelete && terminal(activeJob)" id="job-delete-warning" class="job-delete-warning">删除会一并移除本机保存的这条任务记录与报告，事后不可恢复，也不会保留原任务的分析结果。</p>
       </section>
-      <p v-if="jobMessage" class="notice" role="status">{{ jobMessage }}</p>
-      <section v-if="loading && !report" class="state" role="status">正在加载… <button @click="controller?.abort()">停止本次请求</button></section>
-      <section v-if="error" class="state error" role="alert">{{ error }} <button @click="reload()">重试</button></section>
+      <p v-if="jobMessage" id="job-message" ref="jobMessageEl" class="notice" role="status" tabindex="-1">{{ jobMessage }}</p>
+      <section v-if="loading && !report && !activeJob" class="state"><span role="status">正在加载…</span> <button @click="controller?.abort()">停止本次请求</button></section>
+      <section v-if="error" ref="errorEl" class="state error" tabindex="-1"><span role="alert">{{ error }}</span> <button @click="retryLoad">重试</button></section>
       <template v-if="report">
         <section class="sample-card">
           <div class="app-icon">PT</div>
@@ -546,11 +719,11 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           <!-- Narrow screens stack each row as a card; the explicit table roles keep the grid
                semantics that display:flex/block would otherwise drop. -->
           <div class="table-scroll"><table class="report-table" role="table"><thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">隐私数据</th><th scope="col" role="columnheader">政策来源</th><th scope="col" role="columnheader">当前结论</th><th scope="col" role="columnheader">依据</th></tr></thead><tbody role="rowgroup">
-            <tr v-for="issue in report.result.issues" :key="issue.id" role="row"><td class="type-cell" role="cell" data-label="隐私数据">{{ label(issue.data_type) }}</td><td role="cell" data-label="政策来源">{{ documentLabels(issue.policy_document_ids) }}</td><td role="cell" data-label="当前结论"><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></td><td role="cell" data-label="依据"><button class="evidence-button" :aria-expanded="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue)">查看 {{ issue.evidence_ids.length }} 条证据 →</button></td></tr>
+            <tr v-for="issue in report.result.issues" :key="issue.id" role="row"><td class="type-cell" role="cell" data-label="隐私数据">{{ label(issue.data_type) }}</td><td role="cell" data-label="政策来源">{{ documentLabels(issue.policy_document_ids) }}</td><td role="cell" data-label="当前结论"><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></td><td role="cell" data-label="依据"><button class="evidence-button" :aria-expanded="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue, $event)">查看 {{ issue.evidence_ids.length }} 条证据 →</button></td></tr>
           </tbody></table></div><p v-if="!report.result.issues.length" class="subtle">未产生对照项不等于没有隐私访问，请查看权限与扫描覆盖。</p>
         </section>
-        <section v-if="selected" id="evidence-panel" class="evidence-panel" tabindex="-1" aria-live="polite">
-          <div class="section-heading"><h2>{{ label(selected.data_type) }} · {{ statusLabels[selected.status] }}</h2><button @click="selected = null">收起</button></div>
+        <section v-if="selected" id="evidence-panel" class="evidence-panel" tabindex="-1" aria-labelledby="evidence-title">
+          <div class="section-heading"><h2 id="evidence-title">{{ label(selected.data_type) }} · {{ statusLabels[selected.status] }}</h2><button @click="closeEvidence">收起</button></div>
           <p class="explanation">{{ selected.explanation }}</p>
           <p v-if="selected.status === 'NOT_DECLARED'" class="demo-note">“未找到声明”依赖适用版本、完整正文、提取成功、全文复核和附件齐全。下面保留完整政策及这些状态；缺少其中任一项时不能据此断言违规。</p>
           <div class="evidence-grid"><article v-for="item in selectedEvidence" :key="item.id" class="evidence-card">
@@ -590,7 +763,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
             </article></div>
           </section>
         </section>
-        <section v-if="realReport" id="sdk-panel" class="report-section" aria-live="polite">
+        <section v-if="realReport" id="sdk-panel" class="report-section">
           <div class="section-heading"><h2>第三方 SDK 归属</h2><span class="subtle">仅按公开包前缀提供静态归属参考，不代表实际收集或外传</span></div>
           <p class="subtle">归属命中只表示类路径落在某个已公开的 SDK 包范围内；SDK 的静态存在不等于实际收集或外发，也不能替代宿主 App 自身的声明，归属结论不参与政策一致性判定。</p>
           <template v-if="sdkEvidence.length">
@@ -615,7 +788,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
             <p class="hash">DEX {{ (realReport.sample.dex_entries ?? []).join('、') || '无' }}</p>
             <details><summary>Android 权限（权限不等于已访问）</summary><ul><li v-for="permission in (realReport.sample.permissions ?? [])" :key="permission">{{ permission }}</li></ul></details>
           </template>
-          <article v-for="doc in report.policy_documents" :key="doc.id" :id="'policy-' + doc.id">
+          <article v-for="doc in report.policy_documents" :key="doc.id" :id="'policy-' + doc.id" class="policy-document" tabindex="-1">
             <strong>{{ doc.title }}</strong>
             <p>{{ sourceLabels[doc.source_type] }} · {{ doc.version }} · {{ doc.captured_at }}</p>
             <p class="hash">SHA-256 {{ doc.artifact.sha256 }}</p>
@@ -633,7 +806,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
             <label>复核人<input v-model="actor" required maxlength="100" /></label>
             <label>原因<input v-model="reason" required maxlength="1000" /></label>
             <label>备注（可选）<textarea v-model="note" maxlength="10000" rows="4"></textarea></label>
-            <button class="primary" :disabled="loading || !actor.trim() || !reason.trim()">保存备注并重新计算</button>
+            <button ref="reviewSubmitEl" class="primary" :disabled="loading || !actor.trim() || !reason.trim()">保存备注并重新计算</button>
           </form>
           <p v-if="reviewMessage" role="status">{{ reviewMessage }}</p>
           <details v-for="(event, index) in realReport.reviews" :key="`${event.timestamp}-${index}`" class="audit-event">
@@ -659,6 +832,8 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
 .candidate-nav { display: flex; align-items: center; gap: 12px; margin: 12px 0; font-size: 0.8125rem; }
 .job-terminal-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
 .job-terminal-actions button { margin-left: 0; }
+.job-delete-confirm { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.job-state:focus, .evidence-panel:focus, .policy-document:focus, .notice[tabindex="-1"]:focus, .state.error:focus { outline: 2px solid var(--navy); outline-offset: 3px; }
 .job-delete-warning { color: var(--error); margin: 8px 0 0; }
 .candidate-nav button { padding: 4px 10px; font-size: 12px; }
 .job-error-card { background: #fff1ed; border: 1px solid #f4c7bb; border-radius: 8px; padding: 14px; margin-top: 12px; }
@@ -667,5 +842,5 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
 .job-error-card .error-detail { margin-top: 6px; font-size: 12px; }
 .policy-jump-btn { margin-top: 10px; font-size: 12px; padding: 6px 10px; display: inline-block; }
 .origin-timestamp { font-size: 12px; color: #52665a; margin-top: 4px; }
-.ai-disclosure { margin-top: 4px; font-size: 12px; color: #7d8d81; }
+.ai-disclosure { margin-top: 4px; font-size: 12px; color: var(--muted); }
 </style>

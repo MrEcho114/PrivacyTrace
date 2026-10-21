@@ -14,7 +14,19 @@ export function createMobileFlow(bridge: MobileBridge) {
   const model = ref<ModelStatus>({ configured: false, endpoint: null }), modelResult = ref('')
   let generation = 0, pendingStart: { revision: number; request_id: string } | null = null
   let timer: ReturnType<typeof setTimeout> | undefined
+  // Background polling is not abortable through the native bridge, so every
+  // foreground action invalidates in-flight poll results with an epoch. A late
+  // poll must never overwrite a newer cancellation, retry, instance or removal.
+  let pollEpoch = 0
   const terminal = () => !!job.value && ['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(job.value.state)
+  function stopPoll() {
+    pollEpoch += 1
+    clearTimeout(timer)
+  }
+  function schedulePoll(delay = 1500) {
+    clearTimeout(timer)
+    timer = setTimeout(() => { void poll(true) }, delay)
+  }
   function apply(value: LiveDraft) {
     draft.value = value
     state.sources = value.sources.map(s => ({ id: s.id, title: s.title, type: s.source_type ?? 'OFFICIAL_WEB_POLICY',
@@ -27,9 +39,14 @@ export function createMobileFlow(bridge: MobileBridge) {
       recipient: c.declared_recipient ?? '', startOffset: c.start_offset ?? undefined, ambiguityFlags: c.ambiguity_flags }))
     if (!state.sources.some(s => s.id === state.sourceId)) state.sourceId = state.sources[0]?.id ?? ''
   }
+  async function bridgeRequest<T>(name: string, body?: object): Promise<T> {
+    const response = await bridge.request<T>(name, body)
+    if (!context.value || response.origin !== context.value.origin || response.draft !== context.value.draft) throw new Error('INSTANCE_MISMATCH')
+    return response.data
+  }
   async function run(action: (request: <T>(name: string, body?: object) => Promise<T>, check: () => void) => Promise<void>) {
     if (busy.value) return
-    clearTimeout(timer)
+    stopPoll()
     busy.value = true; error.value = ''
     const current = generation
     const active = () => { if (generation !== current) throw new Error('CANCELLED') }
@@ -41,10 +58,16 @@ export function createMobileFlow(bridge: MobileBridge) {
     }
     try { await action(request, active) }
     catch (cause) { if (current === generation) error.value = typeof cause === 'string' ? cause : cause instanceof Error ? cause.message : '操作未完成，请刷新确认。' }
-    finally { if (current === generation) busy.value = false }
+    finally {
+      if (current === generation) {
+        busy.value = false
+        if (typeof document !== 'undefined' && document.activeElement === document.body) document.getElementById('page-title')?.focus({ preventScroll: true })
+        if (job.value && !terminal()) schedulePoll()
+      }
+    }
   }
   async function stop() {
-    generation++; clearTimeout(timer); busy.value = false
+    generation++; stopPoll(); busy.value = false
     notice.value = '已停止当前请求。服务可能已保存结果，请刷新确认；停止读取不等于取消分析或删除材料。'
     await bridge.cancel().catch(() => {})
   }
@@ -66,7 +89,7 @@ export function createMobileFlow(bridge: MobileBridge) {
         catch { check(); notice.value = '材料已恢复，历史任务暂未读到。请刷新进度重试；未创建新的分析。' }
       }
     })
-    if (current === generation && job.value && !terminal()) timer = setTimeout(poll, 1500)
+    if (current === generation && job.value && !terminal()) schedulePoll()
   }
   async function refresh() { await run(async request => { apply(await request<LiveDraft>('read')); notice.value = '已读取服务保存的材料。' }) }
   async function importCollected(input: ExternalInput) {
@@ -131,17 +154,35 @@ export function createMobileFlow(bridge: MobileBridge) {
       }
       state.step = 'progress'
     })
-    if (current === generation && job.value && !terminal()) timer = setTimeout(poll, 1500)
+    if (current === generation && job.value && !terminal()) schedulePoll()
   }
-  async function poll() {
+  async function poll(background = false) {
     const current = generation
+    if (background) {
+      if (busy.value) return
+      const epoch = ++pollEpoch
+      try {
+        const [nextJob, latest] = await Promise.all([bridgeRequest<AnalysisJob>('job'), bridgeRequest<LiveDraft>('read')])
+        if (current !== generation || epoch !== pollEpoch || busy.value) return
+        job.value = nextJob
+        apply(latest)
+        error.value = ''
+        if (!terminal()) schedulePoll()
+      } catch (cause) {
+        if (current !== generation || epoch !== pollEpoch || busy.value) return
+        if (cause instanceof Error && ['CANCELLED', 'INSTANCE_MISMATCH'].includes(cause.message)) return
+        error.value = cause instanceof Error ? cause.message : '暂时无法刷新进度。'
+        if (job.value && !terminal()) schedulePoll(3000)
+      }
+      return
+    }
     await run(async request => { job.value = await request<AnalysisJob>('job'); apply(await request<LiveDraft>('read')) })
-    if (current === generation && job.value && !terminal() && !error.value) timer = setTimeout(poll, 1500)
+    if (current === generation && job.value && !terminal() && !error.value) schedulePoll()
   }
   async function control(action: 'cancel-job' | 'retry-job') {
     const current = generation
     await run(async request => { job.value = await request<AnalysisJob>(action); state.step = 'progress' })
-    if (current === generation && job.value && !terminal()) timer = setTimeout(poll, 1500)
+    if (current === generation && job.value && !terminal()) schedulePoll()
   }
   async function openReport() { await run(async request => { report.value = await request<Report>('report'); state.step = 'report' }) }
   async function remove() {

@@ -1,35 +1,57 @@
 {
-  "_note": "url 与 console_errors 中的本机绝对路径已替换为占位描述（<package-root> / <local-drive>），其余字段与原始收据一致。",
-  "url": "file:///<package-root>/01_作品及成果文件/demo-web/demo.html",
+  "record_kind": "OFFLINE_REPLAY",
+  "mode": "EXPLICIT_OFFLINE",
+  "offline_enforced": true,
+  "allowed_console_error_rules": [
+    "missing-static-asset",
+    "backend-unavailable-fetch",
+    "backend-unavailable-request"
+  ],
   "checks": [
     {
       "name": "document_loaded",
       "status": "PASSED",
-      "observed": "status 200"
+      "observed": "status 200 in 114 ms"
     },
     {
-      "name": "dom_rendered",
+      "name": "title_rendered",
       "status": "PASSED",
-      "observed": "143 nodes, #app present=true"
+      "observed": "title=\"PrivacyTrace · 证据对照工作台\""
+    },
+    {
+      "name": "import_page_rendered",
+      "status": "PASSED",
+      "observed": "[\"导入分析材料\",\"APK 文件\",\"先看一次对照\",\"政策来源\",\"政策来源 1\"]"
+    },
+    {
+      "name": "sample_material_loaded",
+      "status": "PASSED",
+      "observed": "apk=true policies=true"
+    },
+    {
+      "name": "candidate_page_rendered",
+      "status": "PASSED",
+      "observed": "[\"检查政策候选\",\"政策原文\",\"候选声明 3\",\"编辑候选位置信息\"]"
+    },
+    {
+      "name": "flow_demo_page_rendered",
+      "status": "PASSED",
+      "observed": "[\"分析流程演示\",\"纸舟地图\",\"核对输入\"]"
+    },
+    {
+      "name": "stage_switch_works",
+      "status": "PASSED",
+      "observed": "点击「进入下一阶段」后进入「静态线索」阶段"
+    },
+    {
+      "name": "console_errors_within_declared_scope",
+      "status": "PASSED",
+      "observed": "4 error(s): 4 allowed, 0 unexpected"
     },
     {
       "name": "no_page_errors",
       "status": "PASSED",
-      "observed": []
-    },
-    {
-      "name": "no_console_errors",
-      "status": "FAILED",
-      "observed": [
-        "Failed to load resource: net::ERR_FILE_NOT_FOUND",
-        "Failed to load resource: net::ERR_FILE_NOT_FOUND",
-        "Access to fetch at 'file:///<local-drive>/api/v1/taxonomy' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome-experimental-site-token-provider, chrome-extension, chrome-untrusted, data, edge, http, https, isolated-app."
-      ]
-    },
-    {
-      "name": "no_external_network_dependency",
-      "status": "PASSED",
-      "observed": []
+      "observed": "[]"
     },
     {
       "name": "no_horizontal_overflow_at_390",
@@ -37,15 +59,54 @@
       "observed": "scrollWidth - innerWidth = 0px"
     }
   ],
+  "pages_reached": [
+    "import",
+    "candidates",
+    "flow_demo"
+  ],
+  "screenshots": [
+    "demo-offline-import-1440.png",
+    "demo-offline-candidates-1440.png",
+    "demo-offline-flow-1440.png",
+    "demo-offline-flow-390.png"
+  ],
+  "followup_step_buttons": {
+    "分析进度": "absent",
+    "对照报告": "absent"
+  },
   "title": "PrivacyTrace · 证据对照工作台",
-  "load_ms": 113,
-  "body_text_sample": "跳到内容 P PrivacyTrace 静态证据与政策对照 项目设置 新建对照 已有报告 本机工作台 1 导入材料 2 检查候选 3 分析进度 4 对照报告 新建对照 导入分析材料 准备 APK 和各份政策，也可以先用示例熟悉对照流程。 APK 文件 本机 APK 选择本地 APK 文件 拖放到这里，或选择文件 选择 ",
-  "total_requests": 4,
+  "load_ms": 114,
+  "declared_scope_note": "包内 demo-web/说明.txt 声称导入 / 候选 / 流程演示三页可达、完整报告页需 http 环境；本次实测三页均可达，与声明一致。",
+  "console_errors": {
+    "total": 4,
+    "allowed": [
+      {
+        "text": "Access to fetch at 'file:///<local-drive>/api/v1/taxonomy' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome-experimental-site-token-provider, chrome-extension, chrome-untrusted, data, edge, http, https, isolated-app.",
+        "allowed": true,
+        "rule": "backend-unavailable-fetch"
+      },
+      {
+        "text": "Failed to load resource: net::ERR_FAILED",
+        "allowed": true,
+        "rule": "backend-unavailable-request"
+      },
+      {
+        "text": "Failed to load resource: net::ERR_FILE_NOT_FOUND",
+        "allowed": true,
+        "rule": "missing-static-asset"
+      },
+      {
+        "text": "Failed to load resource: net::ERR_FILE_NOT_FOUND",
+        "allowed": true,
+        "rule": "missing-static-asset"
+      }
+    ],
+    "unexpected": []
+  },
   "page_errors": [],
-  "console_errors": [
-    "Failed to load resource: net::ERR_FILE_NOT_FOUND",
-    "Failed to load resource: net::ERR_FILE_NOT_FOUND",
-    "Access to fetch at 'file:///<local-drive>/api/v1/taxonomy' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome-experimental-site-token-provider, chrome-extension, chrome-untrusted, data, edge, http, https, isolated-app.",
-    "Failed to load resource: net::ERR_FAILED"
-  ]
+  "blocked_external_requests": [],
+  "checks_failed": 0,
+  "overall_status": "PASSED",
+  "captured_at_utc": "2026-10-21T11:06:55.713Z",
+  "evidence_paths_note": "本收据只记录仓库相对路径，不含本机绝对路径。"
 }

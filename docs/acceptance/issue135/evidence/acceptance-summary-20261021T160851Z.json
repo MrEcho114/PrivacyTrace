@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-10-21T11:38:27Z",
+  "generated_at": "2026-10-21T16:08:51Z",
   "receipt_version": 1,
   "receipts": [
-    "acceptance-r1-full-deployment-20261021T113827Z.json",
-    "acceptance-r2-dual-scope-business-loop-20261021T113827Z.json",
-    "acceptance-r3-actual-isolation-20261021T113827Z.json",
-    "acceptance-r4-fault-injection-recovery-20261021T113827Z.json",
-    "acceptance-r5-backup-recovery-drills-20261021T113827Z.json",
-    "acceptance-r6-capacity-and-secret-audit-20261021T113827Z.json"
+    "acceptance-r1-full-deployment-20261021T160851Z.json",
+    "acceptance-r2-dual-scope-business-loop-20261021T160851Z.json",
+    "acceptance-r3-actual-isolation-20261021T160851Z.json",
+    "acceptance-r4-fault-injection-recovery-20261021T160851Z.json",
+    "acceptance-r5-backup-recovery-drills-20261021T160851Z.json",
+    "acceptance-r6-capacity-and-secret-audit-20261021T160851Z.json"
   ],
   "scope": "issue81-r1-r6",
-  "source_sha": "7769dfd4ada1236cc8de575c32264702e69f579c",
+  "source_sha": "d12eeb79deeeedd65880717d3b10a703ddbc97a8",
   "summary": {
     "by_ticket": {
       "R1": {
@@ -22,8 +22,8 @@
       "R2": {
         "fail": 0,
         "not_tested": 0,
-        "pass": 12,
-        "skip": 1
+        "pass": 13,
+        "skip": 0
       },
       "R3": {
         "fail": 0,
@@ -50,17 +50,17 @@
         "skip": 0
       }
     },
-    "conclusion": "PARTIAL",
+    "conclusion": "ALL_REQUIRED_CHECKS_PASS_WITH_WAIVER",
     "evidence_free": false,
     "fail": 0,
     "no_pass_claimed": false,
     "not_tested": 0,
-    "pass": 39,
+    "pass": 40,
     "pass_rate_of_verified": 1.0,
-    "skip": 1,
+    "skip": 0,
     "total": 40,
     "untested_scopes": 0,
-    "verified": 39,
+    "verified": 40,
     "waivers": [
       {
         "authorization": "***",

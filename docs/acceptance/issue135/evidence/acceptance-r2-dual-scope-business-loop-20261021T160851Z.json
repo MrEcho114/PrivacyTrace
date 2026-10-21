@@ -5,11 +5,11 @@
       "detail": {
         "instance_hint": "see PT_ACCEPTANCE_INSTANCE_ID"
       },
-      "duration_s": 0.092,
+      "duration_s": 0.09,
       "name": "r2.tls_and_health",
-      "notes": "internal probe hidden; remote mode confirmed; base=https://privacytrace.test:44623",
-      "result_digest": "sha256:f4f8885ff7163ddd",
-      "started_at": "2026-10-21T11:30:08Z",
+      "notes": "internal probe hidden; remote mode confirmed; base=https://privacytrace.test:49691",
+      "result_digest": "sha256:8541b84e00304985",
+      "started_at": "2026-10-21T16:00:52Z",
       "status": "PASS",
       "ticket": "R2"
     },
@@ -23,7 +23,7 @@
       "name": "r2.synthetic_fixtures",
       "notes": "single sha256:7abc27d59a49 set sha256:d4b7cb6886da",
       "result_digest": "sha256:4d73745ea216a627",
-      "started_at": "2026-10-21T11:30:08Z",
+      "started_at": "2026-10-21T16:00:52Z",
       "status": "PASS",
       "ticket": "R2"
     },
@@ -31,21 +31,21 @@
       "command": "draft -> POST /apk -> /start -> GET /jobs/{id} -> GET /jobs/{id}/report",
       "detail": {
         "input_sha256": "7abc27d59a498184cb0b1e1530df73357d2c3cc4af69bbb299aa37ada0574801",
-        "job_id": "caf8676157544ebbb73272a8bed37be0",
+        "job_id": "07ed239be33b4c73b7bba118d95416ba",
         "report_bytes": 6843,
         "scope": {
-          "draft_id": "32393dba2da245428da6abc6e4217bff",
-          "job_id": "caf8676157544ebbb73272a8bed37be0",
+          "draft_id": "7335aaf2858d46b396625b07a9de4ea5",
+          "job_id": "07ed239be33b4c73b7bba118d95416ba",
           "name": "acceptance-scope-a",
           "revision": 2,
-          "token_fingerprint": "efcbccd1a26d"
+          "token_fingerprint": "ba22fee3a251"
         }
       },
-      "duration_s": 5.549,
+      "duration_s": 5.426,
       "name": "r2.scope_a_single_apk",
       "notes": "single APK report readable; states=QUEUED->SUCCEEDED",
-      "result_digest": "sha256:8ab23e88df36edeb",
-      "started_at": "2026-10-21T11:30:08Z",
+      "result_digest": "sha256:380b9011dc127712",
+      "started_at": "2026-10-21T16:00:52Z",
       "status": "PASS",
       "ticket": "R2"
     },
@@ -55,20 +55,20 @@
         "discover_status": 200,
         "release_status": 200,
         "scope": {
-          "draft_id": "a77365c9763e43b2897d418f674284e6",
+          "draft_id": "722afeab1b7a4107aca7cd939ff846ef",
           "job_id": "",
           "name": "acceptance-scope-discovery",
           "revision": 3,
-          "token_fingerprint": "bf22381cab04"
+          "token_fingerprint": "373d558b76fe"
         },
         "sources": 1,
         "upload_status": 200
       },
-      "duration_s": 1.797,
+      "duration_s": 1.583,
       "name": "r2.policy_discovery_without_docker_socket",
       "notes": "policy discovery ran without a Docker socket; sources=1",
-      "result_digest": "sha256:88d42e3f4361b739",
-      "started_at": "2026-10-21T11:30:14Z",
+      "result_digest": "sha256:0007971ed9120db3",
+      "started_at": "2026-10-21T16:00:58Z",
       "status": "PASS",
       "ticket": "R2"
     },
@@ -76,14 +76,14 @@
       "command": "draft -> POST /package-set -> /start -> GET /jobs/{id}/report",
       "detail": {
         "input_sha256": "d4b7cb6886dab0b16732eebcafcfb8ce36df00505d5cca88789da42419ca0534",
-        "job_id": "b170ecea12ee4c27a07edc9339571dc6",
+        "job_id": "cc090ada7f2043498cdbcd34eb441b33",
         "report_bytes": 12583,
         "scope": {
-          "draft_id": "3821a55cce074d3fa908f6fae15772ed",
-          "job_id": "b170ecea12ee4c27a07edc9339571dc6",
+          "draft_id": "4592c4d111ea43b3aa96275d349b40fa",
+          "job_id": "cc090ada7f2043498cdbcd34eb441b33",
           "name": "acceptance-scope-b",
           "revision": 2,
-          "token_fingerprint": "b45eb070bd1a"
+          "token_fingerprint": "b43aa1bd0e50"
         },
         "split_count": 2,
         "split_names": [
@@ -91,11 +91,11 @@
           "feature_camera"
         ]
       },
-      "duration_s": 9.604,
+      "duration_s": 9.342,
       "name": "r2.scope_b_base_and_splits",
       "notes": "base+splits report has 2 splits",
-      "result_digest": "sha256:6b2f88e9b7d458f7",
-      "started_at": "2026-10-21T11:30:16Z",
+      "result_digest": "sha256:9c04600b8517fb94",
+      "started_at": "2026-10-21T16:00:59Z",
       "status": "PASS",
       "ticket": "R2"
     },
@@ -108,23 +108,29 @@
         "cross_scope_report": 403,
         "unauthenticated": 401
       },
-      "duration_s": 0.269,
+      "duration_s": 0.245,
       "name": "r2.scope_isolation",
       "notes": "all cross-scope and unauthenticated reads rejected",
       "result_digest": "sha256:047a48910762de40",
-      "started_at": "2026-10-21T11:30:25Z",
+      "started_at": "2026-10-21T16:01:09Z",
       "status": "PASS",
       "ticket": "R2"
     },
     {
       "command": "same capability against another instance",
-      "detail": {},
-      "duration_s": 0.0,
+      "detail": {
+        "codes": [
+          404,
+          404,
+          404
+        ]
+      },
+      "duration_s": 0.2,
       "name": "r2.cross_instance",
-      "notes": "a second owned laboratory is required",
-      "result_digest": "sha256:e3c18f4dfcfbf52c",
-      "started_at": "2026-10-21T11:30:25Z",
-      "status": "SKIP",
+      "notes": "cross-instance job, report and draft rejected",
+      "result_digest": "sha256:5964536b8dc9fbbd",
+      "started_at": "2026-10-21T16:01:09Z",
+      "status": "PASS",
       "ticket": "R2"
     },
     {
@@ -134,11 +140,11 @@
         "jobs_listing": 403,
         "local_header": 403
       },
-      "duration_s": 0.141,
+      "duration_s": 0.138,
       "name": "r2.management_surface",
       "notes": "management surface shielded",
       "result_digest": "sha256:6490d4871807ff70",
-      "started_at": "2026-10-21T11:30:25Z",
+      "started_at": "2026-10-21T16:01:09Z",
       "status": "PASS",
       "ticket": "R2"
     },
@@ -147,11 +153,11 @@
       "detail": {
         "status": 413
       },
-      "duration_s": 0.095,
+      "duration_s": 0.096,
       "name": "r2.oversize_rejection",
       "notes": "oversize draft declared length rejected pre-parse",
       "result_digest": "sha256:47fcdf41ffd343da",
-      "started_at": "2026-10-21T11:30:26Z",
+      "started_at": "2026-10-21T16:01:09Z",
       "status": "PASS",
       "ticket": "R2"
     },
@@ -161,11 +167,11 @@
         "code": "MISSING_REQUIRED_SPLIT",
         "status": 400
       },
-      "duration_s": 1.538,
+      "duration_s": 1.436,
       "name": "r2.invalid_split_dependency",
       "notes": "HTTP 400 MISSING_REQUIRED_SPLIT",
       "result_digest": "sha256:7df6441b8fba0e11",
-      "started_at": "2026-10-21T11:30:26Z",
+      "started_at": "2026-10-21T16:01:09Z",
       "status": "PASS",
       "ticket": "R2"
     },
@@ -174,11 +180,11 @@
       "detail": {
         "status": 413
       },
-      "duration_s": 0.106,
+      "duration_s": 0.098,
       "name": "r2.authorized_oversize_upload",
       "notes": "authorized oversized upload refused",
       "result_digest": "sha256:1b4389ce367ee6fb",
-      "started_at": "2026-10-21T11:30:27Z",
+      "started_at": "2026-10-21T16:01:11Z",
       "status": "PASS",
       "ticket": "R2"
     },
@@ -187,11 +193,11 @@
       "detail": {
         "code": "PUBLIC_URL_REQUIRED"
       },
-      "duration_s": 0.16,
+      "duration_s": 0.139,
       "name": "r2.private_source_refusal",
       "notes": "loopback source rejected before fetch",
       "result_digest": "sha256:0f9c1131a4e01dcd",
-      "started_at": "2026-10-21T11:30:27Z",
+      "started_at": "2026-10-21T16:01:11Z",
       "status": "PASS",
       "ticket": "R2"
     },
@@ -200,11 +206,11 @@
       "detail": {
         "limited": 43
       },
-      "duration_s": 3.35,
+      "duration_s": 3.202,
       "name": "r2.rate_limit",
       "notes": "43/70 responses were 429",
       "result_digest": "sha256:fffe7ce9e59e5b19",
-      "started_at": "2026-10-21T11:30:27Z",
+      "started_at": "2026-10-21T16:01:11Z",
       "status": "PASS",
       "ticket": "R2"
     }
@@ -212,57 +218,57 @@
   "environment": {
     "allow_destructive": true,
     "allow_writes": true,
-    "cpu_count": 16,
-    "cpu_model": "13th Gen Intel(R) Core(TM) i7-13620H",
-    "cwd": "<repo>",
+    "cpu_count": 4,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "cwd": "<private-home>/work/PrivacyTrace/PrivacyTrace",
     "disk": {
       "filesystem": "ext2/ext3",
-      "free_bytes": 1017844342784,
-      "path": "<repo>",
-      "total_bytes": 1081101176832
+      "free_bytes": 89064251392,
+      "path": "<private-home>/work/PrivacyTrace/PrivacyTrace",
+      "total_bytes": 154894188544
     },
-    "kernel": "6.18.54.1-microsoft-standard-WSL2",
+    "kernel": "6.17.0-1022-azure",
     "machine": "x86_64",
-    "memory_bytes": 8218636288,
-    "os": "Linux-6.18.54.1-microsoft-standard-WSL2-x86_64-with-glibc2.39",
-    "release": "6.18.54.1-microsoft-standard-WSL2",
+    "memory_bytes": 16766414848,
+    "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "release": "6.17.0-1022-azure",
     "system": "Linux",
     "tools": {
-      "compose": "2.40.3+ds1-0ubuntu1~24.04.1",
-      "docker_client": "29.1.3",
-      "docker_server": "29.1.3",
-      "git": "git version 2.43.0",
+      "compose": "2.38.2",
+      "docker_client": "28.0.4",
+      "docker_server": "28.0.4",
+      "git": "git version 2.55.0",
       "python": "Python 3.12.3",
-      "topology_base_url": "https://privacytrace.test:44623"
+      "topology_base_url": "https://privacytrace.test:49691"
     },
     "topology_configured": true,
-    "wsl": true
+    "wsl": false
   },
-  "finished_at": "2026-10-21T11:30:31Z",
+  "finished_at": "2026-10-21T16:01:14Z",
   "notes": "Synthetic APK/package-set inputs only (apk_fixture_builder); no real APK is used. Tokens are never written to the receipt.",
   "receipt_version": 1,
   "scope": "r2-dual-scope-business-loop",
-  "source_sha": "7769dfd4ada1236cc8de575c32264702e69f579c",
-  "started_at": "2026-10-21T11:30:08Z",
+  "source_sha": "d12eeb79deeeedd65880717d3b10a703ddbc97a8",
+  "started_at": "2026-10-21T16:00:52Z",
   "summary": {
     "by_ticket": {
       "R2": {
         "fail": 0,
         "not_tested": 0,
-        "pass": 12,
-        "skip": 1
+        "pass": 13,
+        "skip": 0
       }
     },
-    "conclusion": "PARTIAL",
+    "conclusion": "ALL_PASS",
     "evidence_free": false,
     "fail": 0,
     "not_tested": 0,
-    "pass": 12,
+    "pass": 13,
     "pass_rate_of_verified": 1.0,
-    "skip": 1,
+    "skip": 0,
     "total": 13,
     "untested_scopes": 0,
-    "verified": 12
+    "verified": 13
   },
   "untested": []
 }

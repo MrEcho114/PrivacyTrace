@@ -18,43 +18,43 @@
             "cap_drop": [
               "ALL"
             ],
-            "image_id": "sha256:75d202440889d48e2dac72ec7ca3073458f4368c70e36b2cf91fc2448560dfb3",
+            "image_id": "sha256:9d09dbb3d59b6aedd176bae77b89a0fedcdb3f0878a6eccb41fee9d0e78fb81e",
             "memory_limit": 805306368,
             "pids_limit": 128,
             "read_only": true,
             "socket": false,
-            "source_revision": "7769dfd4ada1236cc8de575c32264702e69f579c",
+            "source_revision": "d12eeb79deeeedd65880717d3b10a703ddbc97a8",
             "user": "10001:10001"
           },
           "dispatcher": {
             "cap_drop": [
               "ALL"
             ],
-            "image_id": "sha256:75d202440889d48e2dac72ec7ca3073458f4368c70e36b2cf91fc2448560dfb3",
+            "image_id": "sha256:9d09dbb3d59b6aedd176bae77b89a0fedcdb3f0878a6eccb41fee9d0e78fb81e",
             "memory_limit": 268435456,
             "pids_limit": 128,
             "read_only": true,
             "socket": false,
-            "source_revision": "7769dfd4ada1236cc8de575c32264702e69f579c",
+            "source_revision": "d12eeb79deeeedd65880717d3b10a703ddbc97a8",
             "user": "10001:10001"
           },
           "gateway": {
             "cap_drop": [
               "ALL"
             ],
-            "image_id": "sha256:75d202440889d48e2dac72ec7ca3073458f4368c70e36b2cf91fc2448560dfb3",
+            "image_id": "sha256:9d09dbb3d59b6aedd176bae77b89a0fedcdb3f0878a6eccb41fee9d0e78fb81e",
             "memory_limit": 268435456,
             "pids_limit": 128,
             "read_only": true,
             "socket": false,
-            "source_revision": "7769dfd4ada1236cc8de575c32264702e69f579c",
+            "source_revision": "d12eeb79deeeedd65880717d3b10a703ddbc97a8",
             "user": "10001:10001"
           },
           "postgres": {
             "cap_drop": [
               "ALL"
             ],
-            "image_id": "sha256:c7526c0f6c3f30260a563d7bcf8ad778effac59a44f8ffa86678c35418338609",
+            "image_id": "sha256:8bb11c4aae5819656e9a197dda176d826f62da8ad5eb5612702a60a2533302ee",
             "memory_limit": 805306368,
             "pids_limit": 128,
             "read_only": true,
@@ -66,7 +66,7 @@
             "cap_drop": [
               "ALL"
             ],
-            "image_id": "sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6",
+            "image_id": "sha256:9210b8dc25f122eb00e5572dcc7147c8e11fb1a08308b088e06c9d5dd2aa49d6",
             "memory_limit": 268435456,
             "pids_limit": 128,
             "read_only": true,
@@ -78,46 +78,46 @@
             "cap_drop": [
               "ALL"
             ],
-            "image_id": "sha256:de282b094f39d6f21a6c3ff2754c6f42513fe51c400a0810f7d4a3a09463f1c7",
+            "image_id": "sha256:6a82bebdaacbaa71c6adc10a2cc66392e0c4a376b14ac95626aef323d3317717",
             "memory_limit": 1073741824,
             "pids_limit": 256,
             "read_only": true,
             "socket": true,
-            "source_revision": "7769dfd4ada1236cc8de575c32264702e69f579c",
+            "source_revision": "d12eeb79deeeedd65880717d3b10a703ddbc97a8",
             "user": "10001:10001"
           },
           "web": {
             "cap_drop": [
               "ALL"
             ],
-            "image_id": "sha256:c5270f3be7b6e8753a8f1d3c1ea172db1deb63202b0f06591b1c87ada3ba949c",
+            "image_id": "sha256:9fbf4fd76c6b70e5e85361213d9f21a4ffda1aba03cba865c81ac8ff96f33701",
             "memory_limit": 268435456,
             "pids_limit": 128,
             "read_only": true,
             "socket": false,
-            "source_revision": "7769dfd4ada1236cc8de575c32264702e69f579c",
+            "source_revision": "d12eeb79deeeedd65880717d3b10a703ddbc97a8",
             "user": "10001:10001"
           },
           "worker": {
             "cap_drop": [
               "ALL"
             ],
-            "image_id": "sha256:75d202440889d48e2dac72ec7ca3073458f4368c70e36b2cf91fc2448560dfb3",
+            "image_id": "sha256:9d09dbb3d59b6aedd176bae77b89a0fedcdb3f0878a6eccb41fee9d0e78fb81e",
             "memory_limit": 805306368,
             "pids_limit": 128,
             "read_only": true,
             "socket": false,
-            "source_revision": "7769dfd4ada1236cc8de575c32264702e69f579c",
+            "source_revision": "d12eeb79deeeedd65880717d3b10a703ddbc97a8",
             "user": "10001:10001"
           }
         },
-        "scanner_image_id": "sha256:dbcc86ef40cdb1cc7fe1a9cf0e7a381d511e8a50cd05155b48ea771d418dc6b7"
+        "scanner_image_id": "sha256:8ee1e023ac1d11bd5a4f496862ecf17321110294e22e01563eca861df0b82c5e"
       },
-      "duration_s": 7.692,
+      "duration_s": 1.525,
       "name": "r1.full_topology",
       "notes": "all roles ready; packaged resources available",
-      "result_digest": "sha256:42935a0e16c38d29",
-      "started_at": "2026-10-21T11:30:00Z",
+      "result_digest": "sha256:e91b8817a0291683",
+      "started_at": "2026-10-21T16:00:51Z",
       "status": "PASS",
       "ticket": "R1"
     }
@@ -125,38 +125,38 @@
   "environment": {
     "allow_destructive": true,
     "allow_writes": true,
-    "cpu_count": 16,
-    "cpu_model": "13th Gen Intel(R) Core(TM) i7-13620H",
-    "cwd": "<repo>",
+    "cpu_count": 4,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "cwd": "<private-home>/work/PrivacyTrace/PrivacyTrace",
     "disk": {
       "filesystem": "ext2/ext3",
-      "free_bytes": 1017844342784,
-      "path": "<repo>",
-      "total_bytes": 1081101176832
+      "free_bytes": 89064251392,
+      "path": "<private-home>/work/PrivacyTrace/PrivacyTrace",
+      "total_bytes": 154894188544
     },
-    "kernel": "6.18.54.1-microsoft-standard-WSL2",
+    "kernel": "6.17.0-1022-azure",
     "machine": "x86_64",
-    "memory_bytes": 8218636288,
-    "os": "Linux-6.18.54.1-microsoft-standard-WSL2-x86_64-with-glibc2.39",
-    "release": "6.18.54.1-microsoft-standard-WSL2",
+    "memory_bytes": 16766414848,
+    "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "release": "6.17.0-1022-azure",
     "system": "Linux",
     "tools": {
-      "compose": "2.40.3+ds1-0ubuntu1~24.04.1",
-      "docker_client": "29.1.3",
-      "docker_server": "29.1.3",
-      "git": "git version 2.43.0",
+      "compose": "2.38.2",
+      "docker_client": "28.0.4",
+      "docker_server": "28.0.4",
+      "git": "git version 2.55.0",
       "python": "Python 3.12.3",
-      "topology_base_url": "https://privacytrace.test:44623"
+      "topology_base_url": "https://privacytrace.test:49691"
     },
     "topology_configured": true,
-    "wsl": true
+    "wsl": false
   },
-  "finished_at": "2026-10-21T11:38:27Z",
+  "finished_at": "2026-10-21T16:08:51Z",
   "notes": "",
   "receipt_version": 1,
   "scope": "r1-full-deployment",
-  "source_sha": "7769dfd4ada1236cc8de575c32264702e69f579c",
-  "started_at": "2026-10-21T11:30:00Z",
+  "source_sha": "d12eeb79deeeedd65880717d3b10a703ddbc97a8",
+  "started_at": "2026-10-21T16:00:51Z",
   "summary": {
     "by_ticket": {
       "R1": {

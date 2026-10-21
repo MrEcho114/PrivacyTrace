@@ -3,18 +3,18 @@
     {
       "command": "GET /_health/live, /_health/ready, /api/v1/health",
       "detail": {
-        "at": "2026-10-21T11:31:32Z",
+        "at": "2026-10-21T16:02:16Z",
         "health": 200,
         "live": 200,
         "note": "baseline",
         "ready": 200,
         "ready_body": null
       },
-      "duration_s": 0.311,
+      "duration_s": 0.4,
       "name": "r4.baseline_health",
       "notes": "live=200 ready=200",
-      "result_digest": "sha256:47ff8da31c7d8254",
-      "started_at": "2026-10-21T11:31:32Z",
+      "result_digest": "sha256:b780516f97c74fd9",
+      "started_at": "2026-10-21T16:02:15Z",
       "status": "PASS",
       "ticket": "R4"
     },
@@ -22,7 +22,7 @@
       "command": "compose restart api + readiness sampling",
       "detail": {
         "after": {
-          "at": "2026-10-21T11:31:38Z",
+          "at": "2026-10-21T16:02:22Z",
           "health": 200,
           "live": 200,
           "note": "recovery poll",
@@ -30,7 +30,7 @@
           "ready_body": null
         },
         "before": {
-          "at": "2026-10-21T11:31:32Z",
+          "at": "2026-10-21T16:02:16Z",
           "health": 200,
           "live": 200,
           "note": "before injection",
@@ -47,11 +47,11 @@
         },
         "means": "docker compose restart api"
       },
-      "duration_s": 5.482,
+      "duration_s": 5.683,
       "name": "r4.restart.api",
       "notes": "recovered: live=200 ready=200",
-      "result_digest": "sha256:0743dc85b7804b77",
-      "started_at": "2026-10-21T11:31:32Z",
+      "result_digest": "sha256:f645804d76ba174c",
+      "started_at": "2026-10-21T16:02:16Z",
       "status": "PASS",
       "ticket": "R4"
     },
@@ -59,7 +59,7 @@
       "command": "compose restart redis + readiness sampling",
       "detail": {
         "after": {
-          "at": "2026-10-21T11:32:02Z",
+          "at": "2026-10-21T16:02:47Z",
           "health": 200,
           "live": 200,
           "note": "recovery poll",
@@ -67,7 +67,7 @@
           "ready_body": null
         },
         "before": {
-          "at": "2026-10-21T11:31:38Z",
+          "at": "2026-10-21T16:02:22Z",
           "health": 200,
           "live": 200,
           "note": "before injection",
@@ -75,7 +75,7 @@
           "ready_body": null
         },
         "during": {
-          "at": "2026-10-21T11:31:39Z",
+          "at": "2026-10-21T16:02:23Z",
           "health": 200,
           "live": 200,
           "note": "after injection",
@@ -84,11 +84,11 @@
         },
         "means": "docker compose restart redis; readiness must recover"
       },
-      "duration_s": 24.838,
+      "duration_s": 25.452,
       "name": "r4.restart.redis",
       "notes": "recovered: live=200 ready=200",
-      "result_digest": "sha256:46138f6a2e30d811",
-      "started_at": "2026-10-21T11:31:38Z",
+      "result_digest": "sha256:6666ab5792863bfa",
+      "started_at": "2026-10-21T16:02:22Z",
       "status": "PASS",
       "ticket": "R4"
     },
@@ -96,7 +96,7 @@
       "command": "compose restart worker + readiness sampling",
       "detail": {
         "after": {
-          "at": "2026-10-21T11:32:05Z",
+          "at": "2026-10-21T16:02:50Z",
           "health": 200,
           "live": 200,
           "note": "recovery poll",
@@ -104,7 +104,7 @@
           "ready_body": null
         },
         "before": {
-          "at": "2026-10-21T11:32:03Z",
+          "at": "2026-10-21T16:02:47Z",
           "health": 200,
           "live": 200,
           "note": "before injection",
@@ -112,7 +112,7 @@
           "ready_body": null
         },
         "during": {
-          "at": "2026-10-21T11:32:04Z",
+          "at": "2026-10-21T16:02:49Z",
           "health": 200,
           "live": 200,
           "note": "after injection",
@@ -121,11 +121,11 @@
         },
         "means": "docker compose restart worker; readiness must recover"
       },
-      "duration_s": 2.32,
+      "duration_s": 2.477,
       "name": "r4.restart.worker",
       "notes": "recovered: live=200 ready=200",
-      "result_digest": "sha256:ffe1195c24a52cb1",
-      "started_at": "2026-10-21T11:32:02Z",
+      "result_digest": "sha256:701b39a551aff709",
+      "started_at": "2026-10-21T16:02:47Z",
       "status": "PASS",
       "ticket": "R4"
     },
@@ -133,7 +133,7 @@
       "command": "compose restart runner + readiness sampling",
       "detail": {
         "after": {
-          "at": "2026-10-21T11:32:10Z",
+          "at": "2026-10-21T16:02:55Z",
           "health": 200,
           "live": 200,
           "note": "recovery poll",
@@ -141,7 +141,7 @@
           "ready_body": null
         },
         "before": {
-          "at": "2026-10-21T11:32:05Z",
+          "at": "2026-10-21T16:02:50Z",
           "health": 200,
           "live": 200,
           "note": "before injection",
@@ -149,7 +149,7 @@
           "ready_body": null
         },
         "during": {
-          "at": "2026-10-21T11:32:06Z",
+          "at": "2026-10-21T16:02:51Z",
           "health": 200,
           "live": 200,
           "note": "after injection",
@@ -158,11 +158,11 @@
         },
         "means": "restart the laboratory Runner; re-check authenticated readiness"
       },
-      "duration_s": 4.784,
+      "duration_s": 5.414,
       "name": "r4.restart.runner",
       "notes": "recovered: live=200 ready=200",
-      "result_digest": "sha256:fbd3e4d32323166a",
-      "started_at": "2026-10-21T11:32:05Z",
+      "result_digest": "sha256:b98bc1ab53de3955",
+      "started_at": "2026-10-21T16:02:50Z",
       "status": "PASS",
       "ticket": "R4"
     },
@@ -170,7 +170,7 @@
       "command": "compose stop redis -> readiness must degrade while live stays 200 -> compose start redis",
       "detail": {
         "after": {
-          "at": "2026-10-21T11:32:34Z",
+          "at": "2026-10-21T16:03:20Z",
           "health": 200,
           "live": 200,
           "note": "recovery poll",
@@ -178,7 +178,7 @@
           "ready_body": null
         },
         "before": {
-          "at": "2026-10-21T11:32:10Z",
+          "at": "2026-10-21T16:02:55Z",
           "health": 200,
           "live": 200,
           "note": "before outage",
@@ -186,7 +186,7 @@
           "ready_body": null
         },
         "during": {
-          "at": "2026-10-21T11:32:14Z",
+          "at": "2026-10-21T16:02:59Z",
           "health": 200,
           "live": 200,
           "note": "broker stopped",
@@ -194,11 +194,11 @@
           "ready_body": null
         }
       },
-      "duration_s": 24.401,
+      "duration_s": 25.035,
       "name": "r4.broker_outage_and_recovery",
       "notes": "live stayed 200, ready degraded to 503, recovered to 200",
-      "result_digest": "sha256:6ee3c8fe935b0fb6",
-      "started_at": "2026-10-21T11:32:10Z",
+      "result_digest": "sha256:172d088b98b62f31",
+      "started_at": "2026-10-21T16:02:55Z",
       "status": "PASS",
       "ticket": "R4"
     },
@@ -206,7 +206,7 @@
       "command": "stop laboratory runner -> readiness 503 -> restart -> readiness 200",
       "detail": {
         "after": {
-          "at": "2026-10-21T11:32:40Z",
+          "at": "2026-10-21T16:03:26Z",
           "health": 200,
           "live": 200,
           "note": "recovery poll",
@@ -214,7 +214,7 @@
           "ready_body": null
         },
         "during": {
-          "at": "2026-10-21T11:32:36Z",
+          "at": "2026-10-21T16:03:22Z",
           "health": 200,
           "live": 200,
           "note": "",
@@ -222,11 +222,11 @@
           "ready_body": null
         }
       },
-      "duration_s": 5.586,
+      "duration_s": 5.743,
       "name": "r4.runner_heartbeat_loss",
       "notes": "authenticated Runner readiness degraded and recovered",
-      "result_digest": "sha256:3e26637857e0cbfd",
-      "started_at": "2026-10-21T11:32:34Z",
+      "result_digest": "sha256:64700898f5dee17b",
+      "started_at": "2026-10-21T16:03:20Z",
       "status": "PASS",
       "ticket": "R4"
     },
@@ -235,19 +235,19 @@
       "detail": {
         "cancel_status": 200,
         "final_state": "CANCELLED",
-        "job_id": "0536cbe104fd425786e673b5e891157e",
+        "job_id": "a2f51c76cc1844d4bedce784620c1c30",
         "trail": [
           {
-            "at": 3956.717,
+            "at": 706.341,
             "state": "CANCELLED"
           }
         ]
       },
-      "duration_s": 0.438,
+      "duration_s": 0.375,
       "name": "r4.cancel_submitted_job",
       "notes": "cancel accepted, job reached CANCELLED",
-      "result_digest": "sha256:2f2699dc7bb8eef5",
-      "started_at": "2026-10-21T11:32:40Z",
+      "result_digest": "sha256:778c23d4a6ca3cfa",
+      "started_at": "2026-10-21T16:03:26Z",
       "status": "PASS",
       "ticket": "R4"
     },
@@ -257,18 +257,18 @@
         "delete_status": 200,
         "report_after_delete": 404
       },
-      "duration_s": 0.487,
+      "duration_s": 0.368,
       "name": "r4.delete_submitted_scope",
       "notes": "draft deleted; report now HTTP 404",
       "result_digest": "sha256:6a2b7e5609709134",
-      "started_at": "2026-10-21T11:32:40Z",
+      "started_at": "2026-10-21T16:03:26Z",
       "status": "PASS",
       "ticket": "R4"
     },
     {
       "command": "old attempt / revoked lease result must be fenced out",
       "detail": {
-        "completed_output_sha256": "b405c1c39905fd267fb9f39deccc3372d3edcf057c31f5e3a841c16c53ca3d94",
+        "completed_output_sha256": "8a33dab42df19db3977849b104e10be3131f00b4f7d8de3f452524a8845c2bc4",
         "final_state": "CANCELLED",
         "input_sha256": "7abc27d59a498184cb0b1e1530df73357d2c3cc4af69bbb299aa37ada0574801",
         "old_fence": 1,
@@ -276,14 +276,14 @@
         "revoked_fence": 2,
         "runner_isolation": {
           "cleanup_verified": true,
-          "container": "privacytrace-62bfb9d1a17447759b137dfcc1021df2",
+          "container": "privacytrace-3568cc578fce4ea5b323d9628d9b3421",
           "container_created": true,
           "exit_state": {
             "ExitCode": 0,
             "OOMKilled": false,
             "Running": false
           },
-          "image_id": "sha256:0f3240925528bbcbe1a47aa1878f2a344d7bed3dbfd66a73cbeffce64411ee66",
+          "image_id": "sha256:e6b54d7a97aaed09662e2d17219ecee5bd66015589129b4793762b52abdff5d0",
           "input_removed": true,
           "isolation": {
             "CapAdd": null,
@@ -307,16 +307,16 @@
               "read_only": true
             }
           ],
-          "request_id": "d226e3c8-c867-520a-bd2b-2fe858c5c0e4",
+          "request_id": "a963ade6-a7e3-5aad-a89e-cdf57d05904d",
           "user": "65534:65534",
           "version": 1
         }
       },
-      "duration_s": 29.788,
+      "duration_s": 27.372,
       "name": "r4.late_result_rejected",
       "notes": "real completed Runner output fenced after cancellation",
-      "result_digest": "sha256:61e14f536e688599",
-      "started_at": "2026-10-21T11:32:40Z",
+      "result_digest": "sha256:bf017331c6643a25",
+      "started_at": "2026-10-21T16:03:26Z",
       "status": "PASS",
       "ticket": "R4"
     },
@@ -331,11 +331,11 @@
           "temporary": 0
         }
       },
-      "duration_s": 1.876,
+      "duration_s": 2.061,
       "name": "r4.orphan_reclamation",
       "notes": "reclaim objects=0 temporary=0",
       "result_digest": "sha256:3d0838e1dbe1301c",
-      "started_at": "2026-10-21T11:33:10Z",
+      "started_at": "2026-10-21T16:03:54Z",
       "status": "PASS",
       "ticket": "R4"
     },
@@ -345,14 +345,14 @@
         "oom": {
           "actual_isolation": {
             "cleanup_verified": true,
-            "container": "privacytrace-1b9d47fc1c58451b90561bd0772f7a40",
+            "container": "privacytrace-687c5acf5be44f428c27e51eece772a3",
             "container_created": true,
             "exit_state": {
               "ExitCode": 137,
               "OOMKilled": true,
               "Running": false
             },
-            "image_id": "sha256:47edffe9f32fe1767a65e93523312d78385ed795ff98708bf240b3907034248e",
+            "image_id": "sha256:bf12f77a034a73a92072b4fdcecb3d159754923c066db1db1bc5f6e5aaeba1dc",
             "input_removed": true,
             "isolation": {
               "CapAdd": null,
@@ -376,12 +376,12 @@
                 "read_only": true
               }
             ],
-            "request_id": "2468198b-8da3-5144-ac86-1067fbcbb9e1",
+            "request_id": "18de8f9f-4390-5b53-9849-e147895ca155",
             "user": "65534:65534",
             "version": 1
           },
           "error": "OOM",
-          "image_id": "sha256:47edffe9f32fe1767a65e93523312d78385ed795ff98708bf240b3907034248e"
+          "image_id": "sha256:bf12f77a034a73a92072b4fdcecb3d159754923c066db1db1bc5f6e5aaeba1dc"
         },
         "orphan": {
           "final_state": "SUCCEEDED",
@@ -394,10 +394,10 @@
         "timeout": {
           "actual_isolation": {
             "cleanup_verified": true,
-            "container": "privacytrace-902c6b42f2474796a16685f4a0d17981",
+            "container": "privacytrace-420504eafd5c4fdab5fef05cd7e54a9d",
             "container_created": true,
             "exit_state": null,
-            "image_id": "sha256:2190b097cdfacb6d5c2b7777637978b5e099bc2c418ed6f130c172c03e9fa113",
+            "image_id": "sha256:eaa99490a6f7a0a85c5072e37f3304e895d87d21554eab949ee2745a16f7ed06",
             "input_removed": true,
             "isolation": {
               "CapAdd": null,
@@ -421,19 +421,19 @@
                 "read_only": true
               }
             ],
-            "request_id": "0c7046a1-6418-5320-8941-195faaafb5fb",
+            "request_id": "3cfd9342-a4bd-5795-a599-6a78d95336c4",
             "user": "65534:65534",
             "version": 1
           },
           "error": "TIMEOUT",
-          "image_id": "sha256:2190b097cdfacb6d5c2b7777637978b5e099bc2c418ed6f130c172c03e9fa113"
+          "image_id": "sha256:eaa99490a6f7a0a85c5072e37f3304e895d87d21554eab949ee2745a16f7ed06"
         }
       },
-      "duration_s": 85.628,
+      "duration_s": 76.269,
       "name": "r4.oom_and_timeout_budget",
       "notes": "controlled Docker faults and owned-orphan recovery verified",
-      "result_digest": "sha256:34465080d45ef183",
-      "started_at": "2026-10-21T11:33:12Z",
+      "result_digest": "sha256:732330a248599e62",
+      "started_at": "2026-10-21T16:03:56Z",
       "status": "PASS",
       "ticket": "R4"
     }
@@ -442,42 +442,42 @@
     "allow_destructive": true,
     "allow_writes": true,
     "compose_files": [
-      "<repo>/deploy/compose.yaml",
+      "<private-home>/work/PrivacyTrace/PrivacyTrace/deploy/compose.yaml",
       "<lab-state>/ports.yaml",
       "<lab-state>/laboratory.json"
     ],
-    "cpu_count": 16,
-    "cpu_model": "13th Gen Intel(R) Core(TM) i7-13620H",
-    "cwd": "<repo>",
+    "cpu_count": 4,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "cwd": "<private-home>/work/PrivacyTrace/PrivacyTrace",
     "disk": {
       "filesystem": "ext2/ext3",
-      "free_bytes": 1017844342784,
-      "path": "<repo>",
-      "total_bytes": 1081101176832
+      "free_bytes": 89064251392,
+      "path": "<private-home>/work/PrivacyTrace/PrivacyTrace",
+      "total_bytes": 154894188544
     },
-    "kernel": "6.18.54.1-microsoft-standard-WSL2",
+    "kernel": "6.17.0-1022-azure",
     "machine": "x86_64",
-    "memory_bytes": 8218636288,
-    "os": "Linux-6.18.54.1-microsoft-standard-WSL2-x86_64-with-glibc2.39",
-    "release": "6.18.54.1-microsoft-standard-WSL2",
+    "memory_bytes": 16766414848,
+    "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "release": "6.17.0-1022-azure",
     "system": "Linux",
     "tools": {
-      "compose": "2.40.3+ds1-0ubuntu1~24.04.1",
-      "docker_client": "29.1.3",
-      "docker_server": "29.1.3",
-      "git": "git version 2.43.0",
+      "compose": "2.38.2",
+      "docker_client": "28.0.4",
+      "docker_server": "28.0.4",
+      "git": "git version 2.55.0",
       "python": "Python 3.12.3",
-      "topology_base_url": "https://privacytrace.test:44623"
+      "topology_base_url": "https://privacytrace.test:49691"
     },
     "topology_configured": true,
-    "wsl": true
+    "wsl": false
   },
-  "finished_at": "2026-10-21T11:34:38Z",
+  "finished_at": "2026-10-21T16:05:12Z",
   "notes": "Only documented operator actions are used (compose restart/stop/start, reclamation profile). No volume, database or host path is touched.",
   "receipt_version": 1,
   "scope": "r4-fault-injection-recovery",
-  "source_sha": "7769dfd4ada1236cc8de575c32264702e69f579c",
-  "started_at": "2026-10-21T11:31:32Z",
+  "source_sha": "d12eeb79deeeedd65880717d3b10a703ddbc97a8",
+  "started_at": "2026-10-21T16:02:15Z",
   "summary": {
     "by_ticket": {
       "R4": {

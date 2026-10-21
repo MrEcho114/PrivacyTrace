@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Rebuild the lab instance's business state (PostgreSQL + materials + broker)
 # while keeping PKI, certificates and the client's CA trust unchanged.
 #
@@ -17,7 +17,8 @@ set -euo pipefail
 
 : "${PT_LAB_STATE:?Set PT_LAB_STATE to the provisioned lab state directory}"
 LAB=$PT_LAB_STATE
-COMPOSE_DIR=${PT_COMPOSE_DIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)/deploy}
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+COMPOSE_DIR=${PT_COMPOSE_DIR:-$(cd -- "$SCRIPT_DIR/../.." && pwd)}
 PROJECT=${PT_PROJECT:-$(basename -- "$LAB")}
 CA=${PT_CA:-}
 HEALTH_PORT=${PT_HEALTH_PORT:-}

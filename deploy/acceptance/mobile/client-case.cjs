@@ -1,4 +1,4 @@
-﻿// Drive the installed PrivacyTrace Android client through one local
+// Drive the installed PrivacyTrace Android client through one local
 // end-to-end case: select fixture app -> upload -> policy path -> analysis ->
 // report. Native dialogs are driven through adb; the WebView through CDP.
 const fs = require('node:fs');
@@ -6,9 +6,9 @@ const path = require('node:path');
 const { connect } = require('./cdp.cjs');
 const ui = require('./adb-ui.cjs');
 
-const OUT = process.env.PT_EVIDENCE_DIR || 'evidence';
-const MODEL_ENDPOINT = process.env.PT_MODEL_ENDPOINT || 'https://localhost:19543/v1/chat/completions';
-const MODEL_KEY = process.env.PT_MODEL_KEY || 'pt73-test-key';
+const OUT = process.env.PT_EVIDENCE_DIR || path.join(__dirname, 'evidence');
+const MODEL_ENDPOINT = process.env.PT_MODEL_ENDPOINT || '';
+const MODEL_KEY = process.env.PT_MODEL_KEY || '';
 
 const POLICY_JSON = JSON.stringify({
   version: 'privacytrace-policy-collector/1',
@@ -111,6 +111,9 @@ async function importAssist(cdp, raw) {
 }
 
 async function configureModel(cdp) {
+  if (!MODEL_ENDPOINT || !MODEL_KEY) {
+    throw new Error('policyMode "model" requires PT_MODEL_ENDPOINT and PT_MODEL_KEY');
+  }
   log('configuring phone model endpoint');
   await cdp.evaluate(`document.querySelector('details.policy-assist')?.setAttribute('open','')`);
   const present = await cdp.bodyText();
@@ -243,11 +246,9 @@ async function prepareAndAnalyze(cdp, { evidencePrefix, addCandidate: candidate 
   await waitFor(cdp, body => body.includes('保存候选并开始分析'), 'candidate page', 180000);
   log('candidate page reached');
   if (candidate) {
-    try {
-      await addCandidate(cdp, candidate);
-    } catch (error) {
-      log(`manual candidate failed: ${error.message}`);
-    }
+    // A configured candidate is part of the case contract: do not silently
+    // continue into an empty policy comparison when it cannot be saved.
+    await addCandidate(cdp, candidate);
   }
   fs.writeFileSync(`${OUT}/${evidencePrefix}-candidates.txt`, await cdp.bodyText(), 'utf8');
   // Saving a candidate re-renders the footer; a click on the replaced node is a
@@ -294,6 +295,12 @@ async function main() {
     policyMode = 'assist', evidencePrefix = caseId, uploadAttempts = 5, cleanup = false,
   } = options;
   if (!caseId || !origin) throw new Error('caseId and origin are required');
+  if (!process.env.PT_ADB_SERIAL) {
+    throw new Error('PT_ADB_SERIAL is required; refusing to target the default adb device');
+  }
+  if (policyMode === 'model') {
+    log('WARNING: model mode is overwritten by the assist import and does not prove model provenance (see cases/README.md)');
+  }
   fs.mkdirSync(OUT, { recursive: true });
 
   const cdp = await uploadWithRetry({ origin, appLabel }, uploadAttempts);
@@ -306,12 +313,16 @@ async function main() {
     }
     const state = await prepareAndAnalyze(cdp, { evidencePrefix, addCandidate: options.addCandidate });
     const body = await capture(cdp, evidencePrefix);
+    const policyComparison = body.includes('未产生对照项')
+      ? 'EMPTY'
+      : (body.includes('隐私声明对照') ? 'PRESENT' : 'UNKNOWN');
     const deletion = cleanup ? await removeDraft(cdp, { origin }) : 'NOT_REQUESTED';
     const result = {
       case_id: caseId,
       origin,
       policy_mode: policyMode,
       job_state: state,
+      policy_comparison: policyComparison,
       deletion,
       body_chars: body.length,
       captured_at: new Date().toISOString(),
@@ -329,24 +340,27 @@ async function main() {
 async function uploadWithRetry({ origin, appLabel }, attempts) {
   let lastError;
   for (let attempt = 1; attempt <= attempts; attempt++) {
-    ui.run(['shell', 'am', 'force-stop', 'org.privacytrace.mobile']);
-    ui.run(['shell', 'pm', 'clear', 'org.privacytrace.mobile']);
-    ui.run(['shell', 'am', 'start', '-n', 'org.privacytrace.mobile/.MainActivity']);
-    ui.sleep(9000);
-    const pid = ui.forwardDevtools(9222);
-    log(`attempt ${attempt} webview pid ${pid}`);
-    const cdp = await connect(9222);
+    let cdp;
     try {
+      ui.run(['shell', 'am', 'force-stop', 'org.privacytrace.mobile']);
+      ui.run(['shell', 'pm', 'clear', 'org.privacytrace.mobile']);
+      ui.run(['shell', 'am', 'start', '-n', 'org.privacytrace.mobile/.MainActivity']);
+      ui.sleep(9000);
+      const pid = ui.forwardDevtools(9222);
+      log(`attempt ${attempt} webview pid ${pid}`);
+      cdp = await connect(9222);
       await selectAndUpload(cdp, { origin, appLabel });
       return cdp;
     } catch (error) {
       lastError = error;
       log(`attempt ${attempt} failed: ${error.message}`);
-      try { await cdp.close(); } catch { /* already closed */ }
+      if (cdp) {
+        try { await cdp.close(); } catch { /* already closed */ }
+      }
       ui.sleep(8000);
     }
   }
-  throw lastError;
+  throw lastError || new Error('upload phase failed');
 }
 
 main().catch(error => {

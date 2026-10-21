@@ -22,7 +22,7 @@
     只解析并打印计划，不连接 adb、不检查健康、不执行 node。用于核对 -Cases。
 
 .PARAMETER CaCert
-    HTTPS 健康检查使用的 CA 文件，默认 <env>\tls\ca.crt。
+    HTTPS 健康检查使用的 CA 文件，默认取 PT_CA_CERT，其次 <env>\tls\ca.crt。
 
 .PARAMETER Adb
     adb 可执行文件，默认取 PT_ADB，其次 PATH 中的 adb。
@@ -408,6 +408,7 @@ try {
     $deviceState = Assert-AdbDevice -AdbExe $adbExe -Serial $serial
 
     $caPath = $CaCert
+    if ([string]::IsNullOrWhiteSpace($caPath)) { $caPath = $env:PT_CA_CERT }
     if ([string]::IsNullOrWhiteSpace($caPath)) { $caPath = Join-Path $envDir 'tls\ca.crt' }
     $origins = @($plan | ForEach-Object { $_.Origin } | Select-Object -Unique)
     $healthResults = @()
@@ -483,6 +484,7 @@ foreach ($case in $plan) {
     }
 
     $jobState = ''
+    $comparison = ''
     $deletion = ''
     $parseError = ''
     $resultExists = Test-Path -LiteralPath $resultPath -PathType Leaf
@@ -490,6 +492,7 @@ foreach ($case in $plan) {
         try {
             $result = Get-Content -LiteralPath $resultPath -Raw -Encoding UTF8 | ConvertFrom-Json
             $jobState = [string]$result.job_state
+            $comparison = [string]$result.policy_comparison
             $deletion = [string]$result.deletion
         } catch {
             $parseError = $_.Exception.Message
@@ -524,13 +527,14 @@ foreach ($case in $plan) {
         '退出码' = $exitCode
         '结果 JSON 路径' = $resultPathValue
         'job_state' = $jobState
+        '政策对照' = $comparison
         'deletion' = $deletion
         '错误首行' = $errorFirst
     })
     Save-MatrixCsv -Path $csvPath -Rows $rows
 
     if ($resultExists -and $case.Cleanup -eq $true -and $deletion -ne 'DELETED') {
-        Write-Warning ("cleanup=true 但 deletion={0}；当前执行器未驱动原生删除确认，远端草稿可能仍占用每 IP 3 份配额。" -f $deletion)
+        Write-Warning ("cleanup=true 但 deletion={0}；远端草稿可能仍占用每 IP 3 份配额，请在客户端手工删除或重置实例。" -f $deletion)
     }
 
     if ($failureReason) {
@@ -541,7 +545,12 @@ foreach ($case in $plan) {
             break
         }
     } else {
-        Write-Host ("  -> 通过: job_state={0}, deletion={1}" -f $jobState, $deletion) -ForegroundColor Green
+        Write-Host ("  -> 脚本级完成: job_state={0}, policy_comparison={1}, deletion={2}" -f $jobState, $comparison, $deletion) -ForegroundColor Green
+        if ($comparison -eq 'EMPTY') {
+            Write-Warning '政策对照为空；该用例不能作为案例 PASSED，须按 #128/#129/#130 补齐非空对照后再判定。'
+        } elseif ($comparison -ne 'PRESENT') {
+            Write-Warning '未能识别报告中的政策对照状态，请人工核对后再判定案例 PASSED。'
+        }
     }
 }
 
@@ -552,7 +561,7 @@ $passed = $executed - $failed.Count
 $notRun = $total - $executed
 
 Write-Section '矩阵汇总'
-Write-Host ("用例总数: {0}；已执行: {1}；通过: {2}；失败: {3}；未执行: {4}" -f $total, $executed, $passed, $failed.Count, $notRun)
+Write-Host ("用例总数: {0}；已执行: {1}；脚本级完成: {2}；失败: {3}；未执行: {4}" -f $total, $executed, $passed, $failed.Count, $notRun)
 if ($stopped) {
     Write-Host '已在首个失败处停止（未使用 -ContinueOnError）。' -ForegroundColor Yellow
 }
@@ -563,6 +572,7 @@ if ($failed.Count -gt 0) {
     }
 }
 Write-Host ("CSV: " + $csvPath)
+Write-Host '注意：脚本级完成只表示 exit 0 + job_state=SUCCEEDED；H 案例是否 PASSED 仍须核对报告中的非空政策对照与证据。' -ForegroundColor Yellow
 
 if ($failed.Count -gt 0) { exit 1 }
 exit 0

@@ -1,4 +1,4 @@
-﻿const { execFileSync } = require('node:child_process');
+const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 
 const ADB = process.env.PT_ADB || 'adb';

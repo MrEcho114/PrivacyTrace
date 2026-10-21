@@ -1,0 +1,4 @@
+# Windows PowerShell 5.1 decodes BOM-less UTF-8 as the ANSI code page; keep the BOM
+# for the Chinese messages in this runner. Other files in this directory stay BOM-less.
+[run-matrix.ps1]
+charset = utf-8-bom

@@ -1,8 +1,8 @@
-﻿# Issue 73 本机 Android 验收用例矩阵
+# Issue 73 本机 Android 验收用例矩阵
 
-本目录是 `tmp/issue73-local-env/client-case.cjs` 的用例清单。判定依据是
-`tmp/issue73-local-acceptance-20261021/docs/acceptance/issue73/scenarios.md`
-（2026-10-21 版本）。本文只描述本机执行方式，不修改验收文档、不改变案例分母。
+本目录是 `client-case.cjs` 的用例清单。判定依据是仓库内的
+`docs/acceptance/issue73/scenarios.md`（2026-10-21 版本）。本文只描述本机执行方式，
+不修改验收文档、不改变案例分母。
 
 ## 0. 结论速览
 
@@ -12,11 +12,11 @@
 - 需人工执行：**26 个** = H03/H06/H09/H12（4）＋ N01–N12（12）＋ F01–F10（10）。
 - R01–R04 不是人工逐条点，而是**另走既有入口**（仓库检查、Spec30、Browser Acceptance、
   部署专项），不在本执行器覆盖范围内。
-- H01/H04/H07/H10 虽然可自动跑，但当前被 **BUG-01**（`/sources/discover` 503）阻断，
-  预期失败；修复后才能作为通过证据。
-- 用户提示里写的是 R01–R03，scenarios.md 实际有 **R04**。本表按文档实际编号纳入 R04。
+- H01/H04/H07/H10 虽然可自动跑，但本分支基线上仍被 **BUG-01**（`/sources/discover` 503，
+  #127 未合入）阻断，预期失败；#127 合入后应重跑，不能沿用旧结果。
+- scenarios.md 实际有 **R04**；本表按文档实际编号纳入 R04。
 
-判定“通过”的口径不是只看进程退出码：
+脚本级判定（**不等于案例 PASSED**）不是只看进程退出码：
 
 ```text
 exit code == 0
@@ -24,9 +24,11 @@ exit code == 0
 且 job_state == SUCCEEDED
 ```
 
-`cleanup=true` 只表示请求删除远端材料；`deletion` 的
-`DELETED / UNCONFIRMED / SKIPPED / NOT_REQUESTED` 单独记录，不直接等同于 job 失败。
-但当前执行器的 `cleanup` 有实现缺口（见第 6 节），会直接影响连续用例的配额。
+它只说明驱动流程走完；`result.json` 会记录 `policy_comparison`，为 `EMPTY` 时 H 案例
+不得计 PASSED，仍须按 #128/#129/#130 核对非空、可复核政策对照与证据。`cleanup=true`
+只表示请求删除远端材料；`deletion` 的
+`DELETED / UNCONFIRMED / SKIPPED / NOT_REQUESTED` 单独记录，不直接等同于 job 失败，
+但 `UNCONFIRMED` 可能仍占用配额（见第 4.2 节）。
 
 ## 1. 全量对照表
 
@@ -170,18 +172,14 @@ H01–H12 或 F01–F10。
 ### 4.2 每 IP 3 份草稿的硬限制
 
 服务端 `MAX_DRAFTS_PER_IP = 3`（`apps/api/src/privacytrace/web_intake.py`）。
-当前执行器的 `cleanup` 不能完成原生删除确认（见第 6 节），所以**同一实例/IP
-连续跑第 4 个用例时会遇到 `Client draft quota reached`**。
+`cleanup: true` 会尝试走原生两步删除（输入 origin → 检查并继续 → 确认删除），
+但仍要读回 `result.json` 的 `deletion`：
 
-两种可行做法：
+- `DELETED`：配额已释放，可以继续。
+- `UNCONFIRMED` / `SKIPPED`：不要假设已释放；在客户端手工完成删除，或运行
+  `lab-reset.sh` 重置业务态后再跑下一个用例。
 
-- **保守**：每跑 1 个用例，就用客户端 UI 手工完成“删除远端材料”的两个原生对话框
-  （输入 origin → 检查并继续 → 确认删除），再跑下一个。
-- **按 3 个一组**：先跑 H02、H05、H01，手工删除 3 份草稿，再跑 H04；J 组同理
-  （H08、H11、H07 → 清理 → H10）。不要假设 `deletion=UNCONFIRMED` 已经释放配额。
-
-如果 BUG-01 尚未修复，H01/H04/H07/H10 会失败但仍可能占用草稿；建议把它们放在
-每组的最后，或先修 BUG-01 再跑 auto。
+执行器不会自动重试删除；连续跑第 4 个用例前先检查。
 
 ### 4.3 推荐命令
 
@@ -196,13 +194,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\run-matrix.ps1 `
 powershell -NoProfile -ExecutionPolicy Bypass -File .\run-matrix.ps1 `
   -Cases H02,H05,H01 -OutDir .\evidence\matrix-20261021-I -ContinueOnError
 
-# 2) 手工清理 3 份草稿后跑 I 组剩余
+# 2) 读回 deletion；若为 UNCONFIRMED，手工清理后跑 I 组剩余
 powershell -NoProfile -ExecutionPolicy Bypass -File .\run-matrix.ps1 `
   -Cases H04 -OutDir .\evidence\matrix-20261021-I -ContinueOnError
 
 # 3) 切到 J（示例：把 28443 反向映射指向 J 的宿主端口）
-adb -s 127.0.0.1:16480 reverse --remove tcp:28443
-adb -s 127.0.0.1:16480 reverse tcp:28443 tcp:<J_HOST_PORT>
+adb -s <serial> reverse --remove tcp:28443
+adb -s <serial> reverse tcp:28443 tcp:<J_HOST_PORT>
 
 # 4) J 组
 powershell -NoProfile -ExecutionPolicy Bypass -File .\run-matrix.ps1 `
@@ -224,9 +222,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\run-matrix.ps1 `
 | `-OutDir` | 是 | 证据目录。脚本会设置为 `PT_EVIDENCE_DIR`，执行器的 `-webview.txt`、`-device.png`、`-result.json` 都落在这里。 |
 | `-ContinueOnError` | 否 | 某个用例失败后继续；不加则首个失败即停并汇总。 |
 | `-DryRun` | 否 | 只解析并打印计划，不连接 adb、不检查健康、不执行 node。 |
-| `-CaCert` | 否 | 健康检查 CA；默认 `<env>\tls\ca.crt`。 |
-| `-Adb` | 否 | adb 路径；默认 `PT_ADB` → MuMu 默认路径 → PATH。 |
-| `-AdbSerial` | 否 | adb 序列号；默认 `PT_ADB_SERIAL` → `127.0.0.1:16480`。 |
+| `-CaCert` | 否 | 健康检查 CA；默认 `PT_CA_CERT` → `<本目录>\tls\ca.crt`。 |
+| `-Adb` | 否 | adb 路径；默认 `PT_ADB` → PATH。 |
+| `-AdbSerial` | 否 | adb 序列号；默认 `PT_ADB_SERIAL`；缺失即报错，不猜测设备。 |
 
 ### 5.2 行为
 
@@ -243,8 +241,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\run-matrix.ps1 `
 4. 每例写日志 `<OutDir>\logs\<caseId>.log`（UTF-8 无 BOM），并重写
    `<OutDir>\matrix-results.csv`（UTF-8 带 BOM，Excel 可直接打开）。
 5. 失败判定：退出码非 0，或结果 JSON 缺失/解析失败，或 `job_state != SUCCEEDED`。
-   `deletion != DELETED` 只警告，不单独判失败；但它会影响后续配额。
-6. 退出码：`0` 全部通过；`1` 有失败/提前停止；`2` 用例解析或预检失败。
+   `deletion != DELETED` 只警告，不单独判失败；但它可能仍占用配额。`policy_comparison`
+   为 `EMPTY` 时只警告，但该用例不能作为案例 PASSED。此判定只到脚本级。
+6. 退出码：`0` 全部脚本级完成；`1` 有失败/提前停止；`2` 用例解析或预检失败。
 
 ### 5.3 CSV 列
 
@@ -255,6 +254,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\run-matrix.ps1 `
 | 退出码 | `node client-case.cjs` 的退出码 |
 | 结果 JSON 路径 | 存在的 `<OutDir>\<evidencePrefix>-result.json`；缺失时留空 |
 | job_state | `SUCCEEDED` / `FAILED` / `CANCELLED`；未写出结果时留空 |
+| 政策对照 | `PRESENT` / `EMPTY` / `UNKNOWN`（来自 `result.json` 的 `policy_comparison`）；未写出结果时留空 |
 | deletion | `DELETED` / `UNCONFIRMED` / `SKIPPED` / `NOT_REQUESTED`；未写出结果时留空 |
 | 错误首行 | 失败时优先取含 `CASE_FAILED` 的第一行，否则取首个非空行；成功时留空 |
 
@@ -292,15 +292,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\run-matrix.ps1 `
    `importAssist(cdp, POLICY_JSON)`，把 `#collector-result` 覆盖为固定 assist JSON，
    再按 assist 来源补入。模型端点/收集 UI 被走到了，但真正分析的是 assist 文本，
    模型来源、审计和“手机直连模型 API 补入”都没有被证明。因此本目录没有
-   H03/H06/H09/H12 的 JSON；需要人工跑或先修执行器。
-2. **`cleanup: true` 不能完成原生删除（执行器缺口）**
-   `removeDraft()` 只点击 WebView 的“删除远端材料”按钮，然后等待
-   “已确认删除”/“访问已撤销”。实际链路是原生 `delete_upload`：
-   先弹“删除远端材料”要求输入 origin → “检查并继续”，再弹
-   “主动删除远端材料？”→“确认删除”。执行器没有驱动这两个原生对话框，
-   所以 `deletion` 大概率是 `UNCONFIRMED`，远端草稿仍在。
-   结合 `MAX_DRAFTS_PER_IP = 3`，同一 IP 第 4 个用例会失败。
-   本目录仍按契约写 `cleanup: true`；执行顺序和手工清理见第 4.2 节。
+   H03/H06/H09/H12 的 JSON；需要人工跑或先修执行器。`model` 模式还要求显式设置
+   `PT_MODEL_ENDPOINT` / `PT_MODEL_KEY`；即使设置，结果也会被 assist 覆盖。
+2. **`cleanup` 的删除结果仍可能是 `UNCONFIRMED`**
+   `removeDraft()` 会驱动 WebView 按钮后的原生两步对话框（输入 origin →
+   “检查并继续”→“确认删除”），但 UI、网络或服务端超时都可能让
+   `deletion` 停在 `UNCONFIRMED`/`SKIPPED`。结合 `MAX_DRAFTS_PER_IP = 3`，
+   连续跑第 4 个用例前要读回 `deletion`；未确认时手工删除或重置实例（第 4.2 节）。
 3. **I/J 无法写进 case JSON**
    `origin` 固定 `https://localhost:28443`，但 H07–H12 需要实例 J。JSON 只能表达
    “模拟器访问 localhost:28443”，不能表达“这个 28443 背后是 I 还是 J”。必须在
@@ -308,8 +306,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\run-matrix.ps1 `
 4. **单 APK / splits 没有不同 appLabel**
    两者都显示 `Controlled split fixture`；只能靠安装状态（`pm path` 返回 1 或 2 个包）
    区分。任务描述里“用 appLabel 区分单 APK / splits”在本 fixture 上不可行。
-5. **R04 不在用户提示里**
-   用户提示写 R01–R03；scenarios.md 实际有 R04（部署专项）。本表纳入 R04，
+5. **R04 容易漏**
+   scenarios.md 实际有 R04（部署专项）；早期任务描述只写到 R01–R03。本表纳入 R04，
    总数因此是 38 而不是 37。
 6. **BUG-01 仍然阻断 auto**
    H01/H04/H07/H10 的自动政策组合在交付拓扑下 `POST /sources/discover` 返回 503
@@ -326,19 +324,18 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\run-matrix.ps1 `
 9. **`cleanup` 与 N/F 用例冲突**
    N/F 组需要保留远端材料、任务、删除水位和恢复状态来观察；这些用例不能套用
    `cleanup: true`。本目录只给 H 组生成 JSON；N/F 人工执行时按场景表决定清理时机。
-10. **根目录旧样例不是完整契约**
-    `tmp/issue73-local-env/case-H01.json`、`case-H02.json`、`case-H01-auto.json`
-    是最初的样例，缺少 `uploadAttempts`/`cleanup`。本目录的 8 个文件才是矩阵使用的
-    完整字段版本；不要混用。
+10. **早期临时样例不是完整契约**
+    早期临时目录里的样例缺少 `uploadAttempts`/`cleanup`。本目录的 8 个文件才是矩阵
+    使用的完整字段版本；不要混用。
 
 ## 7. 证据与安全
 
-- `-OutDir` 建议放在 `tmp/issue73-<run>/evidence` 这类 Git 忽略目录；不要提交
+- `-OutDir` 建议放在 Git 忽略目录（例如仓库根的 `tmp/`）；不要提交
   原始截图、请求、访问材料、APK 或含凭证的日志。
 - 公开证据必须逐文件脱敏；本目录的 `notes` 只写别名和前置条件，不含秘密。
 - 每个用例至少保留：`matrix-results.csv`、`logs/<caseId>.log`、
   `<evidencePrefix>-candidates.txt`、`<evidencePrefix>-webview.txt`、
   `<evidencePrefix>-webview.png`、`<evidencePrefix>-device.png`、
   `<evidencePrefix>-result.json`（若执行到写结果）。
-- 执行后逐个读回 `result.json` 的 `job_state`/`deletion`，并核对证据文件 SHA256；
-  不能只看 CSV 的“通过”。
+- 执行后逐个读回 `result.json` 的 `job_state`/`policy_comparison`/`deletion`，并核对证据文件 SHA256；
+  不能只看 CSV 的“脚本级完成”。

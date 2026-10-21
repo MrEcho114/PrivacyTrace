@@ -26,6 +26,7 @@ Thumbs.db
 data/
 samples/private/
 evidence/private/
+deploy/acceptance/mobile/evidence/
 tmp/
 *.log
 

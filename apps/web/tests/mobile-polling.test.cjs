@@ -36,14 +36,14 @@ function laboratory(random = () => 0) {
     }
   }
   const { createMobileFlow } = load(path.resolve(__dirname, '../src/mobile/flow.ts'))
-  function client() {
+  function client({ existingJob = true } = {}) {
     const id = (++clientNumber).toString(16).repeat(32)
     const context = { origin: 'https://shared.example/', draft: id, state: 'SERVER_CONFIRMED' }
-    const draft = { id, revision: 1, sources: [], candidates: [], jobs: [{ job_id: id, events: [] }] }
+    const draft = { id, revision: 1, sources: [], candidates: [], jobs: existingJob ? [{ job_id: id, events: [] }] : [] }
     const actions = [], failures = new Map(), blocked = new Map()
-    let job = { id, state: 'QUEUED' }
+    let job = { id, state: 'QUEUED' }, restores = 0
     const bridge = {
-      async restore() { consume(2); return context }, async cancel() {},
+      async restore() { restores++; consume(2); return context }, async cancel() {},
       async remove() { return { ...context, state: 'DELETED' } },
       async request(action) {
         actions.push({ action, at: now })
@@ -56,7 +56,7 @@ function laboratory(random = () => 0) {
         return { origin: context.origin, draft: context.draft, data }
       },
     }
-    return { flow: createMobileFlow(bridge), actions, id,
+    return { flow: createMobileFlow(bridge), actions, id, restores: () => restores,
       failNext: (action, code) => failures.set(action, code),
       blockNext(action) {
         let release
@@ -80,22 +80,24 @@ function laboratory(random = () => 0) {
 }
 
 test('two restored clients sharing 60 HTTP requests/minute leave room for explicit controls', async () => {
-  const lab = laboratory(), clients = [lab.client(), lab.client()]
-  for (const { flow } of clients) await flow.select(true)
-  await lab.advance(179999)
-  for (const { flow, actions, id } of clients) {
-    assert.equal(flow.error.value, '', 'shared automatic reads must not consume the full budget')
-    assert.equal(flow.job.value.id, id)
-    assert.ok(actions.some(item => item.action === 'job' && item.at >= 120000), 'continue across windows')
-    await flow.poll()
-    assert.equal(flow.error.value, '')
-    await flow.control('cancel-job')
-    assert.equal(flow.error.value, '', 'both clients retain budget for cancellation')
-    assert.equal(flow.job.value.state, 'CANCELLED')
-    assert.equal(actions.filter(item => item.action === 'cancel-job').length, 1)
-    assert.equal(actions.filter(item => ['start', 'retry-job'].includes(item.action)).length, 0)
+  for (const until of [59999, 179999]) {
+    const lab = laboratory(), clients = [lab.client(), lab.client()]
+    for (const { flow } of clients) await flow.select(true)
+    await lab.advance(until)
+    for (const { flow, actions, id } of clients) {
+      assert.equal(flow.error.value, '', 'shared automatic reads must not consume the full budget')
+      assert.equal(flow.job.value.id, id)
+      assert.ok(actions.some(item => item.action === 'job' && item.at >= Math.min(120000, until - 30000)), 'keep reading')
+      await flow.poll()
+      assert.equal(flow.error.value, '')
+      await flow.control('cancel-job')
+      assert.equal(flow.error.value, '', 'both clients retain budget for cancellation')
+      assert.equal(flow.job.value.state, 'CANCELLED')
+      assert.equal(actions.filter(item => item.action === 'cancel-job').length, 1)
+      assert.equal(actions.filter(item => ['start', 'retry-job'].includes(item.action)).length, 0)
+    }
+    assert.equal(lab.scheduled.size, 0)
   }
-  assert.equal(lab.scheduled.size, 0)
 })
 
 test('SERVER_BUSY stays visible, waits at least the current 60s server window, then resumes reads', async () => {
@@ -182,4 +184,31 @@ test('a stale in-flight read cannot clear the new generation polling timer', asy
   release(); await pending
   assert.equal(lab.scheduled.size, 1, 'stale completion must leave the new timer intact')
   assert.equal(flow.error.value, '')
+})
+
+for (const action of ['read', 'taxonomy', 'job']) {
+  test(`a busy ${action} while restoring keeps the failure visible and resumes without another restore`, async () => {
+    const lab = laboratory(), { flow, failNext, id, actions, restores } = lab.client()
+    failNext(action, 'SERVER_BUSY')
+    await flow.select(true)
+    assert.equal(flow.error.value, 'SERVER_BUSY')
+    assert.equal(flow.job.value, null, 'do not invent a job state')
+    assert.ok(Number.isFinite(lab.next()) && lab.next() >= 60000)
+    await lab.advance(lab.next())
+    assert.equal(flow.error.value, '')
+    assert.equal(flow.job.value.id, id)
+    assert.equal(restores(), 1, 'automatic recovery must not reopen native restore/confirmation')
+    assert.equal(actions.filter(item => ['start', 'retry-job', 'cancel-job'].includes(item.action)).length, 0)
+  })
+}
+
+test('busy recovery for saved materials without a job never starts an analysis', async () => {
+  const lab = laboratory(), { flow, failNext, actions } = lab.client({ existingJob: false })
+  failNext('taxonomy', 'SERVER_BUSY')
+  await flow.select(true)
+  await lab.advance(lab.next())
+  assert.equal(flow.error.value, '')
+  assert.equal(flow.job.value, null)
+  assert.equal(lab.scheduled.size, 0)
+  assert.equal(actions.filter(item => ['job', 'start', 'retry-job'].includes(item.action)).length, 0)
 })

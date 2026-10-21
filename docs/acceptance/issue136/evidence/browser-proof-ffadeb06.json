@@ -116,7 +116,7 @@
     {
       "tc": "TC-01",
       "action": "screenshot",
-      "details": "Captured screenshot at E:\\学习\\BS\\PrivacyTrace\\evidence\\screenshots\\tc01-long-text-pagination.png",
+      "details": "Captured screenshot at evidence/screenshots/tc01-long-text-pagination.png",
       "timestamp": "2026-10-21T08:20:30.037Z"
     },
     {
@@ -146,7 +146,7 @@
     {
       "tc": "TC-02",
       "action": "screenshot",
-      "details": "Captured screenshot at E:\\学习\\BS\\PrivacyTrace\\evidence\\screenshots\\tc02-xss-defense.png",
+      "details": "Captured screenshot at evidence/screenshots/tc02-xss-defense.png",
       "timestamp": "2026-10-21T08:20:32.431Z"
     },
     {

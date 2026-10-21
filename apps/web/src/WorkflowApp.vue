@@ -92,10 +92,10 @@ watch(state, persist, { deep: true })
         </nav>
         <div class="sidebar-foot"><span class="status-dot" aria-hidden="true"></span>本机工作台</div>
       </aside>
-      <main id="workspace-content" class="workspace-content" tabindex="-1">
+      <main id="workspace-content" class="workspace-content" tabindex="-1" :data-view="view" :data-step="view === 'workflow' ? state.step : 'reports'">
         <template v-if="view === 'workflow'">
           <div class="workflow-toolbar"><nav class="step-nav" aria-label="创建流程"><button v-for="(step, index) in steps" :key="step" :disabled="index > state.maxStep" :aria-current="state.step === step ? 'step' : undefined" @click="go(step)"><span :class="{ complete: index < stepNumber }">{{ index < stepNumber ? '✓' : index + 1 }}</span>{{ stepLabels[index] }}</button></nav>
-          <div class="flow-context"><StatusTag :tone="state.example ? 'info' : 'neutral'">{{ state.example ? '示例体验 · 固定材料' : '新建对照' }}</StatusTag><UiButton v-if="state.example" variant="quiet" @click="newMaterials">新材料</UiButton></div></div>
+          <div class="flow-context"><StatusTag :tone="state.example ? 'info' : 'neutral'">{{ state.example ? '示例体验 · 固定材料' : '真实入口 · 本机材料' }}</StatusTag><UiButton v-if="state.example" variant="quiet" @click="newMaterials">新材料</UiButton></div></div>
           <p v-if="message" class="notice compact" role="status">{{ message }}</p>
           <p v-if="storageError" class="notice" role="status">浏览器暂存不可用，当前输入仍可继续使用。</p>
           <LiveWorkflow v-if="!state.example" :state="state" @example="startExample" />
@@ -104,9 +104,11 @@ watch(state, persist, { deep: true })
           <ProgressPage v-else-if="state.step === 'progress'" :state="state" @back="go('candidates')" @report="next('report')" />
           <ExampleReport v-else :state="state" @edit="go('candidates')" />
         </template>
-        <template v-else><div class="report-page-title"><h1 id="page-title" tabindex="-1">{{ copy.realReports }}</h1><p>{{ copy.reportDescription }}</p></div><ExistingReports /></template>
+        <template v-else><div class="page-heading"><h1 id="page-title" tabindex="-1">{{ copy.realReports }}</h1><p>{{ copy.reportDescription }}</p></div><ExistingReports /></template>
       </main>
     </div>
     <SettingsPanel v-if="settings" :storage-error="storageError" :example="state.example" @close="closeSettings" @clear="clearDraft" />
   </div>
 </template>
+
+<style src="./hierarchy.css"></style>

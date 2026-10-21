@@ -98,3 +98,78 @@ A 票维护 token 与接口；B/C/D/E 在各自范围消费。D 的全站硬件�
 项目既有组件、字体文件和图标原样沿用；Figma仅作为设计变量/角色参考，未复制其业务或图像资源。Reka 源码依赖许可证 [MIT全文](issue142/reka-ui-LICENSE.txt) 随本票保存，上游 [仓库](https://github.com/unovue/reka-ui)。Naive 的 MIT 仅用于探针比较，未进入生产依赖。
 
 依赖审计：生产依赖 `npm audit --omit=dev` 为0项；全量审计仍报告基线已有的 Vite 开发工具告警，本票未升级范围外工具链。
+
+## 第二轮：Android 竖屏 token、UiSheet 与图标（2026-10-22）
+
+来源合同：`.scratch/round2/lead/docs/design/frontend-round2-android-pioneer.md` §2/§3/§8/§9/§10（本轮集成时随父票 #141 进入 `docs/design/`）。本轮只补 #142 的 token 与基础组件；移动外壳（#144）、桌面层级（#143）、语义/焦点（#145）与动效（#146）不在本票范围内，也未在本票验收。
+
+### Token 映射
+
+`apps/web/src/theme.css` 仍是唯一变量文件；下列变量名与值由合同 §3 固定，不改名、不删旧 token。行内注释记录了合同路径、Pioneer Figma 节点与 Android 平台指引。
+
+| token | 值 | 来源与推导 | 预期消费方 |
+| --- | --- | --- | --- |
+| `--m-touch` | `48px` | Android 48dp 最小触控目标（平台规范）；24px 视觉图标用 padding 扩大命中区 | C/D 的按钮、列表行、图标按钮 |
+| `--m-appbar-height` | `56px` | Material 3 top app bar 高度；不含 safe-top | C |
+| `--m-actionbar-min-height` | `64px` | 48px 主按钮 + 上下各 8px 留白，保证底部操作栏可触达 | C |
+| `--m-gutter` | `16px` | Android/Material 16dp 屏幕边距；与既有 `--space-16` 同值，但语义限定为移动外壳 | C/D |
+| `--m-card-radius` | `12px` | 与既有 `--radius-panel` 12px 一致，避免移动端出现第二套圆角 | C |
+| `--m-sheet-radius` | `20px` | 合同固定值（bottom sheet 顶部圆角）；Figma 未提供该变量，不是逐节点量取值 | UiSheet、C 的证据弹层 |
+| `--m-font-title` | `1.25rem`（20px） | §2.1 固定「标题 Pioneer 衬线 20px」；位于桌面 heading 28px、`mobileHeading` 24px 的下一档 | C 顶栏标题、UiSheet 标题 |
+| `--m-font-section` | `1rem`（16px） | 移动端分区标题；与输入 16px 同值但契约不同（输入字号来自 WebView 聚焦缩放防护） | C/D |
+| `--m-body` | `0.875rem`（14px） | Pioneer 正文 14px；长文阅读可用既有 15px，本 token 不强制覆盖 | C/D |
+| `--m-caption` | `0.75rem`（12px） | Pioneer 辅助字号 | C/D |
+| `--m-line-body` | `1.65` | 移动端正文行高；既有正文 1.6–1.7，取中间值 | C/D |
+| `--m-state-hover` / `--m-state-press` | `rgba(44, 53, 71, .06)` / `.12` | 由 `--ink #2C3547` 加 alpha 的状态层，对应 Material state layer 的 6%/12%，不新增颜色 | C/E |
+| `--m-state-selected` | `rgba(51, 60, 80, .08)` | 由 `--navy #333C50` 加 alpha；选中/当前项与 hover 区分 | C/D |
+| `--m-scrim` | `rgba(44, 53, 71, .42)` | 由 `--ink` 推导的弹层遮罩；比桌面 `--overlay`（.3）更实，保证 sheet 前景分离 | UiSheet、C |
+| `--m-shadow-bar` / `--m-shadow-sheet` | `0 1px 2px rgba(...,.08)` / `0 -8px 32px rgba(...,.18)` | 由 `--ink` 推导；sheet 阴影朝上，因为底边贴视口 | A/C |
+
+§3 的 motion token（`--m-duration-*`、`--m-ease-*`）归 E，本票没有提前写入，也没有把动效写成已实现。
+
+### UiSheet（`components/UiSheet.vue`，新增）
+
+- 行为来自 Reka UI **2.11.0** Dialog 家族（MIT，既有生产依赖）：`DialogRoot/Portal/Overlay/Content/Title/Description/Close`。没有复制 Reka 源码，没有新增渲染库或依赖。模态遮罩、焦点进入/循环、Esc、背景 `aria-hidden`、body 滚动锁定由库提供（overlay 负责 scroll lock）。
+- 接口：`title`（必填）、`description?`、`initialFocus?`（元素 ID，缺省聚焦 `.ui-sheet-close`）、`variant?: 'bottom' | 'detail'`（默认 `bottom`）。默认插槽是正文；`close` 插槽是关闭按钮内容（默认 `UiIcon name="close"`）；默认关闭按钮、点击遮罩或 Esc 都经 `update:open` 发出 `close`，由父组件卸载。打开前的焦点由 Reka 记录并在关闭后恢复，父组件也可自行管理（与 `UiDialog` 的既有约定一致）。
+- DOM 类：`ui-sheet-overlay`、`ui-sheet`、`ui-sheet-handle`、`ui-sheet-head`、`ui-sheet-title`（合同外，仅用于测量/焦点定位）、`ui-sheet-close`、`ui-sheet-description`、`ui-sheet-body`。关闭按钮带 `aria-label="关闭"`，图标 `aria-hidden`；标题由 `DialogTitle` 生成 `aria-labelledby` 关联。
+- 几何：bottom 默认 `max-height: min(88dvh, 720px)`，宽度 `min(100%, 640px)`（桌面居中，不把 sheet 拉满 1440）；detail 变体 `inset: 0`、`100dvh` 全屏。正文 `overflow-y: auto` 且 `overscroll-behavior: contain`；左右/底部安全区使用 `env(safe-area-inset-*)`，detail 额外加顶部安全区。关闭按钮 48×48（`--m-touch`），标题 20px 衬线（`--m-font-title`），圆角 `--m-sheet-radius`。
+- `description` 缺省时仍渲染一个 `display:none` 的空 `DialogDescription`，避免 `aria-describedby` 指向不存在的节点；这是实现细节，不改变可选接口。
+- 动效保持静态：本组件没有 transition/animation。按压/进入/退出由 E 在 #146 统一添加并遵守 `prefers-reduced-motion`；本票不认领动效验收。
+
+### UiIcon
+
+在既有 4 个图标之外加入 `back`、`close`、`settings`、`chevron-right`、`refresh`、`check`。全部 24px、`viewBox="0 0 24 24"`、`fill="none"`、`stroke="currentColor"`、`stroke-width="1.5"`、圆头连接、`aria-hidden="true"`/`focusable="false"`。路径是手写的通用 24px 几何，不是 Figma 导出，也没有下载图标库；既有 4 个图标保留名称与行为，渲染尺寸按 §3「统一 24px」由 20px 改为 24px，布局由既有 `.ui-icon`（`flex-shrink: 0`）与局部 CSS 尺寸覆盖。
+
+### `pioneer-design.json`
+
+新增机器可读镜像，既有键值不动：
+
+```json
+"mobile": { "touchTarget": 48, "appBarHeight": 56, "actionBarMinHeight": 64, "inputFontSize": 16, "sheetRadius": 20 }
+```
+
+它只是断言/文档镜像，CSS 的唯一事实源仍是 `theme.css`；两处数值由 `scripts/verify-round2-primitives.cjs` 交叉校验，改一处必须同时改另一处。
+
+### 验证与限制
+
+本分支 `codex/issue142-round2`（HEAD 以提交为准），2026-10-22：
+
+- `node scripts/verify-round2-primitives.cjs`：17 个 §3 token、旧 token 未改名、JSON 镜像、UiIcon/UiSheet 静态合同、无 `transition: all`、四份证据文件存在。
+- `npm run typecheck`（vue-tsc --noEmit）：通过。
+- `npm run build`（apps/web）：通过；产物 CSS 30.80 kB / gzip 6.91 kB、JS 240.37 kB / gzip 86.64 kB。UiSheet 尚未被产品入口引用，因此没有进入当前 bundle；这不是接入完成的证据。
+- 浏览器夹具：Vite 7.3.6 + Playwright Chromium（版本见 json），`390×844` 与 `1440×900`，`deviceScaleFactor: 1`。夹具在 gitignored `tmp/round2-a/`，是受控组件夹具，不是产品页面或真实数据。
+
+| 截图 | 场景 | 视口 | 说明 |
+| --- | --- | --- | --- |
+| [ui-sheet-bottom-390.png](issue142/evidence/ui-sheet-bottom-390.png) | UiSheet 默认 bottom | 390×844 | 390×720、20px 顶部圆角、正文可滚动（scrollHeight 712 > clientHeight 587）、关闭按钮 48×48、初始焦点在关闭按钮 |
+| [ui-sheet-bottom-1440.png](issue142/evidence/ui-sheet-bottom-1440.png) | UiSheet 默认 bottom | 1440×900 | 宽度 640 居中、高度仍受 720 上限约束 |
+| [ui-sheet-detail-390.png](issue142/evidence/ui-sheet-detail-390.png) | detail 变体 | 390×844 | 全屏 390×844、无圆角 |
+| [ui-sheet-metrics.json](issue142/evidence/ui-sheet-metrics.json) | 几何与行为 | 两种视口 | Chromium 版本、开合、Esc、焦点返回、`overscroll-behavior: contain`、无横向溢出 |
+
+限制与 NOT_RUN：
+
+- Chromium 视口模拟不是 Android WebView/真机；桌面 Chromium 的 `env(safe-area-inset-*)` 为 0，刘海/手势条真实留白未验证。
+- 未验证真实 Android 系统返回键、软键盘 IME 与键盘内 `100dvh` 行为（#144/#145 范围）、真实读屏、真实设备字体缩放；未构建 APK；未跑 `bash scripts/check.sh`（由 Lead 在整合树执行）。
+- 未接产品入口：本轮不修改 `App.vue`、`MobileApp.vue`、`workbench.css`、`pages/*`；UiSheet 的真实接入与 390×844 全流程由 C/D 验证。
+- `--m-sheet-radius`、`--m-touch` 等值来自合同/平台规范，不是在 Figma 逐节点量取的；来源与差异以本节表格为准，不把设计规范写成运行结果。
+

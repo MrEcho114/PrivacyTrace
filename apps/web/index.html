@@ -2,7 +2,10 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Mobile flow (#144): cover the notch/home indicator and let the soft keyboard
+         shrink the layout viewport so focused controls and the buttons below them stay
+         reachable. `interactive-widget` is ignored by browsers that do not support it. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="theme-color" content="#f6f5f1" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
     <title>PrivacyTrace · 证据对照工作台</title>

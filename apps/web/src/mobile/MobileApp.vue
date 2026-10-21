@@ -58,11 +58,14 @@ onBeforeUnmount(() => { void flow.stop() })
   </div>
 </template>
 <style scoped>
-.mobile-content { width: min(100%, 72rem); margin: auto; padding: 1.5rem; box-sizing: border-box; }
-.mobile-field { display: grid; gap: .4rem; margin: 1rem 0; }
+.mobile-content { width: min(100%, 72rem); margin: auto; padding: 1.5rem; padding-right: max(1.5rem, env(safe-area-inset-right, 0px)); padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)); padding-left: max(1.5rem, env(safe-area-inset-left, 0px)); box-sizing: border-box; }
+/* A single minmax(0,1fr) column keeps the native input from sizing the grid
+   track with its default intrinsic width when the system font is enlarged. */
+.mobile-field { display: grid; grid-template-columns: minmax(0, 1fr); gap: .4rem; margin: 1rem 0; }
+.mobile-field input { width: 100%; min-width: 0; }
 .policy-reading { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 24rem; overflow: auto; }
 .hash { overflow-wrap: anywhere; }
 .mobile-report :deep(.topbar), .mobile-report :deep(.intro) { display: none; }
 .mobile-report :deep(main) { padding: 0; }
-@media (max-width: 560px) { .mobile-content { padding: 1rem; } }
+@media (max-width: 560px) { .mobile-content { padding: 1rem; padding-right: max(1rem, env(safe-area-inset-right, 0px)); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); padding-left: max(1rem, env(safe-area-inset-left, 0px)); } }
 </style>

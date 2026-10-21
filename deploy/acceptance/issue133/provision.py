@@ -29,6 +29,9 @@ def main():
         parser.error("An owned lane E laboratory already exists; inspect or clean it first")
     root = parent / ("pt81-" + uuid4().hex[:12])
     root.mkdir(mode=0o711)
+    # Reserve ownership before provisioning can create secrets or Compose resources.
+    # The marker also prevents a retry from silently abandoning a failed lab.
+    (parent / "current").write_text(str(root))
     # _populate is the shared deployment recipe. Only this process's port
     # allocator changes; no shared source, daemon configuration or other lab changes.
     provision.free_port = lambda: args.port
@@ -62,7 +65,6 @@ def main():
         caddy.chmod(0o444)
         lab.run("up", "-d", "--no-deps", "--force-recreate", "api", "web")
         lab.ready()
-        (parent / "current").write_text(str(root))
         print(
             json.dumps(
                 {

@@ -88,6 +88,8 @@ python -m deploy.acceptance.issue133.cleanup > PRIVATE_CLEANUP_JSON
 先撤销全部合成作用域、回读 tombstone/材料/容器状态，再删除本票 Compose/卷和私有根目录。
 同时停止经核对的专用 AVD。保留只读镜像缓存不代表业务数据残留。
 检查过程意外退出时先核对 worker 没有暂停，按 current marker 恢复/清理；不重建其他栈。
+启动失败也保留 current marker，阻止误建第二个栈；没有业务输入的启动失败可用
+`python -m deploy.acceptance.issue133.cleanup --failed-provision` 清理。
 
 宿主私有证据目录中包含执行日志后：
 

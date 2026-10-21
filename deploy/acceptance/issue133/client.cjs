@@ -95,7 +95,12 @@ async function main() {
     if (action !== 'background' && after === before) throw new Error('PROCESS_NOT_REPLACED');
     fs.writeFileSync(path.join(options.output, `${options.runId}-${action}-process-${Date.now()}.json`), JSON.stringify({at_utc:new Date().toISOString(),action,process_changed:after!==before,injection:action==='reclaim'?'DEBUG_APP_UID_SIGKILL':action}));
   }
-  ui.forwardDevtools(options.cdpPort);
+  // A cold WebView can expose its socket after the activity has already started.
+  const devtoolsDeadline = Date.now() + 30000;
+  while (true) {
+    try { ui.forwardDevtools(options.cdpPort); break; }
+    catch (cause) { if (Date.now() >= devtoolsDeadline) throw cause; await pause(250); }
+  }
   const cdp = await connect(options.cdpPort);
   try {
     if (['upload','upload-pending'].includes(action)) {

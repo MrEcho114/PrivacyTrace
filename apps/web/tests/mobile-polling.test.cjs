@@ -61,6 +61,9 @@ test('a restored long task leaves default request budget for cancellation', asyn
     await timer.fn()
   }
   assert.equal(flow.error.value, '', 'automatic native reads must not exhaust 60 requests/minute')
+  assert.ok(requests.some(at => at >= 120000), 'keep reading across multiple rate-limit windows')
+  assert.ok(actions.filter(action => action === 'job').length > 2, 'perform automatic progress reads')
+  assert.ok(scheduled.size > 0, 'a running task still has its next automatic read scheduled')
   assert.equal(flow.job.value.id, job.id)
   await flow.control('cancel-job')
   assert.equal(flow.error.value, '', 'leave budget for a real cancel action')

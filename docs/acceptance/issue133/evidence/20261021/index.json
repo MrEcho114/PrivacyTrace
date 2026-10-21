@@ -101,6 +101,16 @@
       "path": "verification.json",
       "sha256": "52a17fbae40b5843ba8f716951fdd8d429a98c7ce8ac3a4114716366b32dcf78",
       "group": "verification"
+    },
+    {
+      "path": "f06-scanning-rerun.json",
+      "sha256": "a88539c7f42a71a2fad7ab0210df27655e9dc027d61be24180a70234baca141a",
+      "group": "f06-scanning-rerun"
+    },
+    {
+      "path": "rerun-identities.json",
+      "sha256": "6b401ff5fc87e287de9c67ba3ec8cbe4032a35bbf7bc1377be44924e24ab40cb",
+      "group": "identities"
     }
   ]
 }

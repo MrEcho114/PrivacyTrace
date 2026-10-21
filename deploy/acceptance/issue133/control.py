@@ -118,7 +118,9 @@ def replay_deleted(lab, alias):
 
 
 def delay_scanner(lab, seconds):
-    context = lab.root / "e-private/delayed-scanner"
+    private = lab.root / "e-private"
+    private.mkdir(mode=0o700, exist_ok=True)
+    context = private / "delayed-scanner"
     context.mkdir(mode=0o700, exist_ok=True)
     (context / "Dockerfile").write_text(
         f"FROM {lab.state['images']['api']}\nUSER 65534:65534\nHEALTHCHECK NONE\nENTRYPOINT "

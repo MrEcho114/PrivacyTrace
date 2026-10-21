@@ -1,5 +1,6 @@
 """Revoke synthetic scopes, then destroy only the marked lane E laboratory."""
 
+import argparse
 import json
 import re
 import shutil
@@ -14,11 +15,34 @@ from deploy.acceptance.topology import request
 
 
 def main():
-    lab = laboratory()
-    root = lab.root.resolve()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--failed-provision", action="store_true")
+    args = parser.parse_args()
     parent = Path("/var/tmp/pt133e")
-    if root.parent != parent or not re.fullmatch(r"pt81-[a-f0-9]{12}", root.name):
+    candidate = Path((parent / "current").read_text())
+    root = candidate.resolve()
+    if (
+        candidate.is_symlink()
+        or root.parent != parent
+        or not re.fullmatch(r"pt81-[a-f0-9]{12}", root.name)
+    ):
         raise ValueError("Refuse cleanup outside the owned lane E project")
+    if args.failed_provision:
+        if not (root / "provision-error.log").is_file():
+            raise ValueError("Not a failed provisioning attempt; use normal revocation cleanup")
+        # _populate creates no resources before owner/configuration exists.
+        required = ("owner.json", "deployment.env", "laboratory.json")
+        if all((root / name).is_file() for name in required):
+            laboratory().stop()
+        elif execute(
+            ["docker", "ps", "-aq", "--filter", "label=com.docker.compose.project=" + root.name]
+        ):
+            raise ValueError("Unexpected partial resources; preserve lab for diagnosis")
+        shutil.rmtree(root)
+        (parent / "current").unlink()
+        print(json.dumps({"failed_provision_removed": True, "case_passed": False}))
+        return
+    lab = laboratory()
     observe(lab)
     registry = json.loads((root / "e-private/scopes.json").read_text())
     statuses = []

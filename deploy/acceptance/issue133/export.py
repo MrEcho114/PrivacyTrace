@@ -56,6 +56,17 @@ SOURCES = {
         "f06-scan-replay.json",
         "f06-scan-after.json",
     ],
+    "f06-scanning-rerun": [
+        "f06-rerun/delay-retry.json",
+        "f06-rerun/client-begin.log",
+        "f06-rerun/active.json",
+        "f06-rerun/before.json",
+        "f06-rerun/client-delete.log",
+        "f06-rerun/revoked.json",
+        "f06-rerun/replay.json",
+        "f06-rerun/after-late.json",
+        "f06-rerun/cleanup.json",
+    ],
     "f06-precommit-fixed": [
         "f06-precommit-fixed/completed-result-before-commit.json",
         "f06-precommit-fixed/client-delete.log",

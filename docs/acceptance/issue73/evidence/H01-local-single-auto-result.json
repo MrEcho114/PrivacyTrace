@@ -1,0 +1,9 @@
+{
+  "case_id": "H01-local-single-auto",
+  "origin": "https://localhost:28443",
+  "policy_mode": "auto",
+  "job_state": "SUCCEEDED",
+  "deletion": "DELETED",
+  "body_chars": 538,
+  "captured_at": "2026-10-21T05:25:17.100Z"
+}

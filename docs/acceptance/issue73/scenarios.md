@@ -1,4 +1,4 @@
-# 场景与故障注入计划
+﻿# 场景与故障注入计划
 
 本表是待执行计划，当前所有案例均 NOT_RUN。统一前置、状态和记录规则见 [入口](README.md)；材料见 [清单](materials.md)。使用既有主流程与 API，不新增验收专用分析 pipeline。
 
@@ -21,16 +21,16 @@
 
 | 案例 | 安装输入 | HTTPS 目标 | 政策路径 | 当前结果 |
 | --- | --- | --- | --- | --- |
-| H01 | 单 APK | 本机官方配置 I | 自动政策 | FAILED（BUG-01） |
-| H02 | 单 APK | 本机官方配置 I | 网页辅助补入 | NOT_RUN |
+| H01 | 单 APK | 本机官方配置 I | 自动政策 | 主链路通过（BUG-01 修复后复验；政策对照未覆盖，系本机未配置服务端模型） |
+| H02 | 单 APK | 本机官方配置 I | 网页辅助补入 | 主链路通过（政策对照未覆盖，系本机未配置服务端模型） |
 | H03 | 单 APK | 本机官方配置 I | 手机直连模型 API 补入 | NOT_RUN |
-| H04 | base＋全部已安装 splits | 本机官方配置 I | 自动政策 | FAILED（BUG-01） |
+| H04 | base＋全部已安装 splits | 本机官方配置 I | 自动政策 | NOT_RUN（受控 splits 集合未安装，仅 base 安装态；BUG-01 已修复待复验） |
 | H05 | base＋全部已安装 splits | 本机官方配置 I | 网页辅助补入 | NOT_RUN |
 | H06 | base＋全部已安装 splits | 本机官方配置 I | 手机直连模型 API 补入 | NOT_RUN |
-| H07 | 单 APK | 本机自托管配置 J | 自动政策 | FAILED（BUG-01） |
+| H07 | 单 APK | 本机自托管配置 J | 自动政策 | NOT_RUN（第二套本机实例 J 未准备） |
 | H08 | 单 APK | 本机自托管配置 J | 网页辅助补入 | NOT_RUN |
 | H09 | 单 APK | 本机自托管配置 J | 手机直连模型 API 补入 | NOT_RUN |
-| H10 | base＋全部已安装 splits | 本机自托管配置 J | 自动政策 | FAILED（BUG-01） |
+| H10 | base＋全部已安装 splits | 本机自托管配置 J | 自动政策 | NOT_RUN（实例 J 未准备且 splits 未安装） |
 | H11 | base＋全部已安装 splits | 本机自托管配置 J | 网页辅助补入 | NOT_RUN |
 | H12 | base＋全部已安装 splits | 本机自托管配置 J | 手机直连模型 API 补入 | NOT_RUN |
 

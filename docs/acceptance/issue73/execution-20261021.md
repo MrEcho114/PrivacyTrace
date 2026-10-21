@@ -62,18 +62,74 @@
 
 | 场景 | 结果 | 原因 |
 | --- | --- | --- |
-| H01 / H04 / H07 / H10（自动政策） | **FAILED** | 产品缺陷 BUG-01：交付拓扑下 `POST /sources/discover` 返回 503 `ISOLATED_INSPECTION_UNAVAILABLE`，客户端显示 `SERVER_BUSY`，无法产生自动来源 |
-| H02 / H03 等其余成功组合 | NOT_RUN | 本机虚拟化环境反复重启（见第 5 节），未能在稳定窗口内完成 |
-| N01–N12、F01–F10 | NOT_RUN | 同上；BUG-01 未修复前自动政策相关负向也不具备通过条件 |
-| R01/R02/R03 | 部分 | R1–R6 已按 R04 本机执行；仓库权威入口与 Spec30/浏览器入口未在本轮窗口内跑完 |
+| H01 / H04 / H07 / H10（自动政策） | **首轮 FAILED（BUG-01），修复后 H01 复验通过** | 首轮：交付拓扑下 `POST /sources/discover` 返回 503 `ISOLATED_INSPECTION_UNAVAILABLE`。已按 BUG-01 修复并在本机复验，见 4.4 |
+| H02（网页辅助补入） | **主链路通过，政策对照未覆盖** | 上传 → 辅助补入 → 分析 → 报告 → 删除全链路成功；但服务端未配置模型，自动候选提取产出 0 条，报告不含政策声明对照 |
+| H03 / H06 / H09 / H12（手机直连模型） | NOT_RUN | 现有执行器在模型收集后会用辅助文本覆盖回填框，不能证明模型来源与审计；且第二实例 J 未准备 |
+| H04 / H05 / H10 / H11（base＋splits） | NOT_RUN | 受控 splits 集合未安装（当前仅 `base.apk` 安装态），需 `install-multiple` 重装 base+split 后重跑 |
+| H07–H12（第二实例 J） | NOT_RUN | 未准备第二套本机 HTTPS 实例 J |
+| N01–N12 | NOT_RUN | 需要人工注入（取消时点、安装态变更、跨实例访问材料、证书负向、抓包、离线恢复等），当前执行器不具备这些控制点 |
+| F01–F10 | NOT_RUN | 需要运行时故障注入（停 API/broker、worker 租约中断、重复投递、备份恢复、磁盘满等），本轮未执行 |
+| R01 | **通过** | `bash scripts/check.sh`（C 盘干净 worktree，修复分支）全绿：1516 passed / 200 skipped，ruff、web 111 单测、build 全过 |
+| R02 / R03 | NOT_RUN | 本轮窗口未执行 |
+| R04 | **通过（首轮）** | R1–R6 37/37，见 4.1 |
+
+### 4.4 BUG-01 修复与本机复验（2026-10-21 下午）
+
+**修复**：`WebIntake` 新增 `inspect_metadata`，`DurableWebIntake` 覆写为 `runner.inspect_metadata`，`_discover_sources` 改调 `self.inspect_metadata`，与上传校验共用同一隔离边界。分支 `codex/issue73-discover-inspector-fix`，提交 `0a3d61e`，Draft PR #127。
+
+**权威验证**：`bash scripts/check.sh` 在 C 盘干净 worktree 全绿（D 盘 worktree 因 IO 慢触发 2 例 e2e 的 15s 硬超时，已用 pristine 基线和 C 盘对照排除与本改动相关）。
+
+**API 层复验**（同一实验室实例、同一夹具 APK、同一 `replay-discover.py`）：
+
+| 端点 | 修复前 | 修复后 |
+| --- | --- | --- |
+| `POST /api/v1/web/drafts` | 200 | 200 |
+| `POST /api/v1/web/drafts/{id}/package-set` | 200 | 200 |
+| `POST /api/v1/web/drafts/{id}/sources/discover` | **503** `ISOLATED_INSPECTION_UNAVAILABLE` | **200**，新增 `Auto Discovered Policy`（`http://1.1.1.1/policy.html`） |
+| `GET /api/v1/web/drafts/{id}` | revision 2，无新来源 | revision 3，含自动来源 |
+| `DELETE /api/v1/web/drafts/{id}` | — | 200 `{"deleted":true,"cleanup_pending":false}`，随后读 404 |
+
+证据：`evidence/bug-01-fixed-discover-200.md`。
+
+**客户端复验**（真实 Android 客户端 + 本机实验栈）：
+
+| 用例 | 结果 | 端到端观察 | 证据 |
+| --- | --- | --- | --- |
+| H01 单 APK + 自动政策 | **通过（主链路）** | 原生窗口输入 origin → 能力协商 → 选包 → 原生确认上传 `SERVER_CONFIRMED` → 自动准备（discover 200 → fetch 受控政策 200）→ 候选页 → 分析 `SUCCEEDED` → 报告已生成 → `删除远端材料` 原生双确认 → 服务端 `deleted:true` | `evidence/H01-local-single-auto-*.txt/json` |
+| H02 单 APK + 网页辅助补入 | **通过（主链路）** | 上传 → 辅助回填 JSON 补入（服务端确认“来源和未检查候选已补入”，来源 1→2）→ 分析 `SUCCEEDED` → 报告 → 删除确认 | `evidence/H02-local-single-assist-*.txt/json` |
+
+**两例共同的口径限制**：实验室实例没有配置服务端模型，自动候选提取返回 0 条（页面提示“自动候选未完成…缺证据状态仍保留”）。因此报告已生成、任务 `SUCCEEDED`，但**报告内没有政策声明对照**。这两例只证明“上传→政策路径→分析→报告→删除”主链路，不证明政策对照结论；不得据此宣称 H01/H02 完全通过。
+
+**为完成上述复验修复的本机环境问题**（均属实验室拓扑，不是产品缺陷，已持久化）：
+
+1. Docker CLI 的 `proxies.default.noProxy` 缺 `1.1.1.1`，容器内抓取走宿主代理 → 在 `/root/.docker/config.json` 补齐并重建 api。
+2. netns DNAT 回程缺 `10.215.134.0/24` 路由 → 在根命名空间补回程路由。
+3. dockerd 重启后 `FORWARD` 的 ACCEPT 被挤到 `DOCKER-FORWARD` 之后并被 internal 网络 DROP → 改写入 `DOCKER-USER` 双向规则。
+4. 容器无默认路由 → 显式加 `1.1.1.1/32 via 10.215.134.1`。
+   以上由 `policy-egress.sh` + `pt73-policy-egress.service` + `pt73-lab-up.service.d/egress.conf` 幂等保证，`systemctl restart pt73-lab-up` 与 `systemctl restart privacytrace73-docker` 后复验均返回 200。
+
+### 4.5 验收执行器与用例矩阵（本轮补齐）
+
+- 用例总数按 `scenarios.md` 为 **38**（H01–H12、N01–N12、F01–F10、R01–R04）。
+- 现有执行器可自动跑 **8** 条（H01/H02/H04/H05/H07/H08/H10/H11），其余 26 条需要人工注入或第二实例。
+- 执行器本轮补强：uiautomator 崩溃后不再读取旧 dump、输入后回读校验、原生删除双对话框、采集器 JSON 补 `state` 字段、服务端确认文案作为导入判据。
 
 ## 5. 环境阻塞（如实记录）
 
-本机 WSL 发行版在本轮多次被外部触发 `systemctl poweroff` 并重启（`wsl-pro.service` 持续重启计数上升，`privacytrace73-docker.service` 随之停止/启动）。每次重启会终止实验容器与临时转发，已通过持久化 systemd 单元（模型/政策/转发/实验室恢复）减小影响，但仍不足以在单次窗口内连续跑完 12 个组合与负向/故障矩阵。这不是产品缺陷，也不能据此把未执行项记为通过。
+**首轮**：本机 WSL 发行版多次被外部触发重启，`privacytrace73-docker.service` 随之停止/启动，实验容器与临时转发反复中断；已用持久化 systemd 单元减小影响，但单次窗口内不足以跑完矩阵。
+
+**本轮处理**：定位到持续重启的直接原因之一是已结束的保活/清理流程，已改为长驻 `wsl` 会话保活 + 幂等恢复单元；并在 `reset-lab-state.sh` 中固化“重置业务态（保留 PKI）”的步骤，用于用例之间清空 per-IP 草稿配额。策略性环境修复见 4.4 末段。
+
 
 ## 6. 结论与下一步
 
-- 本机环境已按要求准备并可复现（工具链、客户端、受控样本、两套实例自动化、转发与 CA 信任边界均已落地）。
-- 本机部署专项 R1–R6 37/37 通过；Android 客户端真实主链路已走到上传确认。
-- **整票最终验收不通过**：自动政策组合被 BUG-01 阻断；其余组合与负向/故障矩阵未执行。
-- 下一步：先修复 BUG-01（`web_intake._discover_sources` 应使用注入的 Runner 检查器），再在稳定窗口内补跑 H01–H12、N01–N12、F01–F10，并保留 R01–R04 本机入口结果。
+- 本机环境已按要求准备并可复现（工具链、客户端、受控样本、实例 I、转发与 CA 信任边界均已落地）。
+- **BUG-01 已修复**（PR #127），并在 API 层与真实客户端两个层面复验：`discover` 由 503 变为 200；H01/H02 客户端主链路端到端 `SUCCEEDED` 并完成服务端删除确认。
+- 本机部署专项 R1–R6 37/37 通过（R04）；仓库权威检查 `bash scripts/check.sh` 在本机通过（R01）。
+- **整票最终验收仍不通过**：38 个场景中只有 H01、H02 在本轮拿到主链路证据（且两例的政策对照未覆盖），H03–H12 未执行（模型路径执行器缺口、splits 未安装、实例 J 未准备），N01–N12 与 F01–F10 全部未执行，R02/R03 未执行。
+- 下一步（按优先级）：
+  1. 配置服务端模型或补一条可产出的受控政策文本，让 H01/H02 的报告真正含政策对照，再据此判定这两例是否完全通过；
+  2. 安装受控 splits 集合（`install-multiple`）→ 补 H04/H05；
+  3. 准备第二套实例 J → 补 H07–H12 与 N06；
+  4. 按 N/F 场景逐个补人工注入能力，再执行负向与故障矩阵。
+

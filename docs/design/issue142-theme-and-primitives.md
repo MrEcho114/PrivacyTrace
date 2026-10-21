@@ -134,7 +134,7 @@ A 票维护 token 与接口；B/C/D/E 在各自范围消费。D 的全站硬件�
 - DOM 类：`ui-sheet-overlay`、`ui-sheet`、`ui-sheet-handle`、`ui-sheet-head`、`ui-sheet-title`（合同外，仅用于测量/焦点定位）、`ui-sheet-close`、`ui-sheet-description`、`ui-sheet-body`。关闭按钮带 `aria-label="关闭"`，图标 `aria-hidden`；标题由 `DialogTitle` 生成 `aria-labelledby` 关联。
 - 几何：bottom 默认 `max-height: min(88dvh, 720px)`，宽度 `min(100%, 640px)`（桌面居中，不把 sheet 拉满 1440）；detail 变体 `inset: 0`、`100dvh` 全屏。正文 `overflow-y: auto` 且 `overscroll-behavior: contain`；左右/底部安全区使用 `env(safe-area-inset-*)`，detail 额外加顶部安全区。关闭按钮 48×48（`--m-touch`），标题 20px 衬线（`--m-font-title`），圆角 `--m-sheet-radius`。
 - `description` 缺省时仍渲染一个 `display:none` 的空 `DialogDescription`，避免 `aria-describedby` 指向不存在的节点；这是实现细节，不改变可选接口。
-- 动效保持静态：本组件没有 transition/animation。按压/进入/退出由 E 在 #146 统一添加并遵守 `prefers-reduced-motion`；本票不认领动效验收。
+- 动效保持静态：A 交付的 `UiSheet` 本身没有 transition/animation；第二轮整合时 E 在 #146 内加入 200ms 进入动画与 `prefers-reduced-motion` 即时规则（见 `docs/acceptance/issue146/20261022-round2.md`），本票不认领动效验收。
 
 ### UiIcon
 

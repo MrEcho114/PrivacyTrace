@@ -20,14 +20,14 @@
 ## 2. 权威检查的入口
 
 - 首选：**Git for Windows Bash** 里 `bash scripts/check.sh`（`"C:\Program Files\Git\bin\bash.exe"`）。
-- `scripts/check.ps1` 需要 `pwsh`（PowerShell 7）。本机只装了 PowerShell 5.1 时 `pwsh` 不存在，这条入口不可用——不要断言“检查通过”，换 Git Bash 入口重跑。
-- 检查跑在慢盘（如 D: 上的 worktree）会比 C: 慢 15–25%。e2e 的等待预算已改成 `PRIVACYTRACE_E2E_JOB_BUDGET_SECONDS`（默认 60s），慢机直接调大，不要改测试。
+- `scripts/check.ps1` 只是把同一入口委托给 Git Bash，本身兼容 Windows PowerShell 5.1；只有命令名 `pwsh` 需要 PowerShell 7。本机没有 `pwsh` 时用 `powershell -NoProfile -File scripts/check.ps1`，或直接走 Git Bash。
+- 检查跑在慢盘（如 D: 上的 worktree）可能让整套测试明显变慢；e2e 的等待预算已改成 `PRIVACYTRACE_E2E_JOB_BUDGET_SECONDS`（默认 60s），慢机直接调大，不要改测试。
 
 ## 3. 实验室与执行器
 
-- 移动端本机验收执行器：`deploy/acceptance/mobile/`（README 里有用例契约、环境变量、已知假失败）。
+- 移动端本机验收执行器：`deploy/acceptance/mobile/`（README 里有用例契约、环境变量、已知假失败）。该目录随 PR #137 落地；合入前 main 上没有，别按路径去找。
 - 部署专项入口：`deploy/check_acceptance.sh`（R1–R6）。
-- 实验室业务态重置（保留 PKI/证书，用于清草稿配额）：`deploy/acceptance/mobile/lab-reset.sh`，参数见脚本头部。
+- 实验室业务态重置（保留 PKI/证书，用于清草稿配额）：`deploy/acceptance/mobile/lab-reset.sh`，参数见脚本头部（同样随 #137 落地）。
 - 实验栈恢复后先跑健康探针：`https://localhost:<port>/api/v1/health` 必须 200，再看容器状态；只看 `docker ps` 会被“容器在跑但转发断了”骗到。
 
 ## 4. 常见假失败

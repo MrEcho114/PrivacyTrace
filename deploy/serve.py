@@ -306,20 +306,29 @@ def create_app():
     return ProductionSurface(app, host)
 
 
-if __name__ == "__main__":
-    import uvicorn
+def build_application():
+    """Compose the served ASGI app.
 
-    # No forwarded-header trust or access log containing private URLs/headers.
+    The deployment surfaces are plain ASGI callables, not Starlette instances, so
+    the failure log wraps them by composition; add_middleware() would not exist.
+    Wrapping outside also covers the surface's own 4xx/5xx answers.
+    """
     # Construct first: startup failures have a fixed, non-secret message.
     try:
-        application = create_app()
+        surface = create_app()
     except Exception:
         raise SystemExit(
             "PT-SRV-102 startup refused; see deployment compatibility matrix"
         ) from None
-    application.add_middleware(FailureLogMiddleware)
+    return FailureLogMiddleware(surface)
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    # No forwarded-header trust or access log containing private URLs/headers.
     uvicorn.run(
-        application,
+        build_application(),
         host="0.0.0.0",
         port=8000,
         workers=1,

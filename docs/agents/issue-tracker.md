@@ -53,8 +53,10 @@ GitHub 的 issues 和 PRs 共享编号；裸 `#42` 可能属于任意一种。�
 
 ## PR 正文校验（themasterplan-check）
 
-复用工作流 `themasterplan-check` 会在 CI 里跑 `validate_pr_body.py`。两条硬规则，正文写得再好也绕不过：
+复用工作流 `themasterplan-check` 会在 CI 里跑 `validate_pr_body.py`。几条硬规则，正文写得再好也绕不过：
 
 - **关联任务**：要么 `Closes #123`（会关闭该 issue），要么写 `Explicit human authorization` 三件套（`Authorization source` / `Goal` / `Scope`）。只写 `Refs #73` 会报 `Issue must be one closing reference such as Closes #123.`。
-- **五项自审**：`- [x]` 后面的文字必须与模板逐字一致。加括号注释（例如 `已阅读完整 diff（3 files）`）会被判成 “Agent self-review item is missing”。
+- **二选一**：`- Issue:` 与授权三件套同时填写会报 `Fill exactly one of Issue or explicit human authorization.`；三件套缺项报 `Explicit human authorization requires <name>.`。
+- **不能空的小节**：`Result` / `Changes` / `Verification` 三个 `##` 小节都必须有内容，否则报 `<heading> must not be empty.`。
+- **五项自审**：`- [x]` 后面的文字必须与模板逐字一致。加括号注释（例如 `已阅读完整 diff（3 files）`）会被判成 “Agent self-review item is missing”；只写 `- [ ]` 会报 “…must be checked”。
 - 正文改动后要等新一轮 `Check` 跑完再判定；旧 run 的 failure 不代表当前正文仍不合格。

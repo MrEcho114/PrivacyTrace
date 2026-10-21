@@ -50,3 +50,13 @@ GitHub 的 issues 和 PRs 共享编号；裸 `#42` 可能属于任意一种。�
 - **Claim**：先读当前执行记录并确认负责人指定的唯一会话及无竞争，再以 `gh issue edit <n> --add-assignee @me` 确认归属并登记会话；已有 Assignee 时由其协调，命令不提供原子抢占锁。规划 ticket 的 frontier 与业务执行就绪条件分别判断，按协作检查清单处理。
 - **Resolve**：使用 `gh issue comment <n> --body-file <answer.md>` 记录结论，再 `gh issue close <n>`；随后向 map 的 Decisions-so-far 追加 context pointer（gist + link）。
 - **技能协作体系**：团队完整技能协作规范与任务路由参见权威指南：[`docs/agents/skills-workflow.md`](skills-workflow.md)。
+
+## PR 正文校验（themasterplan-check）
+
+复用工作流 `themasterplan-check` 会在 CI 里跑 `validate_pr_body.py`。几条硬规则，正文写得再好也绕不过：
+
+- **关联任务**：要么 `Closes #123`（会关闭该 issue），要么写 `Explicit human authorization` 三件套（`Authorization source` / `Goal` / `Scope`）。只写 `Refs #73` 会报 `Issue must be one closing reference such as Closes #123.`。
+- **二选一**：`- Issue:` 与授权三件套同时填写会报 `Fill exactly one of Issue or explicit human authorization.`；三件套缺项报 `Explicit human authorization requires <name>.`。
+- **不能空的小节**：`Result` / `Changes` / `Verification` 三个 `##` 小节都必须有内容，否则报 `<heading> must not be empty.`。
+- **五项自审**：`- [x]` 后面的文字必须与模板逐字一致。加括号注释（例如 `已阅读完整 diff（3 files）`）会被判成 “Agent self-review item is missing”；只写 `- [ ]` 会报 “…must be checked”。
+- 正文改动后要等新一轮 `Check` 跑完再判定；旧 run 的 failure 不代表当前正文仍不合格。

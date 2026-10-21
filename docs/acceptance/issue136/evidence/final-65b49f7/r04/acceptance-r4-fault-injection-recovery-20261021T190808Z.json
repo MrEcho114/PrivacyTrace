@@ -1,0 +1,293 @@
+{
+  "checks": [
+    {
+      "command": "GET /_health/live, /_health/ready, /api/v1/health",
+      "detail": {
+        "at": "2026-10-21T18:57:03Z",
+        "health": 502,
+        "live": 200,
+        "note": "baseline",
+        "ready": 200,
+        "ready_body": null
+      },
+      "duration_s": 0.918,
+      "name": "r4.baseline_health",
+      "notes": "live=200 health=502",
+      "result_digest": "sha256:45c081ad9a948ee4",
+      "started_at": "2026-10-21T18:57:02Z",
+      "status": "FAIL",
+      "ticket": "R4"
+    },
+    {
+      "command": "compose restart api + readiness sampling",
+      "detail": {
+        "before": {
+          "at": "2026-10-21T18:57:04Z",
+          "health": 502,
+          "live": 200,
+          "note": "before injection",
+          "ready": 200,
+          "ready_body": null
+        }
+      },
+      "duration_s": 0.957,
+      "name": "r4.restart.api",
+      "notes": "baseline was not healthy",
+      "result_digest": "sha256:26bdb51afbfa951a",
+      "started_at": "2026-10-21T18:57:03Z",
+      "status": "FAIL",
+      "ticket": "R4"
+    },
+    {
+      "command": "compose restart redis + readiness sampling",
+      "detail": {
+        "before": {
+          "at": "2026-10-21T18:57:05Z",
+          "health": 502,
+          "live": 200,
+          "note": "before injection",
+          "ready": 200,
+          "ready_body": null
+        }
+      },
+      "duration_s": 0.987,
+      "name": "r4.restart.redis",
+      "notes": "baseline was not healthy",
+      "result_digest": "sha256:c3073c2619e9c180",
+      "started_at": "2026-10-21T18:57:04Z",
+      "status": "FAIL",
+      "ticket": "R4"
+    },
+    {
+      "command": "compose restart worker + readiness sampling",
+      "detail": {
+        "before": {
+          "at": "2026-10-21T18:57:06Z",
+          "health": 502,
+          "live": 200,
+          "note": "before injection",
+          "ready": 200,
+          "ready_body": null
+        }
+      },
+      "duration_s": 0.977,
+      "name": "r4.restart.worker",
+      "notes": "baseline was not healthy",
+      "result_digest": "sha256:2a39a8ccfcdca4ba",
+      "started_at": "2026-10-21T18:57:05Z",
+      "status": "FAIL",
+      "ticket": "R4"
+    },
+    {
+      "command": "compose restart runner + readiness sampling",
+      "detail": {
+        "before": {
+          "at": "2026-10-21T18:57:07Z",
+          "health": 502,
+          "live": 200,
+          "note": "before injection",
+          "ready": 200,
+          "ready_body": null
+        }
+      },
+      "duration_s": 0.919,
+      "name": "r4.restart.runner",
+      "notes": "baseline was not healthy",
+      "result_digest": "sha256:a5c55a4973c4bb70",
+      "started_at": "2026-10-21T18:57:06Z",
+      "status": "FAIL",
+      "ticket": "R4"
+    },
+    {
+      "command": "compose stop redis -> readiness must degrade while live stays 200 -> compose start redis",
+      "detail": {
+        "after": {
+          "at": "2026-10-21T19:02:13Z",
+          "health": 502,
+          "live": 200,
+          "note": "recovery poll",
+          "ready": 200,
+          "ready_body": null
+        },
+        "before": {
+          "at": "2026-10-21T18:57:08Z",
+          "health": 502,
+          "live": 200,
+          "note": "before outage",
+          "ready": 200,
+          "ready_body": null
+        },
+        "during": {
+          "at": "2026-10-21T18:57:13Z",
+          "health": 502,
+          "live": 200,
+          "note": "broker stopped",
+          "ready": 503,
+          "ready_body": null
+        }
+      },
+      "duration_s": 308.553,
+      "name": "r4.broker_outage_and_recovery",
+      "notes": "did not recover after the broker restarted",
+      "result_digest": "sha256:b0f4398bb2249faf",
+      "started_at": "2026-10-21T18:57:07Z",
+      "status": "FAIL",
+      "ticket": "R4"
+    },
+    {
+      "command": "stop laboratory runner -> readiness 503 -> restart -> readiness 200",
+      "detail": {
+        "after": {
+          "at": "2026-10-21T19:05:17Z",
+          "health": 502,
+          "live": 200,
+          "note": "recovery poll",
+          "ready": 200,
+          "ready_body": null
+        },
+        "during": {
+          "at": "2026-10-21T19:02:19Z",
+          "health": 502,
+          "live": 200,
+          "note": "",
+          "ready": 503,
+          "ready_body": null
+        }
+      },
+      "duration_s": 184.603,
+      "name": "r4.runner_heartbeat_loss",
+      "notes": "authenticated Runner readiness degraded and recovered",
+      "result_digest": "sha256:4a9b97a997b1d964",
+      "started_at": "2026-10-21T19:02:16Z",
+      "status": "PASS",
+      "ticket": "R4"
+    },
+    {
+      "command": "submit job -> POST /jobs/{id}/cancel -> GET job must reach CANCELLED",
+      "detail": {},
+      "duration_s": 0.061,
+      "name": "r4.cancel_submitted_job",
+      "notes": "topology unavailable: draft creation returned HTTP 502",
+      "result_digest": "sha256:4f37cb3aa2852f3f",
+      "started_at": "2026-10-21T19:05:20Z",
+      "status": "SKIP",
+      "ticket": "R4"
+    },
+    {
+      "command": "submit -> DELETE draft -> job must not publish a report",
+      "detail": {},
+      "duration_s": 0.059,
+      "name": "r4.delete_submitted_scope",
+      "notes": "topology unavailable: draft creation returned HTTP 502",
+      "result_digest": "sha256:aa094b9d64ddfbf7",
+      "started_at": "2026-10-21T19:05:20Z",
+      "status": "SKIP",
+      "ticket": "R4"
+    },
+    {
+      "command": "old attempt / revoked lease result must be fenced out",
+      "detail": {},
+      "duration_s": 1.843,
+      "name": "r4.late_result_rejected",
+      "notes": "TopologyUnavailable",
+      "result_digest": "sha256:0a1ac2b9a38cd47f",
+      "started_at": "2026-10-21T19:05:20Z",
+      "status": "FAIL",
+      "ticket": "R4"
+    },
+    {
+      "command": "compose --profile reclamation run --rm reclaim (one-shot, object counts)",
+      "detail": {
+        "collector_output_lines": 1,
+        "object_counts": {
+          "directories": 0,
+          "objects": 0,
+          "pending": 0,
+          "temporary": 0
+        }
+      },
+      "duration_s": 3.542,
+      "name": "r4.orphan_reclamation",
+      "notes": "reclaim objects=0 temporary=0",
+      "result_digest": "sha256:3d0838e1dbe1301c",
+      "started_at": "2026-10-21T19:05:22Z",
+      "status": "PASS",
+      "ticket": "R4"
+    },
+    {
+      "command": "run the controlled OOM/timeout worker images against the runner",
+      "detail": {
+        "function": "create_scope",
+        "line": 193
+      },
+      "duration_s": 29.24,
+      "name": "r4.oom_and_timeout_budget",
+      "notes": "TopologyUnavailable",
+      "result_digest": "sha256:83900a665724c36b",
+      "started_at": "2026-10-21T19:05:26Z",
+      "status": "FAIL",
+      "ticket": "R4"
+    }
+  ],
+  "environment": {
+    "allow_destructive": true,
+    "allow_writes": true,
+    "compose_files": [
+      "<private-home>/pt136-deploy/deploy/compose.yaml",
+      "/var/tmp/pt81-40e41e3c9f07/ports.yaml",
+      "/var/tmp/pt81-40e41e3c9f07/laboratory.json"
+    ],
+    "cpu_count": 8,
+    "cpu_model": "13th Gen Intel(R) Core(TM) i9-13900H",
+    "cwd": "<private-home>/pt136-deploy",
+    "disk": {
+      "filesystem": "ext2/ext3",
+      "free_bytes": 921942695936,
+      "path": "<private-home>/pt136-deploy",
+      "total_bytes": 1081101176832
+    },
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "machine": "x86_64",
+    "memory_bytes": 16770527232,
+    "os": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "release": "6.18.33.2-microsoft-standard-WSL2",
+    "system": "Linux",
+    "tools": {
+      "compose": "5.5.0",
+      "docker_client": "29.7.2",
+      "docker_server": "29.7.2",
+      "git": "git version 2.43.0",
+      "python": "Python 3.12.3",
+      "topology_base_url": "https://privacytrace.test:59130"
+    },
+    "topology_configured": true,
+    "wsl": true
+  },
+  "finished_at": "2026-10-21T19:05:55Z",
+  "notes": "Only documented operator actions are used (compose restart/stop/start, reclamation profile). No volume, database or host path is touched.",
+  "receipt_version": 1,
+  "scope": "r4-fault-injection-recovery",
+  "source_sha": "65b49f7ffecd8aee5eede21d69b310300dd32ca6",
+  "started_at": "2026-10-21T18:57:02Z",
+  "summary": {
+    "by_ticket": {
+      "R4": {
+        "fail": 8,
+        "not_tested": 0,
+        "pass": 2,
+        "skip": 2
+      }
+    },
+    "conclusion": "FAILURES",
+    "evidence_free": false,
+    "fail": 8,
+    "not_tested": 0,
+    "pass": 2,
+    "pass_rate_of_verified": 0.2,
+    "skip": 2,
+    "total": 12,
+    "untested_scopes": 0,
+    "verified": 10
+  },
+  "untested": []
+}

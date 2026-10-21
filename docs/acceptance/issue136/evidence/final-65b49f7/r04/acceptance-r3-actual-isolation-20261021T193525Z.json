@@ -1,0 +1,132 @@
+{
+  "checks": [
+    {
+      "command": "Runner ledger -> Docker inspect attestations",
+      "detail": {
+        "actual_inspect": {
+          "cleanup_verified": true,
+          "container": "privacytrace-00154ba66ed542dfb642f5ae41f88a1b",
+          "container_created": true,
+          "exit_state": {
+            "ExitCode": 0,
+            "OOMKilled": false,
+            "Running": false
+          },
+          "image_id": "sha256:edf0130a95b5666e82a34826d4e4ba3e53c365cb53d6fad8561384ef3c38dc89",
+          "input_removed": true,
+          "isolation": {
+            "CapAdd": null,
+            "CapDrop": [
+              "ALL"
+            ],
+            "Memory": 1073741824,
+            "MemorySwap": 1073741824,
+            "NanoCpus": 1000000000,
+            "NetworkMode": "none",
+            "PidsLimit": 32,
+            "Privileged": false,
+            "ReadonlyRootfs": true,
+            "SecurityOpt": [
+              "no-new-privileges:true"
+            ]
+          },
+          "mounts": [
+            {
+              "destination": "/input/sample.apk",
+              "read_only": true
+            }
+          ],
+          "request_id": "b8e4d8a4-fdf8-51cc-9e2e-0e41044d56dd",
+          "user": "65534:65534",
+          "version": 1
+        },
+        "api_worker_socket": false,
+        "credential_mounts": false,
+        "image_id": "sha256:edf0130a95b5666e82a34826d4e4ba3e53c365cb53d6fad8561384ef3c38dc89",
+        "scan_count": 2,
+        "scan_host_separate": false,
+        "scan_inputs": [
+          "synthetic single APK",
+          "synthetic base + config.en + feature_camera"
+        ],
+        "scan_request_ids": [
+          "b8e4d8a4-fdf8-51cc-9e2e-0e41044d56dd",
+          "e552ca79-d227-5ddf-862c-e69ea4faddad"
+        ]
+      },
+      "duration_s": 6.797,
+      "name": "r3.actual_scan_isolation",
+      "notes": "actual scan policy and cleanup verified",
+      "result_digest": "sha256:1e0be227aafc73c9",
+      "started_at": "2026-10-21T19:25:57Z",
+      "status": "PASS",
+      "ticket": "R3"
+    }
+  ],
+  "environment": {
+    "allow_destructive": true,
+    "allow_writes": true,
+    "cpu_count": 8,
+    "cpu_model": "13th Gen Intel(R) Core(TM) i9-13900H",
+    "cwd": "<private-home>/pt136-deploy",
+    "disk": {
+      "filesystem": "ext2/ext3",
+      "free_bytes": 921927675904,
+      "path": "<private-home>/pt136-deploy",
+      "total_bytes": 1081101176832
+    },
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "machine": "x86_64",
+    "memory_bytes": 16770527232,
+    "os": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "release": "6.18.33.2-microsoft-standard-WSL2",
+    "system": "Linux",
+    "tools": {
+      "compose": "5.5.0",
+      "docker_client": "29.7.2",
+      "docker_server": "29.7.2",
+      "git": "git version 2.43.0",
+      "python": "Python 3.12.3",
+      "topology_base_url": "https://privacytrace.test:58742"
+    },
+    "topology_configured": true,
+    "waivers": [
+      {
+        "authorization": "https://github.com/MrEcho114/PrivacyTrace/issues/81#issuecomment-6294554745",
+        "blocks_this_acceptance": false,
+        "id": "dedicated-scan-host-verification",
+        "production_requirement_unchanged": true,
+        "scope": "Independent scan host/VM separation and cross-host firewall persistence testing",
+        "status": "WAIVED_BY_USER"
+      }
+    ],
+    "wsl": true
+  },
+  "finished_at": "2026-10-21T19:35:25Z",
+  "notes": "Dedicated-host separation was explicitly waived by the user; see waivers.",
+  "receipt_version": 1,
+  "scope": "r3-actual-isolation",
+  "source_sha": "65b49f7ffecd8aee5eede21d69b310300dd32ca6",
+  "started_at": "2026-10-21T19:25:57Z",
+  "summary": {
+    "by_ticket": {
+      "R3": {
+        "fail": 0,
+        "not_tested": 0,
+        "pass": 1,
+        "skip": 0
+      }
+    },
+    "conclusion": "ALL_PASS",
+    "evidence_free": false,
+    "fail": 0,
+    "not_tested": 0,
+    "pass": 1,
+    "pass_rate_of_verified": 1.0,
+    "skip": 0,
+    "total": 1,
+    "untested_scopes": 0,
+    "verified": 1
+  },
+  "untested": []
+}

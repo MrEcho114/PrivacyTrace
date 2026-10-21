@@ -1,0 +1,120 @@
+{
+  "checks": [
+    {
+      "command": "quiesce -> snapshot -> delete -> fresh migrated DB/volume -> restore/readback",
+      "detail": {
+        "function": "create_scope",
+        "line": 193,
+        "message": "draft creation returned HTTP 502"
+      },
+      "duration_s": 0.057,
+      "name": "r5.snapshot_restore_deletion_replay",
+      "notes": "TopologyUnavailable",
+      "result_digest": "sha256:8e6ab8683143d0e5",
+      "started_at": "2026-10-21T19:05:55Z",
+      "status": "FAIL",
+      "ticket": "R5"
+    },
+    {
+      "command": "separate deployment drill",
+      "detail": {
+        "function": "create_scope",
+        "line": 193,
+        "message": "draft creation returned HTTP 502"
+      },
+      "duration_s": 23.16,
+      "name": "r5.credential_rotation",
+      "notes": "TopologyUnavailable",
+      "result_digest": "sha256:6aa3253a0ba555fd",
+      "started_at": "2026-10-21T19:05:55Z",
+      "status": "FAIL",
+      "ticket": "R5"
+    },
+    {
+      "command": "separate deployment drill",
+      "detail": {
+        "function": "create_scope",
+        "line": 193,
+        "message": "draft creation returned HTTP 502"
+      },
+      "duration_s": 32.287,
+      "name": "r5.disk_full",
+      "notes": "TopologyUnavailable",
+      "result_digest": "sha256:6aa3253a0ba555fd",
+      "started_at": "2026-10-21T19:06:18Z",
+      "status": "FAIL",
+      "ticket": "R5"
+    },
+    {
+      "command": "separate deployment drill",
+      "detail": {
+        "function": "create_scope",
+        "line": 193,
+        "message": "draft creation returned HTTP 502"
+      },
+      "duration_s": 27.865,
+      "name": "r5.upgrade_rollback",
+      "notes": "TopologyUnavailable",
+      "result_digest": "sha256:6aa3253a0ba555fd",
+      "started_at": "2026-10-21T19:06:50Z",
+      "status": "FAIL",
+      "ticket": "R5"
+    }
+  ],
+  "environment": {
+    "allow_destructive": true,
+    "allow_writes": true,
+    "cpu_count": 8,
+    "cpu_model": "13th Gen Intel(R) Core(TM) i9-13900H",
+    "cwd": "<private-home>/pt136-deploy",
+    "disk": {
+      "filesystem": "ext2/ext3",
+      "free_bytes": 921942695936,
+      "path": "<private-home>/pt136-deploy",
+      "total_bytes": 1081101176832
+    },
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "machine": "x86_64",
+    "memory_bytes": 16770527232,
+    "os": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "release": "6.18.33.2-microsoft-standard-WSL2",
+    "system": "Linux",
+    "tools": {
+      "compose": "5.5.0",
+      "docker_client": "29.7.2",
+      "docker_server": "29.7.2",
+      "git": "git version 2.43.0",
+      "python": "Python 3.12.3",
+      "topology_base_url": "https://privacytrace.test:59130"
+    },
+    "topology_configured": true,
+    "wsl": true
+  },
+  "finished_at": "2026-10-21T19:07:18Z",
+  "notes": "",
+  "receipt_version": 1,
+  "scope": "r5-backup-recovery-drills",
+  "source_sha": "65b49f7ffecd8aee5eede21d69b310300dd32ca6",
+  "started_at": "2026-10-21T19:05:55Z",
+  "summary": {
+    "by_ticket": {
+      "R5": {
+        "fail": 4,
+        "not_tested": 0,
+        "pass": 0,
+        "skip": 0
+      }
+    },
+    "conclusion": "FAILURES",
+    "evidence_free": false,
+    "fail": 4,
+    "not_tested": 0,
+    "pass": 0,
+    "pass_rate_of_verified": 0.0,
+    "skip": 0,
+    "total": 4,
+    "untested_scopes": 0,
+    "verified": 4
+  },
+  "untested": []
+}

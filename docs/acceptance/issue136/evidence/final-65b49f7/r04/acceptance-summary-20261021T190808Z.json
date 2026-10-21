@@ -1,0 +1,67 @@
+{
+  "generated_at": "2026-10-21T19:08:08Z",
+  "receipt_version": 1,
+  "receipts": [
+    "acceptance-r1-collector-error-20261021T190808Z.json",
+    "acceptance-r2-dual-scope-business-loop-20261021T190808Z.json",
+    "acceptance-r3-collector-error-20261021T190808Z.json",
+    "acceptance-r4-fault-injection-recovery-20261021T190808Z.json",
+    "acceptance-r5-backup-recovery-drills-20261021T190808Z.json",
+    "acceptance-r6-capacity-and-secret-audit-20261021T190808Z.json"
+  ],
+  "scope": "issue81-r1-r6",
+  "source_sha": "65b49f7ffecd8aee5eede21d69b310300dd32ca6",
+  "summary": {
+    "by_ticket": {
+      "R1": {
+        "fail": 1,
+        "not_tested": 0,
+        "pass": 0,
+        "skip": 0
+      },
+      "R2": {
+        "fail": 1,
+        "not_tested": 0,
+        "pass": 0,
+        "skip": 0
+      },
+      "R3": {
+        "fail": 1,
+        "not_tested": 0,
+        "pass": 0,
+        "skip": 0
+      },
+      "R4": {
+        "fail": 8,
+        "not_tested": 0,
+        "pass": 2,
+        "skip": 2
+      },
+      "R5": {
+        "fail": 4,
+        "not_tested": 0,
+        "pass": 0,
+        "skip": 0
+      },
+      "R6": {
+        "fail": 4,
+        "not_tested": 0,
+        "pass": 5,
+        "skip": 0
+      }
+    },
+    "conclusion": "FAILURES",
+    "evidence_free": false,
+    "fail": 19,
+    "no_pass_claimed": false,
+    "not_tested": 0,
+    "pass": 7,
+    "pass_rate_of_verified": 0.2692,
+    "skip": 2,
+    "total": 28,
+    "untested_scopes": 0,
+    "verified": 26,
+    "waivers": []
+  },
+  "untested": []
+}

@@ -87,8 +87,8 @@ watch(state, persist, { deep: true })
     <div class="workspace-layout">
       <aside class="workspace-sidebar">
         <nav aria-label="工作台">
-          <button class="nav-item" :class="{ active: view === 'workflow' }" @click="view = 'workflow'; go(state.step)"><UiIcon name="plus" />新建对照</button>
-          <button class="nav-item" :class="{ active: view === 'reports' }" @click="openReports"><UiIcon name="report" />{{ copy.realReports }}</button>
+          <button class="nav-item" :class="{ active: view === 'workflow' }" :aria-current="view === 'workflow' ? 'page' : undefined" @click="view = 'workflow'; go(state.step)"><UiIcon name="plus" />新建对照</button>
+          <button class="nav-item" :class="{ active: view === 'reports' }" :aria-current="view === 'reports' ? 'page' : undefined" @click="openReports"><UiIcon name="report" />{{ copy.realReports }}</button>
         </nav>
         <div class="sidebar-foot"><span class="status-dot" aria-hidden="true"></span>本机工作台</div>
       </aside>

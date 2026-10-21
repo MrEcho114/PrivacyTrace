@@ -1,0 +1,24 @@
+[Unit]
+Description=PrivacyTrace fixed private Runner TCP passthrough
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=privacytrace-relay
+Group=privacytrace-relay
+EnvironmentFile=/etc/privacytrace/relay.env
+ExecStart=/usr/bin/python3 /opt/privacytrace/deploy/relay.py --listen ${PT_CONTROL_GATEWAY_IP} --allow ${PT_CONTROL_SUBNET} --target ${PT_RUNNER_PRIVATE_IP}
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+RestrictAddressFamilies=AF_INET
+CapabilityBoundingSet=
+MemoryMax=96M
+TasksMax=32
+
+[Install]
+WantedBy=multi-user.target

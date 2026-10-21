@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "issue": "https://github.com/MrEcho114/PrivacyTrace/issues/81",
+  "waivers": [
+    {
+      "id": "dedicated-scan-host-verification",
+      "status": "WAIVED_BY_USER",
+      "scope": "Independent scan host/VM separation and cross-host firewall persistence testing",
+      "authorization": "https://github.com/MrEcho114/PrivacyTrace/issues/81#issuecomment-6294554745",
+      "blocks_this_acceptance": false,
+      "production_requirement_unchanged": true
+    }
+  ],
+  "production_enabled": false
+}

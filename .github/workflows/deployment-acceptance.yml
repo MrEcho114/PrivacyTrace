@@ -1,0 +1,35 @@
+name: Deployment Acceptance
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deployment-acceptance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actual-linux-deployment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Real deployment and recovery acceptance
+        run: sudo bash deploy/check_acceptance.sh
+      - name: Archive sanitized deployment evidence for this source SHA
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: deployment-acceptance-${{ github.event.pull_request.head.sha || github.sha }}
+          path: tmp/deployment-acceptance/*.json
+          if-no-files-found: error

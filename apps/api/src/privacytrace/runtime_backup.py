@@ -563,11 +563,12 @@ def main():
     store = intake = None
     try:
         from .postgres_store import PostgresJobStore
+        from .storage_factory import resolve_database_url
 
         if os.environ.get("PRIVACYTRACE_STORAGE") != "postgres":
             raise ValueError
         store = PostgresJobStore(
-            os.environ["PRIVACYTRACE_DATABASE_URL"],
+            resolve_database_url(),
             os.environ["PRIVACYTRACE_INSTANCE_ID"],
             Path(os.environ["PRIVACYTRACE_STORE_ROOT"]),
             recovery=args.operation == "restore",

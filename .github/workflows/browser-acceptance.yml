@@ -68,6 +68,9 @@ jobs:
       - name: Run wide hierarchy regression
         run: npm run acceptance:hierarchy
 
+      - name: Verify mobile report reading
+        run: npm run acceptance:reading
+
       # #146: colour feedback, hover gating, reduced motion and evidence expansion.
       - name: Verify motion and reduced-motion behaviour
         run: npm run acceptance:motion

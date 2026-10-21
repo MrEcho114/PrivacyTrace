@@ -60,7 +60,7 @@ watch(() => [props.issue, props.report], () => { candidatePage.value = 0 })
 </script>
 
 <template>
-  <section id="evidence-panel" class="evidence-panel" :class="{ 'm-evidence-panel': !heading }" tabindex="-1" :aria-live="heading ? 'polite' : undefined">
+  <section id="evidence-panel" class="evidence-panel" :class="{ 'm-evidence-panel': !heading }" tabindex="-1">
     <div v-if="heading" class="section-heading"><h2>{{ label(issue.data_type) }} · {{ statusLabels[issue.status] }}</h2><button @click="emit('close')">收起</button></div>
     <p class="explanation">{{ issue.explanation }}</p>
     <p v-if="issue.status === 'NOT_DECLARED'" class="demo-note">“未找到声明”依赖适用版本、完整正文、提取成功、全文复核和附件齐全。下面保留完整政策及这些状态；缺少其中任一项时不能据此断言违规。</p>

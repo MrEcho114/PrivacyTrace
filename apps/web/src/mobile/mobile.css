@@ -390,11 +390,6 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
   gap: 4px 8px;
   color: var(--muted);
 }
-.mobile-workspace .source-context-meta span + span::before {
-  content: '·';
-  margin-right: 8px;
-  color: var(--border);
-}
 .m-notice .ui-button { margin-left: 8px; }
 .m-error { color: var(--error); font-size: var(--m-body); line-height: var(--m-line-body); }
 .m-message { margin: 8px 0 0; }

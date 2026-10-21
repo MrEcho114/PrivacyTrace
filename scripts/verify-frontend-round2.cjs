@@ -778,6 +778,11 @@ async function main() {
     }
     assert.ok(!/transition\s*:\s*all/.test(mobileCss), 'mobile.css must not use transition: all')
     assert.doesNotMatch(mobileCss, /user-scalable\s*=\s*no/, 'mobile.css must not disable zoom')
+    const mobileApp = fs.readFileSync(path.join(root, 'apps/web/src/mobile/MobileApp.vue'), 'utf8')
+    assert.match(mobileApp, /m-busy-notice"><span role="status">/, 'busy text must sit in a text-only status span')
+    assert.doesNotMatch(mobileApp, /role="status">[^<]*<UiButton/, 'a stop button must not be nested in a live region')
+    const evidencePanel = fs.readFileSync(path.join(root, 'apps/web/src/components/EvidencePanel.vue'), 'utf8')
+    assert.doesNotMatch(evidencePanel, /aria-live/, 'the evidence panel must not be a live region containing controls')
     checks.push('mobile.css: 100dvh, safe-area, keyboard inset, overscroll/tap/16px/hover gating, no transition:all')
 
     // ---- ledger + artefact record ----------------------------------------

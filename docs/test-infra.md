@@ -73,7 +73,7 @@ The PrivacyTrace PR #88 test suite (`apps/api/tests/test_e2e_pt_mob_102.py`, `ap
 | **Collection Envelope** | Valid `version="privacytrace-policy-collector/1"`, Unsupported version, 0 results (empty), 1-8 results, >8 results |
 | **Collection Result States**| `RETRIEVED` (with text + URL), `PROVIDED` (with text), `URL_ONLY` (URL + empty text), `OFFLINE` (optional source), `UNAVAILABLE` (empty text + error code), `NOT_FOUND` (no source) |
 | **Upload Payload Format** | Standalone single APK (`/apk`), Multi-package archive (`/package-set`), Corrupted ZIP header, Truncated ZIP, Non-ZIP bytes, >101 APKs archive |
-| **Upload Exception Mapping**| Missing draft (404), BadZipFile/EOFError (400), UploadTooLarge (413), ScanError (503), PackageSetIntegrityError (exc.http_status: 400 or 413), ValueError/OSError (409) |
+| **Upload Exception Mapping**| Missing draft (404), BadZipFile/EOFError (400), UploadTooLarge (413), ScanError (503), PackageSetIntegrityError (exc.http_status: 400 or 413), CapacityRefused (429 with code, plus `Retry-After` when the spend is time-bounded), OSError `ENOSPC`/`EDQUOT` (507 `PRIVATE_MATERIAL_DISK_FULL`), other ValueError/OSError (409) |
 | **Draft Quotas** | Source count <= 8 (valid) vs >8 (409), Candidates <= 800 (valid) vs >800 (409), Audits <= 64 (valid) vs >64 (409) |
 | **Policy Provenance** | Auto-discovered (`MANIFEST_METADATA`), Externally imported (`EXTERNAL_CHAT_EXPORT`), Manual (`MANUAL_INPUT`), Direct fetch (`DIRECT_WEB_FETCH`) |
 | **Candidate Start Semantics** | Unchecked candidates (`checked=False`) accepted without 409; resulting document retains `review_status="UNREVIEWED"` |
@@ -85,6 +85,7 @@ The PrivacyTrace PR #88 test suite (`apps/api/tests/test_e2e_pt_mob_102.py`, `ap
 - **Collection Results Boundary**: `0 results` (rejected with 422), `1 result` (minimal valid collection), `8 results` (maximum allowed collection size), `9 results` (rejected with 422).
 - **Draft Source Capacity Boundary**: `7 existing + 1 added = 8` (allowed), `8 existing + 1 added = 9` (rejected with 409).
 - **External Import History Boundary**: `64 audit entries` (maximum allowed), `65th import` (rejected with 409).
+- **Capacity Refusal Boundary**: a spent budget is told apart from a malformed request by status and code, never by message text — per-client drafts `3` (allowed) vs `4th` (429 `CLIENT_DRAFT_QUOTA_REACHED`), whole-laboratory drafts `12` (allowed) vs `13th` (429 `DRAFT_QUOTA_REACHED`), active jobs `4` (allowed) vs `5th start` (429 `ADMISSION_CAPACITY_REACHED` with `Retry-After 5`), material bytes and volume free space as separate codes (`MATERIAL_BUDGET_REACHED` vs `MATERIAL_DISK_SPACE_REACHED`). `deploy/acceptance/capacity_drill.py` drives all three through real containers; `apps/api/tests/test_capacity_boundaries.py` pins the mapping.
 
 ### 2.3 Pairwise Combinations
 

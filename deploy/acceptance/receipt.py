@@ -22,6 +22,7 @@ import platform
 import shutil
 import subprocess
 import time
+import traceback
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -97,6 +98,15 @@ class Check:
             "notes": self.notes,
             "detail": self.detail,
         }
+
+
+def origin(error: BaseException) -> dict[str, Any]:
+    """Where a drill broke, without echoing command output or private paths."""
+    frames = traceback.extract_tb(error.__traceback__)
+    if not frames:
+        return {}
+    frame = frames[-1]
+    return {"function": frame.name, "line": frame.lineno}
 
 
 class CheckRecorder:

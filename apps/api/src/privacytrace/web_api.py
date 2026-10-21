@@ -1,5 +1,6 @@
 """HTTP seam for local private intake; no browser-supplied scanner facts."""
 
+import errno
 from zipfile import BadZipFile
 
 from fastapi import HTTPException, Request
@@ -9,6 +10,7 @@ from fastapi.responses import JSONResponse
 from pydantic import Field
 
 from .auth import authorize_draft_access
+from .capacity import CapacityRefused
 from .isolated_scan import ScanError
 from .models import Model
 from .package_set import PackageSetIntegrityError
@@ -46,6 +48,15 @@ class ExtractionReservationInput(RevisionInput):
 def web_error(exc):
     if isinstance(exc, KeyError):
         return HTTPException(404, detail="DRAFT_NOT_FOUND")
+    if isinstance(exc, CapacityRefused):
+        # A spent admission/queue/disk budget is a capacity boundary, not an
+        # input rejection: the caller must be able to tell them apart.
+        headers = (
+            {"Retry-After": str(exc.retry_after)} if exc.retry_after is not None else None
+        )
+        return HTTPException(429, detail=exc.code, headers=headers)
+    if isinstance(exc, OSError) and exc.errno in {errno.ENOSPC, errno.EDQUOT}:
+        return HTTPException(507, detail="PRIVATE_MATERIAL_DISK_FULL")
     if isinstance(exc, InspectionBusy):
         return HTTPException(
             503, detail="INSPECTION_CAPACITY_BUSY", headers={"Retry-After": "15"}

@@ -129,20 +129,51 @@ test_e2e_pt_mob_102.py::test_t4_real_world_multisplit_end_to_end_workflow
 
 ## 5. 离线回放验证（断网可看）
 
-方法：Playwright 1.64 驱动系统 Edge，以 `file://` 协议直接打开包内 `01_作品及成果文件/demo-web/demo.html`，记录网络请求与页面错误。脚本见 `verify-demo-offline.cjs`，原始收据见 `evidence/demo-offline-receipt.json`，截图见 `evidence/demo-fileprotocol-1440.png` 与 `evidence/demo-fileprotocol-390.png`。
+方法：Playwright 1.64 驱动系统 Edge，打开包内 `01_作品及成果文件/demo-web/demo.html`，并**显式强制离线**：
 
-| 观察项 | 结果 |
-| --- | --- |
-| 文档加载 | PASSED（`status 200`，load 113 ms） |
-| DOM 渲染 | PASSED（143 节点，`#app` 存在，标题「PrivacyTrace · 证据对照工作台」） |
-| 页面级脚本错误 | PASSED（0 条） |
-| 外部网络依赖 | PASSED（4 次请求中 **0 个 http/https**，全部为 `file://`） |
-| 390px 横向溢出 | PASSED（`scrollWidth - innerWidth = 0`） |
-| 控制台错误 | **4 条**（2× `ERR_FILE_NOT_FOUND`、1× 以 `file:` 协议请求 `/api/v1/taxonomy` 被 CORS 拒绝、1× `ERR_FAILED`） |
+- `context.setOffline(true)` —— 浏览器上下文进入离线状态；
+- `context.route(/^https?:\/\//i, route => route.abort('internetdisconnected'))` —— 另外拦截并中止所有 http(s) 请求，被中止的 URL 全量记入收据 `blocked_external_requests`。
 
-**与包内声明的对照**：`01_作品及成果文件/demo-web/说明.txt` §四明确写着「静态版本对接口的请求会失败（浏览器控制台可见跨域提示），这不影响界面浏览」，并声明完整报告页需要在 http 环境启动服务。**实测与该声明一致，声明范围明确，不属于隐瞒缺陷。**
+因此"断网可看"不是靠"观察到 0 次 HTTP 请求"推断，而是网络通道被主动切断后的实际加载与交互结果。脚本见 `verify-demo-offline.cjs`，收据见 `evidence/demo-offline-receipt.json`，截图见 `evidence/` 下 4 张。
 
-结论：离线回放按声明范围 **PASSED**——可在无网络、无后端、无任何环境安装的情况下浏览界面。
+### 5.1 交互路径与逐页断言
+
+按包内说明的真实路径点击，每步断言关键内容出现：
+
+| 步骤 | 动作 | 断言 | 结果 |
+| --- | --- | --- | --- |
+| 1 | 打开 `file://…/demo.html` | `status 200`、标题含 `PrivacyTrace`、H2 含「导入分析材料」 | PASSED（135 ms） |
+| 2 | 点击「体验示例」 | 正文出现 `paperboat-example.apk` 与两份政策名（纸舟地图隐私政策、云点统计服务说明） | PASSED |
+| 3 | 点击「检查候选」 | H2 含「检查政策候选」，正文含「政策原文」「候选声明」 | PASSED |
+| 4 | 点击「进入流程演示」 | H2 含「分析流程演示」，正文含「核对输入」 | PASSED |
+| 5 | 点击「进入下一阶段」 | 页面推进到「静态线索」阶段 | PASSED |
+| 6 | 390×844 视口 | `scrollWidth - innerWidth = 0` | PASSED |
+
+三页（导入 / 候选 / 流程演示）在离线状态下**全部可达**，与包内 `说明.txt` §三 的声明一致。
+
+### 5.2 允许的控制台错误（白名单）
+
+`说明.txt` §四 已声明「静态版本对接口的请求会失败（浏览器控制台可见跨域提示），这不影响界面浏览」。脚本据此只放行三类：
+
+| 规则 id | 匹配 | 依据 |
+| --- | --- | --- |
+| `missing-static-asset` | `Failed to load resource: net::ERR_FILE_NOT_FOUND` | 静态资源缺失（favicon 等） |
+| `backend-unavailable-fetch` | `Access to fetch at 'file:…' … blocked by CORS policy` | 无后端，接口不可用 |
+| `backend-unavailable-request` | `Failed to load resource: net::ERR_FAILED` | 同上 |
+
+**白名单之外任何控制台错误或 pageerror 都会使整体判 `FAILED` 并返回非零退出码。** 本次 4 条错误全部命中白名单，`unexpected = 0`。
+
+### 5.3 退出码语义与负向验证
+
+脚本行为：`overall_status = PASSED` 时 `exit 0`；任一检查未通过时 `exit 1`；用法或执行异常 `exit 2`。
+
+负向验证（证明不会假通过）：传入不存在的 `demo.html` 路径后，脚本输出 `overall_status: FAILED`、`checks_failed: 5`，进程退出码 **1**。
+
+### 5.4 未覆盖部分
+
+静态版中「分析进度」「对照报告」两个步骤按钮**不存在**，与 `说明.txt` §四「完整的对照报告页在单文件模式下不可达，需按方式一启动服务」一致，因此不计为失败，但也不得表述为"报告页离线可用"。
+
+结论：离线回放按包内声明范围 **PASSED**——在无网络、无后端、无任何环境安装的条件下，导入 / 候选 / 流程演示三页可达且可交互，报告页不在支持范围内。
 
 ## 6. 未验证边界与 BLOCKED
 
@@ -182,8 +213,10 @@ test_e2e_pt_mob_102.py::test_t4_real_world_multisplit_end_to_end_workflow
 
 | 文件 | 说明 |
 | --- | --- |
-| `evidence/browser-proof-ffadeb06.json` | acceptance:browser 收据副本（锚定 `ffadeb06`，原文件为 `evidence/browser-proof.json`，本次未改动仓库内原文件） |
-| `evidence/demo-offline-receipt.json` | 离线回放收据（已把本机绝对路径替换为占位描述，其余字段未改） |
-| `evidence/demo-fileprotocol-1440.png` | 1440×900 离线回放截图 |
-| `evidence/demo-fileprotocol-390.png` | 390×844 离线回放截图 |
-| `verify-demo-offline.cjs` | 离线回放验证脚本（可复现，需 `NODE_PATH` 指向仓库 `node_modules`） |
+| `evidence/browser-proof-ffadeb06.json` | acceptance:browser 收据副本（锚定 `ffadeb06`）。仓库原 `evidence/browser-proof.json` 未改动；本副本仅把 `step_sequences` 中两处本机绝对截图路径改写为仓库相对路径，其余字段未改 |
+| `evidence/demo-offline-receipt.json` | 离线回放收据。由脚本在收集阶段就规范化路径，不含本机盘符；含逐项 `checks`、`pages_reached`、`blocked_external_requests` 与 `console_errors.expected/unexpected` |
+| `evidence/demo-offline-import-1440.png` | 导入页（离线，1440×900） |
+| `evidence/demo-offline-candidates-1440.png` | 候选页（离线，1440×900） |
+| `evidence/demo-offline-flow-1440.png` | 流程演示页（离线，1440×900） |
+| `evidence/demo-offline-flow-390.png` | 流程演示页（离线，390×844） |
+| `verify-demo-offline.cjs` | 离线回放验证脚本：显式离线 + 请求拦截 + 逐页交互断言 + 错误白名单 + 非零退出码；需 `NODE_PATH` 指向仓库 `node_modules` |

@@ -151,24 +151,43 @@ test_e2e_pt_mob_102.py::test_t4_real_world_multisplit_end_to_end_workflow
 
 三页（导入 / 候选 / 流程演示）在离线状态下**全部可达**，与包内 `说明.txt` §三 的声明一致。
 
-### 5.2 允许的失败请求（按具体资源，而非错误类型）
+### 5.2 允许的失败请求（协议 + 路径双约束）
 
-初版按"错误类型"放行（任何 `ERR_FILE_NOT_FOUND` 都放过），这会掩盖真正缺失的 JS / CSS，已改为**按具体资源路径**判定：脚本监听 `requestfailed`，把每个失败 URL 归一成包内相对路径后逐条比对。
+两轮修订后，白名单不再只看错误类型、也不只看路径，而是**同时约束协议与包内路径**：
 
-| 规则 id | 匹配的包内路径 | 依据 |
-| --- | --- | --- |
-| `declared-font-fallback` | `fonts/NotoSansSC-Variable.woff2`、`fonts/NotoSerifSC-Variable.woff2` | `说明.txt` 已声明「字体使用系统回退字体渲染」；包内确实无 `fonts/` 目录（见 §5.5） |
-| `backend-unavailable` | `api/v1/*`（`file:` 协议下解析） | `说明.txt` §四 已声明接口请求会失败 |
+| 规则 id | 协议 | 包内路径 | 依据 |
+| --- | --- | --- | --- |
+| `declared-font-fallback` | 仅 `file:` | `fonts/NotoSansSC-Variable.woff2`、`fonts/NotoSerifSC-Variable.woff2` | `说明.txt` 已声明字体回退；包内无 `fonts/` 目录（见 §5.5） |
+| `backend-unavailable` | 仅 `file:` | `api/v1/*` | 静态版无后端，`说明.txt` §四 已声明 |
 
-本次共 3 个失败请求，**3 个全部命中白名单、0 个越界**；4 条控制台错误全部可归因到这些已知失败（`unattributable = 0`）。
+**为什么必须带协议**：若只按路径截取，`https://example.com/api/v1/x` 会被归一成 `api/v1/x` 而误命中白名单。现在协议为 `http:` / `https:` 时一律判 DENIED。
 
-除上述路径外，任何请求失败或任何无法归因的控制台错误 / `pageerror` 都会使整体判 `FAILED` 并返回非零退出码。
+本次共 3 个失败请求，**3 个均为 `file:` 协议且命中白名单、0 个越界**。
 
-### 5.3 退出码语义与负向验证
+控制台错误**按条数与错误码配额逐一消解**，不是"存在同码请求就算归因"：
 
-脚本行为：`overall_status = PASSED` 时 `exit 0`；任一检查未通过时 `exit 1`；用法或执行异常 `exit 2`。
+- 每个已放行的失败请求，为其错误码贡献 1 个配额；
+- 每条控制台错误必须消耗一个未被认领的配额，扣不掉即计入 `unexplained`；
+- 因此"出现 3 条 `ERR_FILE_NOT_FOUND`、但只有 2 个字体请求放行"这种情形会被判 FAILED。
 
-负向验证（证明不会假通过）：传入不存在的 `demo.html` 路径后，输出 `overall_status: FAILED`、`checks_failed: 6`，进程退出码 **1**；其中 `failed_requests_within_declared_scope` 报出 `1 failed request(s): 0 allowed, 1 disallowed`，说明白名单不会把越界请求一并放过。
+另设独立检查 `no_external_network_attempt`：把 `blocked_external_requests` 与 `requestfailed` 中协议为 `http(s)` 的条目**合并去重**后统计，非 0 即失败。
+
+### 5.3 退出码语义与三组负向验证
+
+脚本行为：`overall_status = PASSED` 时 `exit 0`；任一检查未通过 `exit 1`；用法或执行异常 `exit 2`。
+
+脚本内置两个注入开关，用于证明判定不是"看起来严"：
+
+| 场景 | 参数 | 期望 | 实测 |
+| --- | --- | --- | --- |
+| 正常回放 | 无 | PASSED / exit 0 | ✅ `no_external_network_attempt — 0` |
+| **同错误码、非白名单资源** | `--inject-missing-resource` | FAILED / exit 1 | ✅ `DENIED [file:] __missing_resource__.png`；控制台 5 条错误中 **1 条 unexplained** |
+| **外部 http(s) 尝试** | `--inject-external-request` | FAILED / exit 1 | ✅ `no_external_network_attempt — 1 external http(s) attempt: https://example.com/__external__.png` |
+| 页面不存在 | 传入不存在的路径 | FAILED / exit 1 | ✅ `checks_failed: 6`，`0 allowed, 1 denied` |
+
+第二组直接回应"相同错误码、非白名单资源"：注入的 `__missing_resource__.png` 与字体同为 `ERR_FILE_NOT_FOUND`，但因路径不在白名单、且配额已被两个字体请求占满，被正确判为越界。
+
+第三组暴露并修掉了一个真实盲区：**CSP 可能先于路由拦截外部资源**，此时请求不会进入 `blocked_external_requests`，只能从 `requestfailed` 的协议判断；现判定已合并两处来源去重统计。
 
 ### 5.4 未覆盖部分
 

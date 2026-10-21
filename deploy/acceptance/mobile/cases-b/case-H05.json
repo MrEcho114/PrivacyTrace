@@ -1,0 +1,31 @@
+{
+  "caseId": "H05-local-I-splits-assist",
+  "origin": "https://localhost:28544",
+  "policyMode": "assist",
+  "evidencePrefix": "H05-local-I-splits-assist",
+  "uploadAttempts": 2,
+  "cleanup": true,
+  "appLabel": "Controlled B fixture",
+  "policyText": "本自建测试应用申请精确位置权限，用于权限能力研究。我们访问精确位置。我们读取联系人。无附件。",
+  "candidates": [
+    {
+      "sourceTitle": "受控政策样本",
+      "quote": "我们访问精确位置。",
+      "dataType": "PRECISE_LOCATION"
+    },
+    {
+      "sourceTitle": "受控政策样本",
+      "quote": "我们读取联系人。",
+      "dataType": "CONTACTS"
+    }
+  ],
+  "expected": {
+    "job_state": "SUCCEEDED",
+    "policy_comparison": "PRESENT",
+    "comparison_status": "INSUFFICIENT_EVIDENCE",
+    "data_types": ["PRECISE_LOCATION", "CONTACTS"],
+    "contact_quote_offsets": [34, 42],
+    "scanned_split": "fixture_feature",
+    "note": "Base+feature split must expose the split-only contacts API call and keep the comparison unreviewed/insufficient."
+  }
+}

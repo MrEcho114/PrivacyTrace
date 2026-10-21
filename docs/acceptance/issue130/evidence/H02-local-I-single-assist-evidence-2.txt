@@ -1,0 +1,136 @@
+P
+PrivacyTrace
+对照报告
+
+选择应用后，在系统窗口确认目标服务和上传范围。静态线索不证明实际采集。
+
+当前分析材料
+材料版本 5
+
+https://localhost:28544/
+org.privacytrace.probe.fixture
+
+选择应用并上传
+恢复当前实例材料
+删除远端材料
+
+自动候选未完成。可选用辅助入口或手动补充，也可直接分析；缺证据状态仍保留。
+
+分析范围与来源 · REAL_SCAN · 真实 APK 静态扫描
+输入来源状态
+
+失败来源保留；正文完整度未知、全文未复核、附件未检查。
+
+政策待补充 · 尚无正文 · 出处未标注
+
+请求网址 手动输入 · 最终网址 未获取／手动输入
+
+受控政策样本 · 手动补入正文 · 外部导入
+
+请求网址 https://policy.local/controlled · 最终网址 未获取／手动输入
+
+存档报告查看 · PERSISTED REPLAY
+
+分析生成时点：2026-10-21T09:55:50.395106+00:00。查看存档不代表重新扫描。
+
+PT
+org.privacytrace.probe.fixture
+
+org.privacytrace.probe.fixture · controlled-fixture
+
+原生成时间：2026/10/21 17:55:45 (2026-10-21T09:55:45.601040Z)
+
+真实 APK · REAL_SCAN
+持久化回放 · REPLAY
+DEX 处理范围：已扫描所支持的 DEX 范围
+
+已扫描 base:classes.dex、base:classes2.dex；失败 无。
+
+Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.
+JADX unavailable or timed out; bytecode evidence retained
+
+行为识别：有限的规则静态分析（非穷尽）。
+
+不保证覆盖反射、动态加载、Native、加壳、第三方与混合运行时、复杂数据流或规则集未覆盖的行为。没有命中规则不代表没有隐私行为。
+
+仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。
+不保证覆盖反射、动态加载及运行时生成的调用。
+不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。
+复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。
+静态潜在行为不能证明实际访问、收集或外传。
+
+输入 APK SHA-256：51419844c6305b99ee930dd77d15162f606e39a94b57f1939858eda43bedc44f
+
+扫描完成只描述本轮处理范围，不等于发现了应用所有隐私行为。
+
+1
+涉及的数据类型
+1
+独立政策来源
+4
+可查看的证据
+隐私声明对照
+点开结论后，直接查看代码定位与原句
+隐私数据	政策来源	当前结论	依据
+精确位置	有政策快照 · 对应条款未确认	证据不足 · 待复核	查看 1 条证据 →
+精确位置	官网政策	证据不足 · 待复核	查看 2 条证据 →
+精确位置 · 证据不足
+收起
+
+关于精确位置，政策适用范围尚未确认或条款抽取未成功，需补齐后复核。
+
+API 字节码
+ev-c1eda932b2d0c2ea76b79d78
+
+base:classes2.dex · apk_sha256=51419844c6305b99ee930dd77d15162f606e39a94b57f1939858eda43bedc44f;split=base;dex=classes2.dex;caller=Lorg/privacytrace/probe/fixture/ProbeBehavior;->accessLocation(Landroid/location/LocationManager;)V;offset_bytes=4;target=Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;
+
+目标：Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;
+
+规则 android.location.last-known.gps · 0.3.0；静态上下文 {"provider":"gps"}
+
+字节码定位保留调用方法、DEX 与指令偏移；未提供 JADX Java 源码时以字节码作为依据。
+
+invoke-virtual v1, v0, Landroid/location/LocationManager;->getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;
+政策快照引用
+web-policy-controlled-assist-snapshot
+
+https://policy.local/controlled · Captured UTF-8 text; acquisition=EXTERNAL_CHAT_EXPORT; source type is not proof of official verification; completeness unknown
+
+本条引用政策快照，全文见下方。
+
+完整政策与适用边界
+相关候选条款（未确认匹配）
+共 1 条 · 第 1 / 1 页
+上一页
+下一页
+
+以下仅按相同数据类型展示候选原句，不属于规则已确认的匹配依据，不改变结论或结论证据引用。SDK 自有政策不能替代宿主声明；候选提取仍需人工核验。
+
+web-claim-489256a5-729a-440b-b13f-cd1f566cab9c · 官网政策
+
+极性 UNKNOWN · 主体 HOST_APP · 动作 ACCESS
+
+条件：未提取条件（不代表无条件）
+
+复核 UNREVIEWED · 提取 PARTIAL · 快照 PARTIAL
+
+声明来源 web-policy-controlled-assist · 候选证据 web-sentence-489256a5-729a-440b-b13f-cd1f566cab9c
+
+codepoints [25,34)
+
+原文位置：[25, 34)，按 Unicode 码点计数。
+
+本自建测试应用申请精确位置权限，用于权限能力研究。我们访问精确位置。无附件。
+候选来源全文与适用边界
+第三方 SDK 归属
+仅按公开包前缀提供静态归属参考，不代表实际收集或外传
+
+归属命中只表示类路径落在某个已公开的 SDK 包范围内；SDK 的静态存在不等于实际收集或外发，也不能替代宿主 App 自身的声明，归属结论不参与政策一致性判定。
+
+本次未命中当前有限的签名规则集。没有命中不代表 APK 不含第三方 SDK。
+
+报告版本、权限与全部政策快照
+
+PrivacyTrace · 每条结论保留证据来源，推断与声明单独记录。
+
+报告的隐私核验结果由 Consistency Engine 输出；部分工程代码使用 AI 辅助，范围和核实状态见仓库披露记录。

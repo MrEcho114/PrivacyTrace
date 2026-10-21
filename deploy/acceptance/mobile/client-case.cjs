@@ -10,23 +10,27 @@ const OUT = process.env.PT_EVIDENCE_DIR || path.join(__dirname, 'evidence');
 const MODEL_ENDPOINT = process.env.PT_MODEL_ENDPOINT || '';
 const MODEL_KEY = process.env.PT_MODEL_KEY || '';
 
-const POLICY_JSON = JSON.stringify({
-  version: 'privacytrace-policy-collector/1',
-  results: [{
-    state: 'PROVIDED',
-    source: {
-      id: 'policy-controlled-assist',
-      title: '受控政策样本',
-      source_type: 'OFFICIAL_WEB_POLICY',
-      text: '本自建测试应用申请精确位置权限，用于权限能力研究。我们访问精确位置。无附件。',
-      url: 'https://policy.local/controlled',
-      version: 'UNKNOWN',
-      region: '',
-      product: '',
-      package_name: 'org.privacytrace.probe.fixture',
-    },
-  }],
-});
+const DEFAULT_POLICY_TEXT = '本自建测试应用申请精确位置权限，用于权限能力研究。我们访问精确位置。无附件。';
+
+function policyJson(text) {
+  return JSON.stringify({
+    version: 'privacytrace-policy-collector/1',
+    results: [{
+      state: 'PROVIDED',
+      source: {
+        id: 'policy-controlled-assist',
+        title: '受控政策样本',
+        source_type: 'OFFICIAL_WEB_POLICY',
+        text,
+        url: 'https://policy.local/controlled',
+        version: 'UNKNOWN',
+        region: '',
+        product: '',
+        package_name: 'org.privacytrace.probe.fixture',
+      },
+    }],
+  });
+}
 
 function log(message) {
   console.log(`[case] ${message}`);
@@ -41,6 +45,25 @@ async function waitFor(cdp, predicate, description, timeoutMs = 180000) {
     await new Promise(resolve => setTimeout(resolve, 700));
   }
   throw new Error(`timeout waiting for ${description}; last body: ${last.slice(0, 400)}`);
+}
+
+// The progress view renders "查看报告" before it is enabled. A click on the
+// disabled node is silently ignored, so wait for an enabled node instead of
+// treating the first rendered frame as a ready report entry.
+async function clickEnabled(cdp, text, description, timeoutMs = 120000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const clicked = await cdp.evaluate(`(() => {
+      const nodes = [...document.querySelectorAll('button')];
+      const target = nodes.find(n => (n.innerText || '').trim().includes(${JSON.stringify(text)}));
+      if (!target || target.disabled) return false;
+      target.click();
+      return true;
+    })()`);
+    if (clicked) return;
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  throw new Error(`timeout waiting for enabled ${description}`);
 }
 
 async function selectAndUpload(cdp, { origin, appLabel }) {
@@ -191,7 +214,7 @@ async function removeDraft(cdp, { origin }) {
 // text; use that path so the report actually contains a policy claim instead of
 // an empty comparison. The quote must be an exact substring of the selected
 // source text, which is what the page validates.
-async function addCandidate(cdp, { sourceTitle, quote, dataType }) {
+async function addCandidate(cdp, { sourceTitle, quote, dataType }, ordinal) {
   log(`adding a manual candidate from ${sourceTitle}`);
   await cdp.evaluate(`(() => {
     const nodes = [...document.querySelectorAll('button')];
@@ -236,19 +259,24 @@ async function addCandidate(cdp, { sourceTitle, quote, dataType }) {
   })()`);
   log(`candidate save ${saved}`);
   if (saved !== 'CLICKED') throw new Error(`candidate save failed: ${saved}`);
-  await waitFor(cdp, body => body.includes('候选声明 1') || body.includes('已检查 1'), 'saved candidate', 60000);
+  await waitFor(
+    cdp,
+    body => body.includes(`候选声明 ${ordinal}`) || body.includes(`已检查 ${ordinal}`),
+    'saved candidate',
+    60000,
+  );
   log('manual candidate saved');
 }
 
-async function prepareAndAnalyze(cdp, { evidencePrefix, addCandidate: candidate }) {
+async function prepareAndAnalyze(cdp, { evidencePrefix, candidates = [] }) {
   log('clicking 自动准备政策并继续');
   await cdp.clickText('自动准备政策并继续');
   await waitFor(cdp, body => body.includes('保存候选并开始分析'), 'candidate page', 180000);
   log('candidate page reached');
-  if (candidate) {
+  for (const [index, candidate] of candidates.entries()) {
     // A configured candidate is part of the case contract: do not silently
     // continue into an empty policy comparison when it cannot be saved.
-    await addCandidate(cdp, candidate);
+    await addCandidate(cdp, candidate, index + 1);
   }
   fs.writeFileSync(`${OUT}/${evidencePrefix}-candidates.txt`, await cdp.bodyText(), 'utf8');
   // Saving a candidate re-renders the footer; a click on the replaced node is a
@@ -273,8 +301,16 @@ async function prepareAndAnalyze(cdp, { evidencePrefix, addCandidate: candidate 
   const state = final.includes('查看报告') ? 'SUCCEEDED' : (final.includes('分析已取消') ? 'CANCELLED' : 'FAILED');
   log(`job terminal state: ${state}`);
   if (state === 'SUCCEEDED') {
-    await cdp.clickText('查看报告');
-    await waitFor(cdp, body => body.includes('证据') || body.includes('政策'), 'report page', 120000);
+    // "证据" and "政策" already occur in the progress view's chrome, so they
+    // cannot distinguish the report from the progress page. Wait for the
+    // report-only comparison heading instead, and only click an enabled button.
+    await clickEnabled(cdp, '查看报告', 'report button');
+    await waitFor(
+      cdp,
+      body => body.includes('隐私声明对照') || body.includes('扫描覆盖'),
+      'report page',
+      120000,
+    );
   }
   return state;
 }
@@ -285,6 +321,48 @@ async function capture(cdp, evidencePrefix) {
   await cdp.screenshot(`${OUT}/${evidencePrefix}-webview.png`);
   ui.screencap(`${OUT}/${evidencePrefix}-device.png`);
   return body;
+}
+
+// The comparison table only carries a summary. Open every row and archive the
+// expanded panel so each quote, its source and its code location are
+// reviewable in the same run.
+async function captureEvidence(cdp, evidencePrefix) {
+  const total = await cdp.evaluate(`(() => {
+    return [...document.querySelectorAll('button')]
+      .filter(button => (button.innerText || '').includes('条证据')).length;
+  })()`);
+  if (!total) return 0;
+  let captured = 0;
+  let previous = '';
+  for (let index = 0; index < total; index += 1) {
+    const clicked = await cdp.evaluate(`(() => {
+      const buttons = [...document.querySelectorAll('button')]
+        .filter(button => (button.innerText || '').includes('条证据'));
+      const target = buttons[${index}];
+      if (!target || target.disabled) return false;
+      target.click();
+      return true;
+    })()`);
+    if (!clicked) continue;
+    if (index === 0) {
+      await waitFor(cdp, body => body.includes('原文位置'), 'evidence panel', 60000);
+    } else {
+      await new Promise(resolve => setTimeout(resolve, 1200));
+    }
+    let body = await cdp.bodyText();
+    if (body === previous) {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      body = await cdp.bodyText();
+    }
+    previous = body;
+    fs.writeFileSync(`${OUT}/${evidencePrefix}-evidence-${index + 1}.txt`, body, 'utf8');
+    if (index === 0) {
+      fs.writeFileSync(`${OUT}/${evidencePrefix}-evidence.txt`, body, 'utf8');
+    }
+    await cdp.screenshot(`${OUT}/${evidencePrefix}-evidence-${index + 1}.png`);
+    captured += 1;
+  }
+  return captured;
 }
 
 async function main() {
@@ -303,16 +381,23 @@ async function main() {
   }
   fs.mkdirSync(OUT, { recursive: true });
 
+  const policyText = options.policyText || DEFAULT_POLICY_TEXT;
+  const candidates = options.candidates
+    || (options.addCandidate ? [options.addCandidate] : []);
+
   const cdp = await uploadWithRetry({ origin, appLabel }, uploadAttempts);
   try {
-    if (policyMode === 'assist') await importAssist(cdp, POLICY_JSON);
+    if (policyMode === 'assist') await importAssist(cdp, policyJson(policyText));
     if (policyMode === 'model') {
       await configureModel(cdp);
       await runModelCollect(cdp, { modelName: 'controlled-chat', appHint: 'org.privacytrace.probe.fixture' });
-      await importAssist(cdp, POLICY_JSON);
+      await importAssist(cdp, policyJson(policyText));
     }
-    const state = await prepareAndAnalyze(cdp, { evidencePrefix, addCandidate: options.addCandidate });
+    const state = await prepareAndAnalyze(cdp, { evidencePrefix, candidates });
     const body = await capture(cdp, evidencePrefix);
+    const evidenceCaptured = state === 'SUCCEEDED'
+      ? await captureEvidence(cdp, evidencePrefix)
+      : false;
     const policyComparison = body.includes('未产生对照项')
       ? 'EMPTY'
       : (body.includes('隐私声明对照') ? 'PRESENT' : 'UNKNOWN');
@@ -323,6 +408,7 @@ async function main() {
       policy_mode: policyMode,
       job_state: state,
       policy_comparison: policyComparison,
+      evidence_captured: evidenceCaptured,
       deletion,
       body_chars: body.length,
       captured_at: new Date().toISOString(),

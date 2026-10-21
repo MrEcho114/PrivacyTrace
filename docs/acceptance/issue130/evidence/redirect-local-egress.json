@@ -1,0 +1,10 @@
+{
+  "http_status": 200,
+  "error_code": "PUBLIC_URL_REQUIRED",
+  "source_status": "failed",
+  "has_text": false,
+  "elapsed_s": 0.587,
+  "internal_connections": 0,
+  "internal_lines": [],
+  "pass": true
+}

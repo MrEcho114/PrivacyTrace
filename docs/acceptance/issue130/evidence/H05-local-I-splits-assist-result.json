@@ -1,0 +1,11 @@
+{
+  "case_id": "H05-local-I-splits-assist",
+  "origin": "https://localhost:28544",
+  "policy_mode": "assist",
+  "job_state": "SUCCEEDED",
+  "policy_comparison": "PRESENT",
+  "evidence_captured": 3,
+  "deletion": "DELETED",
+  "body_chars": 1792,
+  "captured_at": "2026-10-21T10:00:05.781Z"
+}

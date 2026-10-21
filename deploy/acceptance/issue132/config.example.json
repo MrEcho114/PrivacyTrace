@@ -1,0 +1,16 @@
+{
+  "disposable": true,
+  "origin": "https://localhost:29443",
+  "instance_id": "00000000-0000-4000-8000-000000000001",
+  "ca_file": "tmp/issue132/pki/ca.pem",
+  "owner_token_env": "PT132_B_TOKEN",
+  "other_token_env": "PT132_A_TOKEN",
+  "target": {
+    "draft_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "job_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    "source_id": "policy",
+    "attempt_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "evidence_id": "replace-with-actual-evidence-id",
+    "revision": 1
+  }
+}

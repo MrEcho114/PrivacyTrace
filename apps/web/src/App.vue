@@ -7,7 +7,8 @@ import { parseSource, serializeSource, sourceProvenanceLabel, sourceStatusLabel 
 import EvidencePanel from './components/EvidencePanel.vue'
 import UiSheet from './components/UiSheet.vue'
 import UiIcon from './components/UiIcon.vue'
-const props = defineProps<{ initialJobId?: string; snapshot?: { report: Report; taxonomy: Taxonomy }; mobile?: boolean }>()
+import MobileReportSummary from './components/MobileReportSummary.vue'
+const props = defineProps<{ initialJobId?: string; snapshot?: { report: Report; taxonomy: Taxonomy }; mobile?: boolean; material?: { origin: string; draft: string; revision?: number } }>()
 // The Tauri shell reuses this whole report body. In mobile mode the evidence
 // preview becomes a bottom sheet and the shell owns the surrounding app chrome.
 const emit = defineEmits<{ evidenceOpen: []; evidenceClose: [] }>()
@@ -659,11 +660,17 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         <button v-if="manualRefresh" type="button" class="ui-button" @click="stopRefresh">停止本次请求</button>
         <p class="field-help">真实任务由 APK 扫描 CLI 创建；示例仅用于演示，不是实际应用的检测结果。</p>
       </section>
-      <details class="demo-note"><summary>分析范围与来源 · <strong>{{ sourceInfo?.label ?? (source.kind === 'demo' ? 'SYNTHETIC 示例' : '真实 APK 静态报告') }}</strong></summary>
+      <MobileReportSummary v-if="mobile && report"
+        :name="report.sample.name" :version="report.demo ? report.sample.version : (report.sample.version_name ?? ('v' + report.sample.version_code))"
+        :package-name="report.sample.package_name" :source-badge="sourceInfo?.badge ?? '来源未标注'" :source-description="sourceInfo?.desc ?? ''"
+        :delivery-badge="deliveryInfo?.badge ?? '投递方式未标注'" :delivery-description="deliveryInfo?.desc ?? ''"
+        :generated-at="report.job?.created_at" :generated-at-label="formatTimestamp(report.job.created_at)" :material="material"
+        :data-type-count="dataTypeCount" :policy-count="report.policy_documents.length" :evidence-count="report.evidence.length" />
+      <details v-if="!mobile" class="demo-note"><summary>分析范围与来源 · <strong>{{ sourceInfo?.label ?? (source.kind === 'demo' ? 'SYNTHETIC 示例' : '真实 APK 静态报告') }}</strong></summary>
         {{ sourceInfo?.desc ?? (source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。报告不保证覆盖反射、动态加载、原生代码或运行时行为。') }}
         六种状态只对照 DATA_TYPE_DISCLOSURE；“具体类型已声明”不代表目的、接收方、传输或时间范围全部一致，更不是合法性判断。
       </details>
-      <section v-if="report" class="sample-card">
+      <section v-if="report && !mobile" class="sample-card">
         <div class="app-icon">PT</div>
         <div>
           <h2>{{ report.sample.name }}</h2>
@@ -675,7 +682,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           <span class="badge" :class="deliveryInfo?.type?.toLowerCase()" :title="deliveryInfo?.desc ?? ''">{{ deliveryInfo?.badge }}</span>
         </div>
       </section>
-      <div v-if="report" class="metrics"><div><strong>{{ dataTypeCount }}</strong><span>涉及的数据类型</span></div><div><strong>{{ report.policy_documents.length }}</strong><span>独立政策来源</span></div><div><strong>{{ report.evidence.length }}</strong><span>可查看的证据</span></div></div>
+      <div v-if="report && !mobile" class="metrics"><div><strong>{{ dataTypeCount }}</strong><span>涉及的数据类型</span></div><div><strong>{{ report.policy_documents.length }}</strong><span>独立政策来源</span></div><div><strong>{{ report.evidence.length }}</strong><span>可查看的证据</span></div></div>
       <p id="job-announcement" class="sr-only" role="status">{{ jobAnnouncement }}</p>
       <section v-if="activeJob" ref="jobStateEl" class="job-state" :class="{ compact: activeJob.state === 'SUCCEEDED' }" tabindex="-1" :aria-busy="(refreshing || loading) || undefined">
         <strong>{{ jobLabels[activeJob.state] }}</strong> · {{ activeJob.id }} · {{ activeJob.state }}

@@ -6,6 +6,7 @@ import UiSheet from '../components/UiSheet.vue'
 import PolicyAssist from '../components/PolicyAssist.vue'
 import CandidatePage from '../pages/CandidatePage.vue'
 import ExistingReports from '../App.vue'
+import MobileMaterialContext from '../components/MobileMaterialContext.vue'
 import { collectionInstructions } from '../policyAssist'
 import { sourceStatusLabel, steps } from '../workflow'
 import type { Step } from '../workflow'
@@ -239,18 +240,8 @@ onBeforeUnmount(() => {
     </nav>
 
     <main id="workspace-content" class="m-main" :class="{ 'm-step-enter': stepEntering }" tabindex="-1" @animationend="stepEntering = false">
-      <section v-if="context && state.step !== 'import'" class="m-context" aria-label="当前分析材料">
-        <div class="m-context-text">
-          <strong class="m-context-name">{{ contextName }}</strong>
-          <span class="m-context-meta">{{ contextVersion }}</span>
-        </div>
-        <button type="button" class="m-text-button" @click="navigate('import')">更换</button>
-        <details class="m-context-details">
-          <summary>材料标识与来源</summary>
-          <p class="hash">{{ context.origin }}</p>
-          <p class="hash">材料 {{ context.draft }}<template v-if="draft"> · 版本 {{ draft.revision }}</template></p>
-        </details>
-      </section>
+      <MobileMaterialContext v-if="context && state.step !== 'import' && state.step !== 'report'"
+        :name="contextName" :version="contextVersion" :origin="context.origin" :draft-id="context.draft" :revision="draft?.revision" @change="navigate('import')" />
 
       <template v-if="state.step === 'import'">
         <section v-if="!context" class="m-card m-empty-card">
@@ -265,7 +256,8 @@ onBeforeUnmount(() => {
           <div class="m-card-head"><h2>当前分析材料</h2><UiButton variant="quiet" :disabled="busy" @click="flow.remove">删除远端材料</UiButton></div>
           <p class="m-material-name" :role="draft ? undefined : 'status'">{{ draft?.name || '正在读取材料…' }}</p>
           <p v-if="draft?.apk_sha256" class="hash">APK SHA-256 {{ draft.apk_sha256 }}</p>
-          <p class="m-help">材料保存在本机服务，服务端长期保留至主动删除。更换文件请重新选择应用。</p>
+          <p class="m-help">材料保存在当前分析服务，长期保留至主动删除。更换文件请重新选择应用。</p>
+          <p class="m-help">分析服务：{{ context.origin }}</p>
         </section>
         <div v-if="busy" class="m-notice m-busy-notice"><span role="status">正在处理当前请求。</span><UiButton variant="quiet" @click="flow.stop">停止本次请求</UiButton></div>
         <section v-if="context" class="m-section" aria-labelledby="m-sources-title">
@@ -324,7 +316,7 @@ onBeforeUnmount(() => {
       </template>
 
       <div v-else-if="state.step === 'report' && report && taxonomy" class="m-report">
-        <ExistingReports ref="reportView" :key="report.job.id" :snapshot="{ report, taxonomy }" mobile @evidence-open="onEvidenceOpen" @evidence-close="onEvidenceClose" />
+        <ExistingReports ref="reportView" :key="report.job.id" :snapshot="{ report, taxonomy }" mobile :material="context ? { origin: context.origin, draft: context.draft, revision: draft?.revision } : undefined" @evidence-open="onEvidenceOpen" @evidence-close="onEvidenceClose" />
       </div>
       <p v-else-if="state.step === 'report'" class="m-notice" role="status">报告尚未载入，请返回进度刷新状态。</p>
 
@@ -359,7 +351,7 @@ onBeforeUnmount(() => {
       </section>
       <section class="m-settings-section">
         <h2>材料与存储</h2>
-        <p v-if="context">当前材料保存在本机服务，服务端长期保留至主动删除。删除后原始材料与分析结果不可恢复。</p>
+        <p v-if="context">当前材料保存在以下分析服务，长期保留至主动删除。删除后原始材料与分析结果不可恢复。</p>
         <p v-else>尚未选择分析材料。</p>
         <p v-if="context" class="hash">{{ context.origin }}</p>
         <div class="m-button-row">
@@ -370,7 +362,7 @@ onBeforeUnmount(() => {
       <section class="m-settings-section">
         <h2>证据边界</h2>
         <p class="m-help">静态线索不证明实际采集；权限是能力，invoke 是静态潜在线索。UNKNOWN、PARTIAL、UNREVIEWED 与附件未检查状态保持可见，不升级结论。</p>
-        <p class="m-help">PrivacyTrace · 本机运行 · 政策对照工作台</p>
+        <p class="m-help">PrivacyTrace · 静态证据与政策声明对照</p>
       </section>
     </UiSheet>
   </div>

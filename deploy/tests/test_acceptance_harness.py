@@ -25,7 +25,7 @@ from acceptance import (  # noqa: E402  # noqa: E402
 )
 from acceptance import run as harness  # noqa: E402
 from acceptance.receipt import SKIP, summarize  # noqa: E402
-from acceptance.topology import ENVIRONMENT_VARIABLES, Topology  # noqa: E402
+from acceptance.topology import ENVIRONMENT_VARIABLES, HttpResult, Topology  # noqa: E402
 
 #: Every PT_ACCEPTANCE_* variable, so a test can start from a clean environment.
 ACCEPTANCE_ENV = tuple(ENVIRONMENT_VARIABLES)
@@ -191,6 +191,32 @@ class GatingTests(unittest.TestCase):
         self.assertIn(check.status, {"PASS", "FAIL", "SKIP"})
         if check.status == "FAIL":
             self.fail(f"tracked source tripped the secret audit: {check.detail}")
+
+
+class ScopeReleaseTests(unittest.TestCase):
+    """Released scopes must not hold a client draft-quota slot or be deleted twice."""
+
+    def test_release_forgets_the_scope_so_cleanup_does_not_repeat_the_delete(self):
+        topology = Topology.from_env()
+        scope = r2_business_loop.Scope(
+            name="released", draft_id="released-draft", token="capability", revision=1
+        )
+        before = list(r2_business_loop.CREATED_SCOPES)
+        r2_business_loop.CREATED_SCOPES.append((topology, scope))
+        calls = []
+
+        def fake_request(topology, path, **kwargs):
+            calls.append((path, kwargs.get("method", "GET")))
+            return HttpResult(method="DELETE", path=path, status=200, duration_s=0.01)
+
+        try:
+            with patch.object(r2_business_loop, "request", fake_request):
+                self.assertEqual(r2_business_loop.release_scope(topology, scope), 200)
+                self.assertNotIn((topology, scope), r2_business_loop.CREATED_SCOPES)
+                self.assertEqual(r2_business_loop.cleanup_created_scopes(), [])
+        finally:
+            r2_business_loop.CREATED_SCOPES[:] = before
+        self.assertEqual(calls, [(f"/api/v1/web/drafts/{scope.draft_id}", "DELETE")])
 
 
 class TopologyEnvironmentTests(unittest.TestCase):

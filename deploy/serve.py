@@ -7,6 +7,7 @@ and must never be used as the production runtime or as a scanning receipt.
 import asyncio
 import ipaddress
 import json
+import logging
 import os
 import re
 import time
@@ -15,6 +16,47 @@ from pathlib import Path
 from privacytrace.storage_factory import resolve_database_url
 
 READ_PATHS = {"/api/v1/health", "/api/v1/taxonomy", "/api/v1/demo/report"}
+
+
+class FailureLogMiddleware:
+    """Log failed requests as method + route template + status only.
+
+    The uvicorn access log stays off on purpose: request paths carry draft IDs,
+    capability-scoped resource paths and policy URLs, and the deployment must not
+    write those to disk. A route template is stable and identifier-free, which is
+    enough to tell an operator (or a debugging agent) which endpoint rejected a
+    request without leaking the request itself.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        status = {"code": 0}
+
+        async def capture(message):
+            if message["type"] == "http.response.start":
+                status["code"] = int(message["status"])
+            await send(message)
+
+        try:
+            await self.app(scope, receive, capture)
+        except Exception:
+            status["code"] = status["code"] or 500
+            raise
+        finally:
+            if status["code"] >= 400:
+                route = scope.get("route")
+                template = getattr(route, "path", None) or "UNMATCHED"
+                # The uvicorn logger is already configured by the server.
+                logging.getLogger("uvicorn.error").warning(
+                    "request_failed method=%s route=%s status=%s",
+                    scope.get("method", ""),
+                    template,
+                    status["code"],
+                )
 
 
 def configure():
@@ -264,19 +306,29 @@ def create_app():
     return ProductionSurface(app, host)
 
 
-if __name__ == "__main__":
-    import uvicorn
+def build_application():
+    """Compose the served ASGI app.
 
-    # No forwarded-header trust or access log containing private URLs/headers.
+    The deployment surfaces are plain ASGI callables, not Starlette instances, so
+    the failure log wraps them by composition; add_middleware() would not exist.
+    Wrapping outside also covers the surface's own 4xx/5xx answers.
+    """
     # Construct first: startup failures have a fixed, non-secret message.
     try:
-        application = create_app()
+        surface = create_app()
     except Exception:
         raise SystemExit(
             "PT-SRV-102 startup refused; see deployment compatibility matrix"
         ) from None
+    return FailureLogMiddleware(surface)
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    # No forwarded-header trust or access log containing private URLs/headers.
     uvicorn.run(
-        application,
+        build_application(),
         host="0.0.0.0",
         port=8000,
         workers=1,

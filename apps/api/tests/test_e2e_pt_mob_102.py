@@ -14,6 +14,7 @@ Authoritative Requirements:
 """
 
 import hashlib
+import os
 import struct
 from pathlib import Path
 from zipfile import ZIP_STORED, ZipFile, ZipInfo
@@ -28,6 +29,16 @@ from privacytrace.resources import read_json, taxonomy
 from privacytrace.runtime_models import Report
 
 pytestmark = pytest.mark.usefixtures("synthetic_package_metadata")
+
+# This suite waits on a background scan job. A fixed wall-clock budget turns a
+# slow machine into a red build, so the budget is explicit and can be raised on
+# slower hosts: PRIVACYTRACE_E2E_JOB_BUDGET_SECONDS=120.
+JOB_BUDGET_SECONDS = float(os.environ.get("PRIVACYTRACE_E2E_JOB_BUDGET_SECONDS", "60"))
+
+
+def wait_for_job(app, job_id: str):
+    """Block until the scan job finishes within the configured budget."""
+    return app.state.web_intake.futures[job_id].result(timeout=JOB_BUDGET_SECONDS)
 
 # ==============================================================================
 # Helper & Fixture Synthesizers
@@ -976,7 +987,7 @@ def test_r3_f29_non_blocking_unreviewed_candidate_start(tmp_path, monkeypatch):
     job_id = start_resp.json()["id"]
 
     # Wait for completion and verify UNREVIEWED policy document metadata & issue status
-    app.state.web_intake.futures[job_id].result(timeout=15)
+    wait_for_job(app, job_id)
     report = app.state.job_store.report(job_id)
     assert len(report.policy_documents) > 0
     for doc in report.policy_documents:
@@ -1661,7 +1672,7 @@ def test_t4_real_world_multisplit_end_to_end_workflow(tmp_path, monkeypatch):
     assert retry_resp.json()["retry_of"] == job_orig_id
 
     # Step 7: Poll status until SUCCEEDED
-    app.state.web_intake.futures[job_id].result(timeout=15)
+    wait_for_job(app, job_id)
     status_resp = client.get(f"/api/v1/jobs/{job_id}", headers=auth_header)
     assert status_resp.status_code == 200
     assert status_resp.json()["state"] == "SUCCEEDED"

@@ -208,4 +208,8 @@ A 的交付：token 映射表、UiSheet/UiIcon 源码、定向 `scripts/verify-f
 - 2026-10-21：合同建立；A/B/C 并行，D/E 待外部会话结束后由 Lead 接手。
 - 2026-10-21 A（`1c031c9`，合并 `b4d39e8`）：新增 §3 的 17 个 `--m-*` token、`UiSheet.vue`（Reka Dialog，bottom/detail）、6 个图标、`pioneer-design.json.mobile`、`verify-round2-primitives.cjs`（15/15）与 390/1440 组件证据。类型检查/构建/111 单测通过；产品入口尚未消费（由 C 接入）。差异：`UiIcon` 视觉尺寸统一为 24px（后续以桌面验收确认导航图标密度）。
 - 2026-10-21 B（`937daf6`，合并 `b995fa0`）：吸收第一轮 `hierarchy.css`/`MaterialContext.vue`，补第二轮桌面守卫与 1280/1440/1920 证据；`verify-issue143-hierarchy.cjs` 在整合树 10/10。桌面按钮仍 36px，无移动触控规则泄漏。
-- C/D/E 条目在各自合并后追加；任何未跑项保持 NOT_RUN。
+- 2026-10-21 C（`67999c6`，合并 `9d9ee20`）：`MobileApp.vue` 重写为 Android 外壳（56px 顶栏/返回/标题/设置、单行四步条、紧凑材料行、固定 64px 操作栏、100dvh/safe-area/`--keyboard-inset`、48px/16px、state layer、hover 门控、硬件返回与逐步滚动恢复），抽出 `EvidencePanel.vue`，移动证据进 A 的 `UiSheet`，设置用 `detail` 全屏；`verify-frontend-round2.cjs` 20 组 + 23 图。与 B 的桌面层级回归双向复跑。
+- 2026-10-21 E（外部 head `c1a11f8`，合并 `f7867db` + `3a14031`）：并入第一轮 motion/hover/reduced-motion；新增 `--m-duration-*`/easing token、`UiSheet` 200ms 进入、步骤 160ms 进入、按钮/候选行 120–150ms；`prefers-reduced-motion` 全部即时。sheet 退出为即时卸载（未实现 150ms exit），已写入 #146 round-2 记录。
+- 2026-10-21 D（外部 PR #158 head `5f12bcf`，合并 `79f45d7`）：并入第一轮原地刷新/焦点/live region/对比度；在 C 外壳上复核顶栏 h1/返回设置名称、步骤 `aria-current`、操作栏 group、忙提示文本与停止按钮分离、证据 sheet 的 `dialog`/`aria-modal`/labelledby/describedby、scrim/Esc/返回关闭与焦点返回；`verify-issue145-a11y.cjs` 14 项桌面回归 + round-2 脚本新增移动语义断言。
+- 2026-10-22 整合次序实际为 A → B → C → E → D（E 先于 D 合并；D 只增加语义，不改视觉，重跑全部脚本通过）。第二轮最终唯一交付入口是 `codex/frontend-round2` 的 PR；旧 #152/#154/#156/#158 作为来源记录，不并行实现第二套。
+- 2026-10-22 视觉复验修正：程序化聚焦 h1 不再画控件式焦点环；候选来源元信息在移动端用 `·` 节奏，不再糊成一行；sheet 进入动效纳入 reduced-motion；桌面来源面板不再重复来源标题（B 的层级守卫）。

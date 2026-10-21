@@ -66,6 +66,10 @@ html.mobile-shell body { margin: 0; background: var(--canvas); overscroll-behavi
   letter-spacing: 0;
   color: var(--ink);
 }
+/* The shell moves focus to the h1 when a step changes (screen-reader landmark,
+   not a keyboard control). A visible ring on a programmatic heading focus reads
+   like a stray input outline; interactive controls keep the global focus ring. */
+.m-appbar h1:focus { outline: none; }
 .m-icon-button {
   display: grid;
   place-items: center;
@@ -145,6 +149,13 @@ html.mobile-shell body { margin: 0; background: var(--canvas); overscroll-behavi
   box-sizing: border-box;
 }
 .m-report-step .m-main { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+/* Step change: one 160ms fade/4px rise, opacity plus a tiny offset. The content
+   is readable on the first frame; no height animation. */
+@keyframes m-step-enter {
+  from { opacity: .55; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.m-main.m-step-enter { animation: m-step-enter 160ms var(--m-ease-decelerate); }
 .m-main:focus { outline: none; }
 
 /* ---------- compact material context (one line + expandable identity) ---------- */
@@ -237,7 +248,7 @@ html.mobile-shell body { margin: 0; background: var(--canvas); overscroll-behavi
 .m-row-main { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
 .m-row-main strong { font-size: 0.9375rem; font-weight: 600; overflow-wrap: anywhere; }
 .m-row-sub { color: var(--muted); font-size: var(--m-caption); line-height: 1.45; overflow-wrap: anywhere; }
-.m-chevron { flex: none; color: var(--muted); width: 24px; height: 24px; transition: transform 150ms ease-out; }
+.m-chevron { flex: none; color: var(--muted); width: 24px; height: 24px; transition: transform var(--m-duration-exit) var(--m-ease-standard); }
 details[open] > summary .m-chevron { transform: rotate(90deg); }
 .m-row-body { min-width: 0; padding: 0 12px 12px; }
 .m-row-body p { margin: 4px 0; }
@@ -264,7 +275,7 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
   grid-template-columns: minmax(0, 1fr);
   padding: 12px 40px 12px 14px;
   border-radius: var(--m-card-radius);
-  transition: background-color 120ms ease-out, border-color 120ms ease-out;
+  transition: background-color var(--m-duration-press) var(--m-ease-standard), border-color var(--m-duration-press) var(--m-ease-standard);
 }
 .mobile-workspace .candidate-item.selected { background: var(--m-state-selected); border-color: var(--navy); box-shadow: inset 3px 0 var(--navy); }
 .mobile-workspace .candidate-item:active { background: var(--m-state-press); }
@@ -310,8 +321,8 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
 .mobile-workspace .candidate-grid[data-tab="candidates"] .original-panel { display: none; }
 .mobile-workspace .candidate-grid[data-tab="original"] .policy-reading { max-height: none; overflow: visible; }
 .mobile-workspace .policy-reading { max-height: 320px; padding: 12px 0; font-size: 0.9375rem; line-height: var(--m-line-body); overflow-y: auto; overscroll-behavior: contain; }
-.mobile-workspace .source-tabs { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 4px; }
-.mobile-workspace .source-tabs button { flex: none; max-width: 70vw; min-height: var(--m-touch); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mobile-workspace .source-tabs { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 4px; scrollbar-width: thin; }
+.mobile-workspace .source-tabs button { flex: 1 0 40%; min-width: 0; min-height: var(--m-touch); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Report issue rows: the whole Android row opens the evidence sheet. */
 .m-issue-list { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
@@ -350,6 +361,39 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
   border-radius: var(--m-card-radius);
   font-size: var(--m-body);
   line-height: var(--m-line-body);
+}
+/* Busy feedback: the live text and the stop button are siblings, so the button
+   never sits inside a role=status region (D #145). */
+.m-busy-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.m-busy-notice > span { flex: 1 1 12rem; min-width: 0; }
+/* Candidate source context: several facts on one line need separators, not a
+   run-on string. Android list subtitles use a middot rhythm. */
+.mobile-workspace .source-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 4px 0 8px;
+  color: var(--muted);
+  font-size: var(--m-caption);
+  line-height: 1.5;
+}
+.mobile-workspace .source-context-meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  color: var(--muted);
+}
+.mobile-workspace .source-context-meta span + span::before {
+  content: '·';
+  margin-right: 8px;
+  color: var(--border);
 }
 .m-notice .ui-button { margin-left: 8px; }
 .m-error { color: var(--error); font-size: var(--m-body); line-height: var(--m-line-body); }
@@ -447,7 +491,7 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
 .mobile-workspace .candidate-item,
 .mobile-workspace .policy-jump-btn,
 .mobile-workspace .candidate-nav button { min-height: var(--m-touch); }
-.mobile-workspace .ui-button { border-radius: 10px; padding: 10px 14px; font-size: var(--m-body); transition: background-color 120ms ease-out, transform 120ms ease-out, border-color 120ms ease-out; }
+.mobile-workspace .ui-button { border-radius: 10px; padding: 10px 14px; font-size: var(--m-body); transition: background-color var(--m-duration-press) var(--m-ease-standard), transform var(--m-duration-press) var(--m-ease-standard), border-color var(--m-duration-press) var(--m-ease-standard); }
 .mobile-workspace .ui-button:active:not(:disabled) { transform: scale(.98); }
 .mobile-workspace .ui-button:not(.primary):not(.danger):active:not(:disabled) { background: var(--m-state-press); }
 .mobile-workspace input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
@@ -508,5 +552,6 @@ dialog.m-settings-dialog .ui-sheet-handle { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .mobile-workspace *,
   .ui-sheet * { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+  .m-main.m-step-enter { animation: none; }
   details[open] > summary .m-chevron { transition: none; }
 }

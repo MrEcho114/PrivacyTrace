@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import UiButton from '../components/UiButton.vue'
 import UiIcon from '../components/UiIcon.vue'
@@ -75,6 +75,7 @@ let overlayEntries = 0
 let closingOverlayByBack = false
 const settingsOpen = ref(false)
 const settingsTrigger = ref<HTMLElement | null>(null)
+const stepEntering = ref(false)
 type ReportViewApi = { evidenceOpen: boolean; closeEvidence: () => void }
 const reportView = useTemplateRef<ReportViewApi>('reportView')
 // The fixed action bar grows with 200% text; publish its measured height so the
@@ -135,6 +136,9 @@ watch(() => state.step, (next, previous) => {
     // focus itself not scrolling the page.
     document.getElementById('page-title')?.focus({ preventScroll: true })
     window.scrollTo({ top: scrollByStep[next] ?? 0, behavior: 'auto' })
+    // One short opacity/offset entrance per step. Reduced motion disables it in CSS.
+    stepEntering.value = false
+    void nextTick(() => { stepEntering.value = true })
   })
 })
 function pushOverlay() {
@@ -234,7 +238,7 @@ onBeforeUnmount(() => {
       </ol>
     </nav>
 
-    <main id="workspace-content" class="m-main" tabindex="-1">
+    <main id="workspace-content" class="m-main" :class="{ 'm-step-enter': stepEntering }" tabindex="-1" @animationend="stepEntering = false">
       <section v-if="context && state.step !== 'import'" class="m-context" aria-label="当前分析材料">
         <div class="m-context-text">
           <strong class="m-context-name">{{ contextName }}</strong>

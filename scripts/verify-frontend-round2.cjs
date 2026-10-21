@@ -318,6 +318,9 @@ async function main() {
         appbarColor: getComputedStyle(appbar).backgroundColor,
         shellHeight: Math.round(document.querySelector('.mobile-workspace').getBoundingClientRect().height),
         skip: Boolean(document.querySelector('.skip-link')),
+        navLabel: document.querySelector('.m-steps')?.getAttribute('aria-label'),
+        actionbarLabel: actionbar?.getAttribute('aria-label'),
+        titleOutline: title ? getComputedStyle(title).outlineStyle : '',
       }
     })
     assert.ok(frame.appbarHeight >= 56, `app bar must be at least 56px (got ${frame.appbarHeight})`)
@@ -340,6 +343,9 @@ async function main() {
     assert.equal(frame.appbarColor, 'rgb(253, 252, 250)', 'app bar must use --surface')
     assert.ok(frame.shellHeight >= 844, `shell must fill 100dvh (got ${frame.shellHeight})`)
     assert.equal(frame.skip, true, 'the shell must keep the skip link')
+    assert.equal(frame.navLabel, '创建流程', 'the step rail must be a labelled navigation landmark')
+    assert.equal(frame.actionbarLabel, '当前步骤操作', 'the fixed action bar must expose a group label')
+    assert.equal(frame.titleOutline, 'none', 'programmatic title focus must not paint a control-like focus ring')
     await assertSingleTitle(page, '应用与政策', 'import/empty')
     await assertNoPageOverflow(page, 'import/empty/390')
     await shot(page, '390-import-empty.png', { scenario: 'import', state: 'no material selected' })
@@ -425,6 +431,17 @@ async function main() {
     checks.push(await assertFieldText(page, 'candidates/390'))
     await page.evaluate(() => window.scrollTo(0, 0))
     await shot(page, '390-candidates.png', { scenario: 'candidates', state: 'one extracted candidate + editor' })
+    // Hardware-keyboard users must see where focus is: the global focus ring must
+    // survive the shell's sticky/fixed layers and not be replaced by a bare colour.
+    await page.keyboard.press('Tab')
+    const focusRing = await page.evaluate(() => {
+      const element = document.activeElement
+      const style = getComputedStyle(element)
+      return { tag: element.tagName, width: Number.parseFloat(style.outlineWidth), style: style.outlineStyle, offset: Number.parseFloat(style.outlineOffset) }
+    })
+    assert.ok(focusRing.width >= 2 && focusRing.style !== 'none', `keyboard focus must keep a visible ring (got ${focusRing.style} ${focusRing.width}px on ${focusRing.tag})`)
+    assert.ok(focusRing.offset >= 0, 'the focus ring must not be clipped by the sticky app bar')
+    checks.push('keyboard focus: global focus ring stays visible on the first focusable control')
 
     // ---- hardware back + scroll restoration (candidates <-> import) --------
     await page.evaluate(() => window.scrollTo(0, 320))
@@ -497,6 +514,32 @@ async function main() {
     const { trigger, before } = await openEvidenceSheet(page)
     assert.ok(await page.evaluate(() => Boolean(document.querySelector('dialog.ui-sheet.m-evidence-sheet .evidence-panel'))), 'the sheet must contain the extracted EvidencePanel')
     assert.equal(await page.evaluate(() => document.querySelectorAll('#evidence-panel').length), 1, 'the sheet renders exactly one evidence panel')
+    // Accessible dialog contract: modal, labelled by its title, described by text.
+    const sheetA11y = await page.evaluate(() => {
+      const dialog = document.querySelector('dialog.ui-sheet.m-evidence-sheet')
+      const labelledby = dialog.getAttribute('aria-labelledby')
+      const describedby = dialog.getAttribute('aria-describedby')
+      return {
+        tag: dialog.tagName,
+        modal: dialog.getAttribute('aria-modal'),
+        title: labelledby ? document.getElementById(labelledby)?.textContent?.trim() : '',
+        description: describedby ? document.getElementById(describedby)?.textContent?.trim() : '',
+        focusables: dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])').length,
+      }
+    })
+    assert.equal(sheetA11y.tag, 'DIALOG', 'the sheet must render a native dialog element')
+    assert.equal(sheetA11y.modal, 'true', 'the sheet must be modal for assistive technology')
+    assert.ok(sheetA11y.title?.includes('位置信息'), 'the sheet must be labelled by its issue title')
+    assert.ok(sheetA11y.description?.includes('静态证据'), 'the sheet must be described by visible scope text')
+    assert.ok(sheetA11y.focusables >= 2, 'the sheet must expose focusable close/content controls')
+    const sheetMotion = await page.evaluate(() => {
+      const dialog = document.querySelector('dialog.ui-sheet.m-evidence-sheet')
+      const style = getComputedStyle(dialog)
+      return { name: style.animationName, duration: style.animationDuration, iteration: style.animationIterationCount }
+    })
+    assert.notEqual(sheetMotion.name, 'none', 'the sheet must have an entrance transition (E #146)')
+    assert.equal(sheetMotion.duration, '0.2s', `sheet entrance must use --m-duration-enter (got ${sheetMotion.duration})`)
+    assert.equal(sheetMotion.iteration, '1', 'sheet entrance must play once, not idle-loop')
     checks.push(await assertTouchTargets(page, 'evidence-sheet/390'))
     await assertNoPageOverflow(page, 'evidence-sheet/390')
     await shot(page, '390-evidence-sheet.png', { scenario: 'evidence', state: 'bottom sheet open over the report' })
@@ -505,6 +548,25 @@ async function main() {
     assert.equal(await page.locator('dialog.ui-sheet.m-evidence-sheet').count(), 0, 'Escape must close the evidence sheet')
     assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('.m-issue-list .evidence-button')), true, 'closing the sheet must return focus to the triggering issue row')
     assert.ok(Math.abs(await page.evaluate(() => Math.round(scrollY)) - before) <= 2, 'closing the sheet must restore the report scroll position')
+    // Scrim tap is an explicit close path on Android sheets.
+    await trigger.click()
+    await page.locator('dialog.ui-sheet.m-evidence-sheet').waitFor()
+    await page.locator('.ui-sheet-overlay').click({ position: { x: 8, y: 8 } })
+    await page.waitForTimeout(250)
+    assert.equal(await page.locator('dialog.ui-sheet.m-evidence-sheet').count(), 0, 'clicking the scrim must close the evidence sheet')
+    assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('.m-issue-list .evidence-button')), true, 'scrim close must return focus to the triggering issue row')
+    // Reduced motion removes the sheet entrance entirely, not just shortens it.
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await trigger.click()
+    await page.locator('dialog.ui-sheet.m-evidence-sheet').waitFor()
+    const reducedSheet = await page.evaluate(() => {
+      const style = getComputedStyle(document.querySelector('dialog.ui-sheet.m-evidence-sheet'))
+      return { name: style.animationName, duration: style.animationDuration }
+    })
+    assert.equal(reducedSheet.name, 'none', `reduced motion must remove the sheet entrance (got ${reducedSheet.name})`)
+    await page.keyboard.press('Escape')
+    await page.waitForTimeout(150)
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
     // Hardware back closes the sheet before it changes steps.
     await trigger.click()
     await page.locator('dialog.ui-sheet.m-evidence-sheet').waitFor()

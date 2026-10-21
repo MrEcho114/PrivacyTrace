@@ -242,7 +242,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\run-matrix.ps1 `
    `<OutDir>\matrix-results.csv`（UTF-8 带 BOM，Excel 可直接打开）。
 5. 失败判定：退出码非 0，或结果 JSON 缺失/解析失败，或 `job_state != SUCCEEDED`。
    `deletion != DELETED` 只警告，不单独判失败；但它可能仍占用配额。`policy_comparison`
-   为 `EMPTY` 时只警告，但该用例不能作为案例 PASSED。此判定只到脚本级。
+   为 `EMPTY`/`UNKNOWN` 时只警告，但该用例不能作为案例 PASSED。此判定只到脚本级。
 6. 退出码：`0` 全部脚本级完成；`1` 有失败/提前停止；`2` 用例解析或预检失败。
 
 ### 5.3 CSV 列
@@ -327,6 +327,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\run-matrix.ps1 `
 10. **早期临时样例不是完整契约**
     早期临时目录里的样例缺少 `uploadAttempts`/`cleanup`。本目录的 8 个文件才是矩阵
     使用的完整字段版本；不要混用。
+11. **手工候选不等于非空对照**
+    8 个 JSON 均未配置 `addCandidate`。受控夹具的静态数据类型为 0，即使手工补入候选，
+    报告也不会形成对照行（H01 历史记录已证实）；`policy_comparison` 会保持 `EMPTY`。
+    `addCandidate` 只在夹具含对应静态数据类型时才有意义；不能据此判定 H 通过。
 
 ## 7. 证据与安全
 

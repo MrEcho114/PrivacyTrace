@@ -50,7 +50,50 @@ def _prepare(lab):
     return directory
 
 
-def _identity(lab, topology, directory, steps, *, address=None):
+def _docker(lab, argv, *, what, timeout=600):
+    """Run a docker command, keeping its own diagnostic when it refuses."""
+    try:
+        return execute(argv, timeout=timeout)
+    except RuntimeError as error:
+        # stderr stays out of receipts; only the last line reaches the collector log, with
+        # the private laboratory path normalized away, so a refusal is diagnosable.
+        stderr = getattr(error, "stderr", "") or ""
+        lines = [line.strip() for line in stderr.splitlines() if line.strip()]
+        detail = " ".join(lines[-1].split()) if lines else str(error)
+        detail = detail.replace(str(lab.root), "<lab-state>")
+        print(f"capacity drill: {what} refused: {detail}", flush=True)
+        raise RuntimeError(f"{what} refused: {detail}") from None
+
+
+def _api_network(lab):
+    """Resolve the laboratory's api network from its compose label, not from its name."""
+    identifiers = _docker(
+        lab,
+        [
+            "docker",
+            "network",
+            "ls",
+            "-q",
+            "--filter",
+            f"label=com.docker.compose.project={lab.project}",
+        ],
+        what="network discovery",
+    ).split()
+    networks = (
+        json.loads(
+            _docker(lab, ["docker", "network", "inspect", *identifiers], what="network inspect")
+        )
+        if identifiers
+        else []
+    )
+    for network in networks:
+        if str(network.get("Name", "")).endswith("_api"):
+            return network
+    names = sorted(str(network.get("Name", "")) for network in networks)
+    raise RuntimeError(f"laboratory {lab.project} has no api network: {names}")
+
+
+def _identity(lab, topology, directory, steps, *, network=None, address=None):
     """Run one client identity in its own container and return its step results."""
     plan = {
         "base_url": "http://api:8000",
@@ -58,17 +101,18 @@ def _identity(lab, topology, directory, steps, *, address=None):
         "apk": "/probe/fixture.apk",
         "steps": steps,
     }
-    network = [f"--network={lab.project}_api"]
+    options = [f"--network={network or f'{lab.project}_api'}"]
     if address:
         # The API keys admission on the peer address, so each identity claims its own
         # address. `compose run` cannot express a fixed address, hence plain docker.
-        network.append(f"--ip={address}")
-    output = execute(
+        options.append(f"--ip={address}")
+    output = _docker(
+        lab,
         [
             "docker",
             "run",
             "--rm",
-            *network,
+            *options,
             "--entrypoint",
             "/opt/venv/bin/python",
             "--volume",
@@ -77,7 +121,7 @@ def _identity(lab, topology, directory, steps, *, address=None):
             "/probe/client_probe.py",
             json.dumps(plan),
         ],
-        timeout=600,
+        what="client container",
     )
     for line in reversed(str(output).strip().splitlines()):
         try:
@@ -87,12 +131,9 @@ def _identity(lab, topology, directory, steps, *, address=None):
     raise RuntimeError("client probe returned no result")
 
 
-def _addresses(lab, count):
+def _addresses(network, count):
     """Reserve distinct free addresses on the laboratory bridge for client identities."""
-    from .provision import execute as run_docker
-
-    network = f"{lab.project}_api"
-    raw = json.loads(run_docker(["docker", "network", "inspect", network]))[0]
+    raw = network
     subnet = raw["IPAM"]["Config"][0]["Subnet"]
     base = subnet.rsplit(".", 1)[0]
     taken = {entry.get("IPv4Address", "").split("/")[0] for entry in raw["Containers"].values()}
@@ -161,13 +202,15 @@ def admission(lab, topology):
     """Per-client and whole-laboratory retained-draft admission budgets."""
     directory = _prepare(lab)
     started = time.monotonic()
-    addresses = iter(_addresses(lab, MAX_DRAFTS // MAX_CLIENT_DRAFTS + 2))
+    api = _api_network(lab)
+    addresses = iter(_addresses(api, MAX_DRAFTS // MAX_CLIENT_DRAFTS + 2))
     names = [f"cap-client-{index}" for index in range(MAX_CLIENT_DRAFTS + 1)]
     first = _identity(
         lab,
         topology,
         directory,
         [{"op": "draft", "draft": name, "name": name} for name in names],
+        network=api["Name"],
         address=next(addresses),
     )
     accepted = [_step(first, "draft", index) for index in range(MAX_CLIENT_DRAFTS)]
@@ -185,6 +228,7 @@ def admission(lab, topology):
             topology,
             directory,
             [{"op": "draft", "draft": name, "name": name} for name in names],
+            network=api["Name"],
             address=next(addresses),
         )
         for index, name in enumerate(names):
@@ -222,7 +266,8 @@ def queue(lab, topology):
     started = time.monotonic()
     held = []
     refusal = None
-    addresses = iter(_addresses(lab, MAX_ACTIVE_JOBS + 1))
+    api = _api_network(lab)
+    addresses = iter(_addresses(api, MAX_ACTIVE_JOBS + 1))
     lab.run("stop", "worker")
     try:
         for index in range(MAX_ACTIVE_JOBS + 1):
@@ -237,6 +282,7 @@ def queue(lab, topology):
                     {"op": "start", "draft": name},
                     {"op": "state", "draft": name},
                 ],
+                network=api["Name"],
                 address=next(addresses),
             )
             observed = [_step(result, op)["status"] for op in ("draft", "upload")]

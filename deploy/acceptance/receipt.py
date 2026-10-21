@@ -28,7 +28,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
-from .redaction import RECEIPT_AUDIT_CATEGORIES, find_secret_markers, redact_value
+from .redaction import RECEIPT_AUDIT_CATEGORIES, find_secret_markers, redact_text, redact_value
 
 PASS = "PASS"
 FAIL = "FAIL"
@@ -100,13 +100,22 @@ class Check:
         }
 
 
+ORIGIN_MESSAGE_LIMIT = 300
+
+
 def origin(error: BaseException) -> dict[str, Any]:
     """Where a drill broke, without echoing command output or private paths."""
     frames = traceback.extract_tb(error.__traceback__)
-    if not frames:
-        return {}
-    frame = frames[-1]
-    return {"function": frame.name, "line": frame.lineno}
+    where: dict[str, Any] = {}
+    if frames:
+        frame = frames[-1]
+        where = {"function": frame.name, "line": frame.lineno}
+    message = " ".join(str(error).split())
+    if message:
+        # The exception type alone cannot separate a refusal from a crash, so the
+        # redacted, clipped message travels with it; private paths stay masked.
+        where["message"] = redact_text(message)[:ORIGIN_MESSAGE_LIMIT]
+    return where
 
 
 class CheckRecorder:

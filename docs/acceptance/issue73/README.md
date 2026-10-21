@@ -1,21 +1,21 @@
-﻿# PT-MOB-301 本机端到端验收
+# PT-MOB-301 本机端到端验收
 
-对应 [#73](https://github.com/MrEcho114/PrivacyTrace/issues/73)。按本次要求，所有测试在本机执行，#81 完成并关闭后即开始最终端到端验收。**当前状态：HANDOFF（按用户指示暂停执行，整票未通过，剩余矩阵移交后续 issue）**；已完成 R01/R04、BUG-01 修复与复验、H01/H02 主链路、N05/N09 服务端负向；H03–H12、N01–N04/N07/N08/N10–N12、F01–F10、R02/R03 未执行，逐条原因见执行记录第 7 节。
+对应 [#73](https://github.com/MrEcho114/PrivacyTrace/issues/73)。本记录写于 #73 被替代关闭之前；#73 后续由 [#128](https://github.com/MrEcho114/PrivacyTrace/issues/128) 及 #129–#136 接替（关闭原因是任务替代，不是验收通过），本文件保留当时结果，不因此改为通过。**当前状态：HANDOFF（按用户指示暂停执行，整票未通过）**；已完成 R04 37/37；R01 在含 BUG-01 修复的工作树通过（被测基线的本机完整入口出现 2 例 e2e 环境超时，未据此判定代码失败）；BUG-01 修复与 API/H01/H02 主链路复验；N05/N09 服务端部分证据。H03–H12、N01–N12（N05/N09 仅服务端部分证据）、F01–F10、R02/R03 未执行，逐条原因见执行记录第 7 节。
 
 ## 当前入口与版本
 
 - [本机执行记录（2026-10-21）](execution-20261021.md) 是本轮实际执行的产物身份、通过项、失败项与未执行项；**结论以上述记录为准**。
-- [Issue 当前测试要求](https://github.com/MrEcho114/PrivacyTrace/issues/73)管理当前范围；[原准备记录](https://github.com/MrEcho114/PrivacyTrace/issues/73#issuecomment-6270680123)保留当时的交付和证据。
+- [#73 原始规格](https://github.com/MrEcho114/PrivacyTrace/issues/73)与 [#128 接替分工](https://github.com/MrEcho114/PrivacyTrace/issues/128)共同界定范围；[原准备记录](https://github.com/MrEcho114/PrivacyTrace/issues/73#issuecomment-6270680123)保留当时的交付和证据。
 - [baseline.json](baseline.json) 是 2026-10-19 的历史快照，保留原 SHA 和哈希；不能当作当前依赖状态或已部署组合。
 - [local-environment.md](local-environment.md) 定义本机拓扑、工具准备、HTTPS 信任与启动门槛。
 - [scenarios.md](scenarios.md) 提供主流程矩阵、越权和故障步骤、观察点与通过条件。
 - [materials.md](materials.md) 列出可复用的受控源码、样本缺口、设备和网络条件。
 - [bugs.md](bugs.md) 定义 BUG 的复现、影响、证据及汇报方式；本轮已登记 BUG-01。
-- [evidence/](evidence/) 保存本轮可公开的脱敏证据（R1–R6 摘要、BUG-01 复现输出）。
+- [evidence/](evidence/) 保存本轮可公开的脱敏证据（R1–R6 摘要与拓扑、BUG-01 复现/修复输出、H01/H02 主链路、N05/N09 服务端检查）。
 - [run-template.json](run-template.json) 是单次场景记录模板，没有通过结果。复制到忽略目录后填写真实值。
 - [release-readiness.md](release-readiness.md) 给出权限用途、数据流、签名和许可的准备草稿及未满足条件，不是商店申报结果。
 
-本轮以 main `aa414073859463abfaa133c1d12ac1f24c93eeb7` 为被测版本。#81 已关闭，#72/#71/#79 已关闭；#79 的便携 Skill 仍为非阻塞扩展。物理设备与公网路径仍列未验证，历史收据保持原文。
+R1–R6 与 N05/N09 以 main `aa414073859463abfaa133c1d12ac1f24c93eeb7` 为被测版本；H01/H02 与 BUG-01 API 复验使用 #127 修复候选镜像（`org.opencontainers.image.revision=058435d`），不能作为 `aa41407` 的通过证据。#81、#72/#71/#79 已关闭；#79 的便携 Skill 仍为非阻塞扩展。物理设备与公网路径仍列未验证，历史收据保持原文。
 
 ## 执行顺序
 
@@ -48,4 +48,4 @@ gh api repos/MrEcho114/PrivacyTrace/branches/main --jq .commit.sha
 
 ## 本轮完成边界
 
-本次交付测试要求和本机环境准备，最终案例仍待 #81 交付后执行。实际构建、安装、TLS、扫描与恢复结果逐项记录，不把环境启动或模板空值当作最终通过；上架准备仍按其独立材料评估。
+本次交付 #73 的本机执行记录、可公开脱敏证据、本机环境记录、探针脚本与暂停移交说明；#73 本身未通过，剩余矩阵由 #128 及子票接续。实际构建、安装、TLS、扫描与恢复结果逐项记录，不把环境启动、模板空值或本文档当作最终通过；上架准备仍按其独立材料评估。

@@ -11,8 +11,8 @@
 | M03 可安装普通包 | [已合入平台样本源码及构建入口](../../../experiments/android-package-probe/README.md) | 在本次 checkout 构建并向专用模拟器安装，记录新 SHA、版本及证书；不得套用 M01 未签名哈希或旧安装收据 |
 | M04 可安装 base/splits | [已合入 fixture/fixture-feature](../../../experiments/android-package-probe/README.md) | 从本次源码生成真实包集合并安装；记录全部已安装 split 名称、版本、单文件哈希和集合摘要，不用单包改名模拟 splits |
 | M05 负向包集合 | 从 M03/M04 的专用测试副本制造缺包、错版本、摘要错配和不可读条件 | 依赖原始可安装产物。原件及正常基线留存；一变体一个别名，记录改动而不篡改冻结真值；真实解析只在受限 Docker |
-| M06 正式客户端 | [apps/mobile](../../../apps/mobile/README.md)，复用已合入 #71 桥接和 #72 主流程 | 源码已合入；需本机实际构建安装和原生 UI/IPC 验证。PoC 和 Web bridge 替身不能代替。记录安装包/源码 SHA、版本、证书指纹、Manifest/SDK/WebView |
-| M07 分析和部署镜像 | main 的 `deploy/` 与 #80/#81 最终交接 | API/Web registry digest、编排/Runner/扫描 digest 与最终迁移/协议仍待填写。image ID 与 registry digest 分别记录，不能互换 |
+| M06 正式客户端 | [apps/mobile](../../../apps/mobile/README.md)，复用已合入 #71 桥接和 #72 主流程 | 源码已合入；本轮已在本机构建并安装 debug 客户端，原生 UI/IPC 走通上传/分析/报告主链路；正式生产包与签名未验证。记录安装包/源码 SHA、版本、证书指纹、Manifest/SDK/WebView |
+| M07 分析和部署镜像 | main 的 `deploy/` 与 #80/#81 最终交接 | 公开 registry digest 仍未取得；本轮只有本地 image ID、migration `0080_05` 与 protocol 1（见执行记录与拓扑）。image ID 与 registry digest 不能互换 |
 | M08 私有证据与许可 | 每个样本的来源、允许内部测试的依据、可公开内容范围 | 公开本包仅含自建来源指针；不导入其他工作区未知研究资料、不使用未授权商业 App 或私人材料 |
 
 M01 的既有构建命令（在满足原说明 Docker/工具条件的专用 checkout 执行；输出目录须不存在）：
@@ -35,12 +35,12 @@ uv run --project apps/api --locked --extra worker python scripts/build-controlle
 | 条件 | 要记录的实际值／放行依据 | 本轮状态 |
 | --- | --- | --- |
 | 设备 | 专用本机模拟器别名、类型、Android API/系统版本、ABI、WebView、权限/包可见性、固定 ADB 目标；不公开序列号/整机清单 | 环境探针与实际安装收据分别记录；物理设备不在本次通过门槛 |
-| 客户端 | M06 安装来源、源码/包哈希、正式 Manifest、支持系统范围；能选包、确认、取消并上传 | 未交接 |
-| 本机官方配置/自托管 HTTPS | 两个独立实例身份、凭据和卷；Android 实际可达且正常校验证书/主机名；记录本机 CA 信任范围 | 等 #81 交接后按本机配置启动并验证，公网不在本次通过门槛 |
-| 控制面 | Linux/VM 版本、CPU/内存/磁盘、API/编排镜像 digest、DB migration、Redis/Celery 配置哈希、角色命令及健康检查 | 等 #80/#81 同版本交接 |
-| 扫描面 | 独立扫描主机/VM、实际 Runner 认证/协议与扫描镜像 digest、隔离限额和 inspect、任务只读输入、无外网/秘密 | 等 #80/#81 同版本交接 |
+| 客户端 | M06 安装来源、源码/包哈希、正式 Manifest、支持系统范围；能选包、确认、取消并上传 | 已在本机构建并安装 debug 客户端（sha256 见执行记录）；正式生产签名/系统信任未验证 |
+| 本机官方配置/自托管 HTTPS | 两个独立实例身份、凭据和卷；Android 实际可达且正常校验证书/主机名；记录本机 CA 信任范围 | 实例 I 已启动并完成 H01/H02 主链路与 R1–R6；实例 J 未准备；公网不在本次通过门槛 |
+| 控制面 | Linux/VM 版本、CPU/内存/磁盘、API/编排镜像 digest、DB migration、Redis/Celery 配置哈希、角色命令及健康检查 | 本机控制面已启动并完成 R1–R6；本地 image ID、migration `0080_05`、protocol 1 见执行记录与拓扑 |
+| 扫描面 | 独立扫描主机/VM、实际 Runner 认证/协议与扫描镜像 digest、隔离限额和 inspect、任务只读输入、无外网/秘密 | 专用 Runner/扫描栈已用于 R1–R6；独立扫描主机隔离为 `WAIVED_BY_USER`，不计 PASS |
 | 模型路径 | 本机独立 HTTPS 协议测试端点、一次性测试凭据、客户端出站与分析服务入口观察 | 不使用个人真实 Key；受控响应不证明外部模型或联网查找能力 |
-| 恢复与负向 | 独占可销毁栈、合成材料、可恢复快照、删除记录、明确资源配额；故障注入对象属于本次运行 | 未建立，不在共享/生产栈注入 |
+| 恢复与负向 | 独占可销毁栈、合成材料、可恢复快照、删除记录、明确资源配额；故障注入对象属于本次运行 | R4/R5 已在专用栈执行；N/F 负向与故障矩阵未完成 |
 
 若只有部分条件可用，只执行其可证明的案例并准确记录环境和未测项。不得借用 #81 只读合成 smoke 的 `SUCCEEDED` 数据或关闭生产门禁拼接假主链路。无账号约束仍需任务级访问材料；不能为测试新建登录体系。
 

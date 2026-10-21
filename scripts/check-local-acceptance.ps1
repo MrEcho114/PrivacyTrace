@@ -24,20 +24,31 @@ function Invoke-Checked([string]$Executable, [string[]]$Arguments) {
     return ($result -join "`n").Trim()
 }
 
+$androidPlatform = if ($config.android_platform) { [string]$config.android_platform } else { 'android-36' }
+$buildToolsVersion = if ($config.build_tools_version) { [string]$config.build_tools_version } else { '36.0.0' }
+$ndkVersion = if ($config.ndk_version) { [string]$config.ndk_version } else { '27.2.12479018' }
+$abiTargets = @{
+    'x86_64' = 'x86_64-linux-android'
+    'arm64-v8a' = 'aarch64-linux-android'
+    'armeabi-v7a' = 'armv7-linux-androideabi'
+}
+
 Add-Probe 'android-build-tools' {
-    foreach ($relative in @('platforms/android-36/android.jar',
-        'build-tools/36.0.0/aapt2.exe', 'build-tools/36.0.0/apksigner.bat',
-        'ndk/27.2.12479018/source.properties')) {
+    foreach ($relative in @("platforms/$androidPlatform/android.jar",
+        "build-tools/$buildToolsVersion/aapt2.exe", "build-tools/$buildToolsVersion/apksigner.bat",
+        "ndk/$ndkVersion/source.properties")) {
         if (-not (Test-Path -LiteralPath (Join-Path $config.android_sdk $relative))) {
             throw "Missing SDK component: $relative"
         }
     }
-    'API36 / build-tools36 / NDK27.2 files present; build compatibility still requires compilation'
+    "API $androidPlatform / build-tools $buildToolsVersion / NDK $ndkVersion files present; build compatibility still requires compilation"
 }
 Add-Probe 'java' { Invoke-Checked (Join-Path $config.java_home 'bin/java.exe') @('-version') }
 Add-Probe 'rust-android-target' {
-    $rust = Join-Path $config.rust_toolchain 'lib/rustlib/x86_64-linux-android/lib'
-    if (-not (Test-Path -LiteralPath $rust)) { throw 'Rust x86_64-linux-android target missing' }
+    $rustTarget = if ($config.rust_android_target) { [string]$config.rust_android_target } else { $abiTargets[[string]$config.expected_abi] }
+    if (-not $rustTarget) { throw "No Rust target mapping for expected ABI: $($config.expected_abi)" }
+    $rust = Join-Path $config.rust_toolchain "lib/rustlib/$rustTarget/lib"
+    if (-not (Test-Path -LiteralPath $rust)) { throw "Rust target missing: $rustTarget" }
     if (-not $config.windows_gnu_tools -or -not (Test-Path -LiteralPath (Join-Path $config.windows_gnu_tools 'dlltool.exe'))) {
         throw 'A complete Windows GNU host toolchain is required'
     }
@@ -70,8 +81,13 @@ Add-Probe 'dedicated-android' {
         webview = Invoke-Checked $config.adb @('-s', $target, 'shell', 'dumpsys', 'webviewupdate')
     }
 }
-if ($config.control_distribution -eq $config.runner_distribution) {
-    throw 'Control and runner must have distinct dedicated distributions'
+if (-not $config.control_distribution -or -not $config.runner_distribution -or
+    $config.control_distribution -eq $config.runner_distribution) {
+    $checks.Add([ordered]@{
+        name = 'dedicated-distributions'
+        status = 'BLOCKED'
+        reason = 'Control and runner must have distinct dedicated distributions'
+    })
 }
 foreach ($role in @('control', 'runner')) {
     $distribution = [string]$config."${role}_distribution"
@@ -107,3 +123,4 @@ if ($OutputPath) {
 }
 $json
 if ($RequireToolchainReady -and -not $report.toolchain_ready) { exit 1 }
+exit 0

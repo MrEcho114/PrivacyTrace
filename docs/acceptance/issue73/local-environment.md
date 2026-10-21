@@ -1,6 +1,6 @@
 # 本机环境与启动要求
 
-本文件按 #73 当前授权定义本机验收。环境准备可以先行；#81 完成并关闭后立即读取交付记录、核对 main 和安装产物，开始探针、构建安装及场景执行。准备进度和案例结果分别记录，缺失单项保留 BLOCKED，不重复等待物理手机或公网条件。
+本文件按 #73 当前授权定义本机验收。环境准备可以先行；#81 完成并关闭后立即读取交付记录、核对 main 和安装产物，开始探针、构建安装及场景执行。本文件写于执行前，实际准备结果见文末“实际准备结果”，执行结论以[执行记录](execution-20261021.md)为准。
 
 ## 拓扑与覆盖
 
@@ -34,13 +34,17 @@ npm run android:build -- --target x86_64
 
 在 WSL 共享网络之外，为每个 daemon 建立独占网络命名空间，并由服务每次启动重建。使用 `nsenter --net` 保留原 cgroup 挂载；不要用会重挂 sysfs 的方式启动 Docker 后误报缺少 devices controller。WSL 的 systemd 服务本身不保证实例持续运行，准备期间另持有专用 keepalive；重启后重新跑探针，不能假定 `/run` 仍存在。
 
-配置放在 Git 忽略的 `tmp/`，以下路径均为示例，须改为实际工具路径；不要加入任何秘密。当前探针以 MuMu 主机清单校验专用实例和 ADB 端点，再对比 API/ABI，不能把设备自报型号当作物理设备证明。
+配置放在 Git 忽略的 `tmp/`，以下路径均为示例，须改为实际工具路径；示例不指向真实用户目录，公开记录不写本机私有路径，也不要加入任何秘密。当前探针以 MuMu 主机清单校验专用实例和 ADB 端点，再对比 API/ABI，不能把设备自报型号当作物理设备证明。
 
 ```json
 {
   "android_sdk": "C:/PT73Tools/android-sdk",
+  "android_platform": "android-36",
+  "build_tools_version": "36.0.0",
+  "ndk_version": "27.2.12479018",
   "java_home": "C:/PT73Tools/jdk",
   "rust_toolchain": "C:/PT73Tools/rustup/toolchains/stable-x86_64-pc-windows-gnu",
+  "rust_android_target": "x86_64-linux-android",
   "windows_gnu_tools": "C:/PT73Tools/mingw/bin",
   "adb": "C:/PT73Tools/android-sdk/platform-tools/adb.exe",
   "adb_target": "127.0.0.1:16480",
@@ -70,7 +74,7 @@ pwsh -NoProfile -File scripts/check-local-acceptance.ps1 -ConfigurationPath tmp/
 
 政策安全校验默认拒绝私网来源；本机政策测试不能关闭 SSRF 守卫或随意允许私网。按上游实际交接使用受控来源/解析与本机隔离路由；若当前交付无法安全提供正向政策来源，明确 BLOCKED 并修复测试基础设施，禁止把 N09 拒绝改成成功。模型接口的受控响应只证明协议、输入最小化与 Key 去向，不证明外部服务质量。
 
-## #81 完成并关闭后的顺序
+## #81 完成并关闭后的执行顺序（历史计划）
 
 1. 重新读 #81 关闭证据及交付 SHA、部署清单、运行时/扫描版本和操作交接；核对 #72/#71 客户端来源。完成只由证据决定，不能自动合并上游 PR 或关闭 Issue。
 2. 在本机新建运行目录与版本快照，实跑环境探针、构建、安装及正向/拒绝 TLS；配置两个实例及任务 A/B。未部署/未信任/未安装的项目保持 BLOCKED。
@@ -84,10 +88,10 @@ pwsh -NoProfile -File scripts/check-local-acceptance.ps1 -ConfigurationPath tmp/
 准备已按本节要求完成，实际值与差异如下：
 
 - **工具链（实测）**：JDK 17.0.20.1、Android SDK platform 36 / build-tools 36.0.0 / NDK 27.2.12479018、Rust 1.99.1（`stable-x86_64-pc-windows-gnullvm` + llvm-mingw host 工具）、Tauri CLI 2.12.3。工具与缓存位于本机忽略目录，不提交。
-- **客户端（实测）**：由上述工具链在本机构建的 debug 客户端 `client-local-ca.apk`，sha256 `8bb257dfd3a63d295b858decba7ba0dcee44d6e20c063c01feb1813f4f3fddc8`；其网络配置**仅**对 `localhost` 追加本机测试 CA 作为信任锚，其余仍用系统信任，未使用 trust-all。另有默认系统信任的对照构建用于 N07 负向。
+- **客户端（实测）**：由上述工具链在本机构建的 debug 客户端 `client-local-ca.apk`，sha256 `8bb257dfd3a63d295b858decba7ba0dcee44d6e20c063c01feb1813f4f3fddc8`；其网络配置**仅**对 `localhost` 追加本机测试 CA 作为信任锚，其余仍用系统信任，未使用 trust-all。默认系统信任的对照构建计划用于 N07 负向，本轮未执行 N07。
 - **受控样本（实测）**：`fixture-base-policy.apk`（sha256 `1d14eadd…`，manifest 内声明 `http://1.1.1.1/policy.html`）与 `fixture-feature.apk`（sha256 `802550145ec9…`），同一 debug 签名；不是把 base 改名冒充 split。
 - **模拟器（实测）**：专用实例 `PrivacyTrace73`，Android 15 / API 35 / x86_64 / `adb 127.0.0.1:16480`。该镜像 **/system 为只读**，无法在系统信任区安装 CA，因此改用上一条的专用 debug 客户端；这一差异已如实记录，不作为系统信任证据。
 - **控制面/扫描面（实测）**：两个专用 WSL2 发行版，独立 Docker 数据根与专用网络命名空间；探针确认守护进程网络命名空间与宿主不同。
 - **网络通路（实测）**：实验室 HTTPS 端口经“命名空间内转发 + 宿主机回环转发 + `adb reverse`”三步映射到模拟器的 `https://localhost:<port>/`；证书链与主机名校验保持开启。宿主回环可达性用一次性 TCP 监听实测确认。
-- **受控来源（实测）**：政策占位地址只在实验室命名空间内 DNAT 到本机受控 HTTP 服务；模型服务为本机 HTTPS 且使用一次性测试凭据。两者都不访问外部主机。
+- **受控来源（实测）**：政策占位地址只在实验室命名空间内 DNAT 到本机受控 HTTP 服务；客户端侧模型接收器为本机 HTTPS 且使用一次性测试凭据。两者都不访问外部主机；客户端模型接收器只证明协议与 Key 去向，服务端自动候选提取未配置模型（见执行记录 4.4）。
 - **环境限制（实测）**：准备期间本机 WSL 发行版被外部反复停启，实验容器与临时转发随之中断；已用持久化 systemd 单元缓解，但仍不足以在单次稳定窗口内连续完成全部矩阵。该限制已记入[执行记录](execution-20261021.md)，不把未执行项记为通过。

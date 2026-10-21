@@ -10,6 +10,8 @@ fn main() {
         "refresh_upload",
         "delete_upload",
         "forget_upload",
+        "workflow",
+        "collect_policy",
     ])
     .android_path("android")
     .build();

@@ -1,0 +1,7 @@
+{
+  "identifier": "mobile-workflow",
+  "description": "Bundled Android workflow; analysis access and model keys remain native.",
+  "windows": ["main"],
+  "platforms": ["android"],
+  "permissions": ["package-probe:allow-cancel", "package-probe:allow-model-status", "package-probe:allow-configure-model", "package-probe:allow-clear-model", "package-probe:allow-upload-selected", "package-probe:allow-refresh-upload", "package-probe:allow-delete-upload", "package-probe:allow-forget-upload", "package-probe:allow-workflow", "package-probe:allow-collect-policy"]
+}

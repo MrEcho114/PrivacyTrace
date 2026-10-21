@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import app.tauri.annotation.Command
+import app.tauri.annotation.InvokeArg
 import app.tauri.annotation.TauriPlugin
 import app.tauri.plugin.Invoke
 import app.tauri.plugin.JSObject
@@ -11,6 +12,11 @@ import app.tauri.plugin.Plugin
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.Executors
+
+@InvokeArg
+class WorkflowArgs { var action: String = ""; var payload: String = "{}" }
+@InvokeArg
+class CollectPolicyArgs { var model: String = ""; var prompt: String = "" }
 
 @TauriPlugin
 class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
@@ -23,12 +29,14 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
     // These fields and all Invoke completion calls are confined to the UI thread.
     private var pending: Pending? = null
     private var dialog: AlertDialog? = null
+    private var activeOrigin: String? = null
 
     private class Pending(val invoke: Invoke, val operation: ProbeOperation) {
         var reading = false
         var secret: CharArray? = null
         var healthCall: HttpsHealthCall? = null
         var transport: AnalysisTransport? = null
+        var modelCall: ModelPolicyCall? = null
         var capabilities: UploadCapabilities? = null
         var progress: AlertDialog? = null
     }
@@ -40,6 +48,73 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
             return null
         }
         return Pending(invoke, operation).also { pending = it }
+    }
+
+    @Command
+    fun workflow(invoke: Invoke) = activity.runOnUiThread {
+        val args = try { invoke.parseArgs(WorkflowArgs::class.java) }
+        catch (_: Exception) { invoke.reject("WORKFLOW_INPUT_REJECTED", "WORKFLOW_INPUT_REJECTED"); return@runOnUiThread }
+        val origin = activeOrigin
+        if (origin == null) { invoke.reject("NO_SAVED_UPLOAD", "NO_SAVED_UPLOAD"); return@runOnUiThread }
+        val request = begin(invoke) ?: return@runOnUiThread
+        request.reading = true
+        val remote = AnalysisTransport(origin, uploadSessions)
+        request.transport = remote
+        worker.execute {
+            try {
+                val result = remote.workflow(args.action, args.payload)
+                activity.runOnUiThread { finish(request, payload = JSObject().apply { put("json", JSONObject(result).toString()) }) }
+            } catch (error: ServerProbeException) {
+                activity.runOnUiThread { finish(request, failure = error.code) }
+            } catch (_: Exception) {
+                activity.runOnUiThread { finish(request, failure = "WORKFLOW_INPUT_REJECTED") }
+            }
+        }
+    }
+
+    @Command
+    fun collectPolicy(invoke: Invoke) = activity.runOnUiThread {
+        if (activeOrigin == null) { invoke.reject("NO_SAVED_UPLOAD", "NO_SAVED_UPLOAD"); return@runOnUiThread }
+        val args = try { invoke.parseArgs(CollectPolicyArgs::class.java) }
+        catch (_: Exception) { invoke.reject("INVALID_MODEL_REQUEST", "INVALID_MODEL_REQUEST"); return@runOnUiThread }
+        if (args.model.isBlank() || args.model.length > 200 || args.prompt.length > 32768) {
+            invoke.reject("INVALID_MODEL_REQUEST", "INVALID_MODEL_REQUEST"); return@runOnUiThread
+        }
+        val request = begin(invoke) ?: return@runOnUiThread
+        request.reading = true
+        worker.execute {
+            try {
+                val status = modelConfig.status()
+                if (status.endpoint == null) throw ModelConfigException("MODEL_CONFIG_UNAVAILABLE")
+                activity.runOnUiThread {
+                    request.reading = false
+                    if (pending !== request) return@runOnUiThread
+                    if (request.operation.cancelled.get()) { finish(request, failure = "CANCELLED"); return@runOnUiThread }
+                    dialog = AlertDialog.Builder(activity).setTitle("向个人模型发送收集指令？")
+                        .setMessage("目标：${status.endpoint}\n模型：${args.model}\n仅发送页面显示的完整收集指令与应用线索。可能产生费用，结果不保证已联网或取得政策。不会自动重试。")
+                        .setNegativeButton("取消") { _, _ -> cancelCurrent() }
+                        .setOnCancelListener { cancelCurrent() }
+                        .setPositiveButton("确认发送一次") { _, _ ->
+                            dialog = null
+                            if (pending !== request || request.operation.cancelled.get()) return@setPositiveButton
+                            val call = ModelPolicyCall(modelConfig, activeOrigin)
+                            request.modelCall = call; request.reading = true
+                            worker.execute {
+                                try {
+                                    val text = call.collect(args.model, args.prompt)
+                                    activity.runOnUiThread { finish(request, payload = JSObject().apply { put("text", text) }) }
+                                } catch (error: ModelConfigException) {
+                                    activity.runOnUiThread { finish(request, failure = error.code) }
+                                } catch (_: Exception) {
+                                    activity.runOnUiThread { finish(request, failure = "MODEL_REQUEST_FAILED") }
+                                }
+                            }
+                        }.show()
+                }
+            } catch (error: ModelConfigException) {
+                activity.runOnUiThread { finish(request, failure = error.code) }
+            }
+        }
     }
 
     @Command
@@ -409,6 +484,7 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
         gate.cancel()
         pending?.healthCall?.cancel()
         pending?.transport?.cancel()
+        pending?.modelCall?.cancel()
         pending?.secret?.fill('\u0000')
         dialog?.dismiss()
         dialog = null
@@ -422,6 +498,7 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
         request.secret = null
         request.healthCall = null
         request.transport = null
+        request.modelCall = null
         request.progress = null
         pending = null
         dialog?.dismiss()
@@ -430,6 +507,9 @@ class PackageProbePlugin(private var activity: Activity) : Plugin(activity) {
         if (code != null || payload == null) {
             request.invoke.reject(code ?: "UNREADABLE", code ?: "UNREADABLE")
             return
+        }
+        if (payload.has("origin") && payload.has("draft") && payload.has("state")) {
+            activeOrigin = if (payload.getString("state") in setOf("DELETED", "LOCAL_ACCESS_FORGOTTEN")) null else payload.getString("origin")
         }
         request.invoke.resolve(payload)
     }

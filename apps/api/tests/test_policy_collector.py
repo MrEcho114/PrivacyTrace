@@ -1,6 +1,7 @@
 """Portable instruction generation and synthetic compatibility with the existing intake."""
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -38,6 +39,28 @@ def test_exports_match_source_and_copy_contains_all_model_instructions():
     skill = (PACKAGE / "SKILL.md").read_text(encoding="utf-8")
     assert skill.split("---\n", 2)[2].lstrip() == copied
     assert SYSTEM_PROMPT in copied
+
+
+def test_skill_structure_references_and_relative_links_resolve():
+    """Structure, cited versions and package-relative links stay consumable."""
+    skill = (PACKAGE / "SKILL.md").read_text(encoding="utf-8")
+    assert skill.startswith("---\n")
+    frontmatter, _body = skill.split("---\n", 2)[1:]
+    meta = dict(line.split(": ", 1) for line in frontmatter.splitlines() if ": " in line)
+    assert meta["name"] == PACKAGE.name
+    assert 0 < len(meta["description"]) <= 1024
+    provenance = json.loads((PACKAGE / "provenance.json").read_text(encoding="utf-8"))
+    copied = (PACKAGE / "COPY.txt").read_text(encoding="utf-8")
+    for version in (provenance["version"], provenance["prompt_version"],
+                    provenance["ruleset_version"]):
+        assert version in copied
+    for document in PACKAGE.rglob("*.md"):
+        relative = document.relative_to(PACKAGE)
+        for target in re.findall(r"\]\(([^)]+)\)", document.read_text(encoding="utf-8")):
+            if target.startswith(("http://", "https://", "#")):
+                continue
+            resolved = (document.parent / target.split("#", 1)[0]).resolve()
+            assert resolved.is_file(), f"{relative} links to missing {target}"
 
 
 @pytest.mark.parametrize("text", [

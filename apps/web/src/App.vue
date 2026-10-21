@@ -4,7 +4,7 @@ import { cancelJob, deleteJob, isNotFoundFor, jobPath, jobReportPath, loadJob, l
 import { clampSdkPage, getSdkEvidence, sdkPageCount, sdkPageSlice } from './sdkEvidence'
 import type { AnalysisJob, DemoReport, Evidence, MatchStatus, PrivacyIssue, Report, ReportSource, Taxonomy, WebSource } from './types'
 import { parseSource, serializeSource, sourceProvenanceLabel, sourceStatusLabel } from './types'
-const props = defineProps<{ initialJobId?: string }>()
+const props = defineProps<{ initialJobId?: string; snapshot?: { report: Report; taxonomy: Taxonomy } }>()
 
 const report = ref<DemoReport | Report | null>(null)
 const taxonomy = ref<Taxonomy | null>(null)
@@ -280,6 +280,7 @@ function failure(cause: unknown) {
   return cause instanceof Error && cause.name === 'AbortError' ? '请求已取消，可以重试。' : cause instanceof Error ? cause.message : '请求失败，请重试。'
 }
 async function reload(initial = false) {
+  if (props.snapshot) return
   const { current, signal } = beginRequest()
   if (source.value.kind === 'job' && removedJobIds.value.includes(source.value.id)) source.value = { kind: 'demo' }
   loading.value = true
@@ -454,7 +455,12 @@ async function review() {
   } catch (cause) { if (current === requestId) error.value = failure(cause) }
   finally { if (current === requestId) loading.value = false }
 }
-onMounted(() => { void reload(true) })
+onMounted(() => {
+  if (props.snapshot) {
+    report.value = props.snapshot.report; taxonomy.value = props.snapshot.taxonomy
+    source.value = { kind: 'job', id: props.snapshot.report.job.id }
+  } else void reload(true)
+})
 onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
 </script>
 
@@ -464,9 +470,9 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
     <main>
       <section class="intro">
         <div><p class="eyebrow">APP 隐私体检 · 本地报告</p><h1>看懂隐私，从证据开始。</h1><p class="lead">查看程序中的潜在隐私访问，与不同来源的政策逐一对照。</p></div>
-        <button class="primary" :disabled="loading" @click="reload()">刷新任务与报告</button>
+        <button v-if="!snapshot" class="primary" :disabled="loading" @click="reload()">刷新任务与报告</button>
       </section>
-      <section class="source-picker">
+      <section v-if="!snapshot" class="source-picker">
         <label for="report-source">报告来源</label>
         <select id="report-source" v-model="selectedSourceKey" @change="reload()">
           <option v-if="!offlineReplay" value="demo:synthetic">SYNTHETIC · 人工构造示例</option>
@@ -621,7 +627,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
             </details>
           </article>
         </details>
-        <section v-if="realReport && !offlineReplay" class="review-panel">
+        <section v-if="realReport && !offlineReplay && !snapshot" class="review-panel">
           <h2>人工复核备注</h2><p class="subtle">这里只保存备注并由纯规则重算，不自动把政策标为已复核，不修改候选声明。填写的身份未认证。</p>
           <form @submit.prevent="review">
             <label>复核人<input v-model="actor" required maxlength="100" /></label>

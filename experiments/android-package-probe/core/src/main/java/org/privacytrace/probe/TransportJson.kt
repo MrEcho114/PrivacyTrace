@@ -6,10 +6,10 @@ import java.nio.charset.CodingErrorAction
 // Strict JSON: duplicate fields, ambiguous numbers, invalid UTF-8 and trailing
 // documents are rejected before a capability or receipt can authorize an action.
 internal object TransportJson {
-    fun decode(bytes: ByteArray): Map<String, Any?> = try {
+    fun decode(bytes: ByteArray, allowDecimals: Boolean = false): Map<String, Any?> = try {
         val text = Charsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
             .onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(bytes)).toString()
-        Reader(text).document()
+        Reader(text, allowDecimals).document()
     } catch (_: Exception) { throw ServerProbeException("SERVER_RESPONSE_INVALID") }
     finally { bytes.fill(0) }
 
@@ -24,7 +24,7 @@ internal object TransportJson {
         append('"')
     }
 
-    private class Reader(private val text: String) {
+    private class Reader(private val text: String, private val allowDecimals: Boolean) {
         private var at = 0
         private var nodes = 0
         private fun space() { while (at < text.length && text[at] in " \t\r\n") at++ }
@@ -94,8 +94,22 @@ internal object TransportJson {
                         check(text[at] in '1'..'9')
                         while (at < text.length && text[at] in '0'..'9') at++
                     }
-                    // This transport contract uses only exact 64-bit integers.
-                    text.substring(start, at).toLong()
+                    var decimal = false
+                    if (allowDecimals && at < text.length && text[at] == '.') {
+                        decimal = true; at++
+                        val first = at
+                        while (at < text.length && text[at] in '0'..'9') at++
+                        check(at > first)
+                    }
+                    if (allowDecimals && at < text.length && text[at] in "eE") {
+                        decimal = true; at++
+                        if (at < text.length && text[at] in "+-") at++
+                        val first = at
+                        while (at < text.length && text[at] in '0'..'9') at++
+                        check(at > first)
+                    }
+                    val number = text.substring(start, at)
+                    if (decimal) number.toDouble().also { check(it.isFinite()) } else number.toLong()
                 }
             }
         }

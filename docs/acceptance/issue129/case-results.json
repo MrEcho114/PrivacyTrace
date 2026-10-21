@@ -14,6 +14,7 @@
       "scanner": "sha256:1a36604312f9d1e6184dd1ab0e4b49fd6c0674842f478d79f8f6b54541f94354"
     },
     "client_apk_sha256": "8bb257dfd3a63d295b858decba7ba0dcee44d6e20c063c01feb1813f4f3fddc8",
+    "client_source": {"paths": ["apps/mobile", "apps/web"], "base_commit": "aa414073859463abfaa133c1d12ac1f24c93eeb7", "delta_to_candidate": "none (git diff aa41407..ffadeb0 -- apps/mobile apps/web is empty)", "signature_cert_sha256": "4172668f29d3523bd5585ab9a2cb7dff237cf751b8cb39084565acd3f2205df2"},
     "fixture": {
       "package": "org.privacytrace.probe.fixture",
       "base_sha256": "4f949286464a163886de6cdd9bd89651d19a622282c117339edfcb1c8e1055c1",

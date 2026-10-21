@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import UiIcon from './UiIcon.vue'
+import UiButton from './UiButton.vue'
 
 defineProps<{
   name: string
@@ -16,6 +17,7 @@ defineProps<{
   evidenceCount: number
   material?: { origin: string; draft: string; revision?: number }
 }>()
+defineEmits<{ changeMaterial: [] }>()
 </script>
 
 <template>
@@ -48,6 +50,7 @@ defineProps<{
             <div v-if="material.revision != null"><dt>材料版本</dt><dd>{{ material.revision }}</dd></div>
           </template>
         </dl>
+        <UiButton v-if="material" variant="quiet" class="reading-change" @click="$emit('changeMaterial')">更换材料</UiButton>
       </div>
     </details>
   </section>
@@ -80,4 +83,5 @@ defineProps<{
 .reading-detail-body dd { margin: 2px 0 0; overflow-wrap: anywhere; }
 .reading-code { font-family: var(--font-code); font-size: var(--m-caption); }
 .reading-raw-time { display: block; color: var(--muted); font-size: var(--m-caption); }
+.reading-change { margin-top: 12px; }
 </style>

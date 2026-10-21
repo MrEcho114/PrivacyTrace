@@ -316,7 +316,7 @@ onBeforeUnmount(() => {
       </template>
 
       <div v-else-if="state.step === 'report' && report && taxonomy" class="m-report">
-        <ExistingReports ref="reportView" :key="report.job.id" :snapshot="{ report, taxonomy }" mobile :material="context ? { origin: context.origin, draft: context.draft, revision: draft?.revision } : undefined" @evidence-open="onEvidenceOpen" @evidence-close="onEvidenceClose" />
+        <ExistingReports ref="reportView" :key="report.job.id" :snapshot="{ report, taxonomy }" mobile :material="context ? { origin: context.origin, draft: context.draft, revision: draft?.revision } : undefined" @evidence-open="onEvidenceOpen" @evidence-close="onEvidenceClose" @change-material="navigate('import')" />
       </div>
       <p v-else-if="state.step === 'report'" class="m-notice" role="status">报告尚未载入，请返回进度刷新状态。</p>
 

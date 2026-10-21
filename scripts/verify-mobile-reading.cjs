@@ -125,6 +125,12 @@ async function main() {
     assert.equal(await summary.getByText('https://analysis.example/', { exact: true }).isVisible(), true)
     await page.keyboard.press('Tab')
     checks.push('320/768/200% text and reduced motion preserve content and disclosure access')
+    const uploadsBefore = await page.evaluate(() => globalThis.mobileCalls.filter(call => call.method === 'upload_selected').length)
+    await summary.getByRole('button', { name: '更换材料', exact: true }).click()
+    await waitTitle(page, '应用与政策')
+    assert.equal(await page.evaluate(() => globalThis.mobileCalls.filter(call => call.method === 'upload_selected').length), uploadsBefore, 'change material returns to the existing input without uploading again')
+    await page.getByRole('heading', { name: '当前分析材料', exact: true }).waitFor()
+    checks.push('report details retain the change-material action and preserve the current material')
 
     const desktop = await browser.newPage({ viewport: { width: 1440, height: 900 } })
     desktop.on('pageerror', error => errors.push(error.message))

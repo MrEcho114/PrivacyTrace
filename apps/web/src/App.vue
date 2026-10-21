@@ -11,7 +11,7 @@ import MobileReportSummary from './components/MobileReportSummary.vue'
 const props = defineProps<{ initialJobId?: string; snapshot?: { report: Report; taxonomy: Taxonomy }; mobile?: boolean; material?: { origin: string; draft: string; revision?: number } }>()
 // The Tauri shell reuses this whole report body. In mobile mode the evidence
 // preview becomes a bottom sheet and the shell owns the surrounding app chrome.
-const emit = defineEmits<{ evidenceOpen: []; evidenceClose: [] }>()
+const emit = defineEmits<{ evidenceOpen: []; evidenceClose: []; changeMaterial: [] }>()
 const mobile = computed(() => props.mobile === true)
 
 const report = ref<DemoReport | Report | null>(null)
@@ -665,7 +665,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         :package-name="report.sample.package_name" :source-badge="sourceInfo?.badge ?? '来源未标注'" :source-description="sourceInfo?.desc ?? ''"
         :delivery-badge="deliveryInfo?.badge ?? '投递方式未标注'" :delivery-description="deliveryInfo?.desc ?? ''"
         :generated-at="report.job?.created_at" :generated-at-label="formatTimestamp(report.job.created_at)" :material="material"
-        :data-type-count="dataTypeCount" :policy-count="report.policy_documents.length" :evidence-count="report.evidence.length" />
+        :data-type-count="dataTypeCount" :policy-count="report.policy_documents.length" :evidence-count="report.evidence.length" @change-material="emit('changeMaterial')" />
       <details v-if="!mobile" class="demo-note"><summary>分析范围与来源 · <strong>{{ sourceInfo?.label ?? (source.kind === 'demo' ? 'SYNTHETIC 示例' : '真实 APK 静态报告') }}</strong></summary>
         {{ sourceInfo?.desc ?? (source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。报告不保证覆盖反射、动态加载、原生代码或运行时行为。') }}
         六种状态只对照 DATA_TYPE_DISCLOSURE；“具体类型已声明”不代表目的、接收方、传输或时间范围全部一致，更不是合法性判断。

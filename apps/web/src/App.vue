@@ -23,7 +23,11 @@ const selectedSourceKey = computed({
   },
 })
 const selected = ref<PrivacyIssue | null>(null)
-function selectIssue(issue: PrivacyIssue) {
+const evidenceTrigger = ref<HTMLElement | null>(null)
+let evidenceScroll = 0
+function selectIssue(issue: PrivacyIssue, event?: Event) {
+  evidenceTrigger.value = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  evidenceScroll = window.scrollY
   selected.value = issue
   void nextTick(() => {
     const panel = document.getElementById('evidence-panel')
@@ -31,6 +35,21 @@ function selectIssue(issue: PrivacyIssue) {
     panel?.focus({ preventScroll: true })
   })
 }
+// Closing the preview returns focus to the row button that opened it and
+// restores the exact reading position instead of dropping focus on <body> at a
+// shifted scroll offset. If the row is gone, focus falls back to the page title.
+function clearSelected(restoreFocus = false) {
+  const trigger = evidenceTrigger.value
+  const top = evidenceScroll
+  selected.value = null
+  if (!restoreFocus) return
+  void nextTick(() => {
+    const target = trigger?.isConnected ? trigger : document.getElementById('page-title')
+    target?.focus({ preventScroll: true })
+    if (trigger?.isConnected) window.scrollTo({ top, behavior: 'auto' })
+  })
+}
+function closeEvidence() { clearSelected(true) }
 const loading = ref(false)
 const error = ref('')
 const reviewMessage = ref('')
@@ -546,11 +565,11 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           <!-- Narrow screens stack each row as a card; the explicit table roles keep the grid
                semantics that display:flex/block would otherwise drop. -->
           <div class="table-scroll"><table class="report-table" role="table"><thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">隐私数据</th><th scope="col" role="columnheader">政策来源</th><th scope="col" role="columnheader">当前结论</th><th scope="col" role="columnheader">依据</th></tr></thead><tbody role="rowgroup">
-            <tr v-for="issue in report.result.issues" :key="issue.id" role="row"><td class="type-cell" role="cell" data-label="隐私数据">{{ label(issue.data_type) }}</td><td role="cell" data-label="政策来源">{{ documentLabels(issue.policy_document_ids) }}</td><td role="cell" data-label="当前结论"><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></td><td role="cell" data-label="依据"><button class="evidence-button" :aria-expanded="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue)">查看 {{ issue.evidence_ids.length }} 条证据 →</button></td></tr>
+            <tr v-for="issue in report.result.issues" :key="issue.id" role="row"><td class="type-cell" role="cell" data-label="隐私数据">{{ label(issue.data_type) }}</td><td role="cell" data-label="政策来源">{{ documentLabels(issue.policy_document_ids) }}</td><td role="cell" data-label="当前结论"><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></td><td role="cell" data-label="依据"><button class="evidence-button" :aria-expanded="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue, $event)">查看 {{ issue.evidence_ids.length }} 条证据 →</button></td></tr>
           </tbody></table></div><p v-if="!report.result.issues.length" class="subtle">未产生对照项不等于没有隐私访问，请查看权限与扫描覆盖。</p>
         </section>
         <section v-if="selected" id="evidence-panel" class="evidence-panel" tabindex="-1" aria-live="polite">
-          <div class="section-heading"><h2>{{ label(selected.data_type) }} · {{ statusLabels[selected.status] }}</h2><button @click="selected = null">收起</button></div>
+          <div class="section-heading"><h2>{{ label(selected.data_type) }} · {{ statusLabels[selected.status] }}</h2><button @click="closeEvidence">收起</button></div>
           <p class="explanation">{{ selected.explanation }}</p>
           <p v-if="selected.status === 'NOT_DECLARED'" class="demo-note">“未找到声明”依赖适用版本、完整正文、提取成功、全文复核和附件齐全。下面保留完整政策及这些状态；缺少其中任一项时不能据此断言违规。</p>
           <div class="evidence-grid"><article v-for="item in selectedEvidence" :key="item.id" class="evidence-card">

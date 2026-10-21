@@ -218,6 +218,27 @@ def upload_package_set(topology: Topology, scope: Scope, data: bytes) -> HttpRes
     return result
 
 
+def discover_policy_sources(topology: Topology, scope: Scope) -> HttpResult:
+    """Ask the control plane to derive policy sources from the uploaded package.
+
+    The durable control plane has no Docker socket, so this endpoint only works
+    while it inspects through the injected Runner inspector. A regression of that
+    seam surfaces here as 503 ISOLATED_INSPECTION_UNAVAILABLE instead of a
+    discovered source, which is the defect this check exists to catch.
+    """
+    result = request(
+        topology,
+        f"/api/v1/web/drafts/{scope.draft_id}/sources/discover",
+        method="POST",
+        json_body={},
+        token=scope.token,
+        timeout=300,
+    )
+    if result.status == 200 and isinstance(result.json, dict):
+        scope.revision = int(result.json.get("revision", scope.revision + 1))
+    return result
+
+
 def start_job(topology: Topology, scope: Scope, *, request_id: str = "") -> HttpResult:
     result = request(
         topology,
@@ -458,6 +479,52 @@ def _business_loop(topology: Topology, fixtures: Fixtures, job_budget_s: float) 
                             input_sha256=fixtures.single_sha256,
                         )
                     )
+
+    recorder = CheckRecorder(
+        "r2.policy_discovery_without_docker_socket",
+        "draft -> POST /apk -> POST /sources/discover -> GET /drafts/{id}",
+        ticket=TICKET,
+    )
+    scope_d: Scope | None = None
+    try:
+        scope_d = create_scope(
+            topology, "acceptance-scope-discovery", "We never access the camera."
+        )
+    except TopologyUnavailable as error:
+        checks.append(recorder.skip(f"discovery scope draft creation failed: {error}"))
+    if scope_d is not None:
+        upload = upload_apk(topology, scope_d, fixtures.single_apk)
+        if upload.status != 200:
+            checks.append(
+                _fail(recorder, f"discovery upload HTTP {upload.status}", status=upload.status)
+            )
+        else:
+            discovered = discover_policy_sources(topology, scope_d)
+            if discovered.status == 503:
+                checks.append(
+                    _fail(
+                        recorder,
+                        "discovery returned 503; the control plane fell back to a local "
+                        "container instead of the injected inspector",
+                        status=discovered.status,
+                        error=_error_code(discovered),
+                    )
+                )
+            elif discovered.status != 200:
+                checks.append(
+                    _fail(recorder, f"discovery HTTP {discovered.status}", status=discovered.status)
+                )
+            else:
+                document = discovered.json if isinstance(discovered.json, dict) else {}
+                sources = document.get("sources") or []
+                checks.append(
+                    recorder.pass_(
+                        f"policy discovery ran without a Docker socket; sources={len(sources)}",
+                        status=discovered.status,
+                        sources=len(sources),
+                        scope=scope_d.as_dict(),
+                    )
+                )
 
     recorder = CheckRecorder(
         "r2.scope_b_base_and_splits",

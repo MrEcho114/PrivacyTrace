@@ -103,7 +103,7 @@ test_e2e_pt_mob_102.py::test_t4_real_world_multisplit_end_to_end_workflow
 | Browser | `npm run acceptance:browser` | **PASSED** | TC-01…TC-06 全部 PASSED，`overall_status: PASSED` |
 | frontend | `npm run acceptance:frontend` | **PASSED** | 见下 |
 | live | `npm run acceptance:live` | **BLOCKED** | 脚本自述链路为 "Actual browser → HTTP intake → policy/model seam → **restricted Docker** → persisted report"（`scripts/verify-live-flow.cjs:1`），且其收据固定 `scanner: 'RESTRICTED_DOCKER'`；本机无 Docker、`wsl.exe` 被拒，未执行 |
-| mobile | `npm run acceptance:mobile` | **NOT_RUN** | 本轮未执行。该入口是 390×844 下"真实生产 Vue + mock 原生桥"的浏览器走查（`scripts/verify-mobile-flow.cjs:1`），**不需要 Docker**，可在本机补跑；不补跑就不得计入通过 |
+| mobile | `npm run acceptance:mobile` | **NOT_RUN** | 本轮记录中没有该入口的执行与收据，按未执行记。该入口是 390×844 下"真实生产 Vue + mock 原生桥"的浏览器走查（`scripts/verify-mobile-flow.cjs:1`），**不需要 Docker**，可补跑；拿到收据前不得计入通过 |
 | （附加）预览生命周期 | `npm run acceptance:preview` | **PASSED** | start/stop、check 恢复、外部进程保护全部通过；**不属四入口**，不用于补齐分母 |
 
 **acceptance:browser 收据**（脚本自动生成，锚定提交）：见 `evidence/browser-proof-ffadeb06.json`
@@ -224,7 +224,7 @@ test_e2e_pt_mob_102.py::test_t4_real_world_multisplit_end_to_end_workflow
 | R02 Spec30 six / twelve | **BLOCKED** | `scripts/validate-spec30.py` 内部先 `docker_prefix() + build` 构建受控镜像，六 / 十二场景跑在该镜像中 | Linux + Docker Engine + `playwright@1.62.1` + chromium |
 | R04 部署专项 | **BLOCKED** | `deploy/check_acceptance.sh` 首行要求 `id -u = 0`，构建 api/web/runner/scan 四个镜像并做上线、回滚与恢复 | **Linux + root** + Docker + compose v2 + 干净已提交工作区 |
 | R03 `acceptance:live` | **BLOCKED** | 链路含 restricted Docker 扫描与持久队列（`scripts/verify-live-flow.cjs:1`），本机无 Docker | 同 R02 环境 |
-| R03 `acceptance:mobile` | **NOT_RUN** | 本轮未执行；该入口是 390×844 浏览器走查 + mock 原生桥，**不依赖 Docker** | 本机补跑 `npm run acceptance:mobile`，把收据落到本目录后改状态 |
+| R03 `acceptance:mobile` | **NOT_RUN** | 本轮记录中没有该入口的执行或收据；该入口是 390×844 浏览器走查 + mock 原生桥，**不依赖 Docker** | 本机补跑 `npm run acceptance:mobile`，把收据落到本目录后改状态 |
 | 交付包"运行 / 停启" | **NOT_RUN** | §4 只覆盖哈希、条目清单与解压冷启动；真正跑起来要后端与真实扫描 | 同 R02 环境 |
 | R01 中 8 个扫描类用例 | **FAILED（环境）** | 见 §2.1 | 同上：Linux + Docker |
 | `npm ci` 本体 | **NOT_RUN** | 见 §2 第 12 项 | 网络稳定时重跑即可 |

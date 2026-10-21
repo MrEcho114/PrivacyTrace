@@ -232,13 +232,24 @@ async function fontsReady(page) {
   await page.evaluate(() => document.fonts.ready)
 }
 
-async function captureWidths(page, name) {
+async function captureWidths(page, name, options = {}) {
   const captured = []
   for (const [width, height] of widths) {
     await page.setViewportSize({ width, height })
     await fontsReady(page)
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, `${name} overflows at ${width}`)
-    await page.evaluate(() => window.scrollTo(0, 0))
+    // Round 2 keeps the 36px desktop action contract: a mobile 44/48px touch
+    // rule that leaks into the wide viewport would change this computed value.
+    const control = await page.evaluate(() => {
+      const button = document.querySelector('.ui-button')
+      return button ? getComputedStyle(button).minHeight : ''
+    })
+    assert.equal(control, '36px', `${name}: wide viewports keep the 36px button contract at ${width}px (got ${control || 'no .ui-button'})`)
+    if (options.focus) {
+      await page.evaluate(selector => document.querySelector(selector)?.scrollIntoView({ block: 'start' }), options.focus)
+    } else {
+      await page.evaluate(() => window.scrollTo(0, 0))
+    }
     const file = path.join(screenshots, `${name}-${width}.png`)
     await page.screenshot({ path: file })
     captured.push(path.relative(root, file).replaceAll('\\', '/'))
@@ -313,6 +324,7 @@ async function main() {
     }
     checks.push('import: long APK name keeps its action; source notes carry completeness/review/attachment state')
     evidence.screenshots.push(...await captureWidths(example, 'example-import'))
+    checks.push('wide desktop: 1920/1440/1280 keep the 36px action contract; no mobile touch rule leaks in')
 
     // Candidates: one persistent source context strip above both panels.
     await example.getByRole('button', { name: '检查候选', exact: true }).click()
@@ -442,7 +454,7 @@ async function main() {
     assert.equal(await reports.locator('#evidence-panel .section-heading h2').isVisible(), true)
     assert.equal(await reports.locator('#evidence-panel .policy-jump-btn').first().isVisible(), true)
     checks.push('reports: code/policy evidence drill-down and full-text jump remain reachable')
-    evidence.screenshots.push(...await captureWidths(reports, 'reports-evidence'))
+    evidence.screenshots.push(...await captureWidths(reports, 'reports-evidence', { focus: '#evidence-panel' }))
 
     // 3. Real progress template (mocked draft + running job, no Docker/model).
     const live = await browser.newPage({ viewport: { width: 1440, height: 900 } })
@@ -522,6 +534,7 @@ async function main() {
     assert.deepEqual(errors, [], 'no page errors may be raised by the hierarchy changes')
     const result = {
       result: 'PASS',
+      captured_at: new Date().toISOString(),
       commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8', cwd: root }).trim(),
       dirty: !!execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8', cwd: root }).trim(),
       scope: 'synthetic example flow + mocked persisted report + mocked live draft; no real scan, model or Docker',

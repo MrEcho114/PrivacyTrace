@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "run_id": "20261021T181741Z-b9af7130f56b",
+  "commit_sha": "65b49f7ffecd8aee5eede21d69b310300dd32ca6",
+  "suite": "spec30",
+  "scenario_count": 6,
+  "dirty_checkout": true,
+  "passed": true,
+  "stages": [
+    {
+      "stage": "build-a",
+      "exit_code": 0,
+      "elapsed_seconds": 191.27383042900328
+    },
+    {
+      "stage": "build-b",
+      "exit_code": 0,
+      "elapsed_seconds": 191.228421550004
+    },
+    {
+      "stage": "rebuild-hashes",
+      "exit_code": 0
+    },
+    {
+      "stage": "worker-build",
+      "exit_code": 0,
+      "elapsed_seconds": 150.74216920600156
+    },
+    {
+      "stage": "six-scenarios",
+      "exit_code": 0,
+      "elapsed_seconds": 16.16615413499676
+    },
+    {
+      "stage": "independent-dex-locations",
+      "exit_code": 0,
+      "elapsed_seconds": 0.7665234849991975
+    },
+    {
+      "stage": "source-cli-regressions",
+      "exit_code": 0,
+      "elapsed_seconds": 7.688988902998972
+    },
+    {
+      "stage": "web-build",
+      "exit_code": 0,
+      "elapsed_seconds": 5.933213128002535
+    },
+    {
+      "stage": "export-offline",
+      "exit_code": 0,
+      "elapsed_seconds": 0.2649965870004962
+    },
+    {
+      "stage": "browser-fixtures",
+      "exit_code": 0,
+      "elapsed_seconds": 0.2147090849975939
+    },
+    {
+      "stage": "controlled-browser",
+      "exit_code": 0,
+      "elapsed_seconds": 20.079338866999024
+    },
+    {
+      "stage": "independent-offline",
+      "exit_code": 0,
+      "elapsed_seconds": 245.7437463899987
+    }
+  ],
+  "evidence_sha256": {
+    "build-a/build-receipt.json": "4755b9667c50a18b99713cf1fdf515b6bc5fae3491b907d290e153ad385104f7",
+    "build-b/build-receipt.json": "4755b9667c50a18b99713cf1fdf515b6bc5fae3491b907d290e153ad385104f7",
+    "evaluation/comparison.json": "7b27b20bb6f43d9712731075e514033d4501edd1ea19aadde72b42bc7b570d41",
+    "evaluation/location-reference-check.json": "c27a49345e946ef99d983bf6cae9c86654a5f3e443f0b3d4b23a1d53cc725a6e",
+    "browser-proof/browser-proof.json": "71a458574f1b72b3f5601fb4abc1b0dee126ec2c796052fbdfee47568c674368",
+    "offline-proof/offline-proof.json": "6b1fa05e621a51986b34002e788751f38577d7a05fe715b6dd11de1e83fc9dc2"
+  },
+  "generated_at": "2026-10-21T18:31:33.529427+00:00"
+}

@@ -1,0 +1,107 @@
+{
+  "source_sha": "65b49f7ffecd8aee5eede21d69b310300dd32ca6",
+  "roles": {
+    "web": {
+      "image_id": "sha256:917dd42d973b70ef4d4b0b55de69643d72bc0e0596e6ec91329510fd765ff961",
+      "user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false,
+      "memory_limit": 268435456,
+      "pids_limit": 128,
+      "source_revision": "65b49f7ffecd8aee5eede21d69b310300dd32ca6"
+    },
+    "api": {
+      "image_id": "sha256:be0a73da42e0f74c6d8e2c0e08e7b4c0b4298cdb323ef0bb43c104881dfb97e0",
+      "user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false,
+      "memory_limit": 805306368,
+      "pids_limit": 128,
+      "source_revision": "65b49f7ffecd8aee5eede21d69b310300dd32ca6"
+    },
+    "postgres": {
+      "image_id": "sha256:c7526c0f6c3f30260a563d7bcf8ad778effac59a44f8ffa86678c35418338609",
+      "user": "70:70",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false,
+      "memory_limit": 805306368,
+      "pids_limit": 128,
+      "source_revision": "UNLABELLED"
+    },
+    "redis": {
+      "image_id": "sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6",
+      "user": "999:999",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false,
+      "memory_limit": 268435456,
+      "pids_limit": 128,
+      "source_revision": "UNLABELLED"
+    },
+    "dispatcher": {
+      "image_id": "sha256:be0a73da42e0f74c6d8e2c0e08e7b4c0b4298cdb323ef0bb43c104881dfb97e0",
+      "user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false,
+      "memory_limit": 268435456,
+      "pids_limit": 128,
+      "source_revision": "65b49f7ffecd8aee5eede21d69b310300dd32ca6"
+    },
+    "worker": {
+      "image_id": "sha256:be0a73da42e0f74c6d8e2c0e08e7b4c0b4298cdb323ef0bb43c104881dfb97e0",
+      "user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false,
+      "memory_limit": 805306368,
+      "pids_limit": 128,
+      "source_revision": "65b49f7ffecd8aee5eede21d69b310300dd32ca6"
+    },
+    "gateway": {
+      "image_id": "sha256:be0a73da42e0f74c6d8e2c0e08e7b4c0b4298cdb323ef0bb43c104881dfb97e0",
+      "user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false,
+      "memory_limit": 268435456,
+      "pids_limit": 128,
+      "source_revision": "65b49f7ffecd8aee5eede21d69b310300dd32ca6"
+    },
+    "runner": {
+      "image_id": "sha256:62b5ed63c87fce02dc233145e22b3b71308594f1313cbff4660ebf4c61bd133f",
+      "user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": true,
+      "memory_limit": 1073741824,
+      "pids_limit": 256,
+      "source_revision": "65b49f7ffecd8aee5eede21d69b310300dd32ca6"
+    }
+  },
+  "migration": "0080_05",
+  "protocol": 1,
+  "scan_host_separate": false,
+  "untested": [
+    "dedicated physical/VM scan-host separation and firewall persistence"
+  ]
+}

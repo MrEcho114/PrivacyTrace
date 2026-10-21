@@ -1,0 +1,76 @@
+{
+  "generated_at": "2026-10-21T19:35:25Z",
+  "receipt_version": 1,
+  "receipts": [
+    "acceptance-r1-full-deployment-20261021T193525Z.json",
+    "acceptance-r2-dual-scope-business-loop-20261021T193525Z.json",
+    "acceptance-r3-actual-isolation-20261021T193525Z.json",
+    "acceptance-r4-fault-injection-recovery-20261021T193525Z.json",
+    "acceptance-r5-backup-recovery-drills-20261021T193525Z.json",
+    "acceptance-r6-capacity-and-secret-audit-20261021T193525Z.json"
+  ],
+  "scope": "issue81-r1-r6",
+  "source_sha": "65b49f7ffecd8aee5eede21d69b310300dd32ca6",
+  "summary": {
+    "by_ticket": {
+      "R1": {
+        "fail": 0,
+        "not_tested": 0,
+        "pass": 1,
+        "skip": 0
+      },
+      "R2": {
+        "fail": 0,
+        "not_tested": 0,
+        "pass": 13,
+        "skip": 0
+      },
+      "R3": {
+        "fail": 0,
+        "not_tested": 0,
+        "pass": 1,
+        "skip": 0
+      },
+      "R4": {
+        "fail": 0,
+        "not_tested": 0,
+        "pass": 12,
+        "skip": 0
+      },
+      "R5": {
+        "fail": 0,
+        "not_tested": 0,
+        "pass": 4,
+        "skip": 0
+      },
+      "R6": {
+        "fail": 0,
+        "not_tested": 0,
+        "pass": 9,
+        "skip": 0
+      }
+    },
+    "conclusion": "ALL_REQUIRED_CHECKS_PASS_WITH_WAIVER",
+    "evidence_free": false,
+    "fail": 0,
+    "no_pass_claimed": false,
+    "not_tested": 0,
+    "pass": 40,
+    "pass_rate_of_verified": 1.0,
+    "skip": 0,
+    "total": 40,
+    "untested_scopes": 0,
+    "verified": 40,
+    "waivers": [
+      {
+        "authorization": "***",
+        "blocks_this_acceptance": false,
+        "id": "dedicated-scan-host-verification",
+        "production_requirement_unchanged": true,
+        "scope": "Independent scan host/VM separation and cross-host firewall persistence testing",
+        "status": "WAIVED_BY_USER"
+      }
+    ]
+  },
+  "untested": []
+}

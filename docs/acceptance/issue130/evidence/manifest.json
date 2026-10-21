@@ -1,7 +1,7 @@
 {
   "issue": 130,
   "parent_issue": 128,
-  "generated_at_utc": "2026-10-21T10:05:00Z",
+  "generated_at_utc": "2026-10-21T10:22:00Z",
   "files": [
     {
       "path": "H02-local-I-single-assist-candidates.txt",
@@ -17,11 +17,6 @@
       "path": "H02-local-I-single-assist-evidence-2.txt",
       "sha256": "60dfaf4a9aa1a12e7caa51aafd4bb202f96119d4f95e80f26fbc3994ce8fed2b",
       "size_bytes": 5489
-    },
-    {
-      "path": "H02-local-I-single-assist-evidence.txt",
-      "sha256": "87bb9b89c1c2bb32a3ca61204c721460616dca92de711f91429393edf4612f9a",
-      "size_bytes": 4755
     },
     {
       "path": "H02-local-I-single-assist-result.json",
@@ -54,11 +49,6 @@
       "size_bytes": 5895
     },
     {
-      "path": "H05-local-I-splits-assist-evidence.txt",
-      "sha256": "063857b9a6f1fa3205a595fb4b68b5acc0e75dd6b0b1f48a74b50a712a197998",
-      "size_bytes": 4924
-    },
-    {
       "path": "H05-local-I-splits-assist-result.json",
       "sha256": "7f814c7d4bf2d41e4db8c5fbec1af553eb89a71c9509ec7ffab23c12e1e30625",
       "size_bytes": 290
@@ -82,11 +72,6 @@
       "path": "H08-local-J-single-assist-evidence-2.txt",
       "sha256": "35b8f46539db7b5c8933cb558823a8d2389a8e0cad08ad4bcb61855c57b246af",
       "size_bytes": 5489
-    },
-    {
-      "path": "H08-local-J-single-assist-evidence.txt",
-      "sha256": "34f3ea2fc7d66a974a3f96e04972fc8c1d1405ad4c4d782e4f090dbd49d12b2a",
-      "size_bytes": 4755
     },
     {
       "path": "H08-local-J-single-assist-result.json",
@@ -117,11 +102,6 @@
       "path": "H11-local-J-splits-assist-evidence-3.txt",
       "sha256": "042b2ea3ea246dad825aa4be6f931b365a021544f0674689eb1071938a5311e3",
       "size_bytes": 5895
-    },
-    {
-      "path": "H11-local-J-splits-assist-evidence.txt",
-      "sha256": "500fdabc80bd62209816439893434e1ba2232ba894f2b6f9d5a288badf800991",
-      "size_bytes": 4924
     },
     {
       "path": "H11-local-J-splits-assist-result.json",

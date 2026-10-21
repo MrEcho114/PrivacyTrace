@@ -18,7 +18,7 @@ async function captureWidths(page, name) {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, `${name} overflow at ${width}`)
     await assertDesign(page)
     await assertSurface(page, name)
-    await page.evaluate(() => window.scrollTo(0, 0))
+    await page.evaluate(() => { window.scrollTo(0, 0); document.querySelector('dialog')?.scrollTo(0, 0) })
     await page.screenshot({ path: path.join(screenshots, `${name}-${width}-viewport.png`) })
     await page.screenshot({ path: path.join(screenshots, `${name}-${width}.png`), fullPage: true })
   }
@@ -370,6 +370,13 @@ async function verifyMobileReport(page, requests) {
     await page.locator('.report-table tbody tr').first().waitFor({ timeout: 5000 })
     assert.equal(await page.evaluate(() => location.hash), '#reports', 'the report view must be reachable at #reports')
     checks.push('#reports: renders a deterministic SUCCEEDED job')
+    // The embedded report must follow runtime theme changes without shell overrides.
+    const themeProbe = await page.addStyleTag({ content: ':root { --surface: rgb(240, 241, 242); --control: rgb(80, 90, 100); }' })
+    try {
+      assert.equal(await page.locator('.report-section').first().evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(240, 241, 242)')
+      assert.equal(await page.locator('#report-source').evaluate(el => getComputedStyle(el).borderTopColor), 'rgb(80, 90, 100)')
+    } finally { await themeProbe.evaluate(el => el.remove()) }
+    checks.push('reports: panels and native source select consume shared theme roles')
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.evaluate(() => document.fonts.ready)
     const desktopHead = await reportTableHeader(page)
@@ -599,12 +606,45 @@ async function main() {
     assert.equal(await deviceEvidenceButton.evaluate(element => element === document.activeElement), true)
     await page.getByRole('button', { name: '项目设置', exact: true }).click()
     await page.getByRole('dialog').waitFor()
+    // Reka owns modal focus, outside dismissal and accessible naming.
+    const settingsDialog = page.getByRole('dialog', { name: '服务与存储设置', exact: true })
+    assert.equal(await settingsDialog.isVisible(), true)
+    assert.equal(await settingsDialog.getAttribute('aria-modal'), 'true')
+    assert.equal(await page.locator('#settings-close').evaluate(el => el === document.activeElement), true)
+    assert.equal(await page.locator('#app').getAttribute('aria-hidden'), 'true', 'modal background must be hidden from assistive technology')
+    const descriptionId = await settingsDialog.getAttribute('aria-describedby')
+    assert.ok(descriptionId && await page.locator('[id="' + descriptionId + '"]').innerText(), 'modal must have an accessible description')
+    await page.locator('#model-name').fill('模型名称'.repeat(25))
+    await page.mouse.click(2, 2)
+    assert.equal(await settingsDialog.isVisible(), true, 'outside clicks must preserve the settings form')
+    assert.equal(await page.locator('#model-name').inputValue(), '模型名称'.repeat(25))
+    await page.locator('#model-name').evaluate(el => { el.disabled = true })
+    await page.locator('#settings-close').focus()
+    for (let index = 0; index < 20; index++) {
+      await page.keyboard.press(index < 10 ? 'Tab' : 'Shift+Tab')
+      assert.equal(await settingsDialog.evaluate(el => el.contains(document.activeElement)), true)
+      assert.notEqual(await page.evaluate(() => document.activeElement?.id), 'model-name', 'disabled fields must leave the tab order')
+    }
+    await page.locator('#model-name').evaluate(el => { el.disabled = false })
     assert.equal(await page.locator('#model-key').getAttribute('type'), 'password')
     assert.equal(await page.locator('#model-key').inputValue(), '')
     await page.route('**/api/v1/health', route => route.fulfill({ json: { status: 'ok' } }))
     await page.getByRole('button', { name: '测试连接', exact: true }).click()
     await page.getByText('分析服务有响应', { exact: true }).waitFor()
     await captureWidths(page, 'settings')
+    await page.setViewportSize({ width: 320, height: 720 })
+    const settingsZoom = await page.addStyleTag({ content: 'html { font-size: 200%; }' })
+    try {
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'settings: 320px at 200% must not overflow the document')
+      assert.equal(await settingsDialog.evaluate(el => el.scrollWidth <= el.clientWidth + 1), true, 'settings: 320px at 200% must not overflow the modal')
+      const zoomedClear = page.getByRole('button', { name: '清除示例草稿', exact: true })
+      await zoomedClear.scrollIntoViewIfNeeded()
+      await zoomedClear.focus()
+      assert.equal(await settingsDialog.evaluate(el => el.contains(document.activeElement)), true)
+    } finally {
+      await settingsZoom.evaluate(el => el.remove())
+      await page.setViewportSize({ width: 1440, height: 900 })
+    }
     for (let index = 0; index < 8; index++) {
       await page.keyboard.press('Tab')
       assert.equal(await page.getByRole('dialog').evaluate(element => element.contains(document.activeElement)), true)

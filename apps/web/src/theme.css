@@ -1,0 +1,19 @@
+/* Pioneer roles: docs/design/issue142-theme-and-primitives.md. One source for all entries. */
+@font-face { font-family: 'Noto Sans SC'; src: url('/fonts/NotoSansSC-Variable.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: 'Noto Serif SC'; src: url('/fonts/NotoSerifSC-Variable.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
+:root {
+  --canvas: #f6f5f1; --surface: #fdfcfa; --surface-muted: #eeedea;
+  --ink: #2c3547; --muted: #64696f; --navy: #333c50; --border: #d9d7d2;
+  --control: #858d92; --mint: #dce9df; --success: #35644b; --slate: #dde2e9;
+  --notice: #ede4d6; --rose: #ebdada; --error: #934342;
+  --navy-hover: #212a3b; --danger: #b25352; --gold: #c6af94;
+  --on-action: #f9f9f9; --overlay: rgba(44, 53, 71, .3);
+  --radius: 8px; --radius-panel: 12px;
+  --space-4: 4px; --space-8: 8px; --space-12: 12px;
+  --space-16: 16px; --space-24: 24px; --space-32: 32px;
+  --font-body: 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-display: 'Noto Serif SC', SimSun, serif;
+  --font-code: Consolas, 'Courier New', monospace;
+  font-family: var(--font-body);
+  color: var(--ink); background: var(--canvas); line-height: 1.6;
+}

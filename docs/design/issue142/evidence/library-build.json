@@ -1,0 +1,34 @@
+{
+  "reka": {
+    "vueSourceLines": 6,
+    "vueSourceBytes": 909,
+    "assets": [
+      {
+        "file": "index-BVvFrSIQ.js",
+        "bytes": 96771,
+        "gzip": 35746
+      },
+      {
+        "file": "index-UNtOa2WS.css",
+        "bytes": 28771,
+        "gzip": 6378
+      }
+    ]
+  },
+  "naive": {
+    "vueSourceLines": 7,
+    "vueSourceBytes": 1352,
+    "assets": [
+      {
+        "file": "index-BaazC73r.js",
+        "bytes": 211536,
+        "gzip": 70864
+      },
+      {
+        "file": "index-UNtOa2WS.css",
+        "bytes": 28771,
+        "gzip": 6378
+      }
+    ]
+  }
+}

@@ -3,6 +3,7 @@ import WorkflowApp from './WorkflowApp.vue'
 import ExistingReports from './App.vue'
 import MobileApp from './mobile/MobileApp.vue'
 import { isTauri } from '@tauri-apps/api/core'
+import './theme.css'
 import './style.css'
 import './workbench.css'
 

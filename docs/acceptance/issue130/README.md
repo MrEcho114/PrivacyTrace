@@ -62,6 +62,12 @@ H05/H11 需先安装 base＋feature split；H08/H11 使用实例 J 的 origin �
 `deploy/acceptance/issue130/fixtures/`；受控政策源与 DNAT 拓扑在
 `deploy/acceptance/issue130/policy-source/`。这两份是测试资料，不是产品组件。
 
+## 交付
+
+- PR：[#147](https://github.com/MrEcho114/PrivacyTrace/pull/147)
+- 分支：`codex/issue130-acceptance-20261021`，首个交付提交 `93e3d06`
+- 本记录随 PR 交付；使用 `Refs #130` / `Refs #128`，不自动关闭验收票。
+
 ## 边界
 
 - 报告中的对照结论为 `INSUFFICIENT_EVIDENCE`（来源完整度未知、未复核、附件未检查），不是 `MATCH`；本记录没有升级任何 `UNKNOWN/PARTIAL/UNREVIEWED`。

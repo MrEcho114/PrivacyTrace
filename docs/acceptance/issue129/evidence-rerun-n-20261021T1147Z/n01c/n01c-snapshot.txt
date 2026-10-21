@@ -1,0 +1,15 @@
+--- uiautomator ---
+选择上传实例
+输入 HTTPS 分析服务根地址。先检查上传协议和限额；访问材料按精确地址与实例加密保存在本机。不会发送模型 Key 或整机应用清单。一次仅保留此实例的一份当前上传；换应用前须主动删除旧材料。
+HTTPS 分析服务根地址
+取消
+检查并继续
+--- pm path ---
+package:/data/app/~~3yRa4ohsc_RqvMd8UKQYew==/org.privacytrace.probe.fixture-eLKJha2bxsng48QPNARmrw==/base.apk
+package:/data/app/~~3yRa4ohsc_RqvMd8UKQYew==/org.privacytrace.probe.fixture-eLKJha2bxsng48QPNARmrw==/split_fixture_feature.apk
+--- dumpsys ---
+    codePath=/data/app/~~3yRa4ohsc_RqvMd8UKQYew==/org.privacytrace.probe.fixture-eLKJha2bxsng48QPNARmrw==
+    versionCode=1 minSdk=24 targetSdk=34
+    versionName=controlled-fixture
+    splits=[base, fixture_feature]
+    lastUpdateTime=2026-10-21 19:26:51

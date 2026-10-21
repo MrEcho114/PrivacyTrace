@@ -1,0 +1,748 @@
+{
+  "old_report_hashes_unchanged_after_candidate_upgrade": true,
+  "reports": [
+    {
+      "apk_sha256": "9add4377c27b8326221f031157759e0da9a6b2815686008964933cdabde9c0f8",
+      "behaviors": 1,
+      "comparisons": 1,
+      "evidence": 3,
+      "expected_invoke_present": true,
+      "expected_quote_present": true,
+      "job_alias": "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560",
+      "report_sha256": "a0206ba84ecae4c9c820070292b8054a33b2aa0c8f553ddc4752b1857553a10a",
+      "runner_receipt": {
+        "cleanup_verified": true,
+        "container_created": true,
+        "image_id": "sha256:9c89315740fd05fb55f3a6a1a6861b4ecc819ee504955680335eff86df29e018",
+        "input_removed": true,
+        "isolation": {
+          "CapAdd": null,
+          "CapDrop": [
+            "ALL"
+          ],
+          "Memory": 1073741824,
+          "MemorySwap": 1073741824,
+          "NanoCpus": 1000000000,
+          "NetworkMode": "none",
+          "PidsLimit": 32,
+          "Privileged": false,
+          "ReadonlyRootfs": true,
+          "SecurityOpt": [
+            "no-new-privileges:true"
+          ]
+        },
+        "mounts": [
+          {
+            "destination": "/input/sample.apk",
+            "read_only": true
+          }
+        ],
+        "user": "65534:65534"
+      },
+      "unreviewed_retained": true
+    },
+    {
+      "apk_sha256": "9add4377c27b8326221f031157759e0da9a6b2815686008964933cdabde9c0f8",
+      "behaviors": 1,
+      "comparisons": 1,
+      "evidence": 3,
+      "expected_invoke_present": true,
+      "expected_quote_present": true,
+      "job_alias": "3e086c38cf9b426a34f0f8c7d2d12461d2b50fb00ec288e19c5d9c517eb3ebc8",
+      "report_sha256": "810b83d8f1a8a9442feac041f1c7c4f42be54376fa76632f61aec1b3407c3b83",
+      "runner_receipt": {
+        "cleanup_verified": true,
+        "container_created": true,
+        "image_id": "sha256:9c89315740fd05fb55f3a6a1a6861b4ecc819ee504955680335eff86df29e018",
+        "input_removed": true,
+        "isolation": {
+          "CapAdd": null,
+          "CapDrop": [
+            "ALL"
+          ],
+          "Memory": 1073741824,
+          "MemorySwap": 1073741824,
+          "NanoCpus": 1000000000,
+          "NetworkMode": "none",
+          "PidsLimit": 32,
+          "Privileged": false,
+          "ReadonlyRootfs": true,
+          "SecurityOpt": [
+            "no-new-privileges:true"
+          ]
+        },
+        "mounts": [
+          {
+            "destination": "/input/sample.apk",
+            "read_only": true
+          }
+        ],
+        "user": "65534:65534"
+      },
+      "unreviewed_retained": true
+    },
+    {
+      "apk_sha256": "9add4377c27b8326221f031157759e0da9a6b2815686008964933cdabde9c0f8",
+      "behaviors": 1,
+      "comparisons": 1,
+      "evidence": 3,
+      "expected_invoke_present": true,
+      "expected_quote_present": true,
+      "job_alias": "391d736891d3f43bcd506fcd364861d9e7e3c049523dea887785d86cd72245e2",
+      "report_sha256": "30762cf8da3d543822242f0ff165f704e63ab1692d874fefbedd65f62b0e013a",
+      "runner_receipt": {
+        "cleanup_verified": true,
+        "container_created": true,
+        "image_id": "sha256:9c89315740fd05fb55f3a6a1a6861b4ecc819ee504955680335eff86df29e018",
+        "input_removed": true,
+        "isolation": {
+          "CapAdd": null,
+          "CapDrop": [
+            "ALL"
+          ],
+          "Memory": 1073741824,
+          "MemorySwap": 1073741824,
+          "NanoCpus": 1000000000,
+          "NetworkMode": "none",
+          "PidsLimit": 32,
+          "Privileged": false,
+          "ReadonlyRootfs": true,
+          "SecurityOpt": [
+            "no-new-privileges:true"
+          ]
+        },
+        "mounts": [
+          {
+            "destination": "/input/sample.apk",
+            "read_only": true
+          }
+        ],
+        "user": "65534:65534"
+      },
+      "unreviewed_retained": true
+    }
+  ],
+  "scope": "PARTIAL_REAL_ANDROID_OBSERVATIONS_NOT_FULL_SCENARIO_PASSES",
+  "sequence_note": "The file f02-delivered.json still observed PENDING/0; its name does not establish delivery. The final candidate queued snapshot observed DELIVERED before publisher/broker interruption.",
+  "snapshots": [
+    {
+      "binding": {
+        "captured_mtime_utc": "2026-10-21T12:53:24.045567+00:00",
+        "private_basename": "f01-before.json",
+        "sha256": "6668804d52c8798afe48bb3b1d903fd14dbccef94b14b2160d2e05bd94b7e911"
+      },
+      "jobs": [
+        {
+          "attempt": 0,
+          "execution_state": "READY",
+          "fence": 0,
+          "has_report": false,
+          "job_alias": "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560",
+          "state": "QUEUED"
+        }
+      ],
+      "outbox": [
+        {
+          "attempts": 1,
+          "job_alias": "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560",
+          "state": "DELIVERED"
+        }
+      ]
+    },
+    {
+      "binding": {
+        "captured_mtime_utc": "2026-10-21T12:53:47.994339+00:00",
+        "private_basename": "f01-after.json",
+        "sha256": "6668804d52c8798afe48bb3b1d903fd14dbccef94b14b2160d2e05bd94b7e911"
+      },
+      "jobs": [
+        {
+          "attempt": 0,
+          "execution_state": "READY",
+          "fence": 0,
+          "has_report": false,
+          "job_alias": "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560",
+          "state": "QUEUED"
+        }
+      ],
+      "outbox": [
+        {
+          "attempts": 1,
+          "job_alias": "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560",
+          "state": "DELIVERED"
+        }
+      ]
+    },
+    {
+      "binding": {
+        "captured_mtime_utc": "2026-10-21T12:54:28.130642+00:00",
+        "private_basename": "f01-terminal.json",
+        "sha256": "7f7ad0b81b1280904e5e87b31390e5a5210ce7329d4940f48594a1ee054df0d4"
+      },
+      "jobs": [
+        {
+          "attempt": 1,
+          "execution_state": "SUCCEEDED",
+          "fence": 1,
+          "has_report": true,
+          "job_alias": "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560",
+          "state": "SUCCEEDED"
+        }
+      ],
+      "outbox": [
+        {
+          "attempts": 1,
+          "job_alias": "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560",
+          "state": "DELIVERED"
+        }
+      ]
+    },
+    {
+      "binding": {
+        "captured_mtime_utc": "2026-10-21T13:02:30.613809+00:00",
+        "private_basename": "f02-pending.json",
+        "sha256": "79b4f394f1b1ce893d843d8dcb9780aeb95e36252543b6d8731a37e82cb37074"
+      },
+      "jobs": [
+        {
+          "attempt": 1,
+          "execution_state": "SUCCEEDED",
+          "fence": 1,
+          "has_report": true,
+          "job_alias": "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560",
+          "state": "SUCCEEDED"
+        },
+        {
+          "attempt": 0,
+          "execution_state": "READY",
+          "fence": 0,
+          "has_report": false,
+          "job_alias": "3e086c38cf9b426a34f0f8c7d2d12461d2b50fb00ec288e19c5d9c517eb3ebc8",
+          "state": "QUEUED"
+        }
+      ],
+      "outbox": [
+        {
+          "attempts": 1,
+          "job_alias": "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560",
+          "state": "DELIVERED"
+        },
+        {
+          "attempts": 0,
+          "job_alias": "3e086c38cf9b426a34f0f8c7d2d12461d2b50fb00ec288e19c5d9c517eb3ebc8",
+          "state": "PENDING"
+        }
+      ]
+    },
+    {
+      "binding": {
+        "captured_mtime_utc": "2026-10-21T13:03:41.593278+00:00",
+        "private_basename": "f02-delivered.json",
+        "sha256": "79b4f394f1b1ce893d843d8dcb9780aeb95e36252543b6d8731a37e82cb37074"
+      },
+      "jobs": [
+        {
+          "attempt": 1,
+          "execution_state": "SUCCEEDED",
+          "fence": 1,
+          "has_report": true,
+          "job_alias": "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560",
+          "state": "SUCCEEDED"
+        },
+        {
+          "attempt": 0,
+          "execution_state": "READY",
+          "fence": 0,
+          "has_report": false,
+          "job_alias": "3e086c38cf9b426a34f0f8c7d2d12461d2b50fb00ec288e19c5d9c517eb3ebc8",
+          "state": "QUEUED"
+        }
+      ],
+      "outbox": [
+        {
+          "attempts": 1,
+          "job_alias": "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560",
+          "state": "DELIVERED"
+        },
+        {
+          "attempts": 0,
+          "job_alias": "3e086c38cf9b426a34f0f8c7d2d12461d2b50fb00ec288e19c5d9c517eb3ebc8",
+          "state": "PENDING"
+        }
+      ]
+    },
+    {
+      "binding": {
+        "captured_mtime_utc": "2026-10-21T13:24:55.231486+00:00",
+        "private_basename": "final-queued.json",
+        "sha256": "58fe15836624a105377cfffa98c12ee0c9008fb233c9cf981cdfd631ed96b97c"
+      },
+      "jobs": [
+        {
+          "attempt": 1,
+          "execution_state": "SUCCEEDED",
+          "fence": 1,
+          "has_report": true,
+          "job_alias": "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560",
+          "state": "SUCCEEDED"
+        },
+        {
+          "attempt": 1,
+          "execution_state": "SUCCEEDED",
+          "fence": 1,
+          "has_report": true,
+          "job_alias": "3e086c38cf9b426a34f0f8c7d2d12461d2b50fb00ec288e19c5d9c517eb3ebc8",
+          "state": "SUCCEEDED"
+        },
+        {
+          "attempt": 0,
+          "execution_state": "READY",
+          "fence": 0,
+          "has_report": false,
+          "job_alias": "391d736891d3f43bcd506fcd364861d9e7e3c049523dea887785d86cd72245e2",
+          "state": "QUEUED"
+        }
+      ],
+      "outbox": [
+        {
+          "attempts": 1,
+          "job_alias": "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560",
+          "state": "DELIVERED"
+        },
+        {
+          "attempts": 1,
+          "job_alias": "3e086c38cf9b426a34f0f8c7d2d12461d2b50fb00ec288e19c5d9c517eb3ebc8",
+          "state": "DELIVERED"
+        },
+        {
+          "attempts": 1,
+          "job_alias": "391d736891d3f43bcd506fcd364861d9e7e3c049523dea887785d86cd72245e2",
+          "state": "DELIVERED"
+        }
+      ]
+    },
+    {
+      "binding": {
+        "captured_mtime_utc": "2026-10-21T13:25:31.533004+00:00",
+        "private_basename": "final-publisher-off-state.json",
+        "sha256": "58fe15836624a105377cfffa98c12ee0c9008fb233c9cf981cdfd631ed96b97c"
+      },
+      "jobs": [
+        {
+          "attempt": 1,
+          "execution_state": "SUCCEEDED",
+          "fence": 1,
+          "has_report": true,
+          "job_alias": "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560",
+          "state": "SUCCEEDED"
+        },
+        {
+          "attempt": 1,
+          "execution_state": "SUCCEEDED",
+          "fence": 1,
+          "has_report": true,
+          "job_alias": "3e086c38cf9b426a34f0f8c7d2d12461d2b50fb00ec288e19c5d9c517eb3ebc8",
+          "state": "SUCCEEDED"
+        },
+        {
+          "attempt": 0,
+          "execution_state": "READY",
+          "fence": 0,
+          "has_report": false,
+          "job_alias": "391d736891d3f43bcd506fcd364861d9e7e3c049523dea887785d86cd72245e2",
+          "state": "QUEUED"
+        }
+      ],
+      "outbox": [
+        {
+          "attempts": 1,
+          "job_alias": "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560",
+          "state": "DELIVERED"
+        },
+        {
+          "attempts": 1,
+          "job_alias": "3e086c38cf9b426a34f0f8c7d2d12461d2b50fb00ec288e19c5d9c517eb3ebc8",
+          "state": "DELIVERED"
+        },
+        {
+          "attempts": 1,
+          "job_alias": "391d736891d3f43bcd506fcd364861d9e7e3c049523dea887785d86cd72245e2",
+          "state": "DELIVERED"
+        }
+      ]
+    },
+    {
+      "binding": {
+        "captured_mtime_utc": "2026-10-21T13:26:07.602500+00:00",
+        "private_basename": "final-reports.json",
+        "sha256": "8a1c8edfd3d7d5e3cfa8aad0f6eaa65e35e021572255316a535d8197b9bfa645"
+      },
+      "jobs": [
+        {
+          "attempt": 1,
+          "execution_state": "SUCCEEDED",
+          "fence": 1,
+          "has_report": true,
+          "job_alias": "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560",
+          "state": "SUCCEEDED"
+        },
+        {
+          "attempt": 1,
+          "execution_state": "SUCCEEDED",
+          "fence": 1,
+          "has_report": true,
+          "job_alias": "3e086c38cf9b426a34f0f8c7d2d12461d2b50fb00ec288e19c5d9c517eb3ebc8",
+          "state": "SUCCEEDED"
+        },
+        {
+          "attempt": 1,
+          "execution_state": "SUCCEEDED",
+          "fence": 1,
+          "has_report": true,
+          "job_alias": "391d736891d3f43bcd506fcd364861d9e7e3c049523dea887785d86cd72245e2",
+          "state": "SUCCEEDED"
+        }
+      ],
+      "outbox": [
+        {
+          "attempts": 1,
+          "job_alias": "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560",
+          "state": "DELIVERED"
+        },
+        {
+          "attempts": 1,
+          "job_alias": "3e086c38cf9b426a34f0f8c7d2d12461d2b50fb00ec288e19c5d9c517eb3ebc8",
+          "state": "DELIVERED"
+        },
+        {
+          "attempts": 1,
+          "job_alias": "391d736891d3f43bcd506fcd364861d9e7e3c049523dea887785d86cd72245e2",
+          "state": "DELIVERED"
+        }
+      ]
+    }
+  ],
+  "timestamp_note": "UI uses its actual UTC timestamp. Internal snapshots use capture-file mtime, not an invented DB commit timestamp.",
+  "ui": [
+    {
+      "body_sha256": "7e56ba44e9aa56f97ce5177308ebea4b9414fbbe49dfd9da181ead83549dd249",
+      "json_sha256": "acefeff08b233dcf8d540638bd80d5ae1a6640223948573949b248df90dc1f3f",
+      "private_receipt": "baseline-drill-1792587570593.json",
+      "screenshot_sha256": "4b531ace4e7116552e20345569f28d51f7517e7bcd51ee4ad223794dcd5a352b",
+      "script_receipt": {
+        "action": "drill",
+        "at_utc": "2026-10-21T12:59:30.679Z",
+        "body_sha256": "7e56ba44e9aa56f97ce5177308ebea4b9414fbbe49dfd9da181ead83549dd249",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": false,
+        "scope_aliases": [],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "17ea1004be8f3b3a6b3e847815631f8ba33e4b56dd4b1c8ecc5ef0dc8929c3c9",
+      "json_sha256": "ab468e3154b4bc35a3c0cb2c35dc184a6d87bfa045fc4634673fb6017938419d",
+      "private_receipt": "baseline-prepare-1792587181639.json",
+      "screenshot_sha256": "90e0b9f51af43eb93c6b13c317f14eb8f4fc1b981ebf6bb9705553f7191604e6",
+      "script_receipt": {
+        "action": "prepare",
+        "at_utc": "2026-10-21T12:53:01.715Z",
+        "body_sha256": "17ea1004be8f3b3a6b3e847815631f8ba33e4b56dd4b1c8ecc5ef0dc8929c3c9",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": false,
+        "scope_aliases": [],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "848e4913a64600ae68e47e3d2da7a2a02eadac38c11415215669fe32f2f89cdd",
+      "json_sha256": "cc20c3017d8e3e9cd2796f240b3e4adf3ace1d360f3165d0e036d9710b0c2df1",
+      "private_receipt": "baseline-refresh-1792587222693.json",
+      "screenshot_sha256": "6a42fc9bff77e64963ac47a4ead0452fddeff71e6e94034014fcdb8df5c96abd",
+      "script_receipt": {
+        "action": "refresh",
+        "at_utc": "2026-10-21T12:53:42.767Z",
+        "body_sha256": "848e4913a64600ae68e47e3d2da7a2a02eadac38c11415215669fe32f2f89cdd",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": false,
+        "scope_aliases": [
+          "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560"
+        ],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "dd0d6f520c20847ff97f16c629f5595ccac4931921983c66636599d1ef7e6eed",
+      "json_sha256": "94acf8adfad129dcc57f421e346ade730f21b2139147765b55b5b12fe09c836a",
+      "private_receipt": "baseline-refresh-1792587226005.json",
+      "screenshot_sha256": "2dcaa7bef27ca0fdad04bcf5fef1efb0cbbed9d5e614941b340547512a0d4c7e",
+      "script_receipt": {
+        "action": "refresh",
+        "at_utc": "2026-10-21T12:53:46.082Z",
+        "body_sha256": "dd0d6f520c20847ff97f16c629f5595ccac4931921983c66636599d1ef7e6eed",
+        "case_passed": false,
+        "error_visible": true,
+        "report_button": false,
+        "scope_aliases": [
+          "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560"
+        ],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "03041faffce5f229b9907177b698bbb0461e58e9577111baba691c4a48ba6706",
+      "json_sha256": "c751c5e14ffc3d904f3fe24ac48c71e5e76e7bb1dd60d3c84e2dfcda33167ea9",
+      "private_receipt": "baseline-refresh-1792587266002.json",
+      "screenshot_sha256": "8fee693f7082f79fca4eefe9071279cbd4d8e69267d571d2405a347ed184a448",
+      "script_receipt": {
+        "action": "refresh",
+        "at_utc": "2026-10-21T12:54:26.071Z",
+        "body_sha256": "03041faffce5f229b9907177b698bbb0461e58e9577111baba691c4a48ba6706",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": true,
+        "scope_aliases": [
+          "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560"
+        ],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "e7f4dd84d2a0508f8ca98f3871c9a04db391775a26df9623d0d66a2a88193a55",
+      "json_sha256": "5b8f84bd1a6733a74e054d7d2672b2216045a591ed03e66f71491b204b009919",
+      "private_receipt": "baseline-report-1792587266845.json",
+      "screenshot_sha256": "32b8e07df7e09fdd2b737b4c45263706a00c7a2b42b0770dae06a643e93fd1e8",
+      "script_receipt": {
+        "action": "report",
+        "at_utc": "2026-10-21T12:54:26.923Z",
+        "body_sha256": "e7f4dd84d2a0508f8ca98f3871c9a04db391775a26df9623d0d66a2a88193a55",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": false,
+        "scope_aliases": [],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "30808e21a510cbe33678ec1515fbb329e6504a38e7b1ecc23d88be013b7631dd",
+      "json_sha256": "13506fa8af46f46a641b198814f880b1da6e3697c1c4bf33fa045dec191e590f",
+      "private_receipt": "baseline-start-1792587201925.json",
+      "screenshot_sha256": "72cc661b315bf434f80a4c6087e264b0b80c8facf038ca9484d11595efa73fd0",
+      "script_receipt": {
+        "action": "start",
+        "at_utc": "2026-10-21T12:53:21.994Z",
+        "body_sha256": "30808e21a510cbe33678ec1515fbb329e6504a38e7b1ecc23d88be013b7631dd",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": false,
+        "scope_aliases": [
+          "5368c3d8ed7ddb5e3d0ee74c9f8f338f94998a526dd8c0e2e5efea6f910a5560"
+        ],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "3d1360f41ffdb9c72d2d38663221e83868a4c818938b72a04f6c98aec973a679",
+      "json_sha256": "e9ce226cf1ed2af7873ecaa37e85ef8ba58c6ba9b8914c4e3a3d1b497f02d4ee",
+      "private_receipt": "baseline-upload-1792587128114.json",
+      "screenshot_sha256": "ff15b50be9e3b224c840b1a2228cedf5db9c5f2036dc1ecb4d655c8113c47a31",
+      "script_receipt": {
+        "action": "upload",
+        "at_utc": "2026-10-21T12:52:08.191Z",
+        "body_sha256": "3d1360f41ffdb9c72d2d38663221e83868a4c818938b72a04f6c98aec973a679",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": false,
+        "scope_aliases": [],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "f966e3069bb2b06c162d9a424d06898974f546a3624f509d15b367af08883808",
+      "json_sha256": "08e1963d4e2cf991bd704f0bf151c5e7e7cb3283f70c5448dca411edf862a9ae",
+      "private_receipt": "candidate-393d108-drill-1792589160692.json",
+      "screenshot_sha256": "4b531ace4e7116552e20345569f28d51f7517e7bcd51ee4ad223794dcd5a352b",
+      "script_receipt": {
+        "action": "drill",
+        "at_utc": "2026-10-21T13:26:00.777Z",
+        "body_sha256": "f966e3069bb2b06c162d9a424d06898974f546a3624f509d15b367af08883808",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": false,
+        "scope_aliases": [],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "17ea1004be8f3b3a6b3e847815631f8ba33e4b56dd4b1c8ecc5ef0dc8929c3c9",
+      "json_sha256": "9df7e4362fa833ed9bfaeb9af378e4e12bbf82d3822577e59f24015f8ae24a64",
+      "private_receipt": "candidate-393d108-prepare-1792588958223.json",
+      "screenshot_sha256": "90e0b9f51af43eb93c6b13c317f14eb8f4fc1b981ebf6bb9705553f7191604e6",
+      "script_receipt": {
+        "action": "prepare",
+        "at_utc": "2026-10-21T13:22:38.304Z",
+        "body_sha256": "17ea1004be8f3b3a6b3e847815631f8ba33e4b56dd4b1c8ecc5ef0dc8929c3c9",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": false,
+        "scope_aliases": [],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "f7e7bf8c80059ff6046278eb1db80c33986c2c2717008fd0e206ae58f54db9ca",
+      "json_sha256": "9d4f48b0ddabbbc5aa692b5f90e8db040b89839d9fb92ceae2d0663b30a9099b",
+      "private_receipt": "candidate-393d108-refresh-1792589156422.json",
+      "screenshot_sha256": "90a0c80d4aab4bc989d6602662ec33e110de2f5fdebfd3e2a5ae657c154ab6a0",
+      "script_receipt": {
+        "action": "refresh",
+        "at_utc": "2026-10-21T13:25:56.486Z",
+        "body_sha256": "f7e7bf8c80059ff6046278eb1db80c33986c2c2717008fd0e206ae58f54db9ca",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": false,
+        "scope_aliases": [
+          "391d736891d3f43bcd506fcd364861d9e7e3c049523dea887785d86cd72245e2"
+        ],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "a3cacd8e21002aae06a5477fb772ac01fd54271b42cd85293ddd589ec01d2ac3",
+      "json_sha256": "8b34693d0c98285d0957effd4036bcaa793142127ac180216c52e99580e71643",
+      "private_receipt": "candidate-393d108-report-1792589159072.json",
+      "screenshot_sha256": "dc2c68c468bf381cab02790e9334d8fb4d875cb5f01800fabf7627742e3a1d53",
+      "script_receipt": {
+        "action": "report",
+        "at_utc": "2026-10-21T13:25:59.159Z",
+        "body_sha256": "a3cacd8e21002aae06a5477fb772ac01fd54271b42cd85293ddd589ec01d2ac3",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": false,
+        "scope_aliases": [],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "b22bc041d5fcc3b2cf3a010c7688f02f8fbfeebe07dc7839939e90d1880de027",
+      "json_sha256": "9759ff9c12c84d500f4f751a690eba97677acd5b74767b7c1a9e831f150431b2",
+      "private_receipt": "candidate-393d108-start-1792588962073.json",
+      "screenshot_sha256": "2fcd49a142801c970b911b00a600c2df1b66765a26613fca7fc372da90ff0b14",
+      "script_receipt": {
+        "action": "start",
+        "at_utc": "2026-10-21T13:22:42.164Z",
+        "body_sha256": "b22bc041d5fcc3b2cf3a010c7688f02f8fbfeebe07dc7839939e90d1880de027",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": false,
+        "scope_aliases": [
+          "391d736891d3f43bcd506fcd364861d9e7e3c049523dea887785d86cd72245e2"
+        ],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "3d1360f41ffdb9c72d2d38663221e83868a4c818938b72a04f6c98aec973a679",
+      "json_sha256": "bf38a173082bc2f969c6c4d5758bcacc7875f1ea917ba777a9c6206d6ad8e8f6",
+      "private_receipt": "candidate-393d108-upload-1792588955247.json",
+      "screenshot_sha256": "ff15b50be9e3b224c840b1a2228cedf5db9c5f2036dc1ecb4d655c8113c47a31",
+      "script_receipt": {
+        "action": "upload",
+        "at_utc": "2026-10-21T13:22:35.326Z",
+        "body_sha256": "3d1360f41ffdb9c72d2d38663221e83868a4c818938b72a04f6c98aec973a679",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": false,
+        "scope_aliases": [],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "17ea1004be8f3b3a6b3e847815631f8ba33e4b56dd4b1c8ecc5ef0dc8929c3c9",
+      "json_sha256": "2f7cc4084de96f40e363d77462205915e1308b56e765b2b1a7584303432fe8d8",
+      "private_receipt": "f02-prepare-1792587743198.json",
+      "screenshot_sha256": "90e0b9f51af43eb93c6b13c317f14eb8f4fc1b981ebf6bb9705553f7191604e6",
+      "script_receipt": {
+        "action": "prepare",
+        "at_utc": "2026-10-21T13:02:23.269Z",
+        "body_sha256": "17ea1004be8f3b3a6b3e847815631f8ba33e4b56dd4b1c8ecc5ef0dc8929c3c9",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": false,
+        "scope_aliases": [],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "a3458d009ba8c3d0c71d7bb0fb11a52899b66d8e269cebd2bff860a0fbe3541a",
+      "json_sha256": "404688459b52230984deb4d8a27cb1c9aae90f8f16982d33093fedb9f2cbeee2",
+      "private_receipt": "f02-refresh-1792587834955.json",
+      "screenshot_sha256": "deb30bbdb40744baf3f6fbf669beeede3892115e1ea15baa0f9f78d5496c3c85",
+      "script_receipt": {
+        "action": "refresh",
+        "at_utc": "2026-10-21T13:03:55.033Z",
+        "body_sha256": "a3458d009ba8c3d0c71d7bb0fb11a52899b66d8e269cebd2bff860a0fbe3541a",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": false,
+        "scope_aliases": [
+          "3e086c38cf9b426a34f0f8c7d2d12461d2b50fb00ec288e19c5d9c517eb3ebc8"
+        ],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "f2c5bca29eaf0c46b89a33e9d62e0bca82d4af70bd7469e842e6445df96d490c",
+      "json_sha256": "ff2c6e662632c4ac3112a7a52d8070a84c37bab20f1d90b937986fbad993f030",
+      "private_receipt": "f02-report-1792587846433.json",
+      "screenshot_sha256": "a4f4e6530d350b8f2365a48e2116eb9e74c1d57c5386708fbc020e4efb3a2ae7",
+      "script_receipt": {
+        "action": "report",
+        "at_utc": "2026-10-21T13:04:06.500Z",
+        "body_sha256": "f2c5bca29eaf0c46b89a33e9d62e0bca82d4af70bd7469e842e6445df96d490c",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": false,
+        "scope_aliases": [],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "a39d6a80a72c3b1d5e861fa6533a9d8fd99a8704050b4becb57592119a3ea110",
+      "json_sha256": "cc5dd3d3ba5388ae23d79dddfdb43675a4b64abbf5e7c64ef371553b66437d1c",
+      "private_receipt": "f02-start-1792587748197.json",
+      "screenshot_sha256": "4b72ca99b8c54e3c281db42e1327b8a08fb51dd9d99eb629d3dd9cf03559609f",
+      "script_receipt": {
+        "action": "start",
+        "at_utc": "2026-10-21T13:02:28.265Z",
+        "body_sha256": "a39d6a80a72c3b1d5e861fa6533a9d8fd99a8704050b4becb57592119a3ea110",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": false,
+        "scope_aliases": [
+          "3e086c38cf9b426a34f0f8c7d2d12461d2b50fb00ec288e19c5d9c517eb3ebc8"
+        ],
+        "status": "OBSERVED"
+      }
+    },
+    {
+      "body_sha256": "3d1360f41ffdb9c72d2d38663221e83868a4c818938b72a04f6c98aec973a679",
+      "json_sha256": "03d94342d0c3c3fc9a269da9e188e4add5f7c8db69a3e65d99ec49b8402361dd",
+      "private_receipt": "f02-upload-1792587739930.json",
+      "screenshot_sha256": "ff15b50be9e3b224c840b1a2228cedf5db9c5f2036dc1ecb4d655c8113c47a31",
+      "script_receipt": {
+        "action": "upload",
+        "at_utc": "2026-10-21T13:02:20.012Z",
+        "body_sha256": "3d1360f41ffdb9c72d2d38663221e83868a4c818938b72a04f6c98aec973a679",
+        "case_passed": false,
+        "error_visible": false,
+        "report_button": false,
+        "scope_aliases": [],
+        "status": "OBSERVED"
+      }
+    }
+  ]
+}

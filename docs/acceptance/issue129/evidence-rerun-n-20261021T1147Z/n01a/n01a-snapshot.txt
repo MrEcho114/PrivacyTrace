@@ -1,0 +1,19 @@
+--- uiautomator ---
+PrivacyTrace · 证据对照工作台
+PrivacyTrace
+应用与政策
+选择应用后，在系统窗口确认目标服务和上传范围。静态线索不证明实际采集。
+选择要对照的应用
+仅上传主动选择的应用及其完整安装包集合。服务端长期保留至主动删除。
+选择应用并上传
+恢复当前实例材料
+CANCELLED
+--- pm path ---
+package:/data/app/~~3yRa4ohsc_RqvMd8UKQYew==/org.privacytrace.probe.fixture-eLKJha2bxsng48QPNARmrw==/base.apk
+package:/data/app/~~3yRa4ohsc_RqvMd8UKQYew==/org.privacytrace.probe.fixture-eLKJha2bxsng48QPNARmrw==/split_fixture_feature.apk
+--- dumpsys ---
+    codePath=/data/app/~~3yRa4ohsc_RqvMd8UKQYew==/org.privacytrace.probe.fixture-eLKJha2bxsng48QPNARmrw==
+    versionCode=1 minSdk=24 targetSdk=34
+    versionName=controlled-fixture
+    splits=[base, fixture_feature]
+    lastUpdateTime=2026-10-21 19:26:51

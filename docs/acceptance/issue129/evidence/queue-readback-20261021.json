@@ -1,0 +1,79 @@
+{
+  "case_family": "A",
+  "captured_at_utc": "2026-10-21T11:20:00Z",
+  "method": "read-only docker exec psql SELECT against the two A lab instances; no writes, no restarts",
+  "instances": {
+    "I": {
+      "instance_id": "18dee246-d274-49d3-9bfa-73832a51a6d2",
+      "compose_project": "pt81-c36811dfa963",
+      "runner_image_id": "sha256:473975aeb2a77f115ec5d5c2b2ffc6b693add882a3001231ad7c6ec13c830c24",
+      "runner_image_tag": "privacytrace-runner:issue130-ffadeb0",
+      "jobs_total": 4,
+      "outbox_total": 4,
+      "outbox_states": ["DELIVERED"],
+      "intake_drafts": 1
+    },
+    "J": {
+      "instance_id": "fa470b68-ecc3-471d-93a1-102b3c5daa45",
+      "compose_project": "pt81-43f6be29e5c0",
+      "runner_image_id": "sha256:473975aeb2a77f115ec5d5c2b2ffc6b693add882a3001231ad7c6ec13c830c24",
+      "runner_image_tag": "privacytrace-runner:issue130-ffadeb0",
+      "jobs_total": 4,
+      "outbox_total": 4,
+      "outbox_states": ["DELIVERED"],
+      "intake_drafts": 0
+    }
+  },
+  "case_jobs": [
+    {
+      "case": "H01",
+      "instance": "I",
+      "job_id": "9b93c20017ff48449d43c50cef4d8d6a",
+      "state": "SUCCEEDED",
+      "input_mode": "APK",
+      "source_origin": "REAL_SCAN",
+      "created_at": "2026-10-21T09:54:43.598152Z",
+      "outbox": {"event_type": "privacytrace.job.ready", "state": "DELIVERED", "attempts": 1, "created_at": "2026-10-21T09:54:43.622706+00:00", "delivered_at": "2026-10-21T09:54:43.649847+00:00"}
+    },
+    {
+      "case": "H04",
+      "instance": "I",
+      "job_id": "0b409b52f7ef44559c955339f4ecfc23",
+      "state": "SUCCEEDED",
+      "input_mode": "APK",
+      "source_origin": "REAL_SCAN",
+      "created_at": "2026-10-21T09:58:16.735264Z",
+      "outbox": {"event_type": "privacytrace.job.ready", "state": "DELIVERED", "attempts": 1, "created_at": "2026-10-21T09:58:16.761754+00:00", "delivered_at": "2026-10-21T09:58:17.376262+00:00"}
+    },
+    {
+      "case": "H07",
+      "instance": "J",
+      "job_id": "fcf504ee39a4440caaf87b1f8a2a7046",
+      "state": "SUCCEEDED",
+      "input_mode": "APK",
+      "source_origin": "REAL_SCAN",
+      "created_at": "2026-10-21T09:56:42.843194Z",
+      "outbox": {"event_type": "privacytrace.job.ready", "state": "DELIVERED", "attempts": 1, "created_at": "2026-10-21T09:56:42.866362+00:00", "delivered_at": "2026-10-21T09:56:43.772512+00:00"}
+    },
+    {
+      "case": "H10",
+      "instance": "J",
+      "job_id": "6518ad4ddd8b45bdbacafe11407a80bc",
+      "state": "SUCCEEDED",
+      "input_mode": "APK",
+      "source_origin": "REAL_SCAN",
+      "created_at": "2026-10-21T10:00:06.563495Z",
+      "outbox": {"event_type": "privacytrace.job.ready", "state": "DELIVERED", "attempts": 1, "created_at": "2026-10-21T10:00:06.583164+00:00", "delivered_at": "2026-10-21T10:00:06.954396+00:00"}
+    }
+  ],
+  "other_jobs_not_used_for_case_mapping": {
+    "I": ["24678217a9fe4a88844f8ddfb10cf3f7@2026-10-21T09:34:51.476448Z", "13dae6d02e5e437ebf1f14aa00147a98@2026-10-21T09:36:53.050159Z"],
+    "J": ["669311df4e4440cab14305f695adddce@2026-10-21T09:33:27.285521Z", "1021b17989994d4cb548838f506091cc@2026-10-21T09:38:42.875991Z"]
+  },
+  "notes": [
+    "input_mode=APK is the product model for all real scans; package-set uploads are recorded as APK with base/splits in the report coverage.",
+    "I intake_drafts=1 is the pre-existing baseline scope used by N01/N02 (no new drafts); J=0.",
+    "All four mapped jobs and their outbox events are SUCCEEDED/DELIVERED with attempts=1.",
+    "Raw query log: queue-readback-20261021.txt; no credentials, keys or private paths in this file."
+  ]
+}

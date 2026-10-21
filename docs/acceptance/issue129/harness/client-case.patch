@@ -1,0 +1,57 @@
+diff --git a/deploy/acceptance/mobile/client-case.cjs b/deploy/acceptance/mobile/client-case.cjs
+index 4ae0917..e7b0f53 100644
+--- a/deploy/acceptance/mobile/client-case.cjs
++++ b/deploy/acceptance/mobile/client-case.cjs
+@@ -242,8 +242,28 @@ async function addCandidate(cdp, { sourceTitle, quote, dataType }) {
+ 
+ async function prepareAndAnalyze(cdp, { evidencePrefix, addCandidate: candidate }) {
+   log('clicking 自动准备政策并继续');
+-  await cdp.clickText('自动准备政策并继续');
+-  await waitFor(cdp, body => body.includes('保存候选并开始分析'), 'candidate page', 180000);
++  let reached = false;
++  for (let attempt = 1; attempt <= 5 && !reached; attempt++) {
++    // The click can land while the previous flow is still clearing its busy
++    // flag; prepare() then returns without doing anything. Retry until the
++    // candidate page actually renders instead of waiting on a dead click.
++    const clicked = await cdp.evaluate(`(() => {
++      const b = [...document.querySelectorAll('button')].find(x => (x.innerText || '').includes('自动准备政策并继续'));
++      if (!b) return 'NOT_FOUND';
++      if (b.disabled) return 'DISABLED';
++      b.click();
++      return 'CLICKED';
++    })()`);
++    log(`prepare click ${attempt}: ${clicked}`);
++    try {
++      await waitFor(cdp, body => body.includes('保存候选并开始分析'), 'candidate page', 25000);
++      reached = true;
++    } catch (error) {
++      if (attempt === 5) throw error;
++      await new Promise(resolve => setTimeout(resolve, 1500));
++    }
++  }
++  await waitFor(cdp, body => body.includes('保存候选并开始分析'), 'candidate page', 150000);
+   log('candidate page reached');
+   if (candidate) {
+     // A configured candidate is part of the case contract: do not silently
+@@ -273,8 +293,19 @@ async function prepareAndAnalyze(cdp, { evidencePrefix, addCandidate: candidate
+   const state = final.includes('查看报告') ? 'SUCCEEDED' : (final.includes('分析已取消') ? 'CANCELLED' : 'FAILED');
+   log(`job terminal state: ${state}`);
+   if (state === 'SUCCEEDED') {
+-    await cdp.clickText('查看报告');
+-    await waitFor(cdp, body => body.includes('证据') || body.includes('政策'), 'report page', 120000);
++    let opened = false;
++    for (let attempt = 1; attempt <= 3 && !opened; attempt++) {
++      await cdp.clickText('查看报告');
++      try {
++        // The progress page also contains the words 证据/政策 (notice text), so
++        // wait for the report-only section heading instead of a loose match.
++        await waitFor(cdp, body => body.includes('隐私声明对照'), 'report page', 45000);
++        opened = true;
++      } catch (error) {
++        if (attempt === 3) throw error;
++        log(`report page attempt ${attempt} not ready, retrying`);
++      }
++    }
+   }
+   return state;
+ }

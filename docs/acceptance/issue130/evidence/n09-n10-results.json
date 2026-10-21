@@ -1,0 +1,445 @@
+{
+  "n09": [
+    {
+      "case": "direct-loopback",
+      "url": "http://127.0.0.1:19090/secret",
+      "http_status": 200,
+      "elapsed_s": 0.089,
+      "source_status": "failed",
+      "error_code": "PUBLIC_URL_REQUIRED",
+      "has_text": false,
+      "policy_requests_before": 14,
+      "policy_requests_after": 14,
+      "policy_request_delta": 0,
+      "last_paths": [
+        "/wrong-type",
+        "/policy.html",
+        "/fail"
+      ],
+      "expected_error": "PUBLIC_URL_REQUIRED",
+      "expect_request_delta": 0,
+      "pass": true
+    },
+    {
+      "case": "direct-private",
+      "url": "http://10.0.0.1/secret",
+      "http_status": 200,
+      "elapsed_s": 0.622,
+      "source_status": "failed",
+      "error_code": "PUBLIC_URL_REQUIRED",
+      "has_text": false,
+      "policy_requests_before": 14,
+      "policy_requests_after": 14,
+      "policy_request_delta": 0,
+      "last_paths": [
+        "/wrong-type",
+        "/policy.html",
+        "/fail"
+      ],
+      "expected_error": "PUBLIC_URL_REQUIRED",
+      "expect_request_delta": 0,
+      "pass": true
+    },
+    {
+      "case": "direct-metadata",
+      "url": "http://169.254.169.254/latest/meta-data/",
+      "http_status": 200,
+      "elapsed_s": 0.744,
+      "source_status": "failed",
+      "error_code": "PUBLIC_URL_REQUIRED",
+      "has_text": false,
+      "policy_requests_before": 14,
+      "policy_requests_after": 14,
+      "policy_request_delta": 0,
+      "last_paths": [
+        "/wrong-type",
+        "/policy.html",
+        "/fail"
+      ],
+      "expected_error": "PUBLIC_URL_REQUIRED",
+      "expect_request_delta": 0,
+      "pass": true
+    },
+    {
+      "case": "redirect-local",
+      "url": "http://1.0.0.1/redirect-local",
+      "http_status": 200,
+      "elapsed_s": 0.527,
+      "source_status": "failed",
+      "error_code": "PUBLIC_URL_REQUIRED",
+      "has_text": false,
+      "policy_requests_before": 14,
+      "policy_requests_after": 15,
+      "policy_request_delta": 1,
+      "last_paths": [
+        "/policy.html",
+        "/fail",
+        "/redirect-local"
+      ],
+      "expected_error": "PUBLIC_URL_REQUIRED",
+      "expect_request_delta": 1,
+      "pass": true
+    },
+    {
+      "case": "redirect-private",
+      "url": "http://1.0.0.1/redirect-private",
+      "http_status": 200,
+      "elapsed_s": 1.028,
+      "source_status": "failed",
+      "error_code": "PUBLIC_URL_REQUIRED",
+      "has_text": false,
+      "policy_requests_before": 15,
+      "policy_requests_after": 16,
+      "policy_request_delta": 1,
+      "last_paths": [
+        "/fail",
+        "/redirect-local",
+        "/redirect-private"
+      ],
+      "expected_error": "PUBLIC_URL_REQUIRED",
+      "expect_request_delta": 1,
+      "pass": true
+    },
+    {
+      "case": "redirect-metadata",
+      "url": "http://1.0.0.1/redirect-metadata",
+      "http_status": 200,
+      "elapsed_s": 1.07,
+      "source_status": "failed",
+      "error_code": "PUBLIC_URL_REQUIRED",
+      "has_text": false,
+      "policy_requests_before": 16,
+      "policy_requests_after": 17,
+      "policy_request_delta": 1,
+      "last_paths": [
+        "/redirect-local",
+        "/redirect-private",
+        "/redirect-metadata"
+      ],
+      "expected_error": "PUBLIC_URL_REQUIRED",
+      "expect_request_delta": 1,
+      "pass": true
+    },
+    {
+      "case": "redirect-loop",
+      "url": "http://1.0.0.1/redirect-loop",
+      "http_status": 200,
+      "elapsed_s": 1.948,
+      "source_status": "failed",
+      "error_code": "FETCH_REDIRECT_LIMIT",
+      "has_text": false,
+      "policy_requests_before": 17,
+      "policy_requests_after": 21,
+      "policy_request_delta": 4,
+      "last_paths": [
+        "/redirect-loop",
+        "/redirect-loop",
+        "/redirect-loop"
+      ],
+      "expected_error": "FETCH_REDIRECT_LIMIT",
+      "expect_request_delta": 4,
+      "pass": true
+    },
+    {
+      "case": "oversize",
+      "url": "http://1.0.0.1/huge",
+      "http_status": 200,
+      "elapsed_s": 0.569,
+      "source_status": "failed",
+      "error_code": "FETCH_TOO_LARGE",
+      "has_text": false,
+      "policy_requests_before": 21,
+      "policy_requests_after": 22,
+      "policy_request_delta": 1,
+      "last_paths": [
+        "/redirect-loop",
+        "/redirect-loop",
+        "/huge"
+      ],
+      "expected_error": "FETCH_TOO_LARGE",
+      "expect_request_delta": 1,
+      "pass": true
+    },
+    {
+      "case": "slow",
+      "url": "http://1.0.0.1/slow",
+      "http_status": 200,
+      "elapsed_s": 15.081,
+      "source_status": "failed",
+      "error_code": "FETCH_TIMEOUT",
+      "has_text": false,
+      "policy_requests_before": 22,
+      "policy_requests_after": 23,
+      "policy_request_delta": 1,
+      "last_paths": [
+        "/redirect-loop",
+        "/huge",
+        "/slow"
+      ],
+      "expected_error": "FETCH_TIMEOUT",
+      "expect_request_delta": 1,
+      "pass": true
+    },
+    {
+      "case": "wrong-type",
+      "url": "http://1.0.0.1/wrong-type",
+      "http_status": 200,
+      "elapsed_s": 0.533,
+      "source_status": "failed",
+      "error_code": "FETCH_HTML_REQUIRED",
+      "has_text": false,
+      "policy_requests_before": 23,
+      "policy_requests_after": 24,
+      "policy_request_delta": 1,
+      "last_paths": [
+        "/huge",
+        "/slow",
+        "/wrong-type"
+      ],
+      "expected_error": "FETCH_HTML_REQUIRED",
+      "expect_request_delta": 1,
+      "pass": true
+    },
+    {
+      "case": "positive",
+      "url": "http://1.0.0.1/policy.html",
+      "http_status": 200,
+      "elapsed_s": 0.628,
+      "source_status": "ready",
+      "error_code": null,
+      "has_text": true,
+      "policy_requests_before": 24,
+      "policy_requests_after": 25,
+      "policy_request_delta": 1,
+      "last_paths": [
+        "/slow",
+        "/wrong-type",
+        "/policy.html"
+      ],
+      "expected_error": null,
+      "expect_request_delta": 1,
+      "pass": true
+    }
+  ],
+  "n10": {
+    "upload": {
+      "status": 200,
+      "revision": 2
+    },
+    "fetch_failure": {
+      "http_status": 200,
+      "elapsed_s": 0.574,
+      "b_status": "failed",
+      "b_error": "FETCH_HTTP_FAILED",
+      "b_text": "",
+      "a_text_unchanged": true,
+      "a_sha_unchanged": true,
+      "a_status_unchanged": true,
+      "revision_before": 1,
+      "revision_after": 3,
+      "pass": true
+    },
+    "malformed": [
+      {
+        "case": "quote-not-in-source",
+        "http_status": 409,
+        "error": "INPUT_OR_VERSION_REJECTED",
+        "candidates_unchanged": true,
+        "revision": 3,
+        "pass": true
+      },
+      {
+        "case": "offset-mismatch",
+        "http_status": 409,
+        "error": "INPUT_OR_VERSION_REJECTED",
+        "candidates_unchanged": true,
+        "revision": 3,
+        "pass": true
+      },
+      {
+        "case": "missing-source-reference",
+        "http_status": 409,
+        "error": "INPUT_OR_VERSION_REJECTED",
+        "candidates_unchanged": true,
+        "revision": 3,
+        "pass": true
+      },
+      {
+        "case": "ambiguous-quote",
+        "http_status": 409,
+        "error": "INPUT_OR_VERSION_REJECTED",
+        "candidates_unchanged": true,
+        "revision": 3,
+        "pass": true
+      }
+    ],
+    "conflict_save": {
+      "status": 200,
+      "body": {
+        "id": "8a845735669848bcbb85cb5629809254",
+        "revision": 4,
+        "name": "N10 fetch failure and candidates",
+        "sources": [
+          {
+            "id": "src-a",
+            "title": "N10 retained policy",
+            "url": "",
+            "source_type": "OFFICIAL_WEB_POLICY",
+            "text": "本自建测试应用申请精确位置权限，用于权限能力研究。我们访问精确位置。无附件。",
+            "version": "UNKNOWN",
+            "region": "",
+            "product": "",
+            "package_name": "org.privacytrace.probe.fixture",
+            "version_code": null,
+            "status": "manual",
+            "error_code": null,
+            "captured_at": "2026-10-21T09:54:02.396280+00:00",
+            "sha256": "1be4bc0b826f7adba437d8e9fdae21cc017e492bcb6269521df29a0db6c3f122",
+            "final_url": null,
+            "provenance": "MANUAL_INPUT",
+            "model_audit": {}
+          },
+          {
+            "id": "src-b",
+            "title": "N10 failing fetch",
+            "url": "http://1.0.0.1/fail",
+            "source_type": "OFFICIAL_WEB_POLICY",
+            "text": "",
+            "version": "UNKNOWN",
+            "region": "",
+            "product": "",
+            "package_name": "org.privacytrace.probe.fixture",
+            "version_code": null,
+            "status": "failed",
+            "error_code": "FETCH_HTTP_FAILED",
+            "captured_at": null,
+            "sha256": null,
+            "final_url": null,
+            "provenance": null,
+            "model_audit": {}
+          },
+          {
+            "id": "src-c",
+            "title": "N10 alt policy",
+            "url": "http://1.0.0.1/policy-alt.html",
+            "source_type": "OFFICIAL_WEB_POLICY",
+            "text": "",
+            "version": "UNKNOWN",
+            "region": "",
+            "product": "",
+            "package_name": "org.privacytrace.probe.fixture",
+            "version_code": null,
+            "status": "empty",
+            "error_code": null,
+            "captured_at": null,
+            "sha256": null,
+            "final_url": null,
+            "provenance": null,
+            "model_audit": {}
+          }
+        ],
+        "candidates": [
+          {
+            "id": "c-one",
+            "source_id": "src-a",
+            "excerpt": "我们访问精确位置。",
+            "data_type": "PRECISE_LOCATION",
+            "polarity": "AFFIRMATIVE",
+            "subject": "HOST_APP",
+            "action": "ACCESS",
+            "condition": null,
+            "declared_purpose": null,
+            "declared_recipient": null,
+            "ambiguity_flags": [],
+            "start_offset": null,
+            "checked": true
+          },
+          {
+            "id": "c-two",
+            "source_id": "src-a",
+            "excerpt": "我们访问精确位置。",
+            "data_type": "CAMERA",
+            "polarity": "NEGATIVE",
+            "subject": "HOST_APP",
+            "action": "ACCESS",
+            "condition": null,
+            "declared_purpose": null,
+            "declared_recipient": null,
+            "ambiguity_flags": [],
+            "start_offset": null,
+            "checked": true
+          }
+        ],
+        "uploaded": true,
+        "apk_sha256": "51419844c6305b99ee930dd77d15162f606e39a94b57f1939858eda43bedc44f",
+        "package_set": {
+          "package_name": "org.privacytrace.probe.fixture",
+          "version_code": 130,
+          "version_name": "controlled-fixture",
+          "base": {
+            "file_name": "base.apk",
+            "part": "BASE",
+            "split_name": null,
+            "sha256": "51419844c6305b99ee930dd77d15162f606e39a94b57f1939858eda43bedc44f",
+            "size_bytes": 7501,
+            "package_name": "org.privacytrace.probe.fixture",
+            "version_code": 130,
+            "version_name": "controlled-fixture",
+            "dependencies": {
+              "is_feature_split": false,
+              "uses_split": null,
+              "config_for_split": null,
+              "is_split_required": false,
+              "split_types": [],
+              "required_split_types": []
+            }
+          },
+          "splits": [],
+          "total_size_bytes": 7501
+        },
+        "jobs": [],
+        "created_at": "2026-10-21T09:54:02.407758+00:00"
+      },
+      "candidates": 2,
+      "pass": true
+    },
+    "start": {
+      "status": 200,
+      "job_id": "d19368ae1fd94c0abb40503a27b5b336",
+      "state": "SUCCEEDED",
+      "states": [
+        "QUEUED",
+        "STATIC_ANALYSIS",
+        "STATIC_ANALYSIS",
+        "SUCCEEDED"
+      ]
+    },
+    "report_status": 200,
+    "issues": [
+      {
+        "data_type": "PRECISE_LOCATION",
+        "status": "INSUFFICIENT_EVIDENCE",
+        "requires_review": true,
+        "evidence_count": 1
+      },
+      {
+        "data_type": "PRECISE_LOCATION",
+        "status": "INSUFFICIENT_EVIDENCE",
+        "requires_review": true,
+        "evidence_count": 2
+      }
+    ],
+    "documents": [
+      {
+        "review_status": "UNREVIEWED",
+        "extraction_status": "PARTIAL",
+        "completeness": "PARTIAL",
+        "attachments_status": "NOT_CHECKED"
+      }
+    ],
+    "claim_count": 2,
+    "no_upgrade": true,
+    "no_auto_reextract": true,
+    "pass": true
+  }
+}

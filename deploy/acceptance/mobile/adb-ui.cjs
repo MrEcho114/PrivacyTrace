@@ -56,6 +56,7 @@ function parseXml(xml) {
       text: attrs.text || '',
       hint: attrs.hint || '',
       cls: attrs.class || '',
+      password: attrs.password === 'true',
       clickable: attrs.clickable === 'true',
       bounds: bounds.slice(1).map(Number),
       center: [
@@ -92,16 +93,27 @@ function editTexts() {
   return nodes.filter(node => node.cls.includes('EditText'));
 }
 
-function clearAndTypeAt(index, text) {
+function clearAndTypeAt(index, text, { secret = false } = {}) {
   const fields = editTexts();
   const field = fields[index];
   if (!field) throw new Error(`no EditText at index ${index} (found ${fields.length})`);
-  tap(...field.center);
-  sleep(600);
-  run(['shell', 'input', 'keyevent', '123']);
-  for (let i = 0; i < 90; i++) run(['shell', 'input', 'keyevent', '67']);
-  run(['shell', 'input', 'text', text]);
-  sleep(400);
+  const typeOnce = () => {
+    tap(...field.center);
+    sleep(600);
+    run(['shell', 'input', 'keyevent', '123']);
+    for (let i = 0; i < 90; i++) run(['shell', 'input', 'keyevent', '67']);
+    run(['shell', 'input', 'text', text]);
+    sleep(400);
+  };
+  typeOnce();
+  // Password fields do not expose their value through uiautomator. Type twice
+  // to ride out the first-keystroke IME swallow, then rely on the server-side
+  // request log to prove the value rather than pretending the masked field was
+  // read back.
+  if (secret || field.password) {
+    typeOnce();
+    return;
+  }
   // The IME can swallow the first keystrokes right after the field appears;
   // confirm the field actually holds the value instead of trusting the tap.
   for (let attempt = 0; attempt < 3; attempt++) {

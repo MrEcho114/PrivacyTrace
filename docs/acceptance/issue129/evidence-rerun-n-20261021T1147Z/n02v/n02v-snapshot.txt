@@ -1,0 +1,10 @@
+--- uiautomator ---
+(no text nodes)
+--- pm path ---
+package:/data/app/~~NwTDibviGEZAsX657Ux1_Q==/org.privacytrace.probe.fixture-Qd5HxVmbR4kDdDcakJSFig==/base.apk
+--- dumpsys ---
+    codePath=/data/app/~~NwTDibviGEZAsX657Ux1_Q==/org.privacytrace.probe.fixture-Qd5HxVmbR4kDdDcakJSFig==
+    versionCode=2 minSdk=24 targetSdk=34
+    versionName=controlled-fixture
+    splits=[base]
+    lastUpdateTime=2026-10-21 19:46:13

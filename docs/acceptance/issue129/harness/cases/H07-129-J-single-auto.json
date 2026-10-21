@@ -1,0 +1,10 @@
+{
+  "caseId": "H07-129-J-single-auto",
+  "origin": "https://localhost:29444",
+  "policyMode": "auto",
+  "evidencePrefix": "H07-129-J-single-auto",
+  "uploadAttempts": 1,
+  "cleanup": true,
+  "appLabel": "Controlled split fixture",
+  "notes": "Issue 129 J instance port 29444; independent compose project and credentials."
+}

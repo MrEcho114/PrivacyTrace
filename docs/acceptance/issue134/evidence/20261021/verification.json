@@ -1,0 +1,99 @@
+{
+  "F-BUG-01": {
+    "after": {
+      "captured_mtime_utc": "2026-10-21T13:30:34.210789+00:00",
+      "private_basename": "deadline-current.txt",
+      "sha256": "6802ea051df3e55644e5edd3ed112ede270d7a8c5f80cea92549a6b59d8c983d"
+    },
+    "after_mtls_with_existing_tls_passed": 24,
+    "before": {
+      "captured_mtime_utc": "2026-10-21T10:33:08.201312+00:00",
+      "private_basename": "deadline-red.txt",
+      "sha256": "60b7d0d71649a29a0d5171f5740fc68006eb884e6da39f6174c9d43f17515ac5"
+    },
+    "before_failed": 5
+  },
+  "F-BUG-02": {
+    "after_runtime_suite": {
+      "binding": {
+        "captured_mtime_utc": "2026-10-21T13:18:56+00:00",
+        "private_basename": "runtime-check-final.xml",
+        "sha256": "9752babf8a9fa6acf714e50735930ab1ace2853510c6e2a620ad5fe8e4274fe3"
+      },
+      "failed": 0,
+      "passed": 238,
+      "skipped": 0
+    },
+    "before": {
+      "captured_mtime_utc": "2026-10-21T13:12:37.000201+00:00",
+      "private_basename": "worker-identity-red.txt",
+      "sha256": "381316de93c0e93c639b0545185e3cef63963fa0bddb9819ff1a8a60cee8799a"
+    },
+    "before_failed": 1,
+    "final_runtime_worker_and_deadline_guard": {
+      "binding": {
+        "captured_mtime_utc": "2026-10-21T13:28:23.646508+00:00",
+        "private_basename": "final-guard.txt",
+        "sha256": "55c133ffd6104307d8b73bf58dadd9bbb3f884881e1db4ecd4ca5ffd5d608699"
+      },
+      "passed": 22
+    }
+  },
+  "authoritative_local_api": {
+    "binding": {
+      "captured_mtime_utc": "2026-10-21T13:05:33+00:00",
+      "private_basename": "check-relay-fixed.log",
+      "sha256": "050b56ef5b219ac7d617179e85a4a2bae017095ff5ff1b8b433bba332126f9cf"
+    },
+    "failed": 4,
+    "failure_reason": "cgroup v2 probe files absent under actual cgroup v1; no expectations or skip rules relaxed",
+    "passed": 1548,
+    "skipped": 179
+  },
+  "boundaries": "Real component PostgreSQL/Redis/mTLS/Docker and protocol tests are not Android F01-F04/F07 full-case acceptance",
+  "ci": "Latest remote head CI is tracked on PR #157, separately from these frozen local receipts",
+  "driver_corrections": [
+    "Shared temporary paths across controller and owned daemon",
+    "Preserve Docker attach half-close in the private controller socket relay",
+    "Initial non-launchable fixture was not selectable; build a new launchable fixture without executing its static identifier method"
+  ],
+  "historical_driver_failures": [
+    {
+      "api_failed": 25,
+      "binding": {
+        "captured_mtime_utc": "2026-10-21T10:41:57+00:00",
+        "private_basename": "check-initial.log",
+        "sha256": "1281a1a1ae58463018a7c90a7804c1bf3089676b6ac34bfd84ff01770e2a07ff"
+      }
+    },
+    {
+      "api_failed": 23,
+      "binding": {
+        "captured_mtime_utc": "2026-10-21T10:50:03+00:00",
+        "private_basename": "check-shared-tmp.log",
+        "sha256": "ba0fbbce54189d0357c3432b53bdef1ea4db5c393d138fe0470696f6d40c4cda"
+      }
+    }
+  ],
+  "latest_authoritative_attempt": {
+    "binding": {
+      "captured_mtime_utc": "2026-10-21T13:20:05+00:00",
+      "private_basename": "check-final.log",
+      "sha256": "817d031d6f523e1414f6d756f394b11395ba3ab68f959d8214e2af9892895bea"
+    },
+    "reason": "Locked dependency download failed after retries; this attempt did not run tests",
+    "status": "FAILED_DURING_IMAGE_BUILD"
+  },
+  "post_api_checks": {
+    "binding": {
+      "captured_mtime_utc": "2026-10-21T13:09:13+00:00",
+      "private_basename": "post-check.log",
+      "sha256": "a767513319d8ec256f301d57e68c8c31573e671e3d47b46695a3b5e67a544d5c"
+    },
+    "contracts": "ZERO_DRIFT",
+    "e2e_passed": 65,
+    "ruff": "PASSED",
+    "web_build": "PASSED",
+    "web_unit_passed": 111
+  }
+}

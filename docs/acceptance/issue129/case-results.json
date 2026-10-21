@@ -1,0 +1,366 @@
+{
+  "issue": 129,
+  "ticket": "PT-MOB-301",
+  "title": "自动政策、包输入与可复用环境样本",
+  "record_kind": "EXECUTED_CASE_GROUP",
+  "final_acceptance_passed": false,
+  "candidate": {
+    "repository": "MrEcho114/PrivacyTrace",
+    "main": "ffadeb06af70072b5ee2d931ee565e5b7e546acd",
+    "images": {
+      "api": "sha256:30825e3640138465446fdd1d05dde21529ab63db98f587387142e2b1ed3f6aa2",
+      "web": "sha256:22a340efbcde68ab1b46fad3eec8a7f49658c9dba88cdf29b93207e4fefd26c5",
+      "runner": "sha256:473975aeb2a77f115ec5d5c2b2ffc6b693add882a3001231ad7c6ec13c830c24",
+      "scanner": "sha256:1a36604312f9d1e6184dd1ab0e4b49fd6c0674842f478d79f8f6b54541f94354"
+    },
+    "client_apk_sha256": "8bb257dfd3a63d295b858decba7ba0dcee44d6e20c063c01feb1813f4f3fddc8",
+    "client_source": {
+      "paths": [
+        "apps/mobile",
+        "apps/web"
+      ],
+      "base_commit": "aa414073859463abfaa133c1d12ac1f24c93eeb7",
+      "delta_to_candidate": "none (git diff aa41407..ffadeb0 -- apps/mobile apps/web is empty)",
+      "signature_cert_sha256": "4172668f29d3523bd5585ab9a2cb7dff237cf751b8cb39084565acd3f2205df2"
+    },
+    "fixture": {
+      "package": "org.privacytrace.probe.fixture",
+      "base_sha256": "4f949286464a163886de6cdd9bd89651d19a622282c117339edfcb1c8e1055c1",
+      "split_name": "fixture_feature",
+      "split_sha256": "1467df6802cd638095e55f8d4c9e6e58a50fe76f393e5e284da78456b0da8db7",
+      "version_code": 1
+    },
+    "policy_sha256": "2d9a31a5f1b1a64c5d9d800c5e64963f7207b095d4c8fdc64a1e7e3a1b6e7106",
+    "executor": "final H rerun: PR #147 head 42b17fbb (merged 3996fa6) client-case.cjs + local prepare-button retry and tolerant evidence capture; first runs: PR #137 add79b6 + local patch"
+  },
+  "device": {
+    "kind": "MuMu Android VM",
+    "android": "15",
+    "abi": "x86_64",
+    "resolution": "1080x1920",
+    "density": 480,
+    "rotation": 0
+  },
+  "instances": {
+    "I": {
+      "project": "pt81-c36811dfa963",
+      "instance_id": "18dee246-d274-49d3-9bfa-73832a51a6d2",
+      "web_port": 60866,
+      "forward_port": 28443
+    },
+    "J": {
+      "project": "pt81-43f6be29e5c0",
+      "instance_id": "fa470b68-ecc3-471d-93a1-102b3c5daa45",
+      "web_port": 59080,
+      "forward_port": 29444
+    }
+  },
+  "success_cases": [
+    {
+      "id": "H01",
+      "status": "PASSED",
+      "input": "single APK",
+      "instance": "I",
+      "policy_mode": "auto",
+      "job_state": "SUCCEEDED",
+      "policy_comparison": "PRESENT",
+      "deletion": "DELETED",
+      "scan_scope": [
+        "base:classes.dex",
+        "base:classes2.dex"
+      ],
+      "outbox": "privacytrace.job.ready DELIVERED, attempts=1, 2026-10-21T09:54:43Z; readback: evidence/queue-readback-20261021.json",
+      "evidence": [
+        "H01-I-result.json",
+        "H01-I-report.txt",
+        "H01-I-device.png",
+        "queue-readback-20261021.json"
+      ],
+      "final_executor_rerun": {
+        "captured_at": "2026-10-21T11:20:20.070Z",
+        "result": "evidence-rerun-20261021T1128Z/H01-129-I-single-auto-result.json",
+        "evidence_panels": 3,
+        "evidence_quote": true,
+        "key_drilldown": "base:classes2.dex LocationProbe->getLastKnownLocation offset 30; quote [38,50); candidate [66,72)"
+      }
+    },
+    {
+      "id": "H04",
+      "status": "PASSED",
+      "input": "base + fixture_feature",
+      "instance": "I",
+      "policy_mode": "auto",
+      "job_state": "SUCCEEDED",
+      "policy_comparison": "PRESENT",
+      "deletion": "DELETED",
+      "scan_scope": [
+        "base:classes.dex",
+        "base:classes2.dex",
+        "split:fixture_feature:classes.dex",
+        "split:fixture_feature:classes2.dex"
+      ],
+      "outbox": "privacytrace.job.ready DELIVERED, attempts=1, 2026-10-21T09:58:16Z; readback: evidence/queue-readback-20261021.json",
+      "evidence": [
+        "H04-I-result.json",
+        "H04-I-report.txt",
+        "H04-I-device.png",
+        "queue-readback-20261021.json"
+      ],
+      "final_executor_rerun": {
+        "captured_at": "2026-10-21T11:24:45.690Z",
+        "result": "evidence-rerun-20261021T1128Z/H04-129-I-splits-auto-result.json",
+        "evidence_panels": 4,
+        "evidence_quote": true,
+        "key_drilldown": "split:fixture_feature:classes2.dex ContactsProbe->query offset 24; quotes [66,72) and [38,50)"
+      }
+    },
+    {
+      "id": "H07",
+      "status": "PASSED",
+      "input": "single APK",
+      "instance": "J",
+      "policy_mode": "auto",
+      "job_state": "SUCCEEDED",
+      "policy_comparison": "PRESENT",
+      "deletion": "DELETED",
+      "scan_scope": [
+        "base:classes.dex",
+        "base:classes2.dex"
+      ],
+      "outbox": "privacytrace.job.ready DELIVERED, attempts=1, 2026-10-21T09:56:42Z; readback: evidence/queue-readback-20261021.json",
+      "evidence": [
+        "H07-J-result.json",
+        "H07-J-report.txt",
+        "H07-J-device.png",
+        "queue-readback-20261021.json"
+      ],
+      "final_executor_rerun": {
+        "captured_at": "2026-10-21T11:26:30.009Z",
+        "result": "evidence-rerun-20261021T1128Z/H07-129-J-single-auto-result.json",
+        "evidence_panels": 3,
+        "evidence_quote": true,
+        "key_drilldown": "base:classes2.dex LocationProbe->getLastKnownLocation offset 30; quote [38,50)"
+      }
+    },
+    {
+      "id": "H10",
+      "status": "PASSED",
+      "input": "base + fixture_feature",
+      "instance": "J",
+      "policy_mode": "auto",
+      "job_state": "SUCCEEDED",
+      "policy_comparison": "PRESENT",
+      "deletion": "DELETED",
+      "scan_scope": [
+        "base:classes.dex",
+        "base:classes2.dex",
+        "split:fixture_feature:classes.dex",
+        "split:fixture_feature:classes2.dex"
+      ],
+      "outbox": "privacytrace.job.ready DELIVERED, attempts=1, 2026-10-21T10:00:06Z; readback: evidence/queue-readback-20261021.json",
+      "evidence": [
+        "H10-J-result.json",
+        "H10-J-report.txt",
+        "H10-J-device.png",
+        "queue-readback-20261021.json"
+      ],
+      "final_executor_rerun": {
+        "captured_at": "2026-10-21T11:28:33.649Z",
+        "result": "evidence-rerun-20261021T1128Z/H10-129-J-splits-auto-result.json",
+        "evidence_panels": 4,
+        "evidence_quote": true,
+        "key_drilldown": "split:fixture_feature:classes2.dex ContactsProbe->query offset 24; quotes [66,72) and [38,50)"
+      }
+    }
+  ],
+  "negative_cases": {
+    "N01": {
+      "status": "PASSED",
+      "variants": {
+        "before-selection-cancel": {
+          "drafts_before": 1,
+          "drafts_after": 1,
+          "evidence": [
+            "n01a-n-summary.json",
+            "n01a-n01a-body.txt",
+            "n01a-n01a-after-cancel.png"
+          ],
+          "rerun_evidence": [
+            "evidence-rerun-n-20261021T1147Z/n01a/n01a-app-list.png",
+            "evidence-rerun-n-20261021T1147Z/n01a/n01a-actions.txt",
+            "evidence-rerun-n-20261021T1147Z/n01a/n01a-snapshot.txt",
+            "evidence-rerun-n-20261021T1147Z/n01a/n-summary.json"
+          ]
+        },
+        "confirmation-cancel": {
+          "drafts_before": 1,
+          "drafts_after": 1,
+          "evidence": [
+            "n01b-n-summary.json",
+            "n01b-n01b-body.txt",
+            "n01b-n01b-after-back.png"
+          ],
+          "rerun_evidence": [
+            "evidence-rerun-n-20261021T1147Z/n01b/n01b-confirmation.png",
+            "evidence-rerun-n-20261021T1147Z/n01b/n01b-actions.txt",
+            "evidence-rerun-n-20261021T1147Z/n01b/n01b-snapshot.txt",
+            "evidence-rerun-n-20261021T1147Z/n01b/n-summary.json"
+          ]
+        },
+        "reselect-after-cancel": {
+          "drafts_before": 1,
+          "drafts_after": 1,
+          "evidence": [
+            "n01c-n-summary.json",
+            "n01c-n01c-body.txt"
+          ],
+          "rerun_evidence": [
+            "evidence-rerun-n-20261021T1147Z/n01c/n01c-first-app-list.png",
+            "evidence-rerun-n-20261021T1147Z/n01c/n01c-after-reselect.png",
+            "evidence-rerun-n-20261021T1147Z/n01c/n01c-actions.txt",
+            "evidence-rerun-n-20261021T1147Z/n01c/n-summary.json"
+          ]
+        }
+      },
+      "requests": "NOT_OBSERVABLE (native client transport; WebView CDP does not see it; no server access log)"
+    },
+    "N02": {
+      "status": "PASSED",
+      "variants": {
+        "uninstall": {
+          "observed": "INSTALLATION_CHANGED",
+          "drafts_before": 1,
+          "drafts_after": 1,
+          "evidence": [
+            "n02-n-summary.json",
+            "n02-n02-body.txt",
+            "n02-n02-after-confirm.png"
+          ],
+          "rerun_evidence": [
+            "evidence-rerun-n-20261021T1147Z/n02/n02-snapshot.txt",
+            "evidence-rerun-n-20261021T1147Z/n02/n02-after-confirm.png"
+          ]
+        },
+        "version-change": {
+          "observed": "INSTALLATION_CHANGED",
+          "drafts_before": 1,
+          "drafts_after": 1,
+          "evidence": [
+            "n02v-n-summary.json",
+            "n02v-n02v-body.txt",
+            "n02v-n02v-after-confirm.png"
+          ],
+          "rerun_evidence": [
+            "evidence-rerun-n-20261021T1147Z/n02v/n02v-snapshot.txt",
+            "evidence-rerun-n-20261021T1147Z/n02v/n02v-after-confirm.png"
+          ]
+        },
+        "unreadable-file": {
+          "observed": "INSTALLATION_CHANGED",
+          "method": "adb root; chmod 000 base.apk; restored 644",
+          "drafts_before": 1,
+          "drafts_after": 1,
+          "evidence": [
+            "n02u-n-summary.json",
+            "n02u-n02u-body.txt",
+            "n02u-n02u-after-confirm.png"
+          ],
+          "rerun_evidence": [
+            "evidence-rerun-n-20261021T1147Z/n02u/n02u-file-mode-unreadable.txt",
+            "evidence-rerun-n-20261021T1147Z/n02u/n02u-file-mode-restored.txt",
+            "evidence-rerun-n-20261021T1147Z/n02u/n02u-snapshot.txt"
+          ]
+        }
+      },
+      "requests": "NOT_OBSERVABLE (same boundary as N01)"
+    },
+    "N03": {
+      "status": "PASSED",
+      "entry": "real HTTPS POST /api/v1/web/drafts/{id}/package-set",
+      "baseline": {
+        "status": 200,
+        "split_name": "fixture_feature",
+        "split_sha256": "1467df6802cd638095e55f8d4c9e6e58a50fe76f393e5e284da78456b0da8db7",
+        "total_size_bytes": 15225
+      },
+      "rejections": {
+        "missing-required-split": 400,
+        "wrong-version": 400,
+        "wrong-package": 400,
+        "duplicate-name": 400,
+        "corrupt": 400
+      },
+      "detail_codes": {
+        "missing-required-split": "MISSING_REQUIRED_SPLIT",
+        "wrong-version": "VERSION_CODE_MISMATCH",
+        "wrong-package": "SPLIT_PACKAGE_MISMATCH",
+        "duplicate-name": "DUPLICATE_SPLIT_NAME",
+        "corrupt": "CORRUPTED_FILE"
+      },
+      "evidence": [
+        "N03-results.json"
+      ]
+    },
+    "N04": {
+      "status": "PASSED",
+      "entry": "real HTTPS POST /api/v1/web/drafts/{id}/package-set",
+      "variants": {
+        "oversize-160MiB": {
+          "http_status": 413,
+          "sent_bytes": 114294784,
+          "elapsed_s": 0.57,
+          "uploaded": false,
+          "evidence": [
+            "N04-fast.json"
+          ]
+        },
+        "chunked-160MiB": {
+          "http_status": 413,
+          "sent_bytes": 167772160,
+          "elapsed_s": 0.81,
+          "uploaded": false,
+          "evidence": [
+            "N04-extra.json"
+          ]
+        },
+        "slow-190s": {
+          "observed": "connection closed / TimeoutError",
+          "elapsed_s": 460.08,
+          "uploaded": false,
+          "evidence": [
+            "N04-slow.json"
+          ]
+        },
+        "disconnect-after-1MiB": {
+          "uploaded": false,
+          "revision": 1,
+          "elapsed_s": 4.01,
+          "evidence": [
+            "N04-fast.json"
+          ]
+        },
+        "retry-after-oversize": {
+          "first_status": 413,
+          "retry_status": 200,
+          "uploaded": true,
+          "evidence": [
+            "N04-extra.json"
+          ]
+        }
+      }
+    }
+  },
+  "not_run": {
+    "H02/H05/H08/H11": "网页辅助补入，属其他子票",
+    "H03/H06/H09/H12": "手机直连模型路径，属其他子票",
+    "N05-N12": "访问隔离/TLS/政策负向/恢复等，属其他子票",
+    "F01-F10": "运行时故障注入，属其他子票",
+    "R01-R04": "仓库权威检查/回归/部署专项，父票汇总范围"
+  },
+  "boundaries": [
+    "受控提取器为本机容器内确定性 mock，不证明外部模型质量",
+    "政策对照结论为证据不足/待复核，不要求 MATCH，也不提升政策状态",
+    "N03/N04 为真实 HTTPS 服务端入口，不冒充客户端界面证据",
+    "未合并、未部署、未提交商店"
+  ]
+}

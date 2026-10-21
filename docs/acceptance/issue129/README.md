@@ -80,6 +80,7 @@
 - N01b：选中应用后在“确认上传所选应用”按返回键取消，无新草稿（1→1），回到材料页。
 - N01c：取消后可再次“选择应用并上传”、输入实例并重新进入应用列表（1→1），未触发未确认上传。
 - 证据：`evidence/n01a-*`、`n01b-*`、`n01c-*`。
+- 补证（2026-10-21T11:47Z）：`evidence-rerun-n-20261021T1147Z/n01a|n01b|n01c` 增加取消前截图（应用列表/确认对话框）、动作日志、UI/安装快照；草稿 2→2（运行前基线 2，未新增）。请求计数因客户端原生传输不可被 WebView CDP 观察、服务端未开 access log，记 `NOT_OBSERVABLE`，不用 0 冒充无请求。
 
 ### N02（确认窗口安装态变化）
 
@@ -87,6 +88,7 @@
 - 版本变化：确认窗口内把 v1 覆盖安装为 v2（versionCode 2）后确认，`INSTALLATION_CHANGED`，1→1。
 - 不可读：以 `adb root` 将 base.apk 置为 `chmod 000` 后确认，`INSTALLATION_CHANGED`，1→1；随后恢复 `644` 并核对文件模式。
 - 证据：`evidence/n02-*`、`n02v-*`、`n02u-*`。未提交部分集合，也没有服务端接收。
+- 补证（2026-10-21T11:47Z）：`evidence-rerun-n-20261021T1147Z/` 的 `n02-snapshot.txt` 显示 `pm path failed`（包已卸载）、`n02v-snapshot.txt` 显示 `versionCode=2`、`n02u-file-mode-unreadable/restored.txt` 显示 `0 → 644`；三变体草稿 2→2、无新 job。补证也只覆盖本票定义的安装态变化，不代替 N05–N12。
 
 ### N03（受控包集合变体）
 

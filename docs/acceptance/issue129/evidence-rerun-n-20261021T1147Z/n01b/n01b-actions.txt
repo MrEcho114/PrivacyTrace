@@ -1,0 +1,3 @@
+2026-10-21T11:43:04.499Z client started; network events enabled
+2026-10-21T11:43:26.011Z confirmation dialog visible; pressing back
+2026-10-21T11:43:34.969Z returned to material page after back

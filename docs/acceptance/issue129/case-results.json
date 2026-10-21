@@ -184,6 +184,12 @@
             "n01a-n-summary.json",
             "n01a-n01a-body.txt",
             "n01a-n01a-after-cancel.png"
+          ],
+          "rerun_evidence": [
+            "evidence-rerun-n-20261021T1147Z/n01a/n01a-app-list.png",
+            "evidence-rerun-n-20261021T1147Z/n01a/n01a-actions.txt",
+            "evidence-rerun-n-20261021T1147Z/n01a/n01a-snapshot.txt",
+            "evidence-rerun-n-20261021T1147Z/n01a/n-summary.json"
           ]
         },
         "confirmation-cancel": {
@@ -193,6 +199,12 @@
             "n01b-n-summary.json",
             "n01b-n01b-body.txt",
             "n01b-n01b-after-back.png"
+          ],
+          "rerun_evidence": [
+            "evidence-rerun-n-20261021T1147Z/n01b/n01b-confirmation.png",
+            "evidence-rerun-n-20261021T1147Z/n01b/n01b-actions.txt",
+            "evidence-rerun-n-20261021T1147Z/n01b/n01b-snapshot.txt",
+            "evidence-rerun-n-20261021T1147Z/n01b/n-summary.json"
           ]
         },
         "reselect-after-cancel": {
@@ -201,9 +213,16 @@
           "evidence": [
             "n01c-n-summary.json",
             "n01c-n01c-body.txt"
+          ],
+          "rerun_evidence": [
+            "evidence-rerun-n-20261021T1147Z/n01c/n01c-first-app-list.png",
+            "evidence-rerun-n-20261021T1147Z/n01c/n01c-after-reselect.png",
+            "evidence-rerun-n-20261021T1147Z/n01c/n01c-actions.txt",
+            "evidence-rerun-n-20261021T1147Z/n01c/n-summary.json"
           ]
         }
-      }
+      },
+      "requests": "NOT_OBSERVABLE (native client transport; WebView CDP does not see it; no server access log)"
     },
     "N02": {
       "status": "PASSED",
@@ -216,6 +235,10 @@
             "n02-n-summary.json",
             "n02-n02-body.txt",
             "n02-n02-after-confirm.png"
+          ],
+          "rerun_evidence": [
+            "evidence-rerun-n-20261021T1147Z/n02/n02-snapshot.txt",
+            "evidence-rerun-n-20261021T1147Z/n02/n02-after-confirm.png"
           ]
         },
         "version-change": {
@@ -226,6 +249,10 @@
             "n02v-n-summary.json",
             "n02v-n02v-body.txt",
             "n02v-n02v-after-confirm.png"
+          ],
+          "rerun_evidence": [
+            "evidence-rerun-n-20261021T1147Z/n02v/n02v-snapshot.txt",
+            "evidence-rerun-n-20261021T1147Z/n02v/n02v-after-confirm.png"
           ]
         },
         "unreadable-file": {
@@ -237,9 +264,15 @@
             "n02u-n-summary.json",
             "n02u-n02u-body.txt",
             "n02u-n02u-after-confirm.png"
+          ],
+          "rerun_evidence": [
+            "evidence-rerun-n-20261021T1147Z/n02u/n02u-file-mode-unreadable.txt",
+            "evidence-rerun-n-20261021T1147Z/n02u/n02u-file-mode-restored.txt",
+            "evidence-rerun-n-20261021T1147Z/n02u/n02u-snapshot.txt"
           ]
         }
-      }
+      },
+      "requests": "NOT_OBSERVABLE (same boundary as N01)"
     },
     "N03": {
       "status": "PASSED",

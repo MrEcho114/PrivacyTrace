@@ -1,0 +1,11 @@
+--- uiautomator ---
+(no text nodes)
+--- pm path ---
+package:/data/app/~~3yRa4ohsc_RqvMd8UKQYew==/org.privacytrace.probe.fixture-eLKJha2bxsng48QPNARmrw==/base.apk
+package:/data/app/~~3yRa4ohsc_RqvMd8UKQYew==/org.privacytrace.probe.fixture-eLKJha2bxsng48QPNARmrw==/split_fixture_feature.apk
+--- dumpsys ---
+    codePath=/data/app/~~3yRa4ohsc_RqvMd8UKQYew==/org.privacytrace.probe.fixture-eLKJha2bxsng48QPNARmrw==
+    versionCode=1 minSdk=24 targetSdk=34
+    versionName=controlled-fixture
+    splits=[base, fixture_feature]
+    lastUpdateTime=2026-10-21 19:26:51

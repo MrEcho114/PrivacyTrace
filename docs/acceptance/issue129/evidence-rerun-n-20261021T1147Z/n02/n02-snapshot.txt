@@ -1,0 +1,5 @@
+--- uiautomator ---
+(no text nodes)
+pm path failed: Command failed: D:\Games\MuMu Player 12\shell\adb.exe -s 127.0.0.1:16512 shell pm path org.privacytrace.probe.fixture
+--- dumpsys ---
+

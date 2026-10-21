@@ -1,0 +1,33 @@
+{
+  "result": "PASS",
+  "commit": "9b8b286ac82586ff69183b4dfd7003e041dce387",
+  "dirty": false,
+  "source_sha256": "e5a10b7ae381f0e3f0fd0186b7f11338f7defe6057c0ad4a9215a47bea0ccab5",
+  "scope": "motion feedback, hover gating, reduced motion and evidence expansion; API responses mocked",
+  "modes": [
+    "hover: hover / pointer: fine",
+    "touch (hasTouch+isMobile)",
+    "prefers-reduced-motion: no-preference",
+    "prefers-reduced-motion: reduce",
+    "CPU throttle 6x"
+  ],
+  "checks": [
+    "pointer: desktop reports (hover: hover) and (pointer: fine)",
+    "feedback: hover keeps its 150ms colour fade; colour properties only",
+    "feedback: press offset is immediate and never transitions",
+    "drag: highlight keeps geometry (no border-width reflow)",
+    "dialog: explicit open stays instant and fully readable",
+    "budget: no transition:all, no over-300ms transition, no idle animation (rejects the injected defect)",
+    "pointer: touch device gets no sticky hover feedback (probe detects an ungated rule)",
+    "normal motion: evidence scroll animates (behavior=smooth), panel readable immediately",
+    "continuity: 9 rapid open/close cycles settle closed with no duplicate request",
+    "low performance: 6x CPU throttle shows evidence at full opacity in 184ms",
+    "background restore: visibility round trip keeps the panel fully readable (DOM-level simulation, not a real suspend)",
+    "reduced motion: evidence scroll is instant (behavior=auto), transitions off, panel readable",
+    "continuity: 9 rapid open/close cycles settle closed with no duplicate request",
+    "low performance: 6x CPU throttle shows evidence at full opacity in 116ms",
+    "background restore: visibility round trip keeps the panel fully readable (DOM-level simulation, not a real suspend)",
+    "narrow evidence: expands in place with no entry animation and readable on the first frame",
+    "narrow evidence: collapse is immediate and leaves no empty cell"
+  ]
+}

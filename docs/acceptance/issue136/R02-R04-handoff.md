@@ -9,7 +9,7 @@
 | **R02** Spec30 六 / 十二场景 | BLOCKED | `six scenarios` 与 `twelve controlled scenarios` 两套证据 |
 | **R04** 部署专项 | BLOCKED | 真实部署与恢复收据 |
 
-R03（浏览器与前端验收）与交付包 / 离线回放已在本机取得 PASSED，不需要重跑。
+R03（浏览器与前端验收）、交付包复核与离线回放已在基线 `ffadeb06` 上取得 PASSED。**该结论仅对该基线成立**：最终交付 head 或包产物发生变化时，必须按影响范围重跑并重新绑定证据（至少重跑 `acceptance:browser`、`acceptance:frontend` 与 `verify-demo-offline.cjs`，并重新计算包哈希、条目数与材料清单）。不得把本基线的结果当作最终组合的验收结论。
 
 ## 1. 环境要求
 
@@ -28,7 +28,7 @@ R03（浏览器与前端验收）与交付包 / 离线回放已在本机取得 P
 ```bash
 git clone https://github.com/MrEcho114/PrivacyTrace.git
 cd PrivacyTrace
-git checkout <交付 head>            # 与票面一致，例如 83f42ea2
+git checkout <票面指定的最终交付 head>   # 必须用当下交付 SHA；不要沿用任何历史示例提交
 git status --porcelain              # 必须无输出
 git rev-parse HEAD                  # 记下这个 SHA，证据必须绑定它
 date -u +%Y-%m-%dT%H:%M:%SZ         # 记下开始时间

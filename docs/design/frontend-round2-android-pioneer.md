@@ -4,6 +4,13 @@
 基线与集成：`origin/main` `6e0122d1a84999de82c458f51c826248698c97dc`；集成分支 `codex/frontend-round2`。
 本文件之后的修改必须同步更新「实现差异」一节；不得把未实现的条目写成已完成。
 
+> **2026-10-22 NASA-punk 补充（设计提案，未生效）**
+> 用户补充了 NASA-punk 视觉方向，并要求与现有规范融合、只把产品代码留在后续整合。**在用户或 #141 整合 owner 选定前，本文件仍是当前产品合同**；下面的第二方向只作并列提案，不把任何条目写成已实现。
+> - 第二方向全文：[`nasa-punk-flight-binder.md`](./nasa-punk-flight-binder.md)，静态原型与 1440/390/320 截图见 [`evidence/nasa-punk-flight-binder/`](./evidence/nasa-punk-flight-binder/)。
+> - 若采纳，**覆盖**：`--canvas/--surface` → `#FFFFFF`、顶栏 → `#ECE5D6`（仅顶栏）、标题去衬线改为宽体无衬线、面板圆角收敛到 2px、主操作色 → `#D63A2C`（单红预算）、加入四色身份条/装订索引/功能标签/边缘磨损。
+> - **保留**：现有 Vue/Reka 组件、48px/36px 触控与桌面合同、A–E 的 flow/状态/证据边界、UNKNOWN/PARTIAL/UNREVIEWED、动效 reduced-motion 与所有验收脚本。
+> - 与 Codex 的 #142 规范评论是**并列比较**，不互相覆盖；落地只能在 #160 集成分支按共享文件单 owner 串行进行，并重跑 A–E + reading。
+
 ## 1. 为什么有第二轮
 
 第一轮 A–E 解决的是「响应式 Web 在窄屏不溢出、可触控、焦点不丢」；它没有把 `MobileApp.vue` 变成 Android 应用界面。当前 390×844 实图（`docs/acceptance/issue144/evidence/after-*.png`）仍能看出：

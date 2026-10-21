@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import UiButton from '../components/UiButton.vue'
 import UiIcon from '../components/UiIcon.vue'
@@ -263,7 +263,7 @@ onBeforeUnmount(() => {
         </section>
         <section v-else class="m-card">
           <div class="m-card-head"><h2>当前分析材料</h2><UiButton variant="quiet" :disabled="busy" @click="flow.remove">删除远端材料</UiButton></div>
-          <p class="m-material-name">{{ draft?.name || '正在读取材料…' }}</p>
+          <p class="m-material-name" :role="draft ? undefined : 'status'">{{ draft?.name || '正在读取材料…' }}</p>
           <p v-if="draft?.apk_sha256" class="hash">APK SHA-256 {{ draft.apk_sha256 }}</p>
           <p class="m-help">材料保存在本机服务，服务端长期保留至主动删除。更换文件请重新选择应用。</p>
         </section>

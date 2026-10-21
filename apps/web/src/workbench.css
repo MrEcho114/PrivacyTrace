@@ -6,14 +6,6 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 button, a, summary, label { touch-action: manipulation; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; }
-/* Hover feedback is a pointer-capability branch: touch devices keep the resting
-   state instead of a sticky :hover after a tap (#144). */
-@media (hover: hover) {
-  button:hover { background: var(--surface-muted); }
-  .ui-button.primary:hover:not(:disabled) { background: var(--navy-hover); }
-  .ui-button.quiet:hover { background: var(--surface-muted); }
-  .ui-button.danger:hover:not(:disabled) { background: var(--error); }
-}
 /* Long unbroken titles, hashes and URLs stay inside their control instead of
    widening the page at 320-390px (#144). */
 .ui-button, .status-tag, .source-tabs button, .mobile-panel-tabs button,
@@ -73,7 +65,11 @@ p { line-height: 1.7; }
 .file-drop strong { max-width: 100%; overflow-wrap: anywhere; font-weight: 500; }
 .file-glyph { display: grid; place-items: center; gap: 4px; color: var(--muted); font-size: 0.75rem; }
 .file-glyph .ui-icon { width: 32px; height: 32px; }
-.drag-active { border: 2px solid var(--navy); background: var(--slate); }
+/* Drop target highlight without a 1px border-width change: widening the border
+   reflowed the panel and shifted the label by a pixel every dragenter/dragleave.
+   The border stays 1px solid navy and the inset shadow supplies the second pixel,
+   so the highlight keeps its previous 2px solid look. */
+.drag-active { border-color: var(--navy); border-style: solid; background: var(--slate); box-shadow: inset 0 0 0 1px var(--navy); }
 .example-entry { border-top: 1px solid var(--border); margin-top: 24px; padding-top: 24px; }
 .field-help { color: var(--muted); font-size: 0.75rem; line-height: 1.65; margin: 8px 0; }
 .source-editor { padding: 24px 0; border-top: 1px solid var(--border); }
@@ -101,7 +97,20 @@ p { line-height: 1.7; }
 .source-notes { display: flex; flex-wrap: wrap; gap: var(--space-8) 16px; font-size: 0.75rem; color: var(--muted); margin-top: 16px; }
 .source-notes span + span { border-left: 1px solid var(--border); padding-left: 8px; }
 .ui-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-8); min-height: 36px; border-radius: var(--radius); padding: 7px 12px; border: 1px solid var(--control); color: var(--ink); background: var(--surface); font-size: 0.875rem; line-height: 1.45; font-weight: 500; white-space: normal; }
-.ui-button, .nav-item, .source-tabs button, .candidate-item { transition: background-color 150ms ease-out, border-color 150ms ease-out; }
+/* One colour rhythm for every button role: toolbar, nav, tabs, candidate rows and
+   evidence links all fade at the same speed. The press offset stays untransitioned
+   so the pressed state is visible in the same frame as the pointer event. */
+button { transition: background-color var(--motion-color) var(--ease-color), border-color var(--motion-color) var(--ease-color); }
+/* Pointer-only hover: a touch tap reports :hover, so ungated rules leave a stuck
+   highlight on the row the finger just touched. Keyboards use :focus-visible.
+   Kept before the :active rules below: hover and :active share specificity for the
+   danger role, so source order decides which one wins while a button is held. */
+@media (hover: hover) and (pointer: fine) {
+  button:hover { background: var(--surface-muted); }
+  .ui-button.primary:hover:not(:disabled) { background: var(--navy-hover); }
+  .ui-button.quiet:hover { background: var(--surface-muted); }
+  .ui-button.danger:hover:not(:disabled) { background: var(--error); }
+}
 .ui-button:active:not(:disabled) { transform: translateY(1px); }
 .ui-button.primary { color: var(--surface); background: var(--navy); border-color: var(--navy); }
 .ui-button.primary:active:not(:disabled) { background: var(--navy-hover); opacity: .88; }
@@ -253,6 +262,10 @@ dl dd { margin: 0; }
   .example-evidence .evidence-card + .evidence-card { border-left: 0; padding-left: 0; border-top: 1px solid var(--border); padding-top: 24px; }
 }
 @media (max-height: 720px) { .apk-panel, .original-panel { position: static; } }
+/* Reduced motion is a preference for less movement, not a second look: no
+   displacement, spring or non-essential animation, and nothing waits on a
+   transition before it can be read. JS-driven scrolling opts in explicitly in
+   App.vue; this block cannot retarget an explicit scrollIntoView({behavior}). */
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
 
 .comparison-table td.row-evidence { display: none; }
@@ -285,22 +298,18 @@ dl dd { margin: 0; }
   .comparison-table td[data-label="静态线索"]::before { content: "线索："; }
   .comparison-table td[data-label="政策来源"]::before { content: "来源："; }
   .comparison-table td[data-label="依据"] { flex: 1 1 100%; margin-top: 6px; }
+  /* No entry animation: the tapped row carries evidence the user asked to read,
+     and the same action is instant in the reports view. See issue146-motion.md. */
   .comparison-table td.row-evidence {
     display: block;
     flex: 1 1 100%;
     margin-top: 10px;
     padding-top: 12px;
     border-top: 1px dashed var(--border);
-    animation: evidence-slide-in .18s ease-out;
   }
   .comparison-table td.row-evidence .evidence-grid { grid-template-columns: 1fr; gap: var(--space-12); }
   .comparison-table td.row-evidence .evidence-card { padding: 12px; }
   .comparison-table td.row-evidence .evidence-explanation { margin: 0 0 10px; }
-}
-
-@keyframes evidence-slide-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 560px) {

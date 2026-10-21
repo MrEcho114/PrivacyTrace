@@ -18,6 +18,7 @@
     "acceptance:hierarchy": "node scripts/verify-issue143-hierarchy.cjs",
     "acceptance:live": "node scripts/verify-live-flow.cjs",
     "acceptance:mobile": "node scripts/verify-mobile-flow.cjs",
+    "acceptance:motion": "node scripts/verify-issue146-motion.cjs",
     "acceptance:preview": "node scripts/verify-frontend-preview.cjs"
   },
   "devDependencies": {

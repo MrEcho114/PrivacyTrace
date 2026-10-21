@@ -38,15 +38,16 @@ function focusInitial(event: Event) {
   </DialogRoot>
 </template>
 <style scoped>
-.ui-sheet-overlay { position: fixed; inset: 0; z-index: 100; background: var(--m-scrim); }
+.ui-sheet-overlay { position: fixed; inset: 0; z-index: 100; background: var(--m-scrim); animation: m-sheet-fade var(--m-duration-enter) var(--m-ease-decelerate); }
 .ui-sheet {
   position: fixed; inset-inline: 0; bottom: 0; z-index: 101;
   display: flex; flex-direction: column; width: min(100%, 640px); max-height: min(88dvh, 720px);
   margin-inline: auto; padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
   background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-bottom: 0;
   border-radius: var(--m-sheet-radius) var(--m-sheet-radius) 0 0; box-shadow: var(--m-shadow-sheet);
-  box-sizing: border-box;
+  box-sizing: border-box; animation: m-sheet-rise var(--m-duration-enter) var(--m-ease-decelerate);
 }
+.ui-sheet--detail { animation-name: m-sheet-fade; }
 .ui-sheet-handle { flex: none; width: 36px; height: 4px; margin: 10px auto 2px; border-radius: 999px; background: var(--border); }
 .ui-sheet-head { flex: none; display: flex; align-items: flex-start; gap: var(--space-12); padding: 4px var(--m-gutter) 12px; }
 .ui-sheet-title { flex: 1; min-width: 0; margin: 0; font-family: var(--font-display); font-size: var(--m-font-title); font-weight: 600; line-height: 1.35; }
@@ -66,5 +67,19 @@ function focusInitial(event: Event) {
 .ui-sheet--detail {
   inset: 0; width: 100%; max-width: none; max-height: none; height: 100dvh;
   padding-top: env(safe-area-inset-top, 0px); border: 0; border-radius: 0; box-shadow: none;
+}
+/* Motion contract (docs/design/frontend-round2-android-pioneer.md §6): the sheet
+   enters with a short, decelerating rise; reduced motion renders it immediately.
+   No height/width animation, so the dialog layout is final on the first frame. */
+@keyframes m-sheet-rise {
+  from { opacity: .01; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes m-sheet-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-sheet-overlay, .ui-sheet { animation: none; }
 }
 </style>

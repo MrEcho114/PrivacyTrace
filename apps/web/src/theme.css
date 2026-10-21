@@ -33,6 +33,18 @@
   --m-scrim: rgba(44, 53, 71, .42);
   --m-shadow-bar: 0 1px 2px rgba(44, 53, 71, .08);
   --m-shadow-sheet: 0 -8px 32px rgba(44, 53, 71, .18);
+  /* Motion: docs/design/issue146-motion.md. Colour feedback is the only animated
+     property; every UI transition stays <= 300ms and becomes instant under
+     prefers-reduced-motion. Press transforms change immediately, never eased. */
+  --motion-color: 150ms; --ease-color: ease;
+  /* Round-2 shell motion (docs/design/frontend-round2-android-pioneer.md §6):
+     press feedback, sheet enter/exit and the step cross-fade share one duration
+     and easing family. Only transform/opacity/background-color may animate. */
+  --m-duration-press: 120ms;
+  --m-duration-enter: 200ms;
+  --m-duration-exit: 150ms;
+  --m-ease-standard: cubic-bezier(.2, 0, 0, 1);
+  --m-ease-decelerate: cubic-bezier(0, 0, 0, 1);
   --font-body: 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
   --font-display: 'Noto Serif SC', SimSun, serif;
   --font-code: Consolas, 'Courier New', monospace;

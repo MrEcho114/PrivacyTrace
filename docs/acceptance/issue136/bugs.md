@@ -1,8 +1,8 @@
 # 缺陷记录（验收 H）
 
-记录口径沿用 [issue73/bugs.md](../issue73/bugs.md)：每条包含编号、严重程度、类别（产品缺陷／环境问题／测试设施缺口）、被测版本、关联场景、前置条件、最短复现、预期／实际、脱敏证据及 SHA256、影响、复现次数与处理状态。未经复现的疑点不计作 BUG。
+记录口径沿用 [issue73/bugs.md](../issue73/bugs.md)：每条包含编号、严重程度、类别（产品缺陷／环境问题／测试设施缺口／交付包缺陷）、被测版本、关联场景、前置条件、最短复现、预期／实际、脱敏证据及 SHA256、影响、复现次数与处理状态。未经复现的疑点不计作 BUG。
 
-本票（#136）在本机执行中确认 1 条**测试设施缺口**，不涉及产品行为。
+本票（#136）在本机执行中确认 **2 条**：1 条**测试设施缺口**（BUG-136-01，不涉及产品行为）与 1 条**交付包缺陷**（BUG-136-02，只影响离线回放的资源完整性，不影响功能与布局）。两条都未在本 PR 修复，原因分别写在各自的"处理状态"里。
 
 ## BUG-136-01 `scripts/check.sh` 在 Windows 上无法自举（2026-10-21）
 
@@ -37,7 +37,7 @@ fi
 
 Windows 的 `venv` 只生成 `Scripts/`，不生成 `bin/`。实测该目录为 `Include/ Lib/ Scripts/ pyvenv.cfg`，因此第 8 行的 `bin/python` 必然不存在；第 9 行的 `PATH` 追加同样指向不存在的 `bin/`。
 
-- **脱敏证据**：本机目录结构观察 `Include/ Lib/ Scripts/ pyvenv.cfg`（不适用私有路径）
+- **脱敏证据**：`scripts/check.sh` 在 `ffadeb06` 的 blob 为 2837 字节，SHA-256 `5567e8de4072d15c6944fa9ba9c8ba2173bee09d770b7db260a12fa71830e778`（`git rev-parse ffadeb06:scripts/check.sh` = `1aed1d722276a1716bbaa980b392dc752e6e392b`，可原地复核）；本机 venv 目录结构观察为 `Include/ Lib/ Scripts/ pyvenv.cfg`，不含私有路径故不附文件哈希
 - **影响**：`docs/agents/local-environment.md` §2 把 Git Bash 的 `bash scripts/check.sh` 列为**权威检查入口**，但该入口的自举分支只对 POSIX 有效。结果是：任何未预装 `uv` 的 Windows 机器都无法通过官方入口跑 R01，只能手工等价拆步（本次即以手工拆步完成，见 [execution-20261021.md](execution-20261021.md) §2）。
 - **复现次数**：3（三次独立执行均在同一行失败；其中一次为首次创建 venv，另两次目录已存在）
 - **建议修复**：按平台选择解释器路径，例如
@@ -75,7 +75,7 @@ Network：fonts/NotoSansSC-Variable.woff2    -> 404
 
 - **预期结果**：页面引用的字体文件随包提供，或 HTML 不引用包外资源
 - **实际结果**：`demo-web/` 下只有 `assets/`（`index-*.css`、`index-*.js`），**无 `fonts/` 目录**；两个字体请求 404，浏览器回退到系统字体
-- **脱敏证据**：`evidence/demo-offline-receipt.json` 的 `failed_requests` 中两条 `declared-font-fallback`
+- **脱敏证据**：`evidence/demo-offline-receipt.json` 的 `failed_requests` 中两条 `declared-font-fallback`（SHA-256 `23adba53dd5c9b9b4a1a8d3bb223f704926cde3981cdee3f0008d76af6d8e195`；对应截图 `demo-offline-import-1440.png` = `796b244d…889da17c`）
 - **影响**：功能、布局与可读性不受影响；`说明.txt` 末尾已声明字体回退，属已知差异。但"HTML 引用包内不存在的文件"是包完整性瑕疵，评审逐项核对资源时会看到 404
 - **复现次数**：3（三次离线验证结果一致）
 - **建议修复**：打包时把构建产物的 `fonts/` 一并复制进 `demo-web/`；或在 `demo.html` 中移除这两个 `@font-face` 引用。修复后应删除 `verify-demo-offline.cjs` 的 `declared-font-fallback` 白名单，使该规则收紧为零

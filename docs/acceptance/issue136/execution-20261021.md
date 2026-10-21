@@ -2,9 +2,10 @@
 
 - **票**：#136（父票 #128，`[验收 H][PT-MOB-301] 仓库/Web 回归、冻结版本与交付包冷启动`）
 - **执行人 / 会话**：`Onikamicpj` / 本机代理会话，2026-10-21
-- **执行时间**：2026-10-21 15:48–17:20 (UTC+8) / 07:48–09:20Z
+- **执行时间**：首轮 2026-10-21 15:48–17:20 (UTC+8) / 07:48–09:20Z；review 修订轮于同日稍晚重跑并重新生成收据（见下）
 - **被测版本**：`ffadeb06af70072b5ee2d931ee565e5b7e546acd`（main，PR #127 合并后）
 - **工作方式**：detached HEAD，工作区干净，未改动、未推送任何远程分支
+- **收据时间戳**：`acceptance:browser` 收据为 `2026-10-21T08:20:40.099Z`（在首轮窗口内）；离线回放收据为 `2026-10-21T15:07:45.323Z`（=23:07 +08:00，**在首轮窗口之外**，属同日 review 修订轮重跑）。首轮结论未因重跑改变；本文档的时间范围只描述首轮，凡是取自修订轮重新生成的收据，均在上表时间戳处单列，不并入首轮窗口。
 
 > 本记录只陈述本机实际执行得到的观察。未执行项标 `NOT_RUN` 或 `BLOCKED`，不以下游推断、CI 结果或历史证据顶替本机结论。
 > 本记录不构成对作品合规性、真实设备行为、公网部署或赛事提交结果的判定。
@@ -26,10 +27,12 @@
 | --- | --- | --- |
 | **R01** 仓库检查 | **部分通过（11/13）** | §2 |
 | **R02** Spec30 六/十二 | **BLOCKED** | 需真实隔离 Docker 扫描 |
-| **R03** 浏览器与前端验收 | **PASSED** | §3 |
+| **R03** Browser/frontend/live/mobile 四入口 | **PARTIAL（2/4）**：browser、frontend 通过；live **BLOCKED**、mobile **NOT_RUN** | §3 |
 | **R04** 部署专项 | **BLOCKED** | 需固定版本镜像与受限配置 |
-| 交付包哈希 / 清单 / 冷启动 | **PASSED** | §4 |
+| 交付包哈希 / 清单 / 解压冷启动 | **PASSED**（运行 / 停启未覆盖） | §4、§6 |
 | 离线回放（断网可看） | **PASSED**（范围如声明） | §5 |
+
+> R03 的分母是票面定义的四入口，不是本轮实际跑到的脚本数；少跑的两个入口在 §3 与 §6 单列，不用"通过三项"替代"四入口通过"。
 
 ## 2. R01 执行记录
 
@@ -41,18 +44,20 @@
 | 2 | 工具引导（等价） | `<venv>/Scripts/python.exe -m pip install uv==0.11.23` | **PASSED** | uv 0.11.23 装入 `.themasterplan/cache/check-tools` |
 | 3 | 依赖同步 | `uv sync --project apps/api --locked --extra worker` | **PASSED** | 退出码 0 |
 | 4 | 治理校验 | `python .themasterplan/bin/themasterplan.py verify --root .` | **PASSED** | `{"ok": true, "status": "OK", "issues": []}` |
-| 5 | 后端测试 | `pytest apps/api/tests` | **8 failed**（收集 1717） | §2.1 |
+| 5 | 后端测试 | `pytest apps/api/tests`（经 `uv run --project apps/api --locked --extra worker`，权威调用见 §7.2） | **8 failed**（收集 1717） | §2.1 |
 | 6 | 端到端测试 | `pytest tests/e2e` | **PASSED** | 61 passed / 4 skipped / 退出码 0 |
 | 7 | 静态检查 A | `ruff check apps/api/src apps/api/tests scripts/*.py` | **PASSED** | All checks passed |
 | 8 | 静态检查 B | `ruff check --config apps/api/pyproject.toml deploy tests/e2e` | **PASSED** | All checks passed |
 | 9 | 用户研究包 | `python scripts/verify-user-study-pack.py` | **PASSED** | `issues: 0` / `result: OK`（question-bank=14, answer-key=50, assignment=8, observations=72） |
 | 10 | 契约导出 | `python scripts/export-schema.py` | **PASSED** | 重新导出成功 |
 | 11 | 契约零漂移 | `git diff --exit-code -- packages/contracts apps/web/src/contracts.generated.ts` | **PASSED** | 退出码 0，无漂移 |
-| 12 | 依赖锁一致性 | `npm ci --dry-run` | **PASSED** | 退出码 0，"added 50 packages" |
+| 12 | 依赖锁一致性 | `npm ci --dry-run` | **PARTIAL** | 退出码 0，"added 50 packages"；`npm ci` 本体未执行，按票面"局部通过不计完整通过"记 PARTIAL |
 | 13 | 前端单测 | `npm run test --workspace @privacytrace/web` | **PASSED** | 111 tests / 111 pass / 0 fail |
 | 14 | 生产构建 | `npm run build` | **PASSED** | `vue-tsc --noEmit` + `vite build`，3.03s，204.33 kB JS / 29.75 kB CSS |
 
-第 12 项说明：`check.sh` 第 40 行执行 `npm ci`，该命令会先删除现有 `node_modules` 再重装。本机 npm 源响应在 12s 量级，重装中途失败会留下残缺依赖，因此**未执行 `npm ci` 本体**，改用 `--dry-run` 验证 `package-lock.json` 与 `package.json` 一致。这不是 PASSED 的等价替代，网络稳定时应完整重跑。
+分母说明：第 1 行是权威入口本体（FAILED）；第 2–14 行是被测的 **13 个登记项** = 12 个 `check.sh` 步骤 + 1 个引导等价步（`check.sh` 的 Docker 构建分支只在 `CI=true` 时执行，本机未触发，不计入分母）。13 项 = 11 PASSED + 1 FAILED（第 5 行）+ 1 PARTIAL（第 12 行），三态互斥、合计 13，因此写作 **11/13**。
+
+第 12 项说明：`check.sh` 第 40 行执行 `npm ci`，该命令会先删除现有 `node_modules` 再重装。本机 npm 源响应在 12s 量级，重装中途失败会留下残缺依赖，因此**未执行 `npm ci` 本体**，改用 `--dry-run` 验证 `package-lock.json` 与 `package.json` 一致。这不是 PASSED 的等价替代，**按票面"局部通过不计完整通过"记为 PARTIAL，不计入上面的 11 项**；网络稳定时应完整重跑并改回 PASSED/FAILED。
 
 ### 2.1 8 个失败：全部为隔离扫描不可用
 
@@ -89,13 +94,17 @@ test_e2e_pt_mob_102.py::test_t4_real_world_multisplit_end_to_end_workflow
 
 拆分复核（独立 `--basetemp`，摘要可正常输出）：`test_pr88_evidence_integrity.py` + `test_e2e_r6_opaque.py` + `test_challenger_m1_2_empirical_m1.py` + `test_challenger_m1_2_split_dex.py` → **6 failed, 104 passed, 4 skipped in 31.28s**；`test_e2e_pt_mob_102.py` 的 2 个失败已单独确认。
 
-## 3. R03 浏览器与前端验收
+## 3. R03 四入口（Browser / frontend / live / mobile）
 
-| 脚本 | 命令 | 结果 | 观察 |
+票面把 R03 定义为 **Browser / frontend / live / mobile 四入口本机运行**。本轮跑通 2 个、另加 1 个附加检查，另 2 个如实列出，合计仍按四入口计：
+
+| 入口 | 命令 | 结果 | 观察 |
 | --- | --- | --- | --- |
-| 浏览器验收 | `npm run acceptance:browser` | **PASSED** | TC-01…TC-06 全部 PASSED，`overall_status: PASSED` |
-| 前端流程 | `npm run acceptance:frontend` | **PASSED** | 见下 |
-| 预览生命周期 | `npm run acceptance:preview` | **PASSED** | start/stop、check 恢复、外部进程保护全部通过 |
+| Browser | `npm run acceptance:browser` | **PASSED** | TC-01…TC-06 全部 PASSED，`overall_status: PASSED` |
+| frontend | `npm run acceptance:frontend` | **PASSED** | 见下 |
+| live | `npm run acceptance:live` | **BLOCKED** | 脚本自述链路为 "Actual browser → HTTP intake → policy/model seam → **restricted Docker** → persisted report"（`scripts/verify-live-flow.cjs:1`），且其收据固定 `scanner: 'RESTRICTED_DOCKER'`；本机无 Docker、`wsl.exe` 被拒，未执行 |
+| mobile | `npm run acceptance:mobile` | **NOT_RUN** | 本轮未执行。该入口是 390×844 下"真实生产 Vue + mock 原生桥"的浏览器走查（`scripts/verify-mobile-flow.cjs:1`），**不需要 Docker**，可在本机补跑；不补跑就不得计入通过 |
+| （附加）预览生命周期 | `npm run acceptance:preview` | **PASSED** | start/stop、check 恢复、外部进程保护全部通过；**不属四入口**，不用于补齐分母 |
 
 **acceptance:browser 收据**（脚本自动生成，锚定提交）：见 `evidence/browser-proof-ffadeb06.json`
 
@@ -119,11 +128,11 @@ test_e2e_pt_mob_102.py::test_t4_real_world_multisplit_end_to_end_workflow
 | --- | --- |
 | SHA-256 | `6ba1fbde366fb6acc8ff3054313c7177f43141d08620cf228c9f82b1e9e46967` |
 | 字节数 | 64,261,830 |
-| 条目 | 436 = **435 文件 + 1 空目录** |
+| 条目 | 436 = **435 文件 + 1 空目录**（`zipfile` 口径：目录条目也计数） |
 | 解压后大小 | 67,957,481 字节 |
 | 根目录 | 单一 `PrivacyTrace_322234/` |
 | CRC | `zipfile.testzip()` 返回 None，**全通过** |
-| 目录结构 | `00_材料清单.md` + `01_作品及成果文件`(407) / `02_作品展示视频`(3) / `03_作品介绍文档`(2) / `04_运行或使用说明`(3) / `05_补充成果材料`(16) / `06_第三方资源说明`(1) / `07_AI工具使用补充说明`(2) / `08_学籍等专项材料`(1) |
+| 目录结构 | `00_材料清单.md` + `01_作品及成果文件`(407) / `02_作品展示视频`(3) / `03_作品介绍文档`(2) / `04_运行或使用说明`(3) / `05_补充成果材料`(16) / `06_第三方资源说明`(1) / `07_AI工具使用补充说明`(2) / `08_学籍等专项材料`(1)；括号为各顶层目录下的**条目数**（含那 1 个空目录），合计 435，加根目录 1 个文件 = 436 |
 | 冷启动 | 解压到全新目录，436 条目全部落盘，9 个顶层条目与包内一致 |
 | 与既有记录一致性 | 与 2026-10-21 打包记录（同 SHA、同 435 文件、CRC 通过）完全一致 |
 
@@ -142,7 +151,7 @@ test_e2e_pt_mob_102.py::test_t4_real_world_multisplit_end_to_end_workflow
 
 | 步骤 | 动作 | 断言 | 结果 |
 | --- | --- | --- | --- |
-| 1 | 打开 `file://…/demo.html` | `status 200`、标题含 `PrivacyTrace`、H2 含「导入分析材料」 | PASSED（135 ms） |
+| 1 | 打开 `file://…/demo.html` | `status 200`、标题含 `PrivacyTrace`、H2 含「导入分析材料」 | PASSED（145 ms） |
 | 2 | 点击「体验示例」 | 正文出现 `paperboat-example.apk` 与两份政策名（纸舟地图隐私政策、云点统计服务说明） | PASSED |
 | 3 | 点击「检查候选」 | H2 含「检查政策候选」，正文含「政策原文」「候选声明」 | PASSED |
 | 4 | 点击「进入流程演示」 | H2 含「分析流程演示」，正文含「核对输入」 | PASSED |
@@ -183,7 +192,12 @@ test_e2e_pt_mob_102.py::test_t4_real_world_multisplit_end_to_end_workflow
 | 正常回放 | 无 | PASSED / exit 0 | ✅ `no_external_network_attempt — 0` |
 | **同错误码、非白名单资源** | `--inject-missing-resource` | FAILED / exit 1 | ✅ `DENIED [file:] __missing_resource__.png`；控制台 5 条错误中 **1 条 unexplained** |
 | **外部 http(s) 尝试** | `--inject-external-request` | FAILED / exit 1 | ✅ `no_external_network_attempt — 1 external http(s) attempt: https://example.com/__external__.png` |
-| 页面不存在 | 传入不存在的路径 | FAILED / exit 1 | ✅ `checks_failed: 6`，`0 allowed, 1 denied` |
+| 页面不存在 | 传入不存在的路径 | FAILED / exit 1 | ✅ 判 FAILED、退出码 1，`0 allowed, 1 denied`（该次回显未单独落库，故不引用其内部计数） |
+| 参数拼错 | `--inject-missing-resourc` | exit 2（用法错误） | ✅ 实测 exit 2 并报未知参数，不会静默退化成正常回放 |
+
+> 三组负向测试的回显只写在本节，**没有另存收据**；因此表中不引用其 `checks_failed` 等内部计数，唯一落库的收据是正常回放的 `evidence/demo-offline-receipt.json`。需要复核时按表中参数重跑即可复现判定逻辑（脚本已拒收未知参数，见上表末行）。
+>
+> 脚本在 review 修订后升到 **v6**（未知参数直接拒收、阶段切换复用 `clickExact`），不改变正常回放的检查名与判定口径；已落库的收据由 v5 生成。本轮**没有重跑**（仓库内不含包里的 `demo-web/demo.html`，脚本需要它才能执行）；将来重跑时请替换收据并在 `captured_at_utc` 旁注明脚本版本。
 
 第二组直接回应"相同错误码、非白名单资源"：注入的 `__missing_resource__.png` 与字体同为 `ERR_FILE_NOT_FOUND`，但因路径不在白名单、且配额已被两个字体请求占满，被正确判为越界。
 
@@ -195,7 +209,7 @@ test_e2e_pt_mob_102.py::test_t4_real_world_multisplit_end_to_end_workflow
 
 ### 5.5 执行中发现的包内问题（BUG-136-02）
 
-`demo.html` 引用了 `fonts/NotoSansSC-Variable.woff2` 与 `fonts/NotoSerifSC-Variable.woff2`（页面中解析到 `01_作品及成果文件/fonts/…`），但包内 `01_作品及成果文件/demo-web/` 下只有 `assets/`（CSS + JS），**没有 `fonts/` 目录**，因此两个字体请求均 404，回退到系统字体。
+`demo.html` 引用了 `fonts/NotoSansSC-Variable.woff2` 与 `fonts/NotoSerifSC-Variable.woff2`（相对 `demo.html` 解析到 `01_作品及成果文件/demo-web/fonts/…`），但包内 `01_作品及成果文件/demo-web/` 下只有 `assets/`（CSS + JS），**没有 `fonts/` 目录**，因此两个字体请求均 404，回退到系统字体。
 
 - **影响**：不影响功能与布局；`说明.txt` 末尾已声明「字体使用系统回退字体渲染，视觉与完整版略有差异，不影响布局与可读性」。
 - **性质**：交付包完整性瑕疵（引用了包内不存在的文件），记为 `BUG-136-02`。
@@ -209,13 +223,16 @@ test_e2e_pt_mob_102.py::test_t4_real_world_multisplit_end_to_end_workflow
 | --- | --- | --- | --- |
 | R02 Spec30 six / twelve | **BLOCKED** | `scripts/validate-spec30.py` 内部先 `docker_prefix() + build` 构建受控镜像，六 / 十二场景跑在该镜像中 | Linux + Docker Engine + `playwright@1.62.1` + chromium |
 | R04 部署专项 | **BLOCKED** | `deploy/check_acceptance.sh` 首行要求 `id -u = 0`，构建 api/web/runner/scan 四个镜像并做上线、回滚与恢复 | **Linux + root** + Docker + compose v2 + 干净已提交工作区 |
+| R03 `acceptance:live` | **BLOCKED** | 链路含 restricted Docker 扫描与持久队列（`scripts/verify-live-flow.cjs:1`），本机无 Docker | 同 R02 环境 |
+| R03 `acceptance:mobile` | **NOT_RUN** | 本轮未执行；该入口是 390×844 浏览器走查 + mock 原生桥，**不依赖 Docker** | 本机补跑 `npm run acceptance:mobile`，把收据落到本目录后改状态 |
+| 交付包"运行 / 停启" | **NOT_RUN** | §4 只覆盖哈希、条目清单与解压冷启动；真正跑起来要后端与真实扫描 | 同 R02 环境 |
 | R01 中 8 个扫描类用例 | **FAILED（环境）** | 见 §2.1 | 同上：Linux + Docker |
 | `npm ci` 本体 | **NOT_RUN** | 见 §2 第 12 项 | 网络稳定时重跑即可 |
 | 真实 Android 设备 / 模拟器行为 | **NOT_RUN** | 无 adb、无模拟器、无 Java | 专用模拟器目标或真机 |
 | 单包 / splits 的真实非空报告 | **BLOCKED** | 依赖真实扫描 | 同 R02 |
 | 外部模型质量 | **NOT_RUN** | 未配置模型端点 | 自带模型端点 |
 
-> 交接说明：上述四项需要 Linux + Docker 的项已整理为 [R02-R04-handoff.md](R02-R04-handoff.md)（环境要求、逐条命令、产物位置、交回方式与禁止事项），可直接交给具备条件的执行人。
+> 交接说明：上表中需要换机器或补跑的项已整理为 [R02-R04-handoff.md](R02-R04-handoff.md)（环境要求、逐条命令、产物位置、交回方式与禁止事项）——R02、R04、R03 `acceptance:live` 与交付包运行/停启需要 Linux + Docker；R03 `acceptance:mobile` 只需浏览器，可在任意机器补跑。可直接交给具备条件的人或机器。
 
 不得由本记录外推：真实设备或 OEM 行为、公网部署与公网 TLS 信任、商店审核、外部模型质量、赛事提交结果。
 
@@ -243,10 +260,10 @@ test_e2e_pt_mob_102.py::test_t4_real_world_multisplit_end_to_end_workflow
 
 | 文件 | 说明 |
 | --- | --- |
-| `evidence/browser-proof-ffadeb06.json` | acceptance:browser 收据副本（锚定 `ffadeb06`）。仓库原 `evidence/browser-proof.json` 未改动；本副本仅把 `step_sequences` 中两处本机绝对截图路径改写为仓库相对路径，其余字段未改 |
+| `evidence/browser-proof-ffadeb06.json` | **本轮运行** `acceptance:browser` 生成的收据（锚定 `ffadeb06`），**不是**仓库既有 `evidence/browser-proof.json` 的副本：后者是 2026-10-11 的旧收据（`git_commit: 82379c7`、5 个 TC、Chromium 156），两份文件内容不同属正常，仓库中该旧文件未被改动。本副本只把 `step_sequences` 里两处本机绝对截图路径改成**不指向仓库内任何路径**的占位形式（`<run-evidence-dir>/screenshots/…`），其余字段未改。复现时应设 `PRIVACYTRACE_EVIDENCE_DIR` 指向仓库外目录，否则脚本会覆盖受版本控制的 `evidence/browser-proof.json` 与 `evidence/screenshots/`。 |
 | `evidence/demo-offline-receipt.json` | 离线回放收据。`failed_requests[].url` 统一为 `file:<包内相对路径>`（保留协议与路径供核验，不含本机盘符；`http(s)` 保留原始 URL 以便审计外部请求）；每条含 `protocol`、`path`、`error`、allow/deny 与命中的规则 id。另含 `checks`、`pages_reached`、`external_attempts` 与 `console_errors.explained/unexplained` |
 | `evidence/demo-offline-import-1440.png` | 导入页（离线，1440×900） |
 | `evidence/demo-offline-candidates-1440.png` | 候选页（离线，1440×900） |
 | `evidence/demo-offline-flow-1440.png` | 流程演示页（离线，1440×900） |
 | `evidence/demo-offline-flow-390.png` | 流程演示页（离线，390×844） |
-| `verify-demo-offline.cjs` | 离线回放验证脚本：显式离线 + 请求拦截 + 逐页内容断言 + 按资源路径的错误白名单 + 非零退出码。在仓库内执行即可解析 `playwright`；输出目录建议给临时路径，避免在仓库里留下产物 |
+| `verify-demo-offline.cjs` | 离线回放验证脚本（v6）：显式离线 + 请求拦截 + 逐页内容断言 + 按资源路径的错误白名单 + 非零退出码。**未知参数直接 `exit 2`**，避免自测开关拼错时静默跑成正常回放；`playwright` 在参数校验之后才加载，缺依赖同样 `exit 2` 而不是抛栈。在仓库根目录执行才能解析到根 `package.json` 的 `playwright`；输出目录建议给临时路径，避免在仓库里留下产物。已落库收据由 v5 生成，v6 不改变正常回放的检查名与判定口径（未重跑，见 §5.3）。 |

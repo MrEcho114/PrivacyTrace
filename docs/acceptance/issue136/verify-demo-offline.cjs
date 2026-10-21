@@ -1,10 +1,11 @@
-// 离线回放验证：#136 / R03 配套（v5）
+// 离线回放验证：#136 / R03 配套（v6：未知参数直接拒收；阶段切换复用 clickExact）
 //
-// 判定设计（对应两轮 review 意见）：
+// 判定设计（对应历次 review 意见）：
 //   1. 显式离线：context.setOffline(true) + 拦截中止所有 http(s)；
 //   2. 交互验证：导入 → 体验示例 → 检查候选 → 进入流程演示 → 进入下一阶段，逐页断言内容；
-//   3. 白名单**同时约束协议与路径**：只允许 `file:` 协议下、包内 `fonts/*.woff2` 与 `api/v1/*`。
-//      任何 `http(s)` 尝试（即使被终断）都单独计为 FAILED —— 离线回放不应有外部请求；
+//   3. 白名单**同时约束协议与路径**：只允许 `file:` 协议下的两个具名字体文件
+//      （`fonts/NotoSansSC-Variable.woff2`、`fonts/NotoSerifSC-Variable.woff2`）与 `api/v1/*`。
+//      任何 `http(s)` 尝试（即使被中断）都单独计为 FAILED —— 离线回放不应有外部请求；
 //   4. 控制台错误**按条数与错误码配额逐一消解**，不是"存在同码请求就算归因"：
 //      每条错误必须消耗一个尚未被认领的失败请求配额，扣不掉即为 unexplained → FAILED；
 //   5. 内置两个负向自测开关（见下），用于证明"相同错误码但非白名单资源"与"外部请求"确实会被判失败。
@@ -16,15 +17,26 @@
 //   正常                                   -> exit 0
 //   --inject-missing-resource              -> exit 1（__missing_resource__.png 不在白名单）
 //   --inject-external-request              -> exit 1（出现外部 http(s) 尝试）
+//   未知参数（含拼错的自测开关）             -> exit 2（不静默退化成正常回放）
 //
 // 退出码：0 = 全部通过；1 = 有检查失败；2 = 用法或执行异常。
-const { chromium } = require('playwright');
+//
+// 参数先于依赖解析：否则缺 playwright 时连"参数写错"都会以 require 崩溃收场（exit 1 + 堆栈），
+// 使下面声明的 exit 2 语义失效。
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
 const argv = process.argv.slice(2);
+const KNOWN_FLAGS = new Set(['--inject-missing-resource', '--inject-external-request']);
 const flags = new Set(argv.filter(a => a.startsWith('--')));
+// 未知参数必须报错：否则 --inject-missing-resourc 这类笔误会静默退化成正常回放并 exit 0，
+// 让"负向自测确实会判失败"变成不可证伪的说法。
+const unknown = [...flags].filter(f => !KNOWN_FLAGS.has(f));
+if (unknown.length) {
+  console.error(`未知参数: ${unknown.join(', ')}；仅支持 ${[...KNOWN_FLAGS].join(' | ')}。`);
+  process.exit(2);
+}
 const positional = argv.filter(a => !a.startsWith('--'));
 const target = positional[0];
 if (!target) {
@@ -37,6 +49,14 @@ const executablePath = process.env.PRIVACYTRACE_CHROMIUM || undefined;
 
 const INJECT_MISSING = flags.has('--inject-missing-resource');
 const INJECT_EXTERNAL = flags.has('--inject-external-request');
+
+let chromium;
+try {
+  ({ chromium } = require('playwright'));
+} catch {
+  console.error('执行异常：无法加载 playwright。请在仓库根目录 npm install 后重试（本脚本只依赖根 package.json 的 playwright）。');
+  process.exit(2);
+}
 
 // 白名单：同时校验协议与路径，避免外部 URL 被截断后误命中。
 const ALLOWED_FAILURES = [
@@ -197,14 +217,10 @@ const record = (name, pass, observed) => checks.push({ name, status: pass ? 'PAS
     if (ok) {
       result.pages_reached.push('flow_demo');
       await shot('demo-offline-flow-1440.png');
-      const next = page.getByRole('button', { name: '进入下一阶段', exact: true }).first();
-      if ((await next.count()) && !(await next.isDisabled())) {
-        await next.click({ timeout: 8000 }).catch(() => {});
-        await page.waitForTimeout(700);
-        record('stage_switch_works', (await bodyText()).includes('静态线索'), '点击「进入下一阶段」后进入「静态线索」阶段');
-      } else {
-        record('stage_switch_works', false, '「进入下一阶段」按钮不存在或不可用');
-      }
+      const next = await clickExact('进入下一阶段');
+      record('stage_switch_works',
+        next.ok && (await bodyText()).includes('静态线索'),
+        next.ok ? '点击「进入下一阶段」后进入「静态线索」阶段' : `「进入下一阶段」不可用: ${next.why}`);
     }
   }
 

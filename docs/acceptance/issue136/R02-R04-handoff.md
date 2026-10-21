@@ -8,8 +8,12 @@
 | --- | --- | --- |
 | **R02** Spec30 六 / 十二场景 | BLOCKED | `six scenarios` 与 `twelve controlled scenarios` 两套证据 |
 | **R04** 部署专项 | BLOCKED | 真实部署与恢复收据 |
+| **R03 `acceptance:live`** | BLOCKED | `tmp/issue44-live-proof/<fixtures\|public>/verification.json` |
+| **R03 `acceptance:mobile`** | NOT_RUN | `tmp/issue72-native/walkthrough.json`（只需浏览器，任一台机器都能补） |
 
-R03（浏览器与前端验收）、交付包复核与离线回放已在基线 `ffadeb06` 上取得 PASSED。**该结论仅对该基线成立**：最终交付 head 或包产物发生变化时，必须按影响范围重跑并重新绑定证据（至少重跑 `acceptance:browser`、`acceptance:frontend` 与 `verify-demo-offline.cjs`，并重新计算包哈希、条目数与材料清单）。不得把本基线的结果当作最终组合的验收结论。
+R03 的四个入口里，Browser 与 frontend 已在基线 `ffadeb06` 上取得 PASSED；`live` 与 `mobile` **未完成**——`live` 同样 BLOCKED（链路要真实受限 Docker 扫描，见第 1 节环境），`mobile` 只是浏览器走查、**不需要 Docker**，任何机器都能补跑。交付包复核与离线回放也只在 `ffadeb06` 上 PASSED。
+
+**这些结论仅对该基线成立**：最终交付 head 或包产物发生变化时，必须按影响范围重跑并重新绑定证据（至少重跑 `acceptance:browser`、`acceptance:frontend`、`acceptance:mobile` 与 `verify-demo-offline.cjs`，并重新计算包哈希、条目数与材料清单）。不得把本基线的结果当作最终组合的验收结论。
 
 ## 1. 环境要求
 
@@ -84,6 +88,8 @@ sudo bash deploy/check_acceptance.sh
 | `tmp/spec30-ci/browser-proof/browser-proof.json` | 浏览器证据 |
 | `tmp/spec30-ci/offline-proof/offline-proof.json` | 独立离线回放证据 |
 | `tmp/deployment-acceptance/` | 部署与恢复收据 |
+| `tmp/issue44-live-proof/<fixtures\|public>/verification.json` | R03 `acceptance:live` 收据（`npm run acceptance:live` 写出） |
+| `tmp/issue72-native/walkthrough.json` | R03 `acceptance:mobile` 收据（`npm run acceptance:mobile` 写出，含截图） |
 
 交回时请附：
 

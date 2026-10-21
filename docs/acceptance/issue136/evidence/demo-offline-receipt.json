@@ -2,16 +2,21 @@
   "record_kind": "OFFLINE_REPLAY",
   "mode": "EXPLICIT_OFFLINE",
   "offline_enforced": true,
-  "allowed_console_error_rules": [
-    "missing-static-asset",
-    "backend-unavailable-fetch",
-    "backend-unavailable-request"
+  "allowed_failure_rules": [
+    {
+      "id": "declared-font-fallback",
+      "why": "demo-web/说明.txt 已声明「字体使用系统回退字体渲染」；实测包内无 fonts/ 目录"
+    },
+    {
+      "id": "backend-unavailable",
+      "why": "静态版无后端，demo-web/说明.txt §四 已声明接口请求会失败"
+    }
   ],
   "checks": [
     {
       "name": "document_loaded",
       "status": "PASSED",
-      "observed": "status 200 in 114 ms"
+      "observed": "status 200 in 171 ms"
     },
     {
       "name": "title_rendered",
@@ -44,9 +49,14 @@
       "observed": "点击「进入下一阶段」后进入「静态线索」阶段"
     },
     {
-      "name": "console_errors_within_declared_scope",
+      "name": "failed_requests_within_declared_scope",
       "status": "PASSED",
-      "observed": "4 error(s): 4 allowed, 0 unexpected"
+      "observed": "3 failed request(s): 3 allowed, 0 disallowed"
+    },
+    {
+      "name": "console_errors_attributable",
+      "status": "PASSED",
+      "observed": "4 console error(s), 4 attributable, 0 unexplained"
     },
     {
       "name": "no_page_errors",
@@ -75,38 +85,36 @@
     "对照报告": "absent"
   },
   "title": "PrivacyTrace · 证据对照工作台",
-  "load_ms": 114,
-  "declared_scope_note": "包内 demo-web/说明.txt 声称导入 / 候选 / 流程演示三页可达、完整报告页需 http 环境；本次实测三页均可达，与声明一致。",
+  "load_ms": 171,
+  "declared_scope_note": "demo-web/说明.txt §三 声称导入 / 候选 / 流程演示三页可达；本次实测三页均可达。§四 声称报告页需 http 环境；实测「分析进度」「对照报告」按钮不存在，与之一致。",
+  "failed_requests": [
+    {
+      "path": "api/v1/taxonomy",
+      "error": "net::ERR_FAILED",
+      "allowed": true,
+      "rule": "backend-unavailable"
+    },
+    {
+      "path": "fonts/NotoSansSC-Variable.woff2",
+      "error": "net::ERR_FILE_NOT_FOUND",
+      "allowed": true,
+      "rule": "declared-font-fallback"
+    },
+    {
+      "path": "fonts/NotoSerifSC-Variable.woff2",
+      "error": "net::ERR_FILE_NOT_FOUND",
+      "allowed": true,
+      "rule": "declared-font-fallback"
+    }
+  ],
   "console_errors": {
     "total": 4,
-    "allowed": [
-      {
-        "text": "Access to fetch at 'file:///<local-drive>/api/v1/taxonomy' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome-experimental-site-token-provider, chrome-extension, chrome-untrusted, data, edge, http, https, isolated-app.",
-        "allowed": true,
-        "rule": "backend-unavailable-fetch"
-      },
-      {
-        "text": "Failed to load resource: net::ERR_FAILED",
-        "allowed": true,
-        "rule": "backend-unavailable-request"
-      },
-      {
-        "text": "Failed to load resource: net::ERR_FILE_NOT_FOUND",
-        "allowed": true,
-        "rule": "missing-static-asset"
-      },
-      {
-        "text": "Failed to load resource: net::ERR_FILE_NOT_FOUND",
-        "allowed": true,
-        "rule": "missing-static-asset"
-      }
-    ],
-    "unexpected": []
+    "unexplained": []
   },
   "page_errors": [],
   "blocked_external_requests": [],
   "checks_failed": 0,
   "overall_status": "PASSED",
-  "captured_at_utc": "2026-10-21T11:06:55.713Z",
-  "evidence_paths_note": "本收据只记录仓库相对路径，不含本机绝对路径。"
+  "captured_at_utc": "2026-10-21T12:22:48.384Z",
+  "evidence_paths_note": "本收据只记录包内相对路径，不含本机盘符或用户名。"
 }

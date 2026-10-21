@@ -186,15 +186,17 @@ test_e2e_pt_mob_102.py::test_t4_real_world_multisplit_end_to_end_workflow
 
 ## 6. 未验证边界与 BLOCKED
 
-| 项 | 状态 | 原因 |
-| --- | --- | --- |
-| R02 Spec30 six / twelve | **BLOCKED** | 需真实隔离 Docker 扫描 |
-| R04 部署专项 | **BLOCKED** | 需固定版本镜像与受限配置 |
-| R01 中 8 个扫描类用例 | **FAILED（环境）** | 见 §2.1 |
-| `npm ci` 本体 | **NOT_RUN** | 见 §2 第 12 项 |
-| 真实 Android 设备 / 模拟器行为 | **NOT_RUN** | 无 adb、无模拟器、无 Java |
-| 单包 / splits 的真实非空报告 | **BLOCKED** | 依赖真实扫描 |
-| 外部模型质量 | **NOT_RUN** | 未配置模型端点 |
+| 项 | 状态 | 原因 | 需要什么才能完成 |
+| --- | --- | --- | --- |
+| R02 Spec30 six / twelve | **BLOCKED** | `scripts/validate-spec30.py` 内部先 `docker_prefix() + build` 构建受控镜像，六 / 十二场景跑在该镜像中 | Linux + Docker Engine + `playwright@1.62.1` + chromium |
+| R04 部署专项 | **BLOCKED** | `deploy/check_acceptance.sh` 首行要求 `id -u = 0`，构建 api/web/runner/scan 四个镜像并做上线、回滚与恢复 | **Linux + root** + Docker + compose v2 + 干净已提交工作区 |
+| R01 中 8 个扫描类用例 | **FAILED（环境）** | 见 §2.1 | 同上：Linux + Docker |
+| `npm ci` 本体 | **NOT_RUN** | 见 §2 第 12 项 | 网络稳定时重跑即可 |
+| 真实 Android 设备 / 模拟器行为 | **NOT_RUN** | 无 adb、无模拟器、无 Java | 专用模拟器目标或真机 |
+| 单包 / splits 的真实非空报告 | **BLOCKED** | 依赖真实扫描 | 同 R02 |
+| 外部模型质量 | **NOT_RUN** | 未配置模型端点 | 自带模型端点 |
+
+> 交接说明：上述四项需要 Linux + Docker 的项已整理为 [R02-R04-handoff.md](R02-R04-handoff.md)（环境要求、逐条命令、产物位置、交回方式与禁止事项），可直接交给具备条件的执行人。
 
 不得由本记录外推：真实设备或 OEM 行为、公网部署与公网 TLS 信任、商店审核、外部模型质量、赛事提交结果。
 

@@ -1,0 +1,126 @@
+{
+  "generatedAt": "2026-10-21T13:06:24.996Z",
+  "fixture": "http://127.0.0.1:5195/tmp/round2-a/index.html",
+  "chromium": "156.0.8078.4",
+  "bottom390": {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "sheet": {
+      "x": 0,
+      "y": 124,
+      "width": 390,
+      "height": 720
+    },
+    "sheetMaxHeight": "720px",
+    "sheetBorderRadius": "20px 20px 0px 0px",
+    "sheetZIndex": "101",
+    "overlayBackground": "rgba(44, 53, 71, 0.42)",
+    "overlayZIndex": "100",
+    "closeButton": {
+      "width": 48,
+      "height": 48,
+      "ariaLabel": "关闭"
+    },
+    "title": {
+      "fontFamily": "\"Noto Serif SC\", SimSun, serif",
+      "fontSize": "20px"
+    },
+    "body": {
+      "overscrollBehavior": "contain",
+      "clientHeight": 587,
+      "scrollHeight": 712,
+      "scrollable": true,
+      "paddingBottom": "16px"
+    },
+    "horizontalOverflow": false,
+    "activeElement": "ui-sheet-close",
+    "bodyOverflow": "hidden",
+    "initialFocusIsClose": true,
+    "escapeCloses": true,
+    "focusReturnedToTrigger": true
+  },
+  "bottom1440": {
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "sheet": {
+      "x": 400,
+      "y": 180,
+      "width": 640,
+      "height": 720
+    },
+    "sheetMaxHeight": "720px",
+    "sheetBorderRadius": "20px 20px 0px 0px",
+    "sheetZIndex": "101",
+    "overlayBackground": "rgba(44, 53, 71, 0.42)",
+    "overlayZIndex": "100",
+    "closeButton": {
+      "width": 48,
+      "height": 48,
+      "ariaLabel": "关闭"
+    },
+    "title": {
+      "fontFamily": "\"Noto Serif SC\", SimSun, serif",
+      "fontSize": "20px"
+    },
+    "body": {
+      "overscrollBehavior": "contain",
+      "clientHeight": 587,
+      "scrollHeight": 690,
+      "scrollable": true,
+      "paddingBottom": "16px"
+    },
+    "horizontalOverflow": false,
+    "activeElement": "ui-sheet-close",
+    "bodyOverflow": "hidden"
+  },
+  "detail390": {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "sheet": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 844
+    },
+    "sheetMaxHeight": "none",
+    "sheetBorderRadius": "0px",
+    "sheetZIndex": "101",
+    "overlayBackground": "rgba(44, 53, 71, 0.42)",
+    "overlayZIndex": "100",
+    "closeButton": {
+      "width": 48,
+      "height": 48,
+      "ariaLabel": "关闭"
+    },
+    "title": {
+      "fontFamily": "\"Noto Serif SC\", SimSun, serif",
+      "fontSize": "20px"
+    },
+    "body": {
+      "overscrollBehavior": "contain",
+      "clientHeight": 728,
+      "scrollHeight": 728,
+      "scrollable": false,
+      "paddingBottom": "16px"
+    },
+    "horizontalOverflow": false,
+    "activeElement": "ui-sheet-close",
+    "bodyOverflow": "hidden"
+  },
+  "withoutDescription": {
+    "opens": true,
+    "describedBy": "reka-dialog-description-v-1",
+    "describedByTargetExists": true,
+    "descriptionPresent": false
+  },
+  "console": {
+    "pageErrors": [],
+    "warningsAndErrors": []
+  }
+}

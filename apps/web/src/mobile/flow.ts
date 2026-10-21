@@ -6,6 +6,11 @@ import type { LiveDraft } from '../liveApi'
 import type { ExternalInput } from '../policyAssist'
 import type { MobileBridge, Upload, ModelStatus } from './bridge'
 
+// One native poll reconciles capabilities/draft state and sends five HTTP reads.
+// Keep automatic traffic below the default 60/minute budget, leaving room for
+// explicit refresh, cancellation and retry on the same instance.
+const POLL_INTERVAL_MS = 10_000
+
 export function createMobileFlow(bridge: MobileBridge) {
   const state = reactive(freshWorkflow())
   const context = ref<Upload | null>(null), draft = ref<LiveDraft | null>(null)
@@ -66,7 +71,7 @@ export function createMobileFlow(bridge: MobileBridge) {
         catch { check(); notice.value = '材料已恢复，历史任务暂未读到。请刷新进度重试；未创建新的分析。' }
       }
     })
-    if (current === generation && job.value && !terminal()) timer = setTimeout(poll, 1500)
+    if (current === generation && job.value && !terminal()) timer = setTimeout(poll, POLL_INTERVAL_MS)
   }
   async function refresh() { await run(async request => { apply(await request<LiveDraft>('read')); notice.value = '已读取服务保存的材料。' }) }
   async function importCollected(input: ExternalInput) {
@@ -131,17 +136,17 @@ export function createMobileFlow(bridge: MobileBridge) {
       }
       state.step = 'progress'
     })
-    if (current === generation && job.value && !terminal()) timer = setTimeout(poll, 1500)
+    if (current === generation && job.value && !terminal()) timer = setTimeout(poll, POLL_INTERVAL_MS)
   }
   async function poll() {
     const current = generation
     await run(async request => { job.value = await request<AnalysisJob>('job'); apply(await request<LiveDraft>('read')) })
-    if (current === generation && job.value && !terminal() && !error.value) timer = setTimeout(poll, 1500)
+    if (current === generation && job.value && !terminal() && !error.value) timer = setTimeout(poll, POLL_INTERVAL_MS)
   }
   async function control(action: 'cancel-job' | 'retry-job') {
     const current = generation
     await run(async request => { job.value = await request<AnalysisJob>(action); state.step = 'progress' })
-    if (current === generation && job.value && !terminal()) timer = setTimeout(poll, 1500)
+    if (current === generation && job.value && !terminal()) timer = setTimeout(poll, POLL_INTERVAL_MS)
   }
   async function openReport() { await run(async request => { report.value = await request<Report>('report'); state.step = 'report' }) }
   async function remove() {

@@ -1,0 +1,322 @@
+{
+  "group": "polling-red",
+  "case_passed": false,
+  "records": [
+    {
+      "private_locator": "polling-red-begin.log",
+      "private_capture_sha256": "80b03aeee93274e38caae8da6b356d37f6098bcf093621804c81fe274adce84c",
+      "observation": {
+        "action": "begin",
+        "at_utc": "2026-10-21T09:15:40.896Z",
+        "body_sha256": "20bc86656f11bb929f88da1886bc08641b6a91d542e2de04750cb0d024fc6ed5",
+        "driver_sha256": "b9b75b1a138289ffa207b9a92466d4f58b14165ed1763c29d4e7d32121eb3ae6",
+        "shows_report_button": false,
+        "shows_cancelled": false,
+        "shows_error": false,
+        "status": "OBSERVED",
+        "case_passed": false,
+        "visible_job_aliases": [
+          "539d52808876"
+        ]
+      }
+    },
+    {
+      "private_locator": "polling-red-watch.log",
+      "private_capture_sha256": "dbd3d6fbd4810f2e508ac7c312302c757d4ef4022de2b440354a2d25ae2b44fb",
+      "observation": {
+        "action": "watch",
+        "at_utc": "2026-10-21T09:16:16.340Z",
+        "body_sha256": "9a5d29e34be35dd454dfcb3a60beda6d053f062146a12fc642bd4bdac7b2d802",
+        "driver_sha256": "b9b75b1a138289ffa207b9a92466d4f58b14165ed1763c29d4e7d32121eb3ae6",
+        "shows_report_button": false,
+        "shows_cancelled": false,
+        "shows_error": true,
+        "status": "OBSERVED",
+        "case_passed": false,
+        "visible_job_aliases": [
+          "539d52808876"
+        ]
+      }
+    },
+    {
+      "private_locator": "polling-red-observe.json",
+      "private_capture_sha256": "785bb76f411a0b1681106bf70b840249075d8e87219fd078a3dfe5f1c28247d9",
+      "observation": {
+        "at_utc": "2026-10-21T09:16:18.305042+00:00",
+        "source_sha": "ffadeb06af70072b5ee2d931ee565e5b7e546acd",
+        "persistent": {
+          "jobs": [
+            {
+              "state": "CANCELLED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 2,
+              "attempt": 1,
+              "job_alias": "b123f956ac36"
+            },
+            {
+              "state": "QUEUED",
+              "has_report": false,
+              "execution_state": "READY",
+              "fence": 0,
+              "attempt": 0,
+              "job_alias": "539d52808876"
+            },
+            {
+              "state": "QUEUED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 1,
+              "attempt": 0,
+              "job_alias": "be2909b12f02"
+            },
+            {
+              "state": "CANCELLED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 1,
+              "attempt": 0,
+              "job_alias": "9d3714364832"
+            },
+            {
+              "state": "SUCCEEDED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 2,
+              "attempt": 1,
+              "job_alias": "8bbdeb8bd7af"
+            },
+            {
+              "state": "SUCCEEDED",
+              "has_report": true,
+              "execution_state": "SUCCEEDED",
+              "fence": 1,
+              "attempt": 1,
+              "job_alias": "fb1cb3e9595f"
+            },
+            {
+              "state": "SUCCEEDED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 2,
+              "attempt": 1,
+              "job_alias": "4c8db27501f4"
+            },
+            {
+              "state": "REPORTING",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 4,
+              "attempt": 2,
+              "job_alias": "ee6927db792b"
+            }
+          ],
+          "counts": {
+            "intake_documents": 16,
+            "outbox_events": 8,
+            "runner_materials": 1,
+            "deletion_intents": 10,
+            "upload_reservations": 0
+          },
+          "scopes": [
+            {
+              "kind": "DRAFT",
+              "tombstone": false,
+              "scope_alias": "8628d29ffe11"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": false,
+              "scope_alias": "fb1cb3e9595f"
+            },
+            {
+              "kind": "DRAFT",
+              "tombstone": true,
+              "scope_alias": "ec62f50247b1"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "9d3714364832"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "8bbdeb8bd7af"
+            },
+            {
+              "kind": "DRAFT",
+              "tombstone": true,
+              "scope_alias": "b27e7a795af3"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "be2909b12f02"
+            },
+            {
+              "kind": "DRAFT",
+              "tombstone": true,
+              "scope_alias": "0b2968b9f815"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "b123f956ac36"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "ee6927db792b"
+            },
+            {
+              "kind": "DRAFT",
+              "tombstone": true,
+              "scope_alias": "aa8f70a0b141"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "4c8db27501f4"
+            },
+            {
+              "kind": "DRAFT",
+              "tombstone": false,
+              "scope_alias": "61b7a30600db"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": false,
+              "scope_alias": "539d52808876"
+            }
+          ],
+          "material_files": 45
+        },
+        "runner": [
+          {
+            "state": "DONE",
+            "error": null,
+            "has_receipt": true,
+            "result_sha256": "bf69ba66d81a18fcacac2e877233ec05baca155806debabfb38b8d3450703b27"
+          }
+        ],
+        "active_scanners": [],
+        "captured_private_scopes": 6,
+        "case_passed": false,
+        "last_60s_request_groups": [
+          {
+            "actor": "ANDROID_NATIVE",
+            "scope_alias": null,
+            "method": "GET",
+            "route": "/api/v1/mobile-capabilities",
+            "status": 200,
+            "count": 24,
+            "first_epoch": 1792574105.0394127,
+            "last_epoch": 1792574153.094097
+          },
+          {
+            "actor": "ANDROID_NATIVE",
+            "scope_alias": null,
+            "method": "POST",
+            "route": "/api/v1/web/drafts",
+            "status": 200,
+            "count": 1,
+            "first_epoch": 1792574114.0309274,
+            "last_epoch": 1792574114.0309274
+          },
+          {
+            "actor": "ANDROID_NATIVE",
+            "scope_alias": "61b7a30600db",
+            "method": "POST",
+            "route": "/api/v1/web/drafts/{id}/package-set",
+            "status": 200,
+            "count": 1,
+            "first_epoch": 1792574135.6669538,
+            "last_epoch": 1792574135.6669538
+          },
+          {
+            "actor": "ANDROID_NATIVE",
+            "scope_alias": "61b7a30600db",
+            "method": "GET",
+            "route": "/api/v1/web/drafts/{id}",
+            "status": 200,
+            "count": 22,
+            "first_epoch": 1792574135.6905165,
+            "last_epoch": 1792574151.5137522
+          },
+          {
+            "actor": "ANDROID_NATIVE",
+            "scope_alias": null,
+            "method": "GET",
+            "route": "/api/v1/taxonomy",
+            "status": 200,
+            "count": 1,
+            "first_epoch": 1792574135.9713914,
+            "last_epoch": 1792574135.9713914
+          },
+          {
+            "actor": "ANDROID_NATIVE",
+            "scope_alias": "61b7a30600db",
+            "method": "POST",
+            "route": "/api/v1/web/drafts/{id}/import-external",
+            "status": 200,
+            "count": 1,
+            "first_epoch": 1792574136.809164,
+            "last_epoch": 1792574136.809164
+          },
+          {
+            "actor": "ANDROID_NATIVE",
+            "scope_alias": "61b7a30600db",
+            "method": "POST",
+            "route": "/api/v1/web/drafts/{id}/sources/lane-e-policy/extract",
+            "status": 409,
+            "count": 1,
+            "first_epoch": 1792574137.22017,
+            "last_epoch": 1792574137.22017
+          },
+          {
+            "actor": "ANDROID_NATIVE",
+            "scope_alias": "61b7a30600db",
+            "method": "POST",
+            "route": "/api/v1/web/drafts/{id}/candidates",
+            "status": 200,
+            "count": 2,
+            "first_epoch": 1792574138.030075,
+            "last_epoch": 1792574140.5682974
+          },
+          {
+            "actor": "ANDROID_NATIVE",
+            "scope_alias": "61b7a30600db",
+            "method": "POST",
+            "route": "/api/v1/web/drafts/{id}/start",
+            "status": 200,
+            "count": 1,
+            "first_epoch": 1792574140.7593553,
+            "last_epoch": 1792574140.7593553
+          },
+          {
+            "actor": "ANDROID_NATIVE",
+            "scope_alias": "539d52808876",
+            "method": "GET",
+            "route": "/api/v1/jobs/{id}",
+            "status": 200,
+            "count": 6,
+            "first_epoch": 1792574142.4487488,
+            "last_epoch": 1792574151.3942459
+          },
+          {
+            "actor": "ANDROID_NATIVE",
+            "scope_alias": "61b7a30600db",
+            "method": "GET",
+            "route": "/api/v1/web/drafts/{id}",
+            "status": 429,
+            "count": 1,
+            "first_epoch": 1792574153.1237752,
+            "last_epoch": 1792574153.1237752
+          }
+        ],
+        "request_window_end_epoch": 1792574153.1237752
+      }
+    }
+  ]
+}

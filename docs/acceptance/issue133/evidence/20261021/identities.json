@@ -1,0 +1,92 @@
+{
+  "format": "privacytrace-issue133-identities/1",
+  "case_passed": false,
+  "server_source_sha": "ffadeb06af70072b5ee2d931ee565e5b7e546acd",
+  "server_local_image_ids": {
+    "api": "sha256:f743db84209325959b67f3d3b26dbbb4d6b0c4859a00d28f0674b9ac9dab3176",
+    "web": "sha256:b9f00d960a7736265d59afb588e8274d40c5dbe9cccff0baa61593cf1657cd1e",
+    "runner": "sha256:d8d238e6cc02bffd9480729726968a0ecbb137b8e84f6374aa2a55e74d03d13b",
+    "scanner": "sha256:9c89315740fd05fb55f3a6a1a6861b4ecc819ee504955680335eff86df29e018"
+  },
+  "registry_digest_available_for_local_builds": false,
+  "candidate_client_source": {
+    "base_sha": "ffadeb06af70072b5ee2d931ee565e5b7e546acd",
+    "modified_file": "apps/web/src/mobile/flow.ts",
+    "file_sha256": "f983761596d74444d0909de74a2893202f05a68f4dc1397d7f0cb2a1724efc1c",
+    "built_before_commit": true
+  },
+  "candidate_apk_sha256": "7c006e9e31d6b6c70b8dcb47ae2a27adeb82863a950769b65f56eefbd7074b52",
+  "candidate_signer_certificate_sha256": "29738abe6887d00558ddf660772b825a77727ec1fb0c695d08f9ebfdf70d7515",
+  "initial_apk_sha256": null,
+  "initial_apk_hash_limitation": "Not retained before rebuild; pre-fix records cannot claim complete artifact identity.",
+  "fixture_apk_sha256": "10434889a570ad8b54ed963a87e9bcc170575acd7f6621a7e336739b469346ac",
+  "policy_quote_sha256": "c2e6ba97a4d0cc1e6828520540a5e175d468bdcdd79105ea759969aafad0c22d",
+  "policy_review": "UNREVIEWED",
+  "runtime_behavior": "NOT_EXECUTED",
+  "model_used": false,
+  "client_tls": {
+    "verification_enabled": true,
+    "cleartext_allowed": false,
+    "debug_exact_host_ca_only": "127.0.0.1",
+    "ca_pem_sha256": "f0db0465c2f8348d4372f95ac2c8bca94269ad6860d2f8d1041079af816604f7"
+  },
+  "device": {
+    "api": 34,
+    "abi": "x86_64",
+    "build_fingerprint": "Android/sdk_phone64_x86_64/emu64x:14/UE1A.230829.036.A1/11228894:userdebug/test-keys",
+    "webview": "com.android.webview 113.0.5672.136",
+    "avd": "privacytrace-issue133-e"
+  },
+  "scan_host_separate": false,
+  "physical_device": false,
+  "public_network": false,
+  "postgres_image": "postgres:17.9-alpine@sha256:c7526c0f6c3f30260a563d7bcf8ad778effac59a44f8ffa86678c35418338609",
+  "redis_image": "redis:7.4.8-alpine@sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6",
+  "source_file_sha256": {
+    "apps/api/migrations/env.py": "af8e11fc7d799336bf1f828a9d0db3929902867c65b05271db5638036be033f1",
+    "apps/api/migrations/versions/0080_01_storage.py": "bf99a8c4471857b833f55a6b75b12e6948b210e9d287e6ec85d0262394ec2f88",
+    "apps/api/migrations/versions/0080_02_outbox.py": "542002bc831fc8f529f34f2f513a4c6640793d1bf15d8e5a04e98a4c0865118e",
+    "apps/api/migrations/versions/0080_03_execution.py": "d6296ed9ac562912107100178e9ed91f7702b4780cd7d677bd2fa40e6155ffbb",
+    "apps/api/migrations/versions/0080_04_runtime_inputs.py": "63842a4b76759902882e004d3afd74d30e6cc8d2e9ace6724c01d62c88f0c109",
+    "apps/api/migrations/versions/0080_05_lifecycle.py": "3fdade25d8ba86706bd3ba784e2631b8a90bff0e457745c3f63676df9f5d11e3",
+    "apps/api/schema.sql": "3ceb90a2084541a5d0a8092843e18a3b08ae81870dfe37f01551fad4d70fef64",
+    "apps/api/src/privacytrace/runner_client.py": "f687fe2832fd28e79c7afb80d0204cdf0566b3b688bcbfe9380aa815b9c5e221",
+    "apps/api/src/privacytrace/runner_protocol.py": "9f36fe16102a8748ca9e3c3e48367061ef9c0020aa60ce81dbb102150e59e589",
+    "apps/mobile/src-tauri/Cargo.lock": "05622263df445a91bf45a2bc31927a4d1c0506ff97f7fbc940372705793648d2",
+    "apps/web/src/mobile/bridge.ts": "72efe9060bad46405a274148434b8a32129afdd49003c90c11249034817bd215",
+    "apps/web/src/mobile/flow.ts": "f983761596d74444d0909de74a2893202f05a68f4dc1397d7f0cb2a1724efc1c",
+    "deploy/acceptance/issue133/fixture/expected.json": "38b144d1e026c20077d177665e37657d6d9513c2e2cd52c4602b401d0f5a83b9",
+    "packages/contracts/evaluation-input.schema.json": "d70239c36fa5b1ec791e297bc61d64ae0713e55a9194a05b9ea913a298b438cd",
+    "packages/contracts/evaluation-result.schema.json": "ecab4389ac09ec7bd52ba6ae3663c8c334a4b112c2d227007ff58c2c0642118c",
+    "packages/contracts/jobs-response.schema.json": "82ee4e240ccb3bf2c300d3c96bed64770c22424343bb17d2b8ce395bfae4e2d1",
+    "packages/contracts/report.schema.json": "6c0ebca11914a20a5af6a10f5fd8ec36ed464b9ba9cea8196476484c62c65740",
+    "packages/contracts/review-request.schema.json": "05cbe796d835402160a7edb13d2768ad5a293ab675cc9fc6f8b0451d5eb115bc",
+    "packages/contracts/sdk-signatures.schema.json": "f0f607af3ac76cda711c5aea9fbb31d62334e2cd712a90071eb14d46c069ccd3",
+    "packages/contracts/web-candidate-input.schema.json": "fb179178f12e6d0b6cb8f15dfec1833477e22f671ed297a5a36497f1ec36cd7c",
+    "packages/contracts/web-draft-input.schema.json": "bf40bbbf144686a960365fce01b99858a974adea0b3a0ccf11bc6f26561304d6",
+    "packages/contracts/web-external-collection-input.schema.json": "6effa36c5a25859b6ce483ec5509046985b96f46b2f8f64b5175057e570d3259",
+    "packages/contracts/web-external-policy-input.schema.json": "ab205fc0c138d0d73f7650b34c50031f28ac9fa20ec1de7e5baab676b3da7b46",
+    "packages/contracts/web-model-settings.schema.json": "0e92f4dbc14eda1dd6e4349f807f42c2e76cb22d29fd90b5375ac68450884138",
+    "packages/contracts/web-start-input.schema.json": "f1b0a06dfc8bd3f299184ac7f9906e2c23463bdfe89c56e63e518b2030f72d93",
+    "rules/sdk-signatures.v0.1.json": "58fb563d745057ae62e1b42e3a9b21f4726e043af9a59ba3751a7bbae195ab89",
+    "rules/sdk-signatures.v1.0.json": "f4987d328ac7b6697cd3fd92c4f6327cfdeea84566ad6e9934c8aa5bc14150e4",
+    "rules/taxonomy.v0.1.json": "f95b61425eebefbaccfa1b795be42fa629e290b7a9b49dc6851cceb81396f8ae",
+    "rules/taxonomy.v0.2.json": "609e47941bbbb2d29eeac91cdc4644d3920614f9c3da043c8dbc3cbd652f060a",
+    "rules/taxonomy.v0.3.json": "e63297c70dcb3ec67b797e315fdfe469d617296b7bd51084a5ed8e950f513951"
+  },
+  "scanner_delay20": {
+    "image_id": "sha256:5e78bd15f5c39b2b5365b3070d81524fcfa390daba8a4aac0c58282b8781cc8e",
+    "delay_seconds": 20,
+    "scanner": "real apk_worker after controlled delay"
+  },
+  "scanner_delay40": {
+    "image_id": "sha256:86e76a00ae91127480862f2248266b3adc6198c65f7734bb6283a40fcae071f5",
+    "delay_seconds": 40,
+    "scanner": "real apk_worker after controlled delay"
+  },
+  "scanner_delay80": {
+    "image_id": "sha256:43b315ab7d55693be26e45378a67d688a0423354741687760706491a85c83f1c",
+    "delay_seconds": 80,
+    "scanner": "real apk_worker after controlled delay"
+  }
+}

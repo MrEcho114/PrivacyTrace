@@ -1,0 +1,72 @@
+{
+  "group": "baseline",
+  "case_passed": false,
+  "records": [
+    {
+      "private_locator": "baseline-report-observed.json",
+      "private_capture_sha256": "1de97117fbb1ff195d6cc8e0d1b90628327d02bc0c6c4d3cc360492b4c4dcf3f",
+      "observation": {
+        "scope": "D1",
+        "draft_status": 200,
+        "jobs": [
+          {
+            "job_alias": "fb1cb3e9595f",
+            "state": "SUCCEEDED",
+            "report_status": 200,
+            "report_sha256": "ec5a5623e8b33d3526c2deb3b2bc8dcbaa896f1f61fe5968cad4c4b738ea2624",
+            "report_keys": [
+              "behaviors",
+              "coverage",
+              "delivery_mode",
+              "demo",
+              "evidence",
+              "job",
+              "policy_claims",
+              "policy_documents",
+              "result",
+              "reviews",
+              "sample",
+              "tools"
+            ],
+            "evidence_count": 3,
+            "behavior_count": 1,
+            "report_content_sha256": "8e1f2a03f7e46078189f44f744528e17ec4c8bffe23b6bce1071e857c0dbcbfd"
+          }
+        ]
+      }
+    },
+    {
+      "private_locator": "d1-report-after-fixed.json",
+      "private_capture_sha256": "1de97117fbb1ff195d6cc8e0d1b90628327d02bc0c6c4d3cc360492b4c4dcf3f",
+      "observation": {
+        "scope": "D1",
+        "draft_status": 200,
+        "jobs": [
+          {
+            "job_alias": "fb1cb3e9595f",
+            "state": "SUCCEEDED",
+            "report_status": 200,
+            "report_sha256": "ec5a5623e8b33d3526c2deb3b2bc8dcbaa896f1f61fe5968cad4c4b738ea2624",
+            "report_keys": [
+              "behaviors",
+              "coverage",
+              "delivery_mode",
+              "demo",
+              "evidence",
+              "job",
+              "policy_claims",
+              "policy_documents",
+              "result",
+              "reviews",
+              "sample",
+              "tools"
+            ],
+            "evidence_count": 3,
+            "behavior_count": 1,
+            "report_content_sha256": "8e1f2a03f7e46078189f44f744528e17ec4c8bffe23b6bce1071e857c0dbcbfd"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -474,30 +474,38 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
     <main>
       <section v-if="!mobile" class="intro">
         <div><p class="eyebrow">APP 隐私体检 · 本地报告</p><h1>看懂隐私，从证据开始。</h1><p class="lead">查看程序中的潜在隐私访问，与不同来源的政策逐一对照。</p></div>
-        <button v-if="!snapshot" class="primary" :disabled="loading" @click="reload()">刷新任务与报告</button>
       </section>
-      <section v-if="!snapshot" class="source-picker">
-        <label for="report-source">报告来源</label>
-        <select id="report-source" v-model="selectedSourceKey" @change="reload()">
-          <option v-if="!offlineReplay" value="demo:synthetic">SYNTHETIC · 人工构造示例</option>
-          <option v-for="job in jobs" :key="job.id" :value="`job:${job.id}`">
-            {{ sourceOptionPrefix(job.source_origin) }}{{ job.package_name || job.sample_id }} · {{ job.id }} · {{ jobLabels[job.state] }}
-          </option>
-        </select>
-        <p class="subtle">真实任务由 APK 扫描 CLI 创建；示例仅用于演示，不是实际应用的检测结果。</p>
+      <section v-if="!snapshot" class="source-picker report-source-bar">
+        <div class="report-source-field">
+          <label for="report-source">报告来源</label>
+          <select id="report-source" v-model="selectedSourceKey" @change="reload()">
+            <option v-if="!offlineReplay" value="demo:synthetic">SYNTHETIC · 人工构造示例</option>
+            <option v-for="job in jobs" :key="job.id" :value="`job:${job.id}`">
+              {{ sourceOptionPrefix(job.source_origin) }}{{ job.package_name || job.sample_id }} · {{ job.id }} · {{ jobLabels[job.state] }}
+            </option>
+          </select>
+        </div>
+        <button type="button" class="ui-button" :disabled="loading" @click="reload()">刷新任务与报告</button>
+        <p class="field-help">真实任务由 APK 扫描 CLI 创建；示例仅用于演示，不是实际应用的检测结果。</p>
       </section>
       <details class="demo-note"><summary>分析范围与来源 · <strong>{{ sourceInfo?.label ?? (source.kind === 'demo' ? 'SYNTHETIC 示例' : '真实 APK 静态报告') }}</strong></summary>
         {{ sourceInfo?.desc ?? (source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。报告不保证覆盖反射、动态加载、原生代码或运行时行为。') }}
         六种状态只对照 DATA_TYPE_DISCLOSURE；“具体类型已声明”不代表目的、接收方、传输或时间范围全部一致，更不是合法性判断。
       </details>
-      <section v-if="webSources.length" class="coverage-card"><h2>输入来源状态</h2><p>失败来源保留；正文完整度未知、全文未复核、附件未检查。</p><ul><li v-for="(item, index) in webSources" :key="index"><strong>{{ item.title }}</strong> · {{ sourceStatusLabel(item.status) }} · {{ sourceProvenanceLabel(item.provenance) }}<span v-if="item.error_code"> · {{ item.error_code }}</span><p class="subtle">请求网址 {{ item.url || '手动输入' }} · 最终网址 {{ item.final_url || '未获取／手动输入' }}</p></li></ul></section><section v-if="realReport" class="report-provenance" aria-label="报告生成来源">
-        <strong>{{ offlineReplay ? 'OFFLINE REPLAY · 离线回放' : '存档报告查看 · PERSISTED REPLAY' }}</strong>
-        <p v-if="realReport.tools.analysis_generated_at">分析生成时点：{{ realReport.tools.analysis_generated_at }}。查看存档不代表重新扫描。</p>
-        <p v-else>记录创建时点：{{ realReport.job.created_at }}。未留存分析生成时点；来源以报告来源标识为准。</p>
-        <p v-if="offlineReplay">回放包生成时点：{{ realReport.tools.offline_package_built_at }}。回放只读，不执行 APK 分析。</p>
-        <p v-if="offlineReplay"><a href="/comparison.html" target="_blank" rel="noopener">查看六场景三方案比较与失败记录</a></p>
+      <section v-if="report" class="sample-card">
+        <div class="app-icon">PT</div>
+        <div>
+          <h2>{{ report.sample.name }}</h2>
+          <p class="subtle">{{ report.sample.package_name }} · {{ report.demo ? report.sample.version : (report.sample.version_name ?? ('v' + report.sample.version_code)) }}</p>
+          <p v-if="report.job?.created_at" class="subtle origin-timestamp">原生成时间：{{ formatTimestamp(report.job.created_at) }} ({{ report.job.created_at }})</p>
+        </div>
+        <div class="badge-stack">
+          <span class="badge" :class="sourceInfo?.type?.toLowerCase()" :title="sourceInfo?.desc ?? ''">{{ sourceInfo?.badge }}</span>
+          <span class="badge" :class="deliveryInfo?.type?.toLowerCase()" :title="deliveryInfo?.desc ?? ''">{{ deliveryInfo?.badge }}</span>
+        </div>
       </section>
-      <section v-if="activeJob" class="job-state" role="status">
+      <div v-if="report" class="metrics"><div><strong>{{ dataTypeCount }}</strong><span>涉及的数据类型</span></div><div><strong>{{ report.policy_documents.length }}</strong><span>独立政策来源</span></div><div><strong>{{ report.evidence.length }}</strong><span>可查看的证据</span></div></div>
+      <section v-if="activeJob" class="job-state" :class="{ compact: activeJob.state === 'SUCCEEDED' }" role="status">
         <strong>{{ jobLabels[activeJob.state] }}</strong> · {{ activeJob.id }} · {{ activeJob.state }}
         <button v-if="!terminal(activeJob)" :disabled="loading" @click="cancel">取消任务</button>
         <div v-if="parsedJobError" class="job-error-card" role="alert">
@@ -522,29 +530,6 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
       <section v-if="loading && !report" class="state" role="status">正在加载… <button @click="controller?.abort()">停止本次请求</button></section>
       <section v-if="error" class="state error" role="alert">{{ error }} <button @click="reload()">重试</button></section>
       <template v-if="report">
-        <section class="sample-card">
-          <div class="app-icon">PT</div>
-          <div>
-            <h2>{{ report.sample.name }}</h2>
-            <p class="subtle">{{ report.sample.package_name }} · {{ report.demo ? report.sample.version : (report.sample.version_name ?? ('v' + report.sample.version_code)) }}</p>
-            <p v-if="report.job?.created_at" class="subtle origin-timestamp">原生成时间：{{ formatTimestamp(report.job.created_at) }} ({{ report.job.created_at }})</p>
-          </div>
-          <div class="badge-stack">
-            <span class="badge" :class="sourceInfo?.type?.toLowerCase()" :title="sourceInfo?.desc ?? ''">{{ sourceInfo?.badge }}</span>
-            <span class="badge" :class="deliveryInfo?.type?.toLowerCase()" :title="deliveryInfo?.desc ?? ''">{{ deliveryInfo?.badge }}</span>
-          </div>
-        </section>
-        <section v-if="realReport" class="coverage-card">
-          <h2>DEX 处理范围：{{ realReport.coverage.status === 'COMPLETE' ? '已扫描所支持的 DEX 范围' : 'PARTIAL · DEX 处理有未完成部分' }}</h2>
-          <p>已扫描 {{ (realReport.coverage.scanned_dex ?? []).join('、') || '无' }}；失败 {{ (realReport.coverage.failed_dex ?? []).join('、') || '无' }}。</p>
-          <ul><li v-for="limitation in (realReport.coverage.limitations ?? [])" :key="limitation">{{ limitation }}</li></ul>
-          <p><strong>行为识别：有限的规则静态分析（非穷尽）。</strong></p>
-          <p class="subtle">不保证覆盖反射、动态加载、Native、加壳、第三方与混合运行时、复杂数据流或规则集未覆盖的行为。没有命中规则不代表没有隐私行为。</p>
-          <ul><li v-for="limitation in (realReport.coverage.behavior_limitations ?? [])" :key="limitation">{{ limitation }}</li></ul>
-          <p class="hash">输入 APK SHA-256：{{ realReport.sample.apk_sha256 }}</p>
-          <p class="subtle">扫描完成只描述本轮处理范围，不等于发现了应用所有隐私行为。</p>
-        </section>
-        <div class="metrics"><div><strong>{{ dataTypeCount }}</strong><span>涉及的数据类型</span></div><div><strong>{{ report.policy_documents.length }}</strong><span>独立政策来源</span></div><div><strong>{{ report.evidence.length }}</strong><span>可查看的证据</span></div></div>
         <section class="report-section">
           <div class="section-heading"><h2>隐私声明对照</h2><span class="subtle">点开结论后，直接查看代码定位与原句</span></div>
           <!-- Narrow screens stack each row as a card; the explicit table roles keep the grid
@@ -552,7 +537,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           <!-- Desktop keeps the comparison table. The Tauri shell renders the same
                issues as tappable Android list rows instead of a scroll table. -->
           <div v-if="!mobile" class="table-scroll"><table class="report-table" role="table"><thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">隐私数据</th><th scope="col" role="columnheader">政策来源</th><th scope="col" role="columnheader">当前结论</th><th scope="col" role="columnheader">依据</th></tr></thead><tbody role="rowgroup">
-            <tr v-for="issue in report.result.issues" :key="issue.id" role="row"><td class="type-cell" role="cell" data-label="隐私数据">{{ label(issue.data_type) }}</td><td role="cell" data-label="政策来源">{{ documentLabels(issue.policy_document_ids) }}</td><td role="cell" data-label="当前结论"><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></td><td role="cell" data-label="依据"><button class="evidence-button" :aria-expanded="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue, $event)">查看 {{ issue.evidence_ids.length }} 条证据 →</button></td></tr>
+            <tr v-for="issue in report.result.issues" :key="issue.id" role="row"><td class="type-cell" role="cell" data-label="隐私数据">{{ label(issue.data_type) }}</td><td role="cell" data-label="政策来源">{{ documentLabels(issue.policy_document_ids) }}</td><td role="cell" data-label="当前结论"><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></td><td role="cell" data-label="依据"><button class="ui-button evidence-button" :aria-expanded="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue, $event)">查看 {{ issue.evidence_ids.length }} 条证据 →</button></td></tr>
           </tbody></table></div>
           <div v-else class="m-issue-list" role="list">
             <div v-for="issue in report.result.issues" :key="issue.id" class="m-issue-card" role="listitem">
@@ -589,6 +574,24 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           </template>
           <p v-else class="subtle">本次未命中当前有限的签名规则集。没有命中不代表 APK 不含第三方 SDK。</p>
           <ul v-if="realReport.coverage.sdk_attribution_limitations?.length"><li v-for="limitation in realReport.coverage.sdk_attribution_limitations" :key="limitation">{{ limitation }}</li></ul>
+        </section>
+        <section v-if="realReport" class="coverage-card">
+          <h2>DEX 处理范围：{{ realReport.coverage.status === 'COMPLETE' ? '已扫描所支持的 DEX 范围' : 'PARTIAL · DEX 处理有未完成部分' }}</h2>
+          <p>已扫描 {{ (realReport.coverage.scanned_dex ?? []).join('、') || '无' }}；失败 {{ (realReport.coverage.failed_dex ?? []).join('、') || '无' }}。</p>
+          <ul><li v-for="limitation in (realReport.coverage.limitations ?? [])" :key="limitation">{{ limitation }}</li></ul>
+          <p><strong>行为识别：有限的规则静态分析（非穷尽）。</strong></p>
+          <p class="subtle">不保证覆盖反射、动态加载、Native、加壳、第三方与混合运行时、复杂数据流或规则集未覆盖的行为。没有命中规则不代表没有隐私行为。</p>
+          <ul><li v-for="limitation in (realReport.coverage.behavior_limitations ?? [])" :key="limitation">{{ limitation }}</li></ul>
+          <p class="hash">输入 APK SHA-256：{{ realReport.sample.apk_sha256 }}</p>
+          <p class="subtle">扫描完成只描述本轮处理范围，不等于发现了应用所有隐私行为。</p>
+        </section>
+        <section v-if="webSources.length" class="coverage-card"><h2>输入来源状态</h2><p>失败来源保留；正文完整度未知、全文未复核、附件未检查。</p><ul><li v-for="(item, index) in webSources" :key="index"><strong>{{ item.title }}</strong> · {{ sourceStatusLabel(item.status) }} · {{ sourceProvenanceLabel(item.provenance) }}<span v-if="item.error_code"> · {{ item.error_code }}</span><p class="subtle">请求网址 {{ item.url || '手动输入' }} · 最终网址 {{ item.final_url || '未获取／手动输入' }}</p></li></ul></section>
+        <section v-if="realReport" class="report-provenance" aria-label="报告生成来源">
+          <strong>{{ offlineReplay ? 'OFFLINE REPLAY · 离线回放' : '存档报告查看 · PERSISTED REPLAY' }}</strong>
+          <p v-if="realReport.tools.analysis_generated_at">分析生成时点：{{ realReport.tools.analysis_generated_at }}。查看存档不代表重新扫描。</p>
+          <p v-else>记录创建时点：{{ realReport.job.created_at }}。未留存分析生成时点；来源以报告来源标识为准。</p>
+          <p v-if="offlineReplay">回放包生成时点：{{ realReport.tools.offline_package_built_at }}。回放只读，不执行 APK 分析。</p>
+          <p v-if="offlineReplay"><a href="/comparison.html" target="_blank" rel="noopener">查看六场景三方案比较与失败记录</a></p>
         </section>
         <details class="provenance" :open="provenanceOpen" @toggle="provenanceToggle($event)"><summary>报告版本、权限与全部政策快照</summary>
           <p>任务 {{ report.job.id }} · 输入 {{ report.job.input_mode }} · 规则版本 {{ report.job.ruleset_version }} · 原生成时间：{{ formatTimestamp(report.job.created_at) || report.job.created_at }}</p>
@@ -637,17 +640,4 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
   </div>
 </template>
 
-<style scoped>
-.candidate-nav { display: flex; align-items: center; gap: 12px; margin: 12px 0; font-size: 0.8125rem; }
-.job-terminal-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
-.job-terminal-actions button { margin-left: 0; }
-.job-delete-warning { color: var(--error); margin: 8px 0 0; }
-.candidate-nav button { padding: 4px 10px; font-size: 12px; }
-.job-error-card { background: #fff1ed; border: 1px solid #f4c7bb; border-radius: 8px; padding: 14px; margin-top: 12px; }
-.job-error-card .error-code { font-weight: bold; color: #a33215; display: inline-block; margin-bottom: 6px; font-size: 13px; }
-.job-error-card .error-msg { margin: 4px 0; color: #72200b; font-size: 14px; }
-.job-error-card .error-detail { margin-top: 6px; font-size: 12px; }
-.policy-jump-btn { margin-top: 10px; font-size: 12px; padding: 6px 10px; display: inline-block; }
-.origin-timestamp { font-size: 12px; color: #52665a; margin-top: 4px; }
-.ai-disclosure { margin-top: 4px; font-size: 12px; color: #7d8d81; }
-</style>
+<style src="./hierarchy.css"></style>

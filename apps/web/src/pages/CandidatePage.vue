@@ -79,17 +79,23 @@ function editQuote() { if (chosen.value) chosen.value.startOffset = undefined; e
 <template>
   <div>
     <div v-if="!mobile" class="page-heading"><h1 id="page-title" tabindex="-1">{{ copy.candidateTitle }}</h1><p>{{ copy.candidateHelp }}</p></div>
+    <slot name="context" />
     <div class="source-tabs" role="group" aria-label="政策来源"><button v-for="item in state.sources" :key="item.id" :aria-pressed="item.id === state.sourceId" :class="{ selected: item.id === state.sourceId }" @click="state.sourceId = item.id">{{ item.title || '未命名来源' }}<span v-if="item.status === 'failed'"> · 获取失败</span></button></div>
+    <p v-if="source" class="source-context" role="note" data-testid="candidate-source-context">
+      <StatusTag :tone="source.status === 'failed' ? 'error' : 'neutral'">{{ sourceTypes[source.type] }}</StatusTag>
+      <span>{{ source.version || '版本未知' }}</span>
+      <span class="source-context-meta"><span v-if="source.status === 'failed'">来源获取失败</span><span>正文完整度未知</span><span>全文未复核</span><span>{{ copy.attachmentsUnknown }}</span><span>{{ copy.sourceScopeUnknown }}</span></span>
+    </p>
     <p v-if="!state.example && extractionUnavailable" class="notice" role="status">当前来源的候选提取未完成，正文与已有候选仍保留。可在“政策原文”中选择“重新提取候选”，或手动添加；此状态不代表政策未声明。</p>
     <div v-if="source" class="mobile-panel-tabs" role="tablist" aria-label="检查候选视图" @keydown="onTabsKeydown">
       <button id="tab-original" type="button" role="tab" aria-controls="panel-original" :aria-selected="mobileTab === 'original'" :tabindex="mobileTab === 'original' ? 0 : -1" :class="{ selected: mobileTab === 'original' }" @click="mobileTab = 'original'">政策原文</button>
       <button id="tab-candidates" type="button" role="tab" aria-controls="panel-candidates" :aria-selected="mobileTab === 'candidates'" :tabindex="mobileTab === 'candidates' ? 0 : -1" :class="{ selected: mobileTab === 'candidates' }" @click="mobileTab = 'candidates'">候选声明 {{ candidates.length }}</button>
     </div>
     <div v-if="source" class="candidate-grid" :data-tab="mobileTab" :inert="busy || undefined">
-      <section id="panel-original" class="material-panel original-panel" role="tabpanel" aria-labelledby="tab-original"><div class="panel-heading"><h2>政策原文</h2><StatusTag :tone="source.status === 'failed' ? 'error' : 'neutral'">{{ sourceTypes[source.type] }}</StatusTag></div><p class="field-help">{{ source.title }} · {{ source.version || '版本未知' }}</p><UiButton v-if="!state.example" :disabled="busy || source.status === 'failed'" variant="quiet" @click="$emit('retryModel', source.id)">重新提取候选</UiButton>
+      <section id="panel-original" class="material-panel original-panel" role="tabpanel" aria-labelledby="tab-original"><div class="panel-heading"><h2>政策原文</h2></div><UiButton v-if="!state.example" :disabled="busy || source.status === 'failed'" variant="quiet" @click="$emit('retryModel', source.id)">重新提取候选</UiButton>
         <div v-if="source.status === 'failed'" class="notice" role="status"><p>{{ state.example ? copy.sourceFailed : "这份来源未获得正文，可重试或返回材料页手动补入。" }}</p><UiButton v-if="state.example" @click="source.status = source.text.trim() ? 'ready' : 'empty'">重试示例来源</UiButton><UiButton v-else @click="$emit('retrySource', source.id)">重新获取来源</UiButton></div>
         <div v-else class="policy-reading" tabindex="0" aria-label="政策原文阅读区"><span>{{ parts.before }}</span><mark v-if="parts.quote" id="candidate-quote-mark" tabindex="-1">{{ parts.quote }}</mark><span>{{ parts.after }}</span><p v-if="!source.text">{{ copy.missingText }}</p></div>
-        <div class="source-notes"><span>正文节选</span><span>{{ copy.attachmentsUnknown }}</span><span>{{ copy.sourceScopeUnknown }}</span></div>
+        <div class="source-notes"><span>正文节选</span></div>
       </section>
       <section id="panel-candidates" class="material-panel candidates-panel" role="tabpanel" aria-labelledby="tab-candidates"><div class="panel-heading"><h2>候选声明 <span class="count">{{ candidates.length }}</span></h2><UiButton id="add-candidate" :disabled="source.status === 'failed' || state.candidates.length >= candidateLimit" @click="add">{{ copy.addCandidate }}</UiButton></div>
         <p class="candidate-summary" role="status">已检查 {{ checkedCount }} / {{ candidates.length }} 条<span>选择一条查看和修改</span></p>

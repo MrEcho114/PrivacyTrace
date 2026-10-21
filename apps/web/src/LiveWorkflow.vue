@@ -5,6 +5,7 @@ import UiButton from './components/UiButton.vue'
 import StatusTag from './components/StatusTag.vue'
 import ImportPage from './pages/ImportPage.vue'
 import CandidatePage from './pages/CandidatePage.vue'
+import MaterialContext from './components/MaterialContext.vue'
 import { cancelJob, loadJob, loadTaxonomy } from './api'
 import { createDraft, discoverSources, displaySourceUrl, extractSource, reserveExtraction, getAttemptStatus, fetchSource, importExternal, readDraft, saveCandidates, startScan, uploadApk } from './liveApi'
 import type { LiveDraft } from './liveApi'
@@ -376,20 +377,26 @@ onBeforeUnmount(() => { generation++; controller.abort(); activeRequest?.abort()
 </script>
 <template>
   <div>
-    <div v-if="draft" class="source-actions"><span class="field-help">材料版本 {{ draft.revision }} · <span class="hash">{{ draft.id }}</span></span><UiButton :disabled="busy" variant="quiet" @click="newInput">新建材料版本</UiButton><UiButton v-if="state.step === 'import'" :disabled="busy" variant="quiet" @click="refreshMaterials">重新读取材料</UiButton></div>
-    <p v-if="draft?.external_imports?.length && state.step === 'import'" class="field-help">当前版本保留外部收集审计。修改已保存的来源时，请先新建材料版本；新版本使用手动输入，旧记录仍保留。</p>
+    <div v-if="draft?.external_imports?.length && state.step === 'import'" class="field-help">当前版本保留外部收集审计。修改已保存的来源时，请先新建材料版本；新版本使用手动输入，旧记录仍保留。</div>
     <p v-if="busy" class="notice compact" role="status">正在处理当前请求，请稍候；已获得的来源仍保留。<UiButton v-if="state.step === 'import'" variant="quiet" @click="cancelPreparation">取消准备请求</UiButton></p>
     <p v-if="error" class="error-text" role="alert">{{ error }}</p><p v-if="notice" class="notice compact" role="status">{{ notice }}</p>
-    <ImportPage v-if="state.step === 'import'" :state="state" :busy="busy" :uploaded-name="draft?.uploaded ? draft.name : undefined" @file="file = $event" @dirty="state.maxStep = 0" @example="emit('example')" @next="prepare" @import="importCollected" />
-    <CandidatePage v-else-if="state.step === 'candidates'" :state="state" :busy="busy || !!draft?.jobs.length" :type-labels="labels" :failed-source-ids="failedSourceIds" @back="go('import')" @next="begin" @retry-source="retrySource" @retry-model="retryModel" @persist-candidates="persistCandidates" />
-    <div v-else-if="state.step === 'progress'" class="material-panel progress-panel">
+    <ImportPage v-if="state.step === 'import'" :state="state" :busy="busy" :uploaded-name="draft?.uploaded ? draft.name : undefined" @file="file = $event" @dirty="state.maxStep = 0" @example="emit('example')" @next="prepare" @import="importCollected">
+      <template #context><MaterialContext v-if="draft" :revision="draft.revision" :draft-id="draft.id" :busy="busy" show-refresh @new="newInput" @refresh="refreshMaterials" /></template>
+    </ImportPage>
+    <CandidatePage v-else-if="state.step === 'candidates'" :state="state" :busy="busy || !!draft?.jobs.length" :type-labels="labels" :failed-source-ids="failedSourceIds" @back="go('import')" @next="begin" @retry-source="retrySource" @retry-model="retryModel" @persist-candidates="persistCandidates">
+      <template #context><MaterialContext v-if="draft" :revision="draft.revision" :draft-id="draft.id" :busy="busy" @new="newInput" /></template>
+    </CandidatePage>
+    <template v-else-if="state.step === 'progress'">
       <div class="page-heading"><h1 id="page-title" tabindex="-1">分析进度</h1><p>显示服务实际记录的离散阶段。静态线索不证明实际采集。</p></div>
-      <div role="status" aria-live="polite"><StatusTag>{{ states[job?.state ?? 'QUEUED'] }}</StatusTag><p>{{ draft?.name }} · {{ job?.id }}</p></div>
-      <ol class="stage-list"><li v-for="(event, i) in events" :key="i"><span class="stage-number">{{ i + 1 }}</span><div><strong>{{ states[event.state] ?? event.state }}</strong><p>开始 {{ event.at }}<span v-if="events[i + 1]"> · 结束 {{ events[i + 1]?.at }}</span><span v-else-if="!terminal"> · 执行中</span></p></div></li></ol>
-      <p v-if="jobError" class="error-text">{{ jobError === 'SERVICE_INTERRUPTED' ? '服务中断，旧任务已停止。重试会新建任务。' : '本次分析未完成，请检查 Docker 环境和 APK。' }} <code>{{ jobError }}</code></p>
-      <div class="source-actions"><UiButton v-if="!terminal" :disabled="busy" @click="cancel">取消分析</UiButton><UiButton v-if="terminal && job?.state !== 'SUCCEEDED'" :disabled="busy" @click="retry">重新创建分析</UiButton><UiButton v-if="job?.state === 'SUCCEEDED'" variant="primary" @click="go('report')">查看报告</UiButton><UiButton variant="quiet" @click="poll">重新读取进度</UiButton></div>
-    </div>
-    <div v-else><div class="page-heading"><h1 id="page-title" tabindex="-1">对照报告</h1><p>本机存档 · 输入版本 {{ draft?.revision }} · 查看存档不会重新扫描。</p></div><ExistingReports :initial-job-id="job?.id" /></div>
+      <MaterialContext v-if="draft" :revision="draft.revision" :draft-id="draft.id" :busy="busy" @new="newInput" />
+      <div class="material-panel progress-panel">
+        <div class="progress-summary" role="status" aria-live="polite"><StatusTag :tone="job?.state === 'FAILED' || job?.state === 'CANCELLED' ? 'error' : job?.state === 'SUCCEEDED' ? 'success' : 'info'">{{ states[job?.state ?? 'QUEUED'] }}</StatusTag><strong>{{ draft?.name }}</strong><span class="hash">{{ job?.id }}</span></div>
+        <ol class="stage-list"><li v-for="(event, i) in events" :key="i" :class="{ done: job?.state === 'SUCCEEDED' || i < events.length - 1, current: !terminal && i === events.length - 1, failed: (job?.state === 'FAILED' || job?.state === 'CANCELLED') && i === events.length - 1 }"><span class="stage-number">{{ job?.state === 'FAILED' || job?.state === 'CANCELLED' ? (i === events.length - 1 ? '!' : '✓') : i < events.length - 1 || job?.state === 'SUCCEEDED' ? '✓' : i + 1 }}</span><div><strong>{{ states[event.state] ?? event.state }}</strong><p>开始 {{ event.at }}<span v-if="events[i + 1]"> · 结束 {{ events[i + 1]?.at }}</span><span v-else-if="!terminal"> · 执行中</span></p></div></li></ol>
+        <p v-if="jobError" class="error-text">{{ jobError === 'SERVICE_INTERRUPTED' ? '服务中断，旧任务已停止。重试会新建任务。' : '本次分析未完成，请检查 Docker 环境和 APK。' }} <code>{{ jobError }}</code></p>
+        <div class="source-actions progress-actions"><UiButton v-if="!terminal" :disabled="busy" @click="cancel">取消分析</UiButton><UiButton v-if="terminal && job?.state !== 'SUCCEEDED'" :disabled="busy" @click="retry">重新创建分析</UiButton><UiButton v-if="job?.state === 'SUCCEEDED'" variant="primary" @click="go('report')">查看报告</UiButton><UiButton variant="quiet" @click="poll">重新读取进度</UiButton></div>
+      </div>
+    </template>
+    <div v-else><div class="page-heading"><h1 id="page-title" tabindex="-1">对照报告</h1><p>本机存档 · 输入版本 {{ draft?.revision }} · 查看存档不会重新扫描。</p></div><MaterialContext v-if="draft" :revision="draft.revision" :draft-id="draft.id" :busy="busy" @new="newInput" /><ExistingReports :initial-job-id="job?.id" /></div>
     <section v-if="draft && state.step !== 'import'" class="material-panel"><h2>来源与核验范围</h2><article v-for="source in draft.sources" :key="source.id" class="source-editor"><strong>{{ source.title }}</strong><p>{{ sourceStatusLabel(source.status) }} · {{ sourceProvenanceLabel(source.provenance) }} · 正文完整度未知 · 未复核 · 附件未检查</p><p v-if="source.error_code" class="error-text">{{ source.error_code }} · 返回材料页粘贴正文，或重试网址。</p><p class="field-help">请求网址 {{ displaySourceUrl(source.url) || '手动输入' }} · 最终网址 {{ displaySourceUrl(source.final_url) || '未获取／手动输入' }}</p><p v-if="source.captured_at" class="field-help">获取时点 {{ source.captured_at }} · SHA-256 {{ source.sha256 }}</p><p v-if="source.model_audit?.status" class="field-help">{{ source.model_audit.status === 'FAILED' ? '模型提取未完成，可手动添加或重新提取' : source.model_audit.status === 'PARTIAL' ? '模型仅提取部分候选' : '模型候选已返回' }} · 原句逐字校验 · 拒绝 {{ source.model_audit.rejected_count ?? 0 }} 条<span v-if="source.model_audit.limited_candidates"> · 超出候选上限 {{ source.model_audit.limited_candidates }} 条</span> · 仍需检查语义</p></article></section>
   </div>
 </template>

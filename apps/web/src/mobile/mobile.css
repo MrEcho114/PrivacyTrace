@@ -186,7 +186,7 @@ html.mobile-shell body { margin: 0; background: var(--canvas); overscroll-behavi
   font-size: var(--m-caption);
   cursor: pointer;
 }
-.m-context-details p { margin: 0 0 6px; font-size: var(--m-caption); color: var(--m-muted, var(--muted)); }
+.m-context-details p { margin: 0 0 6px; font-size: var(--m-caption); color: var(--muted); }
 
 /* ---------- cards, sections, rows ---------- */
 .m-card {
@@ -333,6 +333,7 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
 }
 .m-issue-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; min-width: 0; }
 .m-issue-head strong { font-size: 0.9375rem; }
+.mobile-workspace .tag { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 .m-issue-meta { min-width: 0; color: var(--muted); font-size: var(--m-caption); overflow-wrap: anywhere; }
 .m-issue-action { display: flex; align-items: center; gap: 4px; color: var(--navy); font-size: var(--m-body); font-weight: 600; }
 .m-issue-action .ui-icon { flex: none; color: var(--navy); }

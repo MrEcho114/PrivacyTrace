@@ -73,6 +73,7 @@ function onTextInput(source: PolicySource) {
 <template>
   <div>
     <div class="page-heading"><h1 id="page-title" tabindex="-1">{{ copy.importTitle }}</h1><p>{{ copy.importDescription }}</p></div>
+    <slot name="context" />
     <div class="import-grid" :inert="busy || undefined" @input="!state.example && emit('dirty')" @change="!state.example && emit('dirty')">
       <section class="material-panel apk-panel"><div class="panel-heading"><h2>APK 文件</h2><StatusTag>本机</StatusTag></div>
         <div class="file-drop" :class="{ 'drag-active': dropActive }" @dragover.prevent="dropActive = true" @dragleave="dropActive = false" @drop.prevent="drop">
@@ -90,6 +91,7 @@ function onTextInput(source: PolicySource) {
       <section class="material-panel policy-panel"><div class="panel-heading"><h2>政策来源</h2><span class="field-help">{{ state.sources.length }} 份来源</span></div>
         <article v-for="(source, index) in state.sources" :key="source.id" class="source-editor">
           <div class="source-heading"><h3>{{ source.title || `政策来源 ${index + 1}` }}</h3><StatusTag :tone="source.status === 'failed' ? 'error' : source.text ? 'info' : 'neutral'">{{ state.example ? (source.text ? '示例节选' : '待准备') : `${sourceStatusLabel(source.status)} · ${sourceProvenanceLabel(source.provenance)}` }}</StatusTag><UiButton v-if="state.sources.length > 1" variant="quiet" :aria-label="`移除来源 ${index + 1}`" @click="removeSource(source.id)">移除</UiButton></div>
+          <p v-if="source.status === 'failed'" class="error-text" role="alert">{{ copy.sourceFailed }} · {{ copy.retry }}</p>
           <div class="field-pair"><UiField label="来源名称" :id="'title-' + source.id"><input :id="'title-' + source.id" v-model="source.title" maxlength="100" placeholder="例如：应用官网政策" /></UiField><UiField label="来源类型" :id="'type-' + source.id"><select :id="'type-' + source.id" v-model="source.type"><option v-for="(text, value) in sourceTypes" :key="value" :value="value">{{ text }}</option></select></UiField></div>
           <UiField label="政策网址" :id="'url-' + source.id"><input :id="'url-' + source.id" v-model="source.url" type="url" maxlength="2000" placeholder="https://" /></UiField>
           <details class="source-body" :open="!state.example && index === 0"><summary>正文与适用范围<span class="source-summary-meta">{{ source.text ? `${source.text.length} 字` : copy.missingText }}</span></summary>
@@ -98,8 +100,7 @@ function onTextInput(source: PolicySource) {
             <details class="source-body"><summary>适用范围</summary><div class="field-pair"><UiField label="适用版本" :id="'version-' + source.id"><input :id="'version-' + source.id" v-model="source.version" maxlength="100" placeholder="未知" /></UiField><UiField label="适用地区" :id="'region-' + source.id"><input :id="'region-' + source.id" v-model="source.region" maxlength="100" placeholder="未知" /></UiField></div>
             <div v-if="!state.example" class="field-pair"><UiField label="适用包名" :id="'package-' + source.id"><input :id="'package-' + source.id" v-model="source.packageName" maxlength="200" placeholder="未知" /></UiField><UiField label="适用 versionCode" :id="'vcode-' + source.id"><input :id="'vcode-' + source.id" v-model.number="source.versionCode" type="number" min="0" placeholder="未知" /></UiField></div><UiField label="应用／产品范围" :id="'product-' + source.id"><input :id="'product-' + source.id" v-model="source.product" maxlength="100" placeholder="未知" /></UiField></details>
           </details>
-          <p v-if="source.status === 'failed'" class="error-text" role="alert">{{ copy.sourceFailed }} · {{ copy.retry }}</p>
-          <div class="source-notes"><span>{{ copy.sourceScopeUnknown }}</span><span>{{ copy.attachmentsUnknown }}</span></div>
+          <div class="source-notes"><span>{{ copy.sourceScopeUnknown }}</span><span>正文完整度未知</span><span>全文未复核</span><span>{{ copy.attachmentsUnknown }}</span></div>
         </article>
         <UiButton :disabled="state.sources.length >= 8" @click="addSource">添加政策来源</UiButton>
         <PolicyAssist v-if="!state.example" :busy="busy" :source-count="state.sources.length" @import="emit('import', $event)" />

@@ -4,6 +4,7 @@ import contextlib
 import io
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -237,6 +238,91 @@ class TopologyEnvironmentTests(unittest.TestCase):
 
 
 class DeploymentRegressionTests(unittest.TestCase):
+    def test_provision_failure_before_owner_marker_removes_allocated_root(self):
+        from types import SimpleNamespace
+
+        from acceptance import provision
+
+        with tempfile.TemporaryDirectory() as parent:
+            allocated = Path(parent) / "allocated"
+            allocated.mkdir()
+            with (
+                patch.object(provision, "os", SimpleNamespace(name="posix", geteuid=lambda: 0)),
+                patch.object(provision.tempfile, "mkdtemp", return_value=str(allocated)),
+                patch.object(provision, "_populate", side_effect=RuntimeError("missing image")),
+                self.assertRaises(RuntimeError),
+            ):
+                provision.create("api", "web", "runner", "scanner")
+            self.assertEqual(list(Path(parent).iterdir()), [])
+
+    def test_provision_failure_after_owner_marker_reports_only_cleanup_location(self):
+        from types import SimpleNamespace
+
+        from acceptance import provision
+
+        def fail_after_marker(root, *_args):
+            (root / "owner.json").write_text("{}")
+            (root / "private-canary").write_text("synthetic-sensitive-value")
+            raise RuntimeError("failed initialization")
+
+        with tempfile.TemporaryDirectory() as parent:
+            allocated = Path(parent) / "allocated"
+            allocated.mkdir()
+            output = io.StringIO()
+            with (
+                patch.object(provision, "os", SimpleNamespace(name="posix", geteuid=lambda: 0)),
+                patch.object(provision.tempfile, "mkdtemp", return_value=str(allocated)),
+                patch.object(provision, "_populate", side_effect=fail_after_marker),
+                contextlib.redirect_stdout(output),
+                self.assertRaises(RuntimeError),
+            ):
+                provision.create("api", "web", "runner", "scanner")
+            roots = list(Path(parent).iterdir())
+            self.assertEqual(len(roots), 1)
+            self.assertEqual(output.getvalue().strip(), f"FAILED_LAB={roots[0]}")
+            self.assertNotIn("synthetic-sensitive-value", output.getvalue())
+
+    @unittest.skipUnless(sys.platform.startswith("linux"), "native Linux cleanup contract")
+    def test_shell_cleanup_registers_failed_lab_and_removes_own_build_directory(self):
+        script = (DEPLOY / "check_acceptance.sh").read_text()
+        cleanup = (
+            "cleanup() {" + script.split("cleanup() {", 1)[1].split("\ntrap cleanup EXIT", 1)[0]
+        )
+        with tempfile.TemporaryDirectory() as logs:
+            temporary = Path(tempfile.mkdtemp(prefix="pt81-build-", dir="/var/tmp"))
+            commands = Path(logs) / "commands"
+            (temporary / "up-1.log").write_text("FAILED_LAB=/var/tmp/pt81-000000000000\n")
+            (temporary / "docker").write_text("synthetic CLI copy")
+            source = (
+                "set -euo pipefail\n"
+                'temporary="$PT_BUILD_ROOT"\nstates=()\n'
+                'python3() { printf "%s\\n" "$*" >> "$PT_CLEANUP_COMMANDS"; }\n'
+                + cleanup
+                + "\ncleanup\n"
+            )
+            try:
+                result = subprocess.run(
+                    ["bash", "-c", source],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                    env={
+                        **os.environ,
+                        "PT_BUILD_ROOT": str(temporary),
+                        "PT_CLEANUP_COMMANDS": str(commands),
+                    },
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertFalse(temporary.exists())
+                self.assertIn(
+                    "down --state /var/tmp/pt81-000000000000 --purge", commands.read_text()
+                )
+            finally:
+                if temporary.exists():
+                    import shutil
+
+                    shutil.rmtree(temporary)
+
     def test_metadata_inspections_cannot_replace_actual_scan_isolation_evidence(self):
         from types import SimpleNamespace
 

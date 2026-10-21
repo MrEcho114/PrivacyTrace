@@ -14,10 +14,32 @@ mkdir -p "$receipt_dir"
 states=()
 cleanup() {
   result=$?
-  for state in "${states[@]}"; do
-    python3 -m deploy.acceptance.provision down --state "$state" --purge || result=1
+  # Failed provisioning prints an owned state path before returning nonzero.
+  # Include that state even though the successful-up path was never reached.
+  for log in "$temporary"/up-*.log; do
+    test -f "$log" || continue
+    while IFS= read -r failed; do
+      test -n "$failed" && states+=("$failed")
+    done < <(sed -n 's/^FAILED_LAB=//p' "$log")
   done
-  if test -d "$temporary/baseline"; then git worktree remove "$temporary/baseline" || result=1; fi
+  for state in "${states[@]}"; do
+    if ! python3 -m deploy.acceptance.provision down --state "$state" --purge; then
+      echo "Cleanup failed; retained owned laboratory: $state" >&2
+      result=1
+    fi
+  done
+  if test -d "$temporary/baseline"; then
+    git worktree remove "$temporary/baseline" || result=1
+  fi
+  if test -d "$temporary/baseline"; then
+    echo "Cleanup failed; retained baseline worktree: $temporary/baseline" >&2
+  fi
+  # Keep a failed worktree removal recoverable. Otherwise remove only our
+  # mktemp-generated, non-symlink build directory (CLI copy and local logs).
+  if ! test -d "$temporary/baseline" && [[ "$temporary" =~ ^/var/tmp/pt81-build-[A-Za-z0-9]{8}$ ]] \
+      && test -d "$temporary" && ! test -L "$temporary"; then
+    rm -r -- "$temporary" || result=1
+  fi
   exit "$result"
 }
 trap cleanup EXIT

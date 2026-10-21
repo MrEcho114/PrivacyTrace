@@ -137,6 +137,20 @@ def create(api_image, web_image, runner_image, scanner_image):
     # The exact project marker is also the final directory name.
     root = directory.with_name(project)
     directory.rename(root)
+    try:
+        return _populate(root, project, api_image, web_image, runner_image, scanner_image)
+    except BaseException:
+        if (root / "owner.json").is_file():
+            # The owner marker lets the calling harness safely purge partial
+            # Compose resources as well as generated credentials.
+            print(f"FAILED_LAB={root}", flush=True)
+        else:
+            # No Docker resources or credentials precede the owner marker.
+            shutil.rmtree(root)
+        raise
+
+
+def _populate(root, project, api_image, web_image, runner_image, scanner_image):
     instance = str(uuid4())
     subnet = available_subnet()
     gateway, runner_ip = subnet + ".10", subnet + ".40"
@@ -384,44 +398,38 @@ def create(api_image, web_image, runner_image, scanner_image):
     # Persist the override list so reopen/cleanup uses the identical topology.
     state["reset_ports"] = True
     (root / "owner.json").write_text(json.dumps(state))
-    try:
-        lab.run("up", "-d", "--wait", "postgres", "redis")
-        sql = (
-            f"CREATE ROLE privacytrace_migrator LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE "
-            f"NOINHERIT NOBYPASSRLS PASSWORD '{passwords['migrator']}';\n"
-            f"CREATE ROLE privacytrace_runtime LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE "
-            f"NOINHERIT NOBYPASSRLS PASSWORD '{passwords['runtime']}';\n"
-            "ALTER DATABASE privacytrace OWNER TO privacytrace_migrator;\n"
-            "REVOKE ALL ON DATABASE privacytrace FROM PUBLIC;\n"
-            "GRANT CONNECT ON DATABASE privacytrace "
-            "TO privacytrace_migrator,privacytrace_runtime;\n"
-            "REVOKE CREATE ON SCHEMA public FROM PUBLIC;\n"
-        )
-        lab.run(
-            "exec",
-            "-T",
-            "postgres",
-            "psql",
-            "-v",
-            "ON_ERROR_STOP=1",
-            "-U",
-            "privacytrace_bootstrap",
-            "-d",
-            "privacytrace",
-            input=sql,
-        )
-        lab.run("--profile", "migration", "run", "--rm", "migrate")
-        lab.run("up", "-d", "--no-deps", "gateway", "dispatcher", "worker", "api", "runner")
-        lab.ready()
-        lab.run("up", "-d", "--no-deps", "web")
-        # Only public CA leaves the private PKI directory.
-        shutil.copyfile(pki / "ca.pem", root / "public-ca.pem")
-        return lab
-    except BaseException:
-        # Preserve the owned failed environment for diagnosis; no secrets/logs
-        # are printed or copied into the public receipt.
-        print(f"FAILED_LAB={root}", flush=True)
-        raise
+    lab.run("up", "-d", "--wait", "postgres", "redis")
+    sql = (
+        f"CREATE ROLE privacytrace_migrator LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE "
+        f"NOINHERIT NOBYPASSRLS PASSWORD '{passwords['migrator']}';\n"
+        f"CREATE ROLE privacytrace_runtime LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE "
+        f"NOINHERIT NOBYPASSRLS PASSWORD '{passwords['runtime']}';\n"
+        "ALTER DATABASE privacytrace OWNER TO privacytrace_migrator;\n"
+        "REVOKE ALL ON DATABASE privacytrace FROM PUBLIC;\n"
+        "GRANT CONNECT ON DATABASE privacytrace "
+        "TO privacytrace_migrator,privacytrace_runtime;\n"
+        "REVOKE CREATE ON SCHEMA public FROM PUBLIC;\n"
+    )
+    lab.run(
+        "exec",
+        "-T",
+        "postgres",
+        "psql",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-U",
+        "privacytrace_bootstrap",
+        "-d",
+        "privacytrace",
+        input=sql,
+    )
+    lab.run("--profile", "migration", "run", "--rm", "migrate")
+    lab.run("up", "-d", "--no-deps", "gateway", "dispatcher", "worker", "api", "runner")
+    lab.ready()
+    lab.run("up", "-d", "--no-deps", "web")
+    # Only public CA leaves the private PKI directory.
+    shutil.copyfile(pki / "ca.pem", root / "public-ca.pem")
+    return lab
 
 
 def main():

@@ -1,0 +1,10 @@
+{
+  "caseId": "H05-local-I-splits-assist",
+  "origin": "https://localhost:28443",
+  "policyMode": "assist",
+  "evidencePrefix": "H05-local-I-splits-assist",
+  "uploadAttempts": 1,
+  "cleanup": true,
+  "appLabel": "Controlled split fixture",
+  "notes": "输入=base＋全部已安装 splits：运行前确认 base 与 fixture_feature 均已安装（应读到 2 个包）。实例=本机官方配置 I。assist 先补入受控政策文本，prepare 不再调用 discover，因此不受 BUG-01 阻断；用于证明 splits 集合上传→补入→分析→报告主链路。"
+}

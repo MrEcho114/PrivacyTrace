@@ -1,0 +1,10 @@
+{
+  "caseId": "H01-local-I-single-auto",
+  "origin": "https://localhost:28443",
+  "policyMode": "auto",
+  "evidencePrefix": "H01-local-I-single-auto",
+  "uploadAttempts": 1,
+  "cleanup": true,
+  "appLabel": "Controlled split fixture",
+  "notes": "输入=单 APK：运行前确认只安装 fixture base（org.privacytrace.probe.fixture），不得安装 fixture_feature split。实例=本机官方配置 I。appLabel 与 splits 用例相同，单/拆包只能靠安装状态区分。已知 BUG-01：交付拓扑下 /sources/discover 返回 503，本用例当前预期失败，修复后再复跑。"
+}

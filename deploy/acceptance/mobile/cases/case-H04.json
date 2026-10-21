@@ -1,0 +1,10 @@
+{
+  "caseId": "H04-local-I-splits-auto",
+  "origin": "https://localhost:28443",
+  "policyMode": "auto",
+  "evidencePrefix": "H04-local-I-splits-auto",
+  "uploadAttempts": 1,
+  "cleanup": true,
+  "appLabel": "Controlled split fixture",
+  "notes": "输入=base＋全部已安装 splits：运行前确认 base 与 fixture_feature 均已安装（pm path org.privacytrace.probe.fixture 应返回 2 个包），且同包同签名。实例=本机官方配置 I。appLabel 与单 APK 用例相同，靠安装状态区分。已知 BUG-01，当前预期失败。"
+}

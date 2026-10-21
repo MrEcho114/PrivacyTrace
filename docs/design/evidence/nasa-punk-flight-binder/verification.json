@@ -1,0 +1,77 @@
+{
+  "kind": "static design prototype, not product/runtime acceptance",
+  "source": "docs/design/nasa-punk-flight-binder.html",
+  "spec": "docs/design/nasa-punk-flight-binder.md",
+  "source_sha": "f7c2a6ad725386dceefa7a617c4543df43c84254",
+  "captured_at": "2026-10-21T17:14:10.810Z",
+  "platform": "Chromium headless + local static HTML; no app server, no native bridge, no device",
+  "checks": [
+    "desktop-report-1440: no horizontal overflow, white canvas, #ECE5D6 topbar, #D63A2C primary, 4 ribbon bars, 0 external assets, 23 focusable controls",
+    "desktop-candidates-1440: no horizontal overflow, white canvas, #ECE5D6 topbar, #D63A2C primary, 4 ribbon bars, 0 external assets, 23 focusable controls",
+    "mobile-report-390: no horizontal overflow, white canvas, #ECE5D6 topbar, #D63A2C primary, 4 ribbon bars, 0 external assets, 23 focusable controls",
+    "mobile-candidates-390: no horizontal overflow, white canvas, #ECE5D6 topbar, #D63A2C primary, 4 ribbon bars, 0 external assets, 23 focusable controls",
+    "mobile-report-320: no horizontal overflow, white canvas, #ECE5D6 topbar, #D63A2C primary, 4 ribbon bars, 0 external assets, 23 focusable controls",
+    "interactive details opens; keyboard focus shows >=2px outline"
+  ],
+  "captures": [
+    {
+      "file": "desktop-report-1440.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "mode": "fullPage",
+      "screen": "report"
+    },
+    {
+      "file": "desktop-candidates-1440.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "mode": "fullPage",
+      "screen": "candidates"
+    },
+    {
+      "file": "mobile-report-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "mode": "fullPage",
+      "screen": "report"
+    },
+    {
+      "file": "mobile-candidates-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "mode": "viewport",
+      "screen": "candidates"
+    },
+    {
+      "file": "mobile-report-320.png",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "mode": "fullPage",
+      "screen": "report"
+    }
+  ],
+  "contrast": {
+    "red_on_white": 4.67,
+    "red_on_topbar": 3.72,
+    "ink_on_white": 14.49,
+    "rule_on_white": 7.07,
+    "muted_on_white": 5.07,
+    "olive_on_white": 4.22
+  },
+  "not_run": [
+    "real Android APK/device/WebView",
+    "real IME/safe-area/system font scaling/TalkBack",
+    "200% screenshot (prototype uses px type; implement with rem and measure in app)",
+    "product implementation, existing A-E regression, and browser screenshots of the real app"
+  ]
+}

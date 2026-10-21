@@ -183,6 +183,17 @@ class WebIntake:
         self._safe(self.root)
         self.data_store = JobStore(self.root)
 
+    def inspect_metadata(self, path, *, timeout=120):
+        """Manifest metadata inspection used by upload validation and discovery.
+
+        The local service reads it in its own bounded container. A durable
+        deployment has no Docker socket on the control plane and overrides this
+        with the injected Runner inspector, so policy discovery and package-set
+        validation share one isolation boundary instead of silently falling
+        back to an unavailable local Docker command.
+        """
+        return inspect_package_isolated(path, timeout=timeout)
+
     def _safe(self, path):
         if not path.absolute().is_relative_to(self.store.root):
             raise ValueError("Unsafe input path")
@@ -1287,7 +1298,7 @@ class WebIntake:
             version_code = package_set.get("version_code")
             deadline = time.monotonic() + self.INSPECTION_BUDGET_SECONDS
             for apk_path in apk_files:
-                metadata = inspect_package_isolated(apk_path, timeout=inspection_timeout(deadline))
+                metadata = self.inspect_metadata(apk_path, timeout=inspection_timeout(deadline))
                 # Worker preflight/cleanup has its own bounded I/O. A late return
                 # must not publish results after this discovery pass has expired.
                 inspection_timeout(deadline)

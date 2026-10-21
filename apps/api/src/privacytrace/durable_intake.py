@@ -133,6 +133,11 @@ class DurableWebIntake(PostgresWebIntake):
             path, timeout=timeout, inspector=self.runner.inspect_metadata
         )
 
+    def inspect_metadata(self, path, *, timeout=120):
+        # Policy discovery must use the same isolated Runner path as upload
+        # validation; the control plane has no Docker socket by design.
+        return self.runner.inspect_metadata(path, timeout=timeout)
+
     def delete_draft(self, draft_id):
         return self.lifecycle.delete_draft(draft_id)
 

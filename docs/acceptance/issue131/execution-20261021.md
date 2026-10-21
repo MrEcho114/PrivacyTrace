@@ -27,6 +27,19 @@
 | 受控模型响应 | `91a4bd6655096d2000ae8a1be0c9c07697415b68f8ee81cf95eead9c0d93581e` |
 | 一次性 Key（手机 A/B） | 两个不同的随机测试值，仅私存；公开记录不保留 Key 或可复用的指纹 |
 
+### 2.1 实例侧 job/outbox 回读（只读）
+
+2026-10-21T11:33Z 通过只读 `psql SELECT` 读回两个实例的持久状态，未写入、未重启：
+
+| 案例 | 实例 | job_id | 状态 | outbox | 时间 |
+| --- | --- | --- | --- | --- | --- |
+| H03 | I `pt81-9da08136acca` | `a4c138da…` | SUCCEEDED | `job.ready` DELIVERED attempts=1 | 10:11:09Z |
+| H06 | I | `32be23cb…` | SUCCEEDED | DELIVERED attempts=1 | 10:13:20Z |
+| H09（canonical H09b） | J `pt81-0b0a74b989cc` | `e95335ba…` | SUCCEEDED | DELIVERED attempts=1 | 10:33:22Z |
+| H12（canonical H12b） | J | `c91e0624…` | SUCCEEDED | DELIVERED attempts=1 | 10:36:14Z |
+
+两实例最终 `drafts=0`。完整回读见 `evidence/queue-readback-20261021.json`。
+
 I/J 使用不同的 instance ID、端口、Compose 项目、数据卷和材料目录。手机侧仍以 `https://localhost:28443` 作为 origin；切换实例时只改 `adb reverse` 的宿主目标，客户端状态在每个案例前清空。
 
 ## 3. 案例状态与 H 结果
@@ -49,6 +62,19 @@ I/J 使用不同的 instance ID、端口、Compose 项目、数据卷和材料�
 | H12 | base＋全部已安装 splits / J | SUCCEEDED | PRESENT | 是 | `base:classes.dex`、`split:fixture_feature:classes.dex` | DELETED | `ca0482af826fcf8dfb68834d7571f9846ab52372ebdfcf293e9caa27037ff1df` | `7ccacf5413431d33e56cf78a8e1bf81de44c5f88edcb11f84c6cb3fefac5d986` |
 
 补充证据：
+
+### 3.1 逐次运行 UTC
+
+| 案例 | 接收器 POST | 结果 captured_at | job 创建 | canonical |
+| --- | --- | --- | --- | --- |
+| H03 | 10:11:07.234Z | 10:11:36.506Z | 10:11:09.383Z | H03d |
+| H06 | 10:13:16.923Z | 10:13:45.124Z | 10:13:20.929Z | H06 |
+| H09 | 10:33:18.482Z | 10:33:48.539Z | 10:33:22.507Z | **H09b** |
+| H12 | 10:36:12.182Z | 10:36:40.814Z | 10:36:14.793Z | **H12b** |
+| N11 | A 10:27:18.553Z；B 10:27:53.629Z | 10:27:54.084Z | — | N11b |
+
+H09/H12 的首跑文件保留在 `run-H09/`、`run-H12/`；本记录取加入包集合快照后的 `run-H09b/`、`run-H12b/` 作为 canonical，避免重复计数。
+
 
 - H12 的 `pm path`/`dumpsys` 包集合快照显示 `splits=[base, fixture_feature]`，SHA256 `edb303839912f9f7d2e089bd199c78e6d947f7b950ed4ff53d17373e272042d7`；H09 的单包快照 SHA256 `cbfa8021afc46e82f82db0e07c50d823a293ef5d58f05d1049309a534e35e401`。
 - H03/H06 首次运行时执行器尚未加入包集合快照；其报告正文的“已扫描 base…”/“已扫描 base、split:fixture_feature…”行作为单包/splits 的扫描证据。H09/H12 已用加入快照后的版本重跑，上表取重跑结果；首次 H09/H12 也已得到 SUCCEEDED/PRESENT，旧文件保留不覆盖。
@@ -95,12 +121,22 @@ I/J 使用不同的 instance ID、端口、Compose 项目、数据卷和材料�
 
 边界：手机到分析服务的 HTTPS 未解密；本项只证明上述明文环境/日志/材料/数据库/服务端抽取请求面，**不能写成全路径无泄露**。模型接收器只证明协议、Key 去向和输入最小化，不证明外部模型质量或联网检索能力。
 
+### 6.1 阳性对照与容器存在性
+
+- 2026-10-21T11:33:54Z 复核：I/J 的 api、postgres 容器均为 `running`，materials 卷存在；见 `evidence/n11-analysis-control-20261021.txt`。
+- 负对照（同一次）：API env/logs、extractor 日志、materials 卷、DB dump 中 KeyA/KeyB 匹配均为 0；extractor 的 `authorization_present=true` 为 0。
+- 阳性对照：同一 grep 管线对临时 canary 命中 1，随后删除并确认不存在；证明上述 0 不是容器缺失或空跑造成的假阴性。
+- 边界仍为“明文可观察面”；手机→分析服务 TLS 未解密。
+
 ## 7. 结论与剩余边界
 
 - C 工单的四个模型 H 案例已在本机实际客户端上得到 `SUCCEEDED`、非空政策对照、模型原句和证据下钻，删除均已确认；N11 的 Key 目的地、切换和输入最小化有外部接收器观察及服务端明文面负对照。
 - 未覆盖：物理真机/OEM/其他 ABI、公网官方服务、外部真实模型质量、商店审核、生产部署、N11 分析服务 TLS 解密。模型响应为受控固定文本，受控响应不升级为外部能力。
+- 最终执行器：本记录证据绑定 `83f42ea` + PR #149 head `7871306`；PR #147（B）合并后需串行整合 `client-case.cjs`，并在最终 head 复跑或给出等价性说明。
+- 定向回归：`node --test deploy/acceptance/mobile/client-case.test.cjs` 3/3 手工执行；未接入 `scripts/check.sh`（共享入口，需 owner 决定）。
+- 卫生：receiver `.log` 为 UTF-16LE（非损坏）；`*-device.png` 全黑且多次相同，不作为界面证据；`diag/*.png` 是假 PNG，未进入结果。
 - 本记录不关闭 #131 或 #128，不替代父票最终矩阵汇总；合并与发布需另行授权。
 
 ## 8. 证据位置
 
-原始证据（客户端结果 JSON、报告正文、截图、接收器请求日志、服务端抽取日志、Key/证书、实验室状态）保存在本机 Git 忽略目录，未提交仓库。公开目录只保留本记录中的脱敏结果、身份和 SHA256；复核时需从对应运行目录读回文件并核对哈希。
+原始证据（客户端结果 JSON、报告正文、截图、接收器请求日志、服务端抽取日志、实验室状态）保存在本机 Git 忽略目录，未提交仓库。公开目录保留脱敏结果、身份和 SHA-256：`evidence/queue-readback-20261021.json`、`evidence/n11-analysis-control-20261021.txt`；`evidence-manifest.sha256` 列 55 个可公开复核文件的哈希（不含 Key、APK、证书）。复核时从对应运行目录读回文件并核对哈希。

@@ -1,0 +1,30 @@
+{
+  "case_family": "C",
+  "captured_at_utc": "2026-10-21T11:33:54Z",
+  "method": "read-only docker exec psql SELECT against the two C lab instances; no writes, no restarts",
+  "instances": {
+    "I": {
+      "instance_id": "a74aaab9-8f94-452b-9c89-a67163f5132a",
+      "compose_project": "pt81-9da08136acca",
+      "runner_image_id": "sha256:473975aeb2a77f115ec5d5c2b2ffc6b693add882a3001231ad7c6ec13c830c24",
+      "drafts": 0
+    },
+    "J": {
+      "instance_id": "e4a864bc-d549-45af-98c3-43d524656bb6",
+      "compose_project": "pt81-0b0a74b989cc",
+      "runner_image_id": "sha256:473975aeb2a77f115ec5d5c2b2ffc6b693add882a3001231ad7c6ec13c830c24",
+      "drafts": 0
+    }
+  },
+  "case_jobs": [
+    {"case": "H03", "instance": "I", "job_id": "a4c138daac644905af51263062c2455d", "state": "SUCCEEDED", "input_mode": "APK", "created_at": "2026-10-21T10:11:09.383892Z", "outbox": {"event_type": "privacytrace.job.ready", "state": "DELIVERED", "attempts": 1, "created_at": "2026-10-21T10:11:09.416936+00:00", "delivered_at": "2026-10-21T10:11:09.797574+00:00"}},
+    {"case": "H06", "instance": "I", "job_id": "32be23cb3e3e42449961dfe4e7b5dc6d", "state": "SUCCEEDED", "input_mode": "APK", "created_at": "2026-10-21T10:13:20.929975Z", "outbox": {"event_type": "privacytrace.job.ready", "state": "DELIVERED", "attempts": 1, "created_at": "2026-10-21T10:13:20.958178+00:00", "delivered_at": "2026-10-21T10:13:21.4157+00:00"}},
+    {"case": "H09", "instance": "J", "job_id": "e95335ba6ca248869a0657c4f29e458c", "state": "SUCCEEDED", "input_mode": "APK", "created_at": "2026-10-21T10:33:22.507586Z", "outbox": {"event_type": "privacytrace.job.ready", "state": "DELIVERED", "attempts": 1, "created_at": "2026-10-21T10:33:22.548295+00:00", "delivered_at": "2026-10-21T10:33:22.691607+00:00"}},
+    {"case": "H12", "instance": "J", "job_id": "c91e0624f8044488b7f03c05ba04f5ff", "state": "SUCCEEDED", "input_mode": "APK", "created_at": "2026-10-21T10:36:14.793175Z", "outbox": {"event_type": "privacytrace.job.ready", "state": "DELIVERED", "attempts": 1, "created_at": "2026-10-21T10:36:14.826161+00:00", "delivered_at": "2026-10-21T10:36:15.006824+00:00"}}
+  ],
+  "notes": [
+    "H03/H06 are the I-instance jobs created 2 seconds after the model POST; H09/H12 are the canonical rerun jobs H09b/H12b.",
+    "Both instances end with drafts=0.",
+    "input_mode=APK is the product model for real scans; package sets are recorded as APK with splits in the report coverage."
+  ]
+}

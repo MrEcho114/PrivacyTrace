@@ -44,7 +44,11 @@ def test_remote_draft_per_client_quota_and_idle_recovery(tmp_path):
         first = create_draft(client, "first")
         create_draft(client, "second")
         create_draft(client, "third")
-        assert client.post("/api/v1/web/drafts", json=payload("fourth")).status_code == 409
+        # A spent draft budget is a capacity boundary, not an input rejection:
+        # the caller gets 429 with a machine code so it can retry deliberately.
+        refused = client.post("/api/v1/web/drafts", json=payload("fourth"))
+        assert refused.status_code == 429, refused.text
+        assert refused.json()["detail"] == "CLIENT_DRAFT_QUOTA_REACHED"
 
         # A different real client identity still has its own allocation.
         distinct = {"X-Forwarded-For": "203.0.113.42"}

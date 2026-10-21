@@ -1,0 +1,164 @@
+{
+  "checks": [
+    {
+      "command": "quiesce -> snapshot -> delete -> fresh migrated DB/volume -> restore/readback",
+      "detail": {
+        "backup_bytes": 69510,
+        "backup_sha256": "e75978645fa3ed60c39598a1e8d95ec4e916948be07382166e62967e05d854cd",
+        "fresh_database": true,
+        "independent_deletion_journal": true,
+        "manifest": {
+          "files": 10,
+          "manifest_sha256": "c346c091abade09cddc2bb89bb6b19c299d17e849d3df1af742a482a658cddd1"
+        },
+        "readback": {
+          "deleted_material_absent": true,
+          "retained_hash_verified": true
+        },
+        "restore": {
+          "deletions": 19,
+          "restored": true
+        },
+        "separate_material_volume": true
+      },
+      "duration_s": 25.253,
+      "name": "r5.snapshot_restore_deletion_replay",
+      "notes": "snapshot and deletion replay read back",
+      "result_digest": "sha256:9092b2ffbd23681a",
+      "started_at": "2026-10-21T16:05:12Z",
+      "status": "PASS",
+      "ticket": "R5"
+    },
+    {
+      "command": "separate deployment drill",
+      "detail": {
+        "new_control_peer_ready": 200,
+        "new_credentials": "ready and real scan succeeded",
+        "new_leaf_sha256": "ab3191b92242c0f01754ef8629437b20e369b8ead439ee18723e58d090f07dde",
+        "old_broker_password": "rejected:AUTH",
+        "old_control_peer_status": 403,
+        "old_database_password": "authentication rejected"
+      },
+      "duration_s": 49.628,
+      "name": "r5.credential_rotation",
+      "notes": "actual deployment drill completed",
+      "result_digest": "sha256:290f03d50b85d8dc",
+      "started_at": "2026-10-21T16:05:38Z",
+      "status": "PASS",
+      "ticket": "R5"
+    },
+    {
+      "command": "separate deployment drill",
+      "detail": {
+        "actual_enospc": {
+          "bytes": 536821760,
+          "errno": 28
+        },
+        "drafts_purged": {
+          "errors": [],
+          "purged": 0,
+          "remaining": 0
+        },
+        "filesystem": "disposable tmpfs",
+        "limit_bytes": 536870912,
+        "retained_hash_verified": true,
+        "upload_after_space_released": 200,
+        "upload_refusal_code": "MATERIAL_DISK_SPACE_REACHED",
+        "upload_refusal_status": 507
+      },
+      "duration_s": 20.604,
+      "name": "r5.disk_full",
+      "notes": "actual deployment drill completed",
+      "result_digest": "sha256:a82e1e1ddcb35269",
+      "started_at": "2026-10-21T16:06:27Z",
+      "status": "PASS",
+      "ticket": "R5"
+    },
+    {
+      "command": "separate deployment drill",
+      "detail": {
+        "candidate": {
+          "api_image_id": "sha256:9d09dbb3d59b6aedd176bae77b89a0fedcdb3f0878a6eccb41fee9d0e78fb81e",
+          "migration": "0080_05",
+          "protocol": 1,
+          "retained_report_readable": true
+        },
+        "previous": {
+          "api_image_id": "sha256:6942d1c2be7c94d8218f95ca4d9f5c3a3f2ea14a9656f1f63048c024d8d059cf",
+          "migration": "0080_05",
+          "protocol": 1,
+          "retained_report_readable": true
+        },
+        "rollback": {
+          "api_image_id": "sha256:6942d1c2be7c94d8218f95ca4d9f5c3a3f2ea14a9656f1f63048c024d8d059cf",
+          "migration": "0080_05",
+          "protocol": 1,
+          "retained_report_readable": true
+        }
+      },
+      "duration_s": 39.126,
+      "name": "r5.upgrade_rollback",
+      "notes": "actual deployment drill completed",
+      "result_digest": "sha256:cd74b1530a023ba9",
+      "started_at": "2026-10-21T16:06:48Z",
+      "status": "PASS",
+      "ticket": "R5"
+    }
+  ],
+  "environment": {
+    "allow_destructive": true,
+    "allow_writes": true,
+    "cpu_count": 4,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "cwd": "<private-home>/work/PrivacyTrace/PrivacyTrace",
+    "disk": {
+      "filesystem": "ext2/ext3",
+      "free_bytes": 89064251392,
+      "path": "<private-home>/work/PrivacyTrace/PrivacyTrace",
+      "total_bytes": 154894188544
+    },
+    "kernel": "6.17.0-1022-azure",
+    "machine": "x86_64",
+    "memory_bytes": 16766414848,
+    "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "release": "6.17.0-1022-azure",
+    "system": "Linux",
+    "tools": {
+      "compose": "2.38.2",
+      "docker_client": "28.0.4",
+      "docker_server": "28.0.4",
+      "git": "git version 2.55.0",
+      "python": "Python 3.12.3",
+      "topology_base_url": "https://privacytrace.test:49691"
+    },
+    "topology_configured": true,
+    "wsl": false
+  },
+  "finished_at": "2026-10-21T16:07:27Z",
+  "notes": "",
+  "receipt_version": 1,
+  "scope": "r5-backup-recovery-drills",
+  "source_sha": "d12eeb79deeeedd65880717d3b10a703ddbc97a8",
+  "started_at": "2026-10-21T16:05:12Z",
+  "summary": {
+    "by_ticket": {
+      "R5": {
+        "fail": 0,
+        "not_tested": 0,
+        "pass": 4,
+        "skip": 0
+      }
+    },
+    "conclusion": "ALL_PASS",
+    "evidence_free": false,
+    "fail": 0,
+    "not_tested": 0,
+    "pass": 4,
+    "pass_rate_of_verified": 1.0,
+    "skip": 0,
+    "total": 4,
+    "untested_scopes": 0,
+    "verified": 4
+  },
+  "untested": []
+}

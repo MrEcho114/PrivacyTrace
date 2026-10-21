@@ -19,7 +19,7 @@
     {
       "name": "document_loaded",
       "status": "PASSED",
-      "observed": "status 200 in 162 ms"
+      "observed": "status 200 in 145 ms"
     },
     {
       "name": "title_rendered",
@@ -93,19 +93,11 @@
     "对照报告": "absent"
   },
   "title": "PrivacyTrace · 证据对照工作台",
-  "load_ms": 162,
+  "load_ms": 145,
   "declared_scope_note": "demo-web/说明.txt §三 声称导入 / 候选 / 流程演示三页可达；本次实测三页均可达。§四 声称报告页需 http 环境；实测两个后续步骤按钮不存在，与之一致。",
   "failed_requests": [
     {
-      "url": "file:///D:/api/v1/taxonomy",
-      "protocol": "file:",
-      "path": "api/v1/taxonomy",
-      "error": "net::ERR_FAILED",
-      "allowed": true,
-      "rule": "backend-unavailable"
-    },
-    {
-      "url": "file:///D:/PrivacyTrace/_%E9%AA%8C%E6%94%B6-136/%E5%86%B7%E5%90%AF%E5%8A%A8/PrivacyTrace_322234/01_%E4%BD%9C%E5%93%81%E5%8F%8A%E6%88%90%E6%9E%9C%E6%96%87%E4%BB%B6/fonts/NotoSansSC-Variable.woff2",
+      "url": "file:fonts/NotoSansSC-Variable.woff2",
       "protocol": "file:",
       "path": "fonts/NotoSansSC-Variable.woff2",
       "error": "net::ERR_FILE_NOT_FOUND",
@@ -113,12 +105,20 @@
       "rule": "declared-font-fallback"
     },
     {
-      "url": "file:///D:/PrivacyTrace/_%E9%AA%8C%E6%94%B6-136/%E5%86%B7%E5%90%AF%E5%8A%A8/PrivacyTrace_322234/01_%E4%BD%9C%E5%93%81%E5%8F%8A%E6%88%90%E6%9E%9C%E6%96%87%E4%BB%B6/fonts/NotoSerifSC-Variable.woff2",
+      "url": "file:fonts/NotoSerifSC-Variable.woff2",
       "protocol": "file:",
       "path": "fonts/NotoSerifSC-Variable.woff2",
       "error": "net::ERR_FILE_NOT_FOUND",
       "allowed": true,
       "rule": "declared-font-fallback"
+    },
+    {
+      "url": "file:api/v1/taxonomy",
+      "protocol": "file:",
+      "path": "api/v1/taxonomy",
+      "error": "net::ERR_FAILED",
+      "allowed": true,
+      "rule": "backend-unavailable"
     }
   ],
   "blocked_external_requests": [],
@@ -127,20 +127,20 @@
     "total": 4,
     "explained": [
       {
+        "text": "Failed to load resource: net::ERR_FILE_NOT_FOUND",
+        "rule": "quota:ERR_FILE_NOT_FOUND"
+      },
+      {
+        "text": "Failed to load resource: net::ERR_FILE_NOT_FOUND",
+        "rule": "quota:ERR_FILE_NOT_FOUND"
+      },
+      {
         "text": "Access to fetch at 'file:///<local-drive>/api/v1/taxonomy' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome-experimental-site-token-provider, chrome-extension, chrome-untrusted, data, edge, http, https, isolated-app.",
         "rule": "backend-unavailable:cors"
       },
       {
         "text": "Failed to load resource: net::ERR_FAILED",
         "rule": "quota:ERR_FAILED"
-      },
-      {
-        "text": "Failed to load resource: net::ERR_FILE_NOT_FOUND",
-        "rule": "quota:ERR_FILE_NOT_FOUND"
-      },
-      {
-        "text": "Failed to load resource: net::ERR_FILE_NOT_FOUND",
-        "rule": "quota:ERR_FILE_NOT_FOUND"
       }
     ],
     "unexplained": []
@@ -148,6 +148,6 @@
   "page_errors": [],
   "checks_failed": 0,
   "overall_status": "PASSED",
-  "captured_at_utc": "2026-10-21T14:15:16.923Z",
+  "captured_at_utc": "2026-10-21T15:07:45.323Z",
   "evidence_paths_note": "本收据只记录包内相对路径，不含本机盘符或用户名。"
 }

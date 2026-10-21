@@ -14,7 +14,15 @@
       "scanner": "sha256:1a36604312f9d1e6184dd1ab0e4b49fd6c0674842f478d79f8f6b54541f94354"
     },
     "client_apk_sha256": "8bb257dfd3a63d295b858decba7ba0dcee44d6e20c063c01feb1813f4f3fddc8",
-    "client_source": {"paths": ["apps/mobile", "apps/web"], "base_commit": "aa414073859463abfaa133c1d12ac1f24c93eeb7", "delta_to_candidate": "none (git diff aa41407..ffadeb0 -- apps/mobile apps/web is empty)", "signature_cert_sha256": "4172668f29d3523bd5585ab9a2cb7dff237cf751b8cb39084565acd3f2205df2"},
+    "client_source": {
+      "paths": [
+        "apps/mobile",
+        "apps/web"
+      ],
+      "base_commit": "aa414073859463abfaa133c1d12ac1f24c93eeb7",
+      "delta_to_candidate": "none (git diff aa41407..ffadeb0 -- apps/mobile apps/web is empty)",
+      "signature_cert_sha256": "4172668f29d3523bd5585ab9a2cb7dff237cf751b8cb39084565acd3f2205df2"
+    },
     "fixture": {
       "package": "org.privacytrace.probe.fixture",
       "base_sha256": "4f949286464a163886de6cdd9bd89651d19a622282c117339edfcb1c8e1055c1",
@@ -23,7 +31,7 @@
       "version_code": 1
     },
     "policy_sha256": "2d9a31a5f1b1a64c5d9d800c5e64963f7207b095d4c8fdc64a1e7e3a1b6e7106",
-    "executor": "PR #137 add79b6 + local client-case patch (retry prepare click, strict report wait)"
+    "executor": "final H rerun: PR #147 head 42b17fbb (merged 3996fa6) client-case.cjs + local prepare-button retry and tolerant evidence capture; first runs: PR #137 add79b6 + local patch"
   },
   "device": {
     "kind": "MuMu Android VM",
@@ -57,9 +65,24 @@
       "job_state": "SUCCEEDED",
       "policy_comparison": "PRESENT",
       "deletion": "DELETED",
-      "scan_scope": ["base:classes.dex", "base:classes2.dex"],
-      "outbox": "privacytrace.job.ready DELIVERED, attempts=1, 2026-10-21T09:54:43Z",
-      "evidence": ["H01-I-result.json", "H01-I-report.txt", "H01-I-device.png"]
+      "scan_scope": [
+        "base:classes.dex",
+        "base:classes2.dex"
+      ],
+      "outbox": "privacytrace.job.ready DELIVERED, attempts=1, 2026-10-21T09:54:43Z; readback: evidence/queue-readback-20261021.json",
+      "evidence": [
+        "H01-I-result.json",
+        "H01-I-report.txt",
+        "H01-I-device.png",
+        "queue-readback-20261021.json"
+      ],
+      "final_executor_rerun": {
+        "captured_at": "2026-10-21T11:20:20.070Z",
+        "result": "evidence-rerun-20261021T1128Z/H01-129-I-single-auto-result.json",
+        "evidence_panels": 3,
+        "evidence_quote": true,
+        "key_drilldown": "base:classes2.dex LocationProbe->getLastKnownLocation offset 30; quote [38,50); candidate [66,72)"
+      }
     },
     {
       "id": "H04",
@@ -70,9 +93,26 @@
       "job_state": "SUCCEEDED",
       "policy_comparison": "PRESENT",
       "deletion": "DELETED",
-      "scan_scope": ["base:classes.dex", "base:classes2.dex", "split:fixture_feature:classes.dex", "split:fixture_feature:classes2.dex"],
-      "outbox": "privacytrace.job.ready DELIVERED, attempts=1, 2026-10-21T09:58:16Z",
-      "evidence": ["H04-I-result.json", "H04-I-report.txt", "H04-I-device.png"]
+      "scan_scope": [
+        "base:classes.dex",
+        "base:classes2.dex",
+        "split:fixture_feature:classes.dex",
+        "split:fixture_feature:classes2.dex"
+      ],
+      "outbox": "privacytrace.job.ready DELIVERED, attempts=1, 2026-10-21T09:58:16Z; readback: evidence/queue-readback-20261021.json",
+      "evidence": [
+        "H04-I-result.json",
+        "H04-I-report.txt",
+        "H04-I-device.png",
+        "queue-readback-20261021.json"
+      ],
+      "final_executor_rerun": {
+        "captured_at": "2026-10-21T11:24:45.690Z",
+        "result": "evidence-rerun-20261021T1128Z/H04-129-I-splits-auto-result.json",
+        "evidence_panels": 4,
+        "evidence_quote": true,
+        "key_drilldown": "split:fixture_feature:classes2.dex ContactsProbe->query offset 24; quotes [66,72) and [38,50)"
+      }
     },
     {
       "id": "H07",
@@ -83,9 +123,24 @@
       "job_state": "SUCCEEDED",
       "policy_comparison": "PRESENT",
       "deletion": "DELETED",
-      "scan_scope": ["base:classes.dex", "base:classes2.dex"],
-      "outbox": "privacytrace.job.ready DELIVERED, attempts=1, 2026-10-21T09:56:42Z",
-      "evidence": ["H07-J-result.json", "H07-J-report.txt", "H07-J-device.png"]
+      "scan_scope": [
+        "base:classes.dex",
+        "base:classes2.dex"
+      ],
+      "outbox": "privacytrace.job.ready DELIVERED, attempts=1, 2026-10-21T09:56:42Z; readback: evidence/queue-readback-20261021.json",
+      "evidence": [
+        "H07-J-result.json",
+        "H07-J-report.txt",
+        "H07-J-device.png",
+        "queue-readback-20261021.json"
+      ],
+      "final_executor_rerun": {
+        "captured_at": "2026-10-21T11:26:30.009Z",
+        "result": "evidence-rerun-20261021T1128Z/H07-129-J-single-auto-result.json",
+        "evidence_panels": 3,
+        "evidence_quote": true,
+        "key_drilldown": "base:classes2.dex LocationProbe->getLastKnownLocation offset 30; quote [38,50)"
+      }
     },
     {
       "id": "H10",
@@ -96,32 +151,105 @@
       "job_state": "SUCCEEDED",
       "policy_comparison": "PRESENT",
       "deletion": "DELETED",
-      "scan_scope": ["base:classes.dex", "base:classes2.dex", "split:fixture_feature:classes.dex", "split:fixture_feature:classes2.dex"],
-      "outbox": "privacytrace.job.ready DELIVERED, attempts=1, 2026-10-21T10:00:06Z",
-      "evidence": ["H10-J-result.json", "H10-J-report.txt", "H10-J-device.png"]
+      "scan_scope": [
+        "base:classes.dex",
+        "base:classes2.dex",
+        "split:fixture_feature:classes.dex",
+        "split:fixture_feature:classes2.dex"
+      ],
+      "outbox": "privacytrace.job.ready DELIVERED, attempts=1, 2026-10-21T10:00:06Z; readback: evidence/queue-readback-20261021.json",
+      "evidence": [
+        "H10-J-result.json",
+        "H10-J-report.txt",
+        "H10-J-device.png",
+        "queue-readback-20261021.json"
+      ],
+      "final_executor_rerun": {
+        "captured_at": "2026-10-21T11:28:33.649Z",
+        "result": "evidence-rerun-20261021T1128Z/H10-129-J-splits-auto-result.json",
+        "evidence_panels": 4,
+        "evidence_quote": true,
+        "key_drilldown": "split:fixture_feature:classes2.dex ContactsProbe->query offset 24; quotes [66,72) and [38,50)"
+      }
     }
   ],
   "negative_cases": {
     "N01": {
       "status": "PASSED",
       "variants": {
-        "before-selection-cancel": {"drafts_before": 1, "drafts_after": 1, "evidence": ["n01a-n-summary.json", "n01a-n01a-body.txt", "n01a-n01a-after-cancel.png"]},
-        "confirmation-cancel": {"drafts_before": 1, "drafts_after": 1, "evidence": ["n01b-n-summary.json", "n01b-n01b-body.txt", "n01b-n01b-after-back.png"]},
-        "reselect-after-cancel": {"drafts_before": 1, "drafts_after": 1, "evidence": ["n01c-n-summary.json", "n01c-n01c-body.txt"]}
+        "before-selection-cancel": {
+          "drafts_before": 1,
+          "drafts_after": 1,
+          "evidence": [
+            "n01a-n-summary.json",
+            "n01a-n01a-body.txt",
+            "n01a-n01a-after-cancel.png"
+          ]
+        },
+        "confirmation-cancel": {
+          "drafts_before": 1,
+          "drafts_after": 1,
+          "evidence": [
+            "n01b-n-summary.json",
+            "n01b-n01b-body.txt",
+            "n01b-n01b-after-back.png"
+          ]
+        },
+        "reselect-after-cancel": {
+          "drafts_before": 1,
+          "drafts_after": 1,
+          "evidence": [
+            "n01c-n-summary.json",
+            "n01c-n01c-body.txt"
+          ]
+        }
       }
     },
     "N02": {
       "status": "PASSED",
       "variants": {
-        "uninstall": {"observed": "INSTALLATION_CHANGED", "drafts_before": 1, "drafts_after": 1, "evidence": ["n02-n-summary.json", "n02-n02-body.txt", "n02-n02-after-confirm.png"]},
-        "version-change": {"observed": "INSTALLATION_CHANGED", "drafts_before": 1, "drafts_after": 1, "evidence": ["n02v-n-summary.json", "n02v-n02v-body.txt", "n02v-n02v-after-confirm.png"]},
-        "unreadable-file": {"observed": "INSTALLATION_CHANGED", "method": "adb root; chmod 000 base.apk; restored 644", "drafts_before": 1, "drafts_after": 1, "evidence": ["n02u-n-summary.json", "n02u-n02u-body.txt", "n02u-n02u-after-confirm.png"]}
+        "uninstall": {
+          "observed": "INSTALLATION_CHANGED",
+          "drafts_before": 1,
+          "drafts_after": 1,
+          "evidence": [
+            "n02-n-summary.json",
+            "n02-n02-body.txt",
+            "n02-n02-after-confirm.png"
+          ]
+        },
+        "version-change": {
+          "observed": "INSTALLATION_CHANGED",
+          "drafts_before": 1,
+          "drafts_after": 1,
+          "evidence": [
+            "n02v-n-summary.json",
+            "n02v-n02v-body.txt",
+            "n02v-n02v-after-confirm.png"
+          ]
+        },
+        "unreadable-file": {
+          "observed": "INSTALLATION_CHANGED",
+          "method": "adb root; chmod 000 base.apk; restored 644",
+          "drafts_before": 1,
+          "drafts_after": 1,
+          "evidence": [
+            "n02u-n-summary.json",
+            "n02u-n02u-body.txt",
+            "n02u-n02u-after-confirm.png"
+          ]
+        }
       }
     },
     "N03": {
       "status": "PASSED",
       "entry": "real HTTPS POST /api/v1/web/drafts/{id}/package-set",
-      "baseline": {"status": 200, "split_name": "fixture_feature", "split_sha256": "1467df6802cd638095e55f8d4c9e6e58a50fe76f393e5e284da78456b0da8db7", "total_size_bytes": 15225},
+      "baseline": {
+        "status": 200,
+        "split_name": "fixture_feature",
+        "split_sha256": "1467df6802cd638095e55f8d4c9e6e58a50fe76f393e5e284da78456b0da8db7",
+        "total_size_bytes": 15225
+      },
       "rejections": {
         "missing-required-split": 400,
         "wrong-version": 400,
@@ -136,17 +264,56 @@
         "duplicate-name": "DUPLICATE_SPLIT_NAME",
         "corrupt": "CORRUPTED_FILE"
       },
-      "evidence": ["N03-results.json"]
+      "evidence": [
+        "N03-results.json"
+      ]
     },
     "N04": {
       "status": "PASSED",
       "entry": "real HTTPS POST /api/v1/web/drafts/{id}/package-set",
       "variants": {
-        "oversize-160MiB": {"http_status": 413, "sent_bytes": 114294784, "elapsed_s": 0.57, "uploaded": false, "evidence": ["N04-fast.json"]},
-        "chunked-160MiB": {"http_status": 413, "sent_bytes": 167772160, "elapsed_s": 0.81, "uploaded": false, "evidence": ["N04-extra.json"]},
-        "slow-190s": {"observed": "connection closed / TimeoutError", "elapsed_s": 460.08, "uploaded": false, "evidence": ["N04-slow.json"]},
-        "disconnect-after-1MiB": {"uploaded": false, "revision": 1, "elapsed_s": 4.01, "evidence": ["N04-fast.json"]},
-        "retry-after-oversize": {"first_status": 413, "retry_status": 200, "uploaded": true, "evidence": ["N04-extra.json"]}
+        "oversize-160MiB": {
+          "http_status": 413,
+          "sent_bytes": 114294784,
+          "elapsed_s": 0.57,
+          "uploaded": false,
+          "evidence": [
+            "N04-fast.json"
+          ]
+        },
+        "chunked-160MiB": {
+          "http_status": 413,
+          "sent_bytes": 167772160,
+          "elapsed_s": 0.81,
+          "uploaded": false,
+          "evidence": [
+            "N04-extra.json"
+          ]
+        },
+        "slow-190s": {
+          "observed": "connection closed / TimeoutError",
+          "elapsed_s": 460.08,
+          "uploaded": false,
+          "evidence": [
+            "N04-slow.json"
+          ]
+        },
+        "disconnect-after-1MiB": {
+          "uploaded": false,
+          "revision": 1,
+          "elapsed_s": 4.01,
+          "evidence": [
+            "N04-fast.json"
+          ]
+        },
+        "retry-after-oversize": {
+          "first_status": 413,
+          "retry_status": 200,
+          "uploaded": true,
+          "evidence": [
+            "N04-extra.json"
+          ]
+        }
       }
     }
   },

@@ -2,6 +2,8 @@
 
 状态：**EXECUTED / 已执行，未合并**。本记录只覆盖 #129 票边界；H02/H05/H08/H11 属其他票，本票未执行，也不据此推算通过。
 
+最终合并执行器（PR #147）上的 H 补跑见 §4.1：四个 H 案例均补齐了报告下钻证据（原句码点、代码/权限位置）；首轮证据保留不覆盖。
+
 被测候选：`main` `ffadeb06af70072b5ee2d931ee565e5b7e546acd`（已合入 PR #127/#137）。客户端用例全部在 **1080×1920 竖屏**（密度 480，`wm size 1080x1920`，`mRotation=0`）下重跑；服务器侧 N03/N04 不依赖屏幕，记录同一候选。
 
 ## 1. 结论速览
@@ -34,7 +36,7 @@
 | 受控 split | `fixture_feature-debug.apk`，SHA-256 `1467df6802cd638095e55f8d4c9e6e58a50fe76f393e5e284da78456b0da8db7`，`split="fixture_feature"`，install-time，同签名同版本 |
 | 受控政策正文 | 472 字节 UTF-8，SHA-256 `2d9a31a5f1b1a64c5d9d800c5e64963f7207b095d4c8fdc64a1e7e3a1b6e7106`，由 `http://1.1.1.1/policy.html` 提供 |
 | 静态线索 | base：`LocationProbe.readLastKnownGps` 调用 `LocationManager#getLastKnownLocation("gps")`（dex/方法/字节偏移可定位）；split：`ContactsProbe.readContacts` 调用 `ContentResolver#query(content://com.android.contacts/contacts)` |
-| 执行器 | PR #137 移动执行器 `add79b6` 的 `client-case.cjs`，加本票本地执行补丁：候选页前重试点击（避免 busy 竞态）、报告页等待 `隐私声明对照` 而非宽松的“证据/政策”关键字（见 `harness/README.md`） |
+| 执行器 | 首轮：PR #137 `add79b6` 的 `client-case.cjs` + 本票补丁（候选页重试、报告页等待 `隐私声明对照`）；最终 H 补跑：PR #147 head `42b17fbb`（合并 `3996fa6`）的 `client-case.cjs` + 本票 `自动准备政策并继续` 按钮 busy 重试与证据面板容错，见 §4.1 |
 
 ## 3. 环境与隔离
 
@@ -50,12 +52,25 @@
 四例均满足：
 
 1. 实际 Android 客户端选择并确认安装集合，报告中的 APK SHA-256 与安装材料一致；H04/H10 的扫描范围明确包含 `split:fixture_feature:classes.dex` 与 `classes2.dex`。
-2. 服务端 PostgreSQL `outbox_events` 中 `privacytrace.job.ready` 为 `DELIVERED`、attempts=1（I：09:54:43Z H01、09:58:16Z H04；J：09:56:42Z H07、10:00:06Z H10）；对应报告为 `REAL_SCAN`。
+2. 服务端 PostgreSQL `outbox_events` 中 `privacytrace.job.ready` 为 `DELIVERED`、attempts=1（I：09:54:43Z H01、09:58:16Z H04；J：09:56:42Z H07、10:00:06Z H10）；只读回读见 `evidence/queue-readback-20261021.json` 与 `.txt`，对应报告为 `REAL_SCAN`。
 3. Runner 容器镜像 `sha256:473975…` 与扫描镜像 `sha256:1a3660…` 一致，报告来自本次输入，不是预制回放。
 4. 政策来源为 `Auto Discovered Policy · 已获取网页正文 · Manifest 发现`，请求/最终 URL 均为 `http://1.1.1.1/policy.html`；对照表非空：H01/H07 三行（精确位置、通讯录、位置），H04/H10 四行（另有 split 的通讯录访问行）。
 5. 结论限定为 `证据不足 / 待复核`，没有把静态线索说成实际采集或一致性 MATCH；删除材料通过客户端的原生两步确认，结果 `DELETED`。
 
 证据：`evidence/H01-I-*`、`H04-I-*`、`H07-J-*`、`H10-J-*`（result JSON、报告正文、1080×1920 设备截图）。
+
+### 4.1 最终执行器补跑（2026-10-21T11:16–11:28Z）
+
+首轮 H 报告只有摘要行；PR #147 修复了报告页等待与证据面板采集后，用合并后的执行器补跑四例。执行器身份、环境、逐案例结果与文件约定见 [`evidence-rerun-20261021T1128Z/README.md`](evidence-rerun-20261021T1128Z/README.md)。
+
+| 案例 | 结果 | 展开面板 | 关键下钻 |
+| --- | --- | --- | --- |
+| H01 | SUCCEEDED / PRESENT / DELETED | 3 | `LocationProbe…getLastKnownLocation`（base:classes2.dex，offset 30）；原句 `[38,50)`、候选 `[66,72)` |
+| H04 | SUCCEEDED / PRESENT / DELETED | 4 | split `fixture_feature:classes2.dex`，`ContactsProbe.readContacts`（offset 24，`android.contacts.query`）；原句 `[66,72)` |
+| H07 | SUCCEEDED / PRESENT / DELETED | 3 | 同 H01 结构，实例 J |
+| H10 | SUCCEEDED / PRESENT / DELETED | 4 | 同 H04 结构，实例 J |
+
+四例 `evidence_quote=true`；报告结论仍为 `证据不足 / 待复核`，未升级政策状态。首轮证据仍在 `evidence/`，本轮证据在 `evidence-rerun-20261021T1128Z/`。
 
 ## 5. 负向与边界
 
@@ -114,4 +129,4 @@
 
 ## 8. 证据清单
 
-`evidence/` 下的文件及 SHA-256 见 `evidence-manifest.sha256`。清单包含四组 H 的 result/报告正文/1080×1920 截图、N01/N02 的摘要与截图、N03/N04 的 JSON 结果。原始运行日志、APK 与完整政策正文留在受保护的私有运行区，不进入仓库。
+`evidence/` 下的文件及 SHA-256 见 `evidence-manifest.sha256`。清单包含四组 H 的 result/报告正文/1080×1920 截图、N01/N02 的摘要与截图、N03/N04 的 JSON 结果、队列/outbox 只读回读，以及 `evidence-rerun-20261021T1128Z/` 下最终执行器补跑的四组 H 结果/报告/展开面板/截图。原始运行日志、APK 与完整政策正文留在受保护的私有运行区，不进入仓库。

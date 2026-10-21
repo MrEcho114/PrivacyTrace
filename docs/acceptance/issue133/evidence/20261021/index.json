@@ -94,8 +94,13 @@
     },
     {
       "path": "identities.json",
-      "sha256": "b90a77edad0d045315486d6fe32e3069521acb0f2d6211dc490a25016f754340",
+      "sha256": "ce6f8df96e910944d489c1bbd81e44bd8b0ee7ab356d6357a33994505fc24b7b",
       "group": "identities"
+    },
+    {
+      "path": "verification.json",
+      "sha256": "52a17fbae40b5843ba8f716951fdd8d429a98c7ce8ac3a4114716366b32dcf78",
+      "group": "verification"
     }
   ]
 }

@@ -197,6 +197,7 @@ def main():
         )
         + "\n",
         encoding="utf-8",
+        newline="\n",
     )
     print(json.dumps({"sanitized_files": len(index), "case_passed": False}))
 

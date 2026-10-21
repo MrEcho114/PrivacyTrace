@@ -1,0 +1,95 @@
+{
+  "source_sha": "ffadeb06af70072b5ee2d931ee565e5b7e546acd",
+  "images": {
+    "api": "sha256:30825e3640138465446fdd1d05dde21529ab63db98f587387142e2b1ed3f6aa2",
+    "web": "sha256:22a340efbcde68ab1b46fad3eec8a7f49658c9dba88cdf29b93207e4fefd26c5",
+    "runner": "sha256:473975aeb2a77f115ec5d5c2b2ffc6b693add882a3001231ad7c6ec13c830c24",
+    "scanner": "sha256:1a36604312f9d1e6184dd1ab0e4b49fd6c0674842f478d79f8f6b54541f94354"
+  },
+  "labs": {
+    "I": {
+      "project": "pt81-6914bd8e34aa",
+      "instance_id": "5dcdd930-84a7-433f-bbd5-373b6bd491e6",
+      "https_port": 60944,
+      "mobile_forward_port": 28544,
+      "source_sha": "ffadeb06af70072b5ee2d931ee565e5b7e546acd"
+    },
+    "J": {
+      "project": "pt81-ab4f0a59aa79",
+      "instance_id": "b0509091-925e-4d5f-8f9c-87b1bccf43e9",
+      "https_port": 58910,
+      "mobile_forward_port": 28545,
+      "source_sha": "ffadeb06af70072b5ee2d931ee565e5b7e546acd"
+    }
+  },
+  "tls": {
+    "client_trust_ca_sha256": "8614D8D09857881A0BBD1301D3FF562B3F1399E0C2720FD20A79B386D35EFEB3",
+    "leaf_I_sha256": "CEF08EFBBC8ED6E0EF429510FF15192A032C5F780B47C0C0394046BE5F06BA30",
+    "leaf_J_sha256": "812E44C9B608ACFC3E2515F42FF841879657F0B73437BB46FADE8AE125ADDF23"
+  },
+  "migration": "0080_05",
+  "protocol": 1,
+  "ruleset": "0.3.0",
+  "client_apk_signing_cert_sha256": "4172668F29D3523BD5585AB9A2CB7DFF237CF751B8CB39084565ACD3F2205DF2",
+  "policy_text_sha256": {
+    "H02/H08/N10-source-A": "1be4bc0b826f7adba437d8e9fdae21cc017e492bcb6269521df29a0db6c3f122",
+    "H05/H11": "eb01615e33c30f97b69f901dd3f21af291d0e50f458781b52579d69397e019ba"
+  },
+  "cleanup": {
+    "at_utc": "2026-10-21T10:21:00Z",
+    "drafts": "each H case deleted through the client two-step confirmation; each N09/N10 draft deleted through the API",
+    "labs": "I/J containers, volumes and state directories purged",
+    "relays": "28544/28545 relays stopped",
+    "policy_source": "service and internal listener stopped; B-only 1.0.0.1 DNAT and host return routes removed",
+    "emulator": "PrivacyTrace130 stopped; installed packages retained for audit, not running"
+  },
+  "client_apk": {
+    "path": "client-local-ca.apk (not committed)",
+    "sha256": "53416AEE102B3184F10FB7903FECE66DCC713AC73B327CD139C811911F11F474",
+    "size_bytes": 157558870,
+    "build_note": "Rebuilt debug APK with the B test CA. The embedded mobile/web source is the same tree as the tested revision; the generated Android project was reused."
+  },
+  "fixtures": {
+    "base": {
+      "package": "org.privacytrace.probe.fixture",
+      "version_code": 130,
+      "sha256": "51419844C6305B99EE930DD77D15162F606E39A94B57F1939858EDA43BEDC44F",
+      "size_bytes": 7501,
+      "behaviors": [
+        "ACCESS PRECISE_LOCATION via LocationManager.getLastKnownLocation(\"gps\")"
+      ]
+    },
+    "feature_split": {
+      "split": "fixture_feature",
+      "sha256": "9991311FB07B8EA2F595578F442E514BA138FA04B1367BCBB4F14FF114F848FF",
+      "size_bytes": 7620,
+      "behaviors": [
+        "ACCESS CONTACTS via ContentResolver.query(content://com.android.contacts/contacts)"
+      ]
+    }
+  },
+  "emulator": {
+    "manager": "MuMu Player 12",
+    "instance_index": 3,
+    "instance_name": "PrivacyTrace130",
+    "adb_serial": "127.0.0.1:16480",
+    "android_release": "15",
+    "sdk": 35,
+    "abi": "x86_64",
+    "display": "1080x1920 portrait (SurfaceOrientation=0)"
+  },
+  "policy_source": {
+    "placeholder": "http://1.0.0.1:80",
+    "service_bind": "10.250.73.2:8082 inside privacytrace73 netns",
+    "internal_listener": "127.0.0.1:19090 in the API container netns",
+    "positive_baseline": "http://1.0.0.1/policy.html returned 200 with controlled text"
+  },
+  "case_status": {
+    "H02": "PASSED (portrait rerun)",
+    "H05": "PASSED (portrait rerun)",
+    "H08": "PASSED (portrait rerun)",
+    "H11": "PASSED (portrait rerun)",
+    "N09": "PASSED (all listed variants)",
+    "N10": "PASSED (all listed variants)"
+  }
+}

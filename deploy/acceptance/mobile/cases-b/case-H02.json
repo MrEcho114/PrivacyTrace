@@ -1,0 +1,22 @@
+{
+  "caseId": "H02-local-I-single-assist",
+  "origin": "https://localhost:28544",
+  "policyMode": "assist",
+  "evidencePrefix": "H02-local-I-single-assist",
+  "uploadAttempts": 2,
+  "cleanup": true,
+  "appLabel": "Controlled B fixture",
+  "addCandidate": {
+    "sourceTitle": "受控政策样本",
+    "quote": "我们访问精确位置。",
+    "dataType": "PRECISE_LOCATION"
+  },
+  "expected": {
+    "job_state": "SUCCEEDED",
+    "policy_comparison": "PRESENT",
+    "comparison_status": "INSUFFICIENT_EVIDENCE",
+    "quote": "我们访问精确位置。",
+    "quote_offsets": [25, 34],
+    "note": "Web assist imports an unreviewed source, so the comparison must remain INSUFFICIENT_EVIDENCE rather than being upgraded."
+  }
+}

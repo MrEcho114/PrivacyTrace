@@ -1,0 +1,11 @@
+{
+  "case_id": "H02-local-I-single-assist",
+  "origin": "https://localhost:28544",
+  "policy_mode": "assist",
+  "job_state": "SUCCEEDED",
+  "policy_comparison": "PRESENT",
+  "evidence_captured": 2,
+  "deletion": "DELETED",
+  "body_chars": 1692,
+  "captured_at": "2026-10-21T09:56:12.480Z"
+}

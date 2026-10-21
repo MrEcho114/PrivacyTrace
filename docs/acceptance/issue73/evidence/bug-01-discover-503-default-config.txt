@@ -1,0 +1,6 @@
+port=54049
+create 200 b'{"id":"096ba29b9c4d4438aa9e79a58e63fbe4","revision":1,"name":"org.privacytrace.probe.fixture","sources":[{"id":"pending","title":"\xe6\x94\xbf\xe7\xad\x96\xe5\xbe\x85\xe8\xa1\xa5\xe5\x85\x85","url":"","source_type":"OFFICIAL_WEB_POLICY","text":"'
+package-set 200 b'{"id":"096ba29b9c4d4438aa9e79a58e63fbe4","revision":2,"name":"org.privacytrace.probe.fixture","sources":[{"id":"pending","title":"\xe6\x94\xbf\xe7\xad\x96\xe5\xbe\x85\xe8\xa1\xa5\xe5\x85\x85","url":"","source_type":"OFFICIAL_WEB_POLICY","text":"'
+discover 503 b'{"detail":"ISOLATED_INSPECTION_UNAVAILABLE"} retry-after=None'
+sources: [{"id": "pending", "title": "政策待补充", "url": "", "source_type": "OFFICIAL_WEB_POLICY", "text": "", "version": "UNKNOWN", "region": "", "product": "", "package_name": "", "version_code": null, "status": "empty", "error_code": null, "captured_at": null, "sha256": null, "final_url": null, "provenance": null, "model_audit": {}}]
+DRAFT 096ba29b9c4d4438aa9e79a58e63fbe4

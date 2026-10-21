@@ -39,3 +39,13 @@
 ## 验证边界
 
 先看390px报告/候选代表图，再扩展320/768、200%字号、桌面1440、完整详情、键盘和减少动效检查。浏览器使用固定报告与模拟原生桥，仅证明实际Vue界面行为；真实Android/IME/读屏仍独立列为未运行。验证结果和实际截图在交付时追加。
+
+## 实施与复核
+
+实现 `MobileReportSummary` 与 `MobileMaterialContext` 两个组件，复用已有 UiButton、UiIcon、设置 sheet 和原导航；不增加依赖。报告来源详情内保留“更换材料”，返回原导入页而不重复上传。桌面继续使用既有摘要与统计。
+
+源码版本 `e700c8389573dba716f396254ebca9409f06dd79` 已同步前置 #160 的 `c80f5b5`；后续提交只加入本说明与截图。独立视觉、需求和代码标准审阅均未发现本轮阻塞问题。200%字号下外层步骤导航仍偏拥挤，记录为后续整合观察项；此处保持原导航。
+
+`npm run acceptance:reading` 的7组检查通过，已接入 Browser Acceptance。原移动回归12组与 round-2 回归21组通过；五种视口前端流程、Pioneer渲染/负向守卫、10项政策辅助检查、宽屏层次检查通过。权威 `scripts/check.ps1` 通过：API 1537 passed/200 skipped，E2E 61 passed/4 skipped，前端111 tests通过，Ruff、契约生成校验、类型检查和生产构建通过。本地未启用Docker；skipped不计为通过。
+
+截图、源码版本和复现入口见[阅读设计验收](../acceptance/mobile-reading/README.md)。截图证明浏览器中的真实Vue渲染；不代表真实APK、个人模型、Android设备或IME/TalkBack验收。

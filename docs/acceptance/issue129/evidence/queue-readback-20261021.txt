@@ -1,0 +1,32 @@
+# A 组队列/outbox 回读（只读）
+captured_at_utc: 2026-10-21T11:20:00Z
+method: docker exec <proj>-postgres-1 psql -U privacytrace_bootstrap -d privacytrace -Atc "SELECT ..." (no writes, no restarts)
+
+## 实例 I：pt81-c36811dfa963 / instance 18dee246-d274-49d3-9bfa-73832a51a6d2
+jobs (job_id|state|created_at|input_mode):
+24678217a9fe4a88844f8ddfb10cf3f7|SUCCEEDED|2026-10-21T09:34:51.476448Z|APK
+13dae6d02e5e437ebf1f14aa00147a98|SUCCEEDED|2026-10-21T09:36:53.050159Z|APK
+9b93c20017ff48449d43c50cef4d8d6a|SUCCEEDED|2026-10-21T09:54:43.598152Z|APK   <- H01
+0b409b52f7ef44559c955339f4ecfc23|SUCCEEDED|2026-10-21T09:58:16.735264Z|APK   <- H04
+outbox_events (job_id|event_type|state|attempts|created_at|delivered_at):
+9b93c20017ff48449d43c50cef4d8d6a|privacytrace.job.ready|DELIVERED|1|2026-10-21T09:54:43.622706+00:00|2026-10-21T09:54:43.649847+00:00
+0b409b52f7ef44559c955339f4ecfc23|privacytrace.job.ready|DELIVERED|1|2026-10-21T09:58:16.761754+00:00|2026-10-21T09:58:17.376262+00:00
+intake_documents distinct scope_id: 1 (pre-existing baseline; no new draft in the H runs)
+runner image id: sha256:473975aeb2a77f115ec5d5c2b2ffc6b693add882a3001231ad7c6ec13c830c24 (privacytrace-runner:issue130-ffadeb0)
+
+## 实例 J：pt81-43f6be29e5c0 / instance fa470b68-ecc3-471d-93a1-102b3c5daa45
+jobs (job_id|state|created_at|input_mode):
+669311df4e4440cab14305f695adddce|SUCCEEDED|2026-10-21T09:33:27.285521Z|APK
+1021b17989994d4cb548838f506091cc|SUCCEEDED|2026-10-21T09:38:42.875991Z|APK
+fcf504ee39a4440caaf87b1f8a2a7046|SUCCEEDED|2026-10-21T09:56:42.843194Z|APK   <- H07
+6518ad4ddd8b45bdbacafe11407a80bc|SUCCEEDED|2026-10-21T10:00:06.563495Z|APK   <- H10
+outbox_events (job_id|event_type|state|attempts|created_at|delivered_at):
+fcf504ee39a4440caaf87b1f8a2a7046|privacytrace.job.ready|DELIVERED|1|2026-10-21T09:56:42.866362+00:00|2026-10-21T09:56:43.772512+00:00
+6518ad4ddd8b45bdbacafe11407a80bc|privacytrace.job.ready|DELIVERED|1|2026-10-21T10:00:06.583164+00:00|2026-10-21T10:00:06.954396+00:00
+intake_documents distinct scope_id: 0
+runner image id: sha256:473975aeb2a77f115ec5d5c2b2ffc6b693add882a3001231ad7c6ec13c830c24 (privacytrace-runner:issue130-ffadeb0)
+
+## 说明
+- 四个主责 H 案例对应的 job 与 outbox 行为上方标注行；其余两条 job 为更早的尝试，不用于案例映射。
+- input_mode=APK 是产品当前对真实扫描的唯一模型；package-set 上传仍以 APK 记录，split 覆盖以报告扫描行为准。
+- 本文件不含数据库凭据、Key、访问材料或本机私有路径。

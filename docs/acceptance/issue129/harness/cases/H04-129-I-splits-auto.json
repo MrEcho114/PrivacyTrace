@@ -1,0 +1,10 @@
+{
+  "caseId": "H04-129-I-splits-auto",
+  "origin": "https://localhost:29443",
+  "policyMode": "auto",
+  "evidencePrefix": "H04-129-I-splits-auto",
+  "uploadAttempts": 1,
+  "cleanup": true,
+  "appLabel": "Controlled split fixture",
+  "notes": "Issue 129 isolated device port 29443 to lab relay 28443; never reuse sibling adb reverse mappings."
+}

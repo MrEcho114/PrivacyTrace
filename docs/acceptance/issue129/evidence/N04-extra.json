@@ -1,0 +1,27 @@
+[
+  {
+    "variant": "chunked-stream",
+    "declared_bytes": "chunked",
+    "draft": "7ce4ac548c544c4abc2effb93f61a5a0",
+    "status": 413,
+    "body": "",
+    "sent_bytes": 167772160,
+    "elapsed_s": 0.81,
+    "after": {
+      "revision": 1,
+      "uploaded": false
+    }
+  },
+  {
+    "variant": "retry-after-oversize",
+    "draft": "162077f66e9642c989da1cab0efd22e8",
+    "first_status": 413,
+    "first_body": "{\"detail\":\"UPLOAD_TOO_LARGE\"}",
+    "retry_status": 200,
+    "retry_body": "{\"id\":\"162077f66e9642c989da1cab0efd22e8\",\"revision\":2,\"name\":\"org.privacytrace.probe.fixture\",\"sources\":[{\"id\":\"pending\",\"title\":\"政策待补充\",\"url\":\"\",\"source_type\":\"OFFICIAL_WEB_POLICY\",\"text\":\"\",\"version\":\"UNKNOWN\",\"region\":\"\",\"product\":\"\",\"package_name\":\"\",\"version_code\":null,\"status\":\"empty",
+    "after": {
+      "revision": 2,
+      "uploaded": true
+    }
+  }
+]

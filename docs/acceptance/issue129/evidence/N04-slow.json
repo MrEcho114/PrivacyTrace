@@ -1,0 +1,15 @@
+[
+  {
+    "variant": "slow-stream",
+    "draft": "ce6801e4501d45959ac6472e6db937d0",
+    "send_seconds": 190,
+    "status": "connection-closed",
+    "body": "TimeoutError",
+    "sent_bytes": 147456,
+    "elapsed_s": 460.08,
+    "after": {
+      "revision": 1,
+      "uploaded": false
+    }
+  }
+]

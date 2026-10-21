@@ -1,0 +1,4 @@
+2026-10-21T11:43:47.719Z client started; network events enabled
+2026-10-21T11:44:04.752Z first app list visible; cancelling
+2026-10-21T11:44:24.346Z second app list visible after reselect
+2026-10-21T11:44:32.175Z reselect form visible after second cancel

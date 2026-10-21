@@ -1,0 +1,10 @@
+{
+  "case_id": "H01-129-I-single-auto",
+  "origin": "https://localhost:29443",
+  "policy_mode": "auto",
+  "job_state": "SUCCEEDED",
+  "policy_comparison": "PRESENT",
+  "deletion": "DELETED",
+  "body_chars": 1732,
+  "captured_at": "2026-10-21T09:55:06.542Z"
+}

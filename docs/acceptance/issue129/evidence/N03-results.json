@@ -1,0 +1,129 @@
+[
+  {
+    "variant": "baseline-valid",
+    "note": "同一 v1 base + fixture_feature split",
+    "draft": "c16d746ab5bd4d82a3e4425edaec781a",
+    "payload_bytes": 7752,
+    "upload_status": 200,
+    "upload_body": "{\"id\":\"c16d746ab5bd4d82a3e4425edaec781a\",\"revision\":2,\"name\":\"org.privacytrace.probe.fixture\",\"sources\":[{\"id\":\"pending\",\"title\":\"政策待补充\",\"url\":\"\",\"source_type\":\"OFFICIAL_WEB_POLICY\",\"text\":\"\",\"version\":\"UNKNOWN\",\"region\":\"\",\"product\":\"\",\"package_name\":\"\",\"version_code\":null,\"status\":\"empty\",\"error_code\":null,\"captured_at\":null,\"sha256\":null,\"final_url\":null,\"provenance\":null,\"model_audit\":{}}],\"candidates\":[],\"uploaded\":true,\"apk_sha256\":\"4f949286464a163886de6cdd9bd89651d19a622282c117339edfcb1c8e1055c1\",\"package_set\":{\"package_name\":\"org.privacytrace.probe.fixture\",\"version_code\":1,\"",
+    "after": {
+      "revision": 2,
+      "uploaded": true,
+      "package_set": {
+        "package_name": "org.privacytrace.probe.fixture",
+        "version_code": 1,
+        "version_name": "controlled-fixture",
+        "base": {
+          "file_name": "base.apk",
+          "part": "BASE",
+          "split_name": null,
+          "sha256": "4f949286464a163886de6cdd9bd89651d19a622282c117339edfcb1c8e1055c1",
+          "size_bytes": 7609,
+          "package_name": "org.privacytrace.probe.fixture",
+          "version_code": 1,
+          "version_name": "controlled-fixture",
+          "dependencies": {
+            "is_feature_split": false,
+            "uses_split": null,
+            "config_for_split": null,
+            "is_split_required": false,
+            "split_types": [],
+            "required_split_types": []
+          }
+        },
+        "splits": [
+          {
+            "file_name": "part-1.apk",
+            "part": "SPLIT",
+            "split_name": "fixture_feature",
+            "sha256": "1467df6802cd638095e55f8d4c9e6e58a50fe76f393e5e284da78456b0da8db7",
+            "size_bytes": 7616,
+            "package_name": "org.privacytrace.probe.fixture",
+            "version_code": 1,
+            "version_name": "controlled-fixture",
+            "dependencies": {
+              "is_feature_split": true,
+              "uses_split": null,
+              "config_for_split": null,
+              "is_split_required": false,
+              "split_types": [],
+              "required_split_types": []
+            }
+          }
+        ],
+        "total_size_bytes": 15225
+      }
+    },
+    "delete_status": 200
+  },
+  {
+    "variant": "missing-required-split",
+    "note": "base 声明 isSplitRequired，但集合没有 split",
+    "draft": "8f49103a825649a4b39271ccf9332044",
+    "payload_bytes": 4035,
+    "upload_status": 400,
+    "upload_body": "{\"detail\":\"MISSING_REQUIRED_SPLIT\"}",
+    "after": {
+      "revision": 1,
+      "uploaded": false,
+      "package_set": null
+    },
+    "delete_status": 200
+  },
+  {
+    "variant": "wrong-version",
+    "note": "split versionCode=2，与 base v1 不一致",
+    "draft": "8e744c96f8ba4eb7ac02d509bfcf9228",
+    "payload_bytes": 7751,
+    "upload_status": 400,
+    "upload_body": "{\"detail\":\"VERSION_CODE_MISMATCH\"}",
+    "after": {
+      "revision": 1,
+      "uploaded": false,
+      "package_set": null
+    },
+    "delete_status": 200
+  },
+  {
+    "variant": "wrong-package",
+    "note": "split 包名 org.privacytrace.probe.other",
+    "draft": "be5ac4a1466d4ebd96aaaca02cf0df6c",
+    "payload_bytes": 7766,
+    "upload_status": 400,
+    "upload_body": "{\"detail\":\"SPLIT_PACKAGE_MISMATCH\"}",
+    "after": {
+      "revision": 1,
+      "uploaded": false,
+      "package_set": null
+    },
+    "delete_status": 200
+  },
+  {
+    "variant": "duplicate-name",
+    "note": "两个 split 同级同名 fixture_feature",
+    "draft": "13aa0f1a7d8b46f98c65aa1de2ce720f",
+    "payload_bytes": 11498,
+    "upload_status": 400,
+    "upload_body": "{\"detail\":\"DUPLICATE_SPLIT_NAME\"}",
+    "after": {
+      "revision": 1,
+      "uploaded": false,
+      "package_set": null
+    },
+    "delete_status": 200
+  },
+  {
+    "variant": "corrupt",
+    "note": "split 条目被截断，ZIP 内 APK 损坏",
+    "draft": "c489b2c2d54b48fa9a2780e454fc6932",
+    "payload_bytes": 5107,
+    "upload_status": 400,
+    "upload_body": "{\"detail\":\"CORRUPTED_FILE\"}",
+    "after": {
+      "revision": 1,
+      "uploaded": false,
+      "package_set": null
+    },
+    "delete_status": 200
+  }
+]

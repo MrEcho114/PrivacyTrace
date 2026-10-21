@@ -1,0 +1,12 @@
+{
+  "case_id": "H10-129-J-splits-auto",
+  "origin": "https://localhost:29444",
+  "policy_mode": "auto",
+  "job_state": "SUCCEEDED",
+  "policy_comparison": "PRESENT",
+  "evidence_captured": 4,
+  "evidence_quote": true,
+  "deletion": "DELETED",
+  "body_chars": 1835,
+  "captured_at": "2026-10-21T11:28:33.649Z"
+}

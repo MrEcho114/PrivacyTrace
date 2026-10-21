@@ -1,0 +1,2 @@
+mode=644
+ path=/data/app/~~zqlWLtnkq07D2DCUNeo6kg==/org.privacytrace.probe.fixture-VDMU9BgRupVVlRfCyyXk-A==/base.apk

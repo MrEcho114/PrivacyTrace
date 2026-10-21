@@ -1,0 +1,151 @@
+P
+PrivacyTrace
+对照报告
+
+选择应用后，在系统窗口确认目标服务和上传范围。静态线索不证明实际采集。
+
+当前分析材料
+材料版本 6
+
+https://localhost:29444/
+org.privacytrace.probe.fixture
+
+选择应用并上传
+恢复当前实例材料
+删除远端材料
+分析范围与来源 · REAL_SCAN · 真实 APK 静态扫描
+输入来源状态
+
+失败来源保留；正文完整度未知、全文未复核、附件未检查。
+
+政策待补充 · 尚无正文 · 出处未标注
+
+请求网址 手动输入 · 最终网址 未获取／手动输入
+
+Auto Discovered Policy · 已获取网页正文 · Manifest 发现
+
+请求网址 http://1.1.1.1/policy.html · 最终网址 http://1.1.1.1/policy.html
+
+存档报告查看 · PERSISTED REPLAY
+
+分析生成时点：2026-10-21T11:27:50.593916+00:00。查看存档不代表重新扫描。
+
+PT
+org.privacytrace.probe.fixture
+
+org.privacytrace.probe.fixture · controlled-fixture
+
+原生成时间：2026/10/21 19:27:48 (2026-10-21T11:27:48.373284Z)
+
+真实 APK · REAL_SCAN
+持久化回放 · REPLAY
+DEX 处理范围：已扫描所支持的 DEX 范围
+
+已扫描 base:classes.dex、base:classes2.dex、split:fixture_feature:classes.dex、split:fixture_feature:classes2.dex；失败 无。
+
+Static potential only; runtime access, reflection, native code, dynamic loading, and interprocedural argument resolution are not proven.
+JADX unavailable or timed out; bytecode evidence retained
+
+行为识别：有限的规则静态分析（非穷尽）。
+
+不保证覆盖反射、动态加载、Native、加壳、第三方与混合运行时、复杂数据流或规则集未覆盖的行为。没有命中规则不代表没有隐私行为。
+
+仅识别当前规则集支持的静态特征，未命中规则不代表没有隐私行为。
+不保证覆盖反射、动态加载及运行时生成的调用。
+不保证覆盖 Native、加壳、Flutter 或其他第三方与混合运行时。
+复杂控制流、跨过程参数与数据流不在当前有限局部常量分析范围。
+静态潜在行为不能证明实际访问、收集或外传。
+
+输入 APK SHA-256：4f949286464a163886de6cdd9bd89651d19a622282c117339edfcb1c8e1055c1
+
+扫描完成只描述本轮处理范围，不等于发现了应用所有隐私行为。
+
+3
+涉及的数据类型
+1
+独立政策来源
+7
+可查看的证据
+隐私声明对照
+点开结论后，直接查看代码定位与原句
+隐私数据	政策来源	当前结论	依据
+精确位置
+有政策快照 · 对应条款未确认
+证据不足 · 待复核
+查看 1 条证据 →
+通讯录
+有政策快照 · 对应条款未确认
+证据不足 · 待复核
+查看 1 条证据 →
+位置
+App 内政策
+证据不足 · 待复核
+查看 2 条证据 →
+通讯录
+App 内政策
+证据不足 · 待复核
+查看 2 条证据 →
+通讯录 · 证据不足
+收起
+
+关于通讯录，政策适用范围尚未确认或条款抽取未成功，需补齐后复核。
+
+API 字节码
+ev-ec9168fb4b723236e43619c0
+
+split:fixture_feature:classes2.dex · apk_sha256=1467df6802cd638095e55f8d4c9e6e58a50fe76f393e5e284da78456b0da8db7;split=fixture_feature;dex=classes2.dex;caller=Lorg/privacytrace/probe/fixture/feature/ContactsProbe;->readContacts(Landroid/content/ContentResolver;)Landroid/database/Cursor;;offset_bytes=24;target=Landroid/content/ContentResolver;->query(Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;
+
+目标：Landroid/content/ContentResolver;->query(Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;
+
+规则 android.contacts.query · 0.3.0；静态上下文 {"uri":"content://com.android.contacts/contacts"}
+
+字节码定位保留调用方法、DEX 与指令偏移；未提供 JADX Java 源码时以字节码作为依据。
+
+invoke-virtual/range v1 ... v6, Landroid/content/ContentResolver;->query(Landroid/net/Uri; [Ljava/lang/String; Ljava/lang/String; [Ljava/lang/String; Ljava/lang/String;)Landroid/database/Cursor;
+政策快照引用
+web-src-auto-469a6f33-snapshot
+
+http://1.1.1.1/policy.html · Captured UTF-8 text; acquisition=DIRECT_WEB_FETCH; discovery=MANIFEST_METADATA; source type is not proof of official verification; completeness unknown
+
+本条引用政策快照，全文见下方。
+
+完整政策与适用边界
+相关候选条款（未确认匹配）
+共 1 条 · 第 1 / 1 页
+上一页
+下一页
+
+以下仅按相同数据类型展示候选原句，不属于规则已确认的匹配依据，不改变结论或结论证据引用。SDK 自有政策不能替代宿主声明；候选提取仍需人工核验。
+
+web-claim-ced4275728f542239f85063ad63b8130 · App 内政策
+
+极性 AFFIRMATIVE · 主体 HOST_APP · 动作 ACCESS
+
+条件：未提取条件（不代表无条件）
+
+复核 UNREVIEWED · 提取 PARTIAL · 快照 PARTIAL
+
+声明来源 web-src-auto-469a6f33 · 候选证据 web-sentence-ced4275728f542239f85063ad63b8130
+
+codepoints [66,72)
+
+原文位置：[66, 72)，按 Unicode 码点计数。
+
+Controlled policy fixture
+自建受控政策样本
+本应用会在您授权后访问位置信息，用于提供本地测试服务。
+本应用会读取通讯录，用于受控验收中的联系人权限验证。
+本政策仅用于本机端到端验收，不指示任何真实产品或真实采集行为，也不包含任何附件。
+候选来源全文与适用边界
+第三方 SDK 归属
+仅按公开包前缀提供静态归属参考，不代表实际收集或外传
+
+归属命中只表示类路径落在某个已公开的 SDK 包范围内；SDK 的静态存在不等于实际收集或外发，也不能替代宿主 App 自身的声明，归属结论不参与政策一致性判定。
+
+本次未命中当前有限的签名规则集。没有命中不代表 APK 不含第三方 SDK。
+
+报告版本、权限与全部政策快照
+
+PrivacyTrace · 每条结论保留证据来源，推断与声明单独记录。
+
+报告的隐私核验结果由 Consistency Engine 输出；部分工程代码使用 AI 辅助，范围和核实状态见仓库披露记录。

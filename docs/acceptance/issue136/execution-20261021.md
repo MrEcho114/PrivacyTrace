@@ -223,7 +223,7 @@ test_e2e_pt_mob_102.py::test_t4_real_world_multisplit_end_to_end_workflow
 | 文件 | 说明 |
 | --- | --- |
 | `evidence/browser-proof-ffadeb06.json` | acceptance:browser 收据副本（锚定 `ffadeb06`）。仓库原 `evidence/browser-proof.json` 未改动；本副本仅把 `step_sequences` 中两处本机绝对截图路径改写为仓库相对路径，其余字段未改 |
-| `evidence/demo-offline-receipt.json` | 离线回放收据。由脚本在收集阶段就规范化路径，不含本机盘符；含逐项 `checks`、`pages_reached`、`blocked_external_requests` 与 `console_errors.expected/unexpected` |
+| `evidence/demo-offline-receipt.json` | 离线回放收据。由脚本在收集阶段就规范化路径，不含本机盘符；含逐项 `checks`、`pages_reached`、`failed_requests`（每条含 allow/deny 与命中的规则 id）、`console_errors.unexplained` 与 `blocked_external_requests` |
 | `evidence/demo-offline-import-1440.png` | 导入页（离线，1440×900） |
 | `evidence/demo-offline-candidates-1440.png` | 候选页（离线，1440×900） |
 | `evidence/demo-offline-flow-1440.png` | 流程演示页（离线，1440×900） |

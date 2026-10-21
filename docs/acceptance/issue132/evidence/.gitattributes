@@ -1,0 +1,2 @@
+# Preserve this original PowerShell receipt byte-for-byte, including CRLF.
+legacy-keepalive-cleanup.json -text whitespace=cr-at-eol

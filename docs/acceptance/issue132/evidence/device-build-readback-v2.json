@@ -1,0 +1,31 @@
+{
+  "record_kind": "RECOVERED_PRIOR_TOOL_READBACK",
+  "source_session": "01a15d61-89c4-73a0-afa8-30e85b08b3b8",
+  "matches": [
+    {
+      "fingerprint": "samsung/star2qltezh/star2qltechn:14/UQ1A.240205.07131809/ucsm.20260713.180933:user/release-keys",
+      "captured_tool_timestamp": "2026-10-21T11:23:08.665Z",
+      "tool_output_text_sha256": "d49df7d2d681af0d1dbf27a5e1cd480d8642c1945b23635e9d02850a9469005f"
+    },
+    {
+      "fingerprint": "samsung/star2qltezh/star2qltechn:14/UQ1A.240205.07131809/ucsm.20260713.180933:user/release-keys",
+      "captured_tool_timestamp": "2026-10-21T11:23:08.665Z",
+      "tool_output_text_sha256": "6976c79eef0a95df18c47a66195f296f5c482c8d6232f53d2dd54a38b9feaafb"
+    },
+    {
+      "fingerprint": "samsung/star2qltezh/star2qltechn:14/UQ1A.240205.07131809/ucsm.20260713.180933:user/release-keys",
+      "captured_tool_timestamp": "2026-10-21T15:24:37.140Z",
+      "tool_output_text_sha256": "86a7ebbd5027d48df54ea7ad5960125549d1d36d21f725f4b7a822923224d3a9"
+    },
+    {
+      "fingerprint": "samsung/star2qltezh/star2qltechn:14/UQ1A.240205.07131809/ucsm.20260713.180933:user/release-keys",
+      "captured_tool_timestamp": "2026-10-21T15:24:37.140Z",
+      "tool_output_text_sha256": "df5a7c1d5075c3c124b3d3cc0254cd1963c877d639659f8de8519af4f0263e8a"
+    },
+    {
+      "fingerprint": "samsung/star2qltezh/star2qltechn:14/UQ1A.240205.07131809/ucsm.20260713.180933:user/release-keys",
+      "captured_tool_timestamp": "2026-10-21T15:24:37.140Z",
+      "tool_output_text_sha256": "86fc1204c07f2ce94af49ec61e8d6c492a28eb29c2d1d4ba5417fab90f05e653"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "purpose": "Resume the already created real A; missing local input stopped the first setup before upload; B unchanged",
+  "started_at": "2026-10-21T14:40:19.059386+00:00",
+  "events": [
+    {
+      "method": "GET",
+      "http": 200,
+      "body_sha256": "1cf66f96457bb32cb56645945cf9a11f85114d420a0ede975125de2d6a24d7e6"
+    },
+    {
+      "method": "POST",
+      "http": 200,
+      "body_sha256": "588ae93a1e71dccea8805fcef44993538cac8a8c2ec523f986e29f1bf9d03271"
+    },
+    {
+      "method": "POST",
+      "http": 200,
+      "body_sha256": "61907877274a042167a5058f92a088f97c87a81ae2bd34ae6f98c2a1df0fd954"
+    },
+    {
+      "method": "POST",
+      "http": 200,
+      "body_sha256": "2c7b18a92ae40f5ae3985a28370bebf001b9cbef0d0197c79d1100d0360d249d"
+    },
+    {
+      "method": "GET",
+      "http": 200,
+      "body_sha256": "ea32327808e9fb5d5102cf2fa1d48534d5db1b3b0dcca9314997f450da7c5e49"
+    },
+    {
+      "method": "GET",
+      "http": 200,
+      "body_sha256": "56ed06f5f24992a88219f9d9dbb05a7dc933581dccaa6ef80c6ad850db7cc70d"
+    },
+    {
+      "method": "GET",
+      "http": 200,
+      "body_sha256": "05afb7752a4675f6ba6c7d4a505c3d0ad9eddc9a0ecc030b04a6d35e3d978ac3"
+    },
+    {
+      "method": "GET",
+      "http": 200,
+      "body_sha256": "bbd139958212f2fc264f90a1cd9305c9a7fa8165c917eca3dd427d244b6428f5"
+    }
+  ],
+  "finished_at": "2026-10-21T14:40:51.743930+00:00",
+  "real_A_job": "SUCCEEDED",
+  "passed": true
+}

@@ -1,4 +1,41 @@
-# #132：访问隔离与 TLS 开发检查
+# #132：访问隔离与 TLS 验收
+
+2026-10-21 的独立环境实跑已完成 N05、N06、N07、N08 原定义全变体，
+四例在所记录的本机组合中均为 **PASSED**。入口见
+[执行记录](execution-20261021.md)、[逐例结果](case-results.json)、
+[环境复建配方](environment-recipe.md) 和 [证据清单](evidence-manifest.sha256)。
+父票 #128 的最终组合复核仍独立进行；四例的 `final_acceptance_passed` 保持 false。
+
+下文“开发检查”及 NOT_RUN 表格为 **PR #139 当时的历史范围**，原文与子收据状态保留。
+新场景结果组合实际 Android、持久链路、全部变体和清理证据，没有回写旧收据。
+
+## 新增实际 Android 网络入口
+
+`deploy/acceptance/issue132/android_network.py` 在明确指定的已安装 debug 客户端 UID 下
+运行 Android 自带 curl。先按 [配方](environment-recipe.md) 准备两个可销毁 I/J、
+公开 CA、ADB reverse 和四条操作者临时探测隧道，再复制
+[配置样例](../../../deploy/acceptance/issue132/network-config.example.json) 到忽略目录。
+ADB 可执行文件、显式 serial、I/J 各自任务 capability 仅通过配置指定的环境变量提供。
+
+```powershell
+python -m deploy.acceptance.issue132.android_network --config tmp/issue132/network.json --output-dir tmp/issue132/network-first
+```
+
+运行 31 项：I/J 共 20 项 HTTP、7 个普通未公开端口、4 个单独注入的管理面 mTLS 隧道。
+最后四项只验证真实服务要求客户端证书，不能当作普通网络暴露；七项端口拒绝也只适用
+所记录的 Android/ADB 回环网络，不能外推局域网或公网。正常 CA/主机名校验一直开启。
+
+curl 使用显式 `--noproxy` 主机列表，避免 `adb shell` 展开星号后出现多 URL 假成功；
+HTTP 只接受单个状态标记、预期状态、无 stderr 和准确通用拒绝体。
+管理面探测必须收到客户端证书要求的 TLS alert，断连、坏 CA 或协议错误不能算通过。
+令牌经 stdin 的 curl 配置传入，不进 argv 或公开收据。
+
+输出目录必须全新；`receipt.json` 为脱敏子收据，`private-responses.json` 只留本机。
+执行器不负责删除任务、设备 CA、reverse 或隧道；调用者须另行清理并核验。
+其 `scenario_status=NOT_RUN` 是子检查的固定边界，完整案例由逐例结果组合。
+九项守卫回归见 `apps/api/tests/test_issue132_android_network.py`，合成返回值不计实际验收。
+
+## PR #139 开发检查历史
 
 本目录仅维护 [#132](https://github.com/MrEcho114/PrivacyTrace/issues/132) 的独立交付。
 原 N05–N08 定义见 [原场景](../issue73/scenarios.md)。本交付补齐可运行检查与复用入口，

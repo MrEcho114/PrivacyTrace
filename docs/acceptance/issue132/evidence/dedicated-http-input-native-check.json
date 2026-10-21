@@ -1,0 +1,12 @@
+{
+  "label": "dedicated-http-input",
+  "origin": "http://localhost:41859",
+  "expected": "INVALID_SERVER_ORIGIN",
+  "observed": {
+    "error": "INVALID_SERVER_ORIGIN"
+  },
+  "capabilitiesAccepted": false,
+  "passed": true,
+  "utc": "2026-10-21T14:25:50.567Z",
+  "actual_android": true
+}

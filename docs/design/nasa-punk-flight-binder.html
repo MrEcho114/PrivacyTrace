@@ -1,0 +1,597 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PrivacyTrace · NASA-punk Flight Binder · 设计原型</title>
+<style>
+  :root{
+    --paper:#fff;
+    --topbar:#ECE5D6;
+    --ink:#252A2E;
+    --muted:#6B6F72;
+    --rule:#4C5A68;
+    --line-soft:rgba(76,90,104,.28);
+    --ribbon-1:#4C5A68;
+    --ribbon-2:#7A7F4E;
+    --ribbon-3:#D2A85E;
+    --ribbon-4:#A8432F;
+    --red:#D63A2C;
+    --red-press:#B92E24;
+    --on-red:#fff;
+    --caution:#17181A;
+    --olive:#7A7F4E;
+    --mono:ui-monospace,"SF Mono",Consolas,"Courier New",monospace;
+    --sans:"Helvetica Neue",Helvetica,Arial,"Noto Sans SC","Microsoft YaHei",sans-serif;
+    --cn:"Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+    --shadow:4px 4px 0 var(--line-soft);
+  }
+  *{box-sizing:border-box}
+  html{background:#fff}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--cn);font-size:15px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  button,a,summary{font:inherit}
+  button{cursor:pointer}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .label{
+    margin:0;font-family:var(--mono);font-size:10.5px;line-height:1.4;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--rule);
+  }
+  .rule{height:1px;background:var(--line-soft);border:0;margin:0}
+  .wide-rule{height:2px;background:var(--rule);border:0;margin:0}
+  .desk{max-width:1440px;margin:0 auto;padding:22px 28px 40px}
+  .frame{
+    position:relative;border:1px solid var(--rule);background:var(--paper);
+    box-shadow:var(--shadow);
+  }
+  /* Wear lives on the frame edge only, never over content. */
+  .frame::before{
+    content:"";position:absolute;inset:0;pointer-events:none;z-index:20;opacity:.42;
+    background:
+      linear-gradient(102deg,transparent 0 18%,rgba(76,90,104,.35) 18.1%,transparent 18.3%) 18px 34px/130px 1px no-repeat,
+      linear-gradient(96deg,transparent 0 44%,rgba(76,90,104,.30) 44.1%,transparent 44.3%) calc(100% - 44px) 71px/92px 1px no-repeat,
+      linear-gradient(88deg,transparent 0 68%,rgba(76,90,104,.28) 68.1%,transparent 68.3%) 31px calc(100% - 28px)/160px 1px no-repeat,
+      linear-gradient(94deg,transparent 0 22%,rgba(168,67,47,.22) 22.1%,transparent 22.3%) calc(100% - 30px) calc(100% - 52px)/70px 1px no-repeat;
+  }
+  .rivet{
+    position:absolute;width:8px;height:8px;border-radius:50%;z-index:21;
+    background:radial-gradient(circle at 35% 30%,#fff 0 1px,var(--rule) 1.5px 2.5px,#2f3740 3px 4px);
+    opacity:.85;pointer-events:none;
+  }
+  .rivet.tl{left:7px;top:7px}.rivet.tr{right:7px;top:7px}
+  .rivet.bl{left:7px;bottom:7px}.rivet.br{right:7px;bottom:7px}
+  .edge-mark{position:absolute;left:-18px;top:46%;z-index:22;transform:rotate(-90deg);transform-origin:left top;font-family:var(--mono);font-size:8px;line-height:1;letter-spacing:.18em;color:var(--rule);opacity:.55;pointer-events:none;white-space:nowrap}
+
+  /* Topbar: the only beige surface. */
+  .topbar{background:var(--topbar);border-bottom:1px solid var(--rule);position:relative}
+  .docbar{
+    display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+    min-height:26px;padding:4px 18px;border-bottom:1px solid var(--line-soft);
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--rule);
+  }
+  .docbar .push{margin-left:auto}
+  .docbar .system{display:inline-flex;align-items:center;gap:6px;color:var(--ink)}
+  .lamp{width:6px;height:6px;background:var(--rule);display:inline-block}
+  .masthead{display:flex;align-items:center;gap:18px;padding:13px 18px 12px;min-height:64px}
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .brand-mark{
+    width:38px;height:38px;flex:none;display:grid;place-items:center;
+    border:1px solid var(--rule);background:var(--paper);
+    font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.04em;
+  }
+  .brand h1{
+    margin:0;font-family:var(--sans);font-weight:700;font-size:24px;line-height:1.05;
+    letter-spacing:.09em;text-transform:uppercase;white-space:nowrap;
+  }
+  .brand p{margin:3px 0 0;font-family:var(--mono);font-size:9.5px;line-height:1.35;letter-spacing:.1em;text-transform:uppercase;color:var(--rule)}
+  .screen-switch{display:flex;align-items:center;gap:0;margin-left:auto;border:1px solid var(--rule);background:var(--paper)}
+  .screen-switch label{
+    padding:6px 10px;font-family:var(--mono);font-size:10px;line-height:1.2;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--rule);cursor:pointer;border-left:1px solid var(--line-soft);
+  }
+  .screen-switch label:first-child{border-left:0}
+  .screen-switch input{position:absolute;opacity:0;pointer-events:none}
+  #s-report:checked ~ .desk .screen-switch label[for="s-report"],
+  #s-candidates:checked ~ .desk .screen-switch label[for="s-candidates"]{background:var(--ink);color:var(--paper)}
+  .ribbon{display:grid;grid-template-columns:repeat(4,1fr);height:6px}
+  .ribbon i{display:block}
+  .ribbon i:nth-child(1){background:var(--ribbon-1)}
+  .ribbon i:nth-child(2){background:var(--ribbon-2)}
+  .ribbon i:nth-child(3){background:var(--ribbon-3)}
+  .ribbon i:nth-child(4){background:var(--ribbon-4)}
+
+  .shell{display:grid;grid-template-columns:216px minmax(0,1fr);align-items:stretch}
+  .index{border-right:1px solid var(--rule);padding:18px 14px 22px;background:var(--paper)}
+  .index > .label{padding:0 2px 10px;border-bottom:2px solid var(--rule)}
+  .index-nav{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+  .index-nav a{
+    position:relative;display:flex;align-items:baseline;gap:9px;
+    min-height:42px;padding:9px 10px 8px 12px;border:1px solid var(--line-soft);
+    color:var(--ink);text-decoration:none;background:var(--paper);
+    clip-path:polygon(0 0,calc(100% - 7px) 0,100% 50%,calc(100% - 7px) 100%,0 100%);
+  }
+  .index-nav a .n{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--rule)}
+  .index-nav a .t{font-size:13px;line-height:1.25}
+  .index-nav a[aria-current="step"]{border-color:var(--rule);background:#fff;box-shadow:inset 3px 0 0 var(--red)}
+  .index-nav a[aria-current="step"] .n{color:var(--red)}
+  .index-note{
+    margin-top:22px;padding-top:14px;border-top:1px solid var(--line-soft);
+    font-family:var(--mono);font-size:9.5px;line-height:1.7;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted);
+  }
+  .stamp{
+    display:inline-block;margin-top:14px;padding:5px 8px;border:1px solid var(--olive);
+    color:var(--rule);font-family:var(--mono);font-size:9px;letter-spacing:.12em;
+    text-transform:uppercase;transform:rotate(-2deg);opacity:.9;background:var(--paper);
+  }
+  main{min-width:0;padding:18px 18px 24px}
+  .screen{display:none}
+  #s-report:checked ~ .desk .report-screen{display:block}
+  #s-candidates:checked ~ .desk .candidate-screen{display:block}
+
+  .spread{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);align-items:stretch;border:1px solid var(--rule);background:var(--paper);box-shadow:var(--shadow)}
+  .page{min-width:0;padding:18px 20px 20px;position:relative}
+  .page + .page{border-left:1px solid var(--rule)}
+  .page-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:9px;border-bottom:2px solid var(--rule);margin-bottom:14px}
+  .page-head .label{color:var(--ink)}
+  .page-head .right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .page-foot{margin-top:18px;padding-top:8px;border-top:1px solid var(--line-soft);display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between}
+  .page-foot .label{font-size:9px}
+
+  .badge{
+    display:inline-flex;align-items:center;min-height:20px;padding:1px 6px;
+    border:1px solid var(--rule);font-family:var(--mono);font-size:9px;line-height:1.5;
+    letter-spacing:.07em;text-transform:uppercase;white-space:nowrap;background:var(--paper);
+  }
+  .badge.soft{border-color:var(--line-soft);color:var(--muted)}
+  .badge.red{border-color:var(--red);color:var(--red)}
+  .tag{
+    display:inline-flex;align-items:center;gap:5px;min-height:22px;padding:1px 6px;
+    border:1px solid var(--rule);font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;
+    line-height:1.5;text-transform:uppercase;white-space:nowrap;background:var(--paper);
+  }
+  .tag[data-tone="unknown"]{border-style:dashed}
+  .tag[data-tone="partial"]{border-style:double;border-width:2px;padding:0 5px}
+  .tag[data-tone="none"]{border-color:var(--rule);color:var(--ink)}
+  .tag .dot{width:5px;height:5px;background:currentColor;display:inline-block}
+  .tag[data-tone="partial"] .dot{transform:rotate(45deg)}
+
+  .app-id{display:flex;align-items:flex-start;gap:12px;min-width:0}
+  .app-mark{
+    width:42px;height:42px;flex:none;display:grid;place-items:center;background:var(--ink);
+    color:var(--paper);font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.04em;
+  }
+  .app-id h2{margin:0;font-family:var(--sans);font-size:22px;line-height:1.2;letter-spacing:.01em;overflow-wrap:anywhere}
+  .app-id .version{margin:4px 0 0;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .app-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+  .app-boundary{margin:12px 0 0;padding-left:10px;border-left:3px solid var(--rule);font-size:12.5px;line-height:1.55;color:var(--muted)}
+  .caution-wrap{display:flex;align-items:stretch;margin:13px 0 0;border:1px solid var(--rule)}
+  .caution-strip{
+    width:36px;flex:none;background:repeating-linear-gradient(135deg,var(--caution) 0 6px,var(--paper) 6px 12px);
+    border-right:1px solid var(--rule);
+  }
+  .caution-wrap p{margin:0;padding:6px 9px;font-family:var(--mono);font-size:9.5px;line-height:1.6;letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+  .counts{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:14px 0 4px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+  .counts div{padding:8px 9px 7px;border-left:1px solid var(--line-soft)}
+  .counts div:first-child{border-left:0;padding-left:0}
+  .counts dt{margin:0;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .counts dd{margin:2px 0 0;font-family:var(--mono);font-size:20px;line-height:1;font-variant-numeric:tabular-nums}
+  .counts small{display:block;margin-top:3px;font-family:var(--cn);font-size:10.5px;line-height:1.4;color:var(--muted)}
+
+  .issue{border-top:1px solid var(--rule);padding:13px 0 12px}
+  .issue:first-of-type{border-top:0;padding-top:4px}
+  .issue-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .issue-head h3{margin:0;font-family:var(--cn);font-size:16px;line-height:1.35;font-weight:650}
+  .issue-head .tag{margin-left:auto}
+  .issue p{margin:7px 0 0;font-size:14px;line-height:1.65;color:var(--muted);max-width:66ch}
+  .evidence-link{
+    display:inline-flex;align-items:center;gap:7px;margin-top:9px;padding:0;border:0;background:none;
+    color:var(--ink);font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--rule);cursor:pointer;
+  }
+  .evidence-link::after{content:"→";font-family:var(--cn);font-size:13px;text-decoration:none}
+  .evidence-link:focus-visible,.btn:focus-visible,summary:focus-visible,a:focus-visible{
+    outline:2px solid var(--ink);outline-offset:2px;
+  }
+
+  .log-list{margin:0;border-top:1px solid var(--line-soft)}
+  .log-list > div{display:grid;grid-template-columns:1fr auto;gap:10px;padding:7px 0;border-bottom:1px solid var(--line-soft);font-size:12px}
+  .log-list dt{margin:0;color:var(--muted)}
+  .log-list dd{margin:0;font-family:var(--mono);font-size:10px;line-height:1.6;letter-spacing:.04em;text-align:right;overflow-wrap:anywhere}
+  .log-list dd b{font-weight:600}
+  .log-section{margin-top:16px}
+  .log-section h3{margin:0 0 6px;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--rule)}
+  .log-section p{margin:0;font-size:13px;line-height:1.65;color:var(--muted)}
+  details{border-top:1px solid var(--line-soft);padding:9px 0}
+  details summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:34px;list-style:none;cursor:pointer;font-family:var(--mono);font-size:10px;line-height:1.4;letter-spacing:.08em;text-transform:uppercase}
+  details summary::-webkit-details-marker{display:none}
+  details summary svg{width:14px;height:14px;transition:transform 150ms ease}
+  details[open] summary svg{transform:rotate(90deg)}
+  details .detail-body{padding:3px 0 10px;font-size:12px;line-height:1.65;color:var(--muted)}
+  details .detail-body p{margin:0 0 7px}
+  details .detail-body dl{margin:0}
+  details .detail-body dl > div{display:grid;grid-template-columns:78px minmax(0,1fr);gap:10px;padding:3px 0}
+  details .detail-body dt{color:var(--muted);font-size:11px}
+  details .detail-body dd{margin:0;overflow-wrap:anywhere;font-size:11px}
+  .code{font-family:var(--mono);font-size:10.5px;letter-spacing:.03em}
+  .pencil{
+    position:absolute;right:16px;bottom:10px;transform:rotate(-4deg);
+    font-family:"Segoe Script","Bradley Hand","Comic Sans MS",cursive;
+    font-size:12px;line-height:1.3;color:var(--red);opacity:.82;pointer-events:none;
+  }
+  .page .pencil{bottom:34px}
+  .sticker{
+    display:inline-block;margin-top:12px;padding:4px 7px;border:1px solid var(--olive);
+    color:var(--rule);font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+    transform:rotate(2deg);background:var(--paper);opacity:.9;
+  }
+
+  /* Candidate screen */
+  .material-strip{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--rule);border-bottom:0;padding:8px 12px;background:var(--paper)}
+  .material-strip .label{margin-right:2px}
+  .material-strip strong{font-size:12.5px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+  .material-strip .push{margin-left:auto}
+  .material-actions{display:flex;gap:6px;flex-wrap:wrap}
+  .material-actions button{min-height:32px}
+  .tabs{display:flex;border:1px solid var(--rule);border-bottom:0}
+  .tabs button{flex:1;min-height:38px;padding:6px 10px;border:0;border-left:1px solid var(--line-soft);background:var(--paper);font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .tabs button:first-child{border-left:0}
+  .tabs button[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+  .source-quote{margin:14px 0 0;padding:10px 12px;border-left:3px solid var(--rule);background:#fff;font-size:14px;line-height:1.8}
+  .source-quote mark{background:transparent;color:inherit;font-weight:600;border-bottom:2px solid var(--rule);padding:0 1px}
+  .candidate-row{border:1px solid var(--rule);margin-top:14px;padding:12px}
+  .candidate-row.is-selected{border-left:3px solid var(--red)}
+  .candidate-row .issue-head h3{font-size:15px}
+  .candidate-row .hint{margin:6px 0 0;font-family:var(--mono);font-size:9.5px;line-height:1.6;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .actionbar{display:flex;align-items:center;gap:8px;margin-top:16px;padding-top:12px;border-top:2px solid var(--rule)}
+  .actionbar .push{margin-left:auto}
+  .actionbar .note{font-family:var(--mono);font-size:9px;line-height:1.5;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;
+    padding:8px 12px;border:1px solid var(--rule);border-radius:2px;background:var(--paper);color:var(--ink);
+    font-family:var(--cn);font-size:13px;line-height:1.2;text-decoration:none;
+    transition:background-color 120ms ease,border-color 120ms ease,transform 120ms ease;
+  }
+  .btn:hover{background:#F7F6F2}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--red);border-color:var(--red);color:var(--on-red);font-weight:700}
+  .btn.primary:hover{background:var(--red-press);border-color:var(--red-press)}
+  .btn.quiet{background:transparent;border-color:transparent;padding-left:8px;padding-right:8px}
+  .btn.quiet:hover{background:#F4F2ED;border-color:var(--line-soft)}
+  .btn.danger{border-color:var(--red);color:var(--red);background:var(--paper)}
+  .btn:disabled{opacity:.42;cursor:not-allowed}
+  .btn.small{min-height:30px;padding:4px 8px;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase}
+
+  /* Component plate */
+  .components{margin-top:22px;border:1px solid var(--rule);background:var(--paper)}
+  .components-head{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:2px solid var(--rule)}
+  .components-head .label{color:var(--ink)}
+  .components-head .push{margin-left:auto}
+  .component-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+  .component-cell{padding:13px 14px;border-left:1px solid var(--line-soft);min-width:0}
+  .component-cell:first-child{border-left:0}
+  .component-cell h3{margin:0 0 8px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .button-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .swatches{display:flex;flex-wrap:wrap;gap:4px;margin:0;padding:0;list-style:none}
+  .swatches li{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:8.5px;letter-spacing:.04em;color:var(--muted)}
+  .swatches i{width:12px;height:12px;border:1px solid var(--line-soft);display:inline-block}
+  .field{display:grid;gap:4px;max-width:100%}
+  .field label{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .field input{width:100%;min-height:38px;border:1px solid var(--rule);border-radius:2px;padding:7px 9px;background:var(--paper);font:inherit;font-size:13px;color:var(--ink)}
+  .field input:focus{outline:2px solid var(--ink);outline-offset:1px}
+  .field .help{margin:0;font-size:10.5px;color:var(--muted)}
+  .stripe-sample{height:6px;background:repeating-linear-gradient(135deg,var(--caution) 0 6px,var(--paper) 6px 12px);border:1px solid var(--rule)}
+
+  footer.doc-foot{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;padding:9px 14px;border-top:1px solid var(--rule);font-family:var(--mono);font-size:9px;line-height:1.5;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+  @media (max-width:1200px){.edge-mark{display:none}}
+  @media (max-width:1050px){
+    .desk{padding:14px}
+    .shell{grid-template-columns:180px minmax(0,1fr)}
+    .spread{grid-template-columns:1fr}
+    .page + .page{border-left:0;border-top:1px solid var(--rule)}
+    .component-grid{grid-template-columns:1fr}
+    .component-cell{border-left:0;border-top:1px solid var(--line-soft)}
+    .component-cell:first-child{border-top:0}
+  }
+  @media (max-width:760px){
+    .desk{padding:0}
+    .frame{border-left:0;border-right:0;box-shadow:none}
+    .rivet,.edge-mark{display:none}
+    .docbar{gap:8px;min-height:22px;padding:4px 12px;font-size:8px}
+    .docbar .hide-m{display:none}
+    .masthead{padding:8px 12px 9px;min-height:54px;gap:10px}
+    .brand-mark{width:32px;height:32px;font-size:10px}
+    .brand h1{font-size:17px;letter-spacing:.07em;white-space:normal}
+    .brand p{display:none}
+    .screen-switch label{padding:5px 7px;font-size:8.5px}
+    .ribbon{height:4px}
+    .shell{display:block}
+    .index{border-right:0;border-bottom:1px solid var(--rule);padding:0;position:sticky;top:0;z-index:10;background:var(--paper)}
+    .index > .label,.index-note,.index .stamp{display:none}
+    .index-nav{flex-direction:row;gap:0;margin:0;overflow-x:auto;scrollbar-width:none}
+    .index-nav::-webkit-scrollbar{display:none}
+    .index-nav a{flex:1;min-width:76px;min-height:46px;border:0;border-right:1px solid var(--line-soft);clip-path:none;padding:6px 8px;display:grid;gap:1px;align-content:center}
+    .index-nav a .n{font-size:8.5px}
+    .index-nav a .t{font-size:11px;white-space:nowrap}
+    .index-nav a[aria-current="step"]{box-shadow:inset 0 -3px 0 var(--red);border-right-color:var(--line-soft)}
+    main{padding:12px 12px 18px}
+    .spread{display:block;box-shadow:3px 3px 0 var(--line-soft)}
+    .page{padding:14px 13px 16px}
+    .page-head{margin-bottom:10px;padding-bottom:7px}
+    .page-head .right{gap:4px}
+    .app-id h2{font-size:19px}
+    .app-mark{width:36px;height:36px;font-size:10px}
+    .counts dd{font-size:18px}
+    .issue-head h3{font-size:15px}
+    .issues .issue-head .tag{margin-left:0}
+    .components{display:none}
+    .pencil{right:12px;bottom:16px;font-size:10px}
+    .page .pencil{bottom:22px}
+    .material-strip{padding:7px 9px}
+    .material-strip strong{max-width:190px}
+    .actionbar{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--paper);margin:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom));border-top:2px solid var(--rule);box-shadow:0 -1px 0 var(--line-soft)}
+    .actionbar .note{display:none}
+    .actionbar .btn{min-height:48px;font-size:12px;flex:1}
+    .actionbar .push{margin-left:0}
+    .candidate-screen{padding-bottom:78px}
+    .candidate-screen .spread{margin-bottom:0}
+    .candidate-screen .page:first-child{padding-bottom:8px}
+  }
+  @media (max-width:360px){
+    .screen-switch{display:none}
+    .docbar .doc-date{display:none}
+    .index-nav a{min-width:70px;padding:5px 6px}
+    .index-nav a .t{font-size:10px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  }
+</style>
+</head>
+<body>
+<input type="radio" name="screen" id="s-report" checked hidden />
+<input type="radio" name="screen" id="s-candidates" hidden />
+<div class="desk">
+  <div class="frame">
+    <span class="rivet tl" aria-hidden="true"></span><span class="rivet tr" aria-hidden="true"></span>
+    <span class="rivet bl" aria-hidden="true"></span><span class="rivet br" aria-hidden="true"></span>
+    <span class="edge-mark" aria-hidden="true">THIS SIDE UP ↑</span>
+
+    <header class="topbar">
+      <div class="docbar">
+        <span>PT / DESIGN STUDY 02</span>
+        <span class="hide-m">STATIC ANALYSIS · NOT A SECURITY SCORE</span>
+        <span class="doc-date">2026-10-22</span>
+        <span class="push system"><i class="lamp" aria-hidden="true"></i> SYSTEM READY</span>
+      </div>
+      <div class="masthead">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">PT</span>
+          <div>
+            <h1>PRIVACYTRACE</h1>
+            <p>证据对照工作台 / STATIC EVIDENCE &amp; POLICY</p>
+          </div>
+        </div>
+        <div class="screen-switch" role="group" aria-label="原型视图">
+          <label for="s-report">REPORT</label>
+          <label for="s-candidates">CANDIDATES</label>
+        </div>
+      </div>
+      <div class="ribbon" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    </header>
+
+    <div class="shell">
+      <nav class="index" aria-label="任务索引">
+        <p class="label">MISSION INDEX</p>
+        <div class="index-nav">
+          <a href="#report" data-step="01"><span class="n">01</span><span class="t">导入材料</span></a>
+          <a href="#report" data-step="02"><span class="n">02</span><span class="t">检查候选</span></a>
+          <a href="#report" data-step="03"><span class="n">03</span><span class="t">分析进度</span></a>
+          <a href="#report" data-step="04" aria-current="step"><span class="n">04</span><span class="t">对照报告</span></a>
+        </div>
+        <div class="index-note">
+          <div>DOC TYPE / REPORT</div>
+          <div>REV / 02</div>
+          <div>PLATFORM / ANDROID FIRST</div>
+        </div>
+        <span class="stamp">DESIGN PROOF<br />NOT PRODUCT</span>
+      </nav>
+
+      <main>
+        <section class="screen report-screen" id="report" aria-label="对照报告原型">
+          <div class="spread">
+            <article class="page">
+              <div class="page-head">
+                <p class="label">REPORT / 04</p>
+                <div class="right">
+                  <span class="badge">真实 APK · REAL_SCAN</span>
+                  <span class="badge soft">持久化回放 · REPLAY</span>
+                </div>
+              </div>
+
+              <div class="app-id">
+                <span class="app-mark" aria-hidden="true">PT</span>
+                <div>
+                  <h2>手机端验收示例</h2>
+                  <p class="version">版本 1.0.7 / com.example.mobile.ok</p>
+                  <div class="app-tags">
+                    <span class="tag">STATIC ONLY</span>
+                    <span class="tag">POLICY 01</span>
+                  </div>
+                </div>
+              </div>
+
+              <p class="app-boundary">静态线索与政策声明对照，不证明实际采集。数量不是安全评分；未知与待复核保持原样。</p>
+
+              <div class="caution-wrap">
+                <div class="caution-strip" aria-hidden="true"></div>
+                <p>静态边界 / 权限是能力，invoke 是静态潜在线索，政策是声明</p>
+              </div>
+
+              <dl class="counts">
+                <div><dt>DATA TYPES</dt><dd>2</dd><small>数据类型</small></div>
+                <div><dt>POLICY SOURCES</dt><dd>1</dd><small>政策来源</small></div>
+                <div><dt>EVIDENCE</dt><dd>3</dd><small>可查看证据</small></div>
+              </dl>
+
+              <div class="issues">
+                <section class="issue">
+                  <div class="issue-head">
+                    <h3>位置信息</h3>
+                    <span class="tag" data-tone="partial"><span class="dot" aria-hidden="true"></span>具体类型已声明 · 待复核</span>
+                  </div>
+                  <p>政策中出现了精确位置读取的调用说明，但没有给出目的与保留期限。可下钻到原句与代码定位。</p>
+                  <button class="evidence-link" type="button">查看 2 条证据</button>
+                </section>
+                <section class="issue">
+                  <div class="issue-head">
+                    <h3>设备标识</h3>
+                    <span class="tag" data-tone="unknown"><span class="dot" aria-hidden="true"></span>未找到对应声明 · 待复核</span>
+                  </div>
+                  <p>未找到适用的声明，不等于违规。适用版本、完整正文、提取成功与全文复核仍是缺失条件。</p>
+                  <button class="evidence-link" type="button">查看 1 条证据</button>
+                </section>
+              </div>
+
+              <div class="page-foot">
+                <span class="label">PAGE 1 / 2 · EVIDENCE LEDGER</span>
+                <span class="label">STATIC ONLY</span>
+              </div>
+            </article>
+
+            <aside class="page" aria-label="任务日志与来源">
+              <div class="page-head">
+                <p class="label">MISSION LOG / 02</p>
+                <div class="right"><span class="badge soft">PAGE 2 / 2</span></div>
+              </div>
+
+              <dl class="log-list">
+                <div><dt>应用身份</dt><dd><b>手机端验收示例</b><br />1.0.7</dd></div>
+                <div><dt>来源</dt><dd>REAL_SCAN<br />官网政策 01</dd></div>
+                <div><dt>投递</dt><dd>PERSISTED_REPLAY</dd></div>
+                <div><dt>生成时间</dt><dd>2026-10-14<br />16:05:00</dd></div>
+              </dl>
+
+              <div class="log-section">
+                <h3>SOURCE TRAIL / 来源轨迹</h3>
+                <p>政策原文 1 份；已保留原句、哈希与定位。来源 01 为官网政策，未做附件齐全性复核。</p>
+              </div>
+
+              <div class="log-section">
+                <h3>STATE / 当前状态</h3>
+                <p><span class="tag" data-tone="partial">PARTIAL</span> 部分覆盖：至少一条声明可下钻，仍有未知与未复核项。</p>
+              </div>
+
+              <details>
+                <summary>技术标识与完整边界 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></summary>
+                <div class="detail-body">
+                  <p>六种状态只对照 DATA_TYPE_DISCLOSURE；“具体类型已声明”不代表目的、接收方、传输或时间范围全部一致，更不是合法性判断。</p>
+                  <dl>
+                    <div><dt>包名</dt><dd class="code">com.example.mobile.ok</dd></div>
+                    <div><dt>材料 ID</dt><dd class="code">aaaaaaaaaaaaaaaaaaaaaaaaaaaa</dd></div>
+                    <div><dt>报告来源</dt><dd class="code">REAL_SCAN / PERSISTED_REPLAY</dd></div>
+                  </dl>
+                </div>
+              </details>
+
+              <div class="sticker" aria-hidden="true">STATIC ONLY / NOT COLLECTION</div>
+              <span class="pencil" aria-hidden="true">check original</span>
+            </aside>
+          </div>
+
+          <section class="components" aria-label="组件样例">
+            <div class="components-head"><p class="label">CONTROL SURFACE / 组件样例</p><span class="push label">TOKENS · STATES · TYPE</span></div>
+            <div class="component-grid">
+              <div class="component-cell">
+                <h3>ACTIONS / 按钮</h3>
+                <div class="button-row">
+                  <button class="btn primary" type="button">保存候选并开始分析</button>
+                  <button class="btn" type="button">重新读取</button>
+                  <button class="btn quiet" type="button">详情</button>
+                </div>
+                <div class="button-row" style="margin-top:7px">
+                  <button class="btn danger" type="button">删除远端材料</button>
+                  <button class="btn" type="button" disabled>分析中</button>
+                </div>
+              </div>
+              <div class="component-cell">
+                <h3>STAMPS / 状态</h3>
+                <div class="button-row">
+                  <span class="tag" data-tone="partial"><span class="dot" aria-hidden="true"></span>具体类型已声明</span>
+                  <span class="tag" data-tone="unknown"><span class="dot" aria-hidden="true"></span>UNREVIEWED</span>
+                  <span class="tag" data-tone="none">STATIC ONLY</span>
+                </div>
+                <p class="field help" style="margin-top:8px">状态由文字 + 线型 + 真实数据表达；四色条不映射状态。</p>
+              </div>
+              <div class="component-cell">
+                <h3>FIELD / 输入</h3>
+                <div class="field"><label for="demo-field">模型名称 / MODEL</label><input id="demo-field" value="本机模型" /><p class="help">标签小号 mono；输入正文 ≥16px（移动端）。</p></div>
+                <div class="stripe-sample" style="margin-top:10px" aria-hidden="true"></div>
+                <ul class="swatches" aria-label="色板">
+                  <li><i style="background:#fff"></i>#FFFFFF</li><li><i style="background:#ECE5D6"></i>#ECE5D6</li>
+                  <li><i style="background:#D63A2C"></i>#D63A2C</li><li><i style="background:#4C5A68"></i>#4C5A68</li>
+                  <li><i style="background:#7A7F4E"></i>#7A7F4E</li><li><i style="background:#D2A85E"></i>#D2A85E</li>
+                  <li><i style="background:#A8432F"></i>#A8432F</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="screen candidate-screen" aria-label="候选原型">
+          <div class="material-strip">
+            <span class="label">MANIFEST</span>
+            <strong>com.example.bbbbbbbbbbbbbbbb…</strong>
+            <span class="badge soft">REV 03</span>
+            <div class="material-actions push"><button class="btn small" type="button">详情</button><button class="btn small" type="button">更换</button></div>
+          </div>
+          <div class="spread">
+            <article class="page">
+              <div class="page-head"><p class="label">SOURCE 01 / 政策原文</p><div class="right"><span class="badge soft">AA…</span></div></div>
+              <div class="tabs" role="tablist" aria-label="候选视图">
+                <button role="tab" aria-selected="true" type="button">SOURCE 01</button>
+                <button role="tab" aria-selected="false" type="button">CANDIDATE 01</button>
+              </div>
+              <blockquote class="source-quote">我们会收集设备<mark>位置信息</mark>，用于附近门店推荐。</blockquote>
+              <p class="hint" style="font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:9px">原文位置 [128, 146) / 按 Unicode 码点计数</p>
+              <div class="page-foot"><span class="label">POLICY / OFFICIAL_WEB</span><span class="label">NOT REVIEWED</span></div>
+            </article>
+            <article class="page">
+              <div class="page-head"><p class="label">CANDIDATE / 01</p><div class="right"><span class="tag" data-tone="partial"><span class="dot" aria-hidden="true"></span>待检查</span></div></div>
+              <div class="candidate-row is-selected">
+                <div class="issue-head"><h3>位置信息</h3><button class="btn small" type="button">添加候选</button></div>
+                <p>候选条款只是导航辅助；不是已确认匹配，也不是证据结论。</p>
+                <p class="hint">SOURCE 01 / 官网政策 / 未复核</p>
+              </div>
+              <div class="candidate-row">
+                <div class="issue-head"><h3>设备标识</h3><button class="btn small" type="button">添加候选</button></div>
+                <p>尚未选择候选声明。</p>
+                <p class="hint">UNKNOWN / 候选为空</p>
+              </div>
+              <div class="page-foot"><span class="label">候选未确认匹配</span><span class="label">EVIDENCE BOUNDARY</span></div>
+            </article>
+          </div>
+          <div class="actionbar">
+            <button class="btn" type="button">修改材料</button>
+            <span class="note push">CONTROL / 01</span>
+            <button class="btn primary push" type="button">保存候选并开始分析</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="doc-foot">
+      <span>PRIVACYTRACE / DESIGN STUDY 02</span>
+      <span>STATIC EVIDENCE &amp; POLICY DECLARATION</span>
+      <span>NOT A SECURITY OR LEGALITY RATING</span>
+      <span>2026-10-22</span>
+    </footer>
+  </div>
+</div>
+</body>
+</html>

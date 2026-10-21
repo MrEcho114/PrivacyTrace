@@ -19,6 +19,7 @@ const jobMessage = ref('')
 // selection and reading position while polling or when the user asks to refresh.
 const loading = ref(false)
 const refreshing = ref(false)
+const manualRefresh = ref(false)
 let refreshToken = 0
 const jobAnnouncement = ref('')
 const jobStateEl = ref<HTMLElement | null>(null)
@@ -447,7 +448,12 @@ async function loadData(initial = false, mode: 'replace' | 'refresh' = 'replace'
     if (!replace && token === refreshToken) refreshing.value = false
   }
 }
-function refreshData() { if (refreshing.value) return; void loadData(false, 'refresh') }
+function refreshData() {
+  if (refreshing.value) return
+  manualRefresh.value = true
+  void loadData(false, 'refresh').finally(() => { manualRefresh.value = false })
+}
+function stopRefresh() { controller?.abort() }
 function retryLoad() {
   const trigger = typeof document !== 'undefined' ? document.activeElement as HTMLElement | null : null
   const request = report.value || activeJob.value ? loadData(false, 'refresh') : loadData(false, 'replace')
@@ -643,6 +649,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
       <section class="intro">
         <div><p class="eyebrow">APP 隐私体检 · 本地报告</p><h1>看懂隐私，从证据开始。</h1><p class="lead">查看程序中的潜在隐私访问，与不同来源的政策逐一对照。</p></div>
         <button v-if="!snapshot" ref="refreshEl" class="primary" :disabled="loading" :aria-busy="refreshing || undefined" @click="refreshData">刷新任务与报告</button>
+        <button v-if="manualRefresh" @click="stopRefresh">停止本次请求</button>
       </section>
       <section v-if="!snapshot" class="source-picker">
         <label for="report-source">报告来源</label>

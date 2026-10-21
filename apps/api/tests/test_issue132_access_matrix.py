@@ -7,10 +7,13 @@ from pathlib import Path
 import httpx
 import pytest
 from fastapi.testclient import TestClient
+from test_capability_tokens import seed_job
+
+# isort: split
+# Keep application imports separate across editable-install layouts on Windows/Linux.
 from privacytrace.auth import generate_capability_token
 from privacytrace.config import ServerConfig
 from privacytrace.main import create_app
-from test_capability_tokens import seed_job
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from deploy.acceptance.issue132.access_matrix import endpoints, run_matrix  # noqa: E402

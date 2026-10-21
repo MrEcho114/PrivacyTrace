@@ -1,0 +1,58 @@
+[
+  {
+    "stage": "import",
+    "width": 320,
+    "scrollWidth": 1097,
+    "innerWidth": 320,
+    "body": 1097
+  },
+  {
+    "stage": "import",
+    "width": 390,
+    "scrollWidth": 1097,
+    "innerWidth": 390,
+    "body": 1097
+  },
+  {
+    "stage": "import",
+    "width": 768,
+    "scrollWidth": 1109,
+    "innerWidth": 768,
+    "body": 1109
+  },
+  {
+    "stage": "import-200-320",
+    "width": 320,
+    "scrollWidth": 2177,
+    "innerWidth": 320,
+    "body": 2177
+  },
+  {
+    "stage": "candidates",
+    "width": 320,
+    "scrollWidth": 980,
+    "innerWidth": 320,
+    "body": 980
+  },
+  {
+    "stage": "candidates-200",
+    "width": 320,
+    "scrollWidth": 1930,
+    "innerWidth": 320,
+    "body": 1930
+  },
+  {
+    "stage": "report-200",
+    "width": 390,
+    "scrollWidth": 390,
+    "innerWidth": 390,
+    "body": 390
+  },
+  {
+    "stage": "report-200-320",
+    "scrollWidth": 320,
+    "innerWidth": 320,
+    "body": 320,
+    "tableOverflow": 86
+  }
+]

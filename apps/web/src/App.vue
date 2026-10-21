@@ -1,10 +1,17 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { cancelJob, deleteJob, isNotFoundFor, jobPath, jobReportPath, loadJob, loadJobReport, loadJobs, loadReport, loadTaxonomy, retryJob, submitReview } from './api'
 import { clampSdkPage, getSdkEvidence, sdkPageCount, sdkPageSlice } from './sdkEvidence'
-import type { AnalysisJob, DemoReport, Evidence, MatchStatus, PrivacyIssue, Report, ReportSource, Taxonomy, WebSource } from './types'
+import type { AnalysisJob, DemoReport, MatchStatus, PrivacyIssue, Report, ReportSource, Taxonomy, WebSource } from './types'
 import { parseSource, serializeSource, sourceProvenanceLabel, sourceStatusLabel } from './types'
-const props = defineProps<{ initialJobId?: string; snapshot?: { report: Report; taxonomy: Taxonomy } }>()
+import EvidencePanel from './components/EvidencePanel.vue'
+import UiSheet from './components/UiSheet.vue'
+import UiIcon from './components/UiIcon.vue'
+const props = defineProps<{ initialJobId?: string; snapshot?: { report: Report; taxonomy: Taxonomy }; mobile?: boolean }>()
+// The Tauri shell reuses this whole report body. In mobile mode the evidence
+// preview becomes a bottom sheet and the shell owns the surrounding app chrome.
+const emit = defineEmits<{ evidenceOpen: []; evidenceClose: [] }>()
+const mobile = computed(() => props.mobile === true)
 
 const report = ref<DemoReport | Report | null>(null)
 const taxonomy = ref<Taxonomy | null>(null)
@@ -45,23 +52,36 @@ const selected = ref<PrivacyIssue | null>(null)
 // has to happen here. The panel and its evidence are readable before any scrolling.
 const reducedMotion = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function'
   && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-function selectIssue(issue: PrivacyIssue, event: Event) {
-  evidenceTrigger.value = event.currentTarget as HTMLElement
+let evidenceScroll = 0
+function selectIssue(issue: PrivacyIssue, event?: Event) {
+  evidenceTrigger.value = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  evidenceScroll = window.scrollY
   selected.value = issue
+  if (mobile.value) { emit('evidenceOpen'); return }
   void nextTick(() => {
     const panel = document.getElementById('evidence-panel')
     panel?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' })
     panel?.focus({ preventScroll: true })
   })
 }
-function closeEvidence() {
+// Closing the preview returns focus to the row button that opened it and restores
+// the exact reading position instead of dropping focus on <body> at a shifted
+// scroll offset. If the row is gone, focus falls back to the page title. The
+// sheet hides without restoring when it hands off to the full policy block.
+function closeEvidence(restoreFocus = true) {
   const trigger = evidenceTrigger.value
+  const top = evidenceScroll
   selected.value = null
+  if (mobile.value) emit('evidenceClose')
+  if (!restoreFocus) return
   void nextTick(() => {
     const target = trigger?.isConnected ? trigger : document.getElementById('page-title')
-    target?.focus()
+    target?.focus({ preventScroll: true })
+    if (trigger?.isConnected) window.scrollTo({ top, behavior: 'auto' })
   })
 }
+// Hardware back in the Tauri shell closes the sheet before it changes steps.
+defineExpose({ evidenceOpen: computed(() => mobile.value && !!selected.value), closeEvidence: () => closeEvidence(true) })
 const error = ref('')
 const refreshEl = ref<HTMLButtonElement | null>(null)
 watch(error, (value, oldValue) => {
@@ -102,7 +122,6 @@ const sourceLabels: Record<string, string> = {
 }
 const kindLabels = { MANIFEST: '权限配置', API: 'API 字节码', SDK: 'SDK 特征', POLICY_DOCUMENT: '政策快照引用', POLICY_SENTENCE: '政策原句' }
 const label = (id: string) => taxonomy.value?.data_types.find(item => item.id === id)?.label ?? id
-const selectedEvidence = computed(() => report.value?.evidence.filter(item => selected.value?.evidence_ids.includes(item.id)) ?? [])
 const dataTypeCount = computed(() => new Set(report.value?.result.issues.map(i => i.data_type)).size)
 const realReport = computed(() => report.value && !report.value.demo ? report.value : null)
 const webSources = computed(() => {
@@ -126,32 +145,6 @@ const controlledReport = computed(() => (realReport.value?.job ?? activeJob.valu
 const replayPage = typeof document !== 'undefined'
   && document.querySelector('meta[name="privacytrace-presentation"]')?.getAttribute('content') === 'offline'
 const offlineReplay = computed(() => replayPage || realReport.value?.tools.presentation_mode === 'OFFLINE_REPLAY')
-// Candidate clauses are navigation aids, not evaluator-confirmed evidence or matches.
-// Candidate clauses pagination
-const CANDIDATE_PAGE_SIZE = 20
-const candidatePage = ref(0)
-const candidateClaims = computed(() => {
-  if (!realReport.value || !selected.value) return []
-  return realReport.value.policy_claims.filter(claim => claim.data_type === selected.value?.data_type)
-})
-const candidatePageCount = computed(() => Math.ceil(candidateClaims.value.length / CANDIDATE_PAGE_SIZE))
-watch([() => selected.value?.id, () => report.value?.job?.id], () => {
-  candidatePage.value = 0
-  openedPolicyId.value = null
-  provenanceOpen.value = false
-})
-const relatedCandidates = computed(() => {
-  if (!realReport.value) return []
-  const current = realReport.value
-  return candidateClaims.value
-    .slice(candidatePage.value * CANDIDATE_PAGE_SIZE, (candidatePage.value + 1) * CANDIDATE_PAGE_SIZE)
-    .map(claim => ({
-      claim,
-      document: current.policy_documents.find(doc => doc.id === claim.document_id),
-      evidence: current.evidence.filter(item => item.kind === 'POLICY_SENTENCE'
-        && item.document_id === claim.document_id && claim.evidence_ids.includes(item.id)),
-    }))
-})
 // Full artifacts live only in the provenance section, and are inserted on demand.
 const openedPolicyId = ref<string | null>(null)
 const provenanceOpen = ref(false)
@@ -162,9 +155,20 @@ const openPolicy = (id: string) => {
     if (typeof document === 'undefined') return
     const target = document.getElementById('policy-' + id)
     target?.scrollIntoView()
-    target?.focus({ preventScroll: true })
+    // The policy body is inserted on demand; move keyboard focus there so the
+    // jump is observable instead of leaving it on a button that just vanished.
+    target?.querySelector('summary')?.focus({ preventScroll: true })
   })
 }
+function jumpToPolicy(id: string) {
+  closeEvidence(false)
+  openPolicy(id)
+}
+// A report / issue switch resets the provenance hand-off state.
+watch([selected, report], () => {
+  openedPolicyId.value = null
+  provenanceOpen.value = false
+})
 const provenanceToggle = (event: Event) => {
   provenanceOpen.value = (event.target as HTMLDetailsElement).open
   if (!provenanceOpen.value) openedPolicyId.value = null
@@ -175,19 +179,6 @@ const policyToggle = (event: Event, id: string) => {
   else if (openedPolicyId.value === id) openedPolicyId.value = null
 }
 
-const documentFor = (item: Evidence) => report.value?.policy_documents.find(doc => doc.id === item.document_id)
-const sentenceContext = (item: Evidence) => {
-  const text = documentFor(item)?.artifact.text
-  if (!text || item.start_offset == null || item.end_offset == null) return null
-  const points = Array.from(text)
-  const start = Math.max(0, item.start_offset)
-  const end = Math.max(start, Math.min(points.length, item.end_offset))
-  return {
-    before: points.slice(Math.max(0, start - 100), start).join(''),
-    sentence: points.slice(start, end).join(''),
-    after: points.slice(end, Math.min(points.length, end + 100)).join(''),
-  }
-}
 const documentLabels = (ids: string[]) => {
   if (ids.length) return ids.map(id => {
     const doc = report.value?.policy_documents.find(item => item.id === id)
@@ -649,9 +640,9 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
 
 <template>
   <div class="shell">
-    <header class="topbar"><a class="brand" href="#"><span class="brand-icon">P</span>PrivacyTrace</a><span class="subtle">让每个结论都有依据</span></header>
+    <header v-if="!mobile" class="topbar"><a class="brand" href="#"><span class="brand-icon">P</span>PrivacyTrace</a><span class="subtle">让每个结论都有依据</span></header>
     <main>
-      <section class="intro">
+      <section v-if="!mobile" class="intro">
         <div><p class="eyebrow">APP 隐私体检 · 本地报告</p><h1>看懂隐私，从证据开始。</h1><p class="lead">查看程序中的潜在隐私访问，与不同来源的政策逐一对照。</p></div>
       </section>
       <section v-if="!snapshot" class="source-picker report-source-bar">
@@ -715,52 +706,30 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           <div class="section-heading"><h2>隐私声明对照</h2><span class="subtle">点开结论后，直接查看代码定位与原句</span></div>
           <!-- Narrow screens stack each row as a card; the explicit table roles keep the grid
                semantics that display:flex/block would otherwise drop. -->
-          <div class="table-scroll"><table class="report-table" role="table"><thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">隐私数据</th><th scope="col" role="columnheader">政策来源</th><th scope="col" role="columnheader">当前结论</th><th scope="col" role="columnheader">依据</th></tr></thead><tbody role="rowgroup">
+          <!-- Desktop keeps the comparison table. The Tauri shell renders the same
+               issues as tappable Android list rows instead of a scroll table. -->
+          <div v-if="!mobile" class="table-scroll"><table class="report-table" role="table"><thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">隐私数据</th><th scope="col" role="columnheader">政策来源</th><th scope="col" role="columnheader">当前结论</th><th scope="col" role="columnheader">依据</th></tr></thead><tbody role="rowgroup">
             <tr v-for="issue in report.result.issues" :key="issue.id" role="row"><td class="type-cell" role="cell" data-label="隐私数据">{{ label(issue.data_type) }}</td><td role="cell" data-label="政策来源">{{ documentLabels(issue.policy_document_ids) }}</td><td role="cell" data-label="当前结论"><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></td><td role="cell" data-label="依据"><button class="ui-button evidence-button" :aria-expanded="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue, $event)">查看 {{ issue.evidence_ids.length }} 条证据 →</button></td></tr>
-          </tbody></table></div><p v-if="!report.result.issues.length" class="subtle">未产生对照项不等于没有隐私访问，请查看权限与扫描覆盖。</p>
+          </tbody></table></div>
+          <div v-else class="m-issue-list" role="list">
+            <div v-for="issue in report.result.issues" :key="issue.id" class="m-issue-card" role="listitem">
+              <button type="button" class="evidence-button m-issue-row" :aria-expanded="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue, $event)">
+                <span class="m-issue-head"><strong>{{ label(issue.data_type) }}</strong><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></span>
+                <span class="m-issue-meta">{{ documentLabels(issue.policy_document_ids) }}</span>
+                <span class="m-issue-action">查看 {{ issue.evidence_ids.length }} 条证据<UiIcon name="chevron-right" class="m-chevron" /></span>
+              </button>
+            </div>
+          </div>
+          <p v-if="!report.result.issues.length" class="subtle">未产生对照项不等于没有隐私访问，请查看权限与扫描覆盖。</p>
         </section>
-        <section v-if="selected" id="evidence-panel" class="evidence-panel" tabindex="-1" aria-labelledby="evidence-title">
-          <div class="section-heading"><h2 id="evidence-title">{{ label(selected.data_type) }} · {{ statusLabels[selected.status] }}</h2><button @click="closeEvidence">收起</button></div>
-          <p class="explanation">{{ selected.explanation }}</p>
-          <p v-if="selected.status === 'NOT_DECLARED'" class="demo-note">“未找到声明”依赖适用版本、完整正文、提取成功、全文复核和附件齐全。下面保留完整政策及这些状态；缺少其中任一项时不能据此断言违规。</p>
-          <div class="evidence-grid"><article v-for="item in selectedEvidence" :key="item.id" class="evidence-card">
-            <div class="section-heading"><strong>{{ kindLabels[item.kind] }}</strong><span class="subtle">{{ item.id }}</span></div>
-            <p class="locator">{{ item.source }} · {{ item.locator }}</p>
-            <template v-if="item.api_call"><p class="hash">目标：{{ item.api_call.target_descriptor }}</p><p class="subtle">规则 {{ item.api_call.rule_id }} · {{ item.api_call.ruleset_version }}；静态上下文 {{ JSON.stringify(item.api_call.context) }}</p><p class="subtle">字节码定位保留调用方法、DEX 与指令偏移；未提供 JADX Java 源码时以字节码作为依据。</p></template>
-            <p v-if="item.kind === 'POLICY_SENTENCE'" class="subtle">原文位置：[{{ item.start_offset }}, {{ item.end_offset }})，按 Unicode 码点计数。</p>
-            <pre v-if="sentenceContext(item)">{{ sentenceContext(item)?.before }}<mark>{{ sentenceContext(item)?.sentence }}</mark>{{ sentenceContext(item)?.after }}</pre>
-            <pre v-else-if="item.excerpt">{{ item.excerpt }}</pre>
-            <p v-else class="subtle">本条引用政策快照，全文见下方。</p>
-            <button v-if="item.document_id && documentFor(item)" class="policy-jump-btn" @click="openPolicy(item.document_id)">完整政策与适用边界</button>
-          </article></div>
-          <section v-if="relatedCandidates.length" class="candidate-clauses">
-            <h3>相关候选条款（未确认匹配）</h3>
-            <nav aria-label="候选条款分页" class="candidate-nav">
-              <span>共 {{ candidateClaims.length }} 条 · 第 {{ candidatePage + 1 }} / {{ Math.max(1, candidatePageCount) }} 页</span>
-              <button :disabled="candidatePage === 0" @click="candidatePage--">上一页</button>
-              <button :disabled="candidatePage + 1 >= candidatePageCount" @click="candidatePage++">下一页</button>
-            </nav>
-            <p class="subtle">以下仅按相同数据类型展示候选原句，不属于规则已确认的匹配依据，不改变结论或结论证据引用。SDK 自有政策不能替代宿主声明；候选提取仍需人工核验。</p>
-            <p v-if="report.behaviors.find(item => item.id === selected?.behavior_id)?.action === 'CAPABILITY'" class="demo-note">本项只是清单权限能力，不代表实际访问；候选条款不能据此认定已发生访问或已经对应。</p>
-            <div class="evidence-grid"><article v-for="candidate in relatedCandidates" :key="candidate.claim.id" class="evidence-card">
-              <strong>{{ candidate.claim.id }} · {{ candidate.document ? sourceLabels[candidate.document.source_type] : '来源待补充' }}</strong>
-              <p>极性 {{ candidate.claim.polarity ?? 'UNKNOWN' }} · 主体 {{ candidate.claim.subject ?? 'UNKNOWN' }} · 动作 {{ candidate.claim.action ?? 'UNKNOWN' }}</p>
-              <p>条件：{{ candidate.claim.condition || '未提取条件（不代表无条件）' }}</p>
-              <p v-if="candidate.claim.action === 'UNKNOWN'" class="subtle">动作尚未确认，不能视为声明了实际访问。</p>
-              <p>复核 {{ candidate.document?.review_status ?? 'UNREVIEWED' }} · 提取 {{ candidate.document?.extraction_status ?? 'NOT_STARTED' }} · 快照 {{ candidate.document?.completeness ?? '未知' }}</p>
-              <p class="hash">声明来源 {{ candidate.claim.document_id }} · 候选证据 {{ candidate.claim.evidence_ids.join('、') }}</p>
-              <div v-for="item in candidate.evidence" :key="item.id">
-                <p class="locator">{{ item.locator }}</p>
-                <p class="subtle">原文位置：[{{ item.start_offset }}, {{ item.end_offset }})，按 Unicode 码点计数。</p>
-                <pre v-if="sentenceContext(item)">{{ sentenceContext(item)?.before }}<mark>{{ sentenceContext(item)?.sentence }}</mark>{{ sentenceContext(item)?.after }}</pre>
-                <pre v-else>{{ item.excerpt || '缺少可定位原句，需补充证据。' }}</pre>
-              </div>
-              <p v-if="!candidate.evidence.length" class="subtle">没有可定位的候选原句证据，需补充证据。</p>
-              <button v-if="candidate.document" class="policy-jump-btn" @click="openPolicy(candidate.document.id)">候选来源全文与适用边界</button>
-            </article></div>
-          </section>
-        </section>
-        <section v-if="realReport" id="sdk-panel" class="report-section">
+        <EvidencePanel v-if="!mobile && selected && report" :issue="selected" :report="report" :taxonomy="taxonomy" :status-labels="statusLabels" :kind-labels="kindLabels" :source-labels="sourceLabels" @close="closeEvidence()" @open-policy="openPolicy" />
+        <!-- Mobile evidence preview: A's UiSheet is the bottom-sheet contract
+             (overlay, handle, 48px close, focus trap). The panel markup itself is
+             shared with the inline desktop rendering above. -->
+        <UiSheet v-if="mobile && selected && report" class="m-evidence-sheet" :title="`${label(selected.data_type)} · ${statusLabels[selected.status]}`" description="静态证据、政策原句与候选条款；关闭后回到触发该项的结论。" @close="closeEvidence()">
+          <EvidencePanel :issue="selected" :report="report" :taxonomy="taxonomy" :status-labels="statusLabels" :kind-labels="kindLabels" :source-labels="sourceLabels" :heading="false" @close="closeEvidence()" @open-policy="jumpToPolicy" />
+        </UiSheet>
+        <section v-if="realReport" id="sdk-panel" class="report-section" aria-live="polite">
           <div class="section-heading"><h2>第三方 SDK 归属</h2><span class="subtle">仅按公开包前缀提供静态归属参考，不代表实际收集或外传</span></div>
           <p class="subtle">归属命中只表示类路径落在某个已公开的 SDK 包范围内；SDK 的静态存在不等于实际收集或外发，也不能替代宿主 App 自身的声明，归属结论不参与政策一致性判定。</p>
           <template v-if="sdkEvidence.length">

@@ -29,7 +29,8 @@ the final diff is reviewed — or until a genuine human decision boundary is rea
 
 - 项目：PrivacyTrace；Android APK 静态证据与政策声明对照，不判断违法/安全/实际采集。
 - 默认分支：`main`；短期任务分支：`codex/`；保留现有 Git，不自动迁移 jj。
-- 权威验证：`bash scripts/check.sh`；Windows 用 Git for Windows Bash，`pwsh -NoProfile -File scripts/check.ps1` 委托同一入口。
+- 权威验证：`bash scripts/check.sh`（Windows 用 Git for Windows Bash）；装了 PowerShell 7 时可用 `pwsh -NoProfile -File scripts/check.ps1`，本机没有 `pwsh` 就走 Git Bash 入口。
+- 本机环境纪律（跨 shell 命令写法、恢复入口、已知假失败）：`docs/agents/local-environment.md`。
 - 当前交付责任人：执行当前授权的主代理；子代理只调查/检查，不独立 push、改 Issue 或合并。
 - 当前任务来自 Issue 或用户直接授权；小任务不要求另填表或补造工单编号。
 - 2026-10-09 用户撤销 S1 双人逐条 comment/签字门槛，接受现有技术核验；见 `docs/stages/s1-acceptance-20261009.md`。不再因缺 A/B 表单阻塞交付。

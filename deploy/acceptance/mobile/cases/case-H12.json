@@ -1,0 +1,17 @@
+{
+  "caseId": "H12-local-J-splits-model",
+  "origin": "https://localhost:28443",
+  "policyMode": "model",
+  "evidencePrefix": "H12-local-J-splits-model",
+  "uploadAttempts": 1,
+  "cleanup": true,
+  "appLabel": "C model fixture",
+  "modelExpect": {
+    "sourceId": "policy-model-controlled",
+    "sourceTitle": "受控模型政策样本",
+    "quote": "我们访问精确位置。",
+    "dataType": "PRECISE_LOCATION"
+  },
+  "notes": "输入=base＋全部已安装 splits，安装 C model fixture base 与 feature split。实例=本机自托管配置 J：执行前把 adb reverse tcp:28443 指向 J 的宿主 HTTPS 端口；J 使用独立实例 ID、凭据与数据卷。通过条件同 H06。",
+  "packageName": "org.privacytrace.probe.cfixture"
+}

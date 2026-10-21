@@ -36,16 +36,16 @@ exit code == 0
 | --- | --- | --- | --- | --- |
 | H01 | 单 APK + 官方配置 I + 自动政策 | 是（当前受 BUG-01 阻断） | `auto` | 只装 fixture base；I 绑定 28443；BUG-01 修复后复跑 |
 | H02 | 单 APK + 官方配置 I + 网页辅助补入 | 是 | `assist` | 只装 fixture base；I 绑定 28443；不依赖 discover |
-| H03 | 单 APK + 官方配置 I + 手机直连模型补入 | 否（`model` 模式会被 assist 覆盖） | `model` | 手工核对模型来源、回填、审计；模型端点 + 一次性 Key |
+| H03 | 单 APK + 官方配置 I + 手机直连模型补入 | 是（本票修复后） | `model` | 只装 C model fixture base；I 绑定 28443；`PT_MODEL_ENDPOINT`/`PT_MODEL_KEY` 指向一次性接收器；`modelExpect` 必填 |
 | H04 | base + 全部已安装 splits + I + 自动政策 | 是（当前受 BUG-01 阻断） | `auto` | base 与 `fixture_feature` 均安装；I 绑定 28443；BUG-01 修复 |
 | H05 | base + 全部已安装 splits + I + 网页辅助 | 是 | `assist` | base 与 `fixture_feature` 均安装；I 绑定 28443 |
-| H06 | base + 全部已安装 splits + I + 模型补入 | 否（同 H03） | `model` | splits 安装集；手工模型路径 |
+| H06 | base + 全部已安装 splits + I + 模型补入 | 是（同 H03） | `model` | base 与 C fixture feature split 均安装；I 绑定 28443；模型接收器 + Key |
 | H07 | 单 APK + 自托管配置 J + 自动政策 | 是（当前受 BUG-01 阻断） | `auto` | J 的 28443 映射；J 独立凭据/卷；只装 base；BUG-01 修复 |
 | H08 | 单 APK + 自托管配置 J + 网页辅助 | 是 | `assist` | J 的 28443 映射；只装 base |
-| H09 | 单 APK + 自托管配置 J + 模型补入 | 否（同 H03） | `model` | J 的 28443 映射；手工模型路径 |
+| H09 | 单 APK + 自托管配置 J + 模型补入 | 是（同 H03） | `model` | J 的 28443 映射；只装 C model fixture base；J 独立实例/凭据/卷 |
 | H10 | base + 全部已安装 splits + J + 自动政策 | 是（当前受 BUG-01 阻断） | `auto` | J 的 28443 映射；splits；BUG-01 修复 |
 | H11 | base + 全部已安装 splits + J + 网页辅助 | 是 | `assist` | J 的 28443 映射；splits |
-| H12 | base + 全部已安装 splits + J + 模型补入 | 否（同 H03） | `model` | J 的 28443 映射；splits；手工模型路径 |
+| H12 | base + 全部已安装 splits + J + 模型补入 | 是（同 H03） | `model` | J 的 28443 映射；splits 安装集；J 独立实例/凭据/卷 |
 | N01 | 选择前取消、确认时取消，随后重新选包 | 否 | — | 人工点取消，保留网络请求计数与 UI 状态 |
 | N02 | 安装中变更版本/卸载/不可读后再确认或读取 | 否 | — | 在确认/读取窗口注入真实安装变更 |
 | N03 | splits 缺必需 split、错版本/包名/重复名/坏摘要 | 否 | — | 逐变体安装负向包集合，记录接收与拒绝 |
@@ -56,7 +56,7 @@ exit code == 0
 | N08 | 请求 API 管理探针、DB/broker/Runner/daemon 入口 | 否 | — | 从客户端网络探测；真实监听/隔离配置佐证 |
 | N09 | 政策地址指向回环/私网/元数据、重定向、超大/慢响应 | 否 | `auto`（政策抓取） | 逐变体政策源或 APK 元数据；来源安全与资源限制观察 |
 | N10 | 已有可用政策时注入抓取失败，再补畸形原句/冲突候选 | 否 | `auto`/`assist` | API 侧故障注入；候选区间/引用构造；审计保留 |
-| N11 | 手机模型凭据、切换模型地址、观察客户端出站 | 否 | `model` | 抓包/端点观察；执行器无捕获能力；Key 只到预定端点 |
+| N11 | 手机模型凭据、切换模型地址、观察客户端出站 | 部分（模型执行器 + 接收器日志） | `model` | 接收器日志记录 Key 指纹/请求体；切换地址需两次手动/脚本配置；分析服务 Key 负对照另查 |
 | N12 | 离线、后台/系统回收恢复、断网取消、显式重试 | 否 | `assist`/`auto` | 网络切换、后台/杀进程、任务 ID 对比、不重复提交 |
 | F01 | 持久接收后停止 API，再按交接命令启动 | 否 | — | 服务编排与重启；接收点前后事件 |
 | F02 | 待投递/已投递阶段停 broker 或 outbox publisher | 否 | — | broker/outbox 控制；消息与作业关联 |
@@ -73,22 +73,38 @@ exit code == 0
 | R03 | Browser Acceptance；`acceptance:frontend` / `acceptance:live` | 否（另用既有入口） | — | 按 Mock、预置输入或真实 Docker 分别记录 |
 | R04 | 部署专项 `deploy/check_acceptance.sh` | 否（另用既有入口） | — | 固定版本镜像/受限配置/合成 HTTPS；不能替代 H/F |
 
-## 2. 可自动跑的 8 个用例
+## 2. 可自动跑的 12 个 H 用例
 
 | 文件 | caseId | 输入 | 实例 | 说明 |
 | --- | --- | --- | --- | --- |
 | `case-H01.json` | `H01-local-I-single-auto` | 单 APK | I | 自动政策；已知 BUG-01，当前预期失败 |
 | `case-H02.json` | `H02-local-I-single-assist` | 单 APK | I | 网页辅助；建议首个跑 |
+| `case-H03.json` | `H03-local-I-single-model` | 单 APK | I | 手机模型；C fixture；接收器 + 一次性 Key |
 | `case-H04.json` | `H04-local-I-splits-auto` | base+splits | I | 自动政策；已知 BUG-01，当前预期失败 |
 | `case-H05.json` | `H05-local-I-splits-assist` | base+splits | I | 网页辅助；证明 splits 主链路 |
+| `case-H06.json` | `H06-local-I-splits-model` | base+splits | I | 手机模型；C fixture；接收器 + Key |
 | `case-H07.json` | `H07-local-J-single-auto` | 单 APK | J | 自动政策；J 映射 + BUG-01 |
 | `case-H08.json` | `H08-local-J-single-assist` | 单 APK | J | 网页辅助；J 映射 |
+| `case-H09.json` | `H09-local-J-single-model` | 单 APK | J | 手机模型；J 映射；接收器 + Key |
 | `case-H10.json` | `H10-local-J-splits-auto` | base+splits | J | 自动政策；J 映射 + BUG-01 |
 | `case-H11.json` | `H11-local-J-splits-assist` | base+splits | J | 网页辅助；J 映射 + splits |
+| `case-H12.json` | `H12-local-J-splits-model` | base+splits | J | 手机模型；J 映射；splits |
 
 所有文件都按执行器契约填全：`origin` 固定 `https://localhost:28443`、
-`uploadAttempts: 1`、`cleanup: true`；`appLabel` 统一为
-`Controlled split fixture`。`notes` 是本文约定的附加字段，执行器会忽略。
+`uploadAttempts: 1`、`cleanup: true`。auto/assist 用例的 `appLabel` 为
+`Controlled split fixture`；model 用例使用含 `ACCESS_FINE_LOCATION` 的
+`C model fixture`（`org.privacytrace.probe.cfixture`），并提供
+`modelExpect` 的 `sourceId/sourceTitle/quote/dataType`。`notes` 是本文约定的
+附加字段，执行器会忽略。
+
+### 模型模式的执行顺序
+
+`policyMode: "model"` 现在按“配置端点/Key → 手机收集 → 直接导入 textarea 中的
+模型结果 → 自动准备/提取候选 → 分析 → 报告”执行，不会再调用
+`importAssist(POLICY_JSON)`。模型结果必须出现在候选页和报告原句断言中；静态
+assist 标题出现即判失败。接收器脚本见 `../model-receiver.cjs`，以
+`PT_MODEL_CERT/PT_MODEL_KEY_FILE/PT_MODEL_RESPONSE_FILE/PT_MODEL_LOG` 启动，
+并在客户端用 `PT_MODEL_ENDPOINT/PT_MODEL_KEY` 配置同一一次性 Key。
 
 ### 单 APK 与 splits 不能靠 appLabel 区分
 
@@ -104,12 +120,13 @@ launcher 标签。因此单 APK 与 base+splits 在应用列表里**显示同名
 
 ## 3. 必须人工的用例与一句话原因
 
-### H 组模型路径（4 个）
+### H 组模型路径（4 个，已自动化）
 
-- **H03 / H06 / H09 / H12**：执行器 `policyMode: "model"` 会先收集模型结果，
-  随后调用 `importAssist(cdp, POLICY_JSON)` 覆盖 `#collector-result` 并补入 assist
-  文本；真正被分析的是 assist 来源，模型来源/审计没有被证明。需要人工跑模型路径，
-  或先修执行器（见第 6 节）。
+- **H03 / H06 / H09 / H12**：执行器原来在模型收集后调用
+  `importAssist(cdp, POLICY_JSON)` 覆盖 `#collector-result`；本票已改为读取并导入
+  textarea 中的模型结果，并用 `modelExpect` 断言模型来源/原句出现在候选页与报告。
+  仍需外部提供一次性 HTTPS 接收器、证书和被控响应；没有接收器日志时不能把
+  手机请求记成已观察。
 
 ### N 组负向（12 个）
 
@@ -123,7 +140,9 @@ launcher 标签。因此单 APK 与 base+splits 在应用列表里**显示同名
 - **N08**：执行器不探测管理探针、DB/broker/Runner/daemon 端口。
 - **N09**：执行器不改变 APK 内政策地址，也不注入重定向/超大/慢响应。
 - **N10**：执行器不注入抓取失败，也不能构造畸形原句区间/冲突候选。
-- **N11**：执行器能配置模型，但不抓包、不观察 Key 目的地，且模型结果会被 assist 覆盖。
+- **N11**：执行器现在能把 Key 只发给配置的模型端点；接收器日志提供 Key 指纹/请求体
+  观察。**分析服务是否收到 Key、地址切换后是否复用了旧 Key** 仍需两次配置/切换与
+  服务端入口负对照，执行器单次运行不覆盖全部传输面。
 - **N12**：执行器不切离线、不把应用放后台/杀进程，也不在断网时取消或显式重试。
 
 ### F 组运行时/删除/运维（10 个）

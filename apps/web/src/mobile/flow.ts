@@ -6,10 +6,9 @@ import type { LiveDraft } from '../liveApi'
 import type { ExternalInput } from '../policyAssist'
 import type { MobileBridge, Upload, ModelStatus } from './bridge'
 
-// One native poll reconciles capabilities/draft state and sends five HTTP reads.
-// Keep automatic traffic below the default 60/minute budget, leaving room for
-// explicit refresh, cancellation and retry on the same instance.
-const POLL_INTERVAL_MS = 10_000
+// A native poll sends five HTTP reads. Keep the first progress read responsive,
+// then leave room for two clients sharing the default 60/minute IP budget.
+const FIRST_POLL_MS = 10_000, POLL_INTERVAL_MS = 20_000
 
 export function createMobileFlow(bridge: MobileBridge) {
   const state = reactive(freshWorkflow())
@@ -18,8 +17,22 @@ export function createMobileFlow(bridge: MobileBridge) {
   const busy = ref(false), error = ref(''), notice = ref('')
   const model = ref<ModelStatus>({ configured: false, endpoint: null }), modelResult = ref('')
   let generation = 0, pendingStart: { revision: number; request_id: string } | null = null
+  let busyPolls = 0
   let timer: ReturnType<typeof setTimeout> | undefined
   const terminal = () => !!job.value && ['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(job.value.state)
+  function schedule(current: number, first = false) {
+    if (current !== generation) return
+    clearTimeout(timer)
+    if (!job.value || terminal()) return
+    const throttled = error.value === 'SERVER_BUSY'
+    if (error.value && !throttled) return
+    busyPolls = throttled ? Math.min(busyPolls + 1, 3) : 0
+    // Native currently exposes a busy code, not response headers. Default to
+    // the server's current 60s window; never replay a failed write operation.
+    const delay = throttled ? 60_000 * 2 ** (busyPolls - 1) : first ? FIRST_POLL_MS : POLL_INTERVAL_MS
+    const jitter = first && !throttled ? 0 : Math.floor(Math.random() * (throttled ? 10_000 : 4_000))
+    timer = setTimeout(poll, delay + jitter)
+  }
   function apply(value: LiveDraft) {
     draft.value = value
     state.sources = value.sources.map(s => ({ id: s.id, title: s.title, type: s.source_type ?? 'OFFICIAL_WEB_POLICY',
@@ -71,7 +84,7 @@ export function createMobileFlow(bridge: MobileBridge) {
         catch { check(); notice.value = '材料已恢复，历史任务暂未读到。请刷新进度重试；未创建新的分析。' }
       }
     })
-    if (current === generation && job.value && !terminal()) timer = setTimeout(poll, POLL_INTERVAL_MS)
+    schedule(current, true)
   }
   async function refresh() { await run(async request => { apply(await request<LiveDraft>('read')); notice.value = '已读取服务保存的材料。' }) }
   async function importCollected(input: ExternalInput) {
@@ -136,17 +149,17 @@ export function createMobileFlow(bridge: MobileBridge) {
       }
       state.step = 'progress'
     })
-    if (current === generation && job.value && !terminal()) timer = setTimeout(poll, POLL_INTERVAL_MS)
+    schedule(current, true)
   }
   async function poll() {
     const current = generation
     await run(async request => { job.value = await request<AnalysisJob>('job'); apply(await request<LiveDraft>('read')) })
-    if (current === generation && job.value && !terminal() && !error.value) timer = setTimeout(poll, POLL_INTERVAL_MS)
+    schedule(current)
   }
   async function control(action: 'cancel-job' | 'retry-job') {
     const current = generation
     await run(async request => { job.value = await request<AnalysisJob>(action); state.step = 'progress' })
-    if (current === generation && job.value && !terminal()) timer = setTimeout(poll, POLL_INTERVAL_MS)
+    schedule(current, true)
   }
   async function openReport() { await run(async request => { report.value = await request<Report>('report'); state.step = 'report' }) }
   async function remove() {

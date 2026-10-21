@@ -1,0 +1,52 @@
+{
+  "case_passed": false,
+  "review_url": "https://github.com/MrEcho114/PrivacyTrace/pull/148#pullrequestreview-5600338024",
+  "base_sha": "4f88ac18c28ae270559af9217ecacaa1ff7cb451",
+  "source_sha256": {
+    "apps/web/src/mobile/flow.ts": "da476ae0eadaf67b940b8793c47558a5e4b9489ce5f45ddbc9179a2fab86981d",
+    "apps/web/tests/mobile-polling.test.cjs": "5feda547a07f3ed8624992854ca1a2468a76ea774d8ad2ffd22e83701a0fac4e"
+  },
+  "completed_checks": [
+    {
+      "command": "node --test apps/web/tests/mobile-polling.test.cjs",
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "Actual flow/Vue, simulated native fan-out and shared rolling budget, deterministic timers/RNG; not Android acceptance",
+      "log_sha256": "b88500851c15e6de9ba18fb39b8e8edc6e13a95e34f890f450dd92105df1df23"
+    },
+    {
+      "command": "npm run acceptance:mobile",
+      "status": "PASSED",
+      "scope": "Existing browser walkthrough with controlled native bridge",
+      "log_sha256": "386df86eacc3e17fc016974bca51590bbf4454694ae24adb4c172b70eb35ae53"
+    },
+    {
+      "command": "npm run build",
+      "status": "PASSED",
+      "log_sha256": "1096e79194bb042e945296900fc7edc1e66ef5c84d178ddb62391b46f75a3325"
+    },
+    {
+      "command": "python -m deploy.acceptance.issue133.verify docs/acceptance/issue133/evidence/20261021",
+      "status": "PASSED",
+      "read_back": 22,
+      "scope": "Historical packet integrity, not current candidate acceptance"
+    }
+  ],
+  "red_runs": {
+    "original_4f88ac1": {
+      "failed_cases": 3,
+      "log_sha256": "8e52780df9e8466105bd0aa4b7329f983abfe821384ec61dbf4c0246c3e915dc"
+    },
+    "generation_guard_before_fix": {
+      "failed_cases": 1,
+      "log_sha256": "12c32dc047fe8ba26804cd3ba2d7b99a033a52e4f98c935c164a1c2d4ab7e9f4"
+    }
+  },
+  "original_apk_evidence_reused_as_current_pass": false,
+  "whole_case_pass_count": 0,
+  "whole_case_denominator": 3,
+  "native_retry_after_header_exposed": false,
+  "busy_fallback_seconds": 60,
+  "more_than_two_clients_guaranteed": false
+}

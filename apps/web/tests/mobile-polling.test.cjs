@@ -1,5 +1,5 @@
-// The real Android repro is recorded under docs/acceptance/issue133. This fast
-// guard models the native transport's measured HTTP fan-out, not a timer value.
+// Real flow/Vue with a shared rolling HTTP budget; this is a transport model,
+// not actual Android acceptance. Native fan-out was measured in issue #133.
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
@@ -7,10 +7,9 @@ const vm = require('node:vm')
 const { test } = require('node:test')
 const ts = require('typescript')
 
-test('a restored long task leaves default request budget for cancellation', async () => {
-  let now = 0, sequence = 0
-  const scheduled = new Map(), requests = [], actions = []
-  const cache = new Map()
+function laboratory(random = () => 0) {
+  let now = 0, sequence = 0, clientNumber = 0
+  const scheduled = new Map(), requests = [], cache = new Map()
   function load(file) {
     if (cache.has(file)) return cache.get(file).exports
     const module = { exports: {} }
@@ -20,6 +19,7 @@ test('a restored long task leaves default request budget for cancellation', asyn
     }).outputText
     const context = {
       module, exports: module.exports, crypto: require('node:crypto').webcrypto,
+      Math: Object.assign(Object.create(Math), { random }),
       setTimeout(fn, delay) { const id = ++sequence; scheduled.set(id, { fn, at: now + delay }); return id },
       clearTimeout(id) { scheduled.delete(id) },
       require(name) {
@@ -31,44 +31,155 @@ test('a restored long task leaves default request budget for cancellation', asyn
   }
   function consume(count) {
     for (let index = 0; index < count; index++) {
-      const inWindow = requests.filter(at => at > now - 60000).length
-      if (inWindow >= 60) throw 'SERVER_BUSY'
+      if (requests.filter(at => at > now - 60000).length >= 60) throw 'SERVER_BUSY'
       requests.push(now)
     }
   }
-  const context = { origin: 'https://lane-e.example/', draft: 'd'.repeat(32), state: 'SERVER_CONFIRMED' }
-  let job = { id: 'a'.repeat(32), state: 'QUEUED' }
-  const draft = { id: context.draft, revision: 1, sources: [], candidates: [], jobs: [{ job_id: job.id, events: [] }] }
-  const bridge = {
-    async restore() { consume(2); return context },
-    async cancel() {},
-    async request(action) {
-      actions.push(action)
-      // AnalysisTransport.workflow reconciles capabilities and the draft first.
-      consume(action === 'read' ? 2 : 3)
-      if (action === 'cancel-job') job = { ...job, state: 'CANCELLED' }
-      const data = action === 'read' ? draft : action === 'taxonomy' ? { data_types: [] } : job
-      return { origin: context.origin, draft: context.draft, data }
-    },
-  }
   const { createMobileFlow } = load(path.resolve(__dirname, '../src/mobile/flow.ts'))
-  const flow = createMobileFlow(bridge)
-  await flow.select(true)
-  while (scheduled.size) {
-    const [id, timer] = [...scheduled.entries()].sort((a, b) => a[1].at - b[1].at)[0]
-    if (timer.at > 180000) break
-    scheduled.delete(id); now = timer.at
-    await timer.fn()
+  function client() {
+    const id = (++clientNumber).toString(16).repeat(32)
+    const context = { origin: 'https://shared.example/', draft: id, state: 'SERVER_CONFIRMED' }
+    const draft = { id, revision: 1, sources: [], candidates: [], jobs: [{ job_id: id, events: [] }] }
+    const actions = [], failures = new Map(), blocked = new Map()
+    let job = { id, state: 'QUEUED' }
+    const bridge = {
+      async restore() { consume(2); return context }, async cancel() {},
+      async remove() { return { ...context, state: 'DELETED' } },
+      async request(action) {
+        actions.push({ action, at: now })
+        if (blocked.has(action)) { const pending = blocked.get(action); blocked.delete(action); await pending }
+        if (failures.has(action)) { const code = failures.get(action); failures.delete(action); throw code }
+        // AnalysisTransport.workflow reconciles capabilities and the draft first.
+        consume(action === 'read' ? 2 : 3)
+        if (action === 'cancel-job') job = { ...job, state: 'CANCELLED' }
+        const data = action === 'read' ? draft : action === 'taxonomy' ? { data_types: [] } : job
+        return { origin: context.origin, draft: context.draft, data }
+      },
+    }
+    return { flow: createMobileFlow(bridge), actions, id,
+      failNext: (action, code) => failures.set(action, code),
+      blockNext(action) {
+        let release
+        blocked.set(action, new Promise(resolve => { release = resolve }))
+        return () => release()
+      },
+      finish: () => { job = { ...job, state: 'SUCCEEDED' } } }
   }
-  assert.equal(flow.error.value, '', 'automatic native reads must not exhaust 60 requests/minute')
-  assert.ok(requests.some(at => at >= 120000), 'keep reading across multiple rate-limit windows')
-  assert.ok(actions.filter(action => action === 'job').length > 2, 'perform automatic progress reads')
-  assert.ok(scheduled.size > 0, 'a running task still has its next automatic read scheduled')
-  assert.equal(flow.job.value.id, job.id)
+  async function advance(until) {
+    assert.ok(Number.isFinite(until), 'a pending timer must exist')
+    while (scheduled.size) {
+      const [id, timer] = [...scheduled.entries()].sort((a, b) => a[1].at - b[1].at)[0]
+      if (timer.at > until) break
+      scheduled.delete(id); now = timer.at
+      await timer.fn()
+    }
+    now = until
+  }
+  return { client, advance, scheduled, requests, now: () => now,
+    next: () => Math.min(...[...scheduled.values()].map(timer => timer.at)) }
+}
+
+test('two restored clients sharing 60 HTTP requests/minute leave room for explicit controls', async () => {
+  const lab = laboratory(), clients = [lab.client(), lab.client()]
+  for (const { flow } of clients) await flow.select(true)
+  await lab.advance(179999)
+  for (const { flow, actions, id } of clients) {
+    assert.equal(flow.error.value, '', 'shared automatic reads must not consume the full budget')
+    assert.equal(flow.job.value.id, id)
+    assert.ok(actions.some(item => item.action === 'job' && item.at >= 120000), 'continue across windows')
+    await flow.poll()
+    assert.equal(flow.error.value, '')
+    await flow.control('cancel-job')
+    assert.equal(flow.error.value, '', 'both clients retain budget for cancellation')
+    assert.equal(flow.job.value.state, 'CANCELLED')
+    assert.equal(actions.filter(item => item.action === 'cancel-job').length, 1)
+    assert.equal(actions.filter(item => ['start', 'retry-job'].includes(item.action)).length, 0)
+  }
+  assert.equal(lab.scheduled.size, 0)
+})
+
+test('SERVER_BUSY stays visible, waits at least the current 60s server window, then resumes reads', async () => {
+  const lab = laboratory(() => 0.5), { flow, failNext, actions, id } = lab.client()
+  await flow.select(true)
+  failNext('job', 'SERVER_BUSY')
+  await lab.advance(lab.next())
+  const failedAt = lab.now(), count = actions.length
+  assert.equal(flow.error.value, 'SERVER_BUSY')
+  assert.equal(flow.job.value.state, 'QUEUED')
+  assert.ok(lab.next() >= failedAt + 60000)
+  assert.ok(lab.next() > failedAt + 60000, 'add positive jitter with this seeded sample')
+  await lab.advance(failedAt + 59999)
+  assert.equal(actions.length, count, 'do not read while backing off')
+  await lab.advance(lab.next())
+  assert.equal(flow.error.value, '')
+  assert.equal(flow.job.value.id, id)
+  assert.ok(lab.scheduled.size > 0)
+  assert.equal(actions.filter(item => ['start', 'retry-job', 'cancel-job'].includes(item.action)).length, 0)
+})
+
+test('repeated busy responses back off with a cap and successful reads reset the delay', async () => {
+  const lab = laboratory(), { flow, failNext } = lab.client()
+  await flow.select(true)
+  for (const minimum of [60000, 120000, 240000, 240000]) {
+    failNext('job', 'SERVER_BUSY')
+    await lab.advance(lab.next())
+    const delay = lab.next() - lab.now()
+    assert.ok(delay >= minimum && delay <= 250000)
+  }
+  await lab.advance(lab.next())
+  assert.equal(flow.error.value, '')
+  assert.ok(lab.next() - lab.now() < 60000)
+  failNext('job', 'SERVER_BUSY')
+  await lab.advance(lab.next())
+  assert.equal(lab.next() - lab.now(), 60000, 'reset after success')
+})
+
+test('a rejected explicit cancel is not replayed automatically or reported as cancelled', async () => {
+  const lab = laboratory(), { flow, failNext, actions } = lab.client()
+  await flow.select(true)
+  failNext('cancel-job', 'SERVER_BUSY')
   await flow.control('cancel-job')
-  assert.equal(flow.error.value, '', 'leave budget for a real cancel action')
-  assert.equal(flow.job.value.state, 'CANCELLED')
-  assert.equal(actions.filter(action => action === 'cancel-job').length, 1)
-  assert.equal(actions.filter(action => action === 'start' || action === 'retry-job').length, 0)
-  assert.equal(scheduled.size, 0, 'terminal cancellation stops polling')
+  assert.equal(flow.error.value, 'SERVER_BUSY')
+  assert.equal(flow.job.value.state, 'QUEUED')
+  await lab.advance(120000)
+  assert.equal(flow.job.value.state, 'QUEUED')
+  assert.equal(actions.filter(item => item.action === 'cancel-job').length, 1)
+})
+
+for (const action of ['stop', 'remove']) {
+  test(`${action} during backoff clears pending reads`, async () => {
+    const lab = laboratory(), { flow, failNext, actions } = lab.client()
+    await flow.select(true)
+    failNext('job', 'SERVER_BUSY')
+    await lab.advance(lab.next())
+    await flow[action]()
+    const count = actions.length
+    await lab.advance(600000)
+    assert.equal(actions.length, count)
+    assert.equal(lab.scheduled.size, 0)
+  })
+}
+
+test('non-busy failures and terminal jobs do not start a retry loop', async () => {
+  for (const terminal of [false, true]) {
+    const lab = laboratory(), { flow, failNext, finish } = lab.client()
+    await flow.select(true)
+    if (terminal) finish()
+    else failNext('job', 'ACCESS_REJECTED')
+    await lab.advance(lab.next())
+    assert.equal(lab.scheduled.size, 0)
+    assert.equal(flow.error.value, terminal ? '' : 'ACCESS_REJECTED')
+  }
+})
+
+test('a stale in-flight read cannot clear the new generation polling timer', async () => {
+  const lab = laboratory(), { flow, blockNext } = lab.client()
+  await flow.select(true)
+  const release = blockNext('job'), pending = flow.poll()
+  await flow.stop()
+  await flow.select(true)
+  assert.equal(lab.scheduled.size, 1)
+  release(); await pending
+  assert.equal(lab.scheduled.size, 1, 'stale completion must leave the new timer intact')
+  assert.equal(flow.error.value, '')
 })

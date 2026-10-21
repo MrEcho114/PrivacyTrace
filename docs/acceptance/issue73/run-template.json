@@ -40,7 +40,12 @@
     "contract_hashes": {},
     "ruleset_version": null,
     "sdk_signatures_version": null,
-    "limits_and_hardware": {}
+    "limits_and_hardware": {},
+    "virtualization_kind": null,
+    "shared_kernel": null,
+    "tls_trust_scope": null,
+    "test_ca_sha256": null,
+    "model_endpoint_kind": null
   },
   "materials": {
     "sample_alias": null,
@@ -76,7 +81,10 @@
   },
   "unverified": [
     "This is an empty template; no scenario has been executed.",
-    "Physical device, external HTTPS, full runtime, model traffic and store review are unverified."
+    "Local Android client, HTTPS, runtime and fault scenarios require actual execution.",
+    "Physical devices, public network, external models and store review are outside this local acceptance scope."
   ],
-  "final_acceptance_passed": false
+  "final_acceptance_passed": false,
+  "execution_scope": "LOCAL_ONLY",
+  "bug_refs": []
 }

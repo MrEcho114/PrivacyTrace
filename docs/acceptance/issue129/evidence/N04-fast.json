@@ -1,0 +1,24 @@
+[
+  {
+    "variant": "oversize",
+    "declared_bytes": 167772160,
+    "draft": "428dc6af21d74d48a3ba6d9d3ca9557a",
+    "status": 413,
+    "body": "{\"detail\":\"UPLOAD_TOO_LARGE\"}",
+    "sent_bytes": 114294784,
+    "elapsed_s": 0.57,
+    "after": {
+      "revision": 1,
+      "uploaded": false
+    }
+  },
+  {
+    "variant": "disconnect",
+    "draft": "8fc20cfbce1747afae73eb2affd09468",
+    "elapsed_s": 4.01,
+    "after": {
+      "revision": 1,
+      "uploaded": false
+    }
+  }
+]

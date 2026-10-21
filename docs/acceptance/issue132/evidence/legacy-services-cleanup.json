@@ -1,0 +1,34 @@
+{
+  "started_at": "2026-10-21T15:38:54.893670+00:00",
+  "owned_units_stopped": [
+    "pt132-business-proxies",
+    "pt132-tls-variants",
+    "pt132-cargo-cache",
+    "pt132-I-inner",
+    "pt132-I-outer",
+    "pt132-J-inner",
+    "pt132-J-outer",
+    "pt132-proxy",
+    "pt132-docker-control-v5",
+    "pt132-docker-scan-v5",
+    "pt132-containerd-control",
+    "pt132-containerd-scan"
+  ],
+  "private_build_cache_retained": true,
+  "closed_owned_loopback_ports": {
+    "38319": true,
+    "40355": true,
+    "41028": true,
+    "44170": true,
+    "42696": true,
+    "41458": true,
+    "40794": true,
+    "43720": true,
+    "44238": true,
+    "42140": true,
+    "51321": true
+  },
+  "finished_at": "2026-10-21T15:38:56.885888+00:00",
+  "original_distribution_and_default_daemon_not_stopped": true,
+  "passed": true
+}

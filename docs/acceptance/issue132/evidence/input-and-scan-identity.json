@@ -1,0 +1,134 @@
+{
+  "utc": "2026-10-21T14:50:25.479Z",
+  "package_name": "org.privacytrace.probe.fixture",
+  "version_code": 132,
+  "components": [
+    {
+      "split_name": null,
+      "sha256": "909250568f133f9dfefa0730a919cbd63028d833f7b2ed74db5f8b99fd15e45b",
+      "size_bytes": 8589
+    },
+    {
+      "split_name": "feature_camera",
+      "sha256": "fd12812ccdaabcc318868184b7285cdeaa048ff30549d24a3e23a0d5c2fe1320",
+      "size_bytes": 8532
+    }
+  ],
+  "installed_set_fingerprint": "7e1b0f8a40364c537d1bcf773784e01357561ba0801d39d3487abbd41c6c1a5f",
+  "fingerprint_source": "Operator recomputation from actual Android-installed bytes using frozen native receiptFingerprint; native SERVER_CONFIRMED separately verifies package/version/all parts against its own fingerprint, not ZIP bytes",
+  "checks": [
+    {
+      "instance": "I",
+      "server_set_fingerprint": "7e1b0f8a40364c537d1bcf773784e01357561ba0801d39d3487abbd41c6c1a5f",
+      "components_match_installed": true,
+      "evidence_count": 5,
+      "policy_claims": 1,
+      "comparison_rows": 3,
+      "comparison_states": [
+        "INSUFFICIENT_EVIDENCE"
+      ],
+      "policy_states": [
+        {
+          "completeness": "PARTIAL",
+          "review_status": "UNREVIEWED",
+          "attachments_status": "NOT_CHECKED",
+          "policy_text_sha256": "1be4bc0b826f7adba437d8e9fdae21cc017e492bcb6269521df29a0db6c3f122"
+        }
+      ],
+      "scanner_receipt": {
+        "cleanup_verified": true,
+        "container": "privacytrace-11626fcc8c7b4f77a7d19f235e5defbb",
+        "container_created": true,
+        "exit_state": {
+          "ExitCode": 0,
+          "OOMKilled": false,
+          "Running": false
+        },
+        "image_id": "sha256:9d5ec58eab0dcfa8acbecccf2378ad92e6d9f5b8f84f7c7bf6712290a8337d97",
+        "input_removed": true,
+        "isolation": {
+          "CapAdd": null,
+          "CapDrop": [
+            "ALL"
+          ],
+          "Memory": 1073741824,
+          "MemorySwap": 1073741824,
+          "NanoCpus": 1000000000,
+          "NetworkMode": "none",
+          "PidsLimit": 32,
+          "Privileged": false,
+          "ReadonlyRootfs": true,
+          "SecurityOpt": [
+            "no-new-privileges:true"
+          ]
+        },
+        "mounts": [
+          {
+            "destination": "/input/sample.apk",
+            "read_only": true
+          }
+        ],
+        "request_id": "5df758f6-517c-55c5-a48b-ea7b071275cc",
+        "user": "65534:65534",
+        "version": 1
+      }
+    },
+    {
+      "instance": "J",
+      "server_set_fingerprint": "7e1b0f8a40364c537d1bcf773784e01357561ba0801d39d3487abbd41c6c1a5f",
+      "components_match_installed": true,
+      "evidence_count": 5,
+      "policy_claims": 1,
+      "comparison_rows": 3,
+      "comparison_states": [
+        "INSUFFICIENT_EVIDENCE"
+      ],
+      "policy_states": [
+        {
+          "completeness": "PARTIAL",
+          "review_status": "UNREVIEWED",
+          "attachments_status": "NOT_CHECKED",
+          "policy_text_sha256": "1be4bc0b826f7adba437d8e9fdae21cc017e492bcb6269521df29a0db6c3f122"
+        }
+      ],
+      "scanner_receipt": {
+        "cleanup_verified": true,
+        "container": "privacytrace-a54748dcc1054294a14c9a1c53814b4b",
+        "container_created": true,
+        "exit_state": {
+          "ExitCode": 0,
+          "OOMKilled": false,
+          "Running": false
+        },
+        "image_id": "sha256:9d5ec58eab0dcfa8acbecccf2378ad92e6d9f5b8f84f7c7bf6712290a8337d97",
+        "input_removed": true,
+        "isolation": {
+          "CapAdd": null,
+          "CapDrop": [
+            "ALL"
+          ],
+          "Memory": 1073741824,
+          "MemorySwap": 1073741824,
+          "NanoCpus": 1000000000,
+          "NetworkMode": "none",
+          "PidsLimit": 32,
+          "Privileged": false,
+          "ReadonlyRootfs": true,
+          "SecurityOpt": [
+            "no-new-privileges:true"
+          ]
+        },
+        "mounts": [
+          {
+            "destination": "/input/sample.apk",
+            "read_only": true
+          }
+        ],
+        "request_id": "e7e0ce1a-5ca0-558f-8e54-c687a63018be",
+        "user": "65534:65534",
+        "version": 1
+      }
+    }
+  ],
+  "passed": true
+}

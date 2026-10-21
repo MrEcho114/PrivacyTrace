@@ -1,0 +1,33 @@
+{
+  "record_kind": "LOCAL_AUTHORITY_CHECK",
+  "exported_at": "2026-10-21T15:33:49.752373+00:00",
+  "entrypoint": "bash scripts/check.sh",
+  "exit_code": 0,
+  "base_commit": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+  "source_state": "baseline plus the three added files below; final evidence documents validated separately; final published PR CI remains required",
+  "added_source_sha256": {
+    "deploy/acceptance/issue132/android_network.py": "04d285bad4c3c7adacf28683f67f9e4a2dbd0da7a055ac09e70fe32d44732cbe",
+    "deploy/acceptance/issue132/network-config.example.json": "f372d2fd05f8da16cadc1489bac755b548f96157dbdf116b6e8541156b8f0cc1",
+    "apps/api/tests/test_issue132_android_network.py": "f65d0123f0d58fad51e8c46a1df7a092f199c8b81a48ff0bb0a65b94ffa0df27"
+  },
+  "python": "Python 3.12.3",
+  "node": "v24.17.0",
+  "api": {
+    "passed": 1567,
+    "skipped": 179
+  },
+  "e2e": {
+    "passed": 65
+  },
+  "ruff": "PASSED (both invocations)",
+  "contracts": "No generated diff",
+  "web_test_and_build": "PASSED",
+  "validation_worker_image_id": "sha256:3ab615098cfe2c56a2cf411c5386b002e07623dfe68f07f856122a0f7fc5481b",
+  "log_sha256": {
+    "check-authority-first.log": "2b51d62ba8a8e60a1269fe03dbbf109e6eddf792ee08230d6919355e71017855",
+    "check-authority-final.log": "46ede920441de6fb9f943f90154b60180028d530c681462ce3328c47407561e5",
+    "check-worker-bootstrap.log": "a3f8d6e59435c6111191e44f6b91e6395c36c9b25b469a1917b1968c8e21f425",
+    "check-uv-bootstrap.log": "99c66b0fea2595972007af9fdc99b616ee05867b3c90c878b0be72939ccbe642"
+  },
+  "first_attempt": "API/E2E passed; Ruff I001 in new test import grouping. Corrected only test import grouping, then complete entrypoint rerun succeeded."
+}

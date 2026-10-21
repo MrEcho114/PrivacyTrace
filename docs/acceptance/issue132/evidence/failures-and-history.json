@@ -1,0 +1,76 @@
+{
+  "record_kind": "HISTORICAL_FAILURE_INVENTORY",
+  "old_statuses_and_bytes_preserved": true,
+  "entries": [
+    {
+      "id": "old-shared-filesystem",
+      "classification": "ENVIRONMENT",
+      "detail": "First namespace-only lab lacked separate WSL filesystem; all old component results remain historical, not final case coverage.",
+      "counts_towards_final_case_pass": false
+    },
+    {
+      "id": "old-n08-shell-glob",
+      "classification": "HARNESS",
+      "detail": "Unquoted noproxy star expanded on Android shell; last curl URL could exit zero with earlier failures. Discarded old subset; new entry uses explicit host list, strict single marker and empty stderr; nine regression tests plus actual 31-check rerun.",
+      "counts_towards_final_case_pass": false
+    },
+    {
+      "id": "cold-cgroup-swap",
+      "classification": "ENVIRONMENT",
+      "detail": "New daemon cold-start cached SwapLimit false and actual MemorySwap=-1; isolation assertion rejected upload. Warm-restarted only the new owned daemons, verified SwapLimit true and actual scanner Memory=MemorySwap=1GiB; original assertions unchanged.",
+      "counts_towards_final_case_pass": false,
+      "private_receipt_sha256": "d4f7d290267adfc7d70eabebc31d546b383644b2cab8451916fb645b271d7cc8"
+    },
+    {
+      "id": "stale-native-scope",
+      "classification": "HARNESS_STATE",
+      "detail": "Operator deleted failed scope; next driver reused cached material and got exact404. Cleared only test app on owned emulator before valid final I/J tasks; fresh native flow passed.",
+      "counts_towards_final_case_pass": false,
+      "private_receipt_sha256": "c31327fbe652ae6003e736d2744defaa92622c7f0138ba368c1a44c17e826f81"
+    },
+    {
+      "id": "concurrent-device-drivers",
+      "classification": "HARNESS",
+      "detail": "TLS redirect/HTTP-input unfinished when two owned UI drivers overlapped; retained failure, serial complete rerun passed.",
+      "counts_towards_final_case_pass": false
+    },
+    {
+      "id": "network-error-body",
+      "classification": "HARNESS",
+      "detail": "Initial expected settings detail differed from actual pre-routing middleware. Corrected exact generic body from product source; kept HTTP403 and strict body equality.",
+      "counts_towards_final_case_pass": false
+    },
+    {
+      "id": "matrix-a-setup",
+      "classification": "HARNESS",
+      "detail": "Missing local base file after A creation stopped setup before upload. Resumed same A, genuine scan SUCCEEDED; B unchanged.",
+      "counts_towards_final_case_pass": false
+    },
+    {
+      "id": "pipeline-readback",
+      "classification": "HARNESS",
+      "detail": "First SQL collector queried record.state instead of record.job.state; fixed collector, independently read outbox/execution/job SUCCEEDED.",
+      "counts_towards_final_case_pass": false
+    },
+    {
+      "id": "driver-premature-result",
+      "classification": "HARNESS",
+      "detail": "Generic H driver emitted UNKNOWN before report settled. Old result unchanged; subsequent actual native report retrieval and policy/API DOM drill receipts establish final observations.",
+      "counts_towards_final_case_pass": false
+    },
+    {
+      "id": "device-cleanup-parser",
+      "classification": "HARNESS",
+      "detail": "Blank reverse-list line stopped parser after removals. Final cleanup independently proves all 18 expected own reverses absent; removed-in-resume count remains0.",
+      "counts_towards_final_case_pass": false
+    },
+    {
+      "id": "linux-import-order",
+      "classification": "VALIDATION",
+      "detail": "First full run API/E2E passed, then RuffI001 for new test import grouping. Only test import split changed; entire entrypoint rerun passed.",
+      "counts_towards_final_case_pass": false
+    }
+  ],
+  "other_preparation_failures": "Private rootfs/bootstrap/bridge/relay setup attempts retained locally; no product guard weakened.",
+  "raw_history_location": "Ignored owner-only evidence store; contains sensitive task/report/policy material and is not published."
+}

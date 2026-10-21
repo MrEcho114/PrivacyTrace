@@ -1,0 +1,39 @@
+{
+  "started_at": "2026-10-21T14:40:29.166Z",
+  "finished_at": "2026-10-21T14:41:51.471Z",
+  "actual_android": true,
+  "method": "Real I response held 60s; actual Stop request then native I to J restore; observe J after late server write/cancelled socket",
+  "delay_started": {
+    "label": "I",
+    "delay_started": true,
+    "response_sha256": "c31610bba3693ef412058e9e1fb30f232aaa03fc134bb888aa15d5c3eaa56802",
+    "delay_seconds": 60,
+    "utc": "2026-10-21T14:40:44.983772+00:00"
+  },
+  "late_written": true,
+  "cancelled_socket": false,
+  "observations": [
+    {
+      "label": "before-I",
+      "utc": "2026-10-21T14:40:44.698Z",
+      "body_sha256": "109b78d75be9c7d181708157c3cf4893b3c19e6cd2bbbdf7635338b709d99d5a",
+      "selected_J": false,
+      "contains_I_job": true
+    },
+    {
+      "label": "selected-J",
+      "utc": "2026-10-21T14:41:01.128Z",
+      "body_sha256": "61eb437d47065e8918156482822fe96800916fde9a7d146dc0385ff68ce9e30c",
+      "selected_J": true,
+      "contains_I_job": false
+    },
+    {
+      "label": "after-late-I",
+      "utc": "2026-10-21T14:41:51.309Z",
+      "body_sha256": "61eb437d47065e8918156482822fe96800916fde9a7d146dc0385ff68ce9e30c",
+      "selected_J": true,
+      "contains_I_job": false
+    }
+  ],
+  "passed": true
+}

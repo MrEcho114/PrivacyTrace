@@ -1,0 +1,38 @@
+{
+  "started_at": "2026-10-21T15:19:03.545567+00:00",
+  "removed_packages": [
+    "org.privacytrace.mobile",
+    "org.privacytrace.probe.fixture"
+  ],
+  "finished_at": "2026-10-21T15:19:10.709379+00:00",
+  "expected_owned_reverse_ports": [
+    38319,
+    40355,
+    40794,
+    41028,
+    41044,
+    41458,
+    41859,
+    42140,
+    42696,
+    43720,
+    44170,
+    44198,
+    44238,
+    45443,
+    45444,
+    45445,
+    45446,
+    57313
+  ],
+  "removed_reverse_ports_in_this_resume": [],
+  "remaining_owned_reverse_ports": [],
+  "prior_partial_attempt": "Stopped on a blank adb reverse-list line; completed removals were not rolled back. Final absence is independently checked.",
+  "public_ca_files_removed": 6,
+  "ui_dump_files_removed": 43,
+  "owned_devtools_forward_removed": true,
+  "owned_emulator_removed": true,
+  "daily_instance_retained": true,
+  "owned_adb_listener_closed": true,
+  "passed": true
+}

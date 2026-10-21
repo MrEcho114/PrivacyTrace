@@ -1,0 +1,10 @@
+{
+  "record_kind": "OWN_KEEPALIVE_CLEANUP",
+  "passed": true,
+  "utc": "2026-10-21T15:50:34.5637058Z",
+  "dispatch_utc": "2026-10-21T11:22:40.637Z",
+  "original_dispatch_matched": true,
+  "own_cli_process_chain_stopped": true,
+  "remaining_matching_cli_count": 0,
+  "shared_distribution_not_terminated": true
+}

@@ -1,0 +1,82 @@
+{
+  "started_at": "2026-10-21T15:13:22.278326+00:00",
+  "labs": {
+    "I": {
+      "project": "pt81-522f693a4d44",
+      "remaining_business_counts": {
+        "active_scopes": 0,
+        "documents": 0,
+        "runtime_inputs": 0,
+        "runner_materials": 0,
+        "uploads": 0
+      },
+      "reclamation": {
+        "objects": 0,
+        "directories": 0,
+        "temporary": 0,
+        "pending": 0
+      },
+      "removed_control_roles": 7,
+      "remaining_control_resources": {
+        "container": [],
+        "volume": [],
+        "network": []
+      },
+      "scan": {
+        "project": "pt81-522f693a4d44-scan",
+        "remaining_resources": {
+          "container": [],
+          "network": [],
+          "volume": []
+        },
+        "private_workspace_removed": true
+      },
+      "private_control_root_removed": true
+    },
+    "J": {
+      "project": "pt81-485595698e9b",
+      "remaining_business_counts": {
+        "active_scopes": 0,
+        "documents": 0,
+        "runtime_inputs": 0,
+        "runner_materials": 0,
+        "uploads": 0
+      },
+      "reclamation": {
+        "objects": 0,
+        "directories": 0,
+        "temporary": 0,
+        "pending": 0
+      },
+      "removed_control_roles": 7,
+      "remaining_control_resources": {
+        "container": [],
+        "volume": [],
+        "network": []
+      },
+      "scan": {
+        "project": "pt81-485595698e9b-scan",
+        "remaining_resources": {
+          "container": [],
+          "network": [],
+          "volume": []
+        },
+        "private_workspace_removed": true
+      },
+      "private_control_root_removed": true
+    }
+  },
+  "stopped_owned_processes": 16,
+  "closed_loopback_ports": {
+    "41859": true,
+    "57313": true,
+    "44198": true,
+    "41044": true,
+    "45443": true,
+    "45444": true,
+    "45445": true,
+    "45446": true
+  },
+  "finished_at": "2026-10-21T15:13:41.956678+00:00",
+  "passed": true
+}

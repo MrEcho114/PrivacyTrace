@@ -1,0 +1,11 @@
+{
+  "started_at": "2026-10-21T15:41:01.481494+00:00",
+  "removed_owned_distributions": [
+    "PrivacyTrace132-Control",
+    "PrivacyTrace132-Scan"
+  ],
+  "finished_at": "2026-10-21T15:41:02.491862+00:00",
+  "other_distributions_retained": true,
+  "registration_readback_passed": true,
+  "passed": true
+}

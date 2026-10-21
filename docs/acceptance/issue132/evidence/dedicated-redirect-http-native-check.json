@@ -1,0 +1,12 @@
+{
+  "label": "dedicated-redirect-http",
+  "origin": "https://localhost:43720",
+  "expected": "SERVER_REDIRECT_REJECTED",
+  "observed": {
+    "error": "SERVER_REDIRECT_REJECTED"
+  },
+  "capabilitiesAccepted": false,
+  "passed": true,
+  "utc": "2026-10-21T14:23:44.116Z",
+  "actual_android": true
+}

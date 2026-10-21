@@ -1,0 +1,38 @@
+{
+  "purpose": "TLS fixture validation only; no Android result",
+  "utc": "2026-10-21T11:52:52.294664+00:00",
+  "results": [
+    {
+      "variant": "bad-ca",
+      "default_handshake": "REJECTED",
+      "error_type": "SSLCertVerificationError",
+      "verify_code": 18
+    },
+    {
+      "variant": "bad-host",
+      "default_handshake": "REJECTED",
+      "error_type": "SSLCertVerificationError",
+      "verify_code": 62
+    },
+    {
+      "variant": "expired",
+      "default_handshake": "REJECTED",
+      "error_type": "SSLCertVerificationError",
+      "verify_code": 10
+    },
+    {
+      "variant": "tls10",
+      "default_handshake": "REJECTED",
+      "error_type": "SSLError",
+      "reason": "TLSV1_ALERT_PROTOCOL_VERSION",
+      "legacy_fixture_control": "TLSv1"
+    },
+    {
+      "variant": "tls11",
+      "default_handshake": "REJECTED",
+      "error_type": "SSLError",
+      "reason": "TLSV1_ALERT_PROTOCOL_VERSION",
+      "legacy_fixture_control": "TLSv1.1"
+    }
+  ]
+}

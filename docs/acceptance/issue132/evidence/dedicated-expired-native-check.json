@@ -1,0 +1,12 @@
+{
+  "label": "dedicated-expired",
+  "origin": "https://localhost:42696",
+  "expected": "SERVER_TLS_REJECTED",
+  "observed": {
+    "error": "SERVER_TLS_REJECTED"
+  },
+  "capabilitiesAccepted": false,
+  "passed": true,
+  "utc": "2026-10-21T14:11:07.572Z",
+  "actual_android": true
+}

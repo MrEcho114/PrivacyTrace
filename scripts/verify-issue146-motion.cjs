@@ -1,11 +1,13 @@
 // Issue #146: motion calibration. Verifies the four behaviours this ticket
 // actually changed, in a real browser, in both motion modes:
-//   1. colour feedback has one rhythm and never animates layout or `all`
+//   1. colour feedback has one rhythm, only touches colour properties, and the
+//      pressed state wins over hover
 //   2. hover feedback only exists for hover-capable pointers
 //   3. drag highlight and evidence expansion do not move the content they sit in
 //   4. prefers-reduced-motion drops displacement/spring motion and JS smooth scrolling
-// Assertions read live computed styles and dispatched events; they never compare
-// against a copied table of the stylesheet's own numbers.
+// Assertions read live computed styles and dispatched events. Durations are read
+// back from the `--motion-*` tokens rather than pasted from the stylesheet, so a
+// token change exercises the same contract the browser applies.
 const { chromium } = require('playwright')
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
@@ -138,12 +140,15 @@ async function verifyPointerFeedback(browser) {
   assert.notEqual(hovered, base, 'a hover-capable pointer must still get hover feedback')
   const timing = await button.evaluate(element => {
     const style = getComputedStyle(element)
-    return { property: style.transitionProperty, duration: style.transitionDuration }
+    const token = getComputedStyle(document.documentElement).getPropertyValue('--motion-color').trim()
+    const toMs = value => value.endsWith('ms') ? parseFloat(value) : parseFloat(value) * 1000
+    const durations = style.transitionDuration.split(',').map(value => toMs(value.trim()))
+    return { property: style.transitionProperty, durations, tokenMs: toMs(token), rawToken: token }
   })
   assert.equal(timing.property, 'background-color, border-color', 'colour feedback animates colour properties only')
-  assert.equal(timing.duration, '0.15s, 0.15s', 'one shared colour duration for every button role')
+  assert.ok(timing.durations.every(ms => ms === timing.tokenMs), 'every colour transition must use the shared --motion-color token (got ' + JSON.stringify(timing.durations) + ' vs ' + timing.rawToken + ')')
   await page.screenshot({ path: path.join(screenshots, 'feedback-hover-1440.png') })
-  checks.push('feedback: hover keeps its 150ms colour fade; colour properties only')
+  checks.push('feedback: hover keeps the shared --motion-color colour fade; colour properties only')
 
   // The press offset has no transition, so the pressed state exists in the same
   // frame as pointerdown instead of easing in behind the colour change.
@@ -205,6 +210,47 @@ async function verifyPointerFeedback(browser) {
   } finally { await auditProbe.evaluate(element => element.remove()) }
   checks.push('budget: no transition:all, no over-300ms transition, no idle animation (rejects the injected defect)')
   await context.close()
+}
+
+// Hover and :active have the same specificity for the danger role, so this pins
+// the cascade order that makes a held button show its pressed colour, not hover.
+async function verifyPressedOverridesHover(browser) {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+  const page = await context.newPage()
+  await mockReports(page, [])
+  await page.goto(origin)
+  await page.getByRole('heading', { name: '导入分析材料', exact: true }).waitFor({ timeout: 15000 })
+  await page.getByRole('button', { name: '体验示例', exact: true }).first().click()
+  await page.getByRole('button', { name: '检查候选', exact: true }).click()
+  await page.getByRole('heading', { name: '检查政策候选' }).waitFor()
+  await page.locator('.candidate-item').first().click()
+  const danger = page.getByRole('button', { name: '删除候选', exact: true })
+  const candidates = await page.locator('.candidate-item').count()
+  await danger.hover()
+  await page.waitForTimeout(250)
+  const hovered = await danger.evaluate(element => getComputedStyle(element).backgroundColor)
+  assert.equal(hovered, 'rgb(147, 67, 66)', 'hovering a danger button must use the --error role')
+  const box = await danger.boundingBox()
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.down()
+  // The colour itself is eased, so let the fade finish before reading which rule won.
+  // The press offset is asserted separately as an immediate, untransitioned change.
+  await page.waitForTimeout(250)
+  const pressed = await danger.evaluate(element => getComputedStyle(element).backgroundColor)
+  // Guard proof: appending the same hover rule after the :active rules reproduces
+  // the cascade bug this assertion exists to catch, so the probe is not vacuous.
+  const badOrder = await page.addStyleTag({ content: '.ui-button.danger:hover:not(:disabled) { background: var(--error); }' })
+  await page.waitForTimeout(250)
+  const lateHover = await danger.evaluate(element => getComputedStyle(element).backgroundColor)
+  await badOrder.evaluate(element => element.remove())
+  // Leave the button before releasing so the click (and the delete) never fires.
+  await page.mouse.move(4, 4)
+  await page.mouse.up()
+  assert.equal(pressed, 'rgb(235, 218, 218)', 'holding a danger button must override hover with the --rose pressed role')
+  assert.equal(lateHover, 'rgb(147, 67, 66)', 'a hover rule declared after :active must win, so the press assertion can fail')
+  assert.equal(await page.locator('.candidate-item').count(), candidates, 'the press probe must not delete a candidate')
+  await context.close()
+  checks.push('feedback: pressed colour overrides hover (danger role, same specificity; later hover rule would win)')
 }
 
 async function verifyTouchPointer(browser) {
@@ -271,6 +317,9 @@ async function verifyReducedMotion(browser, reduce) {
     assert.equal(state.transition, '0s', 'reduced motion turns transitions off instead of slowing them')
     assert.deepEqual(await page.evaluate(() => document.getAnimations().length), 0, 'reduced motion must leave no animation running')
   }
+  // Both modes settle to the same frame before capture, so the two screenshots are
+  // directly comparable: the preference changes how the scroll happens, not the result.
+  await page.waitForTimeout(400)
   await page.screenshot({ path: path.join(screenshots, reduce ? 'reports-evidence-reduced-1440.png' : 'reports-evidence-1440.png') })
   checks.push(reduce
     ? 'reduced motion: evidence scroll is instant (behavior=auto), transitions off, panel readable'
@@ -289,7 +338,7 @@ async function verifyReducedMotion(browser, reduce) {
   }
   assert.equal(await page.locator('#evidence-panel').count(), 0)
   assert.equal(ledger.length, requestsBefore, 'opening and closing evidence must not re-trigger report requests')
-  checks.push('continuity: 9 rapid open/close cycles settle closed with no duplicate request')
+  checks.push('continuity: 3 rounds of open-row/open-other-row/close (9 clicks, 3 closes) settle closed with no duplicate request')
 
   // Low-performance simulation: the panel still appears readable, not half-faded.
   const cdp = await context.newCDPSession(page)
@@ -308,8 +357,31 @@ async function verifyReducedMotion(browser, reduce) {
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 })
   }
 
+  // Long text: expand the report provenance so the 10 KB policy body actually
+  // renders, then assert it stays readable and never scrolls sideways.
+  await page.locator('.provenance > summary').click()
+  await page.locator('.provenance article details > summary').first().click()
+  await page.waitForFunction(() => {
+    const pre = document.querySelector('.provenance article details pre')
+    return Boolean(pre) && pre.textContent.length > 4000
+  }, null, { timeout: 5000 })
+  const longText = await page.evaluate(() => {
+    const pre = document.querySelector('.provenance article details pre')
+    return {
+      length: pre.textContent.length,
+      preScrollWidth: pre.scrollWidth,
+      preClientWidth: pre.clientWidth,
+      documentOverflow: document.documentElement.scrollWidth - window.innerWidth,
+    }
+  })
+  assert.ok(longText.length > 4000, 'the long policy body must render in full')
+  assert.ok(longText.documentOverflow <= 0, 'long policy text must not widen the document (overflow ' + longText.documentOverflow + 'px)')
+  assert.ok(longText.preScrollWidth <= longText.preClientWidth + 1, 'long policy text must wrap inside its block instead of scrolling sideways')
+  checks.push('long text: ' + longText.length + '-character policy renders without widening the document or scrolling sideways')
+
   // Visibility change: returning from a hidden tab must not leave a half-applied state.
   await page.waitForFunction(() => document.getAnimations().length === 0, null, { timeout: 2000 })
+  const requestsBeforeRestore = ledger.length
   await page.evaluate(() => {
     Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' })
     document.dispatchEvent(new Event('visibilitychange'))
@@ -320,12 +392,14 @@ async function verifyReducedMotion(browser, reduce) {
   })
   const restored = await page.evaluate(() => {
     const panel = document.getElementById('evidence-panel')
-    return { present: Boolean(panel), opacity: panel ? getComputedStyle(panel).opacity : null, animations: document.getAnimations().length }
+    return { present: Boolean(panel), opacity: panel ? getComputedStyle(panel).opacity : null, animations: document.getAnimations().length, text: panel ? panel.innerText.length : 0 }
   })
   assert.equal(restored.present, true, 'the open evidence panel must survive a visibility round trip')
   assert.equal(restored.opacity, '1', 'returning to the tab must not leave a half-faded panel')
+  assert.ok(restored.text > 0, 'returning to the tab must not blank the panel content')
   assert.equal(restored.animations, 0, 'a visibility round trip must not restart animations')
-  checks.push('background restore: visibility round trip keeps the panel fully readable (DOM-level simulation, not a real suspend)')
+  assert.equal(ledger.length, requestsBeforeRestore, 'a visibility round trip must not re-trigger report requests')
+  checks.push('background restore: visibility round trip keeps the panel readable and issues no new request (DOM-level simulation, not a real suspend)')
 
   await auditTransitions(page, 'reports view')
   await context.close()
@@ -351,7 +425,21 @@ async function verifyNarrowEvidence(browser) {
   assert.equal(inline.animation, 'none', 'the expanded row must not fade in from invisible')
   assert.equal(inline.opacity, '1', 'the expanded row is readable on the first frame')
   assert.equal(inline.text > 0, true, 'the expanded row must render its evidence immediately')
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'the narrow evidence row must not overflow')
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'the narrow evidence row must not overflow the page')
+  // The page-level check cannot see content clipped by the table's own scroll box,
+  // so measure the expanded cell itself.
+  const clipping = await page.evaluate(() => {
+    const cell = document.querySelector('.comparison-table td.row-evidence')
+    const pre = cell ? cell.querySelector('pre') : null
+    return {
+      cellScroll: cell ? cell.scrollWidth : 0,
+      cellClient: cell ? cell.clientWidth : 0,
+      preScroll: pre ? pre.scrollWidth : 0,
+      preClient: pre ? pre.clientWidth : 0,
+    }
+  })
+  assert.ok(clipping.cellScroll <= clipping.cellClient + 1, 'the expanded row must not scroll sideways (cell ' + clipping.cellScroll + ' > ' + clipping.cellClient + ')')
+  assert.ok(clipping.preScroll <= clipping.preClient + 1, 'evidence code blocks must wrap inside the expanded row (pre ' + clipping.preScroll + ' > ' + clipping.preClient + ')')
   await page.screenshot({ path: path.join(screenshots, 'inline-evidence-390.png') })
   checks.push('narrow evidence: expands in place with no entry animation and readable on the first frame')
 
@@ -386,6 +474,7 @@ async function main() {
     }
     browser = await chromium.launch({ headless: true, executablePath: process.env.PRIVACYTRACE_CHROMIUM || undefined })
     await verifyPointerFeedback(browser)
+    await verifyPressedOverridesHover(browser)
     await verifyTouchPointer(browser)
     await verifyReducedMotion(browser, false)
     await verifyReducedMotion(browser, true)

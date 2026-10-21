@@ -20,7 +20,7 @@
 | 1 | `.ui-button`、`.nav-item`、`.source-tabs button`、`.candidate-item` 的颜色过渡 | hover / 按下 / 选中 | 反馈 | `background-color, border-color 150ms ease-out` | 被全局 `transition: none !important` 关闭 | 修改：合并为 `button` 上的一条规则并改用 token |
 | 2 | `button:hover`（`style.css`、`workbench.css` 各一条）、`.ui-button.primary/quiet/danger:hover`、`.primary:hover` | 指针悬停 | 反馈 | 无门控，触摸设备同样命中 | 无 | 修改：整体包进 `@media (hover: hover) and (pointer: fine)` |
 | 3 | `.ui-button:active:not(:disabled)` | 按下 | 按压反馈 | `translateY(1px)`，无过渡 | 不受影响（瞬时） | 保留：按下必须与指针事件同帧，不做缓动 |
-| 4 | `.drag-active` | dragover / dragleave | 状态指示 | `border: 2px solid`，相对常态 `1px dashed` 改变边框宽度 | 无过渡，但回流仍发生 | 修改：改为 `border-color` + `inset box-shadow`，消除 1px 回流 |
+| 4 | `.drag-active` | dragover / dragleave | 状态指示 | `border: 2px solid`，相对常态 `1px dashed` 改变边框宽度 | 无过渡，但回流仍发生 | 修改：`border-color` + `border-style: solid` + `inset box-shadow`，消除 1px 回流；描边观感仍是 2px，但拖拽态内容比旧实现多出 1px（旧实现是靠加宽边框占位） |
 | 5 | `.comparison-table td.row-evidence` | 窄屏展开证据 | 状态 + 空间变化 | `animation: evidence-slide-in .18s ease-out`（`opacity 0→1`、`translateY(-4px→0)`） | 被全局关闭 | 删除 |
 | 6 | `@keyframes evidence-slide-in` | 同上 | 同上 | 同上 | 同上 | 删除（无引用） |
 | 7 | `App.vue` `selectIssue()` | 点开对照结论 | 空间变化：把证据面板带入视野 | `scrollIntoView({behavior:'smooth'})` | **未生效**：显式 `behavior: 'smooth'` 不受 CSS `scroll-behavior: auto !important` 约束 | 修改：`prefers-reduced-motion` 时改用 `behavior: 'auto'` |
@@ -50,6 +50,8 @@
 
 **颜色反馈用 `ease` 而不是自定义强 `ease-out`。** 150ms 的颜色渐变没有可感知的加减速起点，自定义曲线在 150ms 内与 `ease` 无可见差异，增加 token 只会制造第二套词汇。
 
+**hover 能力块放在各 variant 的 `:active` 之前。** `.ui-button.danger:hover:not(:disabled)` 与 `.ui-button.danger:active:not(:disabled)` 特异性同为 `(0,4,0)`，同权重下由源码顺序决定。把 hover 规则集中到 `:active` 之后，会让按下的危险按钮保留 hover 的 `--error` 背景、同时继承 `:active` 的 `--error` 文字，标签与底色同色不可读。改动中先出现、经浏览器实测与独立审查复现后修正；`acceptance:motion` 现在有专门断言盯着这条顺序。
+
 ## 实施取值与理由
 
 Figma 的 Pioneer 当前页与规范页没有给出动效数值（父票盘点只登记了颜色、字体、间距、圆角）。下表是本票的实现取值，**不是从源设计抄来的参数**。
@@ -75,7 +77,7 @@ Figma 的 Pioneer 当前页与规范页没有给出动效数值（父票盘点�
 
 ## 验证
 
-- 定向脚本：`node scripts/verify-issue146-motion.cjs`（`npm run acceptance:motion`），17 项检查覆盖指针能力、按压即时性、拖拽零回流、弹窗即时可读、`transition: all` / 300ms 预算、触摸粘滞 hover、普通与减少动效两种模式的滚动行为、9 次连续开关、6× CPU 节流、可见性往返、窄屏证据行。脚本内有两条「守卫反证」：注入 `transition: all 400ms` 与无门控 hover 后，对应断言必须失败。
+- 定向脚本：`node scripts/verify-issue146-motion.cjs`（`npm run acceptance:motion`），20 项检查覆盖指针能力、按压即时性与按下压过 hover、拖拽零回流、弹窗即时可读、`transition: all` / 300ms 预算、触摸粘滞 hover、普通与减少动效两种模式的滚动行为、每模式 3 轮（9 次点击）快速开关、6× CPU 节流、可见性往返、10 KB 长文本、窄屏证据行与单元格裁切。时长断言读的是 `--motion-color` token 的实际值，不在脚本里抄一份样式表数字。脚本内有三条「守卫反证」：注入 `transition: all 400ms`、注入无门控 hover、把 hover 规则追加到 `:active` 之后，对应的断言都必须失败。
 - 权威入口：`pwsh -NoProfile -File scripts/check.ps1`。
 - 证据与原始结果：`docs/acceptance/issue146/`。
 - 未运行/不互代：真实触屏设备上的 hover 表现（用 `hasTouch` 模拟）、操作系统级「减少动态效果」开关（用 `emulateMedia`）、真实后台挂起（用 DOM 可见性事件模拟）、真机 Tauri WebView、真机低性能（用 CDP 6× 节流）。以上均记为 NOT_RUN，不写成通过。

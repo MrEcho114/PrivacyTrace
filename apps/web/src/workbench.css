@@ -59,8 +59,10 @@ p { line-height: 1.7; }
 .file-glyph { display: grid; place-items: center; gap: 4px; color: var(--muted); font-size: 0.75rem; }
 .file-glyph .ui-icon { width: 32px; height: 32px; }
 /* Drop target highlight without a 1px border-width change: widening the border
-   reflowed the panel and shifted the label by a pixel every dragenter/dragleave. */
-.drag-active { border-color: var(--navy); background: var(--slate); box-shadow: inset 0 0 0 1px var(--navy); }
+   reflowed the panel and shifted the label by a pixel every dragenter/dragleave.
+   The border stays 1px solid navy and the inset shadow supplies the second pixel,
+   so the highlight keeps its previous 2px solid look. */
+.drag-active { border-color: var(--navy); border-style: solid; background: var(--slate); box-shadow: inset 0 0 0 1px var(--navy); }
 .example-entry { border-top: 1px solid var(--border); margin-top: 24px; padding-top: 24px; }
 .field-help { color: var(--muted); font-size: 0.75rem; line-height: 20px; margin: 8px 0; }
 .source-editor { padding: 24px 0; border-top: 1px solid var(--border); }
@@ -92,6 +94,16 @@ p { line-height: 1.7; }
    evidence links all fade at the same speed. The press offset stays untransitioned
    so the pressed state is visible in the same frame as the pointer event. */
 button { transition: background-color var(--motion-color) var(--ease-color), border-color var(--motion-color) var(--ease-color); }
+/* Pointer-only hover: a touch tap reports :hover, so ungated rules leave a stuck
+   highlight on the row the finger just touched. Keyboards use :focus-visible.
+   Kept before the :active rules below: hover and :active share specificity for the
+   danger role, so source order decides which one wins while a button is held. */
+@media (hover: hover) and (pointer: fine) {
+  button:hover { background: var(--surface-muted); }
+  .ui-button.primary:hover:not(:disabled) { background: var(--navy-hover); }
+  .ui-button.quiet:hover { background: var(--surface-muted); }
+  .ui-button.danger:hover:not(:disabled) { background: var(--error); }
+}
 .ui-button:active:not(:disabled) { transform: translateY(1px); }
 .ui-button.primary { color: var(--surface); background: var(--navy); border-color: var(--navy); }
 .ui-button.primary:active:not(:disabled) { background: var(--navy-hover); opacity: .88; }
@@ -99,14 +111,6 @@ button { transition: background-color var(--motion-color) var(--ease-color), bor
 .ui-button.danger { background: var(--danger); border-color: var(--danger); color: var(--on-action); }
 .ui-button.danger:active:not(:disabled) { background: var(--rose); color: var(--error); }
 .ui-button:disabled { color: var(--muted); background: var(--surface-muted); border-color: var(--surface-muted); opacity: 1; }
-/* Pointer-only hover: a touch tap reports :hover, so ungated rules leave a stuck
-   highlight on the row the finger just touched. Keyboards use :focus-visible. */
-@media (hover: hover) and (pointer: fine) {
-  button:hover { background: var(--surface-muted); }
-  .ui-button.primary:hover:not(:disabled) { background: var(--navy-hover); }
-  .ui-button.quiet:hover { background: var(--surface-muted); }
-  .ui-button.danger:hover:not(:disabled) { background: var(--error); }
-}
 .status-tag { display: inline-flex; align-items: center; flex-shrink: 0; border-radius: var(--radius); background: var(--surface-muted); color: var(--ink); padding: var(--space-4) var(--space-8); font-size: 0.75rem; line-height: 20px; font-weight: 500; }
 .status-tag.info { background: var(--slate); }
 .status-tag.wait { background: var(--notice); }

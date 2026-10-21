@@ -228,4 +228,4 @@ test_e2e_pt_mob_102.py::test_t4_real_world_multisplit_end_to_end_workflow
 | `evidence/demo-offline-candidates-1440.png` | 候选页（离线，1440×900） |
 | `evidence/demo-offline-flow-1440.png` | 流程演示页（离线，1440×900） |
 | `evidence/demo-offline-flow-390.png` | 流程演示页（离线，390×844） |
-| `verify-demo-offline.cjs` | 离线回放验证脚本：显式离线 + 请求拦截 + 逐页交互断言 + 错误白名单 + 非零退出码；需 `NODE_PATH` 指向仓库 `node_modules` |
+| `verify-demo-offline.cjs` | 离线回放验证脚本：显式离线 + 请求拦截 + 逐页内容断言 + 按资源路径的错误白名单 + 非零退出码。在仓库内执行即可解析 `playwright`；输出目录建议给临时路径，避免在仓库里留下产物 |

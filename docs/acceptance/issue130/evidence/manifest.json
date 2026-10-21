@@ -135,8 +135,8 @@
     },
     {
       "path": "environment.json",
-      "sha256": "61ae93cba5ed2bfb1b319c4ddab9c2c3b3ed8b052138da8ae2d84a22d3454dae",
-      "size_bytes": 3133
+      "sha256": "7b59496fa53e0cc2dc91bd14eef75a0475f55972b5fe06f5e3390ff0a6c292b9",
+      "size_bytes": 4027
     },
     {
       "path": "harness-bug/H02-local-I-single-assist-first-run-result.json",

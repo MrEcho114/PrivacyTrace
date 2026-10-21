@@ -27,6 +27,22 @@
     "leaf_I_sha256": "CEF08EFBBC8ED6E0EF429510FF15192A032C5F780B47C0C0394046BE5F06BA30",
     "leaf_J_sha256": "812E44C9B608ACFC3E2515F42FF841879657F0B73437BB46FADE8AE125ADDF23"
   },
+  "migration": "0080_05",
+  "protocol": 1,
+  "ruleset": "0.3.0",
+  "client_apk_signing_cert_sha256": "4172668F29D3523BD5585AB9A2CB7DFF237CF751B8CB39084565ACD3F2205DF2",
+  "policy_text_sha256": {
+    "H02/H08/N10-source-A": "1be4bc0b826f7adba437d8e9fdae21cc017e492bcb6269521df29a0db6c3f122",
+    "H05/H11": "eb01615e33c30f97b69f901dd3f21af291d0e50f458781b52579d69397e019ba"
+  },
+  "cleanup": {
+    "at_utc": "2026-10-21T10:21:00Z",
+    "drafts": "each H case deleted through the client two-step confirmation; each N09/N10 draft deleted through the API",
+    "labs": "I/J containers, volumes and state directories purged",
+    "relays": "28544/28545 relays stopped",
+    "policy_source": "service and internal listener stopped; B-only 1.0.0.1 DNAT and host return routes removed",
+    "emulator": "PrivacyTrace130 stopped; installed packages retained for audit, not running"
+  },
   "client_apk": {
     "path": "client-local-ca.apk (not committed)",
     "sha256": "53416AEE102B3184F10FB7903FECE66DCC713AC73B327CD139C811911F11F474",

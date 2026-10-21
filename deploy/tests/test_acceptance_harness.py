@@ -289,7 +289,11 @@ class DeploymentRegressionTests(unittest.TestCase):
             "cleanup() {" + script.split("cleanup() {", 1)[1].split("\ntrap cleanup EXIT", 1)[0]
         )
         with tempfile.TemporaryDirectory() as logs:
-            temporary = Path(tempfile.mkdtemp(prefix="pt81-build-", dir="/var/tmp"))
+            temporary = Path(
+                subprocess.check_output(
+                    ["mktemp", "-d", "/var/tmp/pt81-build-XXXXXXXX"], text=True
+                ).strip()
+            )
             commands = Path(logs) / "commands"
             (temporary / "up-1.log").write_text("FAILED_LAB=/var/tmp/pt81-000000000000\n")
             (temporary / "docker").write_text("synthetic CLI copy")

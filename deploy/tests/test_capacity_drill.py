@@ -172,6 +172,56 @@ class DrillTests(unittest.TestCase):
 
         self.assertIn("--ip=10.200.0.99", calls[0])
 
+    def test_docker_refusal_keeps_the_first_stderr_line_that_names_the_cause(self):
+        class _StateLab:
+            project = "pt81-0123456789ab"
+            root = Path("/var/tmp/pt81-0123456789ab")
+
+        refusal = RuntimeError("deployment command failed (125): docker")
+        refusal.stderr = (
+            "docker: invalid reference format.\n"
+            "Run 'docker run --help' for more information.\n"
+        )
+
+        with patch.object(capacity_drill, "execute", side_effect=refusal):
+            with self.assertRaises(RuntimeError) as caught:
+                capacity_drill._docker(_StateLab(), ["docker", "run"], what="client container")
+
+        message = str(caught.exception)
+        self.assertIn("invalid reference format", message)
+        self.assertIn("client container refused", message)
+
+
+class AddressTests(unittest.TestCase):
+    def _bridge(self, *subnets, containers=None):
+        address = "10.200.0.40/24"
+        return {
+            "Name": "pt81-0123456789ab_api",
+            "IPAM": {"Config": [{"Subnet": subnet} for subnet in subnets]},
+            "Containers": containers
+            if containers is not None
+            else {"existing": {"IPv4Address": address}},
+        }
+
+    def test_a_dual_stack_bridge_yields_ipv4_addresses_from_the_ipv4_subnet(self):
+        bridge = self._bridge("fd00:1::/64", "10.200.0.0/24")
+
+        addresses = capacity_drill._addresses(bridge, 3)
+
+        self.assertEqual(len(set(addresses)), 3)
+        for address in addresses:
+            self.assertRegex(address, r"^10\.200\.0\.\d+$")
+        self.assertNotIn("10.200.0.40", addresses)
+
+    def test_a_bridge_without_ipv4_room_is_refused_with_the_subnets_named(self):
+        bridge = self._bridge("fd00:1::/64")
+
+        with self.assertRaises(RuntimeError) as caught:
+            capacity_drill._addresses(bridge, 3)
+
+        self.assertIn("no IPv4 subnet", str(caught.exception))
+        self.assertIn("fd00:1::/64", str(caught.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

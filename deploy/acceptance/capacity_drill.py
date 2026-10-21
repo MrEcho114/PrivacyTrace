@@ -10,6 +10,7 @@ Capability tokens are returned to this process only so it can poll and clean up.
 They never enter evidence dictionaries, receipts, or logs.
 """
 
+import ipaddress
 import json
 import os
 import time
@@ -58,8 +59,10 @@ def _docker(lab, argv, *, what, timeout=600):
         # stderr stays out of receipts; only the last line reaches the collector log, with
         # the private laboratory path normalized away, so a refusal is diagnosable.
         stderr = getattr(error, "stderr", "") or ""
-        lines = [line.strip() for line in stderr.splitlines() if line.strip()]
-        detail = " ".join(lines[-1].split()) if lines else str(error)
+        # A docker CLI usage error ends with "Run 'docker run --help'", which names no
+        # cause; the cause is the first line, so keep the head of stderr, not the tail.
+        lines = [" ".join(line.split()) for line in stderr.splitlines() if line.strip()]
+        detail = " | ".join(lines[:3])[:600] if lines else str(error)
         detail = detail.replace(str(lab.root), "<lab-state>")
         print(f"capacity drill: {what} refused: {detail}", flush=True)
         raise RuntimeError(f"{what} refused: {detail}") from None
@@ -88,6 +91,11 @@ def _api_network(lab):
     )
     for network in networks:
         if str(network.get("Name", "")).endswith("_api"):
+            subnets = [
+                str(config.get("Subnet"))
+                for config in network.get("IPAM", {}).get("Config") or []
+            ]
+            print(f"capacity drill: bridge {network['Name']} subnets {subnets}", flush=True)
             return network
     names = sorted(str(network.get("Name", "")) for network in networks)
     raise RuntimeError(f"laboratory {lab.project} has no api network: {names}")
@@ -132,16 +140,36 @@ def _identity(lab, topology, directory, steps, *, network=None, address=None):
 
 
 def _addresses(network, count):
-    """Reserve distinct free addresses on the laboratory bridge for client identities."""
-    raw = network
-    subnet = raw["IPAM"]["Config"][0]["Subnet"]
-    base = subnet.rsplit(".", 1)[0]
-    taken = {entry.get("IPv4Address", "").split("/")[0] for entry in raw["Containers"].values()}
-    start = _CLIENT_FIRST + int(uuid.uuid4().hex[:4], 16) % (_CLIENT_LAST - _CLIENT_FIRST)
+    """Reserve distinct free IPv4 addresses on the laboratory bridge for client identities."""
+    subnets = []
+    for config in network.get("IPAM", {}).get("Config") or []:
+        try:
+            subnets.append(ipaddress.ip_network(str(config.get("Subnet")), strict=False))
+        except ValueError:
+            continue
+    # The bridge may also carry an IPv6 subnet, and its position in IPAM is not
+    # guaranteed, so a candidate address is only built from a four-octet network.
+    usable = [
+        subnet
+        for subnet in subnets
+        if subnet.version == 4 and subnet.num_addresses > _CLIENT_LAST
+    ]
+    if not usable:
+        raise RuntimeError(
+            f"bridge {network.get('Name')} has no IPv4 subnet with room for client "
+            f"identities: {[str(subnet) for subnet in subnets]}"
+        )
+    subnet = usable[0]
+    taken = {
+        str(entry.get("IPv4Address", "")).split("/")[0]
+        for entry in network.get("Containers", {}).values()
+    }
+    span = _CLIENT_LAST - _CLIENT_FIRST
+    start = _CLIENT_FIRST + int(uuid.uuid4().hex[:4], 16) % span
     chosen = []
-    for offset in range(_CLIENT_LAST - _CLIENT_FIRST):
-        host = _CLIENT_FIRST + (start - _CLIENT_FIRST + offset) % (_CLIENT_LAST - _CLIENT_FIRST)
-        address = f"{base}.{host}"
+    for offset in range(span):
+        host = _CLIENT_FIRST + (start - _CLIENT_FIRST + offset) % span
+        address = str(subnet.network_address + host)
         if address in taken:
             continue
         chosen.append(address)

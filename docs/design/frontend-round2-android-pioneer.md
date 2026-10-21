@@ -1,4 +1,4 @@
-# 前端打磨第二轮：Pioneer × 真实 Android 竖屏
+﻿# 前端打磨第二轮：Pioneer × 真实 Android 竖屏
 
 状态：2026-10-21 第二轮设计合同。父票 [#141](https://github.com/MrEcho114/PrivacyTrace/issues/141)，子票 #142–#146。
 基线与集成：`origin/main` `6e0122d1a84999de82c458f51c826248698c97dc`；集成分支 `codex/frontend-round2`。
@@ -212,4 +212,4 @@ A 的交付：token 映射表、UiSheet/UiIcon 源码、定向 `scripts/verify-f
 - 2026-10-21 E（外部 head `c1a11f8`，合并 `f7867db` + `3a14031`）：并入第一轮 motion/hover/reduced-motion；新增 `--m-duration-*`/easing token、`UiSheet` 200ms 进入、步骤 160ms 进入、按钮/候选行 120–150ms；`prefers-reduced-motion` 全部即时。sheet 退出为即时卸载（未实现 150ms exit），已写入 #146 round-2 记录。
 - 2026-10-21 D（外部 PR #158 head `5f12bcf`，合并 `79f45d7`）：并入第一轮原地刷新/焦点/live region/对比度；在 C 外壳上复核顶栏 h1/返回设置名称、步骤 `aria-current`、操作栏 group、忙提示文本与停止按钮分离、证据 sheet 的 `dialog`/`aria-modal`/labelledby/describedby、scrim/Esc/返回关闭与焦点返回；`verify-issue145-a11y.cjs` 14 项桌面回归 + round-2 脚本新增移动语义断言。
 - 2026-10-22 整合次序实际为 A → B → C → E → D（E 先于 D 合并；D 只增加语义，不改视觉，重跑全部脚本通过）。第二轮最终唯一交付入口是 `codex/frontend-round2` 的 PR；旧 #152/#154/#156/#158 作为来源记录，不并行实现第二套。
-- 2026-10-22 视觉复验修正：程序化聚焦 h1 不再画控件式焦点环；候选来源元信息在移动端用 `·` 节奏，不再糊成一行；sheet 进入动效纳入 reduced-motion；桌面来源面板不再重复来源标题（B 的层级守卫）。
+- 2026-10-22 交付：集成 PR [#160](https://github.com/MrEcho114/PrivacyTrace/pull/160)（head `25ab23e`）；A–E 汇总与证据见 `docs/acceptance/frontend-round2/20261022.md`。\n- 2026-10-22 视觉复验修正：程序化聚焦 h1 不再画控件式焦点环；候选来源元信息在移动端用 `·` 节奏，不再糊成一行；sheet 进入动效纳入 reduced-motion；桌面来源面板不再重复来源标题（B 的层级守卫）。

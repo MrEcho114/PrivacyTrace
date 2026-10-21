@@ -159,10 +159,19 @@ class PrivateClient:
     def json(self, path, *, data=None, ticket=None, timeout=None):
         try:
             effective_timeout = self.timeout if timeout is None else timeout
+            deadline = time.monotonic() + effective_timeout
             with self.open(path, data=data, ticket=ticket, timeout=timeout) as response:
                 chunks, count = [], 0
-                deadline = time.monotonic() + effective_timeout
-                while block := response.read1(min(65536, MAX_JSON + 1 - count)):
+                while not response.isclosed():
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise RuntimeUnavailable("Private runtime response exceeds limits")
+                    # urllib's timeout is a per-socket wait. Keep the original
+                    # request deadline across headers and successive TLS reads.
+                    response.fp.raw._sock.settimeout(remaining)
+                    block = response.read1(min(65536, MAX_JSON + 1 - count))
+                    if not block:
+                        break
                     count += len(block)
                     if count > MAX_JSON or time.monotonic() >= deadline:
                         raise RuntimeUnavailable("Private runtime response exceeds limits")

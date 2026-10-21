@@ -1,0 +1,533 @@
+{
+  "record_kind": "REVIEWED_CURRENT_LOCAL_CASE_RESULTS",
+  "issue": 132,
+  "supersedes_current_interpretation": "The historical ba46 case-results.json N08 complete PASSED conclusion is withdrawn; its bytes/SHA remain intact.",
+  "cases": [
+    {
+      "record_kind": "EXECUTED_CASE",
+      "composition": "All original scenario conditions plus chain, topology and cleanup",
+      "issue": 132,
+      "case_id": "N05",
+      "run_id": "issue132-dedicated-20261021",
+      "status": "PASSED",
+      "source_commit": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "execution_scope": "LOCAL_ONLY",
+      "final_acceptance_passed": false,
+      "final_acceptance_scope": "This case in the recorded local combination only; parent #128 final integration/review remains separate",
+      "environment_ref": "evidence/source-and-build-identity.json",
+      "materials_ref": "evidence/input-and-scan-identity.json",
+      "observations": {
+        "expected": "19 protected read/write endpoints reject all five absent/malformed/wrong capability variants without B disclosure or mutation.",
+        "actual": "95/95 exact401/403; genuine independent A and Android-created B; B full draft/terminal extraction attempt/job/report/evidence snapshot unchanged after each request.",
+        "cleanup_observed": true
+      },
+      "evidence": [
+        {
+          "ref": "evidence/N05-live-receipt.json",
+          "sha256": "a727dbda38c1af31ac6c60682577d37db160a719ba6624ad1d2fb7ab7e704605",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/matrix-setup-resume-receipt.json",
+          "sha256": "b572f368bb34418819afa5a88227a346334a29f0ad4526590ac5fb1296630b5a",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/J-attempt-setup-receipt.json",
+          "sha256": "56a4b12ee705975845a131b4db3c1ef6d49cea944e9967447de9d503ac1700f9",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/source-and-build-identity.json",
+          "sha256": "dab19f48a7def3c420b9e8f0c0d79664aa6e00c913b2aea133349fc09c34e846",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/topology-control.json",
+          "sha256": "fef0a3c382d09754a362e2f6c9d9961677129586f8a7d56a22636b1a24d181fa",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/topology-scan.json",
+          "sha256": "4459ef92d568a587e6fe039ce0c7bb986c6df0039e513ce417f80f0514f474ce",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/input-and-scan-identity.json",
+          "sha256": "e8e2fe7a4930d7198e2f61f12990c9e7ae32de25dfe2de2d62b3a253b9939430",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/pipeline-ledger.json",
+          "sha256": "b69cda407a98f1efc37daa83c643988f31c42076e808432f3783243738e035f2",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/report-drill-projection.json",
+          "sha256": "032249b52b54a93d43e87ba7053028cf57823ee99a19325fa236b5402e8e85e4",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/I-drill-receipt.json",
+          "sha256": "2d019716aaede1e70ab17c260976fb1f5cac55524fc0c4985557c568323c84d7",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/J-drill-receipt.json",
+          "sha256": "874c25580e5a6333c450f30cc203c521d1bfced54d42d6f02477d695617910b3",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/final-client-cleanup.json",
+          "sha256": "5352fd63f484f2f33e082daff5fea0137b59757028d30a7c81af6435db0abc86",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/final-task-cleanup.json",
+          "sha256": "6ee7484d1622bfc4c3d5ce293019f049ec4361deb3fcaa7a9d721d2d5d53c38c",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/final-lab-cleanup.json",
+          "sha256": "9688ed7052282b91e89a2eeae6c3519f5bf18c65a0f2f3f052f559ea7c9f3e19",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/final-device-cleanup.json",
+          "sha256": "404a63249e9e0607127ebe4acd0dd4a54227bf0db0b6d91061847feb14854f20",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/daemon-control-cleanup.json",
+          "sha256": "00d455fc06d23c7bc862d609903aa0f90f1a0bf396c49511c69a0103c2c74ac2",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/daemon-scan-cleanup.json",
+          "sha256": "be802296e41392b43aa332cc60207129a02c15fb639145f821cafafd1b5a49a5",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/final-host-cleanup.json",
+          "sha256": "6cc8e011c61eb5a1f104a6269c81fea34ee52d0632195618f6d9db34dbc0b1b1",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/legacy-services-cleanup.json",
+          "sha256": "e011e5bf52c88e0755294068a94145cb5f53dee1eb723c9d95871a9e10de1792",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/legacy-keepalive-cleanup.json",
+          "sha256": "b1e3aad4e54a298b3eb43c72aa4aa57ce033666e3a134c77fd02e4da2ec07d62",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        }
+      ],
+      "ci": {
+        "commit": null,
+        "runs": [],
+        "note": "Actual local source and full check are in linux-authority.json; published head CI is tracked in the PR and issue current record, never backdated into original receipts."
+      },
+      "unverified": [
+        "Physical/OEM devices, independent kernels, LAN/public network, external model quality, store release, R6 capacity and parent final integrated product combination."
+      ],
+      "bug_refs": [
+        "HARNESS noproxy glob false success fixed by android_network.py"
+      ]
+    },
+    {
+      "record_kind": "EXECUTED_CASE",
+      "composition": "All original scenario conditions plus chain, topology and cleanup",
+      "issue": 132,
+      "case_id": "N06",
+      "run_id": "issue132-dedicated-20261021",
+      "status": "PASSED",
+      "source_commit": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "execution_scope": "LOCAL_ONLY",
+      "final_acceptance_passed": false,
+      "final_acceptance_scope": "This case in the recorded local combination only; parent #128 final integration/review remains separate",
+      "environment_ref": "evidence/source-and-build-identity.json",
+      "materials_ref": "evidence/input-and-scan-identity.json",
+      "observations": {
+        "expected": "Cross-instance material cannot access existing other target; original IDs denied; late I response must not overwrite current J.",
+        "actual": "95/95 existing-target401/403;38/38 original-ID bidirectional404 with exact generic body and unchanged I/J. Actual I response held60s, Stop request then native J restore; late server write observed and J selected/body unchanged with no I job.",
+        "cleanup_observed": true
+      },
+      "evidence": [
+        {
+          "ref": "evidence/N06-live-receipt.json",
+          "sha256": "6063ba0f41221ba5e1c5d9b2acd2f5b91cf93087562c60d92b39deec16c0c790",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/N06-original-materials-receipt.json",
+          "sha256": "bdd4704d5203d20d792eb4a22b68f29a21ce11beb42d20f221db5c358899211e",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/N06-latest-switch-late-receipt.json",
+          "sha256": "fbb667b554f8e1a92a0ec0fc2d460db8fe675e4bdc3d557af1a00bc35ff4d97a",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/I-attempt-setup-receipt.json",
+          "sha256": "f8941adf41c5d36a666c9aa4741830cc5792da63162ef72314aab5b3398e4c56",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/source-and-build-identity.json",
+          "sha256": "dab19f48a7def3c420b9e8f0c0d79664aa6e00c913b2aea133349fc09c34e846",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/topology-control.json",
+          "sha256": "fef0a3c382d09754a362e2f6c9d9961677129586f8a7d56a22636b1a24d181fa",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/topology-scan.json",
+          "sha256": "4459ef92d568a587e6fe039ce0c7bb986c6df0039e513ce417f80f0514f474ce",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/input-and-scan-identity.json",
+          "sha256": "e8e2fe7a4930d7198e2f61f12990c9e7ae32de25dfe2de2d62b3a253b9939430",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/pipeline-ledger.json",
+          "sha256": "b69cda407a98f1efc37daa83c643988f31c42076e808432f3783243738e035f2",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/report-drill-projection.json",
+          "sha256": "032249b52b54a93d43e87ba7053028cf57823ee99a19325fa236b5402e8e85e4",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/I-drill-receipt.json",
+          "sha256": "2d019716aaede1e70ab17c260976fb1f5cac55524fc0c4985557c568323c84d7",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/J-drill-receipt.json",
+          "sha256": "874c25580e5a6333c450f30cc203c521d1bfced54d42d6f02477d695617910b3",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/final-client-cleanup.json",
+          "sha256": "5352fd63f484f2f33e082daff5fea0137b59757028d30a7c81af6435db0abc86",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/final-task-cleanup.json",
+          "sha256": "6ee7484d1622bfc4c3d5ce293019f049ec4361deb3fcaa7a9d721d2d5d53c38c",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/final-lab-cleanup.json",
+          "sha256": "9688ed7052282b91e89a2eeae6c3519f5bf18c65a0f2f3f052f559ea7c9f3e19",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/final-device-cleanup.json",
+          "sha256": "404a63249e9e0607127ebe4acd0dd4a54227bf0db0b6d91061847feb14854f20",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/daemon-control-cleanup.json",
+          "sha256": "00d455fc06d23c7bc862d609903aa0f90f1a0bf396c49511c69a0103c2c74ac2",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/daemon-scan-cleanup.json",
+          "sha256": "be802296e41392b43aa332cc60207129a02c15fb639145f821cafafd1b5a49a5",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/final-host-cleanup.json",
+          "sha256": "6cc8e011c61eb5a1f104a6269c81fea34ee52d0632195618f6d9db34dbc0b1b1",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/legacy-services-cleanup.json",
+          "sha256": "e011e5bf52c88e0755294068a94145cb5f53dee1eb723c9d95871a9e10de1792",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/legacy-keepalive-cleanup.json",
+          "sha256": "b1e3aad4e54a298b3eb43c72aa4aa57ce033666e3a134c77fd02e4da2ec07d62",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        }
+      ],
+      "ci": {
+        "commit": null,
+        "runs": [],
+        "note": "Actual local source and full check are in linux-authority.json; published head CI is tracked in the PR and issue current record, never backdated into original receipts."
+      },
+      "unverified": [
+        "Physical/OEM devices, independent kernels, LAN/public network, external model quality, store release, R6 capacity and parent final integrated product combination."
+      ],
+      "bug_refs": [
+        "HARNESS noproxy glob false success fixed by android_network.py"
+      ]
+    },
+    {
+      "record_kind": "EXECUTED_CASE",
+      "composition": "All original scenario conditions plus chain, topology and cleanup",
+      "issue": 132,
+      "case_id": "N07",
+      "run_id": "issue132-dedicated-20261021",
+      "status": "PASSED",
+      "source_commit": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "execution_scope": "LOCAL_ONLY",
+      "final_acceptance_passed": false,
+      "final_acceptance_scope": "This case in the recorded local combination only; parent #128 final integration/review remains separate",
+      "environment_ref": "evidence/source-and-build-identity.json",
+      "materials_ref": "evidence/input-and-scan-identity.json",
+      "observations": {
+        "expected": "Same configured-trust APK accepts valid I/J and rejects untrusted CA, wrong SAN, expiry, TLS1.0/1.1, HTTPS-to-HTTP redirect, HTTP input.",
+        "actual": "2 actual native positive capabilities controls and7 negatives passed. Positives explicitly cancelled after capabilities dialog, so trailing CANCELLED is expected; no business upload counted there. No trust-all; TLS fixture legacy controls separate from Android results.",
+        "cleanup_observed": true
+      },
+      "evidence": [
+        {
+          "ref": "evidence/dedicated-positive-I-native-check.json",
+          "sha256": "9a9fba9f0b024cd4bff3d0e498306a5a6fc5414eabac91ff3f54ee0551c2dc58",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/dedicated-positive-J-native-check.json",
+          "sha256": "acb5ec61c258c11b85d47a5e9057ba1260d288b83b74f3aafc23dd3965e1ac0c",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/dedicated-bad-ca-native-check.json",
+          "sha256": "b6c5652408426b29ba7d12809c5ef6cb39dc562ef6289a2fc9075f01b82f8e05",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/dedicated-bad-host-native-check.json",
+          "sha256": "3c836eda38be0903a4886e3a6de06162cdae294cbb3cd6bc9f78fc6d0f035172",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/dedicated-expired-native-check.json",
+          "sha256": "346d4600b2f3084b0b18ce172e2f0de8c28c10a17f0d28b725cd6a38860a28da",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/dedicated-tls10-native-check.json",
+          "sha256": "1ac4d2ae75a595d82fea82764ea578f058e2660b117d8d705d525ce31be22e50",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/dedicated-tls11-native-check.json",
+          "sha256": "8305727deee7ad4ccc751a0c3d7f2cd7aefe1ed88f0b99db9635a0b30a1e2f91",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/dedicated-redirect-http-native-check.json",
+          "sha256": "fa09df324e1953de9b628c88905e87fa3112ef43085fadc5ebb05f2e145a1cdc",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/dedicated-http-input-native-check.json",
+          "sha256": "771ea88d200ac59bd59051be5a0467fbd4960c45528fc9231948eea3f97a8e4a",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/tls-public-fingerprints.json",
+          "sha256": "c59b8bf6cd43d7a79bc2e418b02e250aa20cd8d044c12bfee632addec76bdf16",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/tls-fixture-preflight.json",
+          "sha256": "d0a93e216681674971748992bee830f0ec6222ab51a0f673dcbdf022062d9fef",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/source-and-build-identity.json",
+          "sha256": "dab19f48a7def3c420b9e8f0c0d79664aa6e00c913b2aea133349fc09c34e846",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/topology-control.json",
+          "sha256": "fef0a3c382d09754a362e2f6c9d9961677129586f8a7d56a22636b1a24d181fa",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/topology-scan.json",
+          "sha256": "4459ef92d568a587e6fe039ce0c7bb986c6df0039e513ce417f80f0514f474ce",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/input-and-scan-identity.json",
+          "sha256": "e8e2fe7a4930d7198e2f61f12990c9e7ae32de25dfe2de2d62b3a253b9939430",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/pipeline-ledger.json",
+          "sha256": "b69cda407a98f1efc37daa83c643988f31c42076e808432f3783243738e035f2",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/report-drill-projection.json",
+          "sha256": "032249b52b54a93d43e87ba7053028cf57823ee99a19325fa236b5402e8e85e4",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/I-drill-receipt.json",
+          "sha256": "2d019716aaede1e70ab17c260976fb1f5cac55524fc0c4985557c568323c84d7",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/J-drill-receipt.json",
+          "sha256": "874c25580e5a6333c450f30cc203c521d1bfced54d42d6f02477d695617910b3",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/final-client-cleanup.json",
+          "sha256": "5352fd63f484f2f33e082daff5fea0137b59757028d30a7c81af6435db0abc86",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/final-task-cleanup.json",
+          "sha256": "6ee7484d1622bfc4c3d5ce293019f049ec4361deb3fcaa7a9d721d2d5d53c38c",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/final-lab-cleanup.json",
+          "sha256": "9688ed7052282b91e89a2eeae6c3519f5bf18c65a0f2f3f052f559ea7c9f3e19",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/final-device-cleanup.json",
+          "sha256": "404a63249e9e0607127ebe4acd0dd4a54227bf0db0b6d91061847feb14854f20",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/daemon-control-cleanup.json",
+          "sha256": "00d455fc06d23c7bc862d609903aa0f90f1a0bf396c49511c69a0103c2c74ac2",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/daemon-scan-cleanup.json",
+          "sha256": "be802296e41392b43aa332cc60207129a02c15fb639145f821cafafd1b5a49a5",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/final-host-cleanup.json",
+          "sha256": "6cc8e011c61eb5a1f104a6269c81fea34ee52d0632195618f6d9db34dbc0b1b1",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/legacy-services-cleanup.json",
+          "sha256": "e011e5bf52c88e0755294068a94145cb5f53dee1eb723c9d95871a9e10de1792",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        },
+        {
+          "ref": "evidence/legacy-keepalive-cleanup.json",
+          "sha256": "b1e3aad4e54a298b3eb43c72aa4aa57ce033666e3a134c77fd02e4da2ec07d62",
+          "scope": "Actual local run; component receipts retain their own narrower scope"
+        }
+      ],
+      "ci": {
+        "commit": null,
+        "runs": [],
+        "note": "Actual local source and full check are in linux-authority.json; published head CI is tracked in the PR and issue current record, never backdated into original receipts."
+      },
+      "unverified": [
+        "Physical/OEM devices, independent kernels, LAN/public network, external model quality, store release, R6 capacity and parent final integrated product combination."
+      ],
+      "bug_refs": [
+        "HARNESS noproxy glob false success fixed by android_network.py"
+      ]
+    },
+    {
+      "record_kind": "EXECUTED_CASE",
+      "issue": 132,
+      "case_id": "N08",
+      "run_id": "issue132-review-r1-20261022",
+      "status": "BLOCKED",
+      "blocked_reason": "DIRECT_ROUTE_NOT_PROVEN for all 14 real service binding targets; actual denials intentionally not run.",
+      "execution_scope": "LOCAL_ONLY",
+      "final_acceptance_passed": false,
+      "source_commit": "ba46f2ac1fc402368528d86dde5e136e4c1b3bc1",
+      "source_dirty": true,
+      "source_integration": "Product trees unchanged; cb5137e main adds #136 documents only. Original API/runner/scanner d3c397c and web/client0ad5f56 image/APK identities retained.",
+      "environment": {
+        "device_alias": "PrivacyTrace132Review",
+        "device_kind": "Dedicated LDPlayer14 emulator index2",
+        "android_api": 34,
+        "abi": "x86_64",
+        "client_package_sha256": "5713eacc19875fe9c61ab5af7a9b9e599b9686224e1f909c7bc726370fee5826",
+        "network_kind": "Android wlan0 via172.16.1.1; public subsets use explicit ADB reverse, direct target checks use literal non-loopback IP without tunnels",
+        "model_endpoint_kind": "Not used",
+        "new_business_scan": "Not run; two real draft scopes supplied own valid capabilities only"
+      },
+      "observations": {
+        "expected": "All management resources unavailable on proven direct paths as well as public entry/loopback subsets.",
+        "actual": "31 prior subset checks passed including four exact empty404.14 canaries verified locally in target namespaces, zero Android route positives;14 actual denial checks not run.",
+        "cleanup_observed": true
+      },
+      "evidence": [
+        {
+          "ref": "evidence/review-r1/cleanup-control.json",
+          "sha256": "4dd75b83e1126d031982243895646ab71e0ff671f49eacf3367a2c07ee7b160d",
+          "scope": "Fresh N08 actual app UID subset, real binding route preconditions and cleanup"
+        },
+        {
+          "ref": "evidence/review-r1/cleanup-host-device.json",
+          "sha256": "7471a56121320d228c78b301671f2f39564a629b59537664b1602f9e1fee8b34",
+          "scope": "Fresh N08 actual app UID subset, real binding route preconditions and cleanup"
+        },
+        {
+          "ref": "evidence/review-r1/cleanup-scan.json",
+          "sha256": "b3e99cd6f66c18e519bf9af1a7e4b3ae110cda66a72c8045e356a9a455e2936d",
+          "scope": "Fresh N08 actual app UID subset, real binding route preconditions and cleanup"
+        },
+        {
+          "ref": "evidence/review-r1/cleanup-tasks.json",
+          "sha256": "c9c6982487b1da6f12eba1a405acd0f5380a5b20f9f8c155bb8fb2c34bba9a3a",
+          "scope": "Fresh N08 actual app UID subset, real binding route preconditions and cleanup"
+        },
+        {
+          "ref": "evidence/review-r1/environment-control.json",
+          "sha256": "b5e332c758ff97110d55c2143ca2ad3e55da396b5d1152de11e6ea2aa5795145",
+          "scope": "Fresh N08 actual app UID subset, real binding route preconditions and cleanup"
+        },
+        {
+          "ref": "evidence/review-r1/environment-scan.json",
+          "sha256": "0f06e3e37bb870046ebd3ff235973f1631aeafba2a4f5fbfb1d0f9b945b8e5c3",
+          "scope": "Fresh N08 actual app UID subset, real binding route preconditions and cleanup"
+        },
+        {
+          "ref": "evidence/review-r1/internal-404-body-proof.json",
+          "sha256": "13bc349e38e831a81b852222ca6e4a883e0f698e5b9d4c603e31e77a88cc12a2",
+          "scope": "Fresh N08 actual app UID subset, real binding route preconditions and cleanup"
+        },
+        {
+          "ref": "evidence/review-r1/network-receipt.json",
+          "sha256": "71ec8849233f6514485ee83eb326edb5f428e3a9cb068c9192975b653ad9e1de",
+          "scope": "Fresh N08 actual app UID subset, real binding route preconditions and cleanup"
+        },
+        {
+          "ref": "evidence/review-r1/service-bindings.json",
+          "sha256": "625462964a2ecbae649989aba6b2c62fcc7038e05cb0dc729d99140a4668c402",
+          "scope": "Fresh N08 actual app UID subset, real binding route preconditions and cleanup"
+        }
+      ],
+      "ci": {
+        "commit": null,
+        "runs": [],
+        "note": "Final published head runs are tracked in PR161 and issue132 current record."
+      },
+      "unverified": [
+        "Direct real service address denials require a routed client environment.",
+        "No inference of product isolation from timeout.",
+        "Parent128 final integrated combination, physical/OEM/public network and external model quality remain separate."
+      ]
+    }
+  ]
+}

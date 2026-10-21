@@ -1,10 +1,14 @@
 # #132：访问隔离与 TLS 验收
 
-2026-10-21 的独立环境实跑已完成 N05、N06、N07、N08 原定义全变体，
-四例在所记录的本机组合中均为 **PASSED**。入口见
-[执行记录](execution-20261021.md)、[逐例结果](case-results.json)、
-[环境复建配方](environment-recipe.md) 和 [证据清单](evidence-manifest.sha256)。
-父票 #128 的最终组合复核仍独立进行；四例的 `final_acceptance_passed` 保持 false。
+2026-10-22 审查修订：**N05–N07 保留原本机 PASSED；N08 为 BLOCKED**。
+旧N08只包含设备回环与额外隧道子证据，不能支持完整隔离结论；旧收据及原SHA保留。
+新版31项既有子检查成功（含四个内部探针的准确空正文404），但14个真实目标均未建立
+无隧道正向路径，因此对应真实拒绝未执行。超时不能当作隔离通过。
+
+当前入口：[审查修订记录](review-20261022.md)、[当前逐例结果](case-results-review-r1.json)、
+[当前证据清单](evidence-manifest-review-r1.sha256)。原
+[执行记录](execution-20261021.md)/[逐例结果](case-results.json)是ba46f2a历史，N08总结果
+已撤回。父票#128最终组合复核独立进行；四例 `final_acceptance_passed=false` 保持。
 
 下文“开发检查”及 NOT_RUN 表格为 **PR #139 当时的历史范围**，原文与子收据状态保留。
 新场景结果组合实际 Android、持久链路、全部变体和清理证据，没有回写旧收据。
@@ -21,19 +25,27 @@ ADB 可执行文件、显式 serial、I/J 各自任务 capability 仅通过配�
 python -m deploy.acceptance.issue132.android_network --config tmp/issue132/network.json --output-dir tmp/issue132/network-first
 ```
 
-运行 31 项：I/J 共 20 项 HTTP、7 个普通未公开端口、4 个单独注入的管理面 mTLS 隧道。
-最后四项只验证真实服务要求客户端证书，不能当作普通网络暴露；七项端口拒绝也只适用
-所记录的 Android/ADB 回环网络，不能外推局域网或公网。正常 CA/主机名校验一直开启。
+配置必须引用实际inspect/监听绑定清单及SHA，见
+[绑定样例](../../../deploy/acceptance/issue132/network-bindings.example.json)；模板不能执行。
+覆盖I/J API、DB、broker、Runner、Gateway及两端daemon端口，共14个真实目标。
+每项先访问同一IP独立端口的临时真实监听，准确核对200和正文摘要，再检查真实服务拒绝。
+直连使用字面IP，无代理、connect-to/resolve或ADB reverse；对照不是TCP代理。
+
+完整59项：20项HTTP、7项设备回环、4条额外管理隧道、14项同IP路由对照、14项真实拒绝。
+路径未证明则对应真实拒绝不执行，整体BLOCKED/退出2；真实管理资源可取得则FAILED/退出1；
+只有完整成功退出0。回环与临时隧道不能代替直连。本轮45项观察中31项成功、14项路由
+未证明，14项真实拒绝未执行。CA/主机名验证保持开启。
 
 curl 使用显式 `--noproxy` 主机列表，避免 `adb shell` 展开星号后出现多 URL 假成功；
-HTTP 只接受单个状态标记、预期状态、无 stderr 和准确通用拒绝体。
+HTTP只接受单个状态标记、预期状态、无stderr和准确通用拒绝体；内部路径404必须严格
+为空正文，夹带管理信息、JSON或换行均失败。
 管理面探测必须收到客户端证书要求的 TLS alert，断连、坏 CA 或协议错误不能算通过。
 令牌经 stdin 的 curl 配置传入，不进 argv 或公开收据。
 
 输出目录必须全新；`receipt.json` 为脱敏子收据，`private-responses.json` 只留本机。
 执行器不负责删除任务、设备 CA、reverse 或隧道；调用者须另行清理并核验。
 其 `scenario_status=NOT_RUN` 是子检查的固定边界，完整案例由逐例结果组合。
-九项守卫回归见 `apps/api/tests/test_issue132_android_network.py`，合成返回值不计实际验收。
+定向守卫回归见 `apps/api/tests/test_issue132_android_network.py`，合成返回值不计实际验收。
 
 ## PR #139 开发检查历史
 

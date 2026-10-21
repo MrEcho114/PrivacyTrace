@@ -40,7 +40,14 @@ def test_mtls_requires_actual_certificate_gate_not_an_unreachable_or_invalid_tls
         assert not network.mtls_passed(item)
 
 
-def test_complete_cli_keeps_capabilities_out_of_arguments_and_public_receipt(tmp_path, monkeypatch):
+@pytest.mark.parametrize("direct_mode,expected_exit,expected_status", [
+    ("denied", 0, "PASSED"),
+    ("route-unreachable", 2, "BLOCKED"),
+    ("service-exposed", 1, "FAILED"),
+])
+def test_complete_cli_keeps_capabilities_out_of_arguments_and_public_receipt(
+    tmp_path, monkeypatch, direct_mode, expected_exit, expected_status,
+):
     token = "pt_cap_" + "a" * 40
     monkeypatch.setenv("TEST_ADB", "owned-adb")
     monkeypatch.setenv("TEST_SERIAL", "owned-target")
@@ -55,6 +62,7 @@ def test_complete_cli_keeps_capabilities_out_of_arguments_and_public_receipt(tmp
                          "connect_host": "127.0.0.1", "connect_port": 48443}
                         for label in ["I", "J"] for role in ["runner", "gateway"]],
     }
+    config.update(direct_config(tmp_path))
     inputs = []
 
     def fake_run(adb, serial, arguments, stdin):
@@ -68,6 +76,18 @@ def test_complete_cli_keeps_capabilities_out_of_arguments_and_public_receipt(tmp
         url = arguments[-1]
         if "--connect-to" in arguments:
             return response("PT132STATUS:000", "tlsv13 alert certificate required", 56)
+        if url.endswith("/pt132-route-check"):
+            assert "--connect-to" not in arguments and "--resolve" not in arguments
+            if direct_mode == "route-unreachable":
+                return response("PT132STATUS:000", "Connection refused", 7)
+            return response("owned route controlPT132STATUS:200")
+        if "172.31.144." in url:
+            assert "--connect-to" not in arguments and "--resolve" not in arguments
+            if direct_mode == "service-exposed":
+                return response("private management dataPT132STATUS:200")
+            if url.startswith("https:"):
+                return response("PT132STATUS:000", "tlsv13 alert certificate required", 56)
+            return response("PT132STATUS:000", "Connection refused", 7)
         if url.startswith("http:"):
             return response("PT132STATUS:000", "Connection refused", 7)
         if url.endswith("/health"):
@@ -86,16 +106,63 @@ def test_complete_cli_keeps_capabilities_out_of_arguments_and_public_receipt(tmp
     path = tmp_path / "config.json"
     path.write_text(json.dumps(config))
     out = tmp_path / "new-output"
-    assert network.main(["--config", str(path), "--output-dir", str(out)]) == 0
+    assert network.main(["--config", str(path), "--output-dir", str(out)]) == expected_exit
     raw = (out / "receipt.json").read_bytes()
     receipt = json.loads(raw)
-    assert receipt["subset_status"] == "PASSED" and len(receipt["checks"]) == 31
+    assert receipt["subset_status"] == expected_status
+    assert len(receipt["checks"]) == (45 if direct_mode == "route-unreachable" else 59)
+    assert len(receipt["direct_targets"]) == 14
+    if direct_mode == "route-unreachable":
+        assert all(item["status"] == "BLOCKED" and not item["route_proven"]
+                   for item in receipt["direct_targets"])
+        assert not any(item["kind"] == "direct-service-binding" for item in receipt["checks"])
+    else:
+        assert all(item["route_proven"] for item in receipt["direct_targets"])
     assert receipt["scenario_status"] == "NOT_RUN" and token.encode() not in raw
     assert sum(value is not None for value in inputs) == 6
     assert b"\r\n" not in raw
     assert hashlib.sha256(raw).hexdigest() == network.write_receipt(
         tmp_path / "copy.json", receipt,
     )
+
+
+def direct_config(tmp_path):
+    targets = []
+    for index, alias in enumerate(sorted(network.DIRECT_ALIASES), 2):
+        targets.append({
+            "alias": alias, "host": f"172.31.144.{index}", "port": 8444,
+            "expected": "mtls" if alias.endswith(("-runner", "-gateway")) else "refused",
+            "route_control": {"port": 49321, "body_sha256": hashlib.sha256(
+                b"owned route control",
+            ).hexdigest()},
+        })
+    raw = json.dumps({"record_kind": "OBSERVED_SERVICE_BINDINGS", "targets": [
+        {key: item[key] for key in ["alias", "host", "port"]} for item in targets
+    ]}).encode()
+    path = tmp_path / "bindings.json"
+    path.write_bytes(raw)
+    return {"binding_receipt": str(path), "binding_receipt_sha256": hashlib.sha256(raw).hexdigest(),
+            "direct_targets": targets}
+
+
+@pytest.mark.parametrize("body", ["", "management ready", '{"database":"private"}', "\n"])
+def test_internal_404_requires_exact_empty_generic_body(body):
+    assert network.http_passed(response(body + "PT132STATUS:404"), 404, "") == (body == "")
+
+
+@pytest.mark.parametrize("mutation", ["loopback", "wrong-binding", "missing", "hash"])
+def test_direct_plan_cannot_substitute_loopback_or_unobserved_targets(tmp_path, mutation):
+    config = direct_config(tmp_path)
+    if mutation == "loopback":
+        config["direct_targets"][0]["host"] = "127.0.0.1"
+    elif mutation == "wrong-binding":
+        config["direct_targets"][0]["port"] += 1
+    elif mutation == "missing":
+        config["direct_targets"].pop()
+    else:
+        config["binding_receipt_sha256"] = "0" * 64
+    with pytest.raises(ValueError):
+        network.direct_targets(config)
 
 
 def test_missing_explicit_device_fails_before_starting_adb(tmp_path, monkeypatch):

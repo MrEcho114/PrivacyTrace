@@ -1,0 +1,49 @@
+{
+  "record_kind": "ACTUAL_ANDROID_EMPTY_404_BODY",
+  "network_receipt_sha256": "71ec8849233f6514485ee83eb326edb5f428e3a9cb068c9192975b653ad9e1de",
+  "checks": [
+    {
+      "name": "I GET /_health/live absent",
+      "kind": "public-entry",
+      "expected": 404,
+      "actual_http": 404,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "1227cdc57554f62299e7785de9e9540ed21ee2f84cb9e8ba8a5e4c6e11f47a7d",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "I GET /_health/ready absent",
+      "kind": "public-entry",
+      "expected": 404,
+      "actual_http": 404,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "1227cdc57554f62299e7785de9e9540ed21ee2f84cb9e8ba8a5e4c6e11f47a7d",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "J GET /_health/live absent",
+      "kind": "public-entry",
+      "expected": 404,
+      "actual_http": 404,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "1227cdc57554f62299e7785de9e9540ed21ee2f84cb9e8ba8a5e4c6e11f47a7d",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "J GET /_health/ready absent",
+      "kind": "public-entry",
+      "expected": 404,
+      "actual_http": 404,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "1227cdc57554f62299e7785de9e9540ed21ee2f84cb9e8ba8a5e4c6e11f47a7d",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "expected_body_bytes": 0,
+  "caddy_internal_handler": "respond 404 without body",
+  "passed": true
+}

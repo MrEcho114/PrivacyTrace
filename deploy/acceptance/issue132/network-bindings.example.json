@@ -1,0 +1,76 @@
+{
+  "record_kind": "UNEXECUTED_EXAMPLE",
+  "note": "Populate from actual inspect/listening/network observations. This template is deliberately rejected by the runner.",
+  "targets": [
+    {
+      "alias": "I-api",
+      "host": "10.234.1.10",
+      "port": 8000
+    },
+    {
+      "alias": "I-postgres",
+      "host": "10.234.1.11",
+      "port": 5432
+    },
+    {
+      "alias": "I-broker",
+      "host": "10.234.1.12",
+      "port": 6379
+    },
+    {
+      "alias": "I-runner",
+      "host": "172.31.145.2",
+      "port": 8444
+    },
+    {
+      "alias": "I-gateway",
+      "host": "10.234.1.14",
+      "port": 8443
+    },
+    {
+      "alias": "J-api",
+      "host": "10.234.2.10",
+      "port": 8000
+    },
+    {
+      "alias": "J-postgres",
+      "host": "10.234.2.11",
+      "port": 5432
+    },
+    {
+      "alias": "J-broker",
+      "host": "10.234.2.12",
+      "port": 6379
+    },
+    {
+      "alias": "J-runner",
+      "host": "172.31.145.3",
+      "port": 8444
+    },
+    {
+      "alias": "J-gateway",
+      "host": "10.234.2.14",
+      "port": 8443
+    },
+    {
+      "alias": "control-daemon-http",
+      "host": "172.31.144.2",
+      "port": 2375
+    },
+    {
+      "alias": "control-daemon-tls",
+      "host": "172.31.144.2",
+      "port": 2376
+    },
+    {
+      "alias": "scan-daemon-http",
+      "host": "172.31.145.2",
+      "port": 2375
+    },
+    {
+      "alias": "scan-daemon-tls",
+      "host": "172.31.145.2",
+      "port": 2376
+    }
+  ]
+}

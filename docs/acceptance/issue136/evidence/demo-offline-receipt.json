@@ -1,0 +1,153 @@
+{
+  "record_kind": "OFFLINE_REPLAY",
+  "mode": "EXPLICIT_OFFLINE",
+  "offline_enforced": true,
+  "allowed_failure_rules": [
+    {
+      "id": "declared-font-fallback",
+      "why": "demo-web/说明.txt 已声明字体回退；包内无 fonts/ 目录",
+      "scope": "file: 协议 + 包内路径"
+    },
+    {
+      "id": "backend-unavailable",
+      "why": "静态版无后端，demo-web/说明.txt §四 已声明接口请求会失败",
+      "scope": "file: 协议 + 包内路径"
+    }
+  ],
+  "injection": "none",
+  "checks": [
+    {
+      "name": "document_loaded",
+      "status": "PASSED",
+      "observed": "status 200 in 145 ms"
+    },
+    {
+      "name": "title_rendered",
+      "status": "PASSED",
+      "observed": "title=\"PrivacyTrace · 证据对照工作台\""
+    },
+    {
+      "name": "import_page_rendered",
+      "status": "PASSED",
+      "observed": "[\"导入分析材料\",\"APK 文件\",\"先看一次对照\",\"政策来源\",\"政策来源 1\"]"
+    },
+    {
+      "name": "sample_material_loaded",
+      "status": "PASSED",
+      "observed": "apk=true policies=true"
+    },
+    {
+      "name": "candidate_page_rendered",
+      "status": "PASSED",
+      "observed": "[\"检查政策候选\",\"政策原文\",\"候选声明 3\",\"编辑候选位置信息\"]"
+    },
+    {
+      "name": "flow_demo_page_rendered",
+      "status": "PASSED",
+      "observed": "[\"分析流程演示\",\"纸舟地图\",\"核对输入\"]"
+    },
+    {
+      "name": "stage_switch_works",
+      "status": "PASSED",
+      "observed": "点击「进入下一阶段」后进入「静态线索」阶段"
+    },
+    {
+      "name": "failed_requests_within_declared_scope",
+      "status": "PASSED",
+      "observed": "3 failed request(s): 3 allowed, 0 denied"
+    },
+    {
+      "name": "no_external_network_attempt",
+      "status": "PASSED",
+      "observed": "0 external http(s) attempt(s) (none)"
+    },
+    {
+      "name": "console_errors_attributable",
+      "status": "PASSED",
+      "observed": "4 error(s): 4 matched to allowed request quota, 0 unexplained"
+    },
+    {
+      "name": "no_page_errors",
+      "status": "PASSED",
+      "observed": "[]"
+    },
+    {
+      "name": "no_horizontal_overflow_at_390",
+      "status": "PASSED",
+      "observed": "scrollWidth - innerWidth = 0px"
+    }
+  ],
+  "pages_reached": [
+    "import",
+    "candidates",
+    "flow_demo"
+  ],
+  "screenshots": [
+    "demo-offline-import-1440.png",
+    "demo-offline-candidates-1440.png",
+    "demo-offline-flow-1440.png",
+    "demo-offline-flow-390.png"
+  ],
+  "followup_step_buttons": {
+    "分析进度": "absent",
+    "对照报告": "absent"
+  },
+  "title": "PrivacyTrace · 证据对照工作台",
+  "load_ms": 145,
+  "declared_scope_note": "demo-web/说明.txt §三 声称导入 / 候选 / 流程演示三页可达；本次实测三页均可达。§四 声称报告页需 http 环境；实测两个后续步骤按钮不存在，与之一致。",
+  "failed_requests": [
+    {
+      "url": "file:fonts/NotoSansSC-Variable.woff2",
+      "protocol": "file:",
+      "path": "fonts/NotoSansSC-Variable.woff2",
+      "error": "net::ERR_FILE_NOT_FOUND",
+      "allowed": true,
+      "rule": "declared-font-fallback"
+    },
+    {
+      "url": "file:fonts/NotoSerifSC-Variable.woff2",
+      "protocol": "file:",
+      "path": "fonts/NotoSerifSC-Variable.woff2",
+      "error": "net::ERR_FILE_NOT_FOUND",
+      "allowed": true,
+      "rule": "declared-font-fallback"
+    },
+    {
+      "url": "file:api/v1/taxonomy",
+      "protocol": "file:",
+      "path": "api/v1/taxonomy",
+      "error": "net::ERR_FAILED",
+      "allowed": true,
+      "rule": "backend-unavailable"
+    }
+  ],
+  "blocked_external_requests": [],
+  "external_attempts": [],
+  "console_errors": {
+    "total": 4,
+    "explained": [
+      {
+        "text": "Failed to load resource: net::ERR_FILE_NOT_FOUND",
+        "rule": "quota:ERR_FILE_NOT_FOUND"
+      },
+      {
+        "text": "Failed to load resource: net::ERR_FILE_NOT_FOUND",
+        "rule": "quota:ERR_FILE_NOT_FOUND"
+      },
+      {
+        "text": "Access to fetch at 'file:///<local-drive>/api/v1/taxonomy' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome-experimental-site-token-provider, chrome-extension, chrome-untrusted, data, edge, http, https, isolated-app.",
+        "rule": "backend-unavailable:cors"
+      },
+      {
+        "text": "Failed to load resource: net::ERR_FAILED",
+        "rule": "quota:ERR_FAILED"
+      }
+    ],
+    "unexplained": []
+  },
+  "page_errors": [],
+  "checks_failed": 0,
+  "overall_status": "PASSED",
+  "captured_at_utc": "2026-10-21T15:07:45.323Z",
+  "evidence_paths_note": "本收据只记录包内相对路径，不含本机盘符或用户名。"
+}

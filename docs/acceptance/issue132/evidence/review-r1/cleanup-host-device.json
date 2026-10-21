@@ -1,0 +1,20 @@
+{
+  "record_kind": "REVIEW_HOST_DEVICE_CLEANUP",
+  "passed": true,
+  "owned_client_removed": true,
+  "owned_named_emulator_removed": true,
+  "manager_default_placeholder_retained": true,
+  "prior_emulator_indices_retained": true,
+  "six_owned_reverse_ports_absent_before_device_removal": true,
+  "two_public_ca_files_removed": true,
+  "owned_adb_server_closed": true,
+  "owned_distributions_removed": [
+    "PrivacyTrace132R1-Control",
+    "PrivacyTrace132R1-Scan"
+  ],
+  "registration_paths_verified_under_owned_workspace": true,
+  "original_distribution_and_default_daemon_retained": true,
+  "initial_owned_route_canary_stopped": true,
+  "prior_partial_cleanup": "Uninstall succeeded; pm path exits1 for absent package. Manager removed the named test instance and recreated a default empty slot, so exact inventory equality was invalid; the replacement slot and prior instances were retained.",
+  "utc": "2026-10-21T17:03:45.295226+00:00"
+}

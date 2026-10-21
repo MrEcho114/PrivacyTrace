@@ -446,7 +446,6 @@ async function loadData(initial = false, mode: 'replace' | 'refresh' = 'replace'
   }
 }
 function refreshData() {
-  if (refreshing.value) return
   manualRefresh.value = true
   void loadData(false, 'refresh').finally(() => { manualRefresh.value = false })
 }

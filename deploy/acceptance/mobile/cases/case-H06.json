@@ -1,0 +1,17 @@
+{
+  "caseId": "H06-local-I-splits-model",
+  "origin": "https://localhost:28443",
+  "policyMode": "model",
+  "evidencePrefix": "H06-local-I-splits-model",
+  "uploadAttempts": 1,
+  "cleanup": true,
+  "appLabel": "C model fixture",
+  "modelExpect": {
+    "sourceId": "policy-model-controlled",
+    "sourceTitle": "受控模型政策样本",
+    "quote": "我们访问精确位置。",
+    "dataType": "PRECISE_LOCATION"
+  },
+  "notes": "输入=base＋全部已安装 splits：运行前用 install-multiple 安装 C model fixture base 与 feature split，确认客户端读到 2 个包。实例=本机标准配置 I。通过条件同 H03，另需核对上传集合与 splits 名称。",
+  "packageName": "org.privacytrace.probe.cfixture"
+}

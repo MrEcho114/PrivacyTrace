@@ -82,11 +82,13 @@ def main():
         receipt["status"] = "PASSED"
     receipt["finished_at"] = datetime.now(timezone.utc).isoformat()
     path = args.output_dir / "receipt.json"
-    encoded = json.dumps(receipt, indent=2) + "\n"
-    path.write_text(encoded, encoding="utf-8")
-    if path.read_text(encoding="utf-8") != encoded:
+    encoded = (json.dumps(receipt, indent=2) + "\n").encode("utf-8")
+    path.write_bytes(encoded)
+    actual = path.read_bytes()
+    if actual != encoded:
         raise OSError("native receipt readback failed")
-    print(json.dumps({"status": receipt["status"], "receipt_sha256": sha(path)}))
+    print(json.dumps({"status": receipt["status"],
+                      "receipt_sha256": hashlib.sha256(actual).hexdigest()}))
     return 0 if receipt["status"] == "PASSED" else 1
 
 

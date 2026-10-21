@@ -41,6 +41,9 @@ uv run --project apps/api --locked --extra worker python -m deploy.acceptance.is
 `scenario_status` 保持 NOT_RUN，必须另按原定义完成并核对全部证据才可升级场景状态。
 不含目标 ID、政策/报告正文、访问材料或本机私有路径的输出仍需人工审查后才公开。
 
+两种执行器的 JSON 收据都固定以 UTF-8/LF 字节写入，逐字节读回比较后再计算实际字节的
+SHA256，避免 Windows 文本换行转换与通用文本读取掩盖 CRLF 差异。读回不一致时不打印摘要。
+
 ## 原生组件检查
 
 `verify_native.py` 编译当前 checkout 的既有 Kotlin core 与三个既有测试类，运行
@@ -63,6 +66,7 @@ uv run --project apps/api --locked --extra worker python -m deploy.acceptance.is
 
 ```powershell
 uv run --project apps/api --locked --extra worker pytest apps/api/tests/test_issue132_access_matrix.py -q
+uv run --project apps/api --locked --extra worker pytest apps/api/tests/test_issue132_receipts.py -q
 ```
 
 这些是受控存储报告的 in-process HTTP 合同回归，权限判断/存储使用真实产品代码。
@@ -70,6 +74,8 @@ I/J 使用独立存储/凭据并刻意令 job ID 相同，避免仅凭随机 ID 
 另覆盖 I 原 ID→J、远程 settings/list 禁止、端点清单漂移，以及检查器遇到泄露、错误状态、
 状态变化、断连和错误正向夹具必须失败。测试限流配置仅适用于该进程夹具。
 草稿 DELETE 只有 durable 服务安装；本地夹具只覆盖其 pre-routing 授权，不能证明真实删除处理。
+收据专项只使用受控 HTTP/JVM 返回值验证序列化：覆盖平台默认/模拟 Windows CRLF 写入、
+打印摘要与文件实际字节一致、固定 LF 和读回差异拒绝，不构成额外实跑验收。
 
 | 案例 | 本交付开发覆盖 | 完整验收仍需 |
 | --- | --- | --- |

@@ -190,13 +190,14 @@ def main() -> int:
         or any(row["status"] != "PASSED" for row in receipt["checks"]) else "PASSED"
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    encoded = json.dumps(receipt, indent=2) + "\n"
-    with args.output.open("x", encoding="utf-8") as output:
+    encoded = (json.dumps(receipt, indent=2) + "\n").encode("utf-8")
+    with args.output.open("xb") as output:
         output.write(encoded)
-    if args.output.read_text(encoding="utf-8") != encoded:
+    actual = args.output.read_bytes()
+    if actual != encoded:
         raise OSError("receipt readback failed")
     print(json.dumps({"subset_status": receipt["subset_status"], "checks": len(receipt["checks"]),
-                      "receipt_sha256": hashlib.sha256(encoded.encode()).hexdigest()}))
+                      "receipt_sha256": hashlib.sha256(actual).hexdigest()}))
     return 0 if receipt["subset_status"] == "PASSED" else 1
 
 

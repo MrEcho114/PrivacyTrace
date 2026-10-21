@@ -289,7 +289,15 @@ class DeploymentRegressionTests(unittest.TestCase):
             "cleanup() {" + script.split("cleanup() {", 1)[1].split("\ntrap cleanup EXIT", 1)[0]
         )
         with tempfile.TemporaryDirectory() as logs:
-            temporary = Path(tempfile.mkdtemp(prefix="pt81-build-", dir="/var/tmp"))
+            # The cleanup guard only removes names its own `mktemp` template can
+            # produce. Python's mkdtemp draws from a wider alphabet (it includes
+            # `_`), so a fixture built that way fails the guard roughly one run
+            # in five and reports a cleanup bug that does not exist.
+            temporary = Path(
+                subprocess.check_output(
+                    ["mktemp", "-d", "/var/tmp/pt81-build-XXXXXXXX"], text=True
+                ).strip()
+            )
             commands = Path(logs) / "commands"
             (temporary / "up-1.log").write_text("FAILED_LAB=/var/tmp/pt81-000000000000\n")
             (temporary / "docker").write_text("synthetic CLI copy")

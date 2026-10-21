@@ -151,27 +151,36 @@ test_e2e_pt_mob_102.py::test_t4_real_world_multisplit_end_to_end_workflow
 
 三页（导入 / 候选 / 流程演示）在离线状态下**全部可达**，与包内 `说明.txt` §三 的声明一致。
 
-### 5.2 允许的控制台错误（白名单）
+### 5.2 允许的失败请求（按具体资源，而非错误类型）
 
-`说明.txt` §四 已声明「静态版本对接口的请求会失败（浏览器控制台可见跨域提示），这不影响界面浏览」。脚本据此只放行三类：
+初版按"错误类型"放行（任何 `ERR_FILE_NOT_FOUND` 都放过），这会掩盖真正缺失的 JS / CSS，已改为**按具体资源路径**判定：脚本监听 `requestfailed`，把每个失败 URL 归一成包内相对路径后逐条比对。
 
-| 规则 id | 匹配 | 依据 |
+| 规则 id | 匹配的包内路径 | 依据 |
 | --- | --- | --- |
-| `missing-static-asset` | `Failed to load resource: net::ERR_FILE_NOT_FOUND` | 静态资源缺失（favicon 等） |
-| `backend-unavailable-fetch` | `Access to fetch at 'file:…' … blocked by CORS policy` | 无后端，接口不可用 |
-| `backend-unavailable-request` | `Failed to load resource: net::ERR_FAILED` | 同上 |
+| `declared-font-fallback` | `fonts/NotoSansSC-Variable.woff2`、`fonts/NotoSerifSC-Variable.woff2` | `说明.txt` 已声明「字体使用系统回退字体渲染」；包内确实无 `fonts/` 目录（见 §5.5） |
+| `backend-unavailable` | `api/v1/*`（`file:` 协议下解析） | `说明.txt` §四 已声明接口请求会失败 |
 
-**白名单之外任何控制台错误或 pageerror 都会使整体判 `FAILED` 并返回非零退出码。** 本次 4 条错误全部命中白名单，`unexpected = 0`。
+本次共 3 个失败请求，**3 个全部命中白名单、0 个越界**；4 条控制台错误全部可归因到这些已知失败（`unattributable = 0`）。
+
+除上述路径外，任何请求失败或任何无法归因的控制台错误 / `pageerror` 都会使整体判 `FAILED` 并返回非零退出码。
 
 ### 5.3 退出码语义与负向验证
 
 脚本行为：`overall_status = PASSED` 时 `exit 0`；任一检查未通过时 `exit 1`；用法或执行异常 `exit 2`。
 
-负向验证（证明不会假通过）：传入不存在的 `demo.html` 路径后，脚本输出 `overall_status: FAILED`、`checks_failed: 5`，进程退出码 **1**。
+负向验证（证明不会假通过）：传入不存在的 `demo.html` 路径后，输出 `overall_status: FAILED`、`checks_failed: 6`，进程退出码 **1**；其中 `failed_requests_within_declared_scope` 报出 `1 failed request(s): 0 allowed, 1 disallowed`，说明白名单不会把越界请求一并放过。
 
 ### 5.4 未覆盖部分
 
 静态版中「分析进度」「对照报告」两个步骤按钮**不存在**，与 `说明.txt` §四「完整的对照报告页在单文件模式下不可达，需按方式一启动服务」一致，因此不计为失败，但也不得表述为"报告页离线可用"。
+
+### 5.5 执行中发现的包内问题（BUG-136-02）
+
+`demo.html` 引用了 `fonts/NotoSansSC-Variable.woff2` 与 `fonts/NotoSerifSC-Variable.woff2`（页面中解析到 `01_作品及成果文件/fonts/…`），但包内 `01_作品及成果文件/demo-web/` 下只有 `assets/`（CSS + JS），**没有 `fonts/` 目录**，因此两个字体请求均 404，回退到系统字体。
+
+- **影响**：不影响功能与布局；`说明.txt` 末尾已声明「字体使用系统回退字体渲染，视觉与完整版略有差异，不影响布局与可读性」。
+- **性质**：交付包完整性瑕疵（引用了包内不存在的文件），记为 `BUG-136-02`。
+- **处理**：本验证不把"字体加载成功"作为 PASSED 条件，而是把这两个**具体请求**列为已声明允许项；若将来补齐字体文件，白名单应同步收紧到零。
 
 结论：离线回放按包内声明范围 **PASSED**——在无网络、无后端、无任何环境安装的条件下，导入 / 候选 / 流程演示三页可达且可交互，报告页不在支持范围内。
 

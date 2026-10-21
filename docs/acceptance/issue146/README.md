@@ -38,11 +38,11 @@
 | [`evidence/before-import-drag-active-1440.png`](evidence/before-import-drag-active-1440.png) / [`evidence/after-import-drag-active-1440.png`](evidence/after-import-drag-active-1440.png) | 拖拽高亮前后：仍是一圈 2px 海军蓝描边；旧实现靠把边框从 1px 加宽到 2px 实现（因此会顶动内容），新实现用 1px 边框 + 1px 内阴影，所以**拖拽态内部内容比旧实现多出 1px**（实测差 16,221 px，全部落在拖拽区 304×502 区域内）。这是修掉回流本身的结果，不是新的视觉方向 |
 | [`evidence/before-inline-evidence-390.png`](evidence/before-inline-evidence-390.png) / [`evidence/after-inline-evidence-390.png`](evidence/after-inline-evidence-390.png) | 窄屏证据行前后：**像素级一致**（差 0 px），差异只在入场阶段是否先 `opacity: 0` |
 | [`evidence/before-reports-evidence-1440.png`](evidence/before-reports-evidence-1440.png) / [`evidence/after-reports-evidence-1440.png`](evidence/after-reports-evidence-1440.png) | 「已有报告」证据面板前后：**像素级一致**（差 0 px），未新增视觉方向 |
-| [`evidence/feedback-hover-1440.png`](evidence/feedback-hover-1440.png) | 指针 hover 反馈（颜色过渡中/后） |
-| [`evidence/feedback-pressed-1440.png`](evidence/feedback-pressed-1440.png) | 按下状态：位移已生效，未等待过渡 |
-| [`evidence/reports-evidence-reduced-1440.png`](evidence/reports-evidence-reduced-1440.png) | 减少动效模式下的同一证据面板，呈现与普通模式一致 |
+| [`evidence/reports-evidence-reduced-1440.png`](evidence/reports-evidence-reduced-1440.png) | 减少动效模式下的同一证据面板。它与 `acceptance:motion` 普通模式截图（同一脚本、同一 fixture）逐像素一致（差 0 px），只与同脚本的普通模式图比较 |
+| [`evidence/feedback-hover-1440.png`](evidence/feedback-hover-1440.png) | 指针 hover 反馈（`acceptance:motion` 采集） |
+| [`evidence/feedback-pressed-1440.png`](evidence/feedback-pressed-1440.png) | 按下状态：位移已生效，未等待过渡（`acceptance:motion` 采集） |
 
-`before-*` 截图取自同一工作树改动前的实现（源码未修改）；`after-*`、`feedback-*`、`reduced` 取自改动后的同一实现状态，报告页截图都在滚动稳定后取帧。像素差由 Pillow 对同尺寸 PNG 逐像素比较得出。文件哈希见 [`evidence-manifest.sha256`](evidence-manifest.sha256)。
+`before-*` / `after-*` 三组来自同一采集脚本（同一 fixture、同一视口，报告页在滚动稳定后取帧），因此可以逐像素比较；`feedback-*` 与 `reduced` 来自 `acceptance:motion`，fixture 文本不同，不与前一组作像素比较。像素差由 Pillow 对同尺寸 PNG 逐像素比较得出。文件哈希见 [`evidence-manifest.sha256`](evidence-manifest.sha256)。
 
 ## 变更前后实测对照
 

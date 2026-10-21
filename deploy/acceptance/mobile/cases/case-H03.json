@@ -1,0 +1,17 @@
+{
+  "caseId": "H03-local-I-single-model",
+  "origin": "https://localhost:28443",
+  "policyMode": "model",
+  "evidencePrefix": "H03-local-I-single-model",
+  "uploadAttempts": 1,
+  "cleanup": true,
+  "appLabel": "C model fixture",
+  "modelExpect": {
+    "sourceId": "policy-model-controlled",
+    "sourceTitle": "受控模型政策样本",
+    "quote": "我们访问精确位置。",
+    "dataType": "PRECISE_LOCATION"
+  },
+  "notes": "输入=单 APK：运行前只安装 C model fixture base（org.privacytrace.probe.cfixture，含 ACCESS_FINE_LOCATION），不安装 feature split。实例=本机标准配置 I。PT_MODEL_ENDPOINT/PT_MODEL_KEY 指向本票一次性 HTTPS 接收器。通过条件：模型来源进入候选页并在报告中保留原句，静态辅助文本不得替代。",
+  "packageName": "org.privacytrace.probe.cfixture"
+}

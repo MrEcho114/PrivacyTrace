@@ -4,7 +4,7 @@ import os
 
 from .provision import ROOT, Laboratory
 from .r2_business_loop import cleanup_created_scopes
-from .receipt import CheckRecorder, Receipt, read_source_sha, utc_now
+from .receipt import CheckRecorder, Receipt, origin, read_source_sha, utc_now
 from .topology import Topology
 
 
@@ -28,7 +28,9 @@ def run():
                 recorder.pass_("snapshot and deletion replay read back", **result)
             )
         except Exception as error:
-            receipt.checks.append(recorder.fail(type(error).__name__))
+            receipt.checks.append(
+                recorder.fail(type(error).__name__, **origin(error))
+            )
     if state and topology.allow_destructive and topology.allow_writes:
         cleanup = cleanup_created_scopes()
         if cleanup:
@@ -61,11 +63,8 @@ def run():
                 result = ops.upgrade_rollback(lab, topology, previous)
             receipt.checks.append(recorder.pass_("actual deployment drill completed", **result))
         except Exception as error:
-            import traceback
-
-            frame = traceback.extract_tb(error.__traceback__)[-1]
             receipt.checks.append(
-                recorder.fail(type(error).__name__, function=frame.name, line=frame.lineno)
+                recorder.fail(type(error).__name__, **origin(error))
             )
         finally:
             failures = cleanup_created_scopes()

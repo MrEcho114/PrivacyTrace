@@ -529,5 +529,11 @@
         "Parent128 final integrated combination, physical/OEM/public network and external model quality remain separate."
       ]
     }
-  ]
+  ],
+  "published_integration": {
+    "main": "65b49f7ffecd8aee5eede21d69b310300dd32ca6",
+    "additional_upstream_change": "Merged #135 capacity changes; no claim of product byte equivalence to the recorded actual run.",
+    "actual_scope": "N05-N07 historical original combination only; N08 new actual receipt is also original product images. Final integrated runtime remains for parent review.",
+    "delivery_route": "PR161 was externally merged at old ba46f2a while this authorized revision was in progress; follow-up repair PR required."
+  }
 }

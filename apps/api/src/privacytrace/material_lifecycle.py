@@ -12,6 +12,7 @@ from datetime import datetime
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import insert
 
+from .capacity import CapacityRefused
 from .deletion_journal import fsync_directory
 from .postgres_schema import deletions, documents, runner_materials, runtime_inputs, scopes, uploads
 
@@ -151,15 +152,23 @@ class MaterialLifecycle:
                     raise ValueError("Unexpected private material entry")
                 total += info.st_size
                 if total > self.MAX_BYTES:
-                    raise ValueError("Private material capacity reached")
+                    raise CapacityRefused(
+                        "MATERIAL_BUDGET_REACHED", "Private material capacity reached"
+                    )
         return total
 
     def admit_upload(self, incoming):
-        if (
-            self.usage() + incoming > self.MAX_BYTES
-            or shutil.disk_usage(self.intake.root).free < incoming + self.MIN_FREE
-        ):
-            raise ValueError("Private material capacity reached")
+        # The byte budget and the free space on the material volume are distinct
+        # boundaries: an operator can raise the first, only the disk can fix the
+        # second, and a refusal must say which one was hit.
+        if self.usage() + incoming > self.MAX_BYTES:
+            raise CapacityRefused(
+                "MATERIAL_BUDGET_REACHED", "Private material capacity reached"
+            )
+        if shutil.disk_usage(self.intake.root).free < incoming + self.MIN_FREE:
+            raise CapacityRefused(
+                "MATERIAL_DISK_SPACE_REACHED", "Private material disk space exhausted"
+            )
 
     def collect(self):
         result = {"objects": 0, "directories": 0, "temporary": 0, "pending": 0}

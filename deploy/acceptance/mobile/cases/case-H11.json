@@ -1,0 +1,10 @@
+{
+  "caseId": "H11-local-J-splits-assist",
+  "origin": "https://localhost:28443",
+  "policyMode": "assist",
+  "evidencePrefix": "H11-local-J-splits-assist",
+  "uploadAttempts": 1,
+  "cleanup": true,
+  "appLabel": "Controlled split fixture",
+  "notes": "输入=base＋全部已安装 splits：运行前确认 base 与 fixture_feature 均已安装（应读到 2 个包）。实例=本机自托管配置 J：执行前把 adb reverse tcp:28443 指向 J 的宿主 HTTPS 端口并撤销 I 的转发；origin 固定 localhost:28443。J 使用独立凭据与数据卷。assist 路径不受 BUG-01 阻断。"
+}

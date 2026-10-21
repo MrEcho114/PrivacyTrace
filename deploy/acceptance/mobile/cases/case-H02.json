@@ -1,0 +1,10 @@
+{
+  "caseId": "H02-local-I-single-assist",
+  "origin": "https://localhost:28443",
+  "policyMode": "assist",
+  "evidencePrefix": "H02-local-I-single-assist",
+  "uploadAttempts": 1,
+  "cleanup": true,
+  "appLabel": "Controlled split fixture",
+  "notes": "输入=单 APK：运行前确认只安装 fixture base，不得安装 fixture_feature split。实例=本机官方配置 I。assist 先补入受控政策文本，客户端 prepare 只在没有任何来源时才调用 discover，因此本用例不受 BUG-01 阻断。建议作为矩阵首个核心链路用例。"
+}

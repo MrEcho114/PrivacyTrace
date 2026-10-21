@@ -1,0 +1,10 @@
+{
+  "caseId": "H07-local-J-single-auto",
+  "origin": "https://localhost:28443",
+  "policyMode": "auto",
+  "evidencePrefix": "H07-local-J-single-auto",
+  "uploadAttempts": 1,
+  "cleanup": true,
+  "appLabel": "Controlled split fixture",
+  "notes": "输入=单 APK：运行前确认只安装 fixture base，不得安装 fixture_feature split。实例=本机自托管配置 J：执行前必须把 adb reverse tcp:28443 重新指向 J 的宿主 HTTPS 端口，并确认 I 的转发已撤销；case JSON 的 origin 固定为 localhost:28443，无法表达实例身份。J 使用独立凭据与数据卷，不得复用 I 的访问材料。已知 BUG-01，当前预期失败。"
+}

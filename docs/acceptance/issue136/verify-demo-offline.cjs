@@ -1,17 +1,21 @@
-// 离线回放验证：#136 / R03 配套（v4）
+// 离线回放验证：#136 / R03 配套（v5）
 //
-// 判定设计（对应 review 意见）：
+// 判定设计（对应两轮 review 意见）：
 //   1. 显式离线：context.setOffline(true) + 拦截中止所有 http(s)；
 //   2. 交互验证：导入 → 体验示例 → 检查候选 → 进入流程演示 → 进入下一阶段，逐页断言内容；
-//   3. 白名单按**具体资源**而非错误类型：
-//        - fonts/*.woff2 缺失 → 允许（说明.txt 已声明字体回退系统字体）
-//        - file: 协议下的 /api/* → 允许（静态版无后端，说明.txt §四已声明）
-//      其他任何失败请求、或无法归因的控制台错误，一律判 FAILED；
-//   4. 任一检查失败返回非零退出码；收据只写相对路径。
+//   3. 白名单**同时约束协议与路径**：只允许 `file:` 协议下、包内 `fonts/*.woff2` 与 `api/v1/*`。
+//      任何 `http(s)` 尝试（即使被终断）都单独计为 FAILED —— 离线回放不应有外部请求；
+//   4. 控制台错误**按条数与错误码配额逐一消解**，不是"存在同码请求就算归因"：
+//      每条错误必须消耗一个尚未被认领的失败请求配额，扣不掉即为 unexplained → FAILED；
+//   5. 内置两个负向自测开关（见下），用于证明"相同错误码但非白名单资源"与"外部请求"确实会被判失败。
 //
 // 用法：
-//   PRIVACYTRACE_CHROMIUM=<浏览器可执行文件> \
-//   node verify-demo-offline.cjs <demo.html 绝对路径> [输出目录]
+//   PRIVACYTRACE_CHROMIUM=<浏览器可执行文件> node verify-demo-offline.cjs <demo.html> [输出目录] [--inject-missing-resource|--inject-external-request]
+//
+// 自测期望：
+//   正常                                   -> exit 0
+//   --inject-missing-resource              -> exit 1（__missing_resource__.png 不在白名单）
+//   --inject-external-request              -> exit 1（出现外部 http(s) 尝试）
 //
 // 退出码：0 = 全部通过；1 = 有检查失败；2 = 用法或执行异常。
 const { chromium } = require('playwright');
@@ -19,45 +23,54 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
-const target = process.argv[2];
+const argv = process.argv.slice(2);
+const flags = new Set(argv.filter(a => a.startsWith('--')));
+const positional = argv.filter(a => !a.startsWith('--'));
+const target = positional[0];
 if (!target) {
-  console.error('用法: node verify-demo-offline.cjs <demo.html 路径> [输出目录]');
+  console.error('用法: node verify-demo-offline.cjs <demo.html 路径> [输出目录] [--inject-missing-resource|--inject-external-request]');
   process.exit(2);
 }
-const outDir = path.resolve(process.argv[3] || 'demo-offline');
+const outDir = path.resolve(positional[1] || 'demo-offline');
 const url = /^file:/i.test(target) ? target : pathToFileURL(path.resolve(target)).href;
 const executablePath = process.env.PRIVACYTRACE_CHROMIUM || undefined;
 
-// 按具体资源允许，而非按错误类型放行。
+const INJECT_MISSING = flags.has('--inject-missing-resource');
+const INJECT_EXTERNAL = flags.has('--inject-external-request');
+
+// 白名单：同时校验协议与路径，避免外部 URL 被截断后误命中。
 const ALLOWED_FAILURES = [
   {
     id: 'declared-font-fallback',
-    test: (p) => /^fonts\/Noto(Sans|Serif)SC-Variable\.woff2$/.test(p),
-    why: 'demo-web/说明.txt 已声明「字体使用系统回退字体渲染」；实测包内无 fonts/ 目录',
+    why: 'demo-web/说明.txt 已声明字体回退；包内无 fonts/ 目录',
+    test: (r) => r.protocol === 'file:' && /^fonts\/Noto(Sans|Serif)SC-Variable\.woff2$/.test(r.path),
   },
   {
     id: 'backend-unavailable',
-    test: (p) => /^api\/v1\//.test(p),
     why: '静态版无后端，demo-web/说明.txt §四 已声明接口请求会失败',
+    test: (r) => r.protocol === 'file:' && /^api\/v1\//.test(r.path),
   },
 ];
 
-// 把 file URL 归一成包内相对路径，供白名单匹配与收据记录（不泄露本机路径）。
-// 页面引用 `../fonts/x.woff2` 会解析到 demo-web 之外，因此不能只按 `/demo-web/` 截取。
-function toRelative(u) {
+function protocolOf(u) {
+  try { return new URL(u).protocol; } catch { return 'unknown:'; }
+}
+
+// 只用于展示/匹配的相对路径；协议另存，绝不因截断而放宽判定。
+function relPathOf(u) {
   const decoded = decodeURI(u);
   const afterDemo = decoded.split('/demo-web/')[1];
   if (afterDemo) return afterDemo;
   const m = decoded.match(/^file:\/\/\/[A-Za-z]:\/(.*)$/);
-  const rest = m ? m[1] : decoded.replace(/^file:\/\//, '');
+  const rest = m ? m[1] : decoded.replace(/^[a-z]+:\/\//i, '');
   const apiIdx = rest.indexOf('api/');
   if (apiIdx >= 0) return rest.slice(apiIdx);
   const parts = rest.split('/').filter(Boolean);
-  return parts.slice(-2).join('/'); // 例：fonts/NotoSansSC-Variable.woff2
+  return parts.slice(-2).join('/');
 }
 
-const classify = (rel) => {
-  const hit = ALLOWED_FAILURES.find(a => a.test(rel));
+const classify = (req) => {
+  const hit = ALLOWED_FAILURES.find(a => a.test(req));
   return hit ? { allowed: true, rule: hit.id } : { allowed: false, rule: null };
 };
 
@@ -82,9 +95,14 @@ const record = (name, pass, observed) => checks.push({ name, status: pass ? 'PAS
   const pageErrors = [];
 
   page.on('requestfailed', r => {
-    failedRequests.push({ path: toRelative(r.url()), error: (r.failure() || {}).errorText || 'UNKNOWN' });
+    const u = r.url();
+    failedRequests.push({
+      url: u,
+      protocol: protocolOf(u),
+      path: relPathOf(u),
+      error: (r.failure() || {}).errorText || 'UNKNOWN',
+    });
   });
-  // 浏览器会把 file:// 下的绝对路径解析成 file:///<盘符>/…，统一规范化，使收据不含盘符。
   const normalize = (t) => String(t).replace(/file:\/\/\/[A-Za-z]:\//g, 'file:///<local-drive>/');
   page.on('console', m => { if (m.type() === 'error') consoleErrors.push(normalize(m.text())); });
   page.on('pageerror', e => pageErrors.push(normalize(e.message || e)));
@@ -93,7 +111,8 @@ const record = (name, pass, observed) => checks.push({ name, status: pass ? 'PAS
     record_kind: 'OFFLINE_REPLAY',
     mode: 'EXPLICIT_OFFLINE',
     offline_enforced: true,
-    allowed_failure_rules: ALLOWED_FAILURES.map(a => ({ id: a.id, why: a.why })),
+    allowed_failure_rules: ALLOWED_FAILURES.map(a => ({ id: a.id, why: a.why, scope: 'file: 协议 + 包内路径' })),
+    injection: INJECT_MISSING ? 'missing-resource' : INJECT_EXTERNAL ? 'external-request' : 'none',
     checks,
     pages_reached: [],
     screenshots: [],
@@ -127,6 +146,15 @@ const record = (name, pass, observed) => checks.push({ name, status: pass ? 'PAS
   const title = await page.title();
   record('title_rendered', title.includes('PrivacyTrace'), `title="${title}"`);
 
+  // 1b. 负向自测注入（仅自测时）
+  if (INJECT_MISSING || INJECT_EXTERNAL) {
+    await page.evaluate(({ missing, external }) => {
+      if (missing) { const i = new Image(); i.src = '__missing_resource__.png'; document.body.appendChild(i); }
+      if (external) { const i = new Image(); i.src = 'https://example.com/__external__.png'; document.body.appendChild(i); }
+    }, { missing: INJECT_MISSING, external: INJECT_EXTERNAL });
+    await page.waitForTimeout(1200);
+  }
+
   // 2. 导入页
   const h1 = await headings();
   record('import_page_rendered', h1.includes('导入分析材料'), JSON.stringify(h1.slice(0, 5)));
@@ -155,7 +183,7 @@ const record = (name, pass, observed) => checks.push({ name, status: pass ? 'PAS
     await shot('demo-offline-candidates-1440.png');
   }
 
-  // 5. 流程演示页 + 阶段切换
+  // 5. 流程演示页
   const flow = await clickExact('进入流程演示');
   if (!flow.ok) record('flow_demo_page_rendered', false, `进入流程演示不可用: ${flow.why}`);
   else {
@@ -176,36 +204,58 @@ const record = (name, pass, observed) => checks.push({ name, status: pass ? 'PAS
     }
   }
 
-  // 6. 失败请求按具体资源判定
-  const evaluated = failedRequests.map(f => ({ ...f, ...classify(f.path) }));
+  // 6. 失败请求：协议 + 路径双重判定
+  const evaluated = failedRequests.map(f => ({ ...f, ...classify(f) }));
   const disallowed = evaluated.filter(f => !f.allowed);
   record('failed_requests_within_declared_scope', disallowed.length === 0,
-    `${evaluated.length} failed request(s): ${evaluated.filter(f => f.allowed).length} allowed, ${disallowed.length} disallowed`);
+    `${evaluated.length} failed request(s): ${evaluated.filter(f => f.allowed).length} allowed, ${disallowed.length} denied`);
 
-  // 7. 控制台错误必须能归因到上面已允许的失败
-  const allowedErrors = evaluated.filter(f => f.allowed).map(f => f.error);
-  const unexplained = consoleErrors.filter(text => {
+  // 7. 外部网络尝试：任何 http(s) 都算失败（离线回放不应联网）。
+  //    注意 CSP 可能先于 route 拦下外部资源，此时不会进 blockedExternal，
+  //    但会出现在 requestfailed 中，因此两处合并去重后统计。
+  const externalAttempts = [...new Set([
+    ...blockedExternal,
+    ...failedRequests.filter(f => f.protocol === 'http:' || f.protocol === 'https:').map(f => f.url),
+  ])];
+  record('no_external_network_attempt', externalAttempts.length === 0,
+    `${externalAttempts.length} external http(s) attempt(s)${externalAttempts.length ? ': ' + externalAttempts.slice(0, 3).join(', ') : ' (none)'}`);
+
+  // 8. 控制台错误：按错误码配额逐条消解，未消耗到配额的即为 unexplained
+  const allowedReqs = evaluated.filter(f => f.allowed);
+  const quota = {};
+  for (const r of allowedReqs) {
+    const m = (r.error || '').match(/net::(ERR_[A-Z_]+)/);
+    if (m) quota[m[1]] = (quota[m[1]] || 0) + 1;
+  }
+  let corsQuota = allowedReqs.filter(r => r.path.startsWith('api/')).length;
+  const explained = [];
+  const unexplained = [];
+  for (const text of consoleErrors) {
     if (/blocked by CORS policy/.test(text)) {
-      const m = text.match(/'([^']+)'/);
-      if (!m) return true;
-      return !classify(toRelative(m[1].replace(/^file:\/\/\/[A-Za-z]:\//, 'file:///'))).allowed;
+      if (corsQuota > 0) { corsQuota--; explained.push({ text, rule: 'backend-unavailable:cors' }); }
+      else unexplained.push(text);
+      continue;
     }
-    const em = text.match(/net::(ERR_[A-Z_]+)/);
-    if (em) return !allowedErrors.some(e => e.includes(em[1]));
-    return true;
-  });
+    const m = text.match(/net::(ERR_[A-Z_]+)/);
+    if (m && (quota[m[1]] || 0) > 0) {
+      quota[m[1]]--;
+      explained.push({ text, rule: `quota:${m[1]}` });
+      continue;
+    }
+    unexplained.push(text);
+  }
   record('console_errors_attributable', unexplained.length === 0,
-    `${consoleErrors.length} console error(s), ${consoleErrors.length - unexplained.length} attributable, ${unexplained.length} unexplained`);
+    `${consoleErrors.length} error(s): ${explained.length} matched to allowed request quota, ${unexplained.length} unexplained`);
   record('no_page_errors', pageErrors.length === 0, JSON.stringify(pageErrors.slice(0, 3)));
 
-  // 8. 390px
+  // 9. 390px
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(500);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   await shot('demo-offline-flow-390.png');
   record('no_horizontal_overflow_at_390', overflow <= 1, `scrollWidth - innerWidth = ${overflow}px`);
 
-  // 9. 静态版中不存在的步骤（如实记录，不作为失败项）
+  // 10. 静态版不存在后续步骤（如实记录）
   const reach = {};
   for (const name of ['分析进度', '对照报告']) {
     const btn = page.getByRole('button', { name, exact: true }).first();
@@ -217,11 +267,12 @@ const record = (name, pass, observed) => checks.push({ name, status: pass ? 'PAS
   const failedChecks = checks.filter(c => c.status !== 'PASSED');
   result.title = title;
   result.load_ms = loadMs;
-  result.declared_scope_note = 'demo-web/说明.txt §三 声称导入 / 候选 / 流程演示三页可达；本次实测三页均可达。§四 声称报告页需 http 环境；实测「分析进度」「对照报告」按钮不存在，与之一致。';
+  result.declared_scope_note = 'demo-web/说明.txt §三 声称导入 / 候选 / 流程演示三页可达；本次实测三页均可达。§四 声称报告页需 http 环境；实测两个后续步骤按钮不存在，与之一致。';
   result.failed_requests = evaluated;
-  result.console_errors = { total: consoleErrors.length, unexplained };
-  result.page_errors = pageErrors;
   result.blocked_external_requests = blockedExternal;
+  result.external_attempts = externalAttempts;
+  result.console_errors = { total: consoleErrors.length, explained, unexplained };
+  result.page_errors = pageErrors;
   result.checks_failed = failedChecks.length;
   result.overall_status = failedChecks.length === 0 ? 'PASSED' : 'FAILED';
   result.captured_at_utc = new Date().toISOString();
@@ -230,9 +281,11 @@ const record = (name, pass, observed) => checks.push({ name, status: pass ? 'PAS
   fs.writeFileSync(path.join(outDir, 'demo-offline-receipt.json'), JSON.stringify(result, null, 2) + '\n', 'utf8');
   console.log(JSON.stringify({
     overall_status: result.overall_status,
+    injection: result.injection,
     checks_failed: result.checks_failed,
     checks: checks.map(c => `${c.status.padEnd(7)} ${c.name} — ${c.observed}`),
-    failed_requests: evaluated.map(f => `${f.allowed ? 'ALLOWED' : 'DENIED '} ${f.path} (${f.error})${f.rule ? ' [' + f.rule + ']' : ''}`),
+    failed_requests: evaluated.map(f => `${f.allowed ? 'ALLOWED' : 'DENIED '} [${f.protocol}] ${f.path} (${f.error})${f.rule ? ' [' + f.rule + ']' : ''}`),
+    blocked_external: blockedExternal.length,
     pages_reached: result.pages_reached,
   }, null, 2));
 

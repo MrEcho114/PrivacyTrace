@@ -563,16 +563,16 @@ async function main() {
     const policyComparison = body.includes('未产生对照项')
       ? 'EMPTY'
       : (body.includes('隐私声明对照') ? 'PRESENT' : 'UNKNOWN');
-    const candidates = fs.existsSync(`${OUT}/${evidencePrefix}-candidates.txt`)
+    const candidateText = fs.existsSync(`${OUT}/${evidencePrefix}-candidates.txt`)
       ? fs.readFileSync(`${OUT}/${evidencePrefix}-candidates.txt`, 'utf8') : '';
     const modelEvidence = policyMode === 'model' ? {
       expected_source_id: modelExpect.sourceId || null,
       expected_source_title: modelExpect.sourceTitle || null,
       expected_quote: modelExpect.quote || null,
       model_title_in_candidates: modelExpect.sourceTitle
-        ? candidates.includes(modelExpect.sourceTitle) : null,
+        ? candidateText.includes(modelExpect.sourceTitle) : null,
       model_quote_in_candidates: modelExpect.quote
-        ? candidates.includes(modelExpect.quote) : null,
+        ? candidateText.includes(modelExpect.quote) : null,
       model_title_in_report: modelExpect.sourceTitle
         ? body.includes(modelExpect.sourceTitle) : null,
       model_quote_in_report: modelExpect.quote

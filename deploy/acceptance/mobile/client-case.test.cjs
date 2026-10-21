@@ -3,6 +3,8 @@
 // imported as a second, later write.
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
 const test = require('node:test');
 
 const executor = require('./client-case.cjs');
@@ -84,4 +86,20 @@ test('importModelResult imports the textarea value without overwriting it', asyn
   // The static assist title is not present in any DOM write.
   assert.ok(!cdp.scripts.some(script => script.includes('受控政策样本')));
   assert.ok(!cdp.scripts.some(script => script.includes('policy-controlled-assist')));
+});
+
+// Regression: a later `const candidates = ...` inside main() shadows the case
+// contract's candidates array and puts it in the temporal dead zone, so every
+// run throws "Cannot access 'candidates' before initialization" before the
+// first analysis. Keep a single binding in main().
+test('main() declares the case candidates binding exactly once', () => {
+  const source = fs.readFileSync(path.join(__dirname, 'client-case.cjs'), 'utf8');
+  const mainStart = source.indexOf('async function main()');
+  assert.notEqual(mainStart, -1, 'main() not found');
+  const declarations = source.slice(mainStart).match(/const\s+candidates\b/g) || [];
+  assert.equal(
+    declarations.length,
+    1,
+    'main() declares `candidates` more than once; the later file read shadows the case candidates and triggers a TDZ error',
+  );
 });

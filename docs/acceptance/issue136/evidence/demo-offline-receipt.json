@@ -1,0 +1,51 @@
+{
+  "_note": "url 与 console_errors 中的本机绝对路径已替换为占位描述（<package-root> / <local-drive>），其余字段与原始收据一致。",
+  "url": "file:///<package-root>/01_作品及成果文件/demo-web/demo.html",
+  "checks": [
+    {
+      "name": "document_loaded",
+      "status": "PASSED",
+      "observed": "status 200"
+    },
+    {
+      "name": "dom_rendered",
+      "status": "PASSED",
+      "observed": "143 nodes, #app present=true"
+    },
+    {
+      "name": "no_page_errors",
+      "status": "PASSED",
+      "observed": []
+    },
+    {
+      "name": "no_console_errors",
+      "status": "FAILED",
+      "observed": [
+        "Failed to load resource: net::ERR_FILE_NOT_FOUND",
+        "Failed to load resource: net::ERR_FILE_NOT_FOUND",
+        "Access to fetch at 'file:///<local-drive>/api/v1/taxonomy' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome-experimental-site-token-provider, chrome-extension, chrome-untrusted, data, edge, http, https, isolated-app."
+      ]
+    },
+    {
+      "name": "no_external_network_dependency",
+      "status": "PASSED",
+      "observed": []
+    },
+    {
+      "name": "no_horizontal_overflow_at_390",
+      "status": "PASSED",
+      "observed": "scrollWidth - innerWidth = 0px"
+    }
+  ],
+  "title": "PrivacyTrace · 证据对照工作台",
+  "load_ms": 113,
+  "body_text_sample": "跳到内容 P PrivacyTrace 静态证据与政策对照 项目设置 新建对照 已有报告 本机工作台 1 导入材料 2 检查候选 3 分析进度 4 对照报告 新建对照 导入分析材料 准备 APK 和各份政策，也可以先用示例熟悉对照流程。 APK 文件 本机 APK 选择本地 APK 文件 拖放到这里，或选择文件 选择 ",
+  "total_requests": 4,
+  "page_errors": [],
+  "console_errors": [
+    "Failed to load resource: net::ERR_FILE_NOT_FOUND",
+    "Failed to load resource: net::ERR_FILE_NOT_FOUND",
+    "Access to fetch at 'file:///<local-drive>/api/v1/taxonomy' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome-experimental-site-token-provider, chrome-extension, chrome-untrusted, data, edge, http, https, isolated-app.",
+    "Failed to load resource: net::ERR_FAILED"
+  ]
+}

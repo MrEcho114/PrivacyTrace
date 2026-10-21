@@ -404,7 +404,7 @@ onBeforeUnmount(() => { generation++; controller.abort(); activeRequest?.abort()
 <template>
   <div>
     <p v-if="draft?.external_imports?.length && state.step === 'import'" class="field-help">当前版本保留外部收集审计。修改已保存的来源时，请先新建材料版本；新版本使用手动输入，旧记录仍保留。</p>
-    <div v-if="busy" class="notice compact busy-notice"><span role="status">正在处理当前请求，请稍候；已获得的来源仍保留。</span><UiButton variant="quiet" @click="cancelPreparation">{{ state.step === 'import' ? '取消准备请求' : '停止本次请求' }}</UiButton></div>
+    <div v-if="busy" class="notice compact busy-notice"><span role="status">正在处理当前请求，请稍候；已获得的来源仍保留。</span><UiButton variant="quiet" @click="cancelPreparation">停止本次请求</UiButton></div>
     <p v-if="notice" class="notice compact" role="status">{{ notice }}</p>
     <ImportPage v-if="state.step === 'import'" :state="state" :busy="busy" :error="error" :uploaded-name="draft?.uploaded ? draft.name : undefined" @file="file = $event" @dirty="state.maxStep = 0" @example="emit('example')" @next="prepare" @import="importCollected">
       <template #context><MaterialContext v-if="draft" :revision="draft.revision" :draft-id="draft.id" :busy="busy" show-refresh @new="newInput" @refresh="refreshMaterials" /></template>

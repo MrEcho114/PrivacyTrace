@@ -2,11 +2,12 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import UiButton from '../components/UiButton.vue'
 import UiField from '../components/UiField.vue'
+import UiIcon from '../components/UiIcon.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { copy } from '../copy'
 import { dataTypes, quoteExists, sourceTypes } from '../workflow'
 import type { Candidate, Workflow } from '../workflow'
-const props = defineProps<{ state: Workflow; busy?: boolean; typeLabels?: Record<string, string>; failedSourceIds?: string[] }>()
+const props = defineProps<{ state: Workflow; busy?: boolean; typeLabels?: Record<string, string>; failedSourceIds?: string[]; mobile?: boolean }>()
 const emit = defineEmits<{ back: []; next: []; retrySource: [string]; retryModel: [string]; persistCandidates: [] }>()
 const editorTypes = computed(() => props.state.example ? dataTypes : props.typeLabels ?? {})
 const candidateLimit = computed(() => props.state.example ? 100 : 800)
@@ -77,7 +78,7 @@ function editQuote() { if (chosen.value) chosen.value.startOffset = undefined; e
 </script>
 <template>
   <div>
-    <div class="page-heading"><h1 id="page-title" tabindex="-1">{{ copy.candidateTitle }}</h1><p>{{ copy.candidateHelp }}</p></div>
+    <div v-if="!mobile" class="page-heading"><h1 id="page-title" tabindex="-1">{{ copy.candidateTitle }}</h1><p>{{ copy.candidateHelp }}</p></div>
     <div class="source-tabs" role="group" aria-label="政策来源"><button v-for="item in state.sources" :key="item.id" :aria-pressed="item.id === state.sourceId" :class="{ selected: item.id === state.sourceId }" @click="state.sourceId = item.id">{{ item.title || '未命名来源' }}<span v-if="item.status === 'failed'"> · 获取失败</span></button></div>
     <p v-if="!state.example && extractionUnavailable" class="notice" role="status">当前来源的候选提取未完成，正文与已有候选仍保留。可在“政策原文”中选择“重新提取候选”，或手动添加；此状态不代表政策未声明。</p>
     <div v-if="source" class="mobile-panel-tabs" role="tablist" aria-label="检查候选视图" @keydown="onTabsKeydown">
@@ -92,7 +93,7 @@ function editQuote() { if (chosen.value) chosen.value.startOffset = undefined; e
       </section>
       <section id="panel-candidates" class="material-panel candidates-panel" role="tabpanel" aria-labelledby="tab-candidates"><div class="panel-heading"><h2>候选声明 <span class="count">{{ candidates.length }}</span></h2><UiButton id="add-candidate" :disabled="source.status === 'failed' || state.candidates.length >= candidateLimit" @click="add">{{ copy.addCandidate }}</UiButton></div>
         <p class="candidate-summary" role="status">已检查 {{ checkedCount }} / {{ candidates.length }} 条<span>选择一条查看和修改</span></p>
-        <div class="candidate-list" aria-label="候选列表"><button v-for="candidate in candidates" :key="candidate.id" class="candidate-item" :class="{ selected: chosenId === candidate.id }" :aria-pressed="chosenId === candidate.id" @click="select(candidate)"><span class="candidate-item-heading"><strong>{{ editorTypes[candidate.dataType] || candidate.dataType }}</strong><StatusTag :tone="candidate.checked && quoteExists(candidate, state.sources) ? 'success' : 'wait'">{{ candidate.checked && quoteExists(candidate, state.sources) ? '已检查' : '待检查' }}</StatusTag></span><span class="candidate-quote-preview">{{ candidate.quote || copy.quoteMissing }}</span></button><p v-if="!candidates.length" class="field-help">{{ copy.emptyCandidates }}</p></div>
+        <div class="candidate-list" aria-label="候选列表"><button v-for="candidate in candidates" :key="candidate.id" class="candidate-item" :class="{ selected: chosenId === candidate.id }" :aria-pressed="chosenId === candidate.id" @click="select(candidate)"><span class="candidate-item-heading"><strong>{{ editorTypes[candidate.dataType] || candidate.dataType }}</strong><StatusTag :tone="candidate.checked && quoteExists(candidate, state.sources) ? 'success' : 'wait'">{{ candidate.checked && quoteExists(candidate, state.sources) ? '已检查' : '待检查' }}</StatusTag></span><span class="candidate-quote-preview">{{ candidate.quote || copy.quoteMissing }}</span><UiIcon v-if="mobile" name="chevron-right" class="candidate-chevron" /></button><p v-if="!candidates.length" class="field-help">{{ copy.emptyCandidates }}</p></div>
         <form v-if="chosen" class="candidate-editor" @submit.prevent="save">
           <div class="candidate-editor-heading"><h3>编辑候选<span>{{ editorTypes[chosen.dataType] || chosen.dataType }}</span></h3><UiButton variant="quiet" :disabled="!quoteValid" @click="locateQuote">定位原句</UiButton></div>
           <UiField label="政策原句" id="candidate-quote" :help="quoteValid ? copy.quoteMatched : ''" :error="quoteError" v-slot="{ describedby }"><textarea id="candidate-quote" v-model="chosen.quote" maxlength="5000" rows="3" :aria-describedby="describedby" :aria-invalid="!quoteValid" @input="editQuote" /></UiField>
@@ -103,6 +104,6 @@ function editQuote() { if (chosen.value) chosen.value.startOffset = undefined; e
         </form>
       </section>
     </div>
-    <div class="flow-footer"><UiButton @click="$emit('back')">{{ copy.editMaterials }}</UiButton><span class="field-help">{{ state.example ? copy.reportHelp : "未采用的候选可删除；未检查的候选会保留，启动分析不强制逐条检查，也不会自动提升核验状态。空候选不代表政策未声明。" }}</span><UiButton variant="primary" :disabled="busy" :busy="busy" @click="$emit('next')">{{ state.example ? copy.nextProgress : "保存候选并开始分析" }}</UiButton></div>
+    <div v-if="!mobile" class="flow-footer"><UiButton @click="$emit('back')">{{ copy.editMaterials }}</UiButton><span class="field-help">{{ state.example ? copy.reportHelp : "未采用的候选可删除；未检查的候选会保留，启动分析不强制逐条检查，也不会自动提升核验状态。空候选不代表政策未声明。" }}</span><UiButton variant="primary" :disabled="busy" :busy="busy" @click="$emit('next')">{{ state.example ? copy.nextProgress : "保存候选并开始分析" }}</UiButton></div>
   </div>
 </template>

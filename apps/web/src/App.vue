@@ -5,7 +5,8 @@ import { clampSdkPage, getSdkEvidence, sdkPageCount, sdkPageSlice } from './sdkE
 import type { AnalysisJob, DemoReport, MatchStatus, PrivacyIssue, Report, ReportSource, Taxonomy, WebSource } from './types'
 import { parseSource, serializeSource, sourceProvenanceLabel, sourceStatusLabel } from './types'
 import EvidencePanel from './components/EvidencePanel.vue'
-import UiDialog from './components/UiDialog.vue'
+import UiSheet from './components/UiSheet.vue'
+import UiIcon from './components/UiIcon.vue'
 const props = defineProps<{ initialJobId?: string; snapshot?: { report: Report; taxonomy: Taxonomy }; mobile?: boolean }>()
 // The Tauri shell reuses this whole report body. In mobile mode the evidence
 // preview becomes a bottom sheet and the shell owns the surrounding app chrome.
@@ -558,20 +559,19 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
               <button type="button" class="evidence-button m-issue-row" :aria-expanded="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue, $event)">
                 <span class="m-issue-head"><strong>{{ label(issue.data_type) }}</strong><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></span>
                 <span class="m-issue-meta">{{ documentLabels(issue.policy_document_ids) }}</span>
-                <span class="m-issue-action">查看 {{ issue.evidence_ids.length }} 条证据<span class="m-chevron" aria-hidden="true">›</span></span>
+                <span class="m-issue-action">查看 {{ issue.evidence_ids.length }} 条证据<UiIcon name="chevron-right" class="m-chevron" /></span>
               </button>
             </div>
           </div>
           <p v-if="!report.result.issues.length" class="subtle">未产生对照项不等于没有隐私访问，请查看权限与扫描覆盖。</p>
         </section>
         <EvidencePanel v-if="!mobile && selected && report" :issue="selected" :report="report" :taxonomy="taxonomy" :status-labels="statusLabels" :kind-labels="kindLabels" :source-labels="sourceLabels" @close="closeEvidence()" @open-policy="openPolicy" />
-        <!-- Temporary C seam: Reka UiDialog is styled as the Android bottom sheet; A's
-             UiSheet replaces this single import/component when it lands. EvidencePanel
-             markup stays single-sourced in both contexts. -->
-        <UiDialog v-if="mobile && selected && report" class="m-evidence-sheet" :title="`${label(selected.data_type)} · ${statusLabels[selected.status]}`" description="静态证据、政策原句与候选条款；收起后回到触发该项的结论。" @close="closeEvidence()">
-          <template #close><button type="button" class="m-sheet-close" aria-label="收起证据" @click="closeEvidence()">收起</button></template>
+        <!-- Mobile evidence preview: A's UiSheet is the bottom-sheet contract
+             (overlay, handle, 48px close, focus trap). The panel markup itself is
+             shared with the inline desktop rendering above. -->
+        <UiSheet v-if="mobile && selected && report" class="m-evidence-sheet" :title="`${label(selected.data_type)} · ${statusLabels[selected.status]}`" description="静态证据、政策原句与候选条款；关闭后回到触发该项的结论。" @close="closeEvidence()">
           <EvidencePanel :issue="selected" :report="report" :taxonomy="taxonomy" :status-labels="statusLabels" :kind-labels="kindLabels" :source-labels="sourceLabels" :heading="false" @close="closeEvidence()" @open-policy="jumpToPolicy" />
-        </UiDialog>
+        </UiSheet>
         <section v-if="realReport" id="sdk-panel" class="report-section" aria-live="polite">
           <div class="section-heading"><h2>第三方 SDK 归属</h2><span class="subtle">仅按公开包前缀提供静态归属参考，不代表实际收集或外传</span></div>
           <p class="subtle">归属命中只表示类路径落在某个已公开的 SDK 包范围内；SDK 的静态存在不等于实际收集或外发，也不能替代宿主 App 自身的声明，归属结论不参与政策一致性判定。</p>

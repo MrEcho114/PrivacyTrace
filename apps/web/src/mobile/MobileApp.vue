@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import UiButton from '../components/UiButton.vue'
-import UiDialog from '../components/UiDialog.vue'
+import UiIcon from '../components/UiIcon.vue'
+import UiSheet from '../components/UiSheet.vue'
 import PolicyAssist from '../components/PolicyAssist.vue'
 import CandidatePage from '../pages/CandidatePage.vue'
 import ExistingReports from '../App.vue'
@@ -48,7 +49,7 @@ const contextName = computed(() => {
 const contextVersion = computed(() => {
   if (state.step === 'report' && report.value) {
     const sample = report.value.sample
-    return report.value.demo ? sample.version : (sample.version_name ?? ('v' + sample.version_code))
+    return sample.version_name ?? ('v' + sample.version_code)
   }
   return draft.value ? `材料版本 ${draft.value.revision}` : ''
 })
@@ -60,12 +61,14 @@ const stageLabel = computed(() => job.value ? stages[job.value.state] ?? job.val
 const failed = computed(() => !!job.value && (job.value.state === 'FAILED' || job.value.state === 'CANCELLED'))
 
 // --- Android back + per-step scroll restoration -----------------------------
-// Body scroll is intentional: the browser/Tauri shell keeps native scroll
-// restoration and evidence focus behaviour, while the app bar sticks and the
-// action bar is fixed. `trail` mirrors our own history entries so an in-app
-// back arrow and the hardware back button land on the same semantic step.
+// Body scroll is intentional: the Tauri WebView keeps native scroll restoration
+// and the report's evidence focus behaviour, while the app bar sticks and the
+// action bar is fixed. One history entry tracks every reachable step, so the
+// hardware back button and the in-app back arrow follow the same chain:
+// import <-> candidates <-> progress <-> report. A flow transition that skips
+// steps (a restored job opens progress directly) fills the intermediate entries
+// so back cannot strand the user on an unreachable page.
 const scrollByStep: Partial<Record<Step, number>> = {}
-const trail: Step[] = [state.step]
 let suppressPush = false
 let ignoreNextPop = false
 let overlayEntries = 0
@@ -74,6 +77,19 @@ const settingsOpen = ref(false)
 const settingsTrigger = ref<HTMLElement | null>(null)
 type ReportViewApi = { evidenceOpen: boolean; closeEvidence: () => void }
 const reportView = useTemplateRef<ReportViewApi>('reportView')
+// The fixed action bar grows with 200% text; publish its measured height so the
+// last content is never trapped behind it. Not a layout listener on the page.
+const actionbar = useTemplateRef<HTMLElement>('actionbar')
+let actionbarObserver: ResizeObserver | undefined
+watch(actionbar, element => {
+  actionbarObserver?.disconnect()
+  if (!element) { document.documentElement.style.removeProperty('--m-actionbar-actual'); return }
+  actionbarObserver = new ResizeObserver(() => {
+    document.documentElement.style.setProperty('--m-actionbar-actual', Math.round(element.getBoundingClientRect().height) + 'px')
+  })
+  actionbarObserver.observe(element)
+  document.documentElement.style.setProperty('--m-actionbar-actual', Math.round(element.getBoundingClientRect().height) + 'px')
+}, { flush: 'post' })
 
 function backTarget(): Step | null {
   if (state.step === 'candidates') return 'import'
@@ -85,14 +101,9 @@ function navigate(target: Step) {
   if (target === state.step || !stepAvailable(steps.indexOf(target))) return
   const targetIndex = steps.indexOf(target)
   if (targetIndex < currentIndex.value) {
-    // An earlier step reuses the entry it came from; when the flow jumped here
-    // directly (e.g. a restored job opens progress), replace the current entry
-    // so hardware back cannot strand the user on an unreachable step.
-    if (trail.length > 1 && trail[trail.length - 2] === target) { history.back(); return }
-    trail[trail.length - 1] = target
-    history.replaceState({ pt: target }, '')
-    suppressPush = true
-    state.step = target
+    // Earlier steps reuse the entries already in history; going back keeps the
+    // forward direction working instead of stacking duplicate entries.
+    history.go(targetIndex - currentIndex.value)
     return
   }
   state.step = target
@@ -105,10 +116,19 @@ function goBack() {
 }
 watch(() => state.step, (next, previous) => {
   scrollByStep[previous] = Math.round(window.scrollY)
+  const nextIndex = steps.indexOf(next), previousIndex = steps.indexOf(previous)
   if (suppressPush) suppressPush = false
-  else {
+  else if (nextIndex > previousIndex) {
+    // Fill skipped steps so every reachable entry has the same chain the back
+    // button walks. Entries for unreachable steps are not invented.
+    for (let index = previousIndex + 1; index < nextIndex; index += 1) {
+      if (stepAvailable(index)) history.pushState({ pt: steps[index] }, '')
+    }
     history.pushState({ pt: next }, '')
-    trail.push(next)
+  } else {
+    // A flow reset moved backwards (for example deleting the material); collapse
+    // the current entry instead of growing the stack.
+    history.replaceState({ pt: next }, '')
   }
   void nextTick(() => {
     // Focus lands on the app-bar title, then the saved position is restored with
@@ -119,7 +139,6 @@ watch(() => state.step, (next, previous) => {
 })
 function pushOverlay() {
   overlayEntries += 1
-  trail.push(state.step)
   history.pushState({ pt: state.step, overlay: true }, '')
 }
 function popOverlay() {
@@ -129,7 +148,6 @@ function popOverlay() {
   history.back()
 }
 function onPopState(event: PopStateEvent) {
-  if (trail.length > 1) trail.pop()
   if (ignoreNextPop) { ignoreNextPop = false; return }
   if (settingsOpen.value) { closeSettings(true); return }
   if (reportView.value?.evidenceOpen) {
@@ -142,6 +160,14 @@ function onPopState(event: PopStateEvent) {
   if (target && (steps as readonly string[]).includes(target) && target !== state.step && stepAvailable(steps.indexOf(target as Step))) {
     suppressPush = true
     state.step = target as Step
+    return
+  }
+  // A history entry outside the app chain (older page or unreachable step):
+  // resolve to the semantic previous step instead of leaving the shell stuck.
+  const fallback = backTarget()
+  if (fallback && stepAvailable(steps.indexOf(fallback))) {
+    suppressPush = true
+    state.step = fallback
   }
 }
 function openSettings(event?: Event) {
@@ -171,12 +197,13 @@ const progressSecondary = () => {
 onMounted(() => {
   document.documentElement.classList.add('mobile-shell')
   history.replaceState({ ...(typeof history.state === 'object' && history.state ? history.state : {}), pt: state.step }, '')
-  trail.splice(0, trail.length, state.step)
   window.addEventListener('popstate', onPopState)
   void flow.settings()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('popstate', onPopState)
+  actionbarObserver?.disconnect()
+  document.documentElement.style.removeProperty('--m-actionbar-actual')
   document.documentElement.classList.remove('mobile-shell')
   void flow.stop()
 })
@@ -187,12 +214,12 @@ onBeforeUnmount(() => {
     <a class="skip-link" href="#workspace-content">跳到内容</a>
     <header class="m-appbar">
       <button v-if="state.step !== 'import'" type="button" class="m-icon-button" aria-label="返回上一步" @click="goBack">
-        <svg class="m-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 18l-6-6 6-6" /></svg>
+        <UiIcon name="back" />
       </button>
       <span v-else class="m-appbar-spacer" aria-hidden="true"></span>
       <h1 id="page-title" tabindex="-1">{{ title }}</h1>
       <button type="button" class="m-icon-button" aria-label="服务与存储设置" aria-haspopup="dialog" @click="openSettings">
-        <svg class="m-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" /></svg>
+        <UiIcon name="settings" />
       </button>
     </header>
 
@@ -246,7 +273,7 @@ onBeforeUnmount(() => {
                   <strong>{{ source.title || '未命名来源' }}</strong>
                   <span class="m-row-sub">{{ sourceStatusLabel(source.status) }} · 完整度未知 · 未复核 · 附件未检查</span>
                 </span>
-                <span class="m-chevron" aria-hidden="true">›</span>
+                <UiIcon name="chevron-right" class="m-chevron" />
               </summary>
               <div class="m-row-body">
                 <p v-if="source.url" class="hash">{{ source.url }}</p>
@@ -303,7 +330,7 @@ onBeforeUnmount(() => {
       </template>
     </main>
 
-    <footer v-if="state.step !== 'report'" class="m-actionbar" role="group" aria-label="当前步骤操作">
+    <footer v-if="state.step !== 'report'" ref="actionbar" class="m-actionbar" role="group" aria-label="当前步骤操作">
       <template v-if="state.step === 'import'">
         <UiButton :disabled="busy || !context" @click="flow.refresh">重新读取材料</UiButton>
         <UiButton variant="primary" :disabled="busy || !context" @click="flow.prepare">自动准备政策并继续</UiButton>
@@ -318,8 +345,7 @@ onBeforeUnmount(() => {
       </template>
     </footer>
 
-    <UiDialog v-if="settingsOpen" class="m-settings-dialog" title="服务与存储设置" description="检查本机模型连接、当前分析材料的保存范围与证据边界。" initial-focus="m-settings-close" @close="closeSettings()">
-      <template #close><button id="m-settings-close" type="button" class="m-text-button m-settings-close" aria-label="关闭设置" @click="closeSettings()">关闭</button></template>
+    <UiSheet v-if="settingsOpen" class="m-settings-dialog" variant="detail" title="服务与存储设置" description="检查本机模型连接、当前分析材料的保存范围与证据边界。" @close="closeSettings()">
       <section class="m-settings-section">
         <h2>模型连接</h2>
         <p class="m-settings-status">{{ model.configured ? '本机已配置模型' : '尚未配置模型' }}</p>
@@ -342,6 +368,6 @@ onBeforeUnmount(() => {
         <p class="m-help">静态线索不证明实际采集；权限是能力，invoke 是静态潜在线索。UNKNOWN、PARTIAL、UNREVIEWED 与附件未检查状态保持可见，不升级结论。</p>
         <p class="m-help">PrivacyTrace · 本机运行 · 政策对照工作台</p>
       </section>
-    </UiDialog>
+    </UiSheet>
   </div>
 </template>

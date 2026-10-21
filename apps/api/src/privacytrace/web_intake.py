@@ -184,13 +184,13 @@ class WebIntake:
         self.data_store = JobStore(self.root)
 
     def inspect_metadata(self, path, *, timeout=120):
-        """Manifest metadata inspection used by upload validation and discovery.
+        """Manifest metadata inspection used by policy discovery.
 
         The local service reads it in its own bounded container. A durable
         deployment has no Docker socket on the control plane and overrides this
-        with the injected Runner inspector, so policy discovery and package-set
-        validation share one isolation boundary instead of silently falling
-        back to an unavailable local Docker command.
+        with the injected Runner inspector, so discovery and the upload
+        validation that already runs on the Runner share one isolation boundary
+        instead of silently falling back to an unavailable local Docker command.
         """
         return inspect_package_isolated(path, timeout=timeout)
 

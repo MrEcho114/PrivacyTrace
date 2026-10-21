@@ -38,26 +38,43 @@ TERMINAL_STATES = {"SUCCEEDED", "FAILED", "CANCELLED"}
 CREATED_SCOPES = []
 
 
+def _delete_draft(topology: Topology, scope: Scope) -> int:
+    """DELETE one draft, waiting out the rate limiter once."""
+    response = request(
+        topology, f"/api/v1/web/drafts/{scope.draft_id}", method="DELETE", token=scope.token
+    )
+    if response.status == 429:
+        # The limiter is deliberately tested; retained test scopes must still be
+        # deleted through their own capability after cooldown.
+        time.sleep(60)
+        response = request(
+            topology, f"/api/v1/web/drafts/{scope.draft_id}", method="DELETE", token=scope.token
+        )
+    return response.status
+
+
+def release_scope(topology: Topology, scope: Scope) -> int | str:
+    """Delete one scope before run cleanup and stop tracking it.
+
+    The client draft quota counts live drafts from one address. Every check in
+    this collector runs from that same address, so a scope that already produced
+    its evidence must not keep a quota slot the rejection checks still need.
+    """
+    CREATED_SCOPES[:] = [entry for entry in CREATED_SCOPES if entry[1] is not scope]
+    try:
+        return _delete_draft(topology, scope)
+    except TopologyUnavailable:
+        return "transport"
+
+
 def cleanup_created_scopes():
     failures = []
     while CREATED_SCOPES:
         topology, scope = CREATED_SCOPES.pop()
         try:
-            response = request(
-                topology, f"/api/v1/web/drafts/{scope.draft_id}", method="DELETE", token=scope.token
-            )
-            if response.status == 429:
-                # The limiter is deliberately tested; retained test scopes must
-                # still be deleted through their own capability after cooldown.
-                time.sleep(60)
-                response = request(
-                    topology,
-                    f"/api/v1/web/drafts/{scope.draft_id}",
-                    method="DELETE",
-                    token=scope.token,
-                )
-            if response.status not in {200, 404}:
-                failures.append(response.status)
+            status = _delete_draft(topology, scope)
+            if status not in {200, 404}:
+                failures.append(status)
         except TopologyUnavailable:
             failures.append("transport")
     return failures
@@ -482,7 +499,7 @@ def _business_loop(topology: Topology, fixtures: Fixtures, job_budget_s: float) 
 
     recorder = CheckRecorder(
         "r2.policy_discovery_without_docker_socket",
-        "draft -> POST /apk -> POST /sources/discover -> GET /drafts/{id}",
+        "draft -> POST /apk -> POST /sources/discover -> DELETE /drafts/{id}",
         ticket=TICKET,
     )
     scope_d: Scope | None = None
@@ -494,37 +511,38 @@ def _business_loop(topology: Topology, fixtures: Fixtures, job_budget_s: float) 
         checks.append(recorder.skip(f"discovery scope draft creation failed: {error}"))
     if scope_d is not None:
         upload = upload_apk(topology, scope_d, fixtures.single_apk)
+        problems: list[str] = []
+        sources: list[Any] = []
+        detail: dict[str, Any] = {"upload_status": upload.status}
         if upload.status != 200:
-            checks.append(
-                _fail(recorder, f"discovery upload HTTP {upload.status}", status=upload.status)
-            )
+            problems.append(f"discovery upload HTTP {upload.status}")
         else:
             discovered = discover_policy_sources(topology, scope_d)
+            document = discovered.json if isinstance(discovered.json, dict) else {}
+            sources = document.get("sources") or []
+            detail.update(discover_status=discovered.status, sources=len(sources))
             if discovered.status == 503:
-                checks.append(
-                    _fail(
-                        recorder,
-                        "discovery returned 503; the control plane fell back to a local "
-                        "container instead of the injected inspector",
-                        status=discovered.status,
-                        error=_error_code(discovered),
-                    )
-                )
+                # The control plane has no Docker socket, so a 503 here means the
+                # request never reached the injected Runner inspector.
+                detail["error"] = _error_code(discovered)
+                problems.append(f"discovery returned 503 {detail['error']}")
             elif discovered.status != 200:
-                checks.append(
-                    _fail(recorder, f"discovery HTTP {discovered.status}", status=discovered.status)
+                problems.append(f"discovery HTTP {discovered.status}")
+        # Release before the rejection checks create their drafts: the client
+        # quota is three live drafts per address and this scope is done.
+        released = release_scope(topology, scope_d)
+        detail.update(scope=scope_d.as_dict(), release_status=released)
+        if released not in {200, 404}:
+            problems.append(f"discovery scope release HTTP {released}")
+        if problems:
+            checks.append(_fail(recorder, "; ".join(problems), **detail))
+        else:
+            checks.append(
+                recorder.pass_(
+                    f"policy discovery ran without a Docker socket; sources={len(sources)}",
+                    **detail,
                 )
-            else:
-                document = discovered.json if isinstance(discovered.json, dict) else {}
-                sources = document.get("sources") or []
-                checks.append(
-                    recorder.pass_(
-                        f"policy discovery ran without a Docker socket; sources={len(sources)}",
-                        status=discovered.status,
-                        sources=len(sources),
-                        scope=scope_d.as_dict(),
-                    )
-                )
+            )
 
     recorder = CheckRecorder(
         "r2.scope_b_base_and_splits",

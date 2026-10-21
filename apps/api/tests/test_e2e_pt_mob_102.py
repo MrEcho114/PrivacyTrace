@@ -1,4 +1,4 @@
-﻿"""Opaque-box, requirement-driven E2E test suite for PrivacyTrace PT-MOB-102 (Issue #70).
+"""Opaque-box, requirement-driven E2E test suite for PrivacyTrace PT-MOB-102 (Issue #70).
 
 Four-Tier Test Architecture:
 - Tier 1: Feature Coverage (R1: Features 1-11, R2: Features 12-26, R3: Features 27-33)
@@ -36,11 +36,9 @@ pytestmark = pytest.mark.usefixtures("synthetic_package_metadata")
 JOB_BUDGET_SECONDS = float(os.environ.get("PRIVACYTRACE_E2E_JOB_BUDGET_SECONDS", "60"))
 
 
-def wait_for_job(app, job_id: str, *, budget_s: float | None = None):
-    """Block until the scan job finishes, honoring the configured budget."""
-    return app.state.web_intake.futures[job_id].result(
-        timeout=JOB_BUDGET_SECONDS if budget_s is None else budget_s
-    )
+def wait_for_job(app, job_id: str):
+    """Block until the scan job finishes within the configured budget."""
+    return app.state.web_intake.futures[job_id].result(timeout=JOB_BUDGET_SECONDS)
 
 # ==============================================================================
 # Helper & Fixture Synthesizers

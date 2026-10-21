@@ -90,7 +90,7 @@ test_e2e_pt_mob_102.py::test_t4_real_world_multisplit_end_to_end_workflow
 | `ffadeb06` 完整汇总行 | **未捕获**（原因见 §7.2，非测试结果本身） |
 | 同一命令在 `68015de` 的完整汇总（基线） | `8 failed, 1506 passed, 200 skipped in 423.60s`（共 1714 用例） |
 
-`ffadeb06` 比 `68015de` 多 3 个用例（PR #127 新增），失败数量与失败用例集合均无变化。
+`ffadeb06` 比 `68015de` 多 3 个用例（PR #127 新增），失败数量与失败用例集合均无变化；**8 这个数字来自下方拆分复跑（6）+ `test_e2e_pt_mob_102.py`（2），不是被截断的那行完整汇总**。
 
 拆分复核（独立 `--basetemp`，摘要可正常输出）：`test_pr88_evidence_integrity.py` + `test_e2e_r6_opaque.py` + `test_challenger_m1_2_empirical_m1.py` + `test_challenger_m1_2_split_dex.py` → **6 failed, 104 passed, 4 skipped in 31.28s**；`test_e2e_pt_mob_102.py` 的 2 个失败已单独确认。
 

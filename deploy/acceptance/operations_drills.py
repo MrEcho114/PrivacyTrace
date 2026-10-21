@@ -209,7 +209,12 @@ def disk_full(lab, topology):
         )
         full = json.loads(lab.python(fill))
         refused = upload_apk(topology, target, fixture.single_apk)
-        assert refused.status in {409, 503, 507}, f"full filesystem returned {refused.status}"
+        # A full material volume is storage exhaustion, and uploads are the seam that
+        # fills it: the route must say 507 with a disk code instead of the generic 409
+        # upload rejection that used to swallow every ValueError/OSError.
+        code = (refused.json or {}).get("detail") if isinstance(refused.json, dict) else None
+        assert refused.status == 507, f"full filesystem returned {refused.status}: {code}"
+        assert code in {"MATERIAL_DISK_SPACE_REACHED", "PRIVATE_MATERIAL_DISK_FULL"}, code
         lab.python(
             "import os;from pathlib import Path;"
             "(Path(os.environ['PRIVACYTRACE_STORE_ROOT'])/'.owned-enospc').unlink()"
@@ -231,6 +236,7 @@ def disk_full(lab, topology):
             "limit_bytes": 512 * 1024 * 1024,
             "actual_enospc": full,
             "upload_refusal_status": refused.status,
+            "upload_refusal_code": code,
             "upload_after_space_released": 200,
             "retained_hash_verified": True,
         }

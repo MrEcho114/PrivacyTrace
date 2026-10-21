@@ -218,6 +218,12 @@ def _wait(topology, job_id, token, budget_s=240):
     return state or "UNKNOWN"
 
 
+def _keep(ledger, result):
+    """Move every draft an identity created into the cleanup ledger."""
+    ledger.extend(_scopes(result).values())
+    return ledger
+
+
 def _drop(topology, scope):
     if scope["token"]:
         request(
@@ -233,25 +239,9 @@ def admission(lab, topology):
     api = _api_network(lab)
     addresses = iter(_addresses(api, MAX_DRAFTS // MAX_CLIENT_DRAFTS + 2))
     names = [f"cap-client-{index}" for index in range(MAX_CLIENT_DRAFTS + 1)]
-    first = _identity(
-        lab,
-        topology,
-        directory,
-        [{"op": "draft", "draft": name, "name": name} for name in names],
-        network=api["Name"],
-        address=next(addresses),
-    )
-    accepted = [_step(first, "draft", index) for index in range(MAX_CLIENT_DRAFTS)]
-    refused = _step(first, "draft", MAX_CLIENT_DRAFTS)
-    assert [item["status"] for item in accepted] == [200] * MAX_CLIENT_DRAFTS
-    assert refused["status"] == 429 and refused["code"] == "CLIENT_DRAFT_QUOTA_REACHED"
-    kept = list(_scopes(first).values())
-    whole = None
-    while whole is None:
-        # Drafts created before this drill count against the laboratory budget, so
-        # the observation records where the boundary was hit instead of assuming it.
-        names = [f"cap-fill-{len(kept)}-{index}" for index in range(MAX_CLIENT_DRAFTS)]
-        identity = _identity(
+    kept = []
+    try:
+        first = _identity(
             lab,
             topology,
             directory,
@@ -259,16 +249,35 @@ def admission(lab, topology):
             network=api["Name"],
             address=next(addresses),
         )
-        for index, name in enumerate(names):
-            step = _step(identity, "draft", index)
-            if step["status"] != 200:
-                whole = step
-                break
-            kept.append(_scopes(identity)[name])
-    try:
+        _keep(kept, first)
+        accepted = [_step(first, "draft", index) for index in range(MAX_CLIENT_DRAFTS)]
+        refused = _step(first, "draft", MAX_CLIENT_DRAFTS)
+        assert [item["status"] for item in accepted] == [200] * MAX_CLIENT_DRAFTS
+        assert refused["status"] == 429 and refused["code"] == "CLIENT_DRAFT_QUOTA_REACHED"
+        whole = None
+        while whole is None:
+            # Drafts created before this drill count against the laboratory budget, so
+            # the observation records where the boundary was hit instead of assuming it.
+            names = [f"cap-fill-{len(kept)}-{index}" for index in range(MAX_CLIENT_DRAFTS)]
+            identity = _identity(
+                lab,
+                topology,
+                directory,
+                [{"op": "draft", "draft": name, "name": name} for name in names],
+                network=api["Name"],
+                address=next(addresses),
+            )
+            _keep(kept, identity)
+            for index, name in enumerate(names):
+                step = _step(identity, "draft", index)
+                if step["status"] != 200:
+                    whole = step
+                    break
         assert whole["code"] == "DRAFT_QUOTA_REACHED", whole
         assert 0 <= MAX_DRAFTS - len(kept) < MAX_DRAFTS, len(kept)
     finally:
+        # Every draft that was actually created is removed, including the ones a
+        # failed assertion left behind: a leaked draft spends the next drill's quota.
         for scope in kept:
             _drop(topology, scope)
     return {
@@ -293,6 +302,7 @@ def queue(lab, topology):
     directory = _prepare(lab)
     started = time.monotonic()
     held = []
+    created = []
     refusal = None
     api = _api_network(lab)
     addresses = iter(_addresses(api, MAX_ACTIVE_JOBS + 1))
@@ -313,6 +323,10 @@ def queue(lab, topology):
                 network=api["Name"],
                 address=next(addresses),
             )
+            # Record the draft before any assertion: the identity that is refused at
+            # /start has already created and uploaded one, and only this ledger
+            # reaches the finally below.
+            scopes = _keep(created, result)
             observed = [_step(result, op)["status"] for op in ("draft", "upload")]
             assert observed == [200, 200], f"identity {index}: draft/upload returned {observed}"
             started_step = _step(result, "start")
@@ -327,7 +341,7 @@ def queue(lab, topology):
                 # slots); the boundary itself is what this drill has to observe.
                 refusal = started_step
                 break
-            scope = _scopes(result)[name]
+            scope = scopes[-1]
             scope["state"] = _step(result, "state").get("state")
             held.append(scope)
         queued = [scope["state"] for scope in held]
@@ -337,7 +351,9 @@ def queue(lab, topology):
         metrics = sampler.result()
     finally:
         lab.run("start", "worker")
-        for scope in held:
+        # The refused identity's draft is in the ledger too, so a refused start can
+        # no longer leak a draft into the next run's quota.
+        for scope in created:
             _drop(topology, scope)
     assert held, "the admission budget refused the very first job"
     assert refusal is not None, "every start was admitted; the queue budget was not reached"

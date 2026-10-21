@@ -223,5 +223,114 @@ class AddressTests(unittest.TestCase):
         self.assertIn("fd00:1::/64", str(caught.exception))
 
 
+class _RunLab:
+    def __init__(self):
+        self.calls = []
+
+    def run(self, *argv):
+        self.calls.append(argv)
+
+
+class _Sampler:
+    def __init__(self, lab):
+        self.lab = lab
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def result(self):
+        return {"scanner_sampled_peak_concurrency": 1}
+
+
+def _identity_steps(name, *, start_status=200, start_code=None, draft_id=None):
+    steps = [{"op": "draft", "draft": name, "status": 200}]
+    if draft_id:
+        steps[0]["draft_id"] = draft_id
+        steps[0]["token"] = "cap-" + draft_id
+    steps.append({"op": "upload", "draft": name, "status": 200})
+    started = {"op": "start", "draft": name, "status": start_status}
+    if start_code:
+        started["code"] = start_code
+    else:
+        started["job_id"] = "job-" + name
+    steps.append(started)
+    steps.append({"op": "state", "draft": name, "status": 200, "state": "QUEUED"})
+    return {"steps": steps}
+
+
+class CleanupTests(unittest.TestCase):
+    """A refused drill must not leave a draft behind: it spends the next run's quota."""
+
+    def _patch(self, plans, lab):
+        deleted = []
+
+        def fake_request(topology, path, **kwargs):
+            if kwargs.get("method") == "DELETE":
+                deleted.append(path)
+            return None
+
+        stack = [
+            patch.object(capacity_drill, "_prepare", lambda _lab: Path("probe")),
+            patch.object(
+                capacity_drill,
+                "_api_network",
+                lambda _lab: {"Name": "net", "IPAM": {"Config": [{"Subnet": "10.200.0.0/24"}]}},
+            ),
+            patch.object(
+                capacity_drill,
+                "_addresses",
+                lambda api, count: [f"10.200.0.{40 + i}" for i in range(count)],
+            ),
+            patch.object(capacity_drill, "_identity", lambda *args, **kwargs: plans.pop(0)),
+            patch.object(capacity_drill, "_wait", lambda *args, **kwargs: "SUCCEEDED"),
+            patch.object(capacity_drill, "Sampler", _Sampler),
+            patch.object(capacity_drill, "request", fake_request),
+        ]
+        for item in stack:
+            item.start()
+            self.addCleanup(item.stop)
+        return deleted
+
+    def test_the_refused_identity_has_the_draft_it_created_deleted(self):
+        plans = [_identity_steps(f"q{index}", draft_id=f"d{index}") for index in range(4)]
+        plans.append(
+            _identity_steps(
+                "q4", start_status=429, start_code="ADMISSION_CAPACITY_REACHED", draft_id="d4"
+            )
+        )
+        deleted = self._patch(plans, _RunLab())
+
+        result = capacity_drill.queue(_RunLab(), _Topology())
+
+        self.assertEqual(result["accepted_queue_depth"], 4)
+        self.assertEqual(result["queued_states"], ["QUEUED"] * 4)
+        self.assertEqual(result["terminal_states"], ["SUCCEEDED"] * 4)
+        self.assertIn("/api/v1/web/drafts/d4", deleted)
+        self.assertEqual(len(deleted), 5)
+
+    def test_a_failed_admission_assertion_still_deletes_the_created_draft(self):
+        plans = [
+            {
+                "steps": [
+                    {"op": "draft", "draft": "a", "draft_id": "d-1", "token": "c1", "status": 200},
+                    {"op": "draft", "draft": "b", "status": 500},
+                    {"op": "draft", "draft": "c", "draft_id": "d-2", "token": "c2", "status": 200},
+                    {"op": "draft", "draft": "d", "status": 429, "code": "CLIENT_QUOTA"},
+                ]
+            }
+        ]
+        deleted = self._patch(plans, _RunLab())
+
+        with self.assertRaises(AssertionError):
+            capacity_drill.admission(_RunLab(), _Topology())
+
+        self.assertEqual(
+            sorted(deleted), ["/api/v1/web/drafts/d-1", "/api/v1/web/drafts/d-2"]
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

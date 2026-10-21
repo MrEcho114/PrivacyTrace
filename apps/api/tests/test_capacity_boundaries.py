@@ -43,6 +43,18 @@ def test_capacity_refusal_stays_catchable_as_a_value_error():
     assert isinstance(CapacityRefused("DRAFT_QUOTA_REACHED", "budget"), ValueError)
 
 
+def test_a_full_material_volume_is_storage_exhaustion_not_a_waitable_budget():
+    # The caller cannot wait this one out: the operator has to free the volume, so a
+    # Retry-After hint would be a lie.
+    response = web_error(
+        CapacityRefused("MATERIAL_DISK_SPACE_REACHED", "Private material disk space exhausted")
+    )
+
+    assert response.status_code == 507
+    assert response.detail == "MATERIAL_DISK_SPACE_REACHED"
+    assert response.headers is None
+
+
 @pytest.mark.parametrize("code", [errno.ENOSPC, errno.EDQUOT])
 def test_exhausted_private_material_disk_maps_to_507(code):
     response = web_error(OSError(code, "no space"))

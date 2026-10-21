@@ -51,6 +51,10 @@ def web_error(exc):
     if isinstance(exc, CapacityRefused):
         # A spent admission/queue/disk budget is a capacity boundary, not an
         # input rejection: the caller must be able to tell them apart.
+        if exc.code == "MATERIAL_DISK_SPACE_REACHED":
+            # A full material volume is storage exhaustion, not a budget the caller
+            # can wait out, so a Retry-After hint would mislead it.
+            return HTTPException(507, detail=exc.code)
         headers = (
             {"Retry-After": str(exc.retry_after)} if exc.retry_after is not None else None
         )
@@ -176,6 +180,14 @@ def install_web_api(app, local_write):
         except (BadZipFile, EOFError) as exc:
             raise HTTPException(status_code=400, detail="CORRUPTED_FILE") from exc
         except (ValueError, OSError) as exc:
+            if isinstance(exc, CapacityRefused) or getattr(exc, "errno", None) in {
+                errno.ENOSPC,
+                errno.EDQUOT,
+            }:
+                # Uploads are the seam that actually fills the material volume, so a
+                # spent budget or a full disk has to report 429/507 here too instead
+                # of collapsing into the generic upload rejection.
+                raise web_error(exc) from exc
             raise HTTPException(409, detail="UPLOAD_REJECTED") from exc
 
     @app.post("/api/v1/web/drafts/{draft_id}/apk")

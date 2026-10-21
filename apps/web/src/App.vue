@@ -23,11 +23,16 @@ const selectedSourceKey = computed({
   },
 })
 const selected = ref<PrivacyIssue | null>(null)
+// Reduced motion is a user preference, not a CSS-only hint: an explicit
+// scrollIntoView({behavior: 'smooth'}) overrides scroll-behavior, so the choice
+// has to happen here. The panel and its evidence are readable before any scrolling.
+const reducedMotion = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+  && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 function selectIssue(issue: PrivacyIssue) {
   selected.value = issue
   void nextTick(() => {
     const panel = document.getElementById('evidence-panel')
-    panel?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    panel?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' })
     panel?.focus({ preventScroll: true })
   })
 }

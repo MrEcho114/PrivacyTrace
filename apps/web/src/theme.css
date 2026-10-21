@@ -33,6 +33,10 @@
   --m-scrim: rgba(44, 53, 71, .42);
   --m-shadow-bar: 0 1px 2px rgba(44, 53, 71, .08);
   --m-shadow-sheet: 0 -8px 32px rgba(44, 53, 71, .18);
+  /* Motion: docs/design/issue146-motion.md. Colour feedback is the only animated
+     property; every UI transition stays <= 300ms and becomes instant under
+     prefers-reduced-motion. Press transforms change immediately, never eased. */
+  --motion-color: 150ms; --ease-color: ease;
   --font-body: 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
   --font-display: 'Noto Serif SC', SimSun, serif;
   --font-code: Consolas, 'Courier New', monospace;

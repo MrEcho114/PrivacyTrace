@@ -11,6 +11,10 @@
   --radius: 8px; --radius-panel: 12px;
   --space-4: 4px; --space-8: 8px; --space-12: 12px;
   --space-16: 16px; --space-24: 24px; --space-32: 32px;
+  /* Motion: docs/design/issue146-motion.md. Colour feedback is the only animated
+     property; every UI transition stays <= 300ms and becomes instant under
+     prefers-reduced-motion. Press transforms change immediately, never eased. */
+  --motion-color: 150ms; --ease-color: ease;
   --font-body: 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
   --font-display: 'Noto Serif SC', SimSun, serif;
   --font-code: Consolas, 'Courier New', monospace;

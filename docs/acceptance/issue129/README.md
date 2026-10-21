@@ -129,4 +129,4 @@
 
 ## 8. 证据清单
 
-`evidence/` 下的文件及 SHA-256 见 `evidence-manifest.sha256`。清单包含四组 H 的 result/报告正文/1080×1920 截图、N01/N02 的摘要与截图、N03/N04 的 JSON 结果、队列/outbox 只读回读，以及 `evidence-rerun-20261021T1128Z/` 下最终执行器补跑的四组 H 结果/报告/展开面板/截图。原始运行日志、APK 与完整政策正文留在受保护的私有运行区，不进入仓库。
+`evidence/` 下的文件及 SHA-256 见 `evidence-manifest.sha256`。清单按提交 blob（LF）计算；Windows 检出把 `.ps1` 转成 CRLF 时，以 blob 哈希为准。清单包含四组 H 的 result/报告正文/1080×1920 截图、N01/N02 的摘要与截图、N03/N04 的 JSON 结果、队列/outbox 只读回读，以及 `evidence-rerun-20261021T1128Z/` 下最终执行器补跑的四组 H 结果/报告/展开面板/截图。原始运行日志、APK 与完整政策正文留在受保护的私有运行区，不进入仓库。

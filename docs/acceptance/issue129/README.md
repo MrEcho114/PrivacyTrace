@@ -30,7 +30,6 @@
 | 扫描镜像 | `privacytrace-scanner:issue130-ffadeb0` = `sha256:1a36604312f9d1e6184dd1ab0e4b49fd6c0674842f478d79f8f6b54541f94354` |
 | 客户端 APK | `client-local-ca.apk`，SHA-256 `8bb257dfd3a63d295b858decba7ba0dcee44d6e20c063c01feb1813f4f3fddc8`，内嵌本机测试 CA（CN=PrivacyTrace73-Local-Test-CA，SAN 含 localhost/127.0.0.1） |
 | 客户端源码 | `apps/mobile` + `apps/web`；`aa414073859463abfaa133c1d12ac1f24c93eeb7` 与候选 `ffadeb06af70072b5ee2d931ee565e5b7e546acd` 的 `git diff` 为空；debug 签名证书 SHA-256 `4172668f29d3523bd5585ab9a2cb7dff237cf751b8cb39084565acd3f2205df2` |
-fadeb0 的 git diff 为空；debug 签名证书 SHA-256 4172668f29d3523bd5585ab9a2cb7dff237cf751b8cb39084565acd3f2205df2 |
 | 受控 base APK | `fixture-debug.apk`，SHA-256 `4f949286464a163886de6cdd9bd89651d19a622282c117339edfcb1c8e1055c1`，版本 1，`org.privacytrace.probe.fixture`，含 `ACCESS_FINE_LOCATION`、`READ_CONTACTS` 与 `<meta-data privacy_policy=http://1.1.1.1/policy.html>` |
 | 受控 split | `fixture_feature-debug.apk`，SHA-256 `1467df6802cd638095e55f8d4c9e6e58a50fe76f393e5e284da78456b0da8db7`，`split="fixture_feature"`，install-time，同签名同版本 |
 | 受控政策正文 | 472 字节 UTF-8，SHA-256 `2d9a31a5f1b1a64c5d9d800c5e64963f7207b095d4c8fdc64a1e7e3a1b6e7106`，由 `http://1.1.1.1/policy.html` 提供 |

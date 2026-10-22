@@ -65,6 +65,16 @@ jobs:
       - name: Run frontend walkthrough
         run: npm run acceptance:frontend
 
+      - name: Run wide hierarchy regression
+        run: npm run acceptance:hierarchy
+
+      - name: Verify mobile report reading
+        run: npm run acceptance:reading
+
+      # #146: colour feedback, hover gating, reduced motion and evidence expansion.
+      - name: Verify motion and reduced-motion behaviour
+        run: npm run acceptance:motion
+
       - name: Verify independent design foundation
         run: npm run acceptance:design
 
@@ -90,6 +100,10 @@ jobs:
             tmp/issue44-ui/verification.json
             tmp/issue44-ui/screenshots/
             tmp/concept-foundation/
+            tmp/issue143-hierarchy/verification.json
+            tmp/issue143-hierarchy/screenshots/
+            tmp/issue146-motion/verification.json
+            tmp/issue146-motion/screenshots/
             tmp/frontend-preview/verification.json
             tmp/frontend-preview/preview.log
             tmp/issue44-live-proof/fixtures/verification.json

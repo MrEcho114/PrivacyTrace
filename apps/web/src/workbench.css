@@ -6,7 +6,12 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 button, a, summary, label { touch-action: manipulation; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; }
-button:hover { background: var(--surface-muted); }
+/* Long unbroken titles, hashes and URLs stay inside their control instead of
+   widening the page at 320-390px (#144). */
+.ui-button, .status-tag, .source-tabs button, .mobile-panel-tabs button,
+.source-editor strong, .report-table td, .report-table th, .comparison-table td {
+  overflow-wrap: anywhere;
+}
 :focus-visible { outline: 2px solid var(--navy); outline-offset: 3px; }
 h1, h2, h3, p { overflow-wrap: anywhere; }
 h1, h2, h3 { text-wrap: balance; }
@@ -14,39 +19,42 @@ p { text-wrap: pretty; }
 ::selection { color: var(--ink); background: var(--mint); }
 input, textarea { caret-color: var(--navy); }
 .ui-icon { flex-shrink: 0; vertical-align: middle; }
-h1 { font-family: var(--font-display); font-size: 1.75rem; line-height: 40px; font-weight: 500; letter-spacing: 0; }
-h2 { font-size: 1rem; line-height: 24px; font-weight: 600; }
-h3 { font-size: 0.875rem; line-height: 22px; margin: 0; font-weight: 600; }
+/* Line heights that are fixed px stay readable when the root font size scales
+   (system font size / 200% zoom): `max()` keeps the current desktop value and
+   grows only once the text would otherwise overlap. */
+h1 { font-family: var(--font-display); font-size: 1.75rem; line-height: max(40px, 1.25em); font-weight: 500; letter-spacing: 0; }
+h2 { font-size: 1rem; line-height: max(24px, 1.5em); font-weight: 600; }
+h3 { font-size: 0.875rem; line-height: max(22px, 1.55em); margin: 0; font-weight: 600; }
 p { line-height: 1.7; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .skip-link { position: fixed; top: 8px; left: 8px; z-index: 50; opacity: 0; pointer-events: none; padding: 10px 18px; background: var(--navy); color: var(--surface); border-radius: var(--radius); }
 .skip-link:focus { opacity: 1; pointer-events: auto; }
-.workspace-bar { min-height: 64px; display: flex; align-items: center; padding: 12px 32px; gap: var(--space-32); border-bottom: 1px solid var(--border); background: var(--surface); }
-.workspace-brand { display: flex; gap: var(--space-12); align-items: center; text-decoration: none; font-size: 1.125rem; font-weight: 600; color: var(--ink); }
-.brand-mark { background: var(--navy); color: var(--surface); border-radius: 8px; display: grid; place-items: center; width: 30px; height: 30px; font-size: 1.125rem; }
+.workspace-bar { min-height: 64px; display: flex; align-items: center; padding: 12px 32px; padding: max(12px, env(safe-area-inset-top, 0px)) max(32px, env(safe-area-inset-right, 0px)) 12px max(32px, env(safe-area-inset-left, 0px)); gap: var(--space-32); border-bottom: 1px solid var(--border); background: var(--surface); }
+.workspace-brand { display: flex; gap: var(--space-12); align-items: center; min-width: 0; overflow-wrap: anywhere; text-decoration: none; font-size: 1.125rem; font-weight: 600; color: var(--ink); }
+.brand-mark { background: var(--navy); color: var(--surface); border-radius: 8px; display: grid; place-items: center; width: 30px; height: 30px; font-size: min(1.125rem, 20px); }
 .workspace-purpose { color: var(--muted); border-left: 1px solid var(--border); padding-left: 24px; font-size: 0.8125rem; }
 .workspace-bar > .ui-button { margin-left: auto; }
-.workspace-layout { display: grid; grid-template-columns: 192px minmax(0, 1fr); min-height: calc(100vh - 64px); }
+.workspace-layout { display: grid; grid-template-columns: 192px minmax(0, 1fr); min-height: calc(100vh - 64px); min-height: calc(100dvh - 64px - env(safe-area-inset-top, 0px)); }
 .workspace-sidebar { border-right: 1px solid var(--border); padding: 28px 16px; display: flex; flex-direction: column; gap: 36px; background: var(--canvas); }
 .workspace-sidebar nav { display: grid; gap: var(--space-8); }
 .nav-item { display: flex; align-items: center; gap: var(--space-12); padding: 11px 12px; text-align: left; border: 0; border-radius: var(--radius); background: transparent; width: 100%; }
 .nav-item.active { background: var(--slate); font-weight: 600; }
 .sidebar-foot { margin-top: auto; padding: 24px 12px 0; font-size: 0.75rem; color: var(--muted); display: flex; align-items: center; gap: var(--space-8); }
 .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
-.workspace-content { width: 100%; max-width: 1440px; padding: 24px 40px 40px; margin: 0 auto; min-width: 0; }
+.workspace-content { width: 100%; max-width: 1440px; padding: 24px 40px 40px; padding-right: max(40px, env(safe-area-inset-right, 0px)); padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); padding-left: max(40px, env(safe-area-inset-left, 0px)); margin: 0 auto; min-width: 0; }
 .workflow-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-24); border-bottom: 1px solid var(--border); padding-bottom: 20px; }
 .step-nav { display: flex; gap: var(--space-16); }
 .step-nav button { display: flex; align-items: center; gap: var(--space-8); border: 0; padding: 4px; background: transparent; color: var(--muted); font-size: 0.8125rem; }
 .step-nav button[aria-current] { color: var(--ink); font-weight: 600; }
 .step-nav button:disabled { opacity: .65; }
-.step-nav button > span { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border); border-radius: 50%; font-size: 0.75rem; }
+.step-nav button > span { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border); border-radius: 50%; font-size: min(0.75rem, 14px); }
 .step-nav button[aria-current] > span { background: var(--navy); color: var(--surface); border-color: var(--navy); }
 .step-nav .complete { background: var(--mint); color: var(--success); border-color: var(--mint); }
 .flow-context { display: flex; align-items: center; gap: var(--space-12); color: var(--muted); font-size: 0.75rem; min-height: 32px; }
 .flow-context > .ui-button { margin-left: auto; }
 .page-heading { margin: 28px 0 24px; }
 .page-heading h1 { margin: 0 0 8px; }
-.page-heading p, .report-page-title p { color: var(--muted); margin: 0; max-width: 70ch; font-size: 0.9375rem; line-height: 24px; }
+.page-heading p, .report-page-title p { color: var(--muted); margin: 0; max-width: 70ch; font-size: 0.9375rem; line-height: 1.6; }
 .material-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-panel); padding: 24px; min-width: 0; }
 .panel-heading, .source-heading { display: flex; align-items: center; gap: var(--space-12); justify-content: space-between; margin-bottom: 16px; }
 .panel-heading h2 { margin: 0; }
@@ -57,16 +65,20 @@ p { line-height: 1.7; }
 .file-drop strong { max-width: 100%; overflow-wrap: anywhere; font-weight: 500; }
 .file-glyph { display: grid; place-items: center; gap: 4px; color: var(--muted); font-size: 0.75rem; }
 .file-glyph .ui-icon { width: 32px; height: 32px; }
-.drag-active { border: 2px solid var(--navy); background: var(--slate); }
+/* Drop target highlight without a 1px border-width change: widening the border
+   reflowed the panel and shifted the label by a pixel every dragenter/dragleave.
+   The border stays 1px solid navy and the inset shadow supplies the second pixel,
+   so the highlight keeps its previous 2px solid look. */
+.drag-active { border-color: var(--navy); border-style: solid; background: var(--slate); box-shadow: inset 0 0 0 1px var(--navy); }
 .example-entry { border-top: 1px solid var(--border); margin-top: 24px; padding-top: 24px; }
-.field-help { color: var(--muted); font-size: 0.75rem; line-height: 20px; margin: 8px 0; }
+.field-help { color: var(--muted); font-size: 0.75rem; line-height: 1.65; margin: 8px 0; }
 .source-editor { padding: 24px 0; border-top: 1px solid var(--border); }
 .source-editor:first-of-type { padding-top: 0; border-top: 0; }
 .source-editor:last-of-type { margin-bottom: 8px; }
 .source-heading { margin-bottom: 16px; flex-wrap: wrap; }
-.ui-field { display: grid; gap: var(--space-8); margin: 16px 0; min-width: 0; }
-.ui-field label { font-size: 0.875rem; line-height: 20px; font-weight: 500; }
-.ui-field input, .ui-field select, .ui-field textarea { width: 100%; border: 1px solid var(--control); border-radius: var(--radius); background: var(--surface); padding: 9px 12px; font-size: 0.875rem; line-height: 22px; min-height: 40px; }
+.ui-field { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-8); margin: 16px 0; min-width: 0; }
+.ui-field label { font-size: 0.875rem; line-height: 1.45; font-weight: 500; }
+.ui-field input, .ui-field select, .ui-field textarea { width: 100%; min-width: 0; border: 1px solid var(--control); border-radius: var(--radius); background: var(--surface); padding: 9px 12px; font-size: 0.875rem; line-height: 1.6; min-height: 40px; }
 .ui-field textarea { resize: vertical; max-height: 480px; }
 .ui-field :disabled { background: var(--surface-muted); color: var(--muted); cursor: not-allowed; }
 .ui-field [aria-invalid=true] { border-color: var(--error); }
@@ -84,19 +96,29 @@ p { line-height: 1.7; }
 .text-upload:focus-within { outline: 2px solid var(--navy); outline-offset: 3px; }
 .source-notes { display: flex; flex-wrap: wrap; gap: var(--space-8) 16px; font-size: 0.75rem; color: var(--muted); margin-top: 16px; }
 .source-notes span + span { border-left: 1px solid var(--border); padding-left: 8px; }
-.ui-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-8); min-height: 36px; border-radius: var(--radius); padding: 7px 12px; border: 1px solid var(--control); color: var(--ink); background: var(--surface); font-size: 0.875rem; line-height: 20px; font-weight: 500; white-space: normal; }
-.ui-button, .nav-item, .source-tabs button, .candidate-item { transition: background-color 150ms ease-out, border-color 150ms ease-out; }
+.ui-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-8); min-height: 36px; border-radius: var(--radius); padding: 7px 12px; border: 1px solid var(--control); color: var(--ink); background: var(--surface); font-size: 0.875rem; line-height: 1.45; font-weight: 500; white-space: normal; }
+/* One colour rhythm for every button role: toolbar, nav, tabs, candidate rows and
+   evidence links all fade at the same speed. The press offset stays untransitioned
+   so the pressed state is visible in the same frame as the pointer event. */
+button { transition: background-color var(--motion-color) var(--ease-color), border-color var(--motion-color) var(--ease-color); }
+/* Pointer-only hover: a touch tap reports :hover, so ungated rules leave a stuck
+   highlight on the row the finger just touched. Keyboards use :focus-visible.
+   Kept before the :active rules below: hover and :active share specificity for the
+   danger role, so source order decides which one wins while a button is held. */
+@media (hover: hover) and (pointer: fine) {
+  button:hover { background: var(--surface-muted); }
+  .ui-button.primary:hover:not(:disabled) { background: var(--navy-hover); }
+  .ui-button.quiet:hover { background: var(--surface-muted); }
+  .ui-button.danger:hover:not(:disabled) { background: var(--error); }
+}
 .ui-button:active:not(:disabled) { transform: translateY(1px); }
 .ui-button.primary { color: var(--surface); background: var(--navy); border-color: var(--navy); }
-.ui-button.primary:hover:not(:disabled) { background: var(--navy-hover); }
 .ui-button.primary:active:not(:disabled) { background: var(--navy-hover); opacity: .88; }
 .ui-button.quiet { border-color: transparent; background: transparent; }
-.ui-button.quiet:hover { background: var(--surface-muted); }
 .ui-button.danger { background: var(--danger); border-color: var(--danger); color: var(--on-action); }
-.ui-button.danger:hover:not(:disabled) { background: var(--error); }
 .ui-button.danger:active:not(:disabled) { background: var(--rose); color: var(--error); }
 .ui-button:disabled { color: var(--muted); background: var(--surface-muted); border-color: var(--surface-muted); opacity: 1; }
-.status-tag { display: inline-flex; align-items: center; flex-shrink: 0; border-radius: var(--radius); background: var(--surface-muted); color: var(--ink); padding: var(--space-4) var(--space-8); font-size: 0.75rem; line-height: 20px; font-weight: 500; }
+.status-tag { display: inline-flex; align-items: center; flex-shrink: 0; max-width: 100%; border-radius: var(--radius); background: var(--surface-muted); color: var(--ink); padding: var(--space-4) var(--space-8); font-size: 0.75rem; line-height: 1.65; font-weight: 500; }
 .status-tag.info { background: var(--slate); }
 .status-tag.wait { background: var(--notice); }
 .status-tag.success { background: var(--mint); color: var(--success); }
@@ -109,7 +131,7 @@ p { line-height: 1.7; }
 .notice.compact { margin-bottom: 0; }
 .error-text { color: var(--error); }
 .source-tabs { display: flex; gap: var(--space-8); flex-wrap: wrap; margin-bottom: 20px; }
-.source-tabs button { background: transparent; border: 1px solid var(--border); font-size: 0.8125rem; }
+.source-tabs button { max-width: 100%; background: transparent; border: 1px solid var(--border); font-size: 0.8125rem; }
 .source-tabs button.selected { background: var(--slate); border-color: var(--control); }
 .candidate-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-24); align-items: start; }
 .policy-reading { font-size: 0.9375rem; line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 480px; overflow-y: auto; padding: 20px 0; }
@@ -119,8 +141,9 @@ mark { background: var(--notice); color: var(--ink); border-bottom: 2px solid va
 .candidate-list { display: grid; gap: var(--space-8); max-height: 288px; overflow-y: auto; padding: 3px; margin: -3px; }
 .candidate-item { display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center; gap: var(--space-16); width: 100%; border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius); padding: 12px 16px; text-align: left; }
 .candidate-item.selected { border-color: var(--navy); background: var(--canvas); box-shadow: inset 3px 0 var(--navy); }
-.candidate-item-heading { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-.candidate-quote-preview { display: block; font-size: 0.8125rem; line-height: 22px; color: var(--muted); overflow-wrap: anywhere; }
+.candidate-item-heading { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.candidate-item-heading strong { overflow-wrap: anywhere; }
+.candidate-quote-preview { display: block; font-size: 0.8125rem; line-height: 1.7; color: var(--muted); overflow-wrap: anywhere; }
 .count { font-size: 0.75rem; margin-left: 8px; color: var(--muted); }
 .candidate-editor { border-top: 1px solid var(--border); margin-top: 20px; padding-top: 4px; }
 .candidate-editor-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-8); padding-top: 12px; }
@@ -165,7 +188,7 @@ dl dd { margin: 0; }
 .evidence-card pre { background: var(--surface-muted); color: var(--ink); font-size: 0.8125rem; font-family: var(--font-code); line-height: 1.7; }
 .evidence-card blockquote { margin: 16px 0; border-left: 2px solid var(--gold); padding-left: 16px; font-size: 0.9375rem; line-height: 1.8; }
 .ui-dialog-overlay { position: fixed; inset: 0; z-index: 100; background: var(--overlay); }
-.ui-dialog { position: fixed; inset: 0; z-index: 101; margin: auto; max-width: min(600px, calc(100% - 32px)); width: 600px; height: fit-content; max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: var(--radius-panel); padding: 28px; }
+.ui-dialog { position: fixed; inset: 0; z-index: 101; margin: auto; max-width: min(600px, calc(100% - 32px)); width: 600px; height: fit-content; max-height: calc(100dvh - 32px); max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: var(--radius-panel); padding: 28px; padding-right: max(28px, env(safe-area-inset-right, 0px)); padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); padding-left: max(28px, env(safe-area-inset-left, 0px)); }
 .settings-dialog > .panel-heading h2 { font-family: var(--font-display); font-size: 1.25rem; }
 .settings-section { border-top: 1px solid var(--border); padding: 20px 0; }
 .settings-section h3 { margin-bottom: 12px; }
@@ -179,7 +202,7 @@ dl dd { margin: 0; }
 @media (min-width: 1680px) { .workspace-content { padding-top: 40px; } }
 @media (max-width: 1100px) {
   .workspace-layout { grid-template-columns: 184px minmax(0, 1fr); }
-  .workspace-content { padding: 24px; }
+  .workspace-content { padding: 24px; padding-right: max(24px, env(safe-area-inset-right, 0px)); padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); padding-left: max(24px, env(safe-area-inset-left, 0px)); }
   .import-grid { grid-template-columns: 1fr; }
   .workflow-toolbar { flex-direction: column; align-items: stretch; gap: var(--space-12); }
   .step-nav { justify-content: space-between; }
@@ -199,8 +222,8 @@ dl dd { margin: 0; }
   .nav-item { width: auto; }
   .sidebar-foot { display: none; }
   .workspace-purpose { display: none; }
-  .workspace-content { padding: 24px 20px; }
-  .workspace-bar { padding: 12px 20px; gap: var(--space-12); }
+  .workspace-content { padding: 24px 20px; padding-right: max(20px, env(safe-area-inset-right, 0px)); padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); padding-left: max(20px, env(safe-area-inset-left, 0px)); }
+  .workspace-bar { padding: 12px 20px; padding-top: max(12px, env(safe-area-inset-top, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); padding-left: max(20px, env(safe-area-inset-left, 0px)); gap: var(--space-12); }
   .candidate-grid { grid-template-columns: 1fr; }
   .original-panel { position: static; }
   .policy-reading { max-height: 300px; }
@@ -212,11 +235,11 @@ dl dd { margin: 0; }
 }
 @media (max-width: 520px) {
   .workspace-brand { font-size: 1rem; gap: var(--space-8); }
-  .workspace-bar { padding-inline: 16px; }
-  .workspace-content { padding: 20px 16px 36px; }
+  .workspace-bar { padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+  .workspace-content { padding: 20px 16px 36px; padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-bottom: calc(36px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); }
   .step-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .step-nav button { font-size: 0.8125rem; }
-  .page-heading h1 { font-size: 1.5rem; line-height: 34px; }
+  .page-heading h1 { font-size: 1.5rem; line-height: max(34px, 1.25em); }
   .report-page-title h1 { font-size: 1.5rem; line-height: 2.125rem; }
   .page-heading p { font-size: 0.875rem; }
   .material-panel { padding: 16px; }
@@ -231,7 +254,7 @@ dl dd { margin: 0; }
   .source-heading { gap: var(--space-8); }
   .flow-footer > .primary { width: 100%; }
   .flow-context { flex-wrap: wrap; justify-content: flex-start; }
-  .settings-dialog { padding: 20px; }
+  .settings-dialog, .ui-dialog { padding: 20px; padding-right: max(20px, env(safe-area-inset-right, 0px)); padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); padding-left: max(20px, env(safe-area-inset-left, 0px)); }
   .stage-list li { gap: var(--space-12); }
   .progress-overview { grid-template-columns: 1fr; }
 }
@@ -239,6 +262,10 @@ dl dd { margin: 0; }
   .example-evidence .evidence-card + .evidence-card { border-left: 0; padding-left: 0; border-top: 1px solid var(--border); padding-top: 24px; }
 }
 @media (max-height: 720px) { .apk-panel, .original-panel { position: static; } }
+/* Reduced motion is a preference for less movement, not a second look: no
+   displacement, spring or non-essential animation, and nothing waits on a
+   transition before it can be read. JS-driven scrolling opts in explicitly in
+   App.vue; this block cannot retarget an explicit scrollIntoView({behavior}). */
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
 
 .comparison-table td.row-evidence { display: none; }
@@ -263,30 +290,26 @@ dl dd { margin: 0; }
     padding: 14px;
     margin-bottom: 12px;
   }
-  .comparison-table td { display: block; border: 0; padding: 0; font-size: 0.8125rem; line-height: 1.6; }
+  .comparison-table td { display: block; min-width: 0; border: 0; padding: 0; font-size: 0.8125rem; line-height: 1.6; }
   .comparison-table td[data-label="数据类型"] { flex: 0 1 auto; font-size: 0.875rem; }
-  .comparison-table td[data-label="对照结果"] { flex: 0 0 auto; margin-left: auto; }
+  .comparison-table td[data-label="对照结果"] { flex: 0 1 auto; min-width: 0; margin-left: auto; }
   .comparison-table td[data-label="静态线索"],
   .comparison-table td[data-label="政策来源"] { flex: 1 1 100%; color: var(--muted); font-size: 0.75rem; }
   .comparison-table td[data-label="静态线索"]::before { content: "线索："; }
   .comparison-table td[data-label="政策来源"]::before { content: "来源："; }
   .comparison-table td[data-label="依据"] { flex: 1 1 100%; margin-top: 6px; }
+  /* No entry animation: the tapped row carries evidence the user asked to read,
+     and the same action is instant in the reports view. See issue146-motion.md. */
   .comparison-table td.row-evidence {
     display: block;
     flex: 1 1 100%;
     margin-top: 10px;
     padding-top: 12px;
     border-top: 1px dashed var(--border);
-    animation: evidence-slide-in .18s ease-out;
   }
   .comparison-table td.row-evidence .evidence-grid { grid-template-columns: 1fr; gap: var(--space-12); }
   .comparison-table td.row-evidence .evidence-card { padding: 12px; }
   .comparison-table td.row-evidence .evidence-explanation { margin: 0 0 10px; }
-}
-
-@keyframes evidence-slide-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 560px) {
@@ -317,9 +340,9 @@ dl dd { margin: 0; }
     padding: 14px;
     margin-bottom: 12px;
   }
-  .report-table td { display: block; border: 0; padding: 0; font-size: 0.8125rem; line-height: 1.6; }
+  .report-table td { display: block; min-width: 0; border: 0; padding: 0; font-size: 0.8125rem; line-height: 1.6; }
   .report-table td[data-label="隐私数据"] { flex: 1 1 auto; font-size: 0.875rem; font-weight: 600; white-space: normal; }
-  .report-table td[data-label="当前结论"] { flex: 0 0 auto; margin-left: auto; }
+  .report-table td[data-label="当前结论"] { flex: 0 1 auto; min-width: 0; margin-left: auto; }
   .report-table .tag { white-space: normal; overflow-wrap: anywhere; }
   .report-table td[data-label="政策来源"] { flex: 1 1 100%; color: var(--muted); font-size: 0.75rem; }
   .report-table td[data-label="政策来源"]::before { content: "来源："; }
@@ -358,21 +381,56 @@ dl dd { margin: 0; }
 
 /* mobile report cards: PT-MOB-202 issue 07, 390px layout */
 
-/* PT-MOB-202 touch targets: the narrow layout gets 44px minimum hit areas.
-   Desktop (>560px) keeps the existing 36px .ui-button contract, which the
-   design fixture asserts per width. Inputs and selects keep their 40px. */
-@media (max-width: 560px) {
+/* #144 touch targets: phone/tablet layouts (narrow or coarse primary pointer)
+   get 44x44 minimum hit areas for every button, tab and disclosure summary —
+   not only an enumerated subset. Landscape and 768px tablets are still touch
+   devices, so the capability branch keeps the minimum beyond the mobile
+   breakpoint. Fine-pointer desktop keeps the 36px .ui-button contract and the
+   40px field contract, which the design fixture asserts per width; the
+   coarse-pointer branch below gives touch fields 44px and 16px. */
+@media (max-width: 560px), (pointer: coarse) {
+  button,
   .ui-button,
   [role="tab"],
-  .evidence-button,
+  summary,
+  label.text-upload,
+  .report-filter select,
   .candidate-item,
-  .policy-jump-btn,
-  .candidate-nav button,
-  .source-body summary,
-  .job-state button,
   [data-testid="retry-job"],
   [data-testid="delete-job"],
   [data-testid="delete-confirm"] {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* #144 soft keyboard: browsers that overlay the visual viewport instead of
+   resizing it publish the hidden height as --keyboard-inset (viewport.ts).
+   The extra page bottom space lets the focused field and the actions below it
+   scroll above the keyboard; `interactive-widget=resizes-content` handles
+   Chromium without needing this fallback. */
+html { scroll-padding-bottom: 16px; scroll-padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+html.keyboard-open { scroll-padding-bottom: calc(var(--keyboard-inset, 0px) + 16px); }
+html.keyboard-open body { padding-bottom: var(--keyboard-inset, 0px); }
+html.keyboard-open .ui-dialog { max-height: calc(100dvh - 32px - var(--keyboard-inset, 0px)); }
+
+/* Narrow-screen/touch scroll containers own their gesture instead of chaining it
+   to the page (evidence text, candidate list, table). Fine-pointer desktop keeps
+   the normal wheel propagation. */
+@media (max-width: 560px), (pointer: coarse) {
+  .candidate-list, .policy-reading, .table-scroll { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+}
+
+/* iOS Safari zooms the page whenever a focused field is under 16px. Coarse
+   pointers are the phone/tablet case at any orientation; fine-pointer widths
+   keep the 14px/40px field contract that the design fixture asserts, while every
+   text-entry control on a touch device gets 16px and a 44px hit area. */
+@media (pointer: coarse) {
+  .ui-field input, .ui-field select, .ui-field textarea,
+  .mobile-field input,
+  #report-source, .source-picker select,
+  .review-panel input, .review-panel textarea {
+    font-size: max(1rem, 16px);
     min-height: 44px;
   }
 }

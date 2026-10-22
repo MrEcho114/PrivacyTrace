@@ -1,0 +1,310 @@
+/* Issue #143 — wide-viewport hierarchy for the existing workbench and report viewer.
+
+   This file composes the Pioneer role tokens with the existing
+   UiButton/UiField/StatusTag/UiIcon primitives. It deliberately does not add a
+   second theme, business state, or narrow-screen layout: C/D/E keep ownership
+   of mobile reflow, interaction semantics and motion. */
+
+/* Long package names, URLs, hashes and Chinese error text must never push an
+   action out of its column. */
+.workspace-content :where(td, th, li, dd, dt, p, .hash, .locator, .field-help) {
+  overflow-wrap: anywhere;
+}
+.workspace-content :where(.ui-button, .source-tabs button, .nav-item) {
+  min-width: 0;
+}
+
+/* ------------------------------------------------------------------ *
+ * Existing report viewer inside the workbench
+ * ------------------------------------------------------------------ */
+
+/* One heading scale for the embedded viewer and the workbench pages. */
+.shell h1 { margin: 0; }
+.shell h2 { font-size: 1rem; line-height: 24px; font-weight: 600; }
+.shell h3 { font-size: 0.875rem; line-height: 22px; }
+.shell .section-heading { align-items: baseline; margin-bottom: 14px; }
+.shell .section-heading .subtle { font-size: 0.75rem; line-height: 20px; }
+
+/* The embedded viewer no longer renders its own hero: the workbench page
+   heading already names the view, so a second hero only repeats it. */
+.workspace-content .shell main > .intro { display: none; }
+
+/* Source selection and refresh are one toolbar, not a card plus a floating
+   primary action. */
+.shell .source-picker.report-source-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  margin: 0 0 16px;
+  padding: 16px 20px;
+  background: var(--surface);
+}
+.shell .report-source-field { flex: 1 1 420px; min-width: 0; }
+.shell .report-source-field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.8125rem;
+  line-height: 20px;
+  font-weight: 600;
+}
+.shell .report-source-bar > .ui-button { flex: 0 0 auto; }
+.shell .report-source-bar .field-help { flex: 1 1 100%; margin: 0; }
+
+/* Report identity first, then archive/job metadata as a quiet strip. */
+.shell .sample-card { margin: 16px 0; padding: 20px 24px; align-items: flex-start; }
+.shell .sample-card h2 { font-size: 1.125rem; line-height: 26px; }
+.shell .origin-timestamp { color: var(--muted); }
+.shell .badge-stack { gap: 4px; }
+.shell .badge {
+  margin-left: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+  color: var(--ink);
+  font-size: 0.75rem;
+  line-height: 20px;
+}
+.shell .badge.live_generated { background: var(--mint); border-color: var(--mint); color: var(--success); }
+.shell .badge.persisted_replay { background: var(--notice); border-color: var(--border); color: var(--ink); }
+.shell .report-provenance {
+  margin: 12px 0;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.75rem;
+  line-height: 1.7;
+}
+.shell .report-provenance strong { display: inline; margin-right: 8px; }
+.shell .report-provenance p { margin: 4px 0 0; }
+
+.workspace-content .shell .demo-note {
+  margin: 12px 0;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+.workspace-content .shell .demo-note summary { color: var(--ink); font-size: 0.8125rem; }
+
+/* A successful job is metadata, not a second page section; failed and
+   cancelled jobs keep the full alert surface and actions. */
+.shell .job-state { margin: 12px 0; padding: 16px 20px; }
+.shell .job-state.compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 10px 16px;
+  font-size: 0.8125rem;
+}
+.shell .job-state.compact .job-terminal-actions { margin-top: 0; }
+.shell .job-state.compact .job-delete-warning { flex: 1 1 100%; }
+@media (min-width: 561px) {
+  .shell .sample-card > div:nth-child(2) { flex: 1 1 auto; min-width: 0; }
+  .shell .sample-card .badge-stack { flex: 0 0 auto; }
+  .shell .sample-card .badge { white-space: nowrap; }
+}
+
+/* Coverage, report table and review panel share the same panel scale. */
+.shell .coverage-card { margin: 12px 0; padding: 18px 24px; }
+.shell .coverage-card h2 { margin-bottom: 8px; }
+.shell .coverage-card p,
+.shell .coverage-card li { font-size: 0.8125rem; }
+.shell .report-section { margin: 12px 0; padding: 18px 24px; }
+.shell .report-table th {
+  background: var(--canvas);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.shell .report-table td { border-color: var(--border); }
+.shell .tag { border-radius: var(--radius); font-size: 0.75rem; line-height: 20px; }
+.shell .tag.clear { background: var(--mint); color: var(--success); }
+.shell .tag.review { background: var(--notice); color: var(--ink); }
+.shell input,
+.shell select,
+.shell textarea {
+  border: 1px solid var(--control);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* Report viewer helper controls previously kept in App.vue's scoped block.
+   They stay under .shell so the offline package and the workbench share one
+   style block and one Vite transform. */
+.shell .candidate-nav { display: flex; align-items: center; gap: 12px; margin: 12px 0; font-size: 0.8125rem; }
+.shell .job-terminal-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.shell .job-terminal-actions button { margin-left: 0; }
+.shell .job-delete-warning { color: var(--error); margin: 8px 0 0; }
+.shell .candidate-nav button { padding: 4px 10px; font-size: 12px; }
+.shell .job-error-card { background: var(--rose); border: 1px solid var(--error); border-radius: var(--radius); padding: 14px; margin-top: 12px; color: var(--error); }
+.shell .job-error-card .error-code { font-weight: bold; color: var(--error); display: inline-block; margin-bottom: 6px; font-size: 13px; }
+.shell .job-error-card .error-msg { margin: 4px 0; color: var(--error); font-size: 14px; }
+.shell .job-error-card .error-detail { margin-top: 6px; font-size: 12px; }
+.shell .policy-jump-btn { margin-top: 10px; padding: 6px 10px; display: inline-block; }
+.shell .origin-timestamp { font-size: 12px; margin-top: 4px; }
+.shell .ai-disclosure { margin-top: 4px; font-size: 12px; color: var(--muted); }
+
+/* Desktop control sizing. Narrow screens keep the 44px touch contract and the
+   stacked report-card layout owned by C. */
+@media (min-width: 561px) {
+  .shell .report-table th { padding: 12px 10px; }
+  .shell .report-table td { padding: 14px 10px; }
+  .shell .tag { padding: 4px 8px; }
+  .shell .policy-jump-btn,
+  .shell .candidate-nav button,
+  .shell .job-state button,
+  .shell .job-terminal-actions button,
+  .shell .state button {
+    min-height: 32px;
+    padding: 5px 10px;
+    border: 1px solid var(--control);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.75rem;
+    line-height: 20px;
+  }
+  .shell .job-terminal-actions [data-testid="delete-confirm"] {
+    border-color: var(--error);
+    background: var(--error);
+    color: var(--surface);
+  }
+  .shell .primary {
+    min-height: 36px;
+    padding: 7px 12px;
+    border-radius: var(--radius);
+    border-color: var(--navy);
+    background: var(--navy);
+    color: var(--surface);
+    font-size: 0.875rem;
+    line-height: 20px;
+    white-space: normal;
+  }
+}
+.shell .review-panel { margin: 12px 0; padding: 18px 24px; }
+.shell .review-panel form { gap: 12px; }
+
+@media (min-width: 761px) {
+  .shell .metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    margin: 16px 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+  .shell .metrics > div {
+    align-items: baseline;
+    padding: 18px 24px;
+    border: 0;
+    border-right: 1px solid var(--border);
+    border-radius: 0;
+    background: transparent;
+  }
+  .shell .metrics > div:last-child { border-right: 0; }
+  .shell .metrics strong { color: var(--ink); font-size: 1.75rem; line-height: 1.2; }
+  .shell .metrics span { font-size: 0.8125rem; }
+}
+
+/* ------------------------------------------------------------------ *
+ * Example report and candidate pages
+ * ------------------------------------------------------------------ */
+
+.workspace-content .report-summary { align-items: flex-start; margin: 8px 0 12px; }
+.workspace-content .report-identity h2 { font-size: 1.125rem; line-height: 26px; }
+.workspace-content .report-source-summary { margin: 20px 0 12px; }
+.workspace-content .report-source-summary > div { padding-left: 16px; }
+.workspace-content .report-source-summary h3 { font-size: 0.875rem; line-height: 22px; }
+
+@media (min-width: 561px) {
+  .workspace-content .report-source-summary {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px 24px;
+  }
+}
+
+.workspace-content .source-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 20px;
+}
+.workspace-content .source-context-meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-left: auto;
+}
+.workspace-content .source-context-meta span + span {
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+
+/* ------------------------------------------------------------------ *
+ * Progress: the stage rail and the current-stage card align at the top
+ * ------------------------------------------------------------------ */
+
+.workspace-content .progress-overview {
+  grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.95fr);
+  align-items: start;
+}
+.workspace-content .stage-preview { justify-content: flex-start; padding: 24px 28px; }
+.workspace-content .stage-progress {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.workspace-content .stage-preview h2 { margin: 8px 0 6px; }
+.workspace-content .stage-preview .progress-actions { margin-top: 20px; }
+.workspace-content .progress-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin: 0 0 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.workspace-content .progress-summary strong { color: var(--ink); font-size: 0.8125rem; }
+.workspace-content .progress-summary .hash { color: var(--muted); }
+.workspace-content .progress-actions { margin-top: 20px; }
+.workspace-content .stage-list .failed .stage-number { background: var(--rose); color: var(--error); }
+
+/* Live material identity is a quiet meta line under the page heading, not a
+   competing toolbar above the task name. */
+.workspace-content .material-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: -12px 0 16px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 20px;
+}
+
+@media (max-width: 520px) {
+  .workspace-content .progress-overview { grid-template-columns: 1fr; }
+}

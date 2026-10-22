@@ -735,7 +735,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           <p class="error-msg">{{ parsedJobError.message }}</p>
           <p v-if="parsedJobError.primary_error" class="error-detail subtle">根因：{{ parsedJobError.primary_error }}</p>
         </div>
-        <p v-if="activeJob.state === 'FAILED' || activeJob.state === 'CANCELLED'">本任务没有成功报告。可以重试为新的分析，或删除这条本机记录。</p>
+        <p v-if="activeJob.state === 'FAILED' || activeJob.state === 'CANCELLED'">本任务没有可展示的成功报告。可以重试为一次新的分析，或删除这条本机记录。</p>
         <!-- Destructive actions stay terminal-only: deleting a running job would leave a tombstone
              while the worker may still be writing. Running jobs keep the cancel button above. -->
         <div v-if="terminal(activeJob)" class="job-terminal-actions" @keydown.esc="cancelDelete">

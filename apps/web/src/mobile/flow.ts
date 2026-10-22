@@ -16,7 +16,7 @@ export function createMobileFlow(bridge: MobileBridge) {
   const context = ref<Upload | null>(null), draft = ref<LiveDraft | null>(null)
   const job = ref<AnalysisJob | null>(null), report = ref<Report | null>(null), taxonomy = ref<Taxonomy | null>(null)
   const busy = ref(false), error = ref(''), notice = ref('')
-  const model = ref<ModelStatus>({ configured: false, endpoint: null }), modelResult = ref('')
+  const model = ref<ModelStatus>({ configured: false, endpoint: null }), modelResult = ref(''), resultToken = ref(0)
   let generation = 0, pendingStart: { revision: number; request_id: string } | null = null
   let busyPolls = 0
   let quickPolls = 0
@@ -116,6 +116,10 @@ export function createMobileFlow(bridge: MobileBridge) {
       check()
       // Native lifecycle cancellation rejects the selected result as well.
       context.value = selected; draft.value = null; job.value = null; report.value = null; pendingStart = null
+      // A model answer belongs to the material instance that was collected for.
+      // Dropping it here keeps a deleted or replaced material from refilling the
+      // shared assistant box with the previous result (#243).
+      modelResult.value = ''
       state.step = 'import'; notice.value = ''; restoring = false
       if (selected.state !== 'SERVER_CONFIRMED') throw new Error('服务器尚未确认完整上传，请刷新确认。')
       restoring = true
@@ -253,7 +257,16 @@ export function createMobileFlow(bridge: MobileBridge) {
     await run(async (_, check) => { const value = await (configure ? bridge.configureModel() : bridge.modelStatus()); check(); model.value = value })
   }
   async function collect(modelName: string, app: string) {
-    await run(async (_, check) => { const text = await bridge.collect(modelName, app); check(); modelResult.value = text; notice.value = '模型结果已放入回填框，请检查并确认来源类型；模型返回不等于已取得政策。' })
+    await run(async (_, check) => {
+      const text = await bridge.collect(modelName, app)
+      check()
+      modelResult.value = text
+      // The assistant box is remounted on every return to the material step. A
+      // repeated identical answer must still count as a new delivery, so the
+      // counter travels with the text instead of relying on ref inequality (#243).
+      resultToken.value += 1
+      notice.value = '模型结果已放入回填框，请检查并确认来源类型；模型返回不等于已取得政策。'
+    })
   }
-  return { state, context, draft, job, report, taxonomy, busy, error, notice, model, modelResult, settings, collect, select, refresh, importCollected, prepare, save, begin, poll, control, openReport, remove, stop }
+  return { state, context, draft, job, report, taxonomy, busy, error, notice, model, modelResult, resultToken, settings, collect, select, refresh, importCollected, prepare, save, begin, poll, control, openReport, remove, stop }
 }

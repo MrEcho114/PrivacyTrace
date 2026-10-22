@@ -19,7 +19,7 @@ import { createMobileFlow } from './flow'
 import './mobile.css'
 
 const flow = createMobileFlow(mobileBridge)
-const { state, context, draft, job, report, taxonomy, busy, error, notice, model, modelResult } = flow
+const { state, context, draft, job, report, taxonomy, busy, error, notice, model, modelResult, resultToken } = flow
 const modelName = ref(''), appHint = ref('')
 const modelPrompt = computed(() => appHint.value.trim() ? collectionInstructions(appHint.value) : '')
 const labels = computed(() => Object.fromEntries(taxonomy.value?.data_types.map(t => [t.id, t.label]) ?? []))
@@ -303,7 +303,7 @@ onBeforeUnmount(() => {
           </article>
           <p v-if="!hasSources" class="m-help">尚未补入政策。下一步会尝试自动查找；也可以使用下方辅助入口。</p>
         </section>
-        <PolicyAssist v-if="context" :busy="busy" :source-count="draft?.sources.length ?? 0" :initial-result="modelResult" @import="flow.importCollected" />
+        <PolicyAssist v-if="context" :busy="busy" :source-count="draft?.sources.length ?? 0" :initial-result="modelResult" :result-token="resultToken" @import="flow.importCollected" />
         <details v-if="context" class="m-details m-model">
           <summary>使用手机上的个人模型</summary>
           <p class="m-help">Key 在系统窗口输入并保存在本机。</p>

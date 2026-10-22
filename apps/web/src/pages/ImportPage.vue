@@ -6,10 +6,12 @@ import StatusTag from '../components/StatusTag.vue'
 import UiIcon from '../components/UiIcon.vue'
 import PolicyAssist from '../components/PolicyAssist.vue'
 import type { ExternalInput } from '../policyAssist'
-import { copy } from '../copy'
+import { copy, frontendCopy, policyStateLine } from '../copy'
 import { emptySource, sourceProvenanceLabel, sourceStatusLabel, sourceTypes } from '../workflow'
 import type { PolicySource, Workflow } from '../workflow'
 const props = defineProps<{ state: Workflow; busy?: boolean; error?: string; uploadedName?: string }>()
+// One state line for every policy source: text present never means reviewed.
+const sourceStateLine = (source: PolicySource) => policyStateLine({ review_status: 'UNREVIEWED', completeness: source.complete ? 'COMPLETE' : null, attachments_status: 'NOT_CHECKED' })
 const emit = defineEmits<{ example: []; next: []; file: [File]; dirty: []; import: [ExternalInput] }>()
 const file = ref<File | null>(null)
 const fileError = ref('')
@@ -71,8 +73,8 @@ function onTextInput(source: PolicySource) {
 }
 </script>
 <template>
-  <div>
-    <div class="page-heading"><h1 id="page-title" tabindex="-1">{{ copy.importTitle }}</h1><p>{{ copy.importDescription }}</p></div>
+  <div class="page page-import">
+    <div class="page-heading"><h1 id="page-title" tabindex="-1">{{ frontendCopy.pageTitles.import }}</h1><p>{{ copy.importDescription }}</p></div>
     <slot name="context" />
     <div class="import-grid" :inert="busy || undefined" :aria-busy="busy || undefined" @input="!state.example && emit('dirty')" @change="!state.example && emit('dirty')">
       <section class="material-panel apk-panel"><div class="panel-heading"><h2>APK 文件</h2><StatusTag>本机</StatusTag></div>
@@ -88,7 +90,7 @@ function onTextInput(source: PolicySource) {
         <p v-if="fileError" id="apk-file-error" class="error-text" role="alert">{{ fileError }}</p><p class="field-help">{{ state.example ? copy.apkHelp : "继续后会上传到本机服务，仅在受限 Docker 中解析。上限 150 MiB。本机材料保留以便恢复和重试。" }}</p>
         <div class="example-entry"><h3>先看一次对照</h3><p class="field-help">{{ copy.demoHelp }}</p><UiButton @click="emit('example')">{{ copy.tryDemo }}<UiIcon name="arrow-right" /></UiButton></div>
       </section>
-      <section class="material-panel policy-panel"><div class="panel-heading"><h2>政策来源</h2><span class="field-help">{{ state.sources.length }} 份来源</span></div>
+      <section class="material-panel policy-panel priority-panel"><div class="panel-heading"><h2>政策来源</h2><span class="field-help">{{ state.sources.length }} 份来源</span></div>
         <article v-for="(source, index) in state.sources" :key="source.id" class="source-editor">
           <div class="source-heading"><h3>{{ source.title || `政策来源 ${index + 1}` }}</h3><StatusTag :tone="source.status === 'failed' ? 'error' : source.text ? 'info' : 'neutral'">{{ state.example ? (source.text ? '示例节选' : '待准备') : `${sourceStatusLabel(source.status)} · ${sourceProvenanceLabel(source.provenance)}` }}</StatusTag><UiButton v-if="state.sources.length > 1" variant="quiet" :aria-label="`移除来源 ${index + 1}`" @click="removeSource(source.id)">移除</UiButton></div>
           <p v-if="source.status === 'failed'" class="error-text" role="alert">{{ copy.sourceFailed }} · {{ copy.retry }}</p>
@@ -100,7 +102,7 @@ function onTextInput(source: PolicySource) {
             <details class="source-body"><summary>适用范围</summary><div class="field-pair"><UiField label="适用版本" :id="'version-' + source.id"><input :id="'version-' + source.id" v-model="source.version" maxlength="100" placeholder="未知" /></UiField><UiField label="适用地区" :id="'region-' + source.id"><input :id="'region-' + source.id" v-model="source.region" maxlength="100" placeholder="未知" /></UiField></div>
             <div v-if="!state.example" class="field-pair"><UiField label="适用包名" :id="'package-' + source.id"><input :id="'package-' + source.id" v-model="source.packageName" maxlength="200" placeholder="未知" /></UiField><UiField label="适用 versionCode" :id="'vcode-' + source.id"><input :id="'vcode-' + source.id" v-model.number="source.versionCode" type="number" min="0" placeholder="未知" /></UiField></div><UiField label="应用／产品范围" :id="'product-' + source.id"><input :id="'product-' + source.id" v-model="source.product" maxlength="100" placeholder="未知" /></UiField></details>
           </details>
-          <div class="source-notes"><span>{{ copy.sourceScopeUnknown }}</span><span>正文完整度未知</span><span>全文未复核</span><span>{{ copy.attachmentsUnknown }}</span></div>
+          <div class="source-notes"><span>{{ copy.sourceScopeUnknown }}</span><span>{{ sourceStateLine(source) }}</span></div>
         </article>
         <UiButton :disabled="state.sources.length >= 8" @click="addSource">添加政策来源</UiButton>
         <PolicyAssist v-if="!state.example" :busy="busy" :source-count="state.sources.length" @import="emit('import', $event)" />

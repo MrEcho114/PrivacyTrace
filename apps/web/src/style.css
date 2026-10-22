@@ -97,3 +97,247 @@ summary { cursor: pointer; }
 mark { background: var(--notice); color: var(--ink); }
 .job-state button { margin-left: 15px; }
 .job-state { overflow-wrap: anywhere; }
+
+/* ------------------------------------------------------------------ *
+ * #165 concept shell. Semantic roles live in theme.css; this block only
+ * re-points the workbench chrome and the six page surfaces at them.
+ * ------------------------------------------------------------------ */
+
+.workbench { background: var(--pt-paper); color: var(--pt-ink); }
+.workbench .workspace-bar {
+  position: relative; background: var(--pt-header); border-bottom: 0;
+  gap: 20px; padding-bottom: 16px;
+}
+/* One identity band, four colours: the only vivid decoration in the shell. */
+.workbench .workspace-bar::after {
+  content: ''; position: absolute; inset: auto 0 0; height: 4px;
+  background: linear-gradient(90deg, var(--pt-stripe-1) 0 25%, var(--pt-stripe-2) 25% 50%, var(--pt-stripe-3) 50% 75%, var(--pt-stripe-4) 75% 100%);
+}
+.workbench .workspace-brand { font-family: var(--pt-font-display); font-weight: 600; color: var(--pt-ink); }
+.workbench .brand-mark { background: var(--pt-structure); color: var(--pt-paper); border-radius: 0; }
+.workbench .workspace-purpose { color: var(--pt-ink); border-left-color: var(--pt-structure); }
+.workbench .workspace-bar .status-tag { background: var(--pt-paper); border: 1px solid var(--pt-structure); border-radius: 0; }
+.workbench .workspace-bar > .ui-button { margin-left: auto; }
+
+.workbench .workspace-layout { grid-template-columns: 176px minmax(0, 1fr); background: var(--pt-paper); }
+.workbench .workspace-sidebar {
+  background: var(--pt-paper); border-right: 1px solid var(--pt-rule);
+  padding: 24px 14px; gap: 20px;
+}
+.workbench .flow-nav { display: block; }
+.workbench .flow-nav ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+/* One flow, one current step: the same DOM reflows horizontally at <=896px. */
+.workbench .flow-nav button {
+  display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: start;
+  gap: 8px; width: 100%; min-height: 44px; padding: 10px 8px;
+  border: 0; border-left: 3px solid transparent; border-radius: 0;
+  background: transparent; color: var(--pt-muted); text-align: left;
+  font-size: 0.8125rem; line-height: 1.5;
+}
+.workbench .flow-nav button[aria-current] { border-left-color: var(--pt-action); color: var(--pt-ink); font-weight: 700; }
+.workbench .flow-nav button:disabled { color: var(--pt-muted); cursor: not-allowed; }
+.workbench .flow-nav button:disabled .flow-step-number { border-style: dashed; }
+.workbench .flow-step-number {
+  display: grid; place-items: center; min-width: 22px; min-height: 22px; padding: 1px;
+  border: 1px solid currentColor; font-family: var(--pt-font-code); font-size: 0.6875rem; line-height: 1;
+}
+.workbench .flow-nav button[aria-current] .flow-step-number { background: var(--pt-structure); border-color: var(--pt-structure); color: var(--pt-paper); }
+.workbench .sidebar-actions { display: grid; gap: 4px; padding-top: 16px; border-top: 1px solid var(--pt-rule); }
+.workbench .sidebar-actions .ui-button { justify-content: flex-start; padding-left: 9px; text-align: left; }
+.workbench .nav-item { border-left: 3px solid transparent; padding-left: 9px; border-radius: 0; color: var(--pt-muted); }
+.workbench .nav-item.active { background: transparent; border-left-color: var(--pt-structure); color: var(--pt-ink); font-weight: 700; }
+.workbench .sidebar-foot { color: var(--pt-muted); }
+.workbench .workspace-content { background: var(--pt-paper); }
+
+/* Type scale: report title 48/36, section 22/20, reading 16, status 18. */
+.workbench .workspace-content .page-heading { margin: 28px 0 20px; }
+.workbench .workspace-content .page-heading h1 {
+  font-family: var(--pt-font-display); font-size: var(--pt-type-report);
+  line-height: 1.25; font-weight: 600; letter-spacing: 0; margin: 0 0 10px;
+}
+.workbench .workspace-content .page-heading p { color: var(--pt-muted); font-size: var(--pt-type-reading); line-height: 1.7; max-width: 70ch; margin: 0; }
+.workbench .page .panel-heading h2 { font-family: var(--pt-font-body); font-size: var(--pt-type-panel); font-weight: 700; line-height: 1.4; letter-spacing: 0; }
+.workbench .page .panel-heading { border-bottom: 1px solid var(--pt-rule); padding-bottom: 12px; }
+
+/* Panels: white, 1px structural edge, square corners, no shadows. */
+.workbench .page .material-panel { background: var(--pt-paper); border: 1px solid var(--pt-structure); border-radius: 0; }
+.workbench .page .priority-panel { position: relative; padding-top: 28px; }
+.workbench .page .report-conclusions.priority-panel { padding-top: 4px; }
+.workbench .page .priority-panel::before {
+  content: ''; position: absolute; left: -1px; right: -1px; top: -1px; height: 4px;
+  background: linear-gradient(90deg, var(--pt-stripe-1) 0 25%, var(--pt-stripe-2) 25% 50%, var(--pt-stripe-3) 50% 75%, var(--pt-stripe-4) 75% 100%);
+}
+
+/* One vivid action colour: the page primary. Secondary stays neutral. */
+.workbench .ui-button { border-color: var(--pt-structure); background: var(--pt-paper); color: var(--pt-ink); }
+.workbench .ui-button.primary {
+  background: var(--pt-action); border-color: var(--pt-action); color: #fff;
+  font-size: var(--pt-type-action); font-weight: 700; min-height: 40px; padding: 9px 18px;
+}
+.workbench .ui-button.quiet { border-color: transparent; background: transparent; text-decoration: underline; text-underline-offset: 0.3em; }
+.workbench .ui-button.danger { background: var(--pt-paper); border-color: var(--danger); color: var(--danger); }
+.workbench .ui-button:disabled { background: var(--pt-paper); border-color: var(--pt-rule); border-style: dashed; color: var(--pt-muted); }
+@media (hover: hover) and (pointer: fine) {
+  .workbench .ui-button.primary:hover:not(:disabled) { background: var(--pt-action-hover); border-color: var(--pt-action-hover); }
+}
+
+/* Status is text plus edge style, not a second fill colour. */
+.workbench .page .status-tag { background: var(--pt-paper); border: 1px solid var(--pt-structure); border-radius: 0; color: var(--pt-ink); font-size: 0.8125rem; line-height: 1.6; padding: 2px 6px; }
+.workbench .page .status-tag.wait { background: var(--pt-paper); border-style: dashed; }
+.workbench .page .status-tag.error { background: var(--pt-paper); border-style: double; border-width: 3px; color: var(--pt-ink); }
+.workbench .page .status-tag.info,
+.workbench .page .status-tag.success { background: var(--pt-paper); color: var(--pt-ink); }
+
+.workbench .page .notice { background: var(--pt-paper); border: 1px solid var(--pt-rule); border-left: 3px solid var(--pt-structure); border-radius: 0; }
+.workbench .page .file-drop { background: var(--pt-paper); border: 1px dashed var(--pt-structure); border-radius: 0; }
+.workbench .page .source-editor { border-top-color: var(--pt-rule); }
+.workbench .page .source-tabs button { background: var(--pt-paper); border-color: var(--pt-rule); border-radius: 0; }
+.workbench .page .source-tabs button.selected { background: var(--pt-paper); border-color: var(--pt-structure); font-weight: 700; }
+.workbench .page .candidate-item { background: var(--pt-paper); border-color: var(--pt-rule); border-radius: 0; }
+.workbench .page .candidate-item.selected { background: var(--pt-paper); border-color: var(--pt-structure); box-shadow: inset 3px 0 var(--pt-structure); }
+.workbench .page .candidate-list { scrollbar-gutter: stable; }
+.workbench .page pre { background: var(--pt-paper); border: 1px solid var(--pt-rule); border-radius: 0; color: var(--pt-ink); }
+.workbench .page .evidence-card { background: var(--pt-paper); border: 1px solid var(--pt-rule); border-radius: 0; }
+.workbench .page .evidence-card blockquote { border-left-color: var(--pt-structure); }
+.workbench .page .flow-footer { border-top: 1px solid var(--pt-rule); background: var(--pt-paper); }
+.workbench .page .flow-footer > .primary { flex-shrink: 0; }
+
+/* Progress: stage rail keeps the reading order, current stage uses edge and text. */
+.workbench .page .stage-preview { background: var(--pt-paper); border: 1px solid var(--pt-rule); border-left: 3px solid var(--pt-structure); border-radius: 0; }
+.workbench .page .stage-list li { border-bottom-color: var(--pt-rule); }
+.workbench .page .stage-number { width: auto; height: auto; min-width: 28px; min-height: 28px; padding: 2px; border-radius: 0; border: 1px solid var(--pt-rule); background: var(--pt-paper); font-family: var(--pt-font-code); font-size: 0.75rem; }
+.workbench .page .stage-list .done .stage-number { background: var(--pt-paper); border-color: var(--pt-structure); color: var(--pt-ink); }
+.workbench .page .stage-list .current .stage-number { background: var(--pt-structure); border-color: var(--pt-structure); color: var(--pt-paper); }
+.workbench .page .execution-details { border-top-color: var(--pt-rule); }
+
+/* Example report: report identity, then ~55:45 conclusions/evidence. */
+.workbench .page .report-boundary {
+  position: relative; margin: 0 0 18px; padding: 10px 12px 10px 34px;
+  border: 1px solid var(--pt-structure); font-size: 0.8125rem; line-height: 1.7;
+}
+.workbench .page .report-boundary::before {
+  content: ''; position: absolute; inset: 0 auto 0 0; width: 16px;
+  background: repeating-linear-gradient(135deg, var(--pt-ink) 0 5px, var(--pt-paper) 5px 10px);
+}
+.workbench .page .report-summary { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 24px; margin: 0 0 18px; padding-bottom: 14px; border-bottom: 1px solid var(--pt-rule); }
+.workbench .page .sample-monogram { width: auto; height: auto; min-width: 48px; min-height: 48px; padding: 6px; background: var(--pt-paper); border: 1px solid var(--pt-structure); border-radius: 0; }
+.workbench .page .report-source-state { text-align: right; }
+.workbench .page .report-source-state p { margin: 0; font-size: 0.8125rem; line-height: 1.7; color: var(--pt-muted); }
+.workbench .page .report-columns { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.workbench .page .report-columns[data-layout="stacked"] { grid-template-columns: minmax(0, 1fr); }
+.workbench .page .report-conclusions { background: var(--pt-paper); border: 1px solid var(--pt-structure); }
+.workbench .page .report-conclusions .panel-heading { margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--pt-structure); }
+.workbench .page .report-conclusions .comparison-table { min-width: 0; width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.workbench .page .report-conclusions .comparison-table thead th {
+  padding: 9px 16px; background: transparent; color: var(--pt-muted);
+  font-family: var(--pt-font-code); font-size: 0.6875rem; font-weight: 400;
+  letter-spacing: 0.055em; border-bottom: 1px solid var(--pt-structure);
+}
+.workbench .page .report-conclusions .comparison-table tbody td { padding: 14px 16px; border: 0; vertical-align: top; background: transparent; }
+.workbench .page .report-conclusions .comparison-table tbody tr + tr td { border-top: 1px solid var(--pt-rule); }
+.workbench .page .report-conclusions .finding-type { border-left: 3px solid transparent; }
+.workbench .page .report-conclusions tr.is-selected .finding-type { border-left-color: var(--pt-structure); }
+.workbench .page .report-conclusions .finding-evidence { width: 1%; text-align: right; white-space: nowrap; }
+.workbench .page .finding-number { display: inline-block; margin: 0 8px 4px 0; font-family: var(--pt-font-code); font-size: 0.6875rem; color: var(--pt-muted); }
+.workbench .page .finding-type h3 { display: inline; font-family: var(--pt-font-body); font-size: var(--pt-type-finding); line-height: 1.35; font-weight: 700; margin: 0; }
+.workbench .page .finding-meta { margin: 6px 0 8px; color: var(--pt-muted); font-size: 0.75rem; line-height: 1.6; }
+.workbench .page .report-conclusions .status-tag { font-size: var(--pt-type-status); padding: 2px 8px; border-width: 2px; }
+.workbench .page .comparison-scope { margin: 0; padding: 10px 16px; border-top: 1px solid var(--pt-rule); color: var(--pt-muted); font-size: 0.8125rem; line-height: 1.7; }
+.workbench .page .report-action { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 16px; border-top: 1px solid var(--pt-structure); }
+.workbench .page .report-action .action-context { margin: 0; font-size: 0.8125rem; color: var(--pt-ink); }
+.workbench .page .report-action .ui-button.primary { width: 100%; }
+.workbench .page .text-link {
+  border: 0; background: transparent; padding: 4px 0; min-height: 36px;
+  display: inline-flex; align-items: center; color: var(--pt-ink);
+  font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 0.3em;
+}
+.workbench .page .report-evidence { margin-top: 0; background: var(--pt-paper); border: 1px solid var(--pt-structure); scroll-margin-top: 16px; }
+.workbench .page .report-evidence .panel-heading { margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--pt-rule); }
+.workbench .page .report-evidence .panel-heading h2 { font-family: var(--pt-font-display); font-size: 1.125rem; }
+.workbench .page .report-evidence-body { padding: 14px 16px 16px; }
+.workbench .page .selected-context { margin: 0 0 14px; padding-bottom: 12px; border-bottom: 1px solid var(--pt-rule); }
+.workbench .page .selected-context p { margin: 0 0 6px; font-size: 0.875rem; line-height: 1.7; }
+.workbench .page .selected-context p:last-child { margin-bottom: 0; }
+.workbench .page .report-evidence .evidence-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.workbench .page .report-evidence .evidence-card { padding: 14px; }
+.workbench .page .report-evidence .evidence-card + .evidence-card { border: 1px solid var(--pt-rule); padding: 14px; }
+.workbench .page .report-info { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--pt-rule); font-size: 0.8125rem; }
+.workbench .page .report-info > summary { min-height: 36px; padding: 8px 0; font-weight: 700; }
+.workbench .page .report-info dl { display: grid; gap: 6px; margin: 6px 0 0; }
+.workbench .page .report-info dl > div { display: grid; gap: 2px; margin: 0; padding: 8px 0; border-top: 1px solid var(--pt-rule); }
+.workbench .page .report-info dt { color: var(--pt-muted); font-size: 0.75rem; }
+.workbench .page .report-info dd { margin: 0; font-size: 0.8125rem; line-height: 1.7; }
+
+/* Settings dialog keeps the same paper panel and square edges. Reka teleports
+   the dialog to <body>, so it cannot be scoped under .workbench. */
+.ui-dialog.settings-dialog { background: var(--pt-paper); border: 1px solid var(--pt-structure); border-radius: 0; color: var(--pt-ink); }
+.ui-dialog.settings-dialog > .panel-heading h2 { font-family: var(--pt-font-display); font-size: 1.5rem; }
+.ui-dialog.settings-dialog .settings-section { border-top-color: var(--pt-rule); }
+.ui-dialog.settings-dialog .status-tag { background: var(--pt-paper); border: 1px solid var(--pt-structure); border-radius: 0; color: var(--pt-ink); }
+.ui-dialog.settings-dialog .status-tag.wait { border-style: dashed; }
+.ui-dialog.settings-dialog .status-tag.error { border-style: double; border-width: 3px; }
+.ui-dialog.settings-dialog .ui-button { border-color: var(--pt-structure); background: var(--pt-paper); color: var(--pt-ink); }
+.ui-dialog.settings-dialog .ui-button.quiet { border-color: transparent; background: transparent; text-decoration: underline; text-underline-offset: 0.3em; }
+
+/* Touch: 48px targets and a 56px primary where the layout is narrow or coarse. */
+@media (max-width: 896px), (pointer: coarse) {
+  .workbench button, .workbench .ui-button, .workbench summary, .workbench [role="tab"], .workbench .text-link { min-height: var(--pt-touch); }
+  .workbench .ui-button.primary { min-height: var(--pt-action-height); }
+  .workbench .flow-nav button { min-height: var(--pt-touch); }
+  .workbench .page .text-link, .workbench .page .report-info > summary { min-height: var(--pt-touch); }
+}
+
+/* Single column at <=896px: the flow becomes a horizontal strip of the same DOM. */
+@media (max-width: 896px) {
+  .workbench .workspace-layout { grid-template-columns: minmax(0, 1fr); }
+  .workbench .workspace-sidebar { border-right: 0; border-bottom: 1px solid var(--pt-rule); padding: 8px 12px 10px; gap: 8px; }
+  .workbench .flow-nav ol { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+  .workbench .flow-nav button { grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 6px 4px; border-left: 0; border-bottom: 2px solid transparent; font-size: 0.75rem; }
+  .workbench .flow-nav button[aria-current] { border-left-color: transparent; border-bottom-color: var(--pt-action); }
+  .workbench .flow-step-number { width: auto; height: auto; border: 0; font-size: 0.625rem; color: var(--pt-muted); }
+  .workbench .flow-nav button[aria-current] .flow-step-number { background: transparent; color: var(--pt-ink); }
+  .workbench .sidebar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-top: 0; padding-top: 0; }
+  .workbench .nav-item { width: auto; padding-left: 12px; border-left: 0; }
+  .workbench .nav-item.active { border-left-color: transparent; }
+  .workbench .sidebar-foot { display: none; }
+  .workbench .workspace-purpose { display: none; }
+  .workbench .workspace-bar { flex-wrap: wrap; gap: 8px 12px; padding: 12px 16px 16px; }
+  .workbench .workspace-content { padding: 20px 16px 40px; padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); }
+  .workbench .workspace-content .page-heading h1 { font-size: var(--pt-type-report-mobile); }
+  .workbench .page .panel-heading h2 { font-size: var(--pt-type-panel-mobile); }
+  .workbench .page .finding-type h3 { font-size: var(--pt-type-finding-mobile); }
+  .workbench .page .report-columns { grid-template-columns: minmax(0, 1fr); }
+  .workbench .page .report-source-state { text-align: left; }
+  .workbench .page .report-action { position: static; }
+  .workbench .page .flow-footer { flex-wrap: wrap; }
+  .workbench .page .flow-footer > .primary { width: 100%; }
+  .workbench .page .report-conclusions .report-filter { margin-left: auto; }
+  .workbench .page .progress-overview { grid-template-columns: minmax(0, 1fr); }
+  .workbench .page .candidate-grid { grid-template-columns: minmax(0, 1fr); }
+  .workbench .page .import-grid { grid-template-columns: minmax(0, 1fr); }
+  .workbench .page .field-pair { grid-template-columns: minmax(0, 1fr); }
+  .workbench .page .report-source-summary { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Narrow report cards: the two contract columns stack without losing data-labels. */
+@media (max-width: 560px) {
+  .workbench .page .report-conclusions .comparison-table,
+  .workbench .page .report-conclusions .comparison-table tbody { display: block; min-width: 0; }
+  .workbench .page .report-conclusions .comparison-table thead { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
+  .workbench .page .report-conclusions .comparison-table tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px; border-bottom: 1px solid var(--pt-rule); }
+  .workbench .page .report-conclusions .comparison-table tbody tr + tr td { border-top: 0; }
+  .workbench .page .report-conclusions .comparison-table tbody td { display: block; padding: 0; border: 0; }
+  .workbench .page .report-conclusions .finding-type { border-left: 0; }
+  .workbench .page .report-conclusions tr.is-selected .finding-type { border-left: 0; }
+  .workbench .page .report-conclusions .finding-evidence { align-self: center; }
+  .workbench .page .report-evidence .evidence-card { padding: 12px; }
+}
+
+/* 1280x720 keeps the first evidence entry above the fold by trimming spacing,
+   never the type scale. */
+@media (min-width: 897px) and (max-height: 760px) {
+  .workbench .workspace-content .page-heading { margin: 16px 0 12px; }
+  .workbench .page .report-summary { margin-bottom: 12px; padding-bottom: 10px; }
+  .workbench .page .report-boundary { margin-bottom: 12px; }
+  .workbench .page .report-conclusions .comparison-table tbody td { padding: 11px 16px; }
+}

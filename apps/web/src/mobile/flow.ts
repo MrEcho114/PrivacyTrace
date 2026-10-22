@@ -19,6 +19,7 @@ export function createMobileFlow(bridge: MobileBridge) {
   const model = ref<ModelStatus>({ configured: false, endpoint: null }), modelResult = ref('')
   let generation = 0, pendingStart: { revision: number; request_id: string } | null = null
   let busyPolls = 0
+  let quickPolls = 0
   let restoring = false
   let timer: ReturnType<typeof setTimeout> | undefined
   // Background polling is not abortable through the native bridge, so every
@@ -30,16 +31,18 @@ export function createMobileFlow(bridge: MobileBridge) {
     pollEpoch += 1
     clearTimeout(timer)
   }
-  function schedule(current: number, first = false) {
+  function schedule(current: number, first = false, quick = false) {
     if (current !== generation) return
     clearTimeout(timer)
     if ((!job.value && !restoring) || terminal()) return
     const throttled = error.value === 'SERVER_BUSY'
     if (error.value && !throttled) return
     busyPolls = throttled ? Math.min(busyPolls + 1, 3) : 0
+    if (quick) quickPolls = 2
     // Native currently exposes a busy code, not response headers. Default to
     // the server's current 60s window; never replay a failed write operation.
-    const delay = throttled ? 60_000 * 2 ** (busyPolls - 1) : first ? FIRST_POLL_MS : POLL_INTERVAL_MS
+    let delay = throttled ? 60_000 * 2 ** (busyPolls - 1) : first ? FIRST_POLL_MS : POLL_INTERVAL_MS
+    if (!throttled && quickPolls > 0) { quickPolls -= 1; delay = 1_500 }
     const jitter = first && !throttled ? 0 : Math.floor(Math.random() * (throttled ? 10_000 : 4_000))
     timer = setTimeout(() => poll(true), delay + jitter)
   }
@@ -178,7 +181,7 @@ export function createMobileFlow(bridge: MobileBridge) {
       }
       state.step = 'progress'
     })
-    schedule(current, true)
+    schedule(current, true, true)
   }
   async function poll(background = false) {
     const current = generation
@@ -214,7 +217,7 @@ export function createMobileFlow(bridge: MobileBridge) {
   async function control(action: 'cancel-job' | 'retry-job') {
     const current = generation
     await run(async request => { job.value = await request<AnalysisJob>(action); state.step = 'progress' })
-    schedule(current, true)
+    schedule(current, true, true)
   }
   async function openReport() { await run(async request => { report.value = await request<Report>('report'); state.step = 'report' }) }
   async function remove() {

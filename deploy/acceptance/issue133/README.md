@@ -104,3 +104,40 @@ python -m deploy.acceptance.issue133.verify NEW_PACKET_DIRECTORY
 
 本次结果与仍待最终组合补跑的范围见
 [`docs/acceptance/issue133/20261021.md`](../../../docs/acceptance/issue133/20261021.md)。
+
+## Canonical variant driver（2026-10-22）
+
+`driver.cjs` + `matrix.json` 把 N12/F05/F06 的收敛变体串成可重复的单次运行，
+每例写 `result.json`、UTC timeline、命令、截图、DB/API/材料层读回和 SHA256SUMS。
+
+```text
+node deploy/acceptance/issue133/driver.cjs --config <lab.json> --list
+node deploy/acceptance/issue133/driver.cjs --config <lab.json> --case N12-restore
+node deploy/acceptance/issue133/driver.cjs --config <lab.json> --all
+node deploy/acceptance/issue133/finalize.cjs <evidence-root>
+```
+
+- `lab.json` 至少包含 `origin`、`port`、`cdpPort`、`serial`、`adb`、
+  `wslDistro`、`repoWsl`、`evidenceRoot`、`labState`、`controller`、
+  `mumuManager`、`vmIndex`。可选 `sourceSha`、`serverSourceSha`、
+  `expectedClientApkSha`、`expectedFixtureApkSha`、`refreshIdentity`。
+- 示例 `.scratch/issue133-evidence-20261022/lab.json` 是 pre-fix 4208823 组合；
+  `.scratch/issue133-evidence-final-20261022/lab.json` 是 final 2626152 组合。
+- `finalize.cjs` 读取每个 `result.json`，逐文件校验 SHA256，并回读
+  tombstone、活动扫描器、runner 操作和设备残留规则；任一项不满足即非零退出。
+- 设备侧离线用 MuMu root console 的 `OUTPUT REJECT` 到实例端口（`net-block` /
+  `net-unblock`），不使用飞行模式；一次 radio-off 尝试导致 adbd 不可达，已恢复
+  且不计入证据。
+- 默认 adb server 隔离在 `ANDROID_ADB_SERVER_PORT=5038`；CDP 端口避开 Windows
+  排除区（本次 `18778`）。`avdName` 不再硬校验，设备身份以显式 serial + APK
+  SHA256 记录。
+
+控制容器可重复创建（只操作本票 Compose 项目）：
+
+```text
+wsl -d Ubuntu-24.04 -u root -- env PT133E_CONTROLLER_IMAGE=<runner-image-id> \
+  bash deploy/acceptance/issue133/controller.sh ensure
+```
+
+`provision.sh` / `cleanup.sh` 仍是本票独立实验室的入口；`resign-web-cert.sh`
+用 #73 测试 CA 重签 web 叶证书（客户端只信任 `localhost`）。

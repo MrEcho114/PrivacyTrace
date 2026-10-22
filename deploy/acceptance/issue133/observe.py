@@ -13,11 +13,30 @@ from deploy.acceptance.provision import Laboratory, execute
 
 
 def laboratory():
-    marker = Path("/var/tmp/pt133e/current")
-    candidate = Path(marker.read_text())
-    root = candidate.resolve()
-    if root.parent != marker.parent or candidate.is_symlink():
-        raise ValueError("lane E ownership mismatch")
+    """Resolve only the lab this lane owns.
+
+    The harness-created marker at ``/var/tmp/pt133e/current`` is the default.
+    ``PT133E_LAB_STATE`` (or ``PT_LAB_STATE``) lets the same read-only observer
+    inspect one explicitly assigned lab without touching another lane's stack.
+    """
+    explicit = (os.environ.get("PT133E_LAB_STATE") or os.environ.get("PT_LAB_STATE") or "").strip()
+    if explicit:
+        root = Path(explicit).resolve()
+        expected_parent = Path("/var/tmp")
+        if (
+            root.parent != expected_parent
+            or root.is_symlink()
+            or not re.fullmatch(r"pt81-[a-f0-9]{12}", root.name)
+        ):
+            raise ValueError("lane E ownership mismatch")
+    else:
+        marker = Path("/var/tmp/pt133e/current")
+        candidate = Path(marker.read_text())
+        root = candidate.resolve()
+        if root.parent != marker.parent or candidate.is_symlink():
+            raise ValueError("lane E ownership mismatch")
+    if not (root / "owner.json").is_file():
+        raise ValueError("lane E owner marker missing")
     return Laboratory(root)
 
 
@@ -26,7 +45,12 @@ def observe(lab):
     private.mkdir(mode=0o700, exist_ok=True)
     registry = private / "scopes.json"
     scopes = json.loads(registry.read_text()) if registry.exists() else {}
-    raw = lab.run("exec", "-T", "web", "cat", "/tmp/pt133e-access.json")
+    log_present = True
+    try:
+        raw = lab.run("exec", "-T", "web", "cat", "/tmp/pt133e-access.json")
+    except RuntimeError:
+        raw = ""
+        log_present = False
     requests = []
     for line in raw.splitlines():
         item = json.loads(line)
@@ -39,14 +63,21 @@ def observe(lab):
             authorization = req.get("headers", {}).get("Authorization", [])
             if authorization and authorization[0].startswith("Bearer "):
                 entry["token"] = authorization[0][7:]
+        else:
+            job_match = re.search(r"/jobs/([A-Za-z0-9_-]{1,100})(?:/|$)", route)
+            if job_match:
+                identity = job_match[1]
+            else:
+                identity = None
+        if match:
+            identity = match[1]
         user_agent = " ".join(req.get("headers", {}).get("User-Agent", []))
         actor = "ANDROID_NATIVE" if user_agent == "PrivacyTrace-Android" else "OBSERVER"
-        identity = re.search(r"\b[a-f0-9]{32}\b", route)
         requests.append(
             {
                 "at": item["ts"],
                 "actor": actor,
-                "scope_alias": hashlib.sha256(identity[0].encode()).hexdigest()[:12]
+                "scope_alias": hashlib.sha256(identity.encode()).hexdigest()[:12]
                 if identity
                 else None,
                 "method": req["method"],
@@ -63,22 +94,28 @@ def observe(lab):
         return hashlib.sha256(value.encode()).hexdigest()[:12]
 
     for job in database["jobs"]:
-        job["job_alias"] = alias(job.pop("job_id"))
+        job["job_alias"] = job.get("job_alias") or alias(job.pop("job_id"))
     for scope in database["scopes"]:
-        scope["scope_alias"] = alias(scope.pop("scope_id"))
+        scope["scope_alias"] = scope.get("scope_alias") or alias(scope.pop("scope_id"))
     runner = []
     runner_path = lab.root / "runner/requests.sqlite"
     if runner_path.exists():
         with sqlite3.connect(f"file:{runner_path}?mode=ro", uri=True) as connection:
-            for state, result in connection.execute("SELECT state,result FROM operations"):
-                data = json.loads(result) if result else {}
+            for rowid, state, raw_result in connection.execute(
+                "SELECT rowid,state,result FROM operations"
+            ):
+                data = json.loads(raw_result) if raw_result else {}
                 runner.append(
                     {
+                        "row": rowid,
                         "state": state,
+                        "operation_alias": alias(str(rowid)),
                         "error": data.get("error"),
                         "has_receipt": bool(data.get("receipt")),
                         "result_sha256": hashlib.sha256(
-                            result if isinstance(result, bytes) else (result or "").encode()
+                            raw_result
+                            if isinstance(raw_result, bytes)
+                            else (raw_result or "").encode()
                         ).hexdigest(),
                     }
                 )
@@ -100,6 +137,10 @@ def observe(lab):
     return {
         "at_utc": datetime.now(timezone.utc).isoformat(),
         "source_sha": lab.state["source_sha"],
+        "project": lab.project,
+        "instance_suffix": lab.state["instance_id"][-12:],
+        "access_log_present": log_present,
+        "credential_capture": any("token" in entry for entry in scopes.values()),
         "request_counts": dict(Counter(r["method"] + " " + r["route"] for r in requests)),
         "native_request_counts": dict(
             Counter(

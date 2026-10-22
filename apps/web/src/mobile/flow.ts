@@ -20,6 +20,7 @@ export function createMobileFlow(bridge: MobileBridge) {
   let generation = 0, pendingStart: { revision: number; request_id: string } | null = null
   let busyPolls = 0
   let quickPolls = 0
+  let nativeBusyRetries = 0
   let restoring = false
   let timer: ReturnType<typeof setTimeout> | undefined
   // Background polling is not abortable through the native bridge, so every
@@ -158,6 +159,7 @@ export function createMobileFlow(bridge: MobileBridge) {
   async function save() { await run(async request => { if (draft.value) apply(await request<LiveDraft>('candidates', { revision: draft.value.revision, candidates: state.candidates.map(encode) })) }) }
   async function begin() {
     const current = generation
+    nativeBusyRetries = 0
     await run(async (request, check) => {
       if (!draft.value) return
       const recover = async (latest: LiveDraft) => {
@@ -194,16 +196,32 @@ export function createMobileFlow(bridge: MobileBridge) {
       }
       const epoch = ++pollEpoch
       try {
-        const [nextJob, latest] = await Promise.all([bridgeRequest<AnalysisJob>('job'), bridgeRequest<LiveDraft>('read')])
+        // The native workflow bridge admits one operation at a time; issue the
+        // job and draft reads one after another so the second call can never be
+        // rejected as BUSY_OR_INACTIVE (regression introduced by #145).
+        const nextJob = await bridgeRequest<AnalysisJob>('job')
+        const latest = await bridgeRequest<LiveDraft>('read')
         if (current !== generation || epoch !== pollEpoch || busy.value) return
         job.value = nextJob
         apply(latest)
         error.value = ''
+        nativeBusyRetries = 0
         schedule(current)
       } catch (cause) {
         if (current !== generation || epoch !== pollEpoch || busy.value) return
         if (cause instanceof Error && ['CANCELLED', 'INSTANCE_MISMATCH'].includes(cause.message)) return
-        error.value = typeof cause === 'string' ? cause : cause instanceof Error ? cause.message : '暂时无法刷新进度。'
+        const message = typeof cause === 'string' ? cause : cause instanceof Error ? cause.message : '暂时无法刷新进度。'
+        // A foreground action can hold the native gate while this automatic read
+        // runs; retry quickly a bounded number of times instead of stopping the
+        // progress loop until the user refreshes by hand.
+        if (message === 'BUSY_OR_INACTIVE' && nativeBusyRetries < 3) {
+          nativeBusyRetries += 1
+          error.value = ''
+          clearTimeout(timer)
+          timer = setTimeout(() => poll(true), 1_500)
+          return
+        }
+        error.value = message
         schedule(current)
       }
       return

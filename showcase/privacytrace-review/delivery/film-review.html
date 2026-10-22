@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>PrivacyTrace — 作品评审（专家版）</title>
+<style>
+  :root{
+    --ink:#07090c;
+    --ink2:#0d1219;
+    --paper:#f4f0e4;
+    --paper2:#e6dfcf;
+    --muted:#98a2b3;
+    --line:rgba(244,240,228,.16);
+    --amber:#e9b872;
+    --blue:#8ea3ff;
+    --green:#84c9a6;
+    --red:#e58978;
+    --serif:"Noto Serif SC", serif;
+    --sans:"Noto Sans SC", "Microsoft YaHei UI", sans-serif;
+    --mono:"Cascadia Mono", "Consolas", monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1920px;height:1080px;overflow:hidden;background:#000}
+  body{font-family:var(--sans);color:var(--paper);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  #stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--ink)}
+  .bg{position:absolute;inset:0;background:
+    radial-gradient(1100px 760px at 78% 16%, rgba(66,88,132,.22), transparent 62%),
+    radial-gradient(900px 700px at 12% 90%, rgba(124,92,48,.14), transparent 60%),
+    linear-gradient(180deg,#090c12 0%,#07090c 100%);}
+  .grid{position:absolute;inset:0;opacity:.05;background-image:
+    linear-gradient(to right, rgba(240,235,220,.55) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(240,235,220,.55) 1px, transparent 1px);
+    background-size:80px 80px;
+    -webkit-mask-image:radial-gradient(ellipse at 50% 45%, #000 30%, transparent 78%);
+    mask-image:radial-gradient(ellipse at 50% 45%, #000 30%, transparent 78%);}
+  .grain{position:absolute;inset:-40px;opacity:.045;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");}
+  .vig{position:absolute;inset:0;box-shadow:inset 0 0 260px 90px rgba(0,0,0,.62);pointer-events:none}
+
+  /* persistent chrome */
+  #brand{position:absolute;left:64px;top:42px;display:flex;align-items:center;gap:13px;opacity:0;z-index:20}
+  #brand .mark{width:32px;height:32px;border:1px solid rgba(244,240,228,.55);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--paper)}
+  #brand .name{font-size:17px;font-weight:600;letter-spacing:.03em}
+  #brand .sub{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--muted);margin-left:4px}
+  #chapter{position:absolute;right:64px;top:44px;text-align:right;z-index:20;opacity:.7}
+  #chapter .idx{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--amber)}
+  #chapter .name{display:block;font-size:13px;letter-spacing:.06em;color:var(--paper2);margin-top:3px}
+  #progress{position:absolute;left:0;bottom:0;width:100%;height:1px;background:rgba(244,240,228,.10);z-index:20}
+  #progress i{display:block;height:100%;width:0;background:var(--amber);opacity:.75}
+  #timecode{position:absolute;right:64px;bottom:22px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:rgba(244,240,228,.4);z-index:20}
+  #slate{position:absolute;left:64px;bottom:20px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:rgba(244,240,228,.55);z-index:20}
+
+  .scene{position:absolute;inset:0;opacity:0;overflow:hidden}
+  .serif{font-family:var(--serif)}
+  .mono{font-family:var(--mono)}
+  .muted{color:var(--muted)}
+  .amber{color:var(--amber)}
+  .blue{color:var(--blue)}
+  .green{color:var(--green)}
+  .red{color:var(--red)}
+  em{font-style:normal}
+
+  .sec-no{position:absolute;left:140px;top:150px;font-family:var(--mono);font-size:14px;letter-spacing:.2em;color:var(--amber)}
+  .sec-en{position:absolute;left:140px;top:174px;font-family:var(--mono);font-size:10px;letter-spacing:.32em;color:rgba(244,240,228,.36)}
+  .h1{position:absolute;left:140px;top:198px;width:1000px;font-family:var(--serif);font-weight:600;font-size:64px;line-height:1.24;letter-spacing:.005em;color:var(--paper)}
+  .h1 em{color:var(--amber)}
+  .body{position:absolute;left:142px;top:430px;width:660px;font-size:24px;line-height:1.82;color:rgba(244,240,228,.78);font-weight:300}
+  .body code{font-family:var(--mono);font-size:.86em;color:var(--paper);background:rgba(244,240,228,.08);padding:1px 5px}
+  .ghost{position:absolute;right:-30px;top:-40px;font-family:var(--serif);font-size:520px;line-height:1;color:rgba(244,240,228,.035);font-weight:600;letter-spacing:-.04em}
+
+  /* hook */
+  .hook-line{position:absolute;left:160px;font-family:var(--serif);font-size:54px;font-weight:500;line-height:1.3;letter-spacing:.01em;color:rgba(244,240,228,.9)}
+  #h1{top:238px}
+  #h2{top:338px}
+  #h3{top:438px}
+  .hook-line em{color:var(--amber)}
+  #h2 em{color:var(--blue)}
+  #h3 em{color:var(--green)}
+  .hook-q{position:absolute;left:160px;top:250px;font-family:var(--serif);font-size:72px;font-weight:600;line-height:1.3;color:var(--paper)}
+  .hook-title{position:absolute;left:156px;top:520px;font-family:var(--serif);font-size:150px;font-weight:600;line-height:.98;letter-spacing:-.015em;color:var(--paper)}
+  .hook-sub{position:absolute;left:162px;top:700px;font-size:28px;font-weight:300;letter-spacing:.03em;color:rgba(244,240,228,.76)}
+  .hook-meta{position:absolute;left:162px;top:754px;font-family:var(--mono);font-size:12px;letter-spacing:.22em;color:var(--amber)}
+  .hook-rule{position:absolute;left:160px;top:790px;width:520px;height:1px;background:linear-gradient(90deg,var(--amber),rgba(233,184,114,0))}
+  .hook-code{position:absolute;left:1270px;top:190px;width:230px;opacity:.22}
+  .hook-code i{display:block;height:6px;margin:13px 0;background:rgba(244,240,228,.55)}
+  .hook-policy{position:absolute;left:1620px;top:190px;width:210px;opacity:.20}
+  .hook-policy i{display:block;height:6px;margin:13px 0;background:rgba(244,240,228,.4)}
+  .hook-tag{position:absolute;font-family:var(--mono);font-size:10px;letter-spacing:.24em;color:rgba(244,240,228,.4)}
+  .hook-link{position:absolute;left:1500px;top:410px;width:120px;height:1px;background:var(--amber);transform-origin:left;opacity:.9}
+  .hook-node{position:absolute;left:1436px;top:392px;width:64px;height:36px;border:1px solid rgba(233,184,114,.55);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:var(--amber);background:rgba(10,13,18,.8)}
+
+  /* papers / panels */
+  .paper{position:absolute;background:linear-gradient(180deg,#f7f3e9 0%,#eee7d8 100%);color:#171b22;box-shadow:0 34px 90px rgba(0,0,0,.5)}
+  .paper::after{content:"";position:absolute;inset:10px;border:1px solid rgba(23,27,34,.10);pointer-events:none}
+  .panel{position:absolute;background:rgba(15,19,26,.9);border:1px solid rgba(244,240,228,.14);box-shadow:0 26px 70px rgba(0,0,0,.35)}
+  .corner{position:absolute;width:15px;height:15px;border:1px solid rgba(23,27,34,.4)}
+  .corner.tl{left:0;top:0;border-right:0;border-bottom:0}
+  .corner.tr{right:0;top:0;border-left:0;border-bottom:0}
+  .corner.bl{left:0;bottom:0;border-right:0;border-top:0}
+  .corner.br{right:0;bottom:0;border-left:0;border-top:0}
+
+  /* positioning */
+  .chips{position:absolute;left:142px;top:610px;display:flex;flex-direction:column;gap:10px}
+  .chip{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:13px;color:rgba(244,240,228,.78);letter-spacing:.02em}
+  .chip b{display:inline-block;min-width:74px;color:var(--paper);font-weight:500}
+  .chip .dot{width:5px;height:5px;background:var(--amber);border-radius:50%}
+  .not-card{left:140px;top:782px;width:650px;height:196px;padding:24px 28px}
+  .not-head{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:#8b3a2d}
+  .not-items{display:flex;align-items:baseline;gap:14px;margin-top:12px;font-family:var(--serif);font-size:34px;font-weight:600;color:#1b1f26}
+  .not-items i{font-family:var(--sans);font-size:20px;font-style:normal;color:#b6ad9a;font-weight:300}
+  .not-foot{margin-top:10px;font-size:13px;color:#5d5a52;font-weight:300;letter-spacing:.02em}
+  .claim{position:absolute;left:142px;top:704px;font-family:var(--serif);font-size:40px;font-weight:600;color:var(--paper);letter-spacing:.03em}
+  .win-label{position:absolute;left:1012px;top:196px;display:flex;flex-direction:column;gap:4px;text-align:left}
+  .win-label b{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--amber);font-weight:400}
+  .win-label span{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:rgba(244,240,228,.45)}
+  .window{position:absolute;overflow:hidden;background:#0c1016;border:1px solid rgba(244,240,228,.18);border-radius:9px;box-shadow:0 44px 110px rgba(0,0,0,.62)}
+  .win-bar{height:30px;background:#141a23;display:flex;align-items:center;gap:6px;padding:0 12px;border-bottom:1px solid rgba(244,240,228,.08)}
+  .win-bar i{width:7px;height:7px;border-radius:50%;background:#3b4552;display:block}
+  .win-bar span{margin-left:8px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:rgba(244,240,228,.35)}
+  .win-shot{position:relative;overflow:hidden;background:#f3efe4}
+  .win-shot img{display:block;width:100%}
+  .win-tag{position:absolute;left:14px;bottom:14px;font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:#2b3038;background:rgba(244,240,228,.92);border:1px solid rgba(23,27,34,.18);padding:6px 9px}
+  #pwin{left:1010px;top:232px;width:820px;height:490px}
+  #pwin .win-shot{height:460px}
+
+  /* innovation */
+  .ev-card{left:140px;top:392px;width:1640px;height:416px;padding:0}
+  .ev-head{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid rgba(23,27,34,.14);font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:#5d5a52}
+  .ev-head span:last-child{color:#8b3a2d}
+  .ev-col{position:absolute;top:76px;width:610px}
+  .ev-col.left{left:36px}
+  .ev-col.right{right:36px}
+  .ev-k{font-family:var(--mono);font-size:12px;letter-spacing:.18em;color:#8b3a2d}
+  .ev-path{margin-top:12px;font-family:var(--mono);font-size:14px;color:#3c414a;word-break:break-all}
+  .ev-loc{margin-top:5px;font-family:var(--mono);font-size:12px;color:#787268}
+  .ev-col pre{margin-top:14px;background:#171b22;color:#cdd6e6;font-family:var(--mono);font-size:14px;line-height:1.7;padding:14px 16px;white-space:pre-wrap;word-break:break-all;min-height:92px}
+  .ev-col blockquote{margin-top:14px;font-family:var(--serif);font-size:24px;line-height:1.7;color:#1b1f26;border-left:3px solid #b8863f;padding:4px 0 4px 16px;min-height:92px}
+  .ev-rule{margin-top:12px;font-family:var(--mono);font-size:11px;color:#7c766b;letter-spacing:.03em}
+  .ev-link{position:absolute;left:660px;top:240px;width:320px;height:1px;background:rgba(23,27,34,.35);transform-origin:left}
+  .ev-link i{position:absolute;left:50%;top:-4px;width:9px;height:9px;background:#b8863f;transform:rotate(45deg);margin-left:-4px}
+  .ev-link span{position:absolute;left:50%;top:-30px;transform:translateX(-50%);font-family:var(--mono);font-size:10px;letter-spacing:.24em;color:#8b3a2d}
+  .ev-foot{position:absolute;left:36px;bottom:20px;font-family:var(--serif);font-size:20px;font-weight:600;color:#2b3038;letter-spacing:.01em}
+  .ev-foot::before{content:"";display:inline-block;width:26px;height:1px;background:#b8863f;vertical-align:middle;margin-right:12px}
+  .principles{position:absolute;left:140px;top:792px;width:1640px;display:flex;gap:20px}
+  .pr{width:533px;height:208px;border:1px solid rgba(244,240,228,.16);background:rgba(14,18,25,.72);padding:22px 24px;position:relative}
+  .pr b{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--amber);font-weight:400}
+  .pr .pt{display:block;margin-top:10px;font-family:var(--serif);font-size:30px;font-weight:600;color:var(--paper)}
+  .pr span{display:block;margin-top:9px;font-size:15px;line-height:1.72;color:rgba(244,240,228,.62);font-weight:300}
+  .ifoot{position:absolute;left:142px;top:1014px;font-size:14px;letter-spacing:.02em;color:rgba(244,240,228,.44)}
+  .inno-quote{position:absolute;left:142px;top:372px;width:1500px;font-family:var(--serif);font-size:56px;line-height:1.42;font-weight:600;color:var(--paper);letter-spacing:.01em}
+  .inno-quote em{color:var(--amber)}
+
+  /* implementation */
+  .pipe{position:absolute;left:140px;top:392px;width:1640px;height:88px}
+  .pipe-line{position:absolute;left:0;top:19px;width:1640px;height:1px;background:rgba(244,240,228,.22);transform-origin:left}
+  .pipe-node{position:absolute;top:0;width:240px;transform:translateX(-50%)}
+  .pipe-node .pt-dot{width:9px;height:9px;border:1px solid var(--amber);background:var(--ink);border-radius:50%;margin:15px auto 0}
+  .pipe-node .pt-name{margin-top:14px;text-align:center;font-size:17px;color:rgba(244,240,228,.9);letter-spacing:.02em}
+  .pipe-node .pt-sub{margin-top:4px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:rgba(244,240,228,.4)}
+  .impl-detail{left:140px;top:520px;width:800px;height:404px;padding:24px 26px}
+  .d-page{position:absolute;inset:24px 26px}
+  .d-k{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--amber)}
+  .d-row{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid rgba(244,240,228,.09);padding:9px 0;font-family:var(--mono);font-size:12px}
+  .d-row span{color:rgba(244,240,228,.42);letter-spacing:.06em}
+  .d-row b{color:rgba(244,240,228,.9);font-weight:400;text-align:right}
+  .d-note{margin-top:14px;font-size:13px;line-height:1.7;color:rgba(244,240,228,.5);font-weight:300}
+  .report-win{left:1040px;top:164px;width:740px;height:820px}
+  .report-win .win-shot{height:790px}
+  .rwin-label{position:absolute;left:1040px;top:128px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:rgba(244,240,228,.45)}
+  .phone-wrap{left:1400px;top:150px;width:300px;height:760px}
+  .phone-label{position:absolute;left:1400px;top:112px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:rgba(244,240,228,.45)}
+  .phone{border:9px solid #1b2028;border-radius:34px;overflow:hidden;background:#f6f2e8;box-shadow:0 40px 100px rgba(0,0,0,.6)}
+  .phone .ph-shot{height:100%;overflow:hidden;position:relative}
+  .phone img{display:block;width:100%}
+  .impl-foot{position:absolute;left:142px;top:1012px;font-size:13px;color:rgba(244,240,228,.42)}
+
+  /* results */
+  .res-card{position:absolute;width:800px;height:250px;background:rgba(16,21,29,.96);border:1px solid rgba(244,240,228,.2);padding:20px 24px;overflow:hidden}
+  .res-card .rk{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--amber)}
+  .res-card .rbig{margin-top:6px;font-family:var(--mono);font-size:54px;line-height:1.1;color:var(--paper);letter-spacing:-.02em}
+  .res-card .rbig small{font-size:14px;color:var(--muted);letter-spacing:.03em}
+  .res-card .rsub{margin-top:8px;font-size:13px;line-height:1.6;color:rgba(244,240,228,.7);font-weight:300}
+  .res-card .rfoot{position:absolute;left:24px;bottom:14px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:rgba(244,240,228,.44)}
+  .mini{display:flex;gap:28px;margin-top:12px}
+  .mini div{display:flex;flex-direction:column;gap:2px}
+  .mini b{font-family:var(--mono);font-size:26px;font-weight:500;color:var(--paper)}
+  .mini span{font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--muted)}
+  .hgrid{display:grid;grid-template-columns:repeat(6,30px);gap:5px;margin-top:10px}
+  .hgrid i{display:flex;align-items:center;justify-content:center;height:24px;border:1px solid rgba(132,201,166,.55);font-family:var(--mono);font-size:8px;color:var(--green);font-style:normal}
+  .hgrid i.fail{border-color:rgba(229,137,120,.85);color:var(--red);background:rgba(229,137,120,.10);position:relative}
+  .hgrid i.fail::after{content:"";position:absolute;left:4px;right:4px;top:50%;height:1px;background:var(--red);transform:rotate(-18deg)}
+  .gkd{position:absolute;right:24px;top:48px;width:330px;font-size:12px;line-height:1.75;color:rgba(244,240,228,.64);font-weight:300}
+  .gkd b{color:var(--paper);font-weight:500}
+  .ladder{position:absolute;left:140px;top:916px;width:1640px;display:flex;align-items:center;justify-content:space-between}
+  .ladder .step{position:relative;width:400px;border-top:1px solid rgba(244,240,228,.2);padding-top:10px}
+  .ladder .step b{display:block;font-size:17px;color:rgba(244,240,228,.86);font-weight:500}
+  .ladder .step span{display:block;margin-top:3px;font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:rgba(244,240,228,.36)}
+  .ladder .neq{font-family:var(--serif);font-size:26px;color:rgba(244,240,228,.3)}
+  .ladder .step.off b{color:var(--red)}
+  .ladder .step.off span{color:rgba(229,137,120,.7)}
+  .stamp{position:absolute;left:120px;top:-36px;font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--red);border:1px solid rgba(229,137,120,.7);padding:3px 7px;transform:rotate(-4deg);opacity:0;background:rgba(7,9,12,.75)}
+  .res-foot{position:absolute;left:0;top:1042px;width:1920px;text-align:center;font-size:12px;color:rgba(244,240,228,.44)}
+  .res-end{position:absolute;left:0;top:990px;width:1920px;text-align:center;font-family:var(--serif);font-size:30px;font-weight:600;color:var(--paper);letter-spacing:.02em}
+
+  /* contribution */
+  .ct-card{position:absolute;top:372px;width:800px;height:500px;padding:24px 28px}
+  .ct-card.l{left:140px;background:linear-gradient(180deg,#f7f3e9,#eee7d8);color:#171b22}
+  .ct-card.r{left:980px;background:rgba(14,18,25,.9);border:1px solid rgba(244,240,228,.16)}
+  .ct-head{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:#8b3a2d}
+  .ct-card.r .ct-head{color:var(--amber)}
+  .ct-row{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid rgba(23,27,34,.12);font-size:15px;line-height:1.55;color:#2b3038;font-weight:300}
+  .ct-card.r .ct-row{border-bottom-color:rgba(244,240,228,.09);color:rgba(244,240,228,.76)}
+  .ct-row b{font-family:var(--mono);font-size:10px;color:#8b3a2d;padding-top:3px;min-width:26px}
+  .ct-card.r .ct-row b{color:var(--amber)}
+  .ct-big{margin-top:14px;font-family:var(--serif);font-size:27px;line-height:1.5;font-weight:600;color:#1b1f26}
+  .ct-card.r .ct-big{color:var(--paper)}
+  .ct-small{margin-top:10px;font-size:12px;line-height:1.7;color:#6a655b;font-weight:300}
+  .ct-card.r .ct-small{color:rgba(244,240,228,.48)}
+  .ct-foot{position:absolute;left:28px;right:28px;bottom:20px;font-family:var(--mono);font-size:10px;letter-spacing:.05em;line-height:1.6;color:#7c766b}
+  .ct-card.r .ct-foot{color:rgba(244,240,228,.42)}
+  .ct-flow{position:absolute;left:28px;bottom:62px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:#8b3a2d}
+  .ct-card.r .ct-flow{color:rgba(233,184,114,.65)}
+  .ledger{position:absolute;left:140px;top:900px;width:1640px;display:flex;gap:0;border-top:1px solid rgba(244,240,228,.16);padding-top:12px}
+  .ledger div{width:328px;font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:rgba(244,240,228,.42)}
+  .ledger b{display:block;font-size:12px;color:rgba(244,240,228,.82);font-weight:400;margin-bottom:3px}
+  .caveat{position:absolute;left:140px;top:988px;width:1640px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:rgba(244,240,228,.4)}
+
+  /* close */
+  .close-main{position:absolute;left:0;top:330px;width:1920px;text-align:center;font-family:var(--serif);font-size:118px;font-weight:600;letter-spacing:.03em;color:var(--paper)}
+  #cm{font-size:104px}
+  .close-sub{position:absolute;left:0;top:520px;width:1920px;display:flex;justify-content:center;gap:46px;font-size:24px;font-weight:300;color:rgba(244,240,228,.66)}
+  .close-sub i{font-style:normal;color:rgba(244,240,228,.2)}
+  .close-brand{position:absolute;left:0;top:700px;width:1920px;display:flex;align-items:center;justify-content:center;gap:16px}
+  .close-brand .mark{width:40px;height:40px;border:1px solid rgba(244,240,228,.5);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:14px}
+  .close-brand .nm{font-family:var(--serif);font-size:38px;font-weight:600;letter-spacing:.02em}
+  .close-meta{position:absolute;left:0;top:770px;width:1920px;text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:rgba(233,184,114,.9)}
+  .close-foot{position:absolute;left:0;top:850px;width:1920px;text-align:center;font-size:12px;letter-spacing:.03em;color:rgba(244,240,228,.36)}
+  .fade-to-black{position:absolute;inset:0;background:#000;opacity:0;z-index:30;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="bg"></div>
+  <div class="grid"></div>
+  <div class="grain"></div>
+  <div class="vig"></div>
+
+  <header id="brand">
+    <div class="mark">PT</div>
+    <div class="name">PrivacyTrace</div>
+    <div class="sub">作品评审 / EXPERT REVIEW</div>
+  </header>
+  <div id="chapter"><span class="idx">00 — COLD OPEN</span><span class="name">开场 / 120 秒</span></div>
+  <div id="progress"><i></i></div>
+  <div id="timecode">00:00 / 02:00</div>
+  <div id="slate">PRIVACYTRACE / REVIEW CUT / 2026</div>
+
+  <!-- 00 hook -->
+  <section class="scene" id="sc-hook">
+    <div class="hook-code" id="hc"><i style="width:92%"></i><i style="width:64%"></i><i style="width:84%"></i><i style="width:46%"></i><i style="width:76%"></i><i style="width:58%"></i><i style="width:88%"></i><i style="width:38%"></i><i style="width:70%"></i><i style="width:52%"></i><i style="width:80%"></i><i style="width:42%"></i></div>
+    <div class="hook-policy" id="hp"><i style="width:86%"></i><i style="width:94%"></i><i style="width:62%"></i><i style="width:78%"></i><i style="width:48%"></i><i style="width:90%"></i><i style="width:66%"></i><i style="width:54%"></i><i style="width:82%"></i><i style="width:44%"></i><i style="width:72%"></i><i style="width:58%"></i></div>
+    <span class="hook-tag" id="hct" style="left:1270px;top:164px">CODE / STATIC EVIDENCE</span>
+    <span class="hook-tag" id="hpt" style="left:1620px;top:164px">POLICY / TEXT</span>
+    <div class="hook-link" id="hl"></div>
+    <div class="hook-node" id="hn">EVIDENCE</div>
+    <p class="hook-line" id="h1">权限说它能<em>做什么</em>。</p>
+    <p class="hook-line" id="h2">代码说它<em>可能</em>怎么做。</p>
+    <p class="hook-line" id="h3">政策说它<em>承诺</em>了什么。</p>
+    <p class="hook-q" id="hq">把两边摆到一起，<br>才有对照。</p>
+    <h1 class="hook-title" id="ht">PrivacyTrace</h1>
+    <p class="hook-sub" id="hs">Android APK 静态隐私线索 × 政策原文</p>
+    <p class="hook-meta" id="hm">作品评审 · 专家版 · 120 秒</p>
+    <div class="hook-rule" id="hr"></div>
+  </section>
+
+  <!-- 01 positioning -->
+  <section class="scene" id="sc-pos">
+    <div class="ghost">01</div>
+    <p class="sec-no">01 / 定位</p>
+    <p class="sec-en">POSITIONING</p>
+    <h2 class="h1" id="p-h">读取静态线索，<br><em>对齐政策原文。</em></h2>
+    <p class="body" id="p-b">上传 APK 或 base + splits，解析 manifest 与全部 <code>classesN.dex</code>。再放入政策正文：可定位的线索落到代码位置与政策原句，材料不足保留 UNKNOWN。</p>
+    <div class="chips">
+      <div class="chip" id="p-c1"><span class="dot"></span><b>权限</b> = 能力声明</div>
+      <div class="chip" id="p-c2"><span class="dot"></span><b>invoke</b> = 静态线索</div>
+      <div class="chip" id="p-c3"><span class="dot"></span><b>未证实</b> = UNKNOWN</div>
+    </div>
+    <div class="paper not-card" id="p-not">
+      <span class="corner tl"></span><span class="corner br"></span>
+      <div class="not-head">它不判断</div>
+      <div class="not-items"><span>合规性</span><i>/</i><span>安全性</span><i>/</i><span>实际采集</span></div>
+      <div class="not-foot">线索 ≠ 行为。结论留给证据与人工复核。</div>
+    </div>
+    <p class="claim" id="p-claim">只对照，不判定。</p>
+    <div class="win-label" id="p-wl"><b>工作台 · 开发版</b><span>2026-10-23 截屏 · 固定演示数据</span></div>
+    <div class="window" id="pwin">
+      <div class="win-bar"><i></i><i></i><i></i><span>PRIVACYTRACE / WORKBENCH / NEW COMPARISON</span></div>
+      <div class="win-shot"><img src="assets/ui-import.png" alt="PrivacyTrace 工作台导入材料页"><span class="win-tag">本机材料 · 受限 Docker 解析</span></div>
+    </div>
+  </section>
+
+  <!-- 02 innovation -->
+  <section class="scene" id="sc-inno">
+    <div class="ghost">02</div>
+    <p class="sec-no">02 / 创新</p>
+    <p class="sec-en">INNOVATION</p>
+    <h2 class="h1" id="i-h">结论要能回到<br><em>代码与原文。</em></h2>
+    <div class="paper ev-card" id="evcard">
+      <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+      <div class="ev-head"><span>EVIDENCE / evidence-location-api</span><span>人工构造示例 · 可复算</span></div>
+      <div class="ev-col left" id="ev-l">
+        <div class="ev-k">① 代码位置</div>
+        <div class="ev-path">synthetic/LocationFeature.java</div>
+        <div class="ev-loc">LocationFeature#readGpsLocation:12</div>
+        <pre>locationManager.getLastKnownLocation(
+    LocationManager.GPS_PROVIDER);</pre>
+        <div class="ev-rule">rule · android.location.last-known.gps</div>
+      </div>
+      <div class="ev-link" id="ev-line"><span>对照</span><i></i></div>
+      <div class="ev-col right" id="ev-r">
+        <div class="ev-k">② 政策原句</div>
+        <div class="ev-path">示例 App 内隐私政策 · 全文快照</div>
+        <div class="ev-loc">原文位置 [0, 18)</div>
+        <blockquote>我们访问位置信息，用于提供地图功能。</blockquote>
+        <div class="ev-rule">按 Unicode 码点计数 · 半开区间</div>
+      </div>
+      <div class="ev-foot" id="ev-foot">一条证据，两个终点；两边都能自己走一遍。</div>
+    </div>
+    <p class="inno-quote" id="iquote">代码位置、原文区间、材料来源，<br>都留在同一份报告里。</p>
+    <div class="principles">
+      <div class="pr" id="pr1"><b>01 / 两个终点</b><span class="pt">一条证据，两个终点。</span><span>代码位置与政策原句，都能自己走一遍。</span></div>
+      <div class="pr" id="pr2"><b>02 / 三层分离</b><span class="pt">事实、声明、推断，分开记录。</span><span>UNKNOWN 保留为结果，不补零。</span></div>
+      <div class="pr" id="pr3"><b>03 / 真值先冻结</b><span class="pt">12 个场景，三方案同材料。</span><span>先冻结真值，再让算法跑。</span></div>
+    </div>
+    <p class="ifoot" id="ifoot">一致性分析并非本项目首创；我们把证据链做成可理解、可复核。</p>
+  </section>
+
+  <!-- 03 implementation -->
+  <section class="scene" id="sc-impl">
+    <div class="ghost">03</div>
+    <p class="sec-no">03 / 关键实现</p>
+    <p class="sec-en">IMPLEMENTATION</p>
+    <h2 class="h1" id="im-h">一条流水线，<br><em>同一条证据链。</em></h2>
+    <div class="pipe" id="pipe">
+      <div class="pipe-line" id="pipe-line"></div>
+      <div class="pipe-node" id="pn1" style="left:120px"><div class="pt-dot"></div><div class="pt-name">APK + 政策材料</div><div class="pt-sub">单包 / base + splits</div></div>
+      <div class="pipe-node" id="pn2" style="left:530px"><div class="pt-dot"></div><div class="pt-name">隔离扫描</div><div class="pt-sub">Docker · network none</div></div>
+      <div class="pipe-node" id="pn3" style="left:940px"><div class="pt-dot"></div><div class="pt-name">证据 + 候选</div><div class="pt-sub">代码位置 · 原句区间</div></div>
+      <div class="pipe-node" id="pn4" style="left:1350px"><div class="pt-dot"></div><div class="pt-name">一致性对照</div><div class="pt-sub">多状态 · 缺证据不升级</div></div>
+      <div class="pipe-node" id="pn5" style="left:1760px"><div class="pt-dot"></div><div class="pt-name">报告 / 回放</div><div class="pt-sub">Web · Android · 离线</div></div>
+    </div>
+    <div class="panel impl-detail" id="detail">
+      <div class="d-page" id="d1">
+        <div class="d-k">隔离扫描 / CONTAINER</div>
+        <div class="d-row"><span>USER</span><b>65534:65534 · 非 root</b></div>
+        <div class="d-row"><span>NETWORK</span><b>none</b></div>
+        <div class="d-row"><span>ROOTFS</span><b>read-only · cap-drop ALL</b></div>
+        <div class="d-row"><span>LIMITS</span><b>1 CPU · 1 GiB · PID 32</b></div>
+        <div class="d-note">未知 APK 只在隔离容器里解析；扫描结束删除副本。</div>
+      </div>
+      <div class="d-page" id="d2">
+        <div class="d-k">静态分析 / STATIC</div>
+        <div class="d-row"><span>ENGINE</span><b>Androguard 4.1.3</b></div>
+        <div class="d-row"><span>INPUTS</span><b>AXML · 全部 classesN.dex</b></div>
+        <div class="d-row"><span>FALLBACK</span><b>UNAVAILABLE_BYTECODE_FALLBACK</b></div>
+        <div class="d-row"><span>SCOPE</span><b>方法内无分支局部常量</b></div>
+        <div class="d-note">覆盖有限规则；反射、动态加载、Native 不保证覆盖。</div>
+      </div>
+      <div class="d-page" id="d3">
+        <div class="d-k">政策快照 / POLICY</div>
+        <div class="d-row"><span>OFFSET</span><b>[start, end) · UTF-8 码点</b></div>
+        <div class="d-row"><span>CHECK</span><b>切片 == excerpt</b></div>
+        <div class="d-row"><span>IMMUTABLE</span><b>旧快照不覆盖</b></div>
+        <div class="d-row"><span>META</span><b>来源 · 版本 · 采集时点</b></div>
+        <div class="d-note">未复核、附件未检查，保留为数据事实。</div>
+      </div>
+      <div class="d-page" id="d4">
+        <div class="d-k">引擎与运行 / ENGINE</div>
+        <div class="d-row"><span>CONTRACTS</span><b>FastAPI · Pydantic</b></div>
+        <div class="d-row"><span>STATE</span><b>PostgreSQL outbox</b></div>
+        <div class="d-row"><span>JOBS</span><b>Redis · Celery</b></div>
+        <div class="d-row"><span>RUNNER</span><b>mTLS · 不持 Docker socket</b></div>
+        <div class="d-note">Vue 工作台 · Tauri Android · 离线报告包：同一份证据，三种入口。</div>
+      </div>
+    </div>
+    <div class="rwin-label" id="rwl">报告 · 2026-10-22 交付候选 · 构造材料 / 持久化回放</div>
+    <div class="window report-win" id="rwin">
+      <div class="win-bar"><i></i><i></i><i></i><span>report / CONSTRUCTED INPUT / persisted replay</span></div>
+      <div class="win-shot"><img id="rimg" src="assets/report-desktop.png" alt="PrivacyTrace 对照报告页面"></div>
+    </div>
+    <div class="phone-label" id="phl">Android 客户端 · 移动报告（开发版）</div>
+    <div class="window phone-wrap phone" id="phone">
+      <div class="ph-shot"><img id="pimg" src="assets/report-mobile.png" alt="PrivacyTrace 移动端报告页面"></div>
+    </div>
+    <p class="impl-foot" id="im-foot">界面仍在开发，最终视觉可能变化；截图采集于 2026-10-22 / 23。</p>
+  </section>
+
+  <!-- 04 results -->
+  <section class="scene" id="sc-res">
+    <div class="ghost">04</div>
+    <p class="sec-no">04 / 真实成果</p>
+    <p class="sec-en">RESULTS / BOUNDED</p>
+    <h2 class="h1" id="r-h">把四类数字，<br><em>分开报。</em></h2>
+    <div class="res-card" id="rc1" style="left:140px;top:342px">
+      <div class="rk">工程门禁 / ENGINEERING GATE</div>
+      <div class="rbig">1578 <small>passed</small> · 179 <small>skipped</small></div>
+      <div class="rsub">pytest（API）· e2e <b>65</b> · Web 单测 <b>111</b> · 生产构建通过</div>
+      <div class="rfoot">65b49f7 · 2026-10-21 · CI=true bash scripts/check.sh</div>
+    </div>
+    <div class="res-card" id="rc2" style="left:980px;top:342px">
+      <div class="rk">部署验收 / DEPLOYMENT R1–R6</div>
+      <div class="rbig">40 <small>pass</small> · 0 <small>fail</small> · 0 <small>skip</small></div>
+      <div class="rsub">四入口 <b>4 / 4</b>：browser · frontend · live（真实 Docker）· mobile</div>
+      <div class="rfoot">65b49f7 · 唯一既有豁免 dedicated-scan-host-verification（用户授权）</div>
+    </div>
+    <div class="res-card" id="rc3" style="left:140px;top:612px">
+      <div class="rk">受控评测 / CONTROLLED · 状态一致</div>
+      <div class="mini">
+        <div><b class="green">12 / 12</b><span>PRIVACYTRACE</span></div>
+        <div><b>4 / 12</b><span>API 基线</span></div>
+        <div><b>2 / 12</b><span>权限 + 关键词</span></div>
+      </div>
+      <div class="rsub">36 行三方案 · 执行失败 <b>0</b> · P / R / F1 = <b>N/A</b>（协议无二元真值）</div>
+      <div class="rfoot">b0b3c74 · 名义状态对照 · 不推广为真实 App 准确率</div>
+    </div>
+    <div class="res-card" id="rc4" style="left:980px;top:612px">
+      <div class="rk">真实 App 案例 + H 矩阵 / REAL-WORLD BOUNDARY</div>
+      <div class="hgrid">
+        <i>H01</i><i>H02</i><i>H03</i><i>H04</i><i>H05</i><i>H06</i>
+        <i>H07</i><i>H08</i><i>H09</i><i>H10</i><i>H11</i><i class="fail">H12</i>
+      </div>
+      <div class="gkd"><b>11 通过 / 1 未通过</b><br>H12 · J × splits × 手机模型<br>失败已复现 2 次，保留。<br><br><b>GKD v1.12.1（仅 1 个历史样本）</b><br>6 证据 / 3 行为 / 2 声明 / 3 问题<br>3 条结论均 <b>INSUFFICIENT_EVIDENCE</b></div>
+      <div class="rfoot">2626152 · 2026-10-22 · H 矩阵交付头；GKD 记录 2026-10-09</div>
+    </div>
+    <div class="ladder" id="ladder">
+      <div class="step"><b>工程测试</b><span>代码按预期运行</span></div>
+      <div class="neq">≠</div>
+      <div class="step"><b>受控评测</b><span>自建场景 · 名义状态对照</span></div>
+      <div class="neq">≠</div>
+      <div class="step off"><b>真实 App 准确率</b><span>未做 · 不宣称</span><div class="stamp" id="stamp">NOT CLAIMED</div></div>
+    </div>
+    <p class="res-foot" id="r-foot">受控结果不推广为真实 App 的检测准确率；未命中规则 ≠ 没有隐私行为。</p>
+    <p class="res-end" id="r-end">证据不足，也要写进报告。</p>
+  </section>
+
+  <!-- 05 contribution -->
+  <section class="scene" id="sc-orig">
+    <div class="ghost">05</div>
+    <p class="sec-no">05 / 学生原创贡献</p>
+    <p class="sec-en">ORIGINAL CONTRIBUTION</p>
+    <h2 class="h1" id="o-h">团队提出什么，<br><em>AI 辅助什么。</em></h2>
+    <div class="paper ct-card l" id="oc1">
+      <span class="corner tl"></span><span class="corner br"></span>
+      <div class="ct-head">团队提出并执行</div>
+      <div class="ct-row" id="or1"><b>01</b><span>项目定位与「只对照，不判定」边界</span></div>
+      <div class="ct-row" id="or2"><b>02</b><span>证据模型与一致性状态机</span></div>
+      <div class="ct-row" id="or3"><b>03</b><span>确定性规则与字节码归因</span></div>
+      <div class="ct-row" id="or4"><b>04</b><span>受控场景 · 冻结真值 · 三方案对照</span></div>
+      <div class="ct-row" id="or5"><b>05</b><span>验收治理：Issue / PR / check.sh 门禁</span></div>
+      <div class="ct-small">以上为团队提出的设计与执行职责；具体文件与提交可逐项核对。</div>
+      <div class="ct-flow">问题定义 → 证据模型 → 规则归因 → 受控基准 → 验收治理</div>
+      <div class="ct-foot">参赛团队提出并执行；身份与分工以报名及提交记录为准。</div>
+    </div>
+    <div class="panel ct-card r" id="oc2">
+      <div class="ct-head">AI 辅助 · 披露在案</div>
+      <div class="ct-big">脚手架与接口胶水。<br>测试与验收脚本。<br>文档与文案草稿。</div>
+      <div class="ct-row" id="air1"><b>边界</b><span>不宣称 100% 独立，也不给出比例。</span></div>
+      <div class="ct-row" id="air2"><b>披露</b><span>工具、用途与人工筛选记录保留在仓库。</span></div>
+      <div class="ct-small">第三方：Androguard 4.1.3（Apache-2.0）· FastAPI · Vue 3 · PostgreSQL · Tauri 2。</div>
+      <div class="ct-flow">工具 → 用途 → 受影响文件 → 人工修改 → 复核</div>
+      <div class="ct-foot">披露范围：工具、用途、受影响文件与人工修改；具体归属以提交记录为准。</div>
+    </div>
+    <div class="ledger" id="ledger">
+      <div id="lg1"><b>65b49f7</b>工程门禁 · 2026-10-21</div>
+      <div id="lg2"><b>323780c9</b>六场景 · 2026-10-12</div>
+      <div id="lg3"><b>b0b3c74</b>十二场景 · 36 行</div>
+      <div id="lg4"><b>9e56771</b>离线回放 · 24 成员</div>
+      <div id="lg5"><b>2626152</b>H 矩阵 · 2026-10-22</div>
+    </div>
+    <p class="caveat" id="caveat">每个数字绑定各自的提交与日期，不写成「当前版本」。H12 失败保留在片内；界面仍在开发，提交头以维护者冻结为准。</p>
+  </section>
+
+  <!-- 06 close -->
+  <section class="scene" id="sc-close">
+    <p class="close-main" id="cm">先把证据摆出来，再谈结论。</p>
+    <div class="close-sub" id="cs"><span>线索不等于行为。</span><i>/</i><span>受控结果不是真实 App 的准确率。</span><i>/</i><span>未知就写未知。</span></div>
+    <div class="close-brand" id="cb"><div class="mark">PT</div><div class="nm">PrivacyTrace</div></div>
+    <p class="close-meta" id="cmt">2026 作品评审片 · 120s / 1920×1080 / 30fps</p>
+    <p class="close-foot" id="cf">界面仍在开发；截图采集于 2026-10-22 / 23；数字绑定各自提交与日期。本片由 AI 辅助分镜与排版，未生成产品画面。</p>
+  </section>
+
+  <div class="fade-to-black" id="fade"></div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  const $ = s => document.querySelector(s);
+  const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+  const smooth = x => { x = clamp(x,0,1); return x*x*(3-2*x); };
+  const outQuint = x => 1 - Math.pow(1-clamp(x,0,1),5);
+  const inOut = x => { x = clamp(x,0,1); return x<.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2; };
+
+  // 96 BPM score: one bar = 2.5 s, cuts land on bars (0.625 s beat grid).
+  const T = { pos:9.375, inno:21.875, impl:40.625, res:65.0, orig:90.0, close:108.75, end:120 };
+
+  function fade(el, t, tIn, tOut, dur, dy){
+    if(!el) return;
+    dur = dur || .5; dy = dy == null ? 22 : dy;
+    const i = smooth((t - tIn)/dur);
+    const o = tOut == null ? 0 : smooth((t - tOut)/dur);
+    el.style.opacity = (i*(1-o)).toFixed(3);
+    const y = (1-outQuint(i))*dy - o*12;
+    el.style.transform = 'translate3d(0,' + y.toFixed(2) + 'px,0)';
+  }
+  function fadeX(el, t, tIn, tOut, dur, dx, dy){
+    if(!el) return;
+    dur = dur || .6; dx = dx||0; dy = dy||0;
+    const i = smooth((t - tIn)/dur);
+    const o = tOut == null ? 0 : smooth((t - tOut)/dur);
+    el.style.opacity = (i*(1-o)).toFixed(3);
+    el.style.transform = 'translate3d(' + ((1-outQuint(i))*dx).toFixed(2) + 'px,' + ((1-outQuint(i))*dy - o*14).toFixed(2) + 'px,0)';
+  }
+  function cardIn(el, t, tIn, dur, fromScale){
+    if(!el) return;
+    dur = dur || .65; fromScale = fromScale || .965;
+    const p = outQuint((t - tIn)/dur);
+    el.style.opacity = smooth((t - tIn)/(dur*.7)).toFixed(3);
+    el.style.transform = 'translate3d(0,' + ((1-p)*30).toFixed(2) + 'px,0) scale(' + (fromScale + (1-fromScale)*p).toFixed(4) + ')';
+  }
+  function wipe(el, t, tIn, dur){
+    const p = outQuint((t - tIn)/(dur||.7));
+    el.style.clipPath = 'inset(0 ' + ((1-p)*100).toFixed(2) + '% 0 0)';
+    el.style.opacity = p > 0.001 ? '1' : '0';
+  }
+
+  const scenes = {
+    hook: $('#sc-hook'), pos: $('#sc-pos'), inno: $('#sc-inno'),
+    impl: $('#sc-impl'), res: $('#sc-res'), orig: $('#sc-orig'), close: $('#sc-close')
+  };
+  const chapterEl = $('#chapter');
+  const chapters = [
+    { t:0,   idx:'00 — COLD OPEN',    name:'开场 / 120 秒' },
+    { t:T.pos,  idx:'01 — POSITIONING',   name:'定位 / 它是什么，不是什么' },
+    { t:T.inno, idx:'02 — INNOVATION',    name:'创新 / 证据链的形状' },
+    { t:T.impl, idx:'03 — IMPLEMENTATION',name:'关键实现 / 一条流水线' },
+    { t:T.res,  idx:'04 — RESULTS',       name:'真实成果 / 四类数字' },
+    { t:T.orig, idx:'05 — CONTRIBUTION',  name:'原创贡献 / 边界与披露' },
+    { t:T.close,idx:'06 — CLOSE',         name:'结语 / 先摆证据，再谈结论' }
+  ];
+  let currentChapter = -1;
+
+  function fmt(s){
+    const m = Math.floor(s/60), ss = Math.floor(s%60);
+    return String(m).padStart(2,'0') + ':' + String(ss).padStart(2,'0');
+  }
+
+  // ------------------------------------------------------------------ hook
+  function renderHook(t){
+    fade($('#h1'), t, .9, 4.9, .6, 18);
+    fade($('#h2'), t, 2.1, 4.9, .6, 18);
+    fade($('#h3'), t, 3.3, 4.9, .6, 18);
+    fade($('#hq'), t, 5.25, 6.55, .55, 20);
+    fade($('#ht'), t, 6.8, null, .75, 30);
+    fade($('#hs'), t, 7.45, null, .65, 16);
+    fade($('#hm'), t, 8.0, null, .6, 12);
+    fade($('#hr'), t, 7.9, null, .8, 0);
+    fade($('#hc'), t, .4, null, 1.0, 0);
+    fade($('#hp'), t, .6, null, 1.0, 0);
+    fade($('#hct'), t, .7, null, .8, 0);
+    fade($('#hpt'), t, .9, null, .8, 0);
+    const p = outQuint(clamp((t-2.6)/1.8,0,1));
+    $('#hl').style.transform = 'scaleX(' + p.toFixed(4) + ')';
+    $('#hl').style.opacity = (0.85*p).toFixed(3);
+    fade($('#hn'), t, 4.1, null, .6, 8);
+    const drift = (t - .4) * 5;
+    $('#hc').style.backgroundPosition = '0 ' + (-drift).toFixed(1) + 'px';
+    $('#hp').style.transform = 'translate3d(0,' + ((t-.6)*3).toFixed(1) + 'px,0)';
+  }
+
+  // ------------------------------------------------------------- positioning
+  function renderPos(t){
+    fade($('#p-h'), t, 9.40, null, .7, 26);
+    fade($('#p-b'), t, 11.15, null, .65, 20);
+    fade($('#p-c1'), t, 12.5, null, .55, 14);
+    fade($('#p-c2'), t, 13.05, null, .55, 14);
+    fade($('#p-c3'), t, 13.6, null, .55, 14);
+    fade($('#p-not'), t, 15.6, null, .7, 24);
+    fade($('#p-claim'), t, 19.0, 21.2, .55, 16);
+    fade($('#p-wl'), t, 11.4, null, .6, 12);
+    const p = outQuint(clamp((t-11.55)/.9,0,1));
+    const win = $('#pwin');
+    win.style.opacity = smooth((t-11.55)/.55).toFixed(3);
+    win.style.transform = 'translate3d(' + ((1-p)*54).toFixed(2) + 'px,' + ((1-p)*30).toFixed(2) + 'px,0) scale(' + (0.965+0.035*p).toFixed(4) + ')';
+    const img = win.querySelector('img');
+    img.style.transform = 'translate3d(0,' + (-(t-11.55)*1.2).toFixed(1) + 'px,0) scale(1.015)';
+  }
+
+  // ------------------------------------------------------------- innovation
+  function renderInno(t){
+    fade($('#i-h'), t, 21.95, 33.55, .7, 26);
+    const w = clamp((t-23.35)/.8,0,1);
+    const card = $('#evcard');
+    card.style.clipPath = 'inset(0 ' + ((1-outQuint(w))*100).toFixed(2) + '% 0 0)';
+    card.style.opacity = w > .001 ? '1' : '0';
+    fade($('#ev-l'), t, 23.9, 33.6, .55, 14);
+    fade($('#ev-r'), t, 24.6, 33.6, .55, 14);
+    const lp = outQuint(clamp((t-25.6)/.75,0,1));
+    $('#ev-line').style.transform = 'scaleX(' + lp.toFixed(4) + ')';
+    $('#ev-line').style.opacity = (.9*lp).toFixed(3);
+    fade($('#ev-foot'), t, 26.6, 33.6, .5, 10);
+    const shrink = inOut(clamp((t-29.0)/1.1,0,1));
+    card.style.transform = 'translate3d(' + (-30*shrink).toFixed(2) + 'px,' + (-54*shrink).toFixed(2) + 'px,0) scale(' + (1-0.10*shrink).toFixed(4) + ')';
+    card.style.opacity = ((w > .001 ? 1 : 0) * (1 - smooth((t-33.65)/.6))).toFixed(3);
+    fade($('#pr1'), t, 29.5, 38.5, .55, 22);
+    fade($('#pr2'), t, 30.15, 38.5, .55, 22);
+    fade($('#pr3'), t, 30.8, 38.5, .55, 22);
+    fade($('#iquote'), t, 33.95, 40.05, .65, 22);
+    fade($('#ifoot'), t, 34.4, 40.35, .55, 12);
+  }
+
+  // ---------------------------------------------------------- implementation
+  function renderImpl(t){
+    fade($('#im-h'), t, 40.65, null, .7, 26);
+    const lp = outQuint(clamp((t-41.5)/1.6,0,1));
+    $('#pipe-line').style.transform = 'scaleX(' + lp.toFixed(4) + ')';
+    for(let i=1;i<=5;i++){
+      fade($('#pn'+i), t, 41.85 + (i-1)*.42, null, .5, 16);
+    }
+    const dim = smooth((t-44.2)/1.0);
+    $('#pipe').style.opacity = (1 - .78*dim).toFixed(3);
+    cardIn($('#detail'), t, 44.3, .6, .98);
+    const pages = [['d1',44.4,48.15],['d2',48.15,51.95],['d3',51.95,55.75],['d4',55.75,64.3]];
+    pages.forEach(([id,a,b])=>{
+      const el = $('#'+id);
+      const on = t >= a && t < b;
+      const p = on ? smooth((t-a)/.35) : 0;
+      el.style.opacity = p.toFixed(3);
+      el.style.transform = 'translate3d(0,' + ((1-p)*10).toFixed(2) + 'px,0)';
+    });
+    fade($('#rwl'), t, 44.0, 59.3, .55, 10);
+    const rp = outQuint(clamp((t-44.3)/.8,0,1));
+    const rwin = $('#rwin');
+    rwin.style.opacity = smooth((t-44.25)/.5).toFixed(3);
+    rwin.style.transform = 'translate3d(' + ((1-rp)*40).toFixed(2) + 'px,' + ((1-rp)*24).toFixed(2) + 'px,0)';
+    const pan = clamp((t-44.6)/16.2,0,1);
+    $('#rimg').style.transform = 'translate3d(0,' + (-pan*1900).toFixed(1) + 'px,0)';
+    const phoneOn = t >= 59.35;
+    if(phoneOn){
+      const pp = outQuint(clamp((t-59.35)/.65,0,1));
+      const ph = $('#phone');
+      ph.style.opacity = smooth((t-59.35)/.45).toFixed(3);
+      ph.style.transform = 'translate3d(0,' + ((1-pp)*28).toFixed(2) + 'px,0) scale(' + (0.97+0.03*pp).toFixed(4) + ')';
+      const scroll = clamp((t-59.6)/5.4,0,1);
+      $('#pimg').style.transform = 'translate3d(0,' + (-scroll*900).toFixed(1) + 'px,0)';
+    } else {
+      $('#phone').style.opacity = '0';
+    }
+    fade($('#phl'), t, 59.35, null, .5, 8);
+    fade($('#im-foot'), t, 62.6, null, .5, 8);
+    rwin.style.opacity = (smooth((t-44.25)/.5) * (1-smooth((t-59.4)/.55))).toFixed(3);
+  }
+
+  // ---------------------------------------------------------------- results
+  function renderRes(t){
+    fade($('#r-h'), t, 65.05, null, .7, 26);
+    cardIn($('#rc1'), t, 65.90, .6, .97);
+    cardIn($('#rc2'), t, 68.90, .6, .97);
+    cardIn($('#rc3'), t, 71.90, .6, .97);
+    cardIn($('#rc4'), t, 74.90, .6, .97);
+    const dim = smooth((t-79.8)/1.2);
+    const dimF = 1 - .45*dim;
+    ['rc1','rc2','rc3','rc4'].forEach(id => { const el = $('#'+id); const base = parseFloat(el.style.opacity) || 0; el.style.opacity = (base*dimF).toFixed(3); });
+    fade($('#ladder'), t, 80.0, null, .65, 18);
+    const stamp = $('#stamp');
+    const sp = smooth((t-82.2)/.5);
+    stamp.style.opacity = (sp*.95).toFixed(3);
+    stamp.style.transform = 'rotate(-4deg) scale(' + (1.25 - .25*sp).toFixed(3) + ')';
+    fade($('#r-foot'), t, 83.2, null, .5, 10);
+    fade($('#r-end'), t, 85.8, null, .65, 16);
+    const glow = clamp((t-85.8)/.6,0,1);
+    $('#r-end').style.color = glow > .5 ? 'var(--amber)' : 'var(--paper)';
+  }
+
+  // ----------------------------------------------------------- contribution
+  function renderOrig(t){
+    fade($('#o-h'), t, 90.02, null, .7, 26);
+    cardIn($('#oc1'), t, 90.95, .7, .975);
+    cardIn($('#oc2'), t, 91.3, .7, .975);
+    ['or1','or2','or3','or4','or5'].forEach((id,i)=>fade($('#'+id), t, 91.7+i*.55, null, .45, 8));
+    fade($('#air1'), t, 92.4, null, .5, 8);
+    fade($('#air2'), t, 93.4, null, .5, 8);
+    fade($('#ledger'), t, 99.3, null, .6, 14);
+    ['lg1','lg2','lg3','lg4','lg5'].forEach((id,i)=>fade($('#'+id), t, 99.7+i*.55, null, .45, 8));
+    fade($('#caveat'), t, 104.4, null, .55, 10);
+  }
+
+  // ------------------------------------------------------------------ close
+  function renderClose(t){
+    fade($('#cm'), t, 108.78, null, .8, 26);
+    fade($('#cs'), t, 111.15, null, .7, 16);
+    fade($('#cb'), t, 114.0, null, .7, 16);
+    fade($('#cmt'), t, 114.85, null, .6, 10);
+    fade($('#cf'), t, 116.2, null, .6, 8);
+    $('#fade').style.opacity = smooth((t-118.9)/1.1).toFixed(3);
+  }
+
+  function chapterIndex(t){
+    let k = 0;
+    for(let i=0;i<chapters.length;i++){ if(t >= chapters[i].t) k = i; }
+    return k;
+  }
+
+  function render(t){
+    const time = clamp(t, 0, T.end);
+    scenes.hook.style.opacity = time >= 0 && time < T.pos ? '1' : '0';
+    scenes.pos.style.opacity  = time >= T.pos && time < T.inno ? '1' : '0';
+    scenes.inno.style.opacity = time >= T.inno && time < T.impl ? '1' : '0';
+    scenes.impl.style.opacity = time >= T.impl && time < T.res ? '1' : '0';
+    scenes.res.style.opacity  = time >= T.res && time < T.orig ? '1' : '0';
+    scenes.orig.style.opacity = time >= T.orig && time < T.close ? '1' : '0';
+    scenes.close.style.opacity= time >= T.close ? '1' : '0';
+
+    if(time < T.pos) renderHook(time);
+    if(time >= T.pos && time < T.inno) renderPos(time);
+    if(time >= T.inno && time < T.impl) renderInno(time);
+    if(time >= T.impl && time < T.res) renderImpl(time);
+    if(time >= T.res && time < T.orig) renderRes(time);
+    if(time >= T.orig && time < T.close) renderOrig(time);
+    if(time >= T.close) renderClose(time);
+
+    const ci = chapterIndex(time);
+    if(ci !== currentChapter){
+      currentChapter = ci;
+      chapterEl.querySelector('.idx').textContent = chapters[ci].idx;
+      chapterEl.querySelector('.name').textContent = chapters[ci].name;
+    }
+    $('#progress i').style.width = ((time/T.end)*100).toFixed(3) + '%';
+    $('#timecode').textContent = fmt(time) + ' / 02:00';
+    $('#brand').style.opacity = smooth((time-6.7)/.8).toFixed(3);
+    $('#slate').style.opacity = (0.5 * smooth((time-9.2)/1.0)).toFixed(3);
+  }
+
+  window.__seek = function(t){ render(Number(t) || 0); };
+  window.__meta = { fps: 30, dur: 120, width: 1920, height: 1080 };
+
+  function boot(){
+    const imgs = Array.from(document.images);
+    const ready = imgs.length ? Promise.all(imgs.map(img => img.decode().catch(()=>{}))) : Promise.resolve();
+    Promise.all([document.fonts.ready, ready]).then(() => {
+      render(0);
+      window.__ready = true;
+    });
+  }
+  render(0);
+  if(document.readyState === 'complete') boot();
+  else window.addEventListener('load', boot);
+})();
+</script>
+</body>
+</html>

@@ -4,6 +4,8 @@
 *.png binary
 # Issue #130 evidence keeps the exact bytes named by its SHA-256 manifest.
 docs/acceptance/issue130/evidence/** -text
+# Review delivery keeps the exact bytes named by delivery/manifest.json.
+showcase/privacytrace-review/** -text
 # Frozen input hashes cover exact bytes on every checkout platform.
 benchmarks/controlled/** -text whitespace=cr-at-eol
 benchmarks/controlled-v2/** -text whitespace=cr-at-eol

@@ -190,11 +190,11 @@ a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
     <div class="rule-double" style="max-width:900px"></div>
     <h1 class="h1 anim-rise-in" style="margin-top:26px;margin-bottom:6px">PrivacyTrace</h1>
     <p class="subtitle">移动应用静态隐私证据与政策声明对照</p>
-    <p class="lede" style="margin-bottom:22px;max-width:52ch">把一条静态隐私线索和一段政策原句，落到各自可复核的位置上；不判定合规、安全，也不判定是否真的采集。</p>
+    <p class="lede" style="margin-bottom:22px;max-width:52ch">每条静态线索追到代码位置，每句政策原句切回原文。PrivacyTrace 不判断合规与安全，也不判断应用是否实际采集了数据。</p>
     <hr class="rule" style="max-width:900px">
     <p class="cover-meta mt-m" style="margin-top:14px">作品汇报 · 评审匿名版（不含校名、成员姓名与账号） · 2026-10-23 · v0.1<br>
-    本稿数字截至 2026-10-23；前端迁移与验收仍在收口，标注「进行中」的条目以随包最新记录为准。</p>
-    <div class="notes">开场只讲三件事：作品一句话定位、这稿的证据来源、以及一个诚实的版本说明——前端还在迁移，所以界面截图不是最终视觉。</div>
+    数字截至 2026-10-23。前端迁移和验收还在进行，界面截图与状态以随包最新记录为准。</p>
+    <div class="notes">开场讲三件事：一句话定位、证据来源、版本说明。前端还在迁移，截图不是最终视觉。</div>
   </section>
 
   <!-- 2 · outline -->
@@ -202,37 +202,37 @@ a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
     <p class="kicker">Outline</p>
     <h2 class="h2">汇报结构</h2>
     <ol class="toc-list mt-s anim-stagger-list">
-      <li>作品定位：把证据摊开，不下判决 <span class="dim2">3 min</span></li>
-      <li>主要创新：四项有证据的设计 <span class="dim2">5 min</span></li>
+      <li>作品定位：一条结论怎么复核 <span class="dim2">3 min</span></li>
+      <li>主要创新：四项可指认的设计 <span class="dim2">5 min</span></li>
       <li>技术与创作方法：工作流与工程管理 <span class="dim2">5 min</span></li>
       <li>成果：受控评测、真实运行与界面 <span class="dim2">5 min</span></li>
       <li>原创贡献、边界与后续 <span class="dim2">3 min</span></li>
     </ol>
-    <p class="footnote mt-m">口径提醒：工程测试通过 ≠ 受控评测完成 ≠ 真实 App 评测。本稿把三类证据分开陈述，不互相替代，也不把「没做」写成「没通过」。</p>
-    <div class="notes">先给评审一张地图：定位、创新、方法、成果、贡献。并先把三种证据的口径说清楚，后面所有数字都按这个口径引用。</div>
+    <p class="footnote mt-m">工程测试通过、受控评测完成、真实 App 评测是三件事。本稿分开写，没做的不写成没通过。</p>
+    <div class="notes">先给评审一张地图。三种证据的口径先说清楚，后面所有数字都按它引用。</div>
   </section>
 
   <!-- 3 · section divider 1 -->
   <section class="slide" data-title="第一节">
     <span class="section-num">1</span>
     <p class="eyebrow">Section one</p>
-    <h2 class="h2" style="max-width:22ch">把证据摊开，把判断留给用户</h2>
+    <h2 class="h2" style="max-width:22ch">这个工具给证据，不给合规结论</h2>
     <div class="divider-accent mt-m" style="max-width:220px"></div>
-    <p class="dim2 mt-m" style="font-style:italic">定位 · 用户 · 三条明确不做的事</p>
-    <div class="notes">第一节只回答一个问题：这个作品是什么、不是什么。它决定了后面所有创新与边界的写法。</div>
+    <p class="dim2 mt-m" style="font-style:italic">定位、用户、三条不做的事</p>
+    <div class="notes">第一节回答一个问题：这个作品做什么。后面的创新和边界都从这里长出来。</div>
   </section>
 
   <!-- 4 · positioning -->
   <section class="slide top" data-title="作品定位">
     <p class="kicker">§1 · 定位</p>
-    <h2 class="h2">它是什么，不是什么</h2>
+    <h2 class="h2">范围、用户与三条边界</h2>
     <div class="abstract anim-fade-up">
-      <b>摘要.</b> PrivacyTrace 读取 Android 安装包里能静态看到的隐私线索，与隐私政策原文逐条对照；每条结论都能回到代码位置与政策原句。它只回答「代码里有没有这个线索、政策里有没有这句话」，不回答「应用是否合规、是否安全、是否真的采集」。
+      <b>摘要.</b> PrivacyTrace 读取 Android 安装包里能静态看到的隐私线索，与隐私政策原文逐条对照；每条结论都带代码位置与政策原句。它只回答「代码里有没有这个线索、政策里有没有这句话」，不回答「应用是否合规、是否安全、是否实际采集」。
     </div>
     <div class="grid g3 mt-m" style="gap:18px">
       <div class="card card-accent">
         <h4 class="h4">给谁</h4>
-        <p>普通 Android 用户：不要求会读代码，也不要求懂法务文本。目标是把专业级、可多源追溯的隐私证据，变成能自己复核的隐私体检。</p>
+        <p>普通 Android 用户。不用会读代码，也不用懂法务文本。报告给出线索位置和政策原句，读者可以自己复核。</p>
       </div>
       <div class="card">
         <h4 class="h4">分析范围</h4>
@@ -247,8 +247,8 @@ a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
         </ul>
       </div>
     </div>
-    <p class="footnote mt-m">形态：Android 客户端 + Web 工作台 + 隔离扫描 API + 离线只读回放。分析只在本机或受控内网运行，当前没有公网实例。</p>
-    <div class="notes">强调三条「不做」不是能力不足的托词，而是产品定位：把判定权留给用户。三个卡片分别对应受众、范围、边界。</div>
+    <p class="footnote mt-m">形态：Android 客户端、Web 工作台、隔离扫描 API、离线只读回放。分析只在本机或受控内网运行，没有公网实例。</p>
+    <div class="notes">三条「不做」属于产品定位，把判定权留给用户。三张卡片对应受众、范围和边界。</div>
   </section>
 
   <!-- 5 · verifiability path -->
@@ -287,24 +287,24 @@ a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
           <text x="500" y="190" text-anchor="middle" font-size="12" fill="#707070">接口与页面共用同一套 evidence ID；报告、证据、政策快照三者不拼接</text>
         </g>
       </svg>
-      <p class="figcaption"><b>Figure 1：</b>报告的三层结构与两次下钻。目标不是让人相信结论，而是让人可以自己走一遍、自己验算。</p>
+      <p class="figcaption"><b>Figure 1：</b>报告分三层，两次点击完成下钻。读者可以自己走一遍，自己验算。</p>
     </div>
     <div class="grid g3 mt-m" style="gap:18px">
-      <div class="mini"><b>偏移可自行切算</b><br>政策原句的 `[start, end)` 落在全文快照上，切出来的必须是同一句。</div>
-      <div class="mini"><b>未证实的保留为 UNKNOWN</b><br>目的、接收方、跨境、期限无法从静态材料推出，就不写。</div>
-      <div class="mini"><b>合成与真实分开标识</b><br>演示数据是人工构造样本；真实样本另附运行记录，报告里明确区分。</div>
+      <div class="mini"><b>偏移自己算</b><br>政策原句的 `[start, end)` 落在全文快照上；按区间切出来，必须还是这一句。</div>
+      <div class="mini"><b>没证实就写 UNKNOWN</b><br>目的、接收方、跨境、期限无法从静态材料推出，就不写。</div>
+      <div class="mini"><b>合成样本与真实样本分开</b><br>演示数据是人工构造样本；真实样本另附运行记录，报告里明确区分。</div>
     </div>
-    <div class="notes">这张图说明产品不是「给一个结论」，而是「给一条可走的路」。下钻两次分别到代码位置和政策全文，偏移量可以自己算。</div>
+    <div class="notes">这张图说明产品给的是可走的路。两次下钻分别到代码位置和政策全文，偏移量可以自己算。</div>
   </section>
 
   <!-- 6 · section divider 2 -->
   <section class="slide" data-title="第二节">
     <span class="section-num">2</span>
     <p class="eyebrow">Section two</p>
-    <h2 class="h2" style="max-width:22ch">四项设计，都有可指认的证据</h2>
+    <h2 class="h2" style="max-width:22ch">四项设计，证据都在仓库里</h2>
     <div class="divider-accent mt-m" style="max-width:220px"></div>
     <p class="dim2 mt-m" style="font-style:italic">双向证据链 · 克制判定 · 评测协议 · 隔离回放</p>
-    <div class="notes">第二节是评审最关心的部分：创新必须落到具体设计、具体文件、具体数字，而不是形容词。</div>
+    <div class="notes">第二节让创新落到设计、文件和数字上，不靠形容词。</div>
   </section>
 
   <!-- 7 · innovation 1 -->
@@ -375,19 +375,19 @@ Lr2;-&gt;p · offset_bytes = 2
 
 判定：<b>INSUFFICIENT_EVIDENCE</b></div>
         <ul class="check mt-s">
-          <li>两侧都能自己走：文件 / 方法 / 偏移 / 目标 API，政策全文 / 码点区间。</li>
+          <li>两侧都能自己走：代码侧看文件、方法、偏移和目标 API；政策侧看全文和码点区间。</li>
           <li>区间按 Unicode 码点、半开区间；切出来的必须与原句一致。</li>
           <li>无法证明的参数保持 UNKNOWN，不用推断补全。</li>
         </ul>
       </div>
     </div>
-    <div class="notes">这一页用真实样本说明「双向」不是口号：代码侧给到字节码偏移和目标描述符，政策侧给到码点区间；两侧对不上，就只能是证据不足。</div>
+    <div class="notes">真实样本里，代码侧给字节码偏移和目标描述符，政策侧给码点区间。两侧对不上，结论只能是证据不足。</div>
   </section>
 
   <!-- 8 · innovation 2 -->
   <section class="slide top" data-title="创新二">
     <p class="kicker">§2 · 创新二</p>
-    <h2 class="h2">克制判定：把「没有证据」写成一种结论</h2>
+    <h2 class="h2">证据不足也是一种结论</h2>
     <table class="booktabs mt-s">
       <thead>
         <tr><th style="width:12%">层级</th><th style="width:44%">我们写下</th><th style="width:44%">我们不会写</th></tr>
@@ -400,9 +400,9 @@ Lr2;-&gt;p · offset_bytes = 2
         <tr><td><b>未知</b></td><td>保留 <span class="mono">UNKNOWN</span>：目的、接收方、跨境、期限</td><td class="dim2">推测出一个答案</td></tr>
       </tbody>
     </table>
-    <p class="quote-sm mt-m">「未命中规则不代表没有隐私行为。」<span class="dim2" style="font-size:.8em"> — 项目能力边界</span></p>
+    <p class="quote-sm mt-m">「未命中规则不代表没有隐私行为。」<span class="dim2" style="font-size:.8em">（项目能力边界）</span></p>
     <p class="footnote mt-m">六类状态只对照「数据类型是否被声明」。「具体类型已声明」不代表目的、接收方、传输或时间范围一致，更不是合法性判断。</p>
-    <div class="notes">创新点不在「多识别了几个 API」，而在「识别不出时怎么写」。我们让证据不足成为一等状态，而不是用推断补齐。</div>
+    <div class="notes">创新点在识别不出时怎么写。证据不足是一等状态，不用推断补齐。</div>
   </section>
 
   <!-- 9 · innovation 3 -->
@@ -447,7 +447,7 @@ Lr2;-&gt;p · offset_bytes = 2
           <text x="630" y="201" text-anchor="middle" font-size="12" fill="#1a3a7a">算法容器不挂载真值目录；三方案共用同一 APK、权限、政策、候选与适用边界</text>
         </g>
       </svg>
-      <p class="figcaption"><b>Figure 3：</b>评测协议。先冻结真值与输入，再让三种方案跑同一份材料；本系统使用既有规则引擎，不做事后调参。</p>
+      <p class="figcaption"><b>Figure 3：</b>评测协议。真值和输入先冻结，三种方案跑同一份材料。PrivacyTrace 用既有规则引擎，不按结果调参。</p>
     </div>
     <div class="row mt-m" style="gap:40px;align-items:flex-start">
       <div class="kpi-row">
@@ -456,10 +456,10 @@ Lr2;-&gt;p · offset_bytes = 2
         <div class="kpi"><div class="num">36</div><div class="lbl">对照行</div></div>
       </div>
       <div class="mini" style="max-width:520px">
-        <b>P / R / F1 按协议为 N/A</b>：没有二元「实际采集 / 合法性」真值，就不在事后设立正类。指标只报状态一致数、失败与弃判。
+        <b>P / R / F1 按协议为 N/A</b>。没有「实际采集 / 合法性」的二元真值，就不在事后设正类；指标只报状态一致数、失败与弃判。
       </div>
     </div>
-    <div class="notes">评测最容易造假的地方是「先看结果再定真值」。这里反过来：真值先冻结并哈希，算法容器不挂载真值目录，修订必须另建版本。</div>
+    <div class="notes">评测最容易造假的环节是先看结果再定真值。我们把顺序倒过来：真值先冻结并哈希，算法容器不挂载真值目录，修订另建版本。</div>
   </section>
 
   <!-- 10 · innovation 4 -->
@@ -483,11 +483,11 @@ cap-drop ALL
           <li>不重跑扫描、不连网、不需要 Docker 或额外服务。</li>
           <li>24 个成员 / 3,056,905 B；结果绑定交付 SHA，可在断网环境复现。</li>
         </ul>
-        <p class="mini mt-s">回放不是重扫：打开包只还原已保存的报告与证据，不调用分析链路。</p>
+        <p class="mini mt-s">回放不重扫：打开包只还原已保存的报告与证据，不调用分析链路。</p>
       </div>
     </div>
-    <p class="footnote mt-m">隔离参数是执行约束，不是安全认证；回放包是内部限定验收，不含公开分发授权。两者都不能替代对真实应用的评测。</p>
-    <div class="notes">这一项的价值是「让别人能复核」：扫描在受限容器里跑，交付包打开前先验哈希。参数写死在代码与文档里，可以检查。</div>
+    <p class="footnote mt-m">隔离参数是执行约束，不是安全认证。回放包只做内部限定验收，不含公开分发授权。两项都不能替代真实应用评测。</p>
+    <div class="notes">这一项让评审能复核。扫描在受限容器里跑，交付包打开前先验哈希；参数写在代码和文档里。</div>
   </section>
 
   <!-- 11 · workflow -->
@@ -496,8 +496,8 @@ cap-drop ALL
     <h2 class="h2">从材料到报告：六步，每一步都有状态</h2>
     <div class="two-col" style="grid-template-columns:1.2fr .8fr">
       <ol class="step-list">
-        <li><b>材料</b>：APK（单包 / base + splits）与政策来源；来源可以是自动发现、网页辅助或手工导入。</li>
-        <li><b>候选</b>：政策候选默认由人工准备；可选模型候选一律标记 <span class="mono">UNREVIEWED</span>，不参与最终裁决。</li>
+        <li><b>材料</b>：APK（单包或 base+splits）和政策来源。来源可自动发现、网页辅助或手工导入。</li>
+        <li><b>候选</b>：政策候选默认人工准备。模型候选标 <span class="mono">UNREVIEWED</span>，不参与最终裁决。</li>
         <li><b>确认</b>：用户确认包集合、上传范围与政策候选；取消与返回都不改变草稿原状态。</li>
         <li><b>扫描</b>：仅未知 APK 进入隔离 Worker；本机或部署模式使用同一套扫描参数。</li>
         <li><b>对照</b>：确定性规则输出六类状态；事实、声明、推断分开存放。</li>
@@ -515,29 +515,29 @@ cap-drop ALL
             <tr><td>正式提交</td><td>系统受理</td><td class="dim2">工程验收</td></tr>
           </tbody>
         </table>
-        <p class="mini mt-s">这张表决定了汇报里每个数字的措辞：不把「测试通过」说成「评测通过」，也不把「上传成功」说成「提交成功」。</p>
+        <p class="mini mt-s">这张表管住每个数字的措辞：测试通过不写成评测通过，上传成功不写成提交成功。</p>
       </div>
     </div>
     <p class="footnote mt-m">六步的状态都以页面文字呈现；颜色只是冗余编码，不从颜色推断结论。</p>
-    <div class="notes">工作流本身不复杂，复杂的是每一步的状态都不能被悄悄跳过。右边这张表是全稿的引用口径：任何数字先问它属于哪一层证据。</div>
+    <div class="notes">工作流不复杂。难的是每一步状态都不能悄悄跳过。右边这张表是全稿的引用口径：任何数字先问它属于哪一层证据。</div>
   </section>
 
   <!-- 12 · engineering management -->
   <section class="slide top" data-title="工程管理">
     <p class="kicker">§3 · 工程管理</p>
-    <h2 class="h2">把「可复现」做成流程，而不是口号</h2>
+    <h2 class="h2">每条结论都绑在版本和哈希上</h2>
     <table class="booktabs mt-s">
       <thead><tr><th style="width:16%">机制</th><th style="width:46%">做法</th><th style="width:38%">结果（2026-10-23 快照）</th></tr></thead>
       <tbody>
-        <tr><td><b>交付治理</b></td><td>TheMasterplan v5.0.0 固定 SHA；Issue / 子票 / PR；单一交付责任人；子票未完成不在父票勾完成。</td><td>采纳记录与 PR 历史可查；没有「口头完成」。</td></tr>
+        <tr><td><b>交付治理</b></td><td>TheMasterplan v5.0.0 固定 SHA；Issue / 子票 / PR；单一交付责任人；子票未完成不在父票勾完成。</td><td>采纳记录和 PR 历史可查。</td></tr>
         <tr><td><b>唯一验证入口</b></td><td><span class="mono">scripts/check.sh</span> 与 CI 同名工作流；Python / Web 测试、Ruff、契约导出、构建一次跑完。</td><td>后端 1640 passed / 179 skipped；Web 65 passed；Ruff、契约、构建通过。</td></tr>
-        <tr><td><b>证据绑定</b></td><td>真值先行冻结；输入锁；交付 SHA；离线包 SHA-256；引用数字必须带时点与版本。</td><td>复查时能回到同一版材料，而不是「最新 main」。</td></tr>
+        <tr><td><b>证据绑定</b></td><td>真值先行冻结；输入锁；交付 SHA；离线包 SHA-256；引用数字必须带时点与版本。</td><td>复查时回到同一版材料，不用追最新 main。</td></tr>
         <tr><td><b>验收矩阵</b></td><td>H（成功组合）/ N（负向）/ F（故障恢复）三类用例；另有 8 项匿名化自查门禁。</td><td>H01–H11 通过；H12 失败并如实记录（见成果页）。</td></tr>
-        <tr><td><b>材料创作</b></td><td>截图取自真实运行；影片取真实操作 + 分镜 + 原创配乐；数字全部可复算，缺口直接写在材料里。</td><td>不使用概念图，不虚构比例，不把规划写成已达成。</td></tr>
+        <tr><td><b>材料创作</b></td><td>截图取自真实运行；影片取真实操作 + 分镜 + 原创配乐；数字全部可复算，缺口直接写在材料里。</td><td>没有概念图，没有虚构比例，规划不写成已达成。</td></tr>
       </tbody>
     </table>
     <p class="footnote mt-m">CI 数字来自 2026-10-22 的 Check 运行（<span class="mono">e52cc71</span>）；跳过项包含需真实 Docker / PostgreSQL / Redis 与受控构建显式开启的用例，不计入通过数。</p>
-    <div class="notes">工程管理不是「开了多少会」，而是三件事：谁负责、怎么验、证据绑在哪个版本上。最后一行说明材料本身也是按这个纪律做的。</div>
+    <div class="notes">工程管理看三件事：谁负责、怎么验、证据绑在哪个版本上。最后一行说明材料本身也按这个纪律做。</div>
   </section>
 
   <!-- 13 · results 1 -->
@@ -551,7 +551,7 @@ cap-drop ALL
           <div class="bar muted" style="height:33%"><em>4/12</em><span>API + 扁平规则</span></div>
           <div class="bar muted" style="height:17%"><em>2/12</em><span>权限 + 关键词</span></div>
         </div>
-        <p class="figcaption" style="margin-top:34px"><b>Figure 4：</b>三方案在同一份材料上的状态一致数（36 行对照）。蓝色为本系统；灰色为对照方案。</p>
+        <p class="figcaption" style="margin-top:34px"><b>Figure 4：</b>三方案在同一份材料上的状态一致数（36 行）。蓝色是 PrivacyTrace，灰色是对照方案。</p>
         <div class="legend mt-s"><span><i class="sw"></i>本系统</span><span><i class="sw muted"></i>对照方案</span></div>
       </div>
       <div>
@@ -569,14 +569,14 @@ cap-drop ALL
         <p class="mini mt-s"><b>不能从这张表推出</b>：真实 App 的检测准确率、实际采集或传输行为、合法性结论、商业应用泛化性能。</p>
       </div>
     </div>
-    <p class="footnote mt-m">原六场景评测（2026-10-12）为 2/6、3/6、6/6，保留原时点与原 SHA，不用新结果替换历史记录；本页引用的是十二场景扩展版。</p>
-    <div class="notes">这是全稿最容易被过度解读的数字。说完 12/12，立刻说它不能证明什么，并保留原六场景的历史数字。</div>
+    <p class="footnote mt-m">原六场景评测（2026-10-12）为 2/6、3/6、6/6，保留原时点和原 SHA。本页引用十二场景扩展版。</p>
+    <div class="notes">12/12 最容易读过头。说完这个数，马上说它不能证明什么，再补原六场景的历史数字。</div>
   </section>
 
   <!-- 14 · results 2 -->
   <section class="slide top" data-title="成果与反证">
     <p class="kicker">§4 · 成果与反证</p>
-    <h2 class="h2">用户、设备与交付：有成绩，也有没通过的</h2>
+    <h2 class="h2">三项结果：用户、设备、交付</h2>
     <div class="three-col mt-s">
       <div class="card card-accent">
         <h4 class="h4">理解测试（6 人，探索性）</h4>
@@ -606,8 +606,8 @@ cap-drop ALL
         </ul>
       </div>
     </div>
-    <p class="footnote mt-m">未通过项不写成通过：H12 需要独立补跑窗口；真实 App 全局精度与召回仍未做，动态分析暂缓。</p>
-    <div class="notes">成果页必须带反证。理解测试暴露了报告层级问题，H12 暴露了配置组合缺陷——把这两件事写出来，比多报一个漂亮数字更可信。</div>
+    <p class="footnote mt-m">H12 需要独立补跑窗口。真实 App 全局精度与召回没做，动态分析暂缓。没通过的不写成通过。</p>
+    <div class="notes">成果页带反证。理解测试暴露报告层级问题，H12 暴露配置组合缺陷。这两件事写出来，比多一个漂亮数字可信。</div>
   </section>
 
   <!-- 15 · screenshots 1 -->
@@ -617,18 +617,18 @@ cap-drop ALL
     <div class="two-col" style="grid-template-columns:1.45fr .55fr">
       <div class="figure" style="padding:10px">
         <div class="shot"><img src="./assets/shot-workbench.png" alt="PrivacyTrace 报告页：报告来源、输入来源状态与核验范围"></div>
-        <p class="figcaption"><b>Figure 5：</b>报告页。报告来源、输入来源状态与核验范围在同一屏；失败来源被保留，政策状态以文字写明（未复核 / 部分提取 / 附件未检查）。</p>
+        <p class="figcaption"><b>Figure 5：</b>报告页。报告的来源、输入来源状态和核验范围放在同一屏。失败来源保留，政策状态用文字写明：未复核、部分提取、附件未检查。</p>
       </div>
       <div>
         <ul class="check">
           <li>四步固定流程：导入材料 → 检查候选 → 分析进度 → 对照报告。</li>
-          <li>报告不是一张「总分」：先给出来源与完整度，再给逐条对照。</li>
-          <li>「本机存档 · 查看不会重新扫描」写在标题下，避免把回放当成新分析。</li>
+          <li>报告先给来源和完整度，再给逐条对照，不合成一个总分。</li>
+          <li>「本机存档 · 查看不会重新扫描」写在标题下，读者不会把回放当成新分析。</li>
         </ul>
-        <p class="mini mt-s">截图取自 2026-10-22 候选包的真实运行。前端视觉基线仍在迁移，最终界面可能与此不同；本稿不把开发版界面宣称为最终视觉。</p>
+        <p class="mini mt-s">截图取自 2026-10-22 候选包的真实运行。前端视觉基线还在迁移，最终界面可能不同。</p>
       </div>
     </div>
-    <div class="notes">界面页只讲「可复核」怎么落地：来源状态、失败来源保留、回放不重扫。最后一句主动说明前端仍在迁移。</div>
+    <div class="notes">界面页讲可复核怎么落地：来源状态、失败来源保留、回放不重扫。最后一句说明前端还在迁移。</div>
   </section>
 
   <!-- 16 · screenshots 2 -->
@@ -638,21 +638,21 @@ cap-drop ALL
     <div class="grid" style="grid-template-columns:1.25fr .75fr;gap:26px;align-items:start">
       <div class="figure" style="padding:8px">
         <div class="shot compact"><img src="./assets/shot-evidence.png" alt="证据卡：权限配置、候选条款、政策原句码点区间"></div>
-        <p class="figcaption"><b>Figure 6：</b>「相机 · 证据不足」证据卡：权限配置只证明能力声明；候选条款标 <span class="mono">UNREVIEWED</span> / <span class="mono">PARTIAL</span>，原句位置 <span class="mono">[10, 24)</span> 按 Unicode 码点计数。</p>
+        <p class="figcaption"><b>Figure 6：</b>「相机 · 证据不足」证据卡。权限配置只证明能力声明；候选条款标 <span class="mono">UNREVIEWED</span> 或 <span class="mono">PARTIAL</span>；原句位置 <span class="mono">[10, 24)</span>，按 Unicode 码点计数。</p>
       </div>
       <div>
         <div class="phone"><img src="./assets/shot-mobile.png" alt="Android 客户端报告页：当前分析材料与上传/恢复/删除入口"></div>
-        <p class="figcaption" style="text-align:center"><b>Figure 7：</b>Android 客户端复用同一任务与报告；静态线索不证明实际采集的提示固定在标题下。</p>
-        <p class="mini mt-s">移动端主流程已合入；删除入口在「服务与存储设置」sheet，报告与证据面板共用 Web 端同一契约。</p>
+        <p class="figcaption" style="text-align:center"><b>Figure 7：</b>Android 客户端读取同一任务和报告；标题下固定写着「静态线索不证明实际采集」。</p>
+        <p class="mini mt-s">移动端主流程已合入。删除入口在「服务与存储设置」sheet，报告和证据面板复用 Web 端契约。</p>
       </div>
     </div>
-    <div class="notes">两张图分别证明「证据能下钻」和「移动端能用同一份报告」。Figure 6 里那句「本项只是清单权限能力，不代表实际访问」是产品语气的核心。</div>
+    <div class="notes">两张图分别证明证据能下钻、手机能看同一份报告。Figure 6 里「本项只是清单权限能力，不代表实际访问」这句最能说明产品语气。</div>
   </section>
 
   <!-- 17 · originality -->
   <section class="slide top" data-title="原创贡献">
     <p class="kicker">§5 · 原创贡献与披露</p>
-    <h2 class="h2">团队做了什么，AI 做了什么，边界在哪里</h2>
+    <h2 class="h2">团队、AI 与第三方：分工和披露</h2>
     <div class="three-col mt-s">
       <div class="card card-accent">
         <h4 class="h4">团队原创</h4>
@@ -668,26 +668,26 @@ cap-drop ALL
       <div class="card">
         <h4 class="h4">AI 使用（如实披露）</h4>
         <p class="mini"><b>Gemini</b>：文档起草与修订；<b>Codex</b>：实现与验证；<b>DeepSeek Harness</b>：材料与分镜；<b>Claude / WorkBuddy</b>：文案与材料整理。</p>
-        <p class="mini mt-s">AI 不参与最终事实裁决；生成内容先过机器校验，再人工审阅；不给出未经复算的比例；参赛材料按要求逐项披露。</p>
+        <p class="mini mt-s">AI 不参与最终事实裁决。生成内容先过机器校验，再人工审阅。不给出没有复算的比例；参赛材料逐项披露。</p>
       </div>
       <div class="card">
         <h4 class="h4">第三方与边界</h4>
         <p class="mini">Vue 3 / Vite（MIT）、FastAPI / Pydantic（MIT）、Uvicorn（BSD-3）、Androguard 4.1.3（Apache-2.0）。</p>
-        <p class="mini mt-s">项目源码许可待团队最终决定；不宣称「100% 独立完成」，也不把 AI 参与描述为零。</p>
+        <p class="mini mt-s">项目源码许可还没定。参赛材料不写「100% 独立完成」，也不把 AI 参与写成零。</p>
       </div>
     </div>
-    <p class="footnote mt-m">成员 A/B/C… 为匿名评审表述；真实分工、AI 工具型号与人工修改范围见申报材料与随包披露文档。</p>
-    <div class="notes">原创贡献按「可核验的工作」写，不按「谁写得最多」写。AI 参与如实说，但不把 AI 说成产品能力，也不虚构一个自主率。</div>
+    <p class="footnote mt-m">成员 A/B/C 为匿名评审表述。真实分工、AI 工具型号和人工修改范围见申报材料与随包披露文档。</p>
+    <div class="notes">原创贡献按可核验的工作写，不按谁写得多。AI 参与如实说；不把 AI 说成产品能力，也不虚构自主率。</div>
   </section>
 
   <!-- 18 · conclusion -->
   <section class="slide top" data-title="结论">
     <p class="kicker">结论 · 证据索引</p>
-    <h2 class="h2">把证据摊开，比下结论更难</h2>
+    <h2 class="h2">三条结论与证据索引</h2>
     <div class="grid g3 mt-s" style="gap:18px">
       <div class="card card-accent">
         <h4 class="h4">1 · 定位成立</h4>
-        <p>对照工具，不是合规判决器。三条「不做」写进产品与材料，也写进每一句措辞。</p>
+        <p>对照工具，不是合规判决器。三条「不做」写在产品里，也写在这份材料里。</p>
       </div>
       <div class="card card-accent">
         <h4 class="h4">2 · 创新可指认</h4>
@@ -695,7 +695,7 @@ cap-drop ALL
       </div>
       <div class="card card-accent">
         <h4 class="h4">3 · 仍在收口</h4>
-        <p>H12 未通过、前端在迁移、真实 App 评测未做；不把未完成写成完成，是这稿的底线。</p>
+        <p>H12 未通过，前端在迁移，真实 App 评测没做。三项都留在这里，没有写成完成。</p>
       </div>
     </div>
     <ol class="references" style="margin-top:24px">
@@ -704,8 +704,8 @@ cap-drop ALL
       <li><span class="cite">[3]</span> 理解测试公开摘要 <i>（探索性，6 人）</i></li>
       <li><span class="cite">[4]</span> 离线回放包与校验清单 <i>（41,192,137 B ZIP 内）</i></li>
     </ol>
-    <p class="footnote mt-m">汇报稿 v0.1 · 2026-10-23 · 数字、截图与状态随合入更新；以随包证据与验收记录为准，不以本页为准。</p>
-    <div class="notes">收尾不喊口号：三句话分别对应定位、创新、边界，最后把证据索引交出去。留一句「以随包证据为准」，是给评审的复核入口。</div>
+    <p class="footnote mt-m">汇报稿 v0.1 · 2026-10-23。数字、截图和状态随合入更新，以随包证据与验收记录为准。</p>
+    <div class="notes">收尾三句话对应定位、创新、边界，最后交出证据索引。「以随包证据为准」是给评审的复核入口。</div>
   </section>
 
 </div>

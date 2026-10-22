@@ -12,6 +12,9 @@
 | 接入方式 | 独立预览与开发基座 | 不接管现有报告入口，不修改原生桥或业务状态机；用户稍后向 DS 交接 |
 | 重点信息 | 强调色或四色条标出最高信息区 | 本报告仅在“对照结论”面板顶部加窄四色条，红色继续用于关键操作 |
 | 字体设计 | 复用并采纳旧 Pioneer | Noto Serif SC 展示标题；Noto Sans SC 正文/操作/区段标题；Consolas / Courier New 技术标识 |
+| 重要文字 | 字号显著放大、保持协调 | 桌面标题48/结论条目28/区段22px；手机36/24/20px；状态18、正文16、主操作17px |
+| UI/UX布局 | 用户指定六项修正 | [单流程、55:45、证据关联与集中操作合同](ux-layout-contract.md)；独立示例落实，完整接入留DS |
+| 文案合同 | 用户采纳 #167 并融入 #165 | [完整采用决定、20项用户故事承接与DS剩余接入](copy-contract-167.md)；本轮示例同步新命名、状态行与去重规则 |
 
 此次没有新增领域概念，沿用 [GLOSSARY](../../../GLOSSARY.md) 的静态证据、政策快照、候选声明、离线回放。视觉 token 不进入领域词汇表；无需额外 ADR。
 
@@ -46,11 +49,12 @@
 | 唯一鲜艳操作色 | `--pt-action` | #D63A2C；主按钮白字，其他操作中性描边/下划线 |
 | 识别条 | `--pt-stripe-1…4` | #4C5A68 / #7A7F4E / #D2A85E / #A8432F |
 | 正文/操作/区段标题 | `--pt-font-body` | 复用旧 Pioneer：本地 Noto Sans SC，Microsoft YaHei / system-ui / sans-serif 回退 |
-| 展示标题 | `--pt-font-display` | 复用旧 Pioneer：本地 Noto Serif SC，SimSun / serif 回退；28px/40px、500 字重，手机 24px/约34px |
+| 展示标题 | `--pt-font-display` / `--pt-type-report` | 保留Pioneer字体：本地 Noto Serif SC，SimSun / serif；按最新要求显著放大为48px/60px、600字重，手机36px/45px |
 | 编号/技术标签 | `--pt-font-code` | 复用旧 Pioneer：Consolas / Courier New / monospace；具体系统呈现允许差异 |
 | 控件高度 | `--pt-control` | 桌面至少 36px；手机至少 48px；正文输入 16px 起 |
 | 面板 | — | 白底、1px 深色结构边、直角；不堆阴影 |
-| 文字尺寸 | — | 主标题沿用 Pioneer 字体分工与字级；正文 14px/1.8；辅助 12–13px；仅补充技术标签最低 10–11px |
+| 重点层级 | `--pt-type-finding/panel/conclusion` | 条目28px/手机24px；区段22/20px；实际结论状态18px，与辅助标签拉开明显层级 |
+| 阅读/操作 | `--pt-type-reading/action` | 阅读正文16px；证据入口16px，主操作17px/至少56px高；元数据保持13–14px，仅补充技术标签10–11px |
 
 红/白对比约 4.67:1；红/米白约 3.72:1，不能把红色小号字放到米白顶栏。状态不用四色身份条编码；UNKNOWN/PARTIAL/UNREVIEWED 均保留明确文字。失败通过文案和边线样式识别，不再引入第二种鲜艳颜色。
 
@@ -105,6 +109,9 @@
 5. 保留包名、哈希、适用版本、覆盖限制、政策复核、附件等可展开的真实信息。不要为了像示意图而删事实。
 6. 运行 A–E、reading 与新的 design 检查，重新对照截图；接入产品需要对应 Android/WebView/IME/安全区/字体/TalkBack 验证，本轮浏览器结果不替代。
 7. 未经用户授权不合并、部署或关闭旧票。
+8. 将[已采纳#167合同](copy-contract-167.md)应用于全部业务入口；当前基座已提供统一命名与状态格式接缝，旧页面迁移/十个旧键清理/阶段统一/表格守卫同步仍待完整接入。
+
+9. 按[实用UI/UX布局合同](ux-layout-contract.md)接入单一流程、证据选择上下文、状态分层与操作位置；真实数据、返回/恢复和设备验收逐项补证。
 
 ## 7. 预览与验证
 

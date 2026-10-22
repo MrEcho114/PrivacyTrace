@@ -67,3 +67,35 @@ export const copy = {
   "sampleOnly": "仅示例有效",
   "realInputHelp": "目前可准备材料，暂不能上传、抓取网页或生成候选。选择“体验示例”可继续走完流程。"
 } as const
+
+// Adopted #167 vocabulary. The independent design foundation consumes these;
+// existing runtime pages migrate during the later DS integration.
+const reportTitleParts = ['APP', '隐私收集越权报告'] as const
+export const frontendCopy = {
+  steps: ['APK 与政策材料', '核对政策声明', '扫描与对照进度', '对照报告'],
+  brandSubtitle: '隐私权限使用与隐私声明对照',
+  reportTitle: reportTitleParts.join(' '),
+  reportTitleParts,
+  comparisonTitle: '数据类型与政策声明对照',
+  reportScope: '对照 APK 中的权限、调用位置与政策原文。静态线索不证明运行时采集，结果不作合规判断。',
+  comparisonScope: '六种结论只回答政策是否提到相应数据类型。',
+  demoBadge: '示例体验 · 固定材料',
+} as const
+
+export interface PolicyStateCopyInput {
+  review_status?: 'UNREVIEWED' | 'REVIEWED' | null
+  completeness?: 'COMPLETE' | 'PARTIAL' | null
+  attachments_status?: 'NOT_CHECKED' | 'COMPLETE' | 'MISSING' | null
+}
+
+/** Missing facts remain unknown; never infer review from text availability. */
+export function policyStateLine(state: PolicyStateCopyInput): string {
+  const review = state.review_status === 'REVIEWED' ? '来源已复核'
+    : state.review_status === 'UNREVIEWED' ? '来源未复核' : '来源复核状态未知'
+  const completeness = state.completeness === 'COMPLETE' ? '正文完整'
+    : state.completeness === 'PARTIAL' ? '正文不完整' : '正文完整度未知'
+  const attachments = state.attachments_status === 'COMPLETE' ? '附件齐全'
+    : state.attachments_status === 'MISSING' ? '附件缺失'
+      : state.attachments_status === 'NOT_CHECKED' ? '附件未检查' : '附件状态未知'
+  return [review, completeness, attachments].join(' · ')
+}

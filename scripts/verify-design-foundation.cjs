@@ -40,6 +40,9 @@ async function designContract(page) {
       displayFont: style('h1').fontFamily,
       bodyFont: style('.pt-subtitle').fontFamily,
       codeFont: style('.pt-code').fontFamily,
+      titleSize: parseFloat(style('h1').fontSize),
+      readingSize: parseFloat(style('.pt-panel-body p').fontSize),
+      findingSize: document.querySelector('.pt-findings h3') ? parseFloat(style('.pt-findings h3').fontSize) : null,
       panelBorder: style('.pt-panel').borderTopWidth,
       radius: style('.pt-panel').borderTopLeftRadius,
     }
@@ -55,6 +58,8 @@ async function designContract(page) {
   assert.ok(actual.displayFont.startsWith('"Noto Serif SC"'), 'Pioneer display serif reused')
   assert.ok(actual.bodyFont.startsWith('"Noto Sans SC"'), 'Pioneer body sans reused')
   assert.ok(actual.codeFont.startsWith('Consolas'), 'Pioneer code mono reused')
+  assert.ok(actual.titleSize >= actual.readingSize * 2.25, 'report title has a clearly larger reading scale')
+  if (actual.findingSize != null) assert.ok(actual.findingSize >= actual.readingSize * 1.5, 'finding title visibly leads body text')
   assert.equal(actual.panelBorder, '1px'); assert.equal(actual.radius, '0px')
 }
 async function main() {
@@ -86,17 +91,23 @@ async function main() {
         await noOverflow(page, label)
         await designContract(page)
         checks.push('computed visual contract: ' + label)
+        check(label + ' shared source-state wording', await page.getByText('来源未复核 · 正文完整度未知 · 附件未检查', { exact: true }).count() === 1)
         await capture(page, label)
+        check(label + ' single workflow and current step', await page.getByRole('navigation', { name: '分析流程' }).count() === (gallery ? 0 : 1) && await page.locator('[aria-current=step]:visible').count() === (gallery ? 0 : 1))
         if (!gallery) {
+          check(label + ' one report primary action', await page.locator('.pt-report-actions .ui-button.primary:visible').count() === 1)
+          check(label + ' adopted report heading and only one h1', await page.getByRole('heading', { level: 1, name: 'APP 隐私收集越权报告', exact: true }).count() === 1 && await page.locator('h1').count() === 1)
+          check(label + ' single global example marker', await page.getByText('示例体验 · 固定材料', { exact: true }).count() === 1)
+          check(label + ' comparison names the two materials', await page.getByRole('heading', { name: '数据类型与政策声明对照', exact: true }).isVisible())
           await capture(page, label + '-viewport', false)
           const evidence = page.getByRole('region', { name: '证据详情', exact: true })
           const trigger = page.getByRole('button', { name: '查看对应证据 ：设备标识', exact: true })
           if (width === 1280) {
             const first = await page.getByRole('button', { name: '查看对应证据 ：位置信息', exact: true }).boundingBox()
-            check('1280 first full finding action in first fold', first && first.y + first.height <= height)
+            check('1280 first full finding action in first fold ' + JSON.stringify(first), first && first.y + first.height <= height)
           }
           if (width <= 390) {
-            const target = await page.getByRole('button', { name: '查看证据与政策原文', exact: true }).boundingBox()
+            const target = await page.locator('.pt-report-actions .ui-button.primary').boundingBox()
             check(width + ' touch target >=48', target && target.height >= 48)
           }
           await trigger.click()
@@ -107,10 +118,17 @@ async function main() {
           const box = await evidence.boundingBox()
           check(label + ' evidence scrolled into view', box && box.y >= 0 && box.y < height)
           await page.getByRole('button', { name: '返回刚才的操作' }).click()
+          check(label + ' selected finding controls matching evidence', await trigger.getAttribute('aria-pressed') === 'true' && await trigger.getAttribute('aria-controls') === 'report-evidence' && await page.locator('.pt-finding-selected h3').innerText() === '02 / 设备标识' && (await page.locator('.pt-selected-context').innerText()).includes('设备标识') && (await page.locator('.pt-selected-context').innerText()).includes('1 条关联证据'))
           check(label + ' return restores trigger focus', await trigger.evaluate(el => el === document.activeElement))
-          await page.getByRole('button', { name: '查看证据与政策原文', exact: true }).click()
+          await page.locator('.pt-report-actions .ui-button.primary').click()
+          check(label + ' primary names selected object', (await page.locator('.pt-report-actions .ui-button.primary').innerText()).includes('设备标识'))
+          check(label + ' metadata starts collapsed', !await page.locator('.pt-report-info').evaluate(el => el.open))
+          await page.getByText('报告来源与技术信息', { exact: true }).click()
+          check(label + ' disclosed report facts preserved', (await page.locator('.pt-report-info').innerText()).includes('PARTIAL / 部分覆盖') && (await page.locator('.pt-report-info').innerText()).includes('DEMO / 合成材料'))
+          await page.getByText('报告来源与技术信息', { exact: true }).click()
           check(label + ' primary opens policy', await page.locator('.pt-policy-details').evaluate(el => el.open))
-          check(label + ' policy retains unknown/review/attachment boundaries', (await evidence.innerText()).includes('附件') && (await evidence.innerText()).includes('UNREVIEWED'))
+          check(label + ' one visible shared policy state line', await page.getByText('来源未复核 · 正文完整度未知 · 附件未检查', { exact: true }).count() === 1)
+          check(label + ' policy retains extraction state', (await evidence.innerText()).includes('PARTIAL / 提取未完成'))
         }
       }
     }
@@ -119,9 +137,10 @@ async function main() {
       await page.goto(origin + '/design.html?state=' + state)
       await page.evaluate(() => document.fonts.ready)
       await noOverflow(page, state)
-      if (state === 'empty') check('empty disables action and metrics zero', await page.getByRole('button', { name: '查看证据与政策原文', exact: true }).isDisabled() && (await page.locator('.pt-metric-value').allTextContents()).every(text => text === '00'))
+      if (state === 'empty') check('empty disables action and metrics zero', await page.locator('.pt-report-actions .ui-button.primary').isDisabled() && (await page.locator('.pt-metric-value').allTextContents()).every(text => text === '00'))
       if (state === 'unknown') check('unknown source and delivery not promoted', (await page.locator('.pt-title-row .status-tag').innerText()).includes('UNKNOWN'))
-      if (state === 'unknown') check('unknown finding review remains unknown', (await page.locator('.pt-findings .pt-tags').allTextContents()).every(text => text.includes('UNKNOWN') && !text.includes('UNREVIEWED')))
+      if (state === 'unknown') check('unknown finding review remains unknown', (await page.locator('.pt-findings .pt-tags').allTextContents()).every(text => text.includes('条目复核未知') && !text.includes('待复核')))
+      if (state === 'unknown') check('unknown source-state facts remain visible', await page.getByText('来源复核状态未知 · 正文完整度未知 · 附件未检查', { exact: true }).count() === 1)
       await capture(page, state + '-320')
     }
     for (const width of [390, 320]) {
@@ -133,6 +152,21 @@ async function main() {
         const readable = await page.locator(gallery ? '.pt-swatches li' : '.pt-metrics > div').evaluateAll(cells => cells.every(cell => cell.getBoundingClientRect().width >= Math.min(5.5 * parseFloat(getComputedStyle(document.documentElement).fontSize), cell.parentElement.getBoundingClientRect().width - 2)))
         check('large text readable cells ' + width + (gallery ? ' gallery' : ' report'), readable)
         await capture(page, 'large-text-' + width + (gallery ? '-gallery' : '-report'))
+        if (!gallery) {
+          await capture(page, 'large-text-' + width + '-report-viewport', false)
+          await page.locator('.pt-findings h3').first().scrollIntoViewIfNeeded()
+          await capture(page, 'large-text-' + width + '-finding-viewport', false)
+          for (const action of [page.getByRole('button', { name: '查看对应证据 ：位置信息', exact: true }), page.locator('.pt-report-actions .ui-button.primary')]) {
+            await action.scrollIntoViewIfNeeded()
+            check('large text action readable and unobscured ' + width + ' ' + await action.innerText(), await action.evaluate(el => {
+              const rect = el.getBoundingClientRect(), style = getComputedStyle(el)
+              const contentWidth = rect.width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+              const hit = document.elementFromPoint(rect.x + rect.width / 2, Math.max(1, Math.min(innerHeight - 1, rect.y + rect.height / 2)))
+              return contentWidth >= 2.5 * parseFloat(style.fontSize) && !!hit && el.contains(hit)
+            }))
+          }
+          await capture(page, 'large-text-' + width + '-action-viewport', false)
+        }
       }
     }
     await page.setViewportSize({ width: 390, height: 844 })
@@ -155,7 +189,7 @@ async function main() {
     await page.getByRole('button', { name: '查看对应证据 ：位置信息', exact: true }).click()
     check('reduced motion evidence focus', await page.locator('.pt-evidence-target').evaluate(el => el === document.activeElement && getComputedStyle(el).scrollBehavior === 'auto'))
     // Prove this guard rejects actual source drift; do not regenerate all contracts.
-    for (const content of ['.pt-panel { background:#ece5d6 !important }', '.ui-button.primary { background:blue !important }', '.pt-identity i { background:black !important }', '.pt-priority-stripe i { background:black !important }', 'h1 { font-family:Arial !important }']) {
+    for (const content of ['.pt-panel { background:#ece5d6 !important }', '.ui-button.primary { background:blue !important }', '.pt-identity i { background:black !important }', '.pt-priority-stripe i { background:black !important }', 'h1 { font-family:Arial !important }', 'h1 { font-size:1rem !important }']) {
       const style = await page.addStyleTag({ content })
       await assert.rejects(() => designContract(page))
       await style.evaluate(el => el.remove())
@@ -168,6 +202,7 @@ async function main() {
     await page.locator('#app').waitFor()
     check('original runtime entry preserved', await page.locator('.pt-foundation').count() === 0)
     const sourcePaths = ['apps/web/design.html', 'apps/web/vite.config.ts', 'package.json', 'scripts/verify-design-foundation.cjs',
+      'apps/web/src/copy.ts',
       'deploy/Dockerfile', 'deploy/Dockerfile.dockerignore', 'deploy/audit_context.py', 'deploy/tests/test_deployment.py', '.github/workflows/browser-acceptance.yml',
       ...fs.readdirSync(path.join(root, 'apps/web/src/design')).map(name => 'apps/web/src/design/' + name)]
     const sources = sourcePaths.sort().map(file => ({ file, sha256: crypto.createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest('hex') }))

@@ -1,6 +1,6 @@
 {
   "kind": "Built Chromium / synthetic design fixtures",
-  "generatedAt": "2026-10-22T00:28:27.436Z",
+  "generatedAt": "2026-10-22T01:18:53.994Z",
   "sources": [
     {
       "file": ".github/workflows/browser-acceptance.yml",
@@ -11,8 +11,12 @@
       "sha256": "cf358145ea073ac2957cb49e0217c8471dd2fb3fcbbd52ca651611482cd6f536"
     },
     {
+      "file": "apps/web/src/copy.ts",
+      "sha256": "f1ff0227c776761d61c30aafc8d9ca83f5cafa4107680110f341de3cb2a2e703"
+    },
+    {
       "file": "apps/web/src/design/ComponentGallery.vue",
-      "sha256": "5a6cb7eb4c108e3876938de58985bd47281ca589ab6515daecf1c7726da150eb"
+      "sha256": "9090d2ee8ca962a95b3c2072c77562b3be6d6419fef4d04565ec427f972870fc"
     },
     {
       "file": "apps/web/src/design/DesignApp.vue",
@@ -24,11 +28,11 @@
     },
     {
       "file": "apps/web/src/design/MissionShell.vue",
-      "sha256": "c2242394de8efc70be2db987e73d497a211b5af39263d4aeaa227ecfdea66008"
+      "sha256": "527c34522eb39725e1b606df0de1245fb57afd6bf98e2fe79c9e1baccff19cb1"
     },
     {
       "file": "apps/web/src/design/ReportExample.vue",
-      "sha256": "6502f0aac6ff2380fa4f37865f3a6b851237fbc27d93879d405cd469254c68c7"
+      "sha256": "8e860f930b8a3f9f016056b76e9a6884a1b9470896da0cf15d72fb438e06035f"
     },
     {
       "file": "apps/web/src/design/ReportMetrics.vue",
@@ -40,7 +44,7 @@
     },
     {
       "file": "apps/web/src/design/foundation.css",
-      "sha256": "b4b15f71470f9971496f8f8512c69564fdef3a3a02d29e712921b25fe042e06d"
+      "sha256": "90cdca2ec6f56c95bc26db3291e4d21c25451227f86dc3758a59b68707235ec1"
     },
     {
       "file": "apps/web/src/design/main.ts",
@@ -48,7 +52,7 @@
     },
     {
       "file": "apps/web/src/design/model.ts",
-      "sha256": "867e577d880e1ea9fa3439bf2127d25d6357c5951f803a0239b3df63a0d3bcbe"
+      "sha256": "3abaafad6380ca678f9074fc96cf46d0213e6b5e933d04eb8c130861258cfbcc"
     },
     {
       "file": "apps/web/vite.config.ts",
@@ -76,80 +80,150 @@
     },
     {
       "file": "scripts/verify-design-foundation.cjs",
-      "sha256": "76be2e6425b270b99af28e0a58c1f90cc5e775a135e2bc2d689f922d8e1949aa"
+      "sha256": "541309ee93137ac2ba0c498553a02c20c3bb2f288c3f9e01c1152414ac7865ea"
     }
   ],
   "checks": [
     "no overflow: report-1440 {\"width\":1440,\"scroll\":1440}",
     "computed visual contract: report-1440",
+    "report-1440 shared source-state wording",
+    "report-1440 single workflow and current step",
+    "report-1440 one report primary action",
+    "report-1440 adopted report heading and only one h1",
+    "report-1440 single global example marker",
+    "report-1440 comparison names the two materials",
     "report-1440 selected evidence contains manifest",
     "report-1440 excludes other finding evidence",
     "report-1440 focus moved to evidence",
     "report-1440 evidence scrolled into view",
+    "report-1440 selected finding controls matching evidence",
     "report-1440 return restores trigger focus",
+    "report-1440 primary names selected object",
+    "report-1440 metadata starts collapsed",
+    "report-1440 disclosed report facts preserved",
     "report-1440 primary opens policy",
-    "report-1440 policy retains unknown/review/attachment boundaries",
+    "report-1440 one visible shared policy state line",
+    "report-1440 policy retains extraction state",
     "no overflow: components-1440 {\"width\":1440,\"scroll\":1440}",
     "computed visual contract: components-1440",
+    "components-1440 shared source-state wording",
+    "components-1440 single workflow and current step",
     "no overflow: report-1280 {\"width\":1280,\"scroll\":1280}",
     "computed visual contract: report-1280",
-    "1280 first full finding action in first fold",
+    "report-1280 shared source-state wording",
+    "report-1280 single workflow and current step",
+    "report-1280 one report primary action",
+    "report-1280 adopted report heading and only one h1",
+    "report-1280 single global example marker",
+    "report-1280 comparison names the two materials",
+    "1280 first full finding action in first fold {\"x\":268,\"y\":615.796875,\"width\":115.640625,\"height\":40}",
     "report-1280 selected evidence contains manifest",
     "report-1280 excludes other finding evidence",
     "report-1280 focus moved to evidence",
     "report-1280 evidence scrolled into view",
+    "report-1280 selected finding controls matching evidence",
     "report-1280 return restores trigger focus",
+    "report-1280 primary names selected object",
+    "report-1280 metadata starts collapsed",
+    "report-1280 disclosed report facts preserved",
     "report-1280 primary opens policy",
-    "report-1280 policy retains unknown/review/attachment boundaries",
+    "report-1280 one visible shared policy state line",
+    "report-1280 policy retains extraction state",
     "no overflow: components-1280 {\"width\":1280,\"scroll\":1280}",
     "computed visual contract: components-1280",
+    "components-1280 shared source-state wording",
+    "components-1280 single workflow and current step",
     "no overflow: report-768 {\"width\":768,\"scroll\":768}",
     "computed visual contract: report-768",
+    "report-768 shared source-state wording",
+    "report-768 single workflow and current step",
+    "report-768 one report primary action",
+    "report-768 adopted report heading and only one h1",
+    "report-768 single global example marker",
+    "report-768 comparison names the two materials",
     "report-768 selected evidence contains manifest",
     "report-768 excludes other finding evidence",
     "report-768 focus moved to evidence",
     "report-768 evidence scrolled into view",
+    "report-768 selected finding controls matching evidence",
     "report-768 return restores trigger focus",
+    "report-768 primary names selected object",
+    "report-768 metadata starts collapsed",
+    "report-768 disclosed report facts preserved",
     "report-768 primary opens policy",
-    "report-768 policy retains unknown/review/attachment boundaries",
+    "report-768 one visible shared policy state line",
+    "report-768 policy retains extraction state",
     "no overflow: components-768 {\"width\":768,\"scroll\":768}",
     "computed visual contract: components-768",
+    "components-768 shared source-state wording",
+    "components-768 single workflow and current step",
     "no overflow: report-390 {\"width\":390,\"scroll\":390}",
     "computed visual contract: report-390",
+    "report-390 shared source-state wording",
+    "report-390 single workflow and current step",
+    "report-390 one report primary action",
+    "report-390 adopted report heading and only one h1",
+    "report-390 single global example marker",
+    "report-390 comparison names the two materials",
     "390 touch target >=48",
     "report-390 selected evidence contains manifest",
     "report-390 excludes other finding evidence",
     "report-390 focus moved to evidence",
     "report-390 evidence scrolled into view",
+    "report-390 selected finding controls matching evidence",
     "report-390 return restores trigger focus",
+    "report-390 primary names selected object",
+    "report-390 metadata starts collapsed",
+    "report-390 disclosed report facts preserved",
     "report-390 primary opens policy",
-    "report-390 policy retains unknown/review/attachment boundaries",
+    "report-390 one visible shared policy state line",
+    "report-390 policy retains extraction state",
     "no overflow: components-390 {\"width\":390,\"scroll\":390}",
     "computed visual contract: components-390",
+    "components-390 shared source-state wording",
+    "components-390 single workflow and current step",
     "no overflow: report-320 {\"width\":320,\"scroll\":320}",
     "computed visual contract: report-320",
+    "report-320 shared source-state wording",
+    "report-320 single workflow and current step",
+    "report-320 one report primary action",
+    "report-320 adopted report heading and only one h1",
+    "report-320 single global example marker",
+    "report-320 comparison names the two materials",
     "320 touch target >=48",
     "report-320 selected evidence contains manifest",
     "report-320 excludes other finding evidence",
     "report-320 focus moved to evidence",
     "report-320 evidence scrolled into view",
+    "report-320 selected finding controls matching evidence",
     "report-320 return restores trigger focus",
+    "report-320 primary names selected object",
+    "report-320 metadata starts collapsed",
+    "report-320 disclosed report facts preserved",
     "report-320 primary opens policy",
-    "report-320 policy retains unknown/review/attachment boundaries",
+    "report-320 one visible shared policy state line",
+    "report-320 policy retains extraction state",
     "no overflow: components-320 {\"width\":320,\"scroll\":320}",
     "computed visual contract: components-320",
+    "components-320 shared source-state wording",
+    "components-320 single workflow and current step",
     "no overflow: empty {\"width\":320,\"scroll\":320}",
     "empty disables action and metrics zero",
     "no overflow: unknown {\"width\":320,\"scroll\":320}",
     "unknown source and delivery not promoted",
     "unknown finding review remains unknown",
+    "unknown source-state facts remain visible",
     "no overflow: long {\"width\":320,\"scroll\":320}",
     "no overflow: 200% 390 report {\"width\":390,\"scroll\":390}",
     "large text readable cells 390 report",
+    "large text action readable and unobscured 390 查看对应证据 →\n：位置信息",
+    "large text action readable and unobscured 390 查看「位置信息」证据与政策原文 →",
     "no overflow: 200% 390 gallery {\"width\":390,\"scroll\":390}",
     "large text readable cells 390 gallery",
     "no overflow: 200% 320 report {\"width\":320,\"scroll\":320}",
     "large text readable cells 320 report",
+    "large text action readable and unobscured 320 查看对应证据 →\n：位置信息",
+    "large text action readable and unobscured 320 查看「位置信息」证据与政策原文 →",
     "no overflow: 200% 320 gallery {\"width\":320,\"scroll\":320}",
     "large text readable cells 320 gallery",
     "field error association",
@@ -164,6 +238,7 @@
     "negative visual drift rejected: .pt-identity i { background:black !important }",
     "negative visual drift rejected: .pt-priority-stripe i { background:black !important }",
     "negative visual drift rejected: h1 { font-family:Arial !important }",
+    "negative visual drift rejected: h1 { font-size:1rem !important }",
     "independent preview makes no API calls",
     "no browser errors",
     "original runtime entry preserved"
@@ -175,7 +250,7 @@
         "width": 1440,
         "height": 1096
       },
-      "sha256": "cbdce185479df025c23244b27873f9a80c704bb03e5216f02caf4d2a3d59980a"
+      "sha256": "fa7a4482fce1fe630e3b5c05bd1923ce69d2c2688a6d743695299c869d7897f6"
     },
     {
       "file": "report-1440-viewport.png",
@@ -183,7 +258,7 @@
         "width": 1440,
         "height": 1096
       },
-      "sha256": "5ddabe3ee7d75567ab06d3973a7fb5df779c6cf760c58aba5fdde2a87b2aa00f"
+      "sha256": "b4955a4c209ecc16d53c7e7766dfe8c9776a31ee4d47838e19747c7612d35311"
     },
     {
       "file": "components-1440.png",
@@ -191,7 +266,7 @@
         "width": 1440,
         "height": 1096
       },
-      "sha256": "a5b5c235408e5a13e1307b10be9a58c289e58d52d43378d8de957312580ff113"
+      "sha256": "c4982bafc5452e913152011f9c07698f5c61d4927a48fd15bbba2c1cc12dab38"
     },
     {
       "file": "report-1280.png",
@@ -199,7 +274,7 @@
         "width": 1280,
         "height": 720
       },
-      "sha256": "e08fe03cd65d20779dfe608817fde8f05f49711d98a611e2216244cdb06e662f"
+      "sha256": "c19fa3f7b6829fc179d918e625bb350ed49357cd3e6444b039b6ba786a59c413"
     },
     {
       "file": "report-1280-viewport.png",
@@ -207,7 +282,7 @@
         "width": 1280,
         "height": 720
       },
-      "sha256": "53d1ec5682a1f8945c5677e777df23278980662d01e299dc8e4dc88160e15ada"
+      "sha256": "8e1bd72d2dcfebae216f47da8337873008705e630f4933e13a5f724fbd4bd967"
     },
     {
       "file": "components-1280.png",
@@ -215,7 +290,7 @@
         "width": 1280,
         "height": 720
       },
-      "sha256": "cf1ad0acfe7bd29c809041dc9e5b3f05a9da86ff7128584d9d43ef6768084cf5"
+      "sha256": "bf2f2427865c97f3437a44f0cc098a1f154627b488705b08376f489dee8f8c02"
     },
     {
       "file": "report-768.png",
@@ -223,7 +298,7 @@
         "width": 768,
         "height": 1024
       },
-      "sha256": "5973218144f913c3958be12d50f03c650094be16bd14c5b1b16b3b10c4d96e12"
+      "sha256": "d55f55212972229a03609d84b2dcbe1d370a277181743e9cf26326fc528b371d"
     },
     {
       "file": "report-768-viewport.png",
@@ -231,7 +306,7 @@
         "width": 768,
         "height": 1024
       },
-      "sha256": "f2c0c6d8b5fc336f3bb5b8f1e6f4d9b845df463667b825bee358c98ecf6ea6e9"
+      "sha256": "9533e4555fa5fd82b5dd3a4d3c3950b46ba4af98f3f977c8fed454a594bb4c57"
     },
     {
       "file": "components-768.png",
@@ -239,7 +314,7 @@
         "width": 768,
         "height": 1024
       },
-      "sha256": "39619becbb9b2074ce045d38782609378c10f92b7bd2cd9238d86c753c991a8a"
+      "sha256": "0b4c303f49a91afba78ff00f0ab990d5b3d4afa9f5693b11337e028f4ed7b00a"
     },
     {
       "file": "report-390.png",
@@ -247,7 +322,7 @@
         "width": 390,
         "height": 844
       },
-      "sha256": "57cf0332c301162cc9525f1ed208ac5bd2e68915c1251acc4a5b062ad14d304f"
+      "sha256": "abd08459fbf8f2abcc216aa41806010b84adecd7188bb980f028fd0eeae54cf4"
     },
     {
       "file": "report-390-viewport.png",
@@ -255,7 +330,7 @@
         "width": 390,
         "height": 844
       },
-      "sha256": "2683cd23f052462719654346b191013bcce9562750bf3f8b3acc0c0adf7d3e7d"
+      "sha256": "63334a4f28945ee65fdd72019d896a0b6636840a36eab6fc1c9cf2a3ed4b5aac"
     },
     {
       "file": "components-390.png",
@@ -263,7 +338,7 @@
         "width": 390,
         "height": 844
       },
-      "sha256": "aa1e6c8b4b42fbd948cc71e0dba0e0f1154d6432f26f6cd94c8c833c70bc3758"
+      "sha256": "9e90ed371e043e28c6f821d15fcf72c5c810c017b2172dc432b7dd3ba8840909"
     },
     {
       "file": "report-320.png",
@@ -271,7 +346,7 @@
         "width": 320,
         "height": 740
       },
-      "sha256": "49b2eed9dab73924973599851757d5cefc9c9bdbfd292c9269f2eaadc58533c4"
+      "sha256": "c5e3762c3ce3039db17d3c580768dcd662e530f7b32690f95075a14abc40640b"
     },
     {
       "file": "report-320-viewport.png",
@@ -279,7 +354,7 @@
         "width": 320,
         "height": 740
       },
-      "sha256": "b8ebf2c7795cee90f207d92f150ca67d61c353e82e9939638f2870a70d5963f8"
+      "sha256": "82e2c653042858ead1fb2c341b18553d0c890e3ee831e0ef8c1b80d786cdc5b0"
     },
     {
       "file": "components-320.png",
@@ -287,7 +362,7 @@
         "width": 320,
         "height": 740
       },
-      "sha256": "359cdd086fef7eea34665ccea4dd4e1f25deedbc96f252fad8003fde72454330"
+      "sha256": "cd60e330e552fb0214cb75d7a448c81086975bfaff66e3a49384d6cecaaa78fc"
     },
     {
       "file": "empty-320.png",
@@ -295,7 +370,7 @@
         "width": 320,
         "height": 740
       },
-      "sha256": "f879dd116076418f6c65312a9e4a7c56e4d94101975b2af14dcd64cd88b49a96"
+      "sha256": "19ddb83827dc43a3b59be60ef0cc4bfef7faf445e83a9ca77ba37e0730a48f89"
     },
     {
       "file": "unknown-320.png",
@@ -303,7 +378,7 @@
         "width": 320,
         "height": 740
       },
-      "sha256": "26e6c401629c4ff6067647df74568c4caae8d37fa03916b860266061f06209ea"
+      "sha256": "9ac1844587bc28e2535f890e00b9de5cb17718d4039fca6f34dd3913fc9c522d"
     },
     {
       "file": "long-320.png",
@@ -311,7 +386,7 @@
         "width": 320,
         "height": 740
       },
-      "sha256": "900d9196b920dd7a39ee71c8259f888f66f8058a09bb659bb9b5acf7ea78613e"
+      "sha256": "c1dd8c25e8ef5bc2d8e3030e08105b6ad3958568744493524cc1ff64cb9c3bd0"
     },
     {
       "file": "large-text-390-report.png",
@@ -319,7 +394,31 @@
         "width": 390,
         "height": 844
       },
-      "sha256": "2461a2017d978d27cb563aca644ef44ea00285c22243f6ae231f22c2c2e259f0"
+      "sha256": "a375e32cccb4cffc59711e117086d9e8455e3702bf20ea5a4fe4cd00292d6a78"
+    },
+    {
+      "file": "large-text-390-report-viewport.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "4bc0da21c85c232f76462bed697140c9edb056e68972d6dbd6ed8646bbf1ab15"
+    },
+    {
+      "file": "large-text-390-finding-viewport.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "88d5be6bc65361e5f8035ac1d81b6002bb1eef37ec1fbee695e6820c7e40abe4"
+    },
+    {
+      "file": "large-text-390-action-viewport.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "800278b247994959c770ed8f87009fb9893612c7f7717b25e94d1943f5a64ac0"
     },
     {
       "file": "large-text-390-gallery.png",
@@ -327,7 +426,7 @@
         "width": 390,
         "height": 844
       },
-      "sha256": "aff3286984327c96d092d652eba32ee7d08c7fbf4d9bd7ec33c13a00848cf571"
+      "sha256": "816a1d3cbeb414cec7aca379b371d426d5b80216d329104533d12454da4f04ef"
     },
     {
       "file": "large-text-320-report.png",
@@ -335,7 +434,31 @@
         "width": 320,
         "height": 844
       },
-      "sha256": "3f3111b6d71ea5acc3bcfd7cdc94081a8ea7e56ebbad19dd7dcbdbcd2cf81047"
+      "sha256": "b0b3a6415370333aeff6297a7eaee94761ee22ee1d994339dbbb36f52a6101fc"
+    },
+    {
+      "file": "large-text-320-report-viewport.png",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "sha256": "d6f08bb1fe343a7ff8c9a698ec35efcd8af2e636a63279bd86ad54fc0eec4aeb"
+    },
+    {
+      "file": "large-text-320-finding-viewport.png",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "sha256": "3ad4e1ec64c022b3807ff5dfbfe94d8414361f6fc2872b096ee89eab24bef2b8"
+    },
+    {
+      "file": "large-text-320-action-viewport.png",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "sha256": "38126f7d07edca7f12c1489ac8b9f850783f507fcc120b60a122323252695209"
     },
     {
       "file": "large-text-320-gallery.png",
@@ -343,7 +466,7 @@
         "width": 320,
         "height": 844
       },
-      "sha256": "4702efa7acc8efe8b825453373f5291c59aa19a94862a9d282ed00234bea94f9"
+      "sha256": "a5ed0a043ee5756a03a31e1ff2bf1310e5671654612fabb2cc3fb967d344ebbf"
     }
   ],
   "apiRequests": [

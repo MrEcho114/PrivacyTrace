@@ -6,6 +6,7 @@ import StatusTag from '../components/StatusTag.vue'
 import InstrumentPanel from './InstrumentPanel.vue'
 import ReportMetrics from './ReportMetrics.vue'
 import StaticBoundary from './StaticBoundary.vue'
+import { frontendCopy, policyStateLine } from '../copy'
 const note = ref('')
 const showError = ref(false)
 const pending = ref(false)
@@ -17,7 +18,7 @@ const colors = [{ name: '工作面', value: '#FFFFFF' }, { name: '仅顶栏', va
   <div class="pt-gallery">
     <InstrumentPanel title="01 / 颜色与字体" label="TOKENS">
       <ul class="pt-swatches"><li v-for="color in colors" :key="color.value"><span :style="{ backgroundColor: color.value }" aria-hidden="true"></span><strong>{{ color.name }}</strong><code>{{ color.value }}</code></li></ul>
-      <h3>复用 Pioneer 的字体设计</h3><p>展示标题使用本地 Noto Serif SC 衬线体；正文、操作与区段标题使用 Noto Sans SC；编号、代码与技术标识使用 Consolas / Courier New 等宽回退。沿用原字体角色和字号层级，不引入字体 CDN。</p><p class="pt-type-specimen">隐私声明对照报告</p><p class="pt-code">REPORT / 04 · DATA COMPARISON</p><p>白色工作面；米白仅用于顶栏。四色条属于身份识别，不表示风险或分析结果。</p>
+      <h3>复用 Pioneer 的字体设计</h3><p>保留 Noto Serif SC 展示标题、Noto Sans SC 正文与操作、Consolas / Courier New 技术标识。报告主标题桌面48px/手机36px，重点条目28px/24px，阅读正文16px；重要信息与辅助标签拉开明显层级。</p><p class="pt-type-specimen">{{ frontendCopy.reportTitle }}</p><p class="pt-code">REPORT / 04 · DATA COMPARISON</p><p>白色工作面；米白仅用于顶栏。四色条属于身份识别，不表示风险或分析结果。</p>
     </InstrumentPanel>
     <InstrumentPanel title="02 / 操作控件" label="UiButton / UiField">
       <div class="pt-component-row"><UiButton variant="primary" @click="showError = true">校验示例字段</UiButton><UiButton @click="togglePending">{{ pending ? '结束等待演示' : '演示等待状态' }}</UiButton><UiButton :busy="pending" :disabled="!pending">{{ pending ? '正在处理示例' : '等待状态示例' }}</UiButton><UiButton disabled>不可用操作</UiButton></div>
@@ -27,6 +28,7 @@ const colors = [{ name: '工作面', value: '#FFFFFF' }, { name: '仅顶栏', va
     </InstrumentPanel>
     <InstrumentPanel title="03 / 状态与证据边界" label="StatusTag">
       <div class="pt-tags"><StatusTag>UNKNOWN / 未知</StatusTag><StatusTag tone="wait">PARTIAL / 部分覆盖</StatusTag><StatusTag>UNREVIEWED / 待复核</StatusTag><StatusTag tone="error">失败 / 可重试</StatusTag><StatusTag tone="success">已保存 / 本地示例</StatusTag></div>
+      <p class="pt-policy-state">{{ policyStateLine({ review_status: 'UNREVIEWED', completeness: null, attachments_status: 'NOT_CHECKED' }) }}</p>
       <StaticBoundary /><p>标签保留明确文字。来源、送达、复核、提取与覆盖分别映射，不把 REAL_SCAN 理解成实时运行。</p>
     </InstrumentPanel>
     <InstrumentPanel title="04 / 重点信息面板" label="InstrumentPanel / priority" priority>

@@ -1,0 +1,216 @@
+{
+  "group": "f05-queued",
+  "case_passed": false,
+  "records": [
+    {
+      "private_locator": "f05-queued-cancel.log",
+      "private_capture_sha256": "28f4670b93d540a81ff4e8159197e510e88632b9cf3e29b608f987f3190c8536",
+      "observation": {
+        "action": "cancel",
+        "at_utc": "2026-10-21T08:55:36.731Z",
+        "body_sha256": "13ecf1f400bcc15eb4e283ada64a9464f309deb178cd214a4f19d095156bdc51",
+        "driver_sha256": "afff1dea8e9e70ca55af16b75d52e53b9c4ca9f9a15ac1dab94541507a9314b1",
+        "shows_report_button": false,
+        "shows_cancelled": true,
+        "shows_error": false,
+        "status": "OBSERVED",
+        "case_passed": false,
+        "visible_job_aliases": [
+          "9d3714364832"
+        ]
+      }
+    },
+    {
+      "private_locator": "f05-queued-cancel-observe.json",
+      "private_capture_sha256": "7e93ad022e00f91c24bc3bbade07fb01be228eb0717feb8efc77546fba46ced1",
+      "observation": {
+        "at_utc": "2026-10-21T08:55:38.567249+00:00",
+        "source_sha": "ffadeb06af70072b5ee2d931ee565e5b7e546acd",
+        "persistent": {
+          "jobs": [
+            {
+              "state": "CANCELLED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 1,
+              "attempt": 0,
+              "job_alias": "9d3714364832"
+            },
+            {
+              "state": "SUCCEEDED",
+              "has_report": true,
+              "execution_state": "SUCCEEDED",
+              "fence": 1,
+              "attempt": 1,
+              "job_alias": "fb1cb3e9595f"
+            }
+          ],
+          "counts": {
+            "intake_documents": 16,
+            "outbox_events": 2,
+            "runner_materials": 1,
+            "deletion_intents": 0,
+            "upload_reservations": 0
+          },
+          "scopes": [
+            {
+              "kind": "DRAFT",
+              "tombstone": false,
+              "scope_alias": "8628d29ffe11"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": false,
+              "scope_alias": "fb1cb3e9595f"
+            },
+            {
+              "kind": "DRAFT",
+              "tombstone": false,
+              "scope_alias": "ec62f50247b1"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": false,
+              "scope_alias": "9d3714364832"
+            }
+          ],
+          "material_files": 56
+        },
+        "runner": [
+          {
+            "state": "DONE",
+            "error": null,
+            "has_receipt": true,
+            "result_sha256": "85eccb6384bf9210ae021b49b4321ddb04de856b403b5fb0e72efd21902e6d60"
+          }
+        ],
+        "active_scanners": [],
+        "captured_private_scopes": 2,
+        "case_passed": false,
+        "last_60s_request_groups": [
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "GET",
+            "route": "/api/v1/mobile-capabilities",
+            "status": 200,
+            "count": 21,
+            "first_epoch": 1792572893.02365,
+            "last_epoch": 1792572936.4307337
+          },
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "POST",
+            "route": "/api/v1/web/drafts",
+            "status": 200,
+            "count": 1,
+            "first_epoch": 1792572902.0910754,
+            "last_epoch": 1792572902.0910754
+          },
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "POST",
+            "route": "/api/v1/web/drafts/{id}/package-set",
+            "status": 200,
+            "count": 1,
+            "first_epoch": 1792572903.6593163,
+            "last_epoch": 1792572903.6593163
+          },
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "GET",
+            "route": "/api/v1/web/drafts/{id}",
+            "status": 200,
+            "count": 20,
+            "first_epoch": 1792572903.6856775,
+            "last_epoch": 1792572936.4712138
+          },
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "GET",
+            "route": "/api/v1/taxonomy",
+            "status": 200,
+            "count": 1,
+            "first_epoch": 1792572904.0779061,
+            "last_epoch": 1792572904.0779061
+          },
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "POST",
+            "route": "/api/v1/web/drafts/{id}/import-external",
+            "status": 200,
+            "count": 1,
+            "first_epoch": 1792572905.0852556,
+            "last_epoch": 1792572905.0852556
+          },
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "POST",
+            "route": "/api/v1/web/drafts/{id}/sources/lane-e-policy/extract",
+            "status": 409,
+            "count": 1,
+            "first_epoch": 1792572905.9577289,
+            "last_epoch": 1792572905.9577289
+          },
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "POST",
+            "route": "/api/v1/web/drafts/{id}/candidates",
+            "status": 200,
+            "count": 2,
+            "first_epoch": 1792572906.7688234,
+            "last_epoch": 1792572909.5042317
+          },
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "POST",
+            "route": "/api/v1/web/drafts/{id}/start",
+            "status": 200,
+            "count": 1,
+            "first_epoch": 1792572909.676047,
+            "last_epoch": 1792572909.676047
+          },
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "GET",
+            "route": "/api/v1/jobs/{id}",
+            "status": 200,
+            "count": 5,
+            "first_epoch": 1792572911.3438706,
+            "last_epoch": 1792572918.5053105
+          },
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "GET",
+            "route": "/api/v1/mobile-capabilities",
+            "status": 429,
+            "count": 1,
+            "first_epoch": 1792572918.5876575,
+            "last_epoch": 1792572918.5876575
+          },
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "POST",
+            "route": "/api/v1/jobs/{id}/cancel",
+            "status": 200,
+            "count": 1,
+            "first_epoch": 1792572936.5194187,
+            "last_epoch": 1792572936.5194187
+          }
+        ],
+        "request_window_end_epoch": 1792572936.5194187
+      }
+    }
+  ]
+}

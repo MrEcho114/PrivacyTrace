@@ -1,0 +1,369 @@
+{
+  "group": "cleanup",
+  "case_passed": false,
+  "records": [
+    {
+      "private_locator": "cleanup.json",
+      "private_capture_sha256": "57a6ec62c4fcbb288565dcd93a45374974d3b8dde25df3d7a0a20a64bd19c0ad",
+      "observation": {
+        "scope_cleanup": [
+          {
+            "scope": "D1",
+            "delete_status": 200
+          },
+          {
+            "scope": "D2",
+            "delete_status": 404
+          },
+          {
+            "scope": "D3",
+            "delete_status": 404
+          },
+          {
+            "scope": "D4",
+            "delete_status": 404
+          },
+          {
+            "scope": "D5",
+            "delete_status": 404
+          },
+          {
+            "scope": "D6",
+            "delete_status": 404
+          },
+          {
+            "scope": "D7",
+            "delete_status": 404
+          },
+          {
+            "scope": "D8",
+            "delete_status": 404
+          },
+          {
+            "scope": "D9",
+            "delete_status": 404
+          }
+        ],
+        "before_destroy": {
+          "at_utc": "2026-10-21T10:20:41.444640+00:00",
+          "source_sha": "ffadeb06af70072b5ee2d931ee565e5b7e546acd",
+          "persistent": {
+            "jobs": [
+              {
+                "state": "STATIC_ANALYSIS",
+                "has_report": false,
+                "execution_state": "REVOKED",
+                "fence": 2,
+                "attempt": 1,
+                "job_alias": "cc09806d787b"
+              },
+              {
+                "state": "CANCELLED",
+                "has_report": false,
+                "execution_state": "REVOKED",
+                "fence": 2,
+                "attempt": 1,
+                "job_alias": "b123f956ac36"
+              },
+              {
+                "state": "SUCCEEDED",
+                "has_report": false,
+                "execution_state": "REVOKED",
+                "fence": 2,
+                "attempt": 1,
+                "job_alias": "539d52808876"
+              },
+              {
+                "state": "QUEUED",
+                "has_report": false,
+                "execution_state": "REVOKED",
+                "fence": 1,
+                "attempt": 0,
+                "job_alias": "be2909b12f02"
+              },
+              {
+                "state": "CANCELLED",
+                "has_report": false,
+                "execution_state": "REVOKED",
+                "fence": 2,
+                "attempt": 1,
+                "job_alias": "6ceb23753030"
+              },
+              {
+                "state": "CANCELLED",
+                "has_report": false,
+                "execution_state": "REVOKED",
+                "fence": 1,
+                "attempt": 0,
+                "job_alias": "9d3714364832"
+              },
+              {
+                "state": "SUCCEEDED",
+                "has_report": false,
+                "execution_state": "REVOKED",
+                "fence": 2,
+                "attempt": 1,
+                "job_alias": "8bbdeb8bd7af"
+              },
+              {
+                "state": "SUCCEEDED",
+                "has_report": false,
+                "execution_state": "REVOKED",
+                "fence": 2,
+                "attempt": 1,
+                "job_alias": "fb1cb3e9595f"
+              },
+              {
+                "state": "SUCCEEDED",
+                "has_report": false,
+                "execution_state": "REVOKED",
+                "fence": 2,
+                "attempt": 1,
+                "job_alias": "4c8db27501f4"
+              },
+              {
+                "state": "REPORTING",
+                "has_report": false,
+                "execution_state": "REVOKED",
+                "fence": 4,
+                "attempt": 2,
+                "job_alias": "ee6927db792b"
+              },
+              {
+                "state": "CANCELLED",
+                "has_report": false,
+                "execution_state": "REVOKED",
+                "fence": 1,
+                "attempt": 0,
+                "job_alias": "fe92e7038e16"
+              }
+            ],
+            "counts": {
+              "intake_documents": 0,
+              "outbox_events": 11,
+              "runner_materials": 0,
+              "deletion_intents": 20,
+              "upload_reservations": 0,
+              "runtime_inputs": 0
+            },
+            "scopes": [
+              {
+                "kind": "DRAFT",
+                "tombstone": true,
+                "scope_alias": "8628d29ffe11"
+              },
+              {
+                "kind": "JOB",
+                "tombstone": true,
+                "scope_alias": "fb1cb3e9595f"
+              },
+              {
+                "kind": "DRAFT",
+                "tombstone": true,
+                "scope_alias": "ec62f50247b1"
+              },
+              {
+                "kind": "JOB",
+                "tombstone": true,
+                "scope_alias": "9d3714364832"
+              },
+              {
+                "kind": "JOB",
+                "tombstone": true,
+                "scope_alias": "8bbdeb8bd7af"
+              },
+              {
+                "kind": "DRAFT",
+                "tombstone": true,
+                "scope_alias": "b27e7a795af3"
+              },
+              {
+                "kind": "JOB",
+                "tombstone": true,
+                "scope_alias": "be2909b12f02"
+              },
+              {
+                "kind": "DRAFT",
+                "tombstone": true,
+                "scope_alias": "0b2968b9f815"
+              },
+              {
+                "kind": "JOB",
+                "tombstone": true,
+                "scope_alias": "b123f956ac36"
+              },
+              {
+                "kind": "JOB",
+                "tombstone": true,
+                "scope_alias": "ee6927db792b"
+              },
+              {
+                "kind": "DRAFT",
+                "tombstone": true,
+                "scope_alias": "aa8f70a0b141"
+              },
+              {
+                "kind": "JOB",
+                "tombstone": true,
+                "scope_alias": "4c8db27501f4"
+              },
+              {
+                "kind": "DRAFT",
+                "tombstone": true,
+                "scope_alias": "61b7a30600db"
+              },
+              {
+                "kind": "JOB",
+                "tombstone": true,
+                "scope_alias": "539d52808876"
+              },
+              {
+                "kind": "DRAFT",
+                "tombstone": true,
+                "scope_alias": "62ea6e9e2f55"
+              },
+              {
+                "kind": "JOB",
+                "tombstone": true,
+                "scope_alias": "fe92e7038e16"
+              },
+              {
+                "kind": "JOB",
+                "tombstone": true,
+                "scope_alias": "6ceb23753030"
+              },
+              {
+                "kind": "JOB",
+                "tombstone": true,
+                "scope_alias": "cc09806d787b"
+              },
+              {
+                "kind": "DRAFT",
+                "tombstone": true,
+                "scope_alias": "f133f425ea1c"
+              },
+              {
+                "kind": "DRAFT",
+                "tombstone": true,
+                "scope_alias": "8d76342b47fc"
+              }
+            ],
+            "material_files": 2
+          },
+          "runner": [
+            {
+              "state": "DONE",
+              "error": null,
+              "has_receipt": true,
+              "result_sha256": "4d08208a6e4c24016b644b026e8de977be8b1c1e64ed930c9117e7cc70d6bedc"
+            },
+            {
+              "state": "DONE",
+              "error": "CANCELLED",
+              "has_receipt": true,
+              "result_sha256": "db00064be6979d25659ca3ed2e1ff0a00b3035bd99f7c4242df4a7dcac83dcb0"
+            }
+          ],
+          "active_scanners": [],
+          "captured_private_scopes": 9,
+          "case_passed": false,
+          "last_60s_request_groups": [
+            {
+              "actor": "OBSERVER",
+              "scope_alias": "8628d29ffe11",
+              "method": "DELETE",
+              "route": "/api/v1/web/drafts/{id}",
+              "status": 200,
+              "count": 1,
+              "first_epoch": 1792578023.5861669,
+              "last_epoch": 1792578023.5861669
+            },
+            {
+              "actor": "OBSERVER",
+              "scope_alias": "ec62f50247b1",
+              "method": "DELETE",
+              "route": "/api/v1/web/drafts/{id}",
+              "status": 404,
+              "count": 1,
+              "first_epoch": 1792578025.5688996,
+              "last_epoch": 1792578025.5688996
+            },
+            {
+              "actor": "OBSERVER",
+              "scope_alias": "b27e7a795af3",
+              "method": "DELETE",
+              "route": "/api/v1/web/drafts/{id}",
+              "status": 404,
+              "count": 1,
+              "first_epoch": 1792578027.580503,
+              "last_epoch": 1792578027.580503
+            },
+            {
+              "actor": "OBSERVER",
+              "scope_alias": "0b2968b9f815",
+              "method": "DELETE",
+              "route": "/api/v1/web/drafts/{id}",
+              "status": 404,
+              "count": 1,
+              "first_epoch": 1792578029.6792088,
+              "last_epoch": 1792578029.6792088
+            },
+            {
+              "actor": "OBSERVER",
+              "scope_alias": "aa8f70a0b141",
+              "method": "DELETE",
+              "route": "/api/v1/web/drafts/{id}",
+              "status": 404,
+              "count": 1,
+              "first_epoch": 1792578031.907959,
+              "last_epoch": 1792578031.907959
+            },
+            {
+              "actor": "OBSERVER",
+              "scope_alias": "61b7a30600db",
+              "method": "DELETE",
+              "route": "/api/v1/web/drafts/{id}",
+              "status": 404,
+              "count": 1,
+              "first_epoch": 1792578033.8384633,
+              "last_epoch": 1792578033.8384633
+            },
+            {
+              "actor": "OBSERVER",
+              "scope_alias": "62ea6e9e2f55",
+              "method": "DELETE",
+              "route": "/api/v1/web/drafts/{id}",
+              "status": 404,
+              "count": 1,
+              "first_epoch": 1792578035.7589908,
+              "last_epoch": 1792578035.7589908
+            },
+            {
+              "actor": "OBSERVER",
+              "scope_alias": "f133f425ea1c",
+              "method": "DELETE",
+              "route": "/api/v1/web/drafts/{id}",
+              "status": 404,
+              "count": 1,
+              "first_epoch": 1792578037.7180803,
+              "last_epoch": 1792578037.7180803
+            },
+            {
+              "actor": "OBSERVER",
+              "scope_alias": "8d76342b47fc",
+              "method": "DELETE",
+              "route": "/api/v1/web/drafts/{id}",
+              "status": 404,
+              "count": 1,
+              "first_epoch": 1792578039.6786063,
+              "last_epoch": 1792578039.6786063
+            }
+          ],
+          "request_window_end_epoch": 1792578039.6786063
+        },
+        "owned_compose_removed": true,
+        "private_lab_removed": true
+      }
+    }
+  ]
+}

@@ -37,6 +37,10 @@ uv run --project apps/api --locked --extra worker ruff check --config apps/api/p
 uv run --project apps/api --locked --extra worker python scripts/verify-user-study-pack.py
 uv run --project apps/api --locked --extra worker python scripts/export-schema.py
 git diff --exit-code -- packages/contracts apps/web/src/contracts.generated.ts
+# #169: brand assets are committed sources; web copies must stay byte-identical
+# and the Android icon overlay must be idempotent, including its failure cases.
+# Node only: no Android toolchain, no PowerShell, same result on Linux CI.
+node scripts/verify-brand-assets.cjs
 npm ci
 npm run test --workspace @privacytrace/web
 npm run build

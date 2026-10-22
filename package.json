@@ -21,6 +21,8 @@
     "acceptance:design": "npm run build && node scripts/verify-design-foundation.cjs",
     "acceptance:reading": "node scripts/verify-mobile-reading.cjs",
     "acceptance:motion": "node scripts/verify-issue146-motion.cjs",
+    "acceptance:copy": "node scripts/verify-copy-contract.cjs",
+    "verify:brand": "node scripts/verify-brand-assets.cjs",
     "acceptance:preview": "node scripts/verify-frontend-preview.cjs"
   },
   "devDependencies": {

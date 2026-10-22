@@ -192,7 +192,10 @@ test('both npm entries run prepare-android.ps1 from their package directory', {
         env: { ...process.env, PS_CALL: call, ICON_MARKER: marker, PS_EXIT: String(status) },
       })
       assert.equal(result.status, status, result.error?.message || result.stderr)
-      assert.equal(fs.readFileSync(call, 'utf8').split('|')[0], cwd)
+      // PowerShell reports its cwd through a provider path, which on Windows may
+      // still be the 8.3 short form (RUNNER~1); canonicalize both sides.
+      const recorded = fs.readFileSync(call, 'utf8').split('|')[0]
+      assert.equal(fs.realpathSync.native(recorded), fs.realpathSync.native(cwd))
       assert.equal(fs.existsSync(marker), directory === 'apps/mobile' && status === 0)
     }
   }

@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { cancelJob, deleteJob, isNotFoundFor, jobPath, jobReportPath, loadJob, loadJobReport, loadJobs, loadReport, loadTaxonomy, retryJob, submitReview } from './api'
 import { clampSdkPage, getSdkEvidence, sdkPageCount, sdkPageSlice } from './sdkEvidence'
@@ -8,11 +8,15 @@ import EvidencePanel from './components/EvidencePanel.vue'
 import UiSheet from './components/UiSheet.vue'
 import UiIcon from './components/UiIcon.vue'
 import MobileReportSummary from './components/MobileReportSummary.vue'
-const props = defineProps<{ initialJobId?: string; snapshot?: { report: Report; taxonomy: Taxonomy }; mobile?: boolean; material?: { origin: string; draft: string; revision?: number } }>()
+import { frontendCopy, policyStateLine } from './copy'
+const props = defineProps<{ initialJobId?: string; snapshot?: { report: Report; taxonomy: Taxonomy }; mobile?: boolean; embedded?: boolean; material?: { origin: string; draft: string; revision?: number } }>()
 // The Tauri shell reuses this whole report body. In mobile mode the evidence
 // preview becomes a bottom sheet and the shell owns the surrounding app chrome.
+// The workbench archive view embeds the same body; there the shell owns the one
+// #page-title and brand bar, so the embedded body must not render its own.
 const emit = defineEmits<{ evidenceOpen: []; evidenceClose: []; changeMaterial: [] }>()
 const mobile = computed(() => props.mobile === true)
+const embedded = computed(() => props.embedded === true)
 
 const report = ref<DemoReport | Report | null>(null)
 const taxonomy = ref<Taxonomy | null>(null)
@@ -40,6 +44,10 @@ const confirmDeleteEl = ref<HTMLButtonElement | null>(null)
 const evidenceTrigger = ref<HTMLElement | null>(null)
 const reviewSubmitEl = ref<HTMLButtonElement | null>(null)
 let lastAnnouncedJob = ''
+// The first report paints with its first item selected (UX contract: selecting
+// an entry immediately shows its evidence). Later source switches keep the
+// reader's explicit selection semantics and start closed.
+let firstReportPaint = true
 const source = ref<ReportSource>({ kind: 'demo' })
 const selectedSourceKey = computed({
   get: () => serializeSource(source.value),
@@ -63,6 +71,38 @@ function selectIssue(issue: PrivacyIssue, event?: Event) {
     const panel = document.getElementById('evidence-panel')
     panel?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' })
     panel?.focus({ preventScroll: true })
+  })
+}
+// The one red action acts on the already selected row: it opens that item's
+// policy disclosure and moves the reader to the evidence column, without a
+// second reader, dialog or re-scan.
+function openSelectedEvidence(event: Event) {
+  const issue = selected.value
+  if (!issue) return
+  evidenceTrigger.value = event.currentTarget instanceof HTMLElement ? event.currentTarget : evidenceTrigger.value
+  evidenceScroll = window.scrollY
+  const policyId = issue.policy_document_ids[0]
+  if (policyId) {
+    provenanceOpen.value = true
+    openedPolicyId.value = policyId
+  }
+  if (mobile.value) { emit('evidenceOpen'); return }
+  void nextTick(() => {
+    const panel = document.getElementById('evidence-panel')
+    panel?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' })
+    panel?.focus({ preventScroll: true })
+  })
+}
+// The desktop evidence column is a permanent reading area: its return control
+// only restores focus and the reading position; it never clears the selection or
+// unmounts the panel. Closing (mobile sheet) still goes through closeEvidence.
+function returnToTrigger() {
+  const trigger = evidenceTrigger.value
+  const top = evidenceScroll
+  void nextTick(() => {
+    const target = trigger?.isConnected ? trigger : document.getElementById('page-title')
+    target?.focus({ preventScroll: true })
+    if (trigger?.isConnected) window.scrollTo({ top, behavior: 'auto' })
   })
 }
 // Closing the preview returns focus to the row button that opened it and restores
@@ -113,10 +153,6 @@ const statusLabels: Record<MatchStatus, string> = {
   NOT_DECLARED: '未找到对应声明', POLICY_SOURCE_CONFLICT: '不同来源声明有差异',
   AMBIGUOUS_DISCLOSURE: '相关声明不够清楚', INSUFFICIENT_EVIDENCE: '证据不足',
 }
-const jobLabels: Record<AnalysisJob['state'], string> = {
-  QUEUED: '等待处理', INTAKE: '核对输入', STATIC_ANALYSIS: '扫描 APK', POLICY_PARSING: '提取政策',
-  EVALUATING: '规则对照', REPORTING: '生成报告', SUCCEEDED: '报告已生成', FAILED: '分析失败', CANCELLED: '已取消',
-}
 const sourceLabels: Record<string, string> = {
   IN_APP_POLICY: 'App 内政策', STORE_POLICY: '应用商店', OFFICIAL_WEB_POLICY: '官网政策', SDK_POLICY: 'SDK 自有政策',
   CONTROLLED_POLICY: '自建受控配对政策',
@@ -124,6 +160,13 @@ const sourceLabels: Record<string, string> = {
 const kindLabels = { MANIFEST: '权限配置', API: 'API 字节码', SDK: 'SDK 特征', POLICY_DOCUMENT: '政策快照引用', POLICY_SENTENCE: '政策原句' }
 const label = (id: string) => taxonomy.value?.data_types.find(item => item.id === id)?.label ?? id
 const dataTypeCount = computed(() => new Set(report.value?.result.issues.map(i => i.data_type)).size)
+const issueNumber = (issue: PrivacyIssue) => {
+  const index = report.value?.result.issues.findIndex(item => item.id === issue.id) ?? -1
+  return index < 0 ? '--' : String(index + 1).padStart(2, '0')
+}
+// Archive/web policy sources carry no review or attachment state, so the shared
+// generator states the honest defaults instead of a locally invented line.
+const webSourceState = policyStateLine({ review_status: 'UNREVIEWED', completeness: null, attachments_status: 'NOT_CHECKED' })
 const realReport = computed(() => report.value && !report.value.demo ? report.value : null)
 const webSources = computed(() => {
   try {
@@ -337,7 +380,7 @@ function applyJob(job: AnalysisJob) {
   const key = `${job.id}:${job.state}`
   const changed = !!lastAnnouncedJob && lastAnnouncedJob !== key && lastAnnouncedJob.startsWith(job.id + ':')
   activeJob.value = job
-  if (changed) jobAnnouncement.value = `任务状态更新：${jobLabels[job.state]}（${job.state}）`
+  if (changed) jobAnnouncement.value = `任务状态更新：${frontendCopy.stages[job.state]}（${job.state}）`
   lastAnnouncedJob = key
   focusIfLost(active, jobStateEl.value)
 }
@@ -346,7 +389,16 @@ function applyReport(next: DemoReport | Report, preserveSelection: boolean) {
   const panelHadFocus = typeof document !== 'undefined' && !!document.getElementById('evidence-panel')?.contains(document.activeElement)
   const active = typeof document !== 'undefined' ? document.activeElement : null
   report.value = next
-  selected.value = previousIssueId ? next.result.issues.find(item => item.id === previousIssueId) ?? null : null
+  // A new report selects its first item so the evidence column is never empty on
+  // desktop; a reader-refreshed report keeps (or keeps-cleared) the selection.
+  if (preserveSelection) {
+    selected.value = previousIssueId ? next.result.issues.find(item => item.id === previousIssueId) ?? null : null
+  } else if (firstReportPaint && !mobile.value) {
+    selected.value = next.result.issues[0] ?? null
+  } else {
+    selected.value = null
+  }
+  firstReportPaint = false
   if (!selected.value && panelHadFocus) {
     void nextTick(() => {
       const target = evidenceTrigger.value?.isConnected ? evidenceTrigger.value : document.getElementById('page-title')
@@ -640,18 +692,19 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
 
 <template>
   <div class="shell">
-    <header v-if="!mobile" class="topbar"><a class="brand" href="#"><span class="brand-icon">P</span>PrivacyTrace</a><span class="subtle">让每个结论都有依据</span></header>
+    <header v-if="!mobile && !embedded" class="topbar"><a class="brand" href="#"><span class="brand-icon">P</span>PrivacyTrace</a><span class="subtle">{{ frontendCopy.brandSubtitle }}</span></header>
     <main>
-      <section v-if="!mobile" class="intro">
-        <div><p class="eyebrow">APP 隐私体检 · 本地报告</p><h1>看懂隐私，从证据开始。</h1><p class="lead">查看程序中的潜在隐私访问，与不同来源的政策逐一对照。</p></div>
+      <section v-if="!mobile && !embedded" class="intro">
+        <div><h1 id="page-title" tabindex="-1">{{ frontendCopy.reportTitle }}</h1><p class="lead">{{ frontendCopy.reportScope }} {{ frontendCopy.facts.staticRuntime }}</p></div>
       </section>
+      <p v-if="!mobile && embedded" class="report-scope">{{ frontendCopy.reportScope }} {{ frontendCopy.facts.staticRuntime }}</p>
       <section v-if="!snapshot" class="source-picker report-source-bar">
         <div class="report-source-field">
           <label for="report-source">报告来源</label>
           <select id="report-source" v-model="selectedSourceKey" @change="switchSource">
             <option v-if="!offlineReplay" value="demo:synthetic">SYNTHETIC · 人工构造示例</option>
             <option v-for="job in jobs" :key="job.id" :value="`job:${job.id}`">
-              {{ sourceOptionPrefix(job.source_origin) }}{{ job.package_name || job.sample_id }} · {{ job.id }} · {{ jobLabels[job.state] }}
+              {{ sourceOptionPrefix(job.source_origin) }}{{ job.package_name || job.sample_id }} · {{ job.id }} · {{ frontendCopy.stages[job.state] }}
             </option>
           </select>
         </div>
@@ -666,8 +719,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         :generated-at="report.job?.created_at" :generated-at-label="formatTimestamp(report.job.created_at)" :material="material"
         :data-type-count="dataTypeCount" :policy-count="report.policy_documents.length" :evidence-count="report.evidence.length" @change-material="emit('changeMaterial')" />
       <details v-if="!mobile" class="demo-note"><summary>分析范围与来源 · <strong>{{ sourceInfo?.label ?? (source.kind === 'demo' ? 'SYNTHETIC 示例' : '真实 APK 静态报告') }}</strong></summary>
-        {{ sourceInfo?.desc ?? (source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。报告不保证覆盖反射、动态加载、原生代码或运行时行为。') }}
-        六种状态只对照 DATA_TYPE_DISCLOSURE；“具体类型已声明”不代表目的、接收方、传输或时间范围全部一致，更不是合法性判断。
+        {{ sourceInfo?.desc ?? (source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。') }}
       </details>
       <section v-if="report && !mobile" class="sample-card">
         <div class="app-icon">PT</div>
@@ -684,7 +736,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
       <div v-if="report && !mobile" class="metrics"><div><strong>{{ dataTypeCount }}</strong><span>涉及的数据类型</span></div><div><strong>{{ report.policy_documents.length }}</strong><span>独立政策来源</span></div><div><strong>{{ report.evidence.length }}</strong><span>可查看的证据</span></div></div>
       <p id="job-announcement" class="sr-only" role="status">{{ jobAnnouncement }}</p>
       <section v-if="activeJob" ref="jobStateEl" class="job-state" :class="{ compact: activeJob.state === 'SUCCEEDED' }" tabindex="-1" :aria-busy="(refreshing || loading) || undefined">
-        <strong>{{ jobLabels[activeJob.state] }}</strong> · {{ activeJob.id }} · {{ activeJob.state }}
+        <strong>{{ frontendCopy.stages[activeJob.state] }}</strong> · {{ activeJob.id }} · {{ activeJob.state }}
         <button v-if="!terminal(activeJob)" ref="cancelJobEl" :disabled="loading" @click="cancel">取消任务</button>
         <div v-if="parsedJobError" class="job-error-card" role="alert">
           <span class="error-code">错误码：{{ parsedJobError.code }}</span>
@@ -708,36 +760,74 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
       <section v-if="loading && !report && !activeJob" class="state"><span role="status">正在加载…</span> <button @click="controller?.abort()">停止本次请求</button></section>
       <section v-if="error" ref="errorEl" class="state error" tabindex="-1"><span role="alert">{{ error }}</span> <button @click="retryLoad">重试</button></section>
       <template v-if="report">
-        <section class="report-section">
-          <div class="section-heading"><h2>隐私声明对照</h2><span class="subtle">点开结论后，直接查看代码定位与原句</span></div>
-          <!-- Narrow screens stack each row as a card; the explicit table roles keep the grid
-               semantics that display:flex/block would otherwise drop. -->
-          <!-- Desktop keeps the comparison table. The Tauri shell renders the same
-               issues as tappable Android list rows instead of a scroll table. -->
-          <div v-if="!mobile" class="table-scroll"><table class="report-table" role="table"><thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">隐私数据</th><th scope="col" role="columnheader">政策来源</th><th scope="col" role="columnheader">当前结论</th><th scope="col" role="columnheader">依据</th></tr></thead><tbody role="rowgroup">
-            <tr v-for="issue in report.result.issues" :key="issue.id" role="row"><td class="type-cell" role="cell" data-label="隐私数据">{{ label(issue.data_type) }}</td><td role="cell" data-label="政策来源">{{ documentLabels(issue.policy_document_ids) }}</td><td role="cell" data-label="当前结论"><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></td><td role="cell" data-label="依据"><button class="ui-button evidence-button" :aria-expanded="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue, $event)">查看 {{ issue.evidence_ids.length }} 条证据 →</button></td></tr>
-          </tbody></table></div>
-          <div v-else class="m-issue-list" role="list">
-            <div v-for="issue in report.result.issues" :key="issue.id" class="m-issue-card" role="listitem">
-              <button type="button" class="evidence-button m-issue-row" :aria-expanded="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue, $event)">
-                <span class="m-issue-head"><strong>{{ label(issue.data_type) }}</strong><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></span>
-                <span class="m-issue-meta">{{ documentLabels(issue.policy_document_ids) }}</span>
-                <span class="m-issue-action">查看 {{ issue.evidence_ids.length }} 条证据<UiIcon name="chevron-right" class="m-chevron" /></span>
-              </button>
+        <section class="report-comparison">
+          <div class="report-columns">
+            <div class="report-findings report-section">
+              <div class="section-heading"><h2>{{ frontendCopy.comparisonTitle }}</h2><span class="subtle">点开结论后，直接查看代码定位与原句</span></div>
+              <!-- Narrow screens stack each row as a card; the explicit table roles keep the grid
+                   semantics that display:flex/block would otherwise drop. -->
+              <!-- Desktop keeps the comparison table. The Tauri shell renders the same
+                   issues as tappable Android list rows instead of a scroll table. -->
+              <div v-if="!mobile" class="table-scroll"><table class="report-table" role="table"><thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">{{ frontendCopy.table.dataType }}</th><th scope="col" role="columnheader">政策来源</th><th scope="col" role="columnheader">当前结论</th><th scope="col" role="columnheader">{{ frontendCopy.table.evidence }}</th></tr></thead><tbody role="rowgroup">
+                <tr v-for="(issue, index) in report.result.issues" :key="issue.id" role="row" :class="{ 'report-row-current': selected?.id === issue.id }"><td class="type-cell" role="cell" :data-label="frontendCopy.table.dataType"><span class="report-row-number" aria-hidden="true">{{ String(index + 1).padStart(2, '0') }}</span>{{ label(issue.data_type) }}</td><td role="cell" data-label="政策来源">{{ documentLabels(issue.policy_document_ids) }}</td><td role="cell" data-label="当前结论"><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></td><td role="cell" :data-label="frontendCopy.table.evidence"><button type="button" class="ui-button evidence-button" :aria-pressed="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue, $event)">查看 {{ issue.evidence_ids.length }} 条证据 →</button><span v-if="selected?.id === issue.id" class="report-current-label">当前证据</span></td></tr>
+              </tbody></table></div>
+              <div v-else class="m-issue-list" role="list">
+                <div v-for="(issue, index) in report.result.issues" :key="issue.id" class="m-issue-card" role="listitem">
+                  <button type="button" class="evidence-button m-issue-row" :aria-pressed="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue, $event)">
+                    <span class="m-issue-head"><span class="report-row-number" aria-hidden="true">{{ String(index + 1).padStart(2, '0') }}</span><strong>{{ label(issue.data_type) }}</strong><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></span>
+                    <span class="m-issue-meta">{{ documentLabels(issue.policy_document_ids) }}</span>
+                    <span class="m-issue-action">查看 {{ issue.evidence_ids.length }} 条证据<UiIcon name="chevron-right" class="m-chevron" /></span>
+                  </button>
+                </div>
+              </div>
+              <p v-if="!report.result.issues.length" class="subtle">未产生对照项，请核对下方权限与扫描范围。</p>
+              <p class="comparison-scope">{{ frontendCopy.comparisonScope }}</p>
+              <div class="report-actions">
+                <p class="report-action-context">{{ selected ? `当前对象：${issueNumber(selected)} / ${label(selected.data_type)} · 结论：${statusLabels[selected.status]}` : '尚无条目可阅读' }}</p>
+                <button type="button" class="ui-button primary report-primary-action" :disabled="!selected" @click="openSelectedEvidence($event)">查看{{ selected ? `「${label(selected.data_type)}」` : '' }}证据与政策原文</button>
+              </div>
+            </div>
+            <div v-if="!mobile" class="report-evidence-column">
+              <EvidencePanel v-if="selected && report" :issue="selected" :report="report" :taxonomy="taxonomy" :status-labels="statusLabels" :kind-labels="kindLabels" :source-labels="sourceLabels" @close="returnToTrigger()" @open-policy="openPolicy" />
+              <div v-else class="report-evidence-empty"><h2>证据详情</h2><p>尚无证据。未知与未检查项继续保留。</p></div>
             </div>
           </div>
-          <p v-if="!report.result.issues.length" class="subtle">未产生对照项不等于没有隐私访问，请查看权限与扫描覆盖。</p>
         </section>
-        <EvidencePanel v-if="!mobile && selected && report" :issue="selected" :report="report" :taxonomy="taxonomy" :status-labels="statusLabels" :kind-labels="kindLabels" :source-labels="sourceLabels" @close="closeEvidence()" @open-policy="openPolicy" />
         <!-- Mobile evidence preview: A's UiSheet is the bottom-sheet contract
              (overlay, handle, 48px close, focus trap). The panel markup itself is
              shared with the inline desktop rendering above. -->
         <UiSheet v-if="mobile && selected && report" class="m-evidence-sheet" :title="`${label(selected.data_type)} · ${statusLabels[selected.status]}`" description="静态证据、政策原句与候选条款；关闭后回到触发该项的结论。" @close="closeEvidence()">
           <EvidencePanel :issue="selected" :report="report" :taxonomy="taxonomy" :status-labels="statusLabels" :kind-labels="kindLabels" :source-labels="sourceLabels" :heading="false" @close="closeEvidence()" @open-policy="jumpToPolicy" />
         </UiSheet>
+        <section v-if="realReport" class="report-provenance" aria-label="报告生成来源">
+          <strong>{{ offlineReplay ? 'OFFLINE REPLAY · 离线回放' : '存档报告查看 · PERSISTED REPLAY' }}</strong>
+          <p v-if="realReport.tools.analysis_generated_at">分析生成时点：{{ realReport.tools.analysis_generated_at }}。<template v-if="!embedded">{{ frontendCopy.facts.archiveNoRescan }}</template></p>
+          <p v-else>记录创建时点：{{ realReport.job.created_at }}。未留存分析生成时点；来源以报告来源标识为准。<template v-if="!embedded">{{ frontendCopy.facts.archiveNoRescan }}</template></p>
+          <p v-if="offlineReplay">回放包生成时点：{{ realReport.tools.offline_package_built_at }}。回放只读，不执行 APK 分析。</p>
+          <p v-if="offlineReplay"><a href="/comparison.html" target="_blank" rel="noopener">查看六场景三方案比较与失败记录</a></p>
+        </section>
+        <details class="provenance" :open="provenanceOpen" @toggle="provenanceToggle($event)"><summary>报告版本、权限与全部政策快照</summary>
+          <p>任务 {{ report.job.id }} · 输入 {{ report.job.input_mode }} · 规则版本 {{ report.job.ruleset_version }} · 原生成时间：{{ formatTimestamp(report.job.created_at) || report.job.created_at }}</p>
+          <template v-if="realReport">
+            <p v-for="(version, tool) in Object.fromEntries(Object.entries(realReport.tools).filter(([key]) => key !== 'web_policy_sources'))" :key="tool">{{ tool }}：{{ version }}</p>
+            <p class="hash">DEX {{ (realReport.sample.dex_entries ?? []).join('、') || '无' }}</p>
+            <details><summary>Android 权限</summary><p class="field-help">{{ frontendCopy.facts.permission }}</p><ul><li v-for="permission in (realReport.sample.permissions ?? [])" :key="permission">{{ permission }}</li></ul></details>
+          </template>
+          <article v-for="doc in report.policy_documents" :key="doc.id" :id="'policy-' + doc.id" class="policy-document" tabindex="-1">
+            <strong>{{ doc.title }}</strong>
+            <p>{{ sourceLabels[doc.source_type] }} · {{ doc.version }} · {{ doc.captured_at }}</p>
+            <p class="hash">SHA-256 {{ doc.artifact.sha256 }}</p>
+            <p>{{ policyStateLine(doc) }} · 提取 {{ doc.extraction_status ?? '未知' }}</p>
+            <p class="hash">适用范围 {{ JSON.stringify(doc.applicability) }}</p>
+            <details :open="openedPolicyId === doc.id" @toggle="policyToggle($event, doc.id)">
+              <summary>查看政策全文</summary>
+              <pre v-if="openedPolicyId === doc.id">{{ doc.artifact.text }}</pre>
+            </details>
+          </article>
+        </details>
         <section v-if="realReport" id="sdk-panel" class="report-section">
-          <div class="section-heading"><h2>第三方 SDK 归属</h2><span class="subtle">仅按公开包前缀提供静态归属参考，不代表实际收集或外传</span></div>
-          <p class="subtle">归属命中只表示类路径落在某个已公开的 SDK 包范围内；SDK 的静态存在不等于实际收集或外发，也不能替代宿主 App 自身的声明，归属结论不参与政策一致性判定。</p>
+          <div class="section-heading"><h2>第三方 SDK 归属</h2><span class="subtle">{{ frontendCopy.facts.sdkAttribution }}</span></div>
+          <p class="subtle">归属命中只表示类路径落在某个已公开的 SDK 包范围内；SDK 的静态存在也不能替代宿主 App 自身的声明，归属结论不参与政策一致性判定。</p>
           <template v-if="sdkEvidence.length">
             <nav v-if="sdkPageTotal > 1" aria-label="SDK 归属分页">
               <span>共 {{ sdkEvidence.length }} 条 · 第 {{ sdkPage + 1 }} / {{ sdkPageTotal }} 页</span>
@@ -757,46 +847,18 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           <h2>DEX 处理范围：{{ realReport.coverage.status === 'COMPLETE' ? '已扫描所支持的 DEX 范围' : 'PARTIAL · DEX 处理有未完成部分' }}</h2>
           <p>已扫描 {{ (realReport.coverage.scanned_dex ?? []).join('、') || '无' }}；失败 {{ (realReport.coverage.failed_dex ?? []).join('、') || '无' }}。</p>
           <ul><li v-for="limitation in (realReport.coverage.limitations ?? [])" :key="limitation">{{ limitation }}</li></ul>
-          <p><strong>行为识别：有限的规则静态分析（非穷尽）。</strong></p>
-          <p class="subtle">不保证覆盖反射、动态加载、Native、加壳、第三方与混合运行时、复杂数据流或规则集未覆盖的行为。没有命中规则不代表没有隐私行为。</p>
+          <p class="subtle">{{ frontendCopy.facts.coverage }}</p>
           <ul><li v-for="limitation in (realReport.coverage.behavior_limitations ?? [])" :key="limitation">{{ limitation }}</li></ul>
           <p class="hash">输入 APK SHA-256：{{ realReport.sample.apk_sha256 }}</p>
-          <p class="subtle">扫描完成只描述本轮处理范围，不等于发现了应用所有隐私行为。</p>
         </section>
-        <section v-if="webSources.length" class="coverage-card"><h2>输入来源状态</h2><p>失败来源保留；正文完整度未知、全文未复核、附件未检查。</p><ul><li v-for="(item, index) in webSources" :key="index"><strong>{{ item.title }}</strong> · {{ sourceStatusLabel(item.status) }} · {{ sourceProvenanceLabel(item.provenance) }}<span v-if="item.error_code"> · {{ item.error_code }}</span><p class="subtle">请求网址 {{ item.url || '手动输入' }} · 最终网址 {{ item.final_url || '未获取／手动输入' }}</p></li></ul></section>
-        <section v-if="realReport" class="report-provenance" aria-label="报告生成来源">
-          <strong>{{ offlineReplay ? 'OFFLINE REPLAY · 离线回放' : '存档报告查看 · PERSISTED REPLAY' }}</strong>
-          <p v-if="realReport.tools.analysis_generated_at">分析生成时点：{{ realReport.tools.analysis_generated_at }}。查看存档不代表重新扫描。</p>
-          <p v-else>记录创建时点：{{ realReport.job.created_at }}。未留存分析生成时点；来源以报告来源标识为准。</p>
-          <p v-if="offlineReplay">回放包生成时点：{{ realReport.tools.offline_package_built_at }}。回放只读，不执行 APK 分析。</p>
-          <p v-if="offlineReplay"><a href="/comparison.html" target="_blank" rel="noopener">查看六场景三方案比较与失败记录</a></p>
-        </section>
-        <details class="provenance" :open="provenanceOpen" @toggle="provenanceToggle($event)"><summary>报告版本、权限与全部政策快照</summary>
-          <p>任务 {{ report.job.id }} · 输入 {{ report.job.input_mode }} · 规则版本 {{ report.job.ruleset_version }} · 原生成时间：{{ formatTimestamp(report.job.created_at) || report.job.created_at }}</p>
-          <template v-if="realReport">
-            <p v-for="(version, tool) in Object.fromEntries(Object.entries(realReport.tools).filter(([key]) => key !== 'web_policy_sources'))" :key="tool">{{ tool }}：{{ version }}</p>
-            <p class="hash">DEX {{ (realReport.sample.dex_entries ?? []).join('、') || '无' }}</p>
-            <details><summary>Android 权限（权限不等于已访问）</summary><ul><li v-for="permission in (realReport.sample.permissions ?? [])" :key="permission">{{ permission }}</li></ul></details>
-          </template>
-          <article v-for="doc in report.policy_documents" :key="doc.id" :id="'policy-' + doc.id" class="policy-document" tabindex="-1">
-            <strong>{{ doc.title }}</strong>
-            <p>{{ sourceLabels[doc.source_type] }} · {{ doc.version }} · {{ doc.captured_at }}</p>
-            <p class="hash">SHA-256 {{ doc.artifact.sha256 }}</p>
-            <p>快照 {{ doc.completeness }} · 提取 {{ doc.extraction_status }} · 复核 {{ doc.review_status }} · 附件 {{ doc.attachments_status }}</p>
-            <p class="hash">适用范围 {{ JSON.stringify(doc.applicability) }}</p>
-            <details :open="openedPolicyId === doc.id" @toggle="policyToggle($event, doc.id)">
-              <summary>查看政策全文</summary>
-              <pre v-if="openedPolicyId === doc.id">{{ doc.artifact.text }}</pre>
-            </details>
-          </article>
-        </details>
+        <section v-if="webSources.length" class="coverage-card"><h2>输入来源状态</h2><p>失败来源保留；{{ webSourceState }}。</p><ul><li v-for="(item, index) in webSources" :key="index"><strong>{{ item.title }}</strong> · {{ sourceStatusLabel(item.status) }} · {{ sourceProvenanceLabel(item.provenance) }}<span v-if="item.error_code"> · {{ item.error_code }}</span><p class="subtle">请求网址 {{ item.url || '手动输入' }} · 最终网址 {{ item.final_url || '未获取／手动输入' }}</p></li></ul></section>
         <section v-if="realReport && !offlineReplay && !snapshot" class="review-panel">
           <h2>人工复核备注</h2><p class="subtle">这里只保存备注并由纯规则重算，不自动把政策标为已复核，不修改候选声明。填写的身份未认证。</p>
           <form @submit.prevent="review">
             <label>复核人<input v-model="actor" required maxlength="100" /></label>
             <label>原因<input v-model="reason" required maxlength="1000" /></label>
             <label>备注（可选）<textarea v-model="note" maxlength="10000" rows="4"></textarea></label>
-            <button ref="reviewSubmitEl" class="primary" :disabled="loading || !actor.trim() || !reason.trim()">保存备注并重新计算</button>
+            <button ref="reviewSubmitEl" :disabled="loading || !actor.trim() || !reason.trim()">保存备注并重新计算</button>
           </form>
           <p v-if="reviewMessage" role="status">{{ reviewMessage }}</p>
           <details v-for="(event, index) in realReport.reviews" :key="`${event.timestamp}-${index}`" class="audit-event">

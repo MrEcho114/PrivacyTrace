@@ -107,7 +107,7 @@ function onTextInput(source: PolicySource) {
       </section>
     </div>
     <p v-if="error" class="error-text" role="alert">{{ error }}</p>
-    <div class="flow-footer"><p>{{ state.example ? copy.storageHelp : "继续后会在本机保存输入快照，获取缺少正文的网页，并请求已配置模型提供候选。失败来源会保留。" }}</p><UiButton variant="primary" :disabled="!canContinue || busy" :busy="busy" @click="emit('next')">{{ state.example ? copy.nextCandidates : "获取政策并检查候选" }}<UiIcon name="arrow-right" /></UiButton></div>
+    <div class="flow-footer"><p>{{ state.example ? copy.storageHelp : "继续后会保存输入快照、获取缺少正文的网页，并调用已配置模型生成候选。失败来源会保留。" }}</p><UiButton variant="primary" :disabled="!canContinue || busy" :busy="busy" @click="emit('next')">{{ state.example ? copy.nextCandidates : "获取政策并检查候选" }}<UiIcon name="arrow-right" /></UiButton></div>
   </div>
 </template>
 <style scoped>

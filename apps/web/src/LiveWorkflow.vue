@@ -154,7 +154,7 @@ async function importCollected(input: ExternalInput) {
     value = await importExternal(value.id, input, requestSignal)
     assertActive(requestSignal)
     apply(value); pendingRevision = null; if (incoming) needsPreparation = true
-    notice.value = incoming ? '收集结果已补入当前材料。来源、原句与收集状态分别保留，完整度未知、未复核。' : '已记录离线或未找到结果；尚未取得政策正文，可补充网址或正文。'
+    notice.value = incoming ? '收集结果已补入当前材料。来源、原句和收集状态都保留；完整度未知、未复核。' : '已记录离线或未找到结果；尚未取得政策正文，可补充网址或正文。'
   })
 }
 // Exact attempt receipts, not a transient active=false observation, authorize
@@ -419,7 +419,7 @@ onBeforeUnmount(() => { generation++; controller.abort(); activeRequest?.abort()
       <template #context><MaterialContext v-if="draft" :revision="draft.revision" :draft-id="draft.id" :busy="busy" @new="newInput" /></template>
     </CandidatePage>
     <template v-else-if="state.step === 'progress'">
-      <div class="page-heading"><h1 id="page-title" tabindex="-1">{{ frontendCopy.pageTitles.progress }}</h1><p>显示服务实际记录的离散阶段。</p></div>
+      <div class="page-heading"><h1 id="page-title" tabindex="-1">{{ frontendCopy.pageTitles.progress }}</h1><p>显示服务记录的阶段。</p></div>
       <MaterialContext v-if="draft" :revision="draft.revision" :draft-id="draft.id" :busy="busy" @new="newInput" />
       <div class="material-panel progress-panel" :aria-busy="busy || undefined">
         <div class="progress-summary" role="status" aria-atomic="true"><StatusTag :tone="job?.state === 'FAILED' || job?.state === 'CANCELLED' ? 'error' : job?.state === 'SUCCEEDED' ? 'success' : 'info'">{{ stageLabel(job?.state) }}</StatusTag><strong>{{ draft?.name }}</strong><span class="hash">{{ job?.id }}</span></div>

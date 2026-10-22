@@ -256,7 +256,7 @@ const SOURCE_LABELS: Record<string, { badge: string; label: string; desc: string
   REAL_SCAN: {
     badge: '真实 APK · REAL_SCAN',
     label: 'REAL_SCAN · 真实 APK 静态扫描',
-    desc: '数据来自真实 APK 静态扫描，已保留完整证据链与原生成时点。',
+    desc: '数据来自真实 APK 静态扫描，保留证据链与原生成时点。',
   },
   // Records written before source_origin existed. Their provenance was never
   // recorded, so it is reported as unknown instead of being guessed: "unknown"
@@ -264,18 +264,18 @@ const SOURCE_LABELS: Record<string, { badge: string; label: string; desc: string
   UNKNOWN: {
     badge: '来源未知 · UNKNOWN',
     label: 'UNKNOWN · 来源未记录',
-    desc: '该记录写于来源字段引入之前，磁盘上没有留存来源信息，因此无法判断它是真实扫描、受控用例还是人工示例。',
+    desc: '这条记录早于来源字段，磁盘没有留存来源信息，无法判断它是真实扫描、受控用例还是人工示例。',
   },
 }
 
 const DELIVERY_LABELS: Record<string, { badge: string; desc: string }> = {
   LIVE_GENERATED: {
     badge: '本次生成 · LIVE',
-    desc: '本次运行刚刚产出的结果。',
+    desc: '本次运行产出的结果。',
   },
   PERSISTED_REPLAY: {
     badge: '持久化回放 · REPLAY',
-    desc: '从持久化存储加载的既有报告，不是本次运行新产出的结果。',
+    desc: '从持久化存储加载的既有报告；本次运行没有重新分析。',
   },
 }
 
@@ -478,7 +478,7 @@ async function loadData(initial = false, mode: 'replace' | 'refresh' = 'replace'
         error.value = '任务已删除，界面已移除该任务。'
       } catch { /* keep the removal message; the user can retry */ }
     } else if (wantedId && isNotFoundFor(cause, jobReportPath(wantedId))) {
-      error.value = '任务仍存在，但报告不可用（可能尚未生成或已被移除），可稍后重试。'
+      error.value = '任务还在，报告不可用：可能尚未生成，或已被移除。稍后重试。'
     } else {
       error.value = failure(cause)
       if (!replace && activeJob.value && !terminal(activeJob.value)) schedulePoll(3000)
@@ -526,7 +526,7 @@ async function cancel() {
       if (msg.includes('409')) {
         // The job moved on while we tried to cancel. Resolve the latest state
         // instead of leaving a SUCCEEDED job without its report.
-        error.value = '任务已处于终态或无法取消（状态已更新）。'
+        error.value = '任务已结束或状态已更新，无法取消。'
         try {
           const latest = await loadJob(id, signal)
           if (current !== requestId) return
@@ -570,7 +570,7 @@ async function retryTerminal() {
   try {
     const fresh = await retryJob(job.id, signal)
     if (current !== requestId) return
-    jobMessage.value = `已创建新的分析任务 ${fresh.id}，这是新的分析，不是原任务的重新打开；原任务 ${job.id} 的记录仍保留，可在报告来源中查看。`
+    jobMessage.value = `已创建分析任务 ${fresh.id}。原任务 ${job.id} 的记录仍保留，可在报告来源中查看。`
     source.value = { kind: 'job', id: fresh.id }
     applyJob(fresh)
     report.value = null
@@ -703,7 +703,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         </div>
         <button ref="refreshEl" type="button" class="ui-button" :disabled="loading" :aria-busy="refreshing || undefined" @click="refreshData">刷新任务与报告</button>
         <button v-if="manualRefresh" type="button" class="ui-button" @click="stopRefresh">停止本次请求</button>
-        <p class="field-help">真实任务由 APK 扫描 CLI 创建；示例仅用于演示，不是实际应用的检测结果。</p>
+        <p class="field-help">APK 扫描 CLI 创建真实任务；示例只演示流程，结果不来自真实应用。</p>
       </section>
       <MobileReportSummary v-if="mobile && report"
         :name="report.sample.name" :version="report.demo ? report.sample.version : (report.sample.version_name ?? ('v' + report.sample.version_code))"
@@ -735,7 +735,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           <p class="error-msg">{{ parsedJobError.message }}</p>
           <p v-if="parsedJobError.primary_error" class="error-detail subtle">根因：{{ parsedJobError.primary_error }}</p>
         </div>
-        <p v-if="activeJob.state === 'FAILED' || activeJob.state === 'CANCELLED'">本任务没有可展示的成功报告。可以重试为一次新的分析，或删除这条本机记录。</p>
+        <p v-if="activeJob.state === 'FAILED' || activeJob.state === 'CANCELLED'">本任务没有成功报告。可以重试为新的分析，或删除这条本机记录。</p>
         <!-- Destructive actions stay terminal-only: deleting a running job would leave a tombstone
              while the worker may still be writing. Running jobs keep the cancel button above. -->
         <div v-if="terminal(activeJob)" class="job-terminal-actions" @keydown.esc="cancelDelete">
@@ -746,7 +746,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
             <button :disabled="loading" @click="cancelDelete">取消删除</button>
           </span>
         </div>
-        <p v-if="confirmDelete && terminal(activeJob)" id="job-delete-warning" class="job-delete-warning">删除会一并移除本机保存的这条任务记录与报告，事后不可恢复，也不会保留原任务的分析结果。</p>
+        <p v-if="confirmDelete && terminal(activeJob)" id="job-delete-warning" class="job-delete-warning">删除会移除本机保存的任务记录与报告，无法恢复。</p>
       </section>
       <p v-if="jobMessage" id="job-message" ref="jobMessageEl" class="notice" role="status" tabindex="-1">{{ jobMessage }}</p>
       <section v-if="loading && !report && !activeJob" class="state"><span role="status">正在加载…</span> <button @click="controller?.abort()">停止本次请求</button></section>
@@ -755,7 +755,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         <section class="report-comparison">
           <div class="report-columns">
             <div class="report-findings report-section">
-              <div class="section-heading"><h2>{{ frontendCopy.comparisonTitle }}</h2><span class="subtle">点开结论后，直接查看代码定位与原句</span></div>
+              <div class="section-heading"><h2>{{ frontendCopy.comparisonTitle }}</h2><span class="subtle">点开结论，查看代码定位与原句</span></div>
               <!-- Narrow screens stack each row as a card; the explicit table roles keep the grid
                    semantics that display:flex/block would otherwise drop. -->
               <!-- Desktop keeps the comparison table. The Tauri shell renders the same
@@ -773,7 +773,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
                   </button>
                 </div>
               </div>
-              <p v-if="!report.result.issues.length" class="subtle">未产生对照项，请核对下方权限与扫描范围。</p>
+              <p v-if="!report.result.issues.length" class="subtle">未产生对照项。核对下方权限与扫描范围。</p>
               <p class="comparison-scope">{{ frontendCopy.comparisonScope }}</p>
               <div class="report-actions">
                 <p class="report-action-context">{{ selected ? `当前对象：${issueNumber(selected)} / ${label(selected.data_type)} · 结论：${statusLabels[selected.status]}` : '尚无条目可阅读' }}</p>
@@ -782,7 +782,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
             </div>
             <div v-if="!mobile" class="report-evidence-column">
               <EvidencePanel v-if="selected && report" :issue="selected" :report="report" :taxonomy="taxonomy" :status-labels="statusLabels" :kind-labels="kindLabels" :source-labels="sourceLabels" @close="returnToTrigger()" @open-policy="openPolicy" />
-              <div v-else class="report-evidence-empty"><h2>证据详情</h2><p>尚无证据。未知与未检查项继续保留。</p></div>
+              <div v-else class="report-evidence-empty"><h2>证据详情</h2><p>尚无证据；未知与未检查项仍保留。</p></div>
             </div>
           </div>
         </section>

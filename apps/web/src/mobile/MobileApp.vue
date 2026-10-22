@@ -264,7 +264,7 @@ onBeforeUnmount(() => {
       <template v-if="state.step === 'import'">
         <section v-if="!context" class="m-card m-empty-card">
           <h2>选择要对照的应用</h2>
-          <p>仅上传主动选择的应用及其完整安装包集合。服务端长期保留至主动删除。</p>
+          <p>只上传你选择的应用及其安装包集合。分析服务保留材料，直到你主动删除。</p>
           <div class="m-button-row">
             <UiButton variant="primary" :disabled="busy" @click="flow.select()">选择应用并上传</UiButton>
             <UiButton :disabled="busy" @click="flow.select(true)">恢复当前实例材料</UiButton>
@@ -274,7 +274,7 @@ onBeforeUnmount(() => {
           <div class="m-card-head"><h2>当前分析材料</h2><UiButton variant="quiet" :disabled="busy" @click="flow.remove">删除远端材料</UiButton></div>
           <p class="m-material-name" :role="draft ? undefined : 'status'">{{ draft?.name || '正在读取材料…' }}</p>
           <p v-if="draft?.apk_sha256" class="hash">APK SHA-256 {{ draft.apk_sha256 }}</p>
-          <p class="m-help">材料保存在当前分析服务，长期保留至主动删除。更换文件请重新选择应用。</p>
+          <p class="m-help">材料保存在当前分析服务，直到你主动删除。更换文件请重新选择应用。</p>
           <p class="m-help">分析服务：{{ context.origin }}</p>
         </section>
         <div v-if="busy" class="m-notice m-busy-notice"><span role="status">正在处理当前请求。</span><UiButton variant="quiet" @click="flow.stop">停止本次请求</UiButton></div>
@@ -319,7 +319,7 @@ onBeforeUnmount(() => {
           <h2>{{ job?.state === 'SUCCEEDED' ? frontendCopy.stages.SUCCEEDED : failed ? '本次分析未完成' : '正在分析当前材料' }}</h2>
           <p v-if="job?.id" class="hash">{{ job.id }}</p>
           <p v-if="failed" class="m-error" role="alert">本次分析未完成，可刷新状态或重试为新的分析。</p>
-          <p v-if="job?.state === 'SUCCEEDED'" class="m-help">阶段已完成。查看报告中的证据依据与政策原句。</p>
+          <p v-if="job?.state === 'SUCCEEDED'" class="m-help">阶段已完成。报告里有证据位置与政策原句。</p>
         </section>
         <section class="m-section" aria-labelledby="m-timeline-title">
           <div class="m-section-head"><h2 id="m-timeline-title">分析阶段</h2><span class="m-help">{{ job ? stageName(job.state) : '未开始' }}</span></div>
@@ -350,7 +350,7 @@ onBeforeUnmount(() => {
           </div>
         </details>
       </div>
-      <p v-else-if="state.step === 'report'" class="m-notice" role="status">报告尚未载入，请返回进度刷新状态。</p>
+      <p v-else-if="state.step === 'report'" class="m-notice" role="status">报告还没载入。回到进度页刷新状态。</p>
 
       <template v-if="error || notice">
         <p v-if="error" class="m-error m-message" role="alert">{{ error }}</p>

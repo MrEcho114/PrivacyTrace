@@ -21,7 +21,7 @@ async function copyInstructions() {
   error.value = ''; message.value = ''
   try {
     prompt.value = collectionInstructions(app.value)
-    try { await navigator.clipboard.writeText(prompt.value); message.value = '收集指令已复制。请在你选择的网页聊天工具中使用。' }
+    try { await navigator.clipboard.writeText(prompt.value); message.value = '收集指令已复制，粘贴到你选择的网页聊天工具中使用。' }
     catch { message.value = '未能自动复制，请在下方选择并复制完整指令。' }
   } catch (cause) { error.value = (cause as Error).message }
 }
@@ -38,7 +38,7 @@ function submit() {
 <template>
   <details class="policy-assist source-body">
     <summary>找不到政策？使用网页辅助收集</summary>
-    <p class="field-help">复制指令到你选择的聊天工具，再回填结果。只提供当前应用的名称或包名；联网能力与来源是否取得，以实际收集结果为准。</p>
+    <p class="field-help">复制指令到你选择的聊天工具，再回填结果。只提供当前应用的名称或包名；能否联网、能否找到来源，以实际结果为准。</p>
     <p class="field-help">当前有 {{ sourceCount }} 份政策来源，最多可再补入 {{ Math.max(0, 8 - sourceCount) }} 份；没有取得来源的失败记录不占来源数量。</p>
     <fieldset :disabled="busy" class="assist-fields">
       <UiField label="要查找政策的应用" id="collector-app"><input id="collector-app" v-model="app" maxlength="200" placeholder="应用名称或包名" /></UiField>

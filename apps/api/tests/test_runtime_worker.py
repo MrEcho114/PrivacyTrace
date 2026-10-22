@@ -117,6 +117,44 @@ print('CONSTRUCTED')
     assert child.stdout.strip() == "CONSTRUCTED"
 
 
+@pytest.mark.parametrize("code", ["LEASE_LOST", "EXECUTION_NOT_ACQUIRED"])
+def test_worker_log_formats_keep_fixed_diagnostic_code_visible(code):
+    """A format without %(message)s renders the bracket prefix only (#179).
+
+    The container log is the sole carrier of the fixed diagnostic codes, so both
+    Celery formats must preserve the record body while still adding no fields
+    beyond level and message.
+    """
+
+    instance = str(uuid4())
+    app = create_worker_app(BrokerConfig("redis://u:p@127.0.0.1:1/15", instance))
+    record = logging.LogRecord(
+        "privacytrace.runtime_worker",
+        logging.WARNING,
+        __file__,
+        1,
+        "privacytrace.worker.%s",
+        (code,),
+        None,
+    )
+    formats = {
+        "worker_task_log_format": (
+            app.conf.worker_task_log_format,
+            f"[privacytrace runtime task WARNING] privacytrace.worker.{code}",
+        ),
+        "worker_log_format": (
+            app.conf.worker_log_format,
+            f"[privacytrace runtime WARNING] privacytrace.worker.{code}",
+        ),
+    }
+    try:
+        for name, (template, expected) in formats.items():
+            assert "%(message)s" in template, f"{name} discards the diagnostic body"
+            assert logging.Formatter(template).format(record) == expected
+    finally:
+        app.close()
+
+
 @pytest.mark.parametrize(
     ("failure", "code"),
     [

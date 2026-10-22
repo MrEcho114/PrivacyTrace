@@ -212,8 +212,8 @@ def create_worker_app(config):
     app.conf.update(
         worker_hijack_root_logger=False,
         worker_redirect_stdouts=False,
-        worker_task_log_format="[privacytrace runtime task %(levelname)s]",
-        worker_log_format="[privacytrace runtime %(levelname)s]",
+        worker_task_log_format="[privacytrace runtime task %(levelname)s] %(message)s",
+        worker_log_format="[privacytrace runtime %(levelname)s] %(message)s",
     )
     return app
 

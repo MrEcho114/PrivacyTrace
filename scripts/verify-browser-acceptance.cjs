@@ -16,12 +16,15 @@ const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
 
 const { stopChildren, spawnOptions } = require('./lib/process-control.cjs');
+const { resolvePort } = require('./lib/local-ports.cjs');
 
-// Dedicated ports keep the run isolated from a developer's own dev servers.
+// Dedicated ports keep the run isolated from a developer's own dev servers. The
+// web port is allocated per run: the previous fixed 5273 sat inside the Windows
+// Hyper-V/WinNAT reserved range, where listen() fails with EACCES.
 const API_PORT = Number(process.env.PRIVACYTRACE_ACCEPTANCE_API_PORT || 8123);
-const WEB_PORT = Number(process.env.PRIVACYTRACE_ACCEPTANCE_WEB_PORT || 5273);
 const API_ORIGIN = `http://127.0.0.1:${API_PORT}`;
-const WEB_ORIGIN = `http://127.0.0.1:${WEB_PORT}`;
+let WEB_PORT;
+let WEB_ORIGIN;
 
 function getPlaywright() {
   try {
@@ -47,9 +50,16 @@ async function isPortOpen(url) {
   }
 }
 
-async function waitForServer(url, timeoutMs = 30000) {
+async function waitForServer(url, timeoutMs = 30000, child, readLog = () => '') {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
+    // A crashed server never becomes ready; fail fast instead of waiting out the
+    // whole budget and reporting a misleading timeout. The owned log explains
+    // the crash (spawnOptions pipes it).
+    if (child && child.exitCode !== null) {
+      const detail = String(readLog()).trim();
+      throw new Error(`Owned server on ${url} exited during startup (code ${child.exitCode}); it never became ready.` + (detail ? `\n--- owned server log ---\n${detail}` : ''));
+    }
     if (await isPortOpen(url)) return true;
     await new Promise(r => setTimeout(r, 500));
   }
@@ -180,6 +190,11 @@ async function main() {
 
   const childrenToKill = [];
 
+  // Allocate the web port before any server starts. PRIVACYTRACE_ACCEPTANCE_WEB_PORT
+  // still pins the port when a caller needs a specific one.
+  WEB_PORT = await resolvePort('PRIVACYTRACE_ACCEPTANCE_WEB_PORT');
+  WEB_ORIGIN = `http://127.0.0.1:${WEB_PORT}`;
+
   // Every resource acquired below lives inside this outermost try/finally, from
   // the temporary store onwards. If Chromium is missing, the API fails to boot,
   // or the port check throws, cleanup still runs and no child or temp directory
@@ -231,8 +246,10 @@ async function main() {
       ...spawnOptions(projectRoot, { PRIVACYTRACE_API_ORIGIN: API_ORIGIN, PRIVACYTRACE_WEB_PORT: String(WEB_PORT) }),
     });
     childrenToKill.push(webProc);
-    if (!(await waitForServer(WEB_ORIGIN, 60000))) {
-      throw new Error(`Failed to start Vite frontend on port ${WEB_PORT}`);
+    const webLog = { text: '' };
+    for (const stream of [webProc.stdout, webProc.stderr]) stream.on('data', chunk => { webLog.text = (webLog.text + chunk).slice(-8000); });
+    if (!(await waitForServer(WEB_ORIGIN, 60000, webProc, () => webLog.text))) {
+      throw new Error(`Failed to start Vite frontend on port ${WEB_PORT}` + (webLog.text.trim() ? `\n--- owned server log ---\n${webLog.text.trim()}` : ''));
     }
     console.log('[Server] Vite frontend is ready.');
 
@@ -609,8 +626,12 @@ async function main() {
     await selectSource(page, 'demo:synthetic');
     recordStep('TC-04', 'select_demo', 'Selected demo:synthetic');
     await page.locator('.sample-card').waitFor();
+    // #167 kept the material identity badge verbatim; the global example marker
+    // (示例体验 · 固定材料) belongs to the example workflow, and this archive view is
+    // the non-example entry, so assert the identity text exactly instead of
+    // loosening it to "contains 示例".
     const demoBadge = await page.locator('.badge-stack .badge').first().innerText();
-    assert(demoBadge.includes('人工示例') && demoBadge.includes('SYNTHETIC'), `Badge should show 人工示例 · SYNTHETIC, got: ${demoBadge}`);
+    assert.equal(demoBadge.trim(), '人工示例 · SYNTHETIC', `Badge should be exactly 人工示例 · SYNTHETIC, got: ${demoBadge}`);
     // The demo envelope is assembled per response, so it is a live generation.
     const demoDeliveryBadge = await page.locator('.badge-stack .badge').last().innerText();
     assert(demoDeliveryBadge.includes('本次生成') && demoDeliveryBadge.includes('LIVE'), `Demo delivery badge should show 本次生成 · LIVE, got: ${demoDeliveryBadge}`);
@@ -705,8 +726,10 @@ async function main() {
     await page.locator('.review-panel input').nth(1).fill('验证备注完全可选特性');
     await page.locator('.review-panel textarea').fill('');
 
-    // Ensure submit button is enabled when note is empty
-    const submitBtn = page.locator('.review-panel button.primary');
+    // #165 keeps one red primary per page (the report action); the review panel
+    // submit is a normal form action, so select it structurally and keep the
+    // disabled/enabled behaviour assertions unchanged.
+    const submitBtn = page.locator('.review-panel form button');
     const isDisabled = await submitBtn.isDisabled();
     assert.equal(isDisabled, false, 'Submit button must be ENABLED when note is empty');
     recordStep('TC-05', 'verify_optional_button', 'Confirmed submit button enabled with empty note');

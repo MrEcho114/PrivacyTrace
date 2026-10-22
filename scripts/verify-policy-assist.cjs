@@ -2,21 +2,14 @@
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
-const net = require('node:net')
 const { spawn, execFileSync } = require('node:child_process')
 const { chromium } = require('playwright')
+const { freePort } = require('./lib/local-ports.cjs')
 const { spawnOptions, stopChildren } = require('./lib/process-control.cjs')
 const { assertDesign } = require('./lib/frontend-guards.cjs')
 const root = path.resolve(__dirname, '..')
 const output = path.join(root, 'tmp/issue72-policy-assist')
 fs.mkdirSync(output, { recursive: true })
-async function freePort() {
-  const server = net.createServer()
-  await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve) })
-  const port = server.address().port
-  await new Promise(resolve => server.close(resolve))
-  return port
-}
 async function ready(url, child) {
   const deadline = Date.now() + 45000
   while (Date.now() < deadline) {
@@ -52,7 +45,7 @@ async function main() {
     page.on('pageerror', error => errors.push(error.message))
     page.on('request', request => { if (request.url().includes('/api/')) requests.push(new URL(request.url()).pathname) })
     await page.goto(origin)
-    await page.getByRole('heading', { name: '导入分析材料', exact: true }).waitFor()
+    await page.getByRole('heading', { name: 'APK 与政策材料', exact: true }).waitFor()
     await page.locator('.policy-assist > summary').click()
     await page.getByLabel('要查找政策的应用', { exact: true }).fill('受控示例 org.example.synthetic')
     await page.getByRole('button', { name: '复制收集指令', exact: true }).click()
@@ -129,7 +122,7 @@ async function main() {
       await page.setViewportSize({ width, height: 900 }); await page.evaluate(() => document.fonts.ready)
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
       await page.mouse.move(0, 0)
-      await page.waitForFunction(() => [...document.querySelectorAll('.ui-button.primary:not(:disabled)')].every(button => getComputedStyle(button).backgroundColor === 'rgb(51, 60, 80)'))
+      await page.waitForFunction(() => [...document.querySelectorAll('.ui-button.primary:not(:disabled)')].every(button => getComputedStyle(button).backgroundColor === 'rgb(214, 58, 44)'))
       await assertDesign(page)
       await page.locator('.policy-assist').scrollIntoViewIfNeeded()
       await page.screenshot({ path: path.join(output, `assist-${width}-viewport.png`) })

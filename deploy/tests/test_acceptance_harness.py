@@ -172,6 +172,31 @@ class GatingTests(unittest.TestCase):
             self.assertEqual(check.status, SKIP)
             self.assertIn("ALLOW_DESTRUCTIVE", check.notes)
 
+    def test_r4_waits_for_a_settled_baseline_before_each_injection(self):
+        # A previous step's recovery poll can return before readiness settles
+        # (ready=503 with live=health=200). Injecting on that sample used to fail
+        # the step as "baseline was not healthy" on a healthy topology.
+        from acceptance.r4_fault_recovery import Observation, _wait_healthy_baseline
+
+        settling = Observation(at="t0", live=200, ready=503, health=200, note="before injection")
+        settled = Observation(at="t1", live=200, ready=200, health=200, note="baseline")
+        with patch("acceptance.r4_fault_recovery._sample", side_effect=[settling, settled]):
+            self.assertEqual(_wait_healthy_baseline(topology=object(), interval_s=0).ready, 200)
+
+    def test_r4_reports_an_unhealthy_baseline_instead_of_injecting(self):
+        from acceptance.r4_fault_recovery import (
+            Observation,
+            TopologyUnavailable,
+            _wait_healthy_baseline,
+        )
+
+        broken = Observation(at="t0", live=200, ready=503, health=200, note="before injection")
+        with patch("acceptance.r4_fault_recovery._sample", return_value=broken), patch(
+            "acceptance.r4_fault_recovery.time.monotonic", side_effect=[0.0, 1.0]
+        ):
+            with self.assertRaises(TopologyUnavailable):
+                _wait_healthy_baseline(topology=object(), budget_s=0.5, interval_s=0)
+
     def test_r5_never_counts_an_unexecuted_backup_plan_as_evidence(self):
         with clean_environment():
             receipt = r5_backup_recovery.run()

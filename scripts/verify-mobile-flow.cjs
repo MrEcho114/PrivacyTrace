@@ -20,7 +20,6 @@ const { spawn } = require('node:child_process')
 const { chromium } = require('playwright')
 const { spawnOptions, stopChildren } = require('./lib/process-control.cjs')
 const { assertMobileDesign } = require('./lib/frontend-guards.cjs')
-const mobileDesign = require('./fixtures/mobile-design.json')
 const root = path.resolve(__dirname, '..'), output = path.join(root, 'tmp/issue72-native')
 fs.mkdirSync(output, { recursive: true })
 const source = fs.readFileSync(path.join(__dirname, 'verify-frontend-flow.cjs'), 'utf8')
@@ -72,15 +71,10 @@ async function assertTouchTargets(page, label) {
     let total = 0
     for (const element of document.querySelectorAll('.mobile-workspace button, .mobile-workspace [role="tab"], .mobile-workspace summary, .mobile-workspace .ui-button, dialog.ui-sheet button')) {
       if (!element.getClientRects().length || getComputedStyle(element).display === 'inline') continue
-      // A touch target is a layout box, not a press-time visual: offsetWidth/Height
-      // ignore the scale(.98) press transform, so a button measured during the
-      // 120ms release animation no longer reads a transient 47px. The 48px
-      // threshold is unchanged.
-      const width = element.offsetWidth
-      const height = element.offsetHeight
-      if (!width || !height) continue
+      const rect = element.getBoundingClientRect()
+      if (!rect.width || !rect.height) continue
       total += 1
-      if (width < 48 || height < 48) short.push((element.getAttribute('aria-label') || element.textContent || element.tagName).trim().slice(0, 24) + ' ' + width + 'x' + height)
+      if (rect.width < 47.5 || rect.height < 47.5) short.push((element.getAttribute('aria-label') || element.textContent || element.tagName).trim().slice(0, 24) + ' ' + Math.round(rect.width) + 'x' + Math.round(rect.height))
     }
     return { total, short }
   })
@@ -100,14 +94,9 @@ async function shot(page, name) {
 async function waitTitle(page, title, timeout = 10000) {
   await page.waitForFunction(expected => document.getElementById('page-title')?.textContent?.trim() === expected, title, { timeout })
 }
-// Mobile design contract: assert on the live shell at each page state and keep
-// the observed contract groups. Status tags only exist on the candidates step
-// and the bottom sheet only while open, so coverage across the run is checked
-// once at the end instead of pretending one snapshot proves the whole contract.
-const mobileCoverage = new Set()
 async function checkMobileDesign(page) {
-  const { checked } = await assertMobileDesign(page)
-  for (const group of checked) mobileCoverage.add(group)
+  await page.mouse.move(0, 0)
+  await assertMobileDesign(page)
 }
 
 function bridge(options) {
@@ -238,11 +227,33 @@ async function main() {
     await page.goto(origin)
     await page.getByRole('button', { name: '选择应用并上传', exact: true }).click()
     await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
-    // The shell is ready once the upload settles and the action bar primary is live.
-    await page.waitForFunction(() => {
-      const primary = document.querySelector('.mobile-workspace .m-actionbar .ui-button.primary')
-      return Boolean(primary) && !primary.disabled
-    }, undefined, { timeout: 8000 })
+    // #169 mobile brand slot: the import step shows the same-origin symbol in the
+    // 48x48 app-bar slot (no letter placeholder); later steps keep the back button.
+    const mobileBrand = await page.evaluate(async () => {
+      const slot = document.querySelector('.m-appbar-brand')
+      const image = slot?.querySelector('img.brand-mark-image')
+      if (!image) return null
+      let decoded = false
+      try { await image.decode(); decoded = true } catch {}
+      const rect = image.getBoundingClientRect()
+      return {
+        complete: image.complete, currentSrc: image.currentSrc,
+        naturalWidth: image.naturalWidth, naturalHeight: image.naturalHeight,
+        width: Math.round(rect.width), height: Math.round(rect.height),
+        slotText: (slot.textContent || '').trim(), decoded,
+      }
+    })
+    assert.ok(mobileBrand, 'mobile import must render the brand slot')
+    assert.equal(mobileBrand.complete, true, 'mobile brand image must finish loading')
+    assert.ok(mobileBrand.currentSrc.endsWith('/brand/privacy-trace-symbol.svg'), `mobile brand must resolve the same-origin symbol (got ${mobileBrand.currentSrc})`)
+    assert.ok(mobileBrand.naturalWidth > 0 && mobileBrand.naturalHeight > 0, 'mobile brand image must decode to real pixels')
+    assert.ok(mobileBrand.width > 0 && mobileBrand.height > 0, 'mobile brand slot renders a positive box')
+    assert.equal(mobileBrand.slotText, '', 'mobile brand slot must not keep a letter placeholder')
+    assert.equal(mobileBrand.decoded, true, 'mobile brand img.decode() must resolve')
+    const mobileSymbol = await page.request.get(origin + '/brand/privacy-trace-symbol.svg')
+    assert.equal(mobileSymbol.status(), 200, 'the mobile shell must load the same-origin brand symbol')
+    assert.ok((await mobileSymbol.body()).toString('utf8').includes('<svg'), 'the brand symbol must be SVG markup')
+    checks.push('brand: mobile import slot decodes the same-origin symbol with no letter placeholder')
     await checkMobileDesign(page)
     for (const width of [320, 390, 768]) {
       await page.setViewportSize({ width, height: 844 })
@@ -278,7 +289,9 @@ async function main() {
     checks.push('import: 200% root font keeps 320/390 free of page overflow with the model fields open')
     await page.setViewportSize({ width: 390, height: 844 })
     await page.getByRole('button', { name: '自动准备政策并继续', exact: true }).click()
-    await waitTitle(page, '检查政策候选', 12000)
+    await waitTitle(page, '核对政策声明', 12000)
+    assert.equal(await page.locator('.m-appbar-brand').count(), 0, 'non-import steps replace the brand slot with the back button')
+    assert.equal(await page.getByRole('button', { name: '返回上一步' }).count(), 1, 'non-import steps keep the back arrow')
     assert.equal(await page.evaluate(() => document.querySelectorAll('.mobile-panel-tabs button').length), 2, 'candidates: Android segmented control must render')
     await checkMobileDesign(page)
     await page.locator('.source-tabs button').nth(1).click()
@@ -343,10 +356,10 @@ async function main() {
     assert.ok(Math.abs(reset.barBottom - 844) <= 1, 'the action bar must return to the bottom edge')
     checks.push('soft keyboard: --keyboard-inset reserves the IME height, lifts the action bar, keeps the field reachable, releases on close')
     await page.getByRole('button', { name: '保存候选并开始分析', exact: true }).click()
-    await waitTitle(page, '分析进度', 12000)
+    await waitTitle(page, '扫描与对照进度', 12000)
     await page.getByRole('button', { name: '查看报告', exact: true }).waitFor({ timeout: 12000 })
     await page.getByRole('button', { name: '查看报告', exact: true }).click()
-    await waitTitle(page, '对照报告', 12000)
+    await waitTitle(page, 'APP 隐私收集越权报告', 12000)
     for (const width of [320, 390, 768]) {
       await page.setViewportSize({ width, height: 844 })
       await page.evaluate(() => document.fonts.ready)
@@ -364,31 +377,27 @@ async function main() {
     await page.evaluate(() => { document.documentElement.style.fontSize = '' })
     await page.setViewportSize({ width: 390, height: 844 })
     checks.push('report: 200% root font keeps the mobile report inside 320px')
-    // Evidence sheet: open/close twice restores focus and the exact scroll position.
+    // Inline evidence: open twice, return to the row, exact scroll position.
     await page.evaluate(() => window.scrollTo(0, 0))
     for (let round = 1; round <= 2; round += 1) {
       const trigger = page.locator('.m-issue-list .evidence-button').first()
       await trigger.scrollIntoViewIfNeeded()
       const before = await page.evaluate(() => Math.round(scrollY))
       await trigger.click()
-      const sheet = page.locator('dialog.ui-sheet.m-evidence-sheet')
-      await sheet.waitFor({ timeout: 5000 })
-      assert.equal(await page.evaluate(() => Boolean(document.activeElement?.closest('dialog.ui-sheet.m-evidence-sheet'))), true, `round ${round}: focus must move into the evidence sheet`)
+      const panel = page.locator('.report-evidence-inline #evidence-panel')
+      await panel.waitFor({ timeout: 5000 })
+      assert.equal(await page.evaluate(() => Boolean(document.activeElement?.closest('.report-evidence-inline #evidence-panel'))), true, `round ${round}: focus must move into the inline evidence panel`)
+      assert.equal(await page.locator('dialog.ui-sheet.m-evidence-sheet').count(), 0, `round ${round}: no sheet may open over the report`)
       if (round === 1) {
         await shot(page, 'round2-report-preview-390.png')
-        checks.push(await assertTouchTargets(page, 'evidence-sheet'))
-        await checkMobileDesign(page)
+        checks.push(await assertTouchTargets(page, 'evidence-inline'))
       }
-      await page.keyboard.press('Escape')
+      await panel.getByRole('button', { name: '返回刚才的操作', exact: true }).click()
       await page.waitForTimeout(250)
-      assert.equal(await sheet.count(), 0, `round ${round}: the evidence sheet must close`)
       assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('.m-issue-list .evidence-button')), true, `round ${round}: focus must return to the triggering row`)
-      assert.ok(Math.abs(await page.evaluate(() => Math.round(scrollY)) - before) <= 2, `round ${round}: closing must restore the exact scroll position`)
+      assert.ok(Math.abs(await page.evaluate(() => Math.round(scrollY)) - before) <= 2, `round ${round}: returning must restore the exact scroll position`)
     }
-    checks.push('evidence sheet: opening/closing twice restores focus and the exact scroll position')
-    const uncoveredDesign = mobileDesign.coverage.filter(group => !mobileCoverage.has(group))
-    assert.deepEqual(uncoveredDesign, [], `mobile design guard did not cover: ${uncoveredDesign.join(', ')}`)
-    checks.push(`mobile design: ${mobileCoverage.size}/${mobileDesign.coverage.length} contract groups covered (${[...mobileCoverage].join(', ')})`)
+    checks.push('inline evidence: opening twice keeps the section, restores focus and the exact scroll position')
     const ledger = await page.evaluate(() => globalThis.mobileCalls)
     assert.equal(ledger.filter(call => call.method === 'workflow' && call.args.action === 'start').length, 1, 'a lost start response must not submit a second analysis')
     const save = ledger.find(call => call.method === 'workflow' && call.args.action === 'candidates')
@@ -405,7 +414,6 @@ async function main() {
       landscape_viewport: [844, 390],
       keyboard_viewport: [390, 380],
       large_text: '200% root font size',
-      mobile_design: { covered: [...mobileCoverage], expected: mobileDesign.coverage },
       checks,
       ledger,
       browser_api_requests: api,

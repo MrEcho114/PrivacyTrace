@@ -2,29 +2,26 @@ const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
 const http = require('node:http')
-const net = require('node:net')
 const { start, stop, status, withPreviewPaused } = require('./frontend-preview.cjs')
+const { resolvePort } = require('./lib/local-ports.cjs')
 const { execFileSync } = require('node:child_process')
 
 const root = path.resolve(__dirname, '..')
 const stateFile = path.join(root, 'tmp/frontend-preview/state.json')
-function freePort() {
-  return new Promise((resolve, reject) => {
-    const server = net.createServer()
-    server.once('error', reject)
-    server.listen(0, '127.0.0.1', () => {
-      const { port } = server.address()
-      server.close(() => resolve(port))
-    })
-  })
-}
 async function main() {
   assert.equal((await status()).running, false, 'Stop the managed preview before running its lifecycle acceptance')
-  const basePort = await freePort()
+  // A bare start is what `npm run dev:start` runs: repeating it must reuse the
+  // owned preview even when the default port had to come from the OS.
+  const implicit = await start()
+  assert.equal((await start()).pid, implicit.pid, 'A repeated bare start reuses the owned process')
+  await stop()
+  // A fixed 5185 lands inside the Windows Hyper-V/WinNAT reserved range; the
+  // scenario port is therefore allocated unless the caller pins one.
+  const scenarioPort = await resolvePort('PRIVACYTRACE_PREVIEW_PORT')
   let foreign
   try {
-    const first = await start(basePort)
-    assert.equal((await start(basePort)).pid, first.pid, 'Starting twice reuses the owned process')
+    const first = await start(scenarioPort)
+    assert.equal((await start(scenarioPort)).pid, first.pid, 'Starting twice reuses the owned process')
     assert.equal((await status()).ready, true)
     assert.equal((await fetch(first.url)).ok, true)
     await assert.rejects(() => withPreviewPaused(async () => {
@@ -41,15 +38,15 @@ async function main() {
     await stop()
     assert.equal((await stop()).running, false)
     await assert.rejects(() => fetch(first.url, { signal: AbortSignal.timeout(500) }))
-    await assert.rejects(() => start(basePort, 'http://127.0.0.1:8000', 1), /timed out/)
+    await assert.rejects(() => start(scenarioPort, 'http://127.0.0.1:8000', 1), /timed out/)
     assert.equal((await status()).running, false, 'Startup failure removes its ownership record')
     await assert.rejects(() => fetch(first.url, { signal: AbortSignal.timeout(500) }))
-    const raceFailure = assert.rejects(() => start(basePort), /Vite exited during startup/)
+    const raceFailure = assert.rejects(() => start(scenarioPort), /Vite exited during startup/)
     const raceDeadline = Date.now() + 3000
     while (!fs.existsSync(stateFile) && Date.now() < raceDeadline) await new Promise(resolve => setTimeout(resolve, 5))
     assert.ok(fs.existsSync(stateFile), 'Manager created its ownership record before Vite starts')
     foreign = http.createServer((req, res) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ foreign: true })) })
-    await new Promise((resolve, reject) => { foreign.once('error', reject); foreign.listen(basePort, '127.0.0.1', resolve) })
+    await new Promise((resolve, reject) => { foreign.once('error', reject); foreign.listen(scenarioPort, '127.0.0.1', resolve) })
     await raceFailure
     assert.equal((await status()).running, false, 'A competing 200 response cannot prove readiness')
     assert.equal((await fetch(first.url)).ok, true, 'The competing listener remains alive')

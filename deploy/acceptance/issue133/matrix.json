@@ -1,0 +1,54 @@
+{
+  "format": "privacytrace-issue133-matrix/1",
+  "source": "docs/acceptance/issue73/scenarios.md N12/F05/F06",
+  "cases": [
+    {
+      "id": "N12-offline-retry",
+      "title": "N12 离线读取/取消 + 显式重试新任务 + 旧报告保留",
+      "variants": ["offline-read", "offline-cancel", "explicit-retry", "old-report-preserved"],
+      "expected": "断网时显示真实错误、服务端状态不变；恢复后显式重试创建新 job ID；原 CANCELLED 保留且独立旧报告哈希不变；无重复 start。"
+    },
+    {
+      "id": "N12-restore",
+      "title": "N12 后台与 force-stop 进程回收后恢复同一任务",
+      "variants": ["background-40s", "force-stop-reclaim", "restore-same-job", "no-duplicate-start"],
+      "expected": "后台/进程回收后只重新读取原任务；同一 job ID、单次 start/runtime_input/outbox；不自动重试、不伪造成功；记录 BUSY_OR_INACTIVE 观察与恢复分类。"
+    },
+    {
+      "id": "F05-queued",
+      "title": "F05 排队中取消",
+      "variants": ["queued"],
+      "expected": "QUEUED→CANCELLED，execution REVOKED/fence 递增，无扫描器、无报告；worker 恢复后旧投递不复活任务。"
+    },
+    {
+      "id": "F05-scanning",
+      "title": "F05 扫描中取消",
+      "variants": ["scanning"],
+      "expected": "真实扫描容器运行中取消；容器回收、REVOKED、无报告；迟到扫描结果不得提交。"
+    },
+    {
+      "id": "F05-precommit",
+      "title": "F05 提交前取消（真实结果已生成未提交）",
+      "variants": ["precommit"],
+      "expected": "Runner 真实 result+receipt 已生成、worker 暂停；取消后恢复消费者，旧结果被 LeaseLost/fence 拒绝，任务保持 CANCELLED、无报告。"
+    },
+    {
+      "id": "F06-queued",
+      "title": "F06 排队中删除 + 迟到投递/旧访问",
+      "variants": ["queued-delete", "late-delivery", "old-access", "persist-after-restart"],
+      "expected": "DRAFT+JOB tombstone、token 撤销、材料/索引清零；worker 恢复消费旧 outbox 不重建；六类旧访问 404/403/410；API 重启后 tombstone 保持。"
+    },
+    {
+      "id": "F06-scanning",
+      "title": "F06 扫描中删除 + 迟到结果/旧访问",
+      "variants": ["scanning-delete", "late-result", "old-access", "no-rebuild-window"],
+      "expected": "真实扫描容器运行中删除；容器回收、REVOKED、无报告；超过原扫描窗口后再读仍 tombstone，旧访问拒绝，不重建材料/索引。"
+    },
+    {
+      "id": "F06-precommit",
+      "title": "F06 提交前删除 + 迟到真实结果消费",
+      "variants": ["precommit-delete", "late-real-result", "old-access", "storage-layers"],
+      "expected": "真实 result+receipt 已生成、worker 暂停；删除后恢复消费者，迟到结果被拒绝；各存储层读回 tombstone/零材料/零报告，旧访问拒绝。"
+    }
+  ]
+}

@@ -20,27 +20,24 @@ defineEmits<{ change: [] }>()
         <div v-if="revision != null"><dt>材料版本</dt><dd>{{ revision }}</dd></div>
       </dl>
     </details>
-    <UiButton variant="quiet" class="material-change" @click="$emit('change')">更换</UiButton>
+    <UiButton variant="quiet" class="material-change" @click="$emit('change')">更换材料</UiButton>
   </section>
 </template>
 
 <style scoped>
-/* Mobile-only component: consume the `--mt-*` Claude tokens directly (spec §11.3 prefers
-   them here). Values match the previous body.is-mobile-app remap exactly, including
-   `--mt-border-soft` for hairlines instead of the near-invisible `--mt-border`. */
-.material-context { display: flex; align-items: flex-start; gap: 4px; padding: 4px 8px 4px 12px; margin-bottom: 12px; border: 1px solid var(--mt-border-soft); border-radius: var(--mt-radius-card); background: var(--mt-surface); }
+.material-context { display: flex; align-items: flex-start; gap: 4px; padding: 4px 8px 4px 12px; margin-bottom: 12px; border: 1px solid var(--pt-rule); border-radius: var(--m-card-radius); background: var(--pt-paper); }
 .material-disclosure { flex: 1; min-width: 0; }
-.material-disclosure > summary { display: flex; align-items: center; gap: 8px; min-height: var(--mt-touch); padding: 4px 0; box-sizing: border-box; cursor: pointer; list-style: none; }
+.material-disclosure > summary { display: flex; align-items: center; gap: 8px; min-height: var(--m-touch); padding: 4px 0; box-sizing: border-box; cursor: pointer; list-style: none; }
 .material-disclosure > summary::-webkit-details-marker { display: none; }
 .material-identity { display: grid; flex: 1; min-width: 0; gap: 2px; }
-.material-identity strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 0.9375rem; font-weight: 600; }
-.material-identity > span { color: var(--mt-muted); font-size: var(--mt-text-caption); overflow-wrap: anywhere; }
-.material-affordance { display: flex; align-items: center; gap: 2px; flex: none; color: var(--mt-muted); font-size: var(--mt-text-caption); }
+.material-identity strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 0.9375rem; font-weight: 600; color: var(--pt-ink); }
+.material-identity > span { color: var(--pt-muted); font-size: var(--m-caption); overflow-wrap: anywhere; }
+.material-affordance { display: flex; align-items: center; gap: 2px; flex: none; color: var(--pt-muted); font-size: var(--m-caption); }
 .material-affordance .ui-icon { width: 16px; height: 16px; }
 .material-disclosure[open] .material-affordance .ui-icon { transform: rotate(90deg); }
-.material-facts { margin: 8px 0; padding-top: 8px; border-top: 1px solid var(--mt-border-soft); font-size: var(--mt-text-caption); }
+.material-facts { margin: 8px 0; padding-top: 8px; border-top: 1px solid var(--pt-rule); font-size: var(--m-caption); }
 .material-facts > div + div { margin-top: 10px; }
-.material-facts dt { margin-bottom: 2px; color: var(--mt-muted); }
-.material-facts dd { margin: 0; overflow-wrap: anywhere; }
+.material-facts dt { margin-bottom: 2px; color: var(--pt-muted); }
+.material-facts dd { margin: 0; color: var(--pt-ink); overflow-wrap: anywhere; }
 .material-change { flex: none; margin: 0; }
 </style>

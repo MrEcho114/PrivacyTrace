@@ -59,19 +59,19 @@
 .shell .badge {
   margin-left: 0;
   padding: 4px 8px;
-  border: 1px solid var(--ui-border-soft);
-  border-radius: var(--ui-radius-tag);
-  background: var(--ui-neutral-bg);
-  color: var(--ui-neutral-fg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
+  color: var(--ui-fg);
   font-size: 0.75rem;
   line-height: 20px;
 }
 .shell .badge.live_generated { background: var(--ui-success-bg); border-color: var(--ui-success-bg); color: var(--ui-success); }
-.shell .badge.persisted_replay { background: var(--ui-warn-bg); border-color: var(--ui-border-soft); color: var(--ui-fg); }
+.shell .badge.persisted_replay { background: var(--ui-warn-bg); border-color: var(--ui-border); color: var(--ui-fg); }
 .shell .report-provenance {
   margin: 12px 0;
   padding: 12px 16px;
-  border: 1px solid var(--ui-border-soft);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-control);
   background: var(--ui-surface);
   color: var(--ui-fg);
@@ -84,7 +84,7 @@
 .workspace-content .shell .demo-note {
   margin: 12px 0;
   padding: 10px 16px;
-  border: 1px solid var(--ui-border-soft);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-control);
   background: var(--ui-surface);
   color: var(--ui-fg);
@@ -125,7 +125,7 @@
   font-weight: 500;
 }
 .shell .report-table td { border-color: var(--ui-border); }
-.shell .tag { border-radius: var(--ui-radius-tag); font-size: 0.75rem; line-height: 20px; }
+.shell .tag { border-radius: var(--ui-radius-control); font-size: 0.75rem; line-height: 20px; }
 .shell .tag.clear { background: var(--ui-success-bg); color: var(--ui-success); }
 .shell .tag.review { background: var(--ui-warn-bg); color: var(--ui-fg); }
 .shell input,
@@ -134,7 +134,7 @@
   border: 1px solid var(--ui-border-control);
   border-radius: var(--ui-radius-control);
   background: var(--ui-surface);
-  color: var(--ui-fg-2);
+  color: var(--ui-fg);
 }
 
 /* Report viewer helper controls previously kept in App.vue's scoped block.
@@ -169,26 +169,29 @@
     border: 1px solid var(--ui-border-control);
     border-radius: var(--ui-radius-control);
     background: var(--ui-surface);
-    color: var(--ui-fg-2);
+    color: var(--ui-fg);
     font-size: 0.75rem;
     line-height: 20px;
   }
   .shell .job-terminal-actions [data-testid="delete-confirm"] {
     border-color: var(--ui-danger-text);
     background: var(--ui-danger-text);
-    color: var(--ui-accent-on);
+    color: var(--ui-surface);
   }
   .shell .primary {
     min-height: 36px;
     padding: 7px 12px;
     border-radius: var(--ui-radius-control);
-    border-color: var(--ui-accent);
-    background: var(--ui-accent);
-    color: var(--ui-accent-on);
+    border-color: var(--pt-action);
+    background: var(--pt-action);
+    color: var(--pt-paper);
     font-size: 0.875rem;
     line-height: 20px;
     white-space: normal;
   }
+}
+@media (hover: hover) and (pointer: fine) {
+  .shell .primary:hover:not(:disabled) { background: var(--pt-action-hover); }
 }
 .shell .review-panel { margin: 12px 0; padding: 18px 24px; }
 .shell .review-panel form { gap: 12px; }
@@ -199,7 +202,7 @@
     gap: 0;
     margin: 16px 0;
     overflow: hidden;
-    border: 1px solid var(--ui-border-soft);
+    border: 1px solid var(--ui-border);
     border-radius: 12px;
     background: var(--ui-surface);
   }
@@ -240,7 +243,7 @@
   gap: 6px 12px;
   margin: 0 0 16px;
   padding: 8px 12px;
-  border: 1px solid var(--ui-border-soft);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-control);
   background: var(--ui-surface);
   color: var(--ui-muted);
@@ -307,4 +310,34 @@
 
 @media (max-width: 520px) {
   .workspace-content .progress-overview { grid-template-columns: 1fr; }
+}
+
+/* ------------------------------------------------------------------ *
+ * Standalone report chrome and short desktop viewports
+ * ------------------------------------------------------------------ */
+
+/* The offline/persisted report entry keeps its own brand bar; it is the one
+   tinted band on the page (panels stay on the reading surface). */
+.shell .topbar { background: var(--pt-header); border-bottom: 1px solid var(--pt-rule); }
+.shell .topbar .brand { font-family: var(--pt-font-body); color: var(--pt-ink); }
+.shell .topbar > .subtle { color: var(--pt-structure); }
+.shell .intro h1 { font-family: var(--pt-font-display); font-size: var(--pt-type-report); line-height: 1.25; font-weight: 600; margin: 8px 0 10px; }
+.shell .intro .lead { max-width: 70ch; font-size: var(--pt-type-reading); }
+
+/* 1280x720: compress decorative spacing first so the first evidence entry stays
+   visible; headline and reading sizes are not reduced. */
+@media (min-width: 897px) and (max-height: 800px) {
+  .workspace-content .shell .report-source-bar { padding: 12px 16px; margin-bottom: 10px; }
+  .workspace-content .shell .sample-card { margin: 10px 0; padding: 14px 20px; }
+  .workspace-content .shell .metrics { margin: 10px 0; }
+  .workspace-content .shell .metrics > div { padding: 12px 20px; }
+  .workspace-content .shell .demo-note { margin: 8px 0; padding: 8px 14px; }
+  .workspace-content .shell .report-comparison { padding-top: 14px; }
+}
+/* A disabled report action keeps the neutral disabled surface instead of the
+   vivid action colour; the red is reserved for the one available primary. */
+.shell .primary:disabled {
+  border-color: var(--ui-surface-muted);
+  background: var(--ui-surface-muted);
+  color: var(--ui-muted);
 }

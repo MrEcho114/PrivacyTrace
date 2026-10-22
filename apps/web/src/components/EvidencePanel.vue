@@ -5,6 +5,8 @@
 // where the panel appears and what happens on close / policy jump.
 import { computed, ref, watch } from 'vue'
 import type { DemoReport, Evidence, MatchStatus, PrivacyIssue, Report, Taxonomy } from '../types'
+import { frontendCopy, policyStateLine } from '../copy'
+import { reportRowNumber } from '../reportUi'
 
 const props = withDefaults(defineProps<{
   issue: PrivacyIssue
@@ -33,6 +35,13 @@ const sentenceContext = (item: Evidence) => {
   }
 }
 const selectedEvidence = computed(() => props.report.evidence.filter(item => props.issue.evidence_ids.includes(item.id)))
+const issueNumber = computed(() => {
+  const index = props.report.result.issues.findIndex(item => item.id === props.issue.id)
+  return reportRowNumber(index)
+})
+// The unified source-state line is generated from the document's own values; a
+// fetched body never upgrades the review state and missing values stay unknown.
+const docState = (doc?: Report['policy_documents'][number]) => policyStateLine(doc ?? {})
 
 // Candidate clauses are navigation aids, not evaluator-confirmed evidence or matches.
 const CANDIDATE_PAGE_SIZE = 20
@@ -61,9 +70,13 @@ watch(() => [props.issue, props.report], () => { candidatePage.value = 0 })
 
 <template>
   <section id="evidence-panel" class="evidence-panel" :class="{ 'm-evidence-panel': !heading }" tabindex="-1">
-    <div v-if="heading" class="section-heading"><h2>{{ label(issue.data_type) }} · {{ statusLabels[issue.status] }}</h2><button @click="emit('close')">收起</button></div>
+    <div v-if="heading" class="section-heading"><h2>{{ label(issue.data_type) }} · {{ statusLabels[issue.status] }}</h2><button @click="emit('close')">返回刚才的操作</button></div>
+    <div class="evidence-context">
+      <p class="evidence-context-meta">对应条目 {{ issueNumber }} · {{ label(issue.data_type) }} · {{ issue.evidence_ids.length }} 条关联证据</p>
+      <p class="evidence-context-conclusion">对照结论：{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 条目待复核' : '' }}</p>
+    </div>
     <p class="explanation">{{ issue.explanation }}</p>
-    <p v-if="issue.status === 'NOT_DECLARED'" class="demo-note">“未找到声明”依赖适用版本、完整正文、提取成功、全文复核和附件齐全。下面保留完整政策及这些状态；缺少其中任一项时不能据此断言违规。</p>
+    <p v-if="issue.status === 'NOT_DECLARED'" class="demo-note">{{ frontendCopy.facts.notDeclared }} 下面保留完整政策及这些状态。</p>
     <div class="evidence-grid"><article v-for="item in selectedEvidence" :key="item.id" class="evidence-card">
       <div class="section-heading"><strong>{{ kindLabels[item.kind] }}</strong><span class="subtle">{{ item.id }}</span></div>
       <p class="locator">{{ item.source }} · {{ item.locator }}</p>
@@ -81,14 +94,13 @@ watch(() => [props.issue, props.report], () => { candidatePage.value = 0 })
         <button :disabled="candidatePage === 0" @click="candidatePage--">上一页</button>
         <button :disabled="candidatePage + 1 >= candidatePageCount" @click="candidatePage++">下一页</button>
       </nav>
-      <p class="subtle">以下仅按相同数据类型展示候选原句，不属于规则已确认的匹配依据，不改变结论或结论证据引用。SDK 自有政策不能替代宿主声明；候选提取仍需人工核验。</p>
-      <p v-if="report.behaviors.find(item => item.id === issue.behavior_id)?.action === 'CAPABILITY'" class="demo-note">本项只是清单权限能力，不代表实际访问；候选条款不能据此认定已发生访问或已经对应。</p>
+      <p class="subtle">{{ frontendCopy.facts.candidateUnconfirmed }} 以下仅按相同数据类型展示候选原句，不改变结论或结论证据引用。SDK 自有政策不能替代宿主声明；候选提取仍需人工核验。</p>
       <div class="evidence-grid"><article v-for="candidate in relatedCandidates" :key="candidate.claim.id" class="evidence-card">
         <strong>{{ candidate.claim.id }} · {{ candidate.document ? sourceLabels[candidate.document.source_type] : '来源待补充' }}</strong>
         <p>极性 {{ candidate.claim.polarity ?? 'UNKNOWN' }} · 主体 {{ candidate.claim.subject ?? 'UNKNOWN' }} · 动作 {{ candidate.claim.action ?? 'UNKNOWN' }}</p>
         <p>条件：{{ candidate.claim.condition || '未提取条件（不代表无条件）' }}</p>
         <p v-if="candidate.claim.action === 'UNKNOWN'" class="subtle">动作尚未确认，不能视为声明了实际访问。</p>
-        <p>复核 {{ candidate.document?.review_status ?? 'UNREVIEWED' }} · 提取 {{ candidate.document?.extraction_status ?? 'NOT_STARTED' }} · 快照 {{ candidate.document?.completeness ?? '未知' }}</p>
+        <p>{{ docState(candidate.document) }} · 提取 {{ candidate.document?.extraction_status ?? '未知' }}</p>
         <p class="hash">声明来源 {{ candidate.claim.document_id }} · 候选证据 {{ candidate.claim.evidence_ids.join('、') }}</p>
         <div v-for="item in candidate.evidence" :key="item.id">
           <p class="locator">{{ item.locator }}</p>

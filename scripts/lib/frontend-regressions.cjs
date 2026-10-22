@@ -47,7 +47,7 @@ async function verifyInputRecovery(browser, origin) {
     await page.getByRole('button', { name: '体验示例', exact: true }).click()
     await page.getByRole('button', { name: '新材料', exact: true }).click()
     await page.reload()
-    await page.getByRole('heading', { name: '导入分析材料', exact: true }).waitFor()
+    await page.getByRole('heading', { name: 'APK 与政策材料', exact: true }).waitFor()
     assert.equal(await page.getByRole('button', { name: '新材料', exact: true }).count(), 0)
     assert.equal(await page.locator('.source-editor').count(), 1)
     assert.equal(await page.evaluate(() => localStorage.getItem('privacytrace.example.v1')), null, 'new materials must not restore a stale example')

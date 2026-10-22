@@ -4,6 +4,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { spawn, execFileSync } = require('node:child_process')
 const { stopChildren, spawnOptions } = require('./lib/process-control.cjs')
+const { resolvePort } = require('./lib/local-ports.cjs')
 
 const output = path.resolve('tmp/issue145-a11y')
 fs.mkdirSync(path.join(output, 'screenshots'), { recursive: true })
@@ -84,8 +85,9 @@ function assertNoInteractiveLive(regions, label) {
 }
 
 async function main() {
-  const port = Number(process.env.PRIVACYTRACE_WEB_PORT || 5184)
-  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid PRIVACYTRACE_WEB_PORT')
+  // A fixed 5184 lands inside the Windows Hyper-V/WinNAT reserved range, so the
+  // port is allocated unless an externally served frontend is chosen.
+  const port = process.env.PRIVACYTRACE_FRONTEND_URL ? undefined : await resolvePort('PRIVACYTRACE_WEB_PORT')
   const origin = process.env.PRIVACYTRACE_FRONTEND_URL || `http://127.0.0.1:${port}`
   const children = []
   let browser
@@ -93,8 +95,6 @@ async function main() {
   const screenshots = path.join(output, 'screenshots')
   try {
     if (!process.env.PRIVACYTRACE_FRONTEND_URL) {
-      try { await fetch(origin, { signal: AbortSignal.timeout(1000) }); throw new Error(`Port ${port} is already occupied. Set PRIVACYTRACE_FRONTEND_URL for an explicitly chosen server.`) }
-      catch (error) { if (!['TypeError', 'TimeoutError'].includes(error.name)) throw error }
       const child = spawn('npm run dev', spawnOptions(path.resolve(__dirname, '..'), { PRIVACYTRACE_WEB_PORT: String(port) }))
       children.push(child)
       let serverLog = ''
@@ -231,7 +231,7 @@ async function main() {
     await delay(700)
     assert.equal(await page.locator('#evidence-panel').count(), 1, 'an in-place refresh must not close the open evidence panel')
     assert.notEqual((await active(page)).tag, 'BODY', 'an in-place refresh must not drop focus to the body')
-    await page.getByRole('button', { name: '收起', exact: true }).click()
+    await page.getByRole('button', { name: '返回刚才的操作', exact: true }).click()
     assert.equal((await active(page)).text, triggerText, 'closing evidence must return focus to its trigger')
     checks.push('evidence: in-place refresh keeps the panel and reading position; close restores trigger focus')
     checkpoint('evidence focus checked')
@@ -322,7 +322,7 @@ async function main() {
     await page.setViewportSize({ width: 1440, height: 900 })
 
     await page.getByRole('button', { name: '新建对照', exact: true }).click()
-    await page.getByRole('heading', { name: '导入分析材料', exact: true }).waitFor()
+    await page.getByRole('heading', { name: 'APK 与政策材料', exact: true }).waitFor()
     const fileInput = page.locator('input[accept=".apk"]')
     await fileInput.setInputFiles({ name: 'not-an-apk.txt', mimeType: 'text/plain', buffer: Buffer.from('not an apk') })
     await page.locator('#apk-file-error').waitFor()
@@ -427,7 +427,7 @@ async function main() {
     const session = await page.context().newCDPSession(page)
     const tree = await session.send('Accessibility.getFullAXTree')
     const roles = tree.nodes.map(node => ({ role: node.role?.value, name: node.name?.value })).filter(node => node.role && node.name)
-    assert.ok(roles.some(node => node.role === 'heading' && node.name.includes('导入分析材料')), 'AX tree lost the import heading')
+    assert.ok(roles.some(node => node.role === 'heading' && node.name.includes('APK 与政策材料')), 'AX tree lost the import heading')
     assert.deepEqual(errors, [], 'browser page errors: ' + JSON.stringify(errors))
 
     jobsFail = true

@@ -11,11 +11,14 @@ const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
 
 const { stopChildren, spawnOptions } = require('./lib/process-control.cjs');
+const { resolvePort } = require('./lib/local-ports.cjs');
 
+// The web port is allocated per run: the previous fixed 5274 sat inside the
+// Windows Hyper-V/WinNAT reserved range, where listen() fails with EACCES.
 const API_PORT = Number(process.env.PRIVACYTRACE_ACCEPTANCE_API_PORT || 8124);
-const WEB_PORT = Number(process.env.PRIVACYTRACE_ACCEPTANCE_WEB_PORT || 5274);
 const API_ORIGIN = `http://127.0.0.1:${API_PORT}`;
-const WEB_ORIGIN = `http://127.0.0.1:${WEB_PORT}`;
+let WEB_PORT;
+let WEB_ORIGIN;
 
 function getPlaywright() {
   try {
@@ -40,9 +43,15 @@ async function isPortOpen(url) {
   }
 }
 
-async function waitForServer(url, timeoutMs = 30000) {
+async function waitForServer(url, timeoutMs = 30000, child, readLog = () => '') {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
+    // Fail fast when the owned server crashed instead of blind-waiting 60s, and
+    // surface the log that explains the crash (spawnOptions pipes it).
+    if (child && child.exitCode !== null) {
+      const detail = String(readLog()).trim();
+      throw new Error(`Owned server on ${url} exited during startup (code ${child.exitCode}); it never became ready.` + (detail ? `\n--- owned server log ---\n${detail}` : ''));
+    }
     if (await isPortOpen(url)) return true;
     await new Promise(r => setTimeout(r, 500));
   }
@@ -79,6 +88,11 @@ async function runChallengerSuite() {
   let browser = null;
   let fatal = null;
 
+  // Allocate the web port before any server starts; the variable still pins a
+  // specific port when a caller needs one.
+  WEB_PORT = await resolvePort('PRIVACYTRACE_ACCEPTANCE_WEB_PORT');
+  WEB_ORIGIN = `http://127.0.0.1:${WEB_PORT}`;
+
   // Every resource acquired below lives inside these try blocks, from the
   // temporary store onwards. Chromium launch, API boot and the port check all
   // happen after the temp store is created, so a failure there must still stop
@@ -113,8 +127,10 @@ async function runChallengerSuite() {
     console.log(`[Server] Starting Vite frontend on port ${WEB_PORT}...`);
     const webProc = spawn('npm', ['--prefix', 'apps/web', 'run', 'dev'], spawnOptions(projectRoot, { PRIVACYTRACE_API_ORIGIN: API_ORIGIN, PRIVACYTRACE_WEB_PORT: String(WEB_PORT) }));
     childrenToKill.push(webProc);
-    if (!(await waitForServer(WEB_ORIGIN, 60000))) {
-      throw new Error(`Failed to start Vite frontend on port ${WEB_PORT}`);
+    const webLog = { text: '' };
+    for (const stream of [webProc.stdout, webProc.stderr]) stream.on('data', chunk => { webLog.text = (webLog.text + chunk).slice(-8000); });
+    if (!(await waitForServer(WEB_ORIGIN, 60000, webProc, () => webLog.text))) {
+      throw new Error(`Failed to start Vite frontend on port ${WEB_PORT}` + (webLog.text.trim() ? `\n--- owned server log ---\n${webLog.text.trim()}` : ''));
     }
     console.log('[Server] Vite frontend ready.');
 

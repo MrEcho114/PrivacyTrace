@@ -15,6 +15,7 @@ from zipfile import ZIP_STORED, ZipFile, ZipInfo
 import pytest
 from apk_fixture_builder import apk_bytes, package_set_archive
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from privacytrace.apk_worker import scan_package_set
 from privacytrace.main import create_app
@@ -23,6 +24,7 @@ from privacytrace.package_set import (
     MAX_PACKAGE_SET_SIZE,
     PackageFile,
     PackagePart,
+    PackageSet,
     PackageSetIntegrityError,
     inspect_apk_bytes,
     parse_package_input,
@@ -31,6 +33,54 @@ from privacytrace.package_set import (
 
 HEADERS = {"X-PrivacyTrace-Local": "1"}
 pytestmark = pytest.mark.usefixtures("synthetic_package_metadata")
+
+
+@pytest.fixture
+def unique_package_files():
+    base = PackageFile(
+        file_name="base.apk", part=PackagePart.BASE, sha256="a" * 64,
+        size_bytes=10, package_name="org.privacytrace.unique", version_code=1,
+    )
+    return [base, *[
+        PackageFile(
+            file_name=f"split_{name}.apk", part=PackagePart.SPLIT, split_name=name,
+            sha256=digest * 64, size_bytes=20,
+            package_name=base.package_name, version_code=base.version_code,
+        )
+        for name, digest in [("config.en", "b"), ("config.fr", "c")]
+    ]]
+
+
+def package_set_from_models(files):
+    return PackageSet(
+        package_name=files[0].package_name, version_code=files[0].version_code,
+        base=files[0], splits=files[1:], total_size_bytes=sum(f.size_bytes for f in files),
+    )
+
+
+@pytest.mark.parametrize("duplicate_index", [0, 1], ids=["base-split", "split-split"])
+@pytest.mark.parametrize("via_model", [False, True], ids=["validator", "model"])
+def test_duplicate_package_file_names_rejected(unique_package_files, duplicate_index, via_model):
+    files = unique_package_files
+    files[2] = files[2].model_copy(update={"file_name": files[duplicate_index].file_name})
+
+    if via_model:
+        with pytest.raises(ValidationError, match="[Dd]uplicate.*file name"):
+            package_set_from_models(files)
+    else:
+        with pytest.raises(PackageSetIntegrityError) as error:
+            validate_package_set(files)
+        assert error.value.http_status == 400
+        assert error.value.code == "CORRUPTED_FILE"
+
+
+def test_unique_package_file_names_preserve_file_map(unique_package_files):
+    for package_set in (
+        validate_package_set(unique_package_files),
+        package_set_from_models(unique_package_files),
+    ):
+        assert len(package_set.file_map) == len(package_set.all_files) == 3
+        assert list(package_set.file_map.values()) == unique_package_files
 
 
 def create_draft(client: TestClient) -> dict:

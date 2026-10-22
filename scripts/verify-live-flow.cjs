@@ -7,13 +7,16 @@ const assert = require('node:assert/strict')
 const { spawn, execFileSync } = require('node:child_process')
 const { chromium } = require('playwright')
 const { spawnOptions, stopChildren } = require('./lib/process-control.cjs')
+const { resolvePort } = require('./lib/local-ports.cjs')
 const { assertDesign } = require('./lib/frontend-guards.cjs')
 const root = path.resolve(__dirname, '..')
 const publicMode = process.argv.includes('--public')
 const apiPort = Number(process.env.PRIVACYTRACE_LIVE_API_PORT || 8134)
-const webPort = Number(process.env.PRIVACYTRACE_LIVE_WEB_PORT || 5284)
 const api = `http://127.0.0.1:${apiPort}`
-const web = `http://127.0.0.1:${webPort}`
+// Assigned in main(): the fixed 5284 default lands inside the Windows
+// Hyper-V/WinNAT reserved range, so the web port is allocated per run.
+let webPort
+let web
 const output = path.join(root, 'tmp/issue44-live-proof', publicMode ? 'public' : 'fixtures')
 const widths = [[1440, 900], [1920, 1080], [1280, 720], [768, 1024], [390, 844]]
 async function ready(url, child) {
@@ -26,6 +29,8 @@ async function ready(url, child) {
   throw new Error('Owned service startup timed out')
 }
 async function main() {
+  webPort = await resolvePort('PRIVACYTRACE_LIVE_WEB_PORT')
+  web = `http://127.0.0.1:${webPort}`
   fs.mkdirSync(output, { recursive: true })
   const store = fs.mkdtempSync(path.join(os.tmpdir(), 'privacytrace-live-'))
   const children = []; let browser
@@ -49,7 +54,7 @@ async function main() {
     browser = await chromium.launch({ headless: true })
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
     page.on('pageerror', e => errors.push(e.message))
-    await page.goto(web); await page.getByRole('heading', { name: '导入分析材料', exact: true }).waitFor()
+    await page.goto(web); await page.getByRole('heading', { name: 'APK 与政策材料', exact: true }).waitFor()
     await page.locator('input[accept=".apk"]').setInputFiles(apk)
     await page.getByLabel('来源名称', { exact: true }).first().fill(publicMode ? 'GKD 公开政策' : '人工政策 A')
     await page.getByLabel('政策网址', { exact: true }).first().fill(publicMode ? 'https://gkd.li/guide/privacy' : 'http://policy.privacytrace.test/policy/host')
@@ -62,7 +67,7 @@ async function main() {
     await page.getByLabel('政策网址', { exact: true }).nth(2).fill('http://127.0.0.1/private')
     await page.screenshot({ path: path.join(output, 'import-1440.png'), fullPage: true })
     await page.getByRole('button', { name: '获取政策并检查候选', exact: true }).click()
-    await page.getByRole('heading', { name: '检查政策候选', exact: true }).waitFor({ timeout: 90000 })
+    await page.getByRole('heading', { name: '核对政策声明', exact: true }).waitFor({ timeout: 90000 })
     await page.getByRole('button', { name: '保存候选并开始分析', exact: true }).waitFor({ state: 'visible' })
     await page.waitForFunction(() => !document.querySelector('.candidate-grid')?.hasAttribute('inert'), null, { timeout: 240000 })
     const draftId = await page.evaluate(() => localStorage.getItem('privacytrace.live.draft.v1'))
@@ -77,7 +82,7 @@ async function main() {
     await page.locator('.source-tabs button').first().click()
     await page.waitForFunction(() => {
       const button = document.querySelector('.flow-footer .primary:not(:disabled)')
-      return button && getComputedStyle(button).backgroundColor === 'rgb(51, 60, 80)'
+      return button && getComputedStyle(button).backgroundColor === 'rgb(214, 58, 44)'
     })
     for (const [width, height] of widths) {
       await page.setViewportSize({ width, height }); await page.evaluate(() => document.fonts.ready)
@@ -117,19 +122,19 @@ async function main() {
       }
     }
     draft = await read(); assert(draft.candidates.every(c => c.checked))
-    await page.reload(); await page.getByRole('heading', { name: '检查政策候选', exact: true }).waitFor()
+    await page.reload(); await page.getByRole('heading', { name: '核对政策声明', exact: true }).waitFor()
     await page.getByRole('button', { name: '保存候选并开始分析', exact: true }).click()
-    await page.getByRole('heading', { name: '分析进度', exact: true }).waitFor()
-    await page.reload(); await page.getByRole('heading', { name: '分析进度', exact: true }).waitFor()
+    await page.getByRole('heading', { name: '扫描与对照进度', exact: true }).waitFor()
+    await page.reload(); await page.getByRole('heading', { name: '扫描与对照进度', exact: true }).waitFor()
     await page.screenshot({ path: path.join(output, 'progress-1440.png'), fullPage: true })
     if (!publicMode) {
       await page.getByRole('button', { name: '取消分析', exact: true }).click()
-      await page.getByRole('button', { name: '重新创建分析', exact: true }).waitFor()
+      await page.getByRole('button', { name: '重新分析', exact: true }).waitFor()
       const cancelledDraft = await read()
       const cancelledJob = await fetch(api + '/api/v1/jobs/' + cancelledDraft.jobs[0].job_id).then(r => r.json())
       assert.equal(cancelledJob.state, 'CANCELLED')
       assert.equal(cancelledDraft.jobs.length, 1)
-      await page.getByRole('button', { name: '重新创建分析', exact: true }).click()
+      await page.getByRole('button', { name: '重新分析', exact: true }).click()
     }
     await page.getByRole('button', { name: '查看报告', exact: true }).waitFor({ timeout: 180000 })
     draft = await read(); const run = draft.jobs.at(-1); const job = await fetch(api + '/api/v1/jobs/' + run.job_id).then(r => r.json())
@@ -172,7 +177,7 @@ async function main() {
       await failedSource.getByLabel('政策正文', { exact: true }).fill('手动补入：我们不会读取联系人。<script>window.privacytraceAttack=1</script>')
       await failedSource.getByRole('button', { name: '使用这份正文', exact: true }).click()
       await page.getByRole('button', { name: '获取政策并检查候选', exact: true }).click()
-      await page.getByRole('heading', { name: '检查政策候选', exact: true }).waitFor()
+      await page.getByRole('heading', { name: '核对政策声明', exact: true }).waitFor()
       await page.waitForFunction(() => !document.querySelector('.candidate-grid')?.hasAttribute('inert'))
       const fallbackId = await page.evaluate(() => localStorage.getItem('privacytrace.live.draft.v1'))
       const fallback = await fetch(api + '/api/v1/web/drafts/' + fallbackId).then(r => r.json())
@@ -180,7 +185,12 @@ async function main() {
       assert.equal(await page.evaluate(() => window.privacytraceAttack), undefined)
       await page.getByRole('button', { name: '修改材料', exact: true }).click()
       await page.getByLabel('政策正文', { exact: true }).first().fill('修改后的政策正文')
-      assert.equal(await page.getByRole('button', { name: '2 检查候选', exact: true }).isDisabled(), true)
+      // #167 renamed and re-based the flow rail: the second step is the shared
+      // frontendCopy name and it stays locked after an edit invalidates later steps.
+      const flowSteps = page.locator('.flow-nav button')
+      assert.equal(await flowSteps.count(), 4, 'the workbench must expose exactly four flow steps')
+      assert.equal(await flowSteps.nth(1).innerText().then(text => text.includes('核对政策声明')), true, 'the second flow step must use the shared #167 name')
+      assert.equal(await flowSteps.nth(1).isDisabled(), true)
       proof.browser_recovery = ['candidate edit/add/delete persisted', 'cancel then new retry job', 'manual text replaces failed source', 'material edits invalidate later steps', 'policy HTML rendered as text']
     }
     proof = { ...proof, passed: true, draft_revision: draft.revision, job_id: job.id, sources: draft.sources.map(s => ({ title: s.title, status: s.status, requested_url: s.url, final_url: s.final_url, hash: s.sha256, captured_at: s.captured_at, model_audit: s.model_audit })), candidates: count, events: run.events, isolation: { container_created: isolation.container_created, input_removed: isolation.input_removed, cleanup_verified: isolation.cleanup_verified }, page_errors: errors, viewports: widths.map(w => w[0]) }

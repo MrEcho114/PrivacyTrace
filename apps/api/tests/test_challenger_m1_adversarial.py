@@ -44,6 +44,43 @@ def create_archive_with_n_apks(n: int) -> bytes:
     return buf.getvalue()
 
 
+@pytest.mark.parametrize("first_name", ["split.apk", "a/split.apk"])
+def test_unpack_rejects_duplicate_apk_file_names_before_extraction(tmp_path, first_name):
+    service = create_app(tmp_path / "jobs").state.web_intake
+    archive_path = tmp_path / "duplicate.apks"
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        archive.writestr(first_name, b"first APK")
+        archive.writestr("b/split.apk", b"second APK")
+    target = service.root / "duplicate-target"
+    target.mkdir()
+
+    with pytest.raises(PackageSetIntegrityError) as error:
+        service._unpack_package_set(archive_path, target)
+
+    assert error.value.code == "CORRUPTED_FILE"
+    assert error.value.http_status == 400
+    assert error.value.detail == "Archive contains duplicate APK file names"
+    assert list(target.iterdir()) == []
+
+
+def test_unpack_flattens_unique_apks_and_ignores_non_apk_basename_collisions(tmp_path):
+    service = create_app(tmp_path / "jobs").state.web_intake
+    archive_path = tmp_path / "unique.zip"
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        archive.writestr("a/base.apk", b"base APK")
+        archive.writestr("b/split.apk", b"split APK")
+        archive.writestr("a/metadata.json", b"first metadata")
+        archive.writestr("b/metadata.json", b"second metadata")
+    target = service.root / "unique-target"
+    target.mkdir()
+
+    service._unpack_package_set(archive_path, target)
+
+    assert {p.name: p.read_bytes() for p in target.iterdir()} == {
+        "base.apk": b"base APK", "split.apk": b"split APK",
+    }
+
+
 # ==============================================================================
 # Objective 1: 101 APKs vs 102 APKs boundary check
 # ==============================================================================

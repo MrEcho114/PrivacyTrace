@@ -1154,3 +1154,26 @@ html.mobile-shell dialog.ui-sheet .status-tag.error { background: var(--mt-dange
   .mobile-workspace :focus-visible,
   .ui-sheet :focus-visible { outline-color: Highlight; }
 }
+
+/* Main #165 added an app-bar subtitle and brand wrapper; the Claude contract keeps a
+   56px app bar, so the subtitle is not rendered inside the mobile shell. */
+.m-appbar-titles { padding: 0; gap: 0; justify-content: center; }
+.m-appbar-subtitle { display: none; }
+.m-appbar-brand { padding: 0; width: var(--mt-touch); height: var(--mt-touch); }
+
+/* #165 的 --pt-* 语义层保留（品牌/文案/结构），移动壳下映射到 Claude 视觉；
+   theme.css 的根 --pt-* 保持与 design/foundation.css 一致，不在这里之前定义。 */
+body.is-mobile-app {
+  --pt-paper: var(--mt-bg); --pt-header: var(--mt-surface); --pt-ink: var(--mt-fg);
+  --pt-structure: var(--mt-muted); --pt-muted: var(--mt-muted); --pt-rule: var(--mt-border-soft);
+  --pt-action: var(--mt-accent-strong); --pt-action-hover: var(--mt-accent-strong-hover);
+  --pt-stripe-1: var(--mt-accent-strong); --pt-stripe-2: var(--mt-accent-strong);
+  --pt-stripe-3: var(--mt-accent-strong); --pt-stripe-4: var(--mt-accent-strong);
+  --pt-font-body: var(--mt-font-sans); --pt-font-display: var(--mt-font-serif); --pt-font-code: var(--mt-font-mono);
+  --pt-control: var(--mt-touch); --pt-touch: var(--mt-touch); --pt-action-height: var(--mt-touch);
+  --pt-type-report: var(--mt-text-title-l); --pt-type-finding: var(--mt-text-title-s);
+  --pt-type-panel: var(--mt-text-title-s); --pt-type-status: var(--mt-text-caption);
+  --pt-type-reading: var(--mt-text-body-l); --pt-type-action: var(--mt-text-control);
+  --pt-type-report-mobile: var(--mt-text-title-l); --pt-type-finding-mobile: var(--mt-text-title-s);
+  --pt-type-panel-mobile: var(--mt-text-title-s);
+}

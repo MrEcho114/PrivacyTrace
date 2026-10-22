@@ -31,6 +31,13 @@ _DIAGNOSTIC_CODES = frozenset(
         "TERMINAL_EVENT_UNAVAILABLE",
     }
 )
+# Celery is the optional runtime extra, so the formats stay plain module strings:
+# the regression test can then prove the diagnostic body survives formatting even
+# where celery is absent (the authoritative local check installs only the worker
+# extra). Both must keep %(message)s; without it the container log shows a bare
+# bracket prefix and every fixed diagnostic code is dropped (#179).
+WORKER_TASK_LOG_FORMAT = "[privacytrace runtime task %(levelname)s] %(message)s"
+WORKER_LOG_FORMAT = "[privacytrace runtime %(levelname)s] %(message)s"
 
 
 def _diagnostic(code):
@@ -212,8 +219,8 @@ def create_worker_app(config):
     app.conf.update(
         worker_hijack_root_logger=False,
         worker_redirect_stdouts=False,
-        worker_task_log_format="[privacytrace runtime task %(levelname)s]",
-        worker_log_format="[privacytrace runtime %(levelname)s]",
+        worker_task_log_format=WORKER_TASK_LOG_FORMAT,
+        worker_log_format=WORKER_LOG_FORMAT,
     )
     return app
 

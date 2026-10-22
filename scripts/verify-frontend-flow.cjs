@@ -5,6 +5,7 @@ const path = require('node:path')
 const { spawn, execFileSync } = require('node:child_process')
 const crypto = require('node:crypto')
 const { stopChildren, spawnOptions } = require('./lib/process-control.cjs')
+const { resolvePort } = require('./lib/local-ports.cjs')
 const { assertDesign, assertSurface, verifyGuardFailures } = require('./lib/frontend-guards.cjs')
 const { verifyInputRecovery } = require('./lib/frontend-regressions.cjs')
 const design = require('./fixtures/pioneer-design.json')
@@ -12,12 +13,80 @@ const design = require('./fixtures/pioneer-design.json')
 const output = path.resolve('tmp/issue44-ui')
 const screenshots = path.join(output, 'screenshots')
 fs.mkdirSync(screenshots, { recursive: true })
+// #169 brand assets. The favicon/icons are same-origin static files; the brand
+// slot must carry a decoded <img> (no "P" letter placeholder) and must never
+// overlap the title or the top-bar action, including at 200% root text.
+const brandChecks = []
+async function brandAsset(page, origin, href, label) {
+  const response = await page.request.get(new URL(href, origin).href)
+  assert.equal(response.status(), 200, `${label}: ${href} must return 200`)
+  const body = await response.body()
+  if (/\.svg($|\?)/.test(href)) assert.ok(body.toString('utf8').includes('<svg'), `${label}: ${href} must be SVG markup`)
+  else assert.deepEqual([...body.subarray(0, 4)], [0x89, 0x50, 0x4e, 0x47], `${label}: ${href} must be a real PNG`)
+  brandChecks.push(`${label}: ${href} -> 200 ${response.headers()['content-type'] || ''}`.trim())
+}
+async function assertBrandGraphic(page, slotSelector, label) {
+  const state = await page.evaluate((selector) => {
+    const slot = document.querySelector(selector)
+    const image = slot?.querySelector('img.brand-mark-image')
+    if (!image) return null
+    const rect = image.getBoundingClientRect()
+    return {
+      currentSrc: image.currentSrc,
+      complete: image.complete,
+      naturalWidth: image.naturalWidth,
+      naturalHeight: image.naturalHeight,
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+      slotText: (slot.textContent || '').trim(),
+    }
+  }, slotSelector)
+  assert.ok(state, `${label}: ${slotSelector} must contain img.brand-mark-image`)
+  assert.equal(state.complete, true, `${label}: the brand image must finish loading`)
+  assert.ok(state.currentSrc && state.currentSrc.length > 0, `${label}: the brand image needs a resolved currentSrc`)
+  assert.ok(state.currentSrc.endsWith('/brand/privacy-trace-symbol.svg'), `${label}: the brand image resolves the same-origin symbol (got ${state.currentSrc})`)
+  assert.ok(state.naturalWidth > 0 && state.naturalHeight > 0, `${label}: the brand image must decode to real pixels`)
+  assert.ok(state.width > 0 && state.height > 0, `${label}: the brand slot renders a positive box`)
+  assert.equal(state.slotText, '', `${label}: the brand slot must not keep a letter placeholder`)
+  const decoded = await page.evaluate(async (selector) => {
+    const image = document.querySelector(selector + ' img.brand-mark-image')
+    try { await image.decode(); return image.complete && image.naturalWidth > 0 } catch { return false }
+  }, slotSelector)
+  assert.equal(decoded, true, `${label}: img.decode() must resolve`)
+  brandChecks.push(`${label}: symbol ${state.naturalWidth}x${state.naturalHeight}, box ${state.width}x${state.height}`)
+  return state
+}
+async function assertBrandClearance(page, label) {
+  const boxes = await page.evaluate(() => {
+    const rect = (selector) => {
+      const element = document.querySelector(selector)
+      if (!element) return null
+      const box = element.getBoundingClientRect()
+      return { left: box.left, right: box.right, top: box.top, bottom: box.bottom }
+    }
+    const overlap = (a, b) => Boolean(a && b) && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom
+    const brand = rect('.workspace-brand .brand-mark')
+    return {
+      brand,
+      titleOverlap: overlap(brand, rect('#page-title')),
+      settingsOverlap: overlap(brand, rect('.workspace-bar > .ui-button')),
+      insideViewport: Boolean(brand) && brand.right <= window.innerWidth + 1 && brand.left >= -1,
+    }
+  })
+  assert.ok(boxes.brand, `${label}: the workbench brand slot must exist`)
+  assert.equal(boxes.titleOverlap, false, `${label}: the brand graphic must not cover the page title`)
+  assert.equal(boxes.settingsOverlap, false, `${label}: the brand graphic must not cover the top-bar action`)
+  assert.equal(boxes.insideViewport, true, `${label}: the brand graphic stays inside the viewport`)
+  brandChecks.push(`${label}: brand clears title/action and stays in viewport`)
+}
 async function captureWidths(page, name) {
   for (const [width, height] of [[1440, 900], [1920, 1080], [1280, 720], [768, 1024], [390, 844], [320, 640]]) {
     await page.setViewportSize({ width, height }); await page.evaluate(() => document.fonts.ready)
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, `${name} overflow at ${width}`)
     await assertDesign(page)
     await assertSurface(page, name)
+    await assertBrandGraphic(page, '.workspace-brand .brand-mark', `${name} brand@${width}`)
+    await assertBrandClearance(page, `${name}@${width}`)
     await page.evaluate(() => { window.scrollTo(0, 0); document.querySelector('dialog')?.scrollTo(0, 0) })
     await page.screenshot({ path: path.join(screenshots, `${name}-${width}-viewport.png`) })
     await page.screenshot({ path: path.join(screenshots, `${name}-${width}.png`), fullPage: true })
@@ -160,7 +229,7 @@ const demoReportFixture = {
   delivery_mode: 'LIVE_GENERATED',
 }
 const fixtureRoutes = ['**/api/v1/taxonomy', '**/api/v1/demo/report', '**/api/v1/jobs', '**/api/v1/jobs/*']
-const touchSelectors = [...new Set(['.ui-button', '[role="tab"]', '.evidence-button', '.candidate-item', '.policy-jump-btn', '.candidate-nav button', '.source-body summary', 'summary', '.step-nav button', '.source-tabs button', '.mobile-panel-tabs button', '.text-upload', '.evidence-panel .section-heading button', '.state button', '.job-state button', '.report-filter select', '[data-testid="retry-job"]', '[data-testid="delete-job"]', '[data-testid="delete-confirm"]'])]
+const touchSelectors = [...new Set(['.ui-button', '[role="tab"]', '.evidence-button', '.candidate-item', '.policy-jump-btn', '.candidate-nav button', '.source-body summary', 'summary', '.flow-nav button', '.source-tabs button', '.mobile-panel-tabs button', '.text-upload', '.evidence-panel .section-heading button', '.state button', '.job-state button', '.report-filter select', '[data-testid="retry-job"]', '[data-testid="delete-job"]', '[data-testid="delete-confirm"]'])]
 
 async function waitFor(check, message, timeout = 5000) {
   const deadline = Date.now() + timeout
@@ -198,44 +267,31 @@ const reportTableHeader = page => page.evaluate(() => {
     },
   }
 })
-// The inline row evidence is narrow-only by design (ExampleReport.vue v-if inlineEvidence): above
-// 560px the row button opens the standalone #example-evidence section; below 560px that section is
-// absent and the selected row expands in place. Pin both sides so nobody renders both presentations.
-async function assertReportRowToggle(page, label) {
+// #165: the example report keeps one permanent evidence region (#example-evidence)
+// at every width; only .report-columns[data-layout] changes between "columns"
+// (above 896px) and "stacked" (at or below). The old inline row cell and the
+// desktop/mobile toggles were deleted, so this pins the single region, the
+// breakpoint-driven layout, the one red primary action and the return control.
+async function assertReportEvidenceLayout(page, label) {
   const width = page.viewportSize().width
-  // Viewport resizing updates CSS immediately; matchMedia dispatch and Vue's
-  // conditional evidence render settle on a later frame. Assert that render,
-  // rather than reading an intermediate desktop DOM at the new mobile width.
-  await page.waitForFunction(narrow => {
-    const inline = document.querySelector('.comparison-table td.row-evidence')
-    const standalone = document.querySelector('section#example-evidence')
-    return narrow ? Boolean(inline) && !standalone : !inline && Boolean(standalone)
-  }, width <= design.mobileButton.maxWidth, { timeout: 5000 })
-  const state = await page.evaluate(() => {
-    const shown = element => Boolean(element) && getComputedStyle(element).display !== 'none' && element.getClientRects().length > 0
-    const row = document.querySelector('.comparison-table td.row-evidence')
-    const desktop = document.querySelector('.comparison-table td[data-label="依据"] .desktop-toggle')
-    const mobile = document.querySelector('.comparison-table td[data-label="依据"] .mobile-toggle')
-    return {
-      row: row ? getComputedStyle(row).display : 'absent',
-      rowVisible: shown(row),
-      desktop: desktop ? getComputedStyle(desktop).display : 'absent',
-      desktopVisible: shown(desktop),
-      mobile: mobile ? getComputedStyle(mobile).display : 'absent',
-      mobileVisible: shown(mobile),
-    }
-  })
-  if (width > design.mobileButton.maxWidth) {
-    assert.ok(state.row === 'absent' || state.row === 'none', label + ': the inline row evidence must not render on desktop (display=' + state.row + ')')
-    assert.equal(state.rowVisible, false, label + ': the inline row evidence must not be reachable on desktop')
-    assert.equal(state.desktopVisible, true, label + ': the desktop toggle is the visible affordance on desktop')
-    assert.equal(state.mobile, 'none', label + ': the mobile toggle stays hidden on desktop (display=' + state.mobile + ')')
-  } else {
-    assert.notEqual(state.row, 'absent', label + ': the selected row must render its inline evidence cell at ' + width + 'px')
-    assert.equal(state.rowVisible, true, label + ': the row must expand in place at ' + width + 'px (display=' + state.row + ')')
-    assert.equal(state.mobileVisible, true, label + ': the mobile toggle is the visible affordance at ' + width + 'px')
-    assert.equal(state.desktop, 'none', label + ': the desktop toggle stays hidden at ' + width + 'px (display=' + state.desktop + ')')
-  }
+  const expected = width <= design.product.breakpoint ? 'stacked' : 'columns'
+  await page.waitForFunction(value => document.querySelector('.report-columns')?.getAttribute('data-layout') === value, expected, { timeout: 5000 })
+  const state = await page.evaluate(() => ({
+    regions: document.querySelectorAll('#example-evidence').length,
+    layout: document.querySelector('.report-columns')?.getAttribute('data-layout') ?? 'absent',
+    primary: document.querySelectorAll('.report-action .ui-button.primary').length,
+    inlineCells: document.querySelectorAll('.comparison-table td.row-evidence').length,
+    toggles: document.querySelectorAll('.desktop-toggle, .mobile-toggle').length,
+    reachable: Boolean(document.querySelector('#example-evidence')?.getClientRects().length),
+    activeSteps: document.querySelectorAll('.flow-nav button[aria-current="step"]').length,
+  }))
+  assert.equal(state.regions, 1, label + ': exactly one #example-evidence must exist at ' + width + 'px')
+  assert.equal(state.reachable, true, label + ': the evidence region must stay rendered at ' + width + 'px')
+  assert.equal(state.layout, expected, label + ': .report-columns must use data-layout="' + expected + '" at ' + width + 'px')
+  assert.equal(state.primary, 1, label + ': exactly one red primary action per report at ' + width + 'px')
+  assert.equal(state.inlineCells, 0, label + ': the deleted inline evidence cell must not render at ' + width + 'px')
+  assert.equal(state.toggles, 0, label + ': the deleted desktop/mobile toggles must not render at ' + width + 'px')
+  assert.equal(state.activeSteps, 1, label + ': exactly one flow step is current')
   return state
 }
 const tabState = page => page.evaluate(() => ['tab-original', 'tab-candidates'].map(id => {
@@ -257,7 +313,7 @@ const waitForPanel = (page, id, visible) => waitFor(async () => {
 // Touch targets only have to reach the mobile minimum, and only below the breakpoint declared in the design fixture.
 async function assertTouchTargets(page, label) {
   const width = page.viewportSize().width
-  assert.ok(width <= design.mobileButton.maxWidth, label + ': touch targets are asserted at or below ' + design.mobileButton.maxWidth + 'px, got ' + width)
+  assert.ok(width <= design.product.breakpoint, label + ': touch targets are asserted at or below ' + design.product.breakpoint + 'px, got ' + width)
   const measured = await page.evaluate(({ selectors, minHeight }) => {
     const short = []
     let total = 0
@@ -276,10 +332,10 @@ async function assertTouchTargets(page, label) {
       }
     }
     return { short, total }
-  }, { selectors: touchSelectors, minHeight: design.mobileButton.minHeight })
+  }, { selectors: touchSelectors, minHeight: design.product.touchTarget })
   assert.ok(measured.total > 0, label + ': no interactive target matched the touch list')
-  assert.deepEqual(measured.short, [], label + ': touch targets under ' + design.mobileButton.minHeight + 'px at ' + width + 'px wide')
-  return [label + ': ' + measured.total + ' interactive targets at or above ' + design.mobileButton.minHeight + 'px']
+  assert.deepEqual(measured.short, [], label + ': touch targets under ' + design.product.touchTarget + 'px at ' + width + 'px wide')
+  return [label + ': ' + measured.total + ' interactive targets at or above ' + design.product.touchTarget + 'px']
 }
 
 async function assertRovingTabs(page, expected, label, options = {}) {
@@ -471,7 +527,7 @@ async function verifyMobileReport(page, requests) {
     const previewScroll = await page.evaluate(() => Math.round(scrollY))
     await previewTrigger.click()
     await waitFor(async () => page.evaluate(() => document.activeElement?.id === 'evidence-panel'), 'reports: the preview must take focus when it opens')
-    await page.getByRole('button', { name: '收起', exact: true }).click()
+    await page.getByRole('button', { name: '返回刚才的操作', exact: true }).click()
     await waitFor(async () => page.evaluate(() => document.activeElement === document.querySelector('.report-table tbody tr .evidence-button')), 'reports: closing the preview must return focus to the triggering row')
     await waitFor(async () => Math.abs(await page.evaluate(() => Math.round(scrollY)) - previewScroll) <= 2, 'reports: closing the preview must restore the exact scroll position')
     checks.push('reports: closing the evidence preview returns focus and the exact scroll position at 390px')
@@ -486,7 +542,7 @@ async function verifyMobileReport(page, requests) {
     checks.push('reports: a report-source switch closes the preview without trapping focus in it')
     const jobState = page.locator('.job-state')
     await jobState.locator('[data-testid="retry-job"]').waitFor({ timeout: 5000 })
-    assert.equal((await jobState.locator('[data-testid="retry-job"]').innerText()).includes('重试为新的分析'), true, 'reports: the retry control must read 重试为新的分析')
+    assert.equal((await jobState.locator('[data-testid="retry-job"]').innerText()).includes('重新分析'), true, 'reports: the retry control must read 重试为新的分析')
     assert.equal((await jobState.locator('[data-testid="delete-job"]').innerText()).includes('删除任务'), true, 'reports: the delete control must read 删除任务')
     assert.equal(await jobState.locator('[data-testid="retry-job"]').isVisible(), true, 'reports: retry must be visible on a FAILED job')
     assert.equal(await jobState.locator('[data-testid="delete-job"]').isVisible(), true, 'reports: delete must be visible on a FAILED job')
@@ -522,15 +578,15 @@ async function verifyMobileReport(page, requests) {
 }
 
 async function main() {
-  const port = Number(process.env.PRIVACYTRACE_WEB_PORT || 5184)
-  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid PRIVACYTRACE_WEB_PORT')
+  // An explicitly chosen externally served frontend wins; otherwise allocate a
+  // port the OS will actually let us bind (the old fixed 5184 falls inside the
+  // Windows Hyper-V/WinNAT reserved range).
+  const port = process.env.PRIVACYTRACE_FRONTEND_URL ? undefined : await resolvePort('PRIVACYTRACE_WEB_PORT')
   const origin = process.env.PRIVACYTRACE_FRONTEND_URL || `http://127.0.0.1:${port}`
   const children = []
   let browser
   try {
     if (!process.env.PRIVACYTRACE_FRONTEND_URL) {
-      try { await fetch(origin, { signal: AbortSignal.timeout(1000) }); throw new Error(`Port ${port} is already occupied. Set PRIVACYTRACE_FRONTEND_URL only for an explicitly chosen server.`) }
-      catch (error) { if (!['TypeError', 'TimeoutError'].includes(error.name)) throw error }
       const child = spawn('npm run dev', spawnOptions(path.resolve(__dirname, '..'), { PRIVACYTRACE_WEB_PORT: String(port) }))
       children.push(child)
       let serverLog = ''
@@ -552,8 +608,26 @@ async function main() {
     page.on('pageerror', error => errors.push(error.message))
     page.on('request', request => { if (request.url().includes('/api/')) requests.push(request.url()) })
     await page.goto(origin)
-    await page.getByRole('heading', { name: '导入分析材料', exact: true }).waitFor({ timeout: 5000 })
+    await page.getByRole('heading', { name: 'APK 与政策材料', exact: true }).waitFor({ timeout: 5000 })
     await page.evaluate(() => document.fonts.ready)
+    // #169: head-declared favicon/icons and the one workbench brand slot.
+    const brandHead = await page.evaluate(() => ({
+      svg: document.querySelector('link[rel="icon"][type="image/svg+xml"]')?.getAttribute('href'),
+      png: document.querySelector('link[rel="icon"][sizes="512x512"]')?.getAttribute('href'),
+      apple: document.querySelector('link[rel="apple-touch-icon"]')?.getAttribute('href'),
+      symbol: '/brand/privacy-trace-symbol.svg',
+    }))
+    assert.ok(brandHead.svg, 'head must declare the SVG favicon')
+    assert.ok(brandHead.png, 'head must declare the 512 PNG icon')
+    assert.ok(brandHead.apple, 'head must declare the apple-touch-icon')
+    await brandAsset(page, origin, brandHead.svg, 'favicon')
+    await brandAsset(page, origin, brandHead.png, 'icon-512')
+    await brandAsset(page, origin, brandHead.apple, 'apple-touch-icon')
+    await brandAsset(page, origin, brandHead.symbol, 'brand-symbol')
+    await assertBrandGraphic(page, '.workspace-brand .brand-mark', 'workbench brand')
+    await assertBrandClearance(page, 'workbench brand')
+    assert.equal(await page.getByRole('link', { name: 'PrivacyTrace', exact: true }).count(), 1, 'the brand link keeps its exact accessible name')
+    assert.equal((await page.locator('.workspace-purpose').innerText()).trim(), '隐私权限使用与隐私声明对照', 'the brand subtitle stays the adopted sentence')
     const guardRegressions = await verifyGuardFailures(page)
     await page.evaluate(() => window.scrollTo(0, 0))
     const skipLink = page.getByRole('link', { name: '跳到内容', exact: true })
@@ -573,7 +647,7 @@ async function main() {
     await page.getByLabel('政策网址', { exact: true }).first().fill('https://example.com/' + 'a'.repeat(1800))
     await captureWidths(page, 'import')
     await page.getByRole('button', { name: '检查候选', exact: true }).click()
-    await page.getByRole('heading', { name: '检查政策候选' }).waitFor()
+    await page.getByRole('heading', { name: '核对政策声明' }).waitFor()
     await page.locator('.candidate-item').first().click()
     const originalQuote = await page.getByLabel('政策原句', { exact: true }).inputValue()
     assert.equal(await page.locator('#candidate-quote-mark').innerText(), originalQuote)
@@ -589,7 +663,7 @@ async function main() {
     await page.getByLabel('条件', { exact: true }).fill('PRIVATE_FREE_TEXT_44')
     await page.getByRole('button', { name: '保存候选', exact: true }).click()
     await page.reload()
-    await page.getByRole('heading', { name: '检查政策候选' }).waitFor()
+    await page.getByRole('heading', { name: '核对政策声明' }).waitFor()
     assert.equal(await page.getByLabel('声明方式', { exact: true }).inputValue(), 'NEGATED')
     assert.equal(await page.evaluate(() => localStorage.getItem('privacytrace.example.v1').includes('PRIVATE_FREE_TEXT_44')), false)
     await page.getByRole('button', { name: '添加候选', exact: true }).click()
@@ -605,7 +679,7 @@ async function main() {
     await page.getByRole('button', { name: '修改材料', exact: true }).click()
     const firstSource = page.locator('.source-editor').first()
     await firstSource.locator('summary').first().click()
-    await firstSource.getByRole('button', { name: '体验来源失败' }).click()
+    await firstSource.getByRole('button', { name: '模拟来源失败' }).click()
     await firstSource.getByRole('alert').waitFor()
     await page.getByRole('button', { name: '检查候选', exact: true }).click()
     await page.locator('.original-panel').getByText('示例来源获取失败').waitFor()
@@ -624,7 +698,7 @@ async function main() {
     await page.getByRole('button', { name: '进入流程演示', exact: true }).click()
     await page.getByText('阶段与来源详情', { exact: true }).click()
     await page.getByRole('button', { name: '标记当前阶段失败' }).click()
-    await page.getByRole('alert').filter({ hasText: '示例阶段失败' }).waitFor()
+    await page.getByRole('alert').filter({ hasText: '分析失败' }).waitFor()
     await page.screenshot({ path: path.join(screenshots, 'failure-1440.png'), fullPage: true })
     await page.getByRole('button', { name: '重试', exact: true }).click()
     await page.getByRole('button', { name: '取消', exact: true }).click()
@@ -634,32 +708,43 @@ async function main() {
     for (let index = 0; index < 4; index++) await page.getByRole('button', { name: '进入下一阶段', exact: true }).click()
     await page.getByRole('button', { name: '完成当前阶段', exact: true }).click()
     await page.getByRole('button', { name: '查看报告', exact: true }).click()
-    await page.getByRole('heading', { name: '分析报告', exact: true }).waitFor()
+    await page.getByRole('heading', { name: 'APP 隐私收集越权报告', exact: true }).waitFor()
     await page.getByLabel('报告来源筛选').selectOption('sdk')
     assert.equal(await page.locator('.comparison-table tbody tr').count(), 1)
     await page.getByLabel('报告来源筛选').selectOption('all')
-    await page.getByRole('button', { name: '查看线索详情：位置信息', exact: true }).click()
+    // The first row is the initial current selection, so its entry names itself
+    // as the current evidence; every other row names the object it opens.
+    const firstRowButton = page.locator('.comparison-table tbody tr').first().getByRole('button').first()
+    await firstRowButton.click()
     assert.equal(await page.locator('#example-evidence-title').evaluate(element => element === document.activeElement), true)
     await page.getByRole('button', { name: '查看示例全文', exact: true }).click()
     assert.equal(await page.locator('#example-evidence mark').innerText(), originalQuote)
-    await assertReportRowToggle(page, 'report 桌面行内证据')
+    assert.equal(await page.getByRole('button', { name: '查看「设备标识」证据', exact: true }).count(), 1, 'the non-current row must name the object it opens')
+    await assertReportEvidenceLayout(page, 'report 桌面证据区')
     await captureWidths(page, 'report')
     await page.setViewportSize({ width: 390, height: 844 })
     await page.evaluate(() => document.fonts.ready)
-    await assertReportRowToggle(page, 'report 窄屏行内证据')
+    await assertReportEvidenceLayout(page, 'report 窄屏证据区')
     await page.getByLabel('报告来源筛选').selectOption('sdk')
-    assert.equal(await page.locator('.comparison-table td.row-evidence').count(), 0, 'narrow filter change must clear hidden inline evidence')
+    assert.equal(await page.locator('.comparison-table tbody tr').count(), 1, 'narrow filter change keeps only the matching row')
+    assert.equal(await page.locator('#example-evidence').count(), 1, 'narrow filter change keeps the single permanent evidence region')
+    assert.match(await page.locator('#example-evidence').innerText(), /设备标识/, 'narrow filter change points the evidence region at the visible row')
+    assert.doesNotMatch(await page.locator('#example-evidence').innerText(), /LocationManager/, 'narrow filter change must not keep the hidden row evidence')
     await page.getByLabel('报告来源筛选').selectOption('all')
     await page.setViewportSize({ width: 1440, height: 900 })
-    await page.getByRole('button', { name: '查看线索详情：位置信息', exact: true }).click()
+    await firstRowButton.click()
     assert.equal(await page.locator('#example-evidence-title').evaluate(element => element === document.activeElement), true)
     await page.getByLabel('报告来源筛选').selectOption('sdk')
-    assert.equal(await page.locator('#example-evidence').count(), 0, 'desktop filter change must close hidden evidence')
+    assert.equal(await page.locator('#example-evidence').count(), 1, 'desktop filter change keeps the single permanent evidence region')
+    assert.match(await page.locator('#example-evidence').innerText(), /设备标识/, 'desktop filter change points the evidence region at the visible row')
+    assert.doesNotMatch(await page.locator('#example-evidence').innerText(), /LocationManager/, 'desktop filter change must not keep the hidden row evidence')
     await page.getByLabel('报告来源筛选').selectOption('all')
-    const deviceEvidenceButton = page.getByRole('button', { name: '查看线索详情：设备标识', exact: true })
+    const deviceEvidenceButton = page.getByRole('button', { name: '查看「设备标识」证据', exact: true })
     await deviceEvidenceButton.click()
-    await page.locator('#example-evidence').getByRole('button', { name: '关闭', exact: true }).click()
-    assert.equal(await deviceEvidenceButton.evaluate(element => element === document.activeElement), true)
+    assert.match(await page.locator('#example-evidence-title').innerText(), /设备标识/, '选择设备标识后证据区标题同步更新')
+    await page.locator('#example-evidence').getByRole('button', { name: '返回刚才的操作', exact: true }).click()
+    const deviceRowButton = page.locator('.comparison-table tbody tr').filter({ hasText: '设备标识' }).getByRole('button').first()
+    assert.equal(await deviceRowButton.evaluate(element => element === document.activeElement), true, '返回刚才的操作 must restore the triggering row')
     await page.getByRole('button', { name: '项目设置', exact: true }).click()
     await page.getByRole('dialog').waitFor()
     // Reka owns modal focus, outside dismissal and accessible naming.
@@ -693,6 +778,7 @@ async function main() {
     try {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'settings: 320px at 200% must not overflow the document')
       assert.equal(await settingsDialog.evaluate(el => el.scrollWidth <= el.clientWidth + 1), true, 'settings: 320px at 200% must not overflow the modal')
+      await assertBrandClearance(page, 'settings@320 200%')
       const zoomedClear = page.getByRole('button', { name: '清除示例草稿', exact: true })
       await zoomedClear.scrollIntoViewIfNeeded()
       await zoomedClear.focus()
@@ -717,7 +803,7 @@ async function main() {
     assert.equal(await page.evaluate(() => localStorage.getItem('privacytrace.example.v1')), null)
     await page.keyboard.press('Escape')
     await page.reload()
-    await page.getByRole('heading', { name: '导入分析材料', exact: true }).waitFor()
+    await page.getByRole('heading', { name: 'APK 与政策材料', exact: true }).waitFor()
     // No selected file or real input survives refresh.
     assert.equal(await page.locator('input[accept=".apk"]').evaluate(element => element.files.length), 0)
     await page.getByLabel('政策正文', { exact: true }).fill('PRIVATE_POLICY_44')
@@ -727,12 +813,12 @@ async function main() {
     await page.locator('.apk-panel').getByRole('button', { name: '体验示例' }).focus()
     await page.keyboard.press('Enter')
     await page.getByRole('button', { name: '检查候选', exact: true }).focus(); await page.keyboard.press('Enter')
-    await page.getByRole('heading', { name: '检查政策候选' }).waitFor()
+    await page.getByRole('heading', { name: '核对政策声明' }).waitFor()
     await page.getByRole('button', { name: '进入流程演示' }).focus(); await page.keyboard.press('Enter')
     for (let index = 0; index < 4; index++) { await page.getByRole('button', { name: '进入下一阶段' }).focus(); await page.keyboard.press('Enter') }
     await page.getByRole('button', { name: '完成当前阶段' }).focus(); await page.keyboard.press('Enter')
     await page.getByRole('button', { name: '查看报告', exact: true }).focus(); await page.keyboard.press('Enter')
-    await page.getByRole('heading', { name: '分析报告', exact: true }).waitFor()
+    await page.getByRole('heading', { name: 'APP 隐私收集越权报告', exact: true }).waitFor()
     await page.emulateMedia({ reducedMotion: 'reduce' })
     assert.equal(await page.locator('.workbench').evaluate(element => getComputedStyle(element).animationName), 'none')
     // Deliver screenshots of the fixed example after adversarial edits are cleared.
@@ -752,8 +838,9 @@ async function main() {
     const sourceFiles = fs.readdirSync(path.resolve('apps/web/src'), { recursive: true }).filter(file => fs.statSync(path.join('apps/web/src', file)).isFile()).sort()
     const sourceHash = crypto.createHash('sha256')
     for (const file of sourceFiles) sourceHash.update(file).update(fs.readFileSync(path.join('apps/web/src', file)))
-    fs.writeFileSync(path.join(output, 'verification.json'), JSON.stringify({ result: 'PASS', commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), dirty: !!execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim(), source_sha256: sourceHash.digest('hex'), scope: 'synthetic frontend interactions; health response mocked', viewports: [1440, 1920, 1280, 768, 390], guard_regressions: guardRegressions, input_regressions: inputRegressions, mobile_ui: mobileChecks, mocked_requests: reportChecks.mocked, errors, requests }, null, 2))
+    fs.writeFileSync(path.join(output, 'verification.json'), JSON.stringify({ result: 'PASS', commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), dirty: !!execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim(), source_sha256: sourceHash.digest('hex'), scope: 'synthetic frontend interactions; health response mocked', viewports: [1440, 1920, 1280, 768, 390], guard_regressions: guardRegressions, input_regressions: inputRegressions, brand: brandChecks, mobile_ui: mobileChecks, mocked_requests: reportChecks.mocked, errors, requests }, null, 2))
     console.log('Input recovery:', inputRegressions.join(', '))
+    console.log('Brand assets:', brandChecks.length, 'checks passed.')
     console.log('Frontend flow: import, quote validation, enum edits, add/delete, source switching, persistence isolation, cancellation/retry, report evidence, responsive layouts, focus and settings passed.')
     console.log('Reports flow:', reportChecks.checks.length + reportChecks.mocked.length, 'mocked report requests,', mobileChecks.length, 'mobile assertions passed.')
   } finally { await browser?.close(); const survivors = await stopChildren(children); if (survivors.length) throw new Error('This test left a server process running') }

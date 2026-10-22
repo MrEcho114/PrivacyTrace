@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import ExistingReports from './App.vue'
 import UiButton from './components/UiButton.vue'
@@ -10,7 +10,8 @@ import { cancelJob, loadJob, loadTaxonomy } from './api'
 import { createDraft, discoverSources, displaySourceUrl, extractSource, reserveExtraction, getAttemptStatus, fetchSource, importExternal, readDraft, saveCandidates, startScan, uploadApk } from './liveApi'
 import type { LiveDraft } from './liveApi'
 import type { ExternalInput } from './policyAssist'
-import { quoteExists, sourceProvenanceLabel, sourceStatusLabel } from './workflow'
+import { frontendCopy, policyStateFromSource, type JobStage } from './copy'
+import { quoteExists, sourceProvenanceLabel, sourceStatusLabel, steps } from './workflow'
 import type { Workflow, Candidate } from './workflow'
 import type { AnalysisJob, WebCandidate, WebSource } from './types'
 const props = defineProps<{ state: Workflow }>()
@@ -69,7 +70,12 @@ function markExtraction(id: string, failed: boolean) {
 function extractionFailed(value: LiveDraft, id: string): boolean {
   return value.sources.find(source => source.id === id)?.model_audit?.status === 'FAILED'
 }
-const states: Record<string, string> = { QUEUED: '等待处理', INTAKE: '核对输入', STATIC_ANALYSIS: '隔离扫描', POLICY_PARSING: '装载政策快照', EVALUATING: '规则对照', REPORTING: '生成报告', SUCCEEDED: '报告已生成', FAILED: '分析失败', CANCELLED: '已取消' }
+// The nine stage names are defined once in frontendCopy.stages. Recorded events
+// carry a string state, so the label lookup falls back to the raw enum.
+const stageLabel = (state?: string) => (state ? frontendCopy.stages[state as JobStage] ?? state : frontendCopy.stages.QUEUED)
+// Draft sources have no review/attachment fields yet; the shared generator keeps
+// the wording identical to the report and mobile views.
+const liveSourceState = policyStateFromSource({})
 const terminal = computed(() => !!job.value && ['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(job.value.state))
 const events = computed(() => draft.value?.jobs.find(r => r.job_id === job.value?.id)?.events ?? [])
 const jobError = computed(() => { try { return JSON.parse(job.value?.error ?? '{}').code ?? '' } catch { return 'JOB_FAILED' } })
@@ -86,7 +92,7 @@ function apply(value: LiveDraft) {
     condition: c.condition ?? '', checked: c.checked ?? false, action: c.action, purpose: c.declared_purpose ?? '', recipient: c.declared_recipient ?? '', startOffset: c.start_offset ?? undefined, ambiguityFlags: c.ambiguity_flags }))
   if (!props.state.sources.some(s => s.id === props.state.sourceId)) props.state.sourceId = props.state.sources[0]?.id ?? ''
 }
-function go(step: Workflow['step']) { props.state.step = step; props.state.maxStep = Math.max(props.state.maxStep, ['import', 'candidates', 'progress', 'report'].indexOf(step)); void nextTick(() => document.getElementById('page-title')?.focus()) }
+function go(step: Workflow['step']) { props.state.step = step; props.state.maxStep = Math.max(props.state.maxStep, steps.indexOf(step)); void nextTick(() => document.getElementById('page-title')?.focus()) }
 async function perform(action: (requestSignal: AbortSignal) => Promise<void>) {
   if (busy.value) return
   const request = new AbortController()
@@ -148,7 +154,7 @@ async function importCollected(input: ExternalInput) {
     value = await importExternal(value.id, input, requestSignal)
     assertActive(requestSignal)
     apply(value); pendingRevision = null; if (incoming) needsPreparation = true
-    notice.value = incoming ? '收集结果已补入当前材料。来源、原句与收集状态分别保留，完整度未知、未复核。' : '已记录离线或未找到结果；尚未取得政策正文，可补充网址或正文。'
+    notice.value = incoming ? '收集结果已补入当前材料。来源、原句和收集状态都保留；完整度未知、未复核。' : '已记录离线或未找到结果；尚未取得政策正文，可补充网址或正文。'
   })
 }
 // Exact attempt receipts, not a transient active=false observation, authorize
@@ -413,17 +419,17 @@ onBeforeUnmount(() => { generation++; controller.abort(); activeRequest?.abort()
       <template #context><MaterialContext v-if="draft" :revision="draft.revision" :draft-id="draft.id" :busy="busy" @new="newInput" /></template>
     </CandidatePage>
     <template v-else-if="state.step === 'progress'">
-      <div class="page-heading"><h1 id="page-title" tabindex="-1">分析进度</h1><p>显示服务实际记录的离散阶段。静态线索不证明实际采集。</p></div>
+      <div class="page-heading"><h1 id="page-title" tabindex="-1">{{ frontendCopy.pageTitles.progress }}</h1><p>显示服务记录的阶段。</p></div>
       <MaterialContext v-if="draft" :revision="draft.revision" :draft-id="draft.id" :busy="busy" @new="newInput" />
       <div class="material-panel progress-panel" :aria-busy="busy || undefined">
-        <div class="progress-summary" role="status" aria-atomic="true"><StatusTag :tone="job?.state === 'FAILED' || job?.state === 'CANCELLED' ? 'error' : job?.state === 'SUCCEEDED' ? 'success' : 'info'">{{ states[job?.state ?? 'QUEUED'] }}</StatusTag><strong>{{ draft?.name }}</strong><span class="hash">{{ job?.id }}</span></div>
-        <ol class="stage-list"><li v-for="(event, i) in events" :key="i" :class="{ done: job?.state === 'SUCCEEDED' || i < events.length - 1, current: !terminal && i === events.length - 1, failed: (job?.state === 'FAILED' || job?.state === 'CANCELLED') && i === events.length - 1 }"><span class="stage-number">{{ job?.state === 'FAILED' || job?.state === 'CANCELLED' ? (i === events.length - 1 ? '!' : '✓') : i < events.length - 1 || job?.state === 'SUCCEEDED' ? '✓' : i + 1 }}</span><div><strong>{{ states[event.state] ?? event.state }}</strong><p>开始 {{ event.at }}<span v-if="events[i + 1]"> · 结束 {{ events[i + 1]?.at }}</span><span v-else-if="!terminal"> · 执行中</span></p></div></li></ol>
+        <div class="progress-summary" role="status" aria-atomic="true"><StatusTag :tone="job?.state === 'FAILED' || job?.state === 'CANCELLED' ? 'error' : job?.state === 'SUCCEEDED' ? 'success' : 'info'">{{ stageLabel(job?.state) }}</StatusTag><strong>{{ draft?.name }}</strong><span class="hash">{{ job?.id }}</span></div>
+        <ol class="stage-list"><li v-for="(event, i) in events" :key="i" :class="{ done: job?.state === 'SUCCEEDED' || i < events.length - 1, current: !terminal && i === events.length - 1, failed: (job?.state === 'FAILED' || job?.state === 'CANCELLED') && i === events.length - 1 }"><span class="stage-number">{{ job?.state === 'FAILED' || job?.state === 'CANCELLED' ? (i === events.length - 1 ? '!' : '✓') : i < events.length - 1 || job?.state === 'SUCCEEDED' ? '✓' : i + 1 }}</span><div><strong>{{ stageLabel(event.state) }}</strong><p>开始 {{ event.at }}<span v-if="events[i + 1]"> · 结束 {{ events[i + 1]?.at }}</span><span v-else-if="!terminal"> · 执行中</span></p></div></li></ol>
         <p v-if="jobError" class="error-text" role="alert">{{ jobError === 'SERVICE_INTERRUPTED' ? '服务中断，旧任务已停止。重试会新建任务。' : '本次分析未完成，请检查 Docker 环境和 APK。' }} <code>{{ jobError }}</code></p>
         <p v-if="error" class="error-text" role="alert">{{ error }}</p>
-        <div class="source-actions progress-actions"><UiButton v-if="!terminal" :disabled="busy" @click="cancel">取消分析</UiButton><UiButton v-if="terminal && job?.state !== 'SUCCEEDED'" :disabled="busy" @click="retry">重新创建分析</UiButton><UiButton v-if="job?.state === 'SUCCEEDED'" variant="primary" @click="go('report')">查看报告</UiButton><UiButton variant="quiet" @click="poll">重新读取进度</UiButton></div>
+        <div class="source-actions progress-actions"><UiButton v-if="!terminal" :disabled="busy" @click="cancel">取消分析</UiButton><UiButton v-if="terminal && job?.state !== 'SUCCEEDED'" :disabled="busy" @click="retry">重新分析</UiButton><UiButton v-if="job?.state === 'SUCCEEDED'" variant="primary" @click="go('report')">查看报告</UiButton><UiButton variant="quiet" @click="poll">重新读取进度</UiButton></div>
       </div>
     </template>
-    <div v-else><div class="page-heading"><h1 id="page-title" tabindex="-1">对照报告</h1><p>本机存档 · 输入版本 {{ draft?.revision }} · 查看存档不会重新扫描。</p></div><MaterialContext v-if="draft" :revision="draft.revision" :draft-id="draft.id" :busy="busy" @new="newInput" /><ExistingReports :initial-job-id="job?.id" /></div>    <section v-if="draft && state.step !== 'import'" class="material-panel"><h2>来源与核验范围</h2><article v-for="source in draft.sources" :key="source.id" class="source-editor"><strong>{{ source.title }}</strong><p>{{ sourceStatusLabel(source.status) }} · {{ sourceProvenanceLabel(source.provenance) }} · 正文完整度未知 · 未复核 · 附件未检查</p><p v-if="source.error_code" class="error-text">{{ source.error_code }} · 返回材料页粘贴正文，或重试网址。</p><p class="field-help">请求网址 {{ displaySourceUrl(source.url) || '手动输入' }} · 最终网址 {{ displaySourceUrl(source.final_url) || '未获取／手动输入' }}</p><p v-if="source.captured_at" class="field-help">获取时点 {{ source.captured_at }} · SHA-256 {{ source.sha256 }}</p><p v-if="source.model_audit?.status" class="field-help">{{ source.model_audit.status === 'FAILED' ? '模型提取未完成，可手动添加或重新提取' : source.model_audit.status === 'PARTIAL' ? '模型仅提取部分候选' : '模型候选已返回' }} · 原句逐字校验 · 拒绝 {{ source.model_audit.rejected_count ?? 0 }} 条<span v-if="source.model_audit.limited_candidates"> · 超出候选上限 {{ source.model_audit.limited_candidates }} 条</span> · 仍需检查语义</p></article></section>
+    <div v-else><div class="page-heading"><h1 id="page-title" tabindex="-1">{{ frontendCopy.pageTitles.report }}</h1><p>本机存档 · 输入版本 {{ draft?.revision }} · {{ frontendCopy.facts.archiveNoRescan }}</p></div><MaterialContext v-if="draft" :revision="draft.revision" :draft-id="draft.id" :busy="busy" @new="newInput" /><ExistingReports :initial-job-id="job?.id" embedded /></div>    <section v-if="draft && state.step !== 'import' && state.step !== 'report'" class="material-panel"><h2>来源与核验范围</h2><article v-for="source in draft.sources" :key="source.id" class="source-editor"><strong>{{ source.title }}</strong><p>{{ sourceStatusLabel(source.status) }} · {{ sourceProvenanceLabel(source.provenance) }} · {{ liveSourceState }}</p><p v-if="source.error_code" class="error-text">{{ source.error_code }} · 返回材料页粘贴正文，或重试网址。</p><p class="field-help">请求网址 {{ displaySourceUrl(source.url) || '手动输入' }} · 最终网址 {{ displaySourceUrl(source.final_url) || '未获取／手动输入' }}</p><p v-if="source.captured_at" class="field-help">获取时点 {{ source.captured_at }} · SHA-256 {{ source.sha256 }}</p><p v-if="source.model_audit?.status" class="field-help">{{ source.model_audit.status === 'FAILED' ? '模型提取未完成，可手动添加或重新提取' : source.model_audit.status === 'PARTIAL' ? '模型仅提取部分候选' : '模型候选已返回' }} · 原句逐字校验 · 拒绝 {{ source.model_audit.rejected_count ?? 0 }} 条<span v-if="source.model_audit.limited_candidates"> · 超出候选上限 {{ source.model_audit.limited_candidates }} 条</span> · 仍需检查语义</p></article></section>
   </div>
 </template>
 <style scoped>

@@ -2,6 +2,8 @@
 
 前端页面、样式或组件任务按此流程执行。任务授权与完成标准仍由根部 AGENTS.md 和 `core/workflow.md` 管理。
 
+客户端定义以 [ADR-0004](../adr/0004-client-is-android-app.md) 为准：客户端仅指 Android App；桌面 Web 工作台是工程验收介质与离线回放载体，不是客户端，但仍是部署拓扑必需件。
+
 ## 先看代表页面
 
 1. 读取当前设计来源；本工作台为 [Pioneer 来源](../design/issue-44-provenance.md)。保留用户要求固定的颜色、字体、字号和控件，调整布局与信息层次。

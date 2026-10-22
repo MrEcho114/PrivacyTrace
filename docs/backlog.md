@@ -2,7 +2,7 @@
 
 ## 2026-10-23 前端设计规范重置（仅移动端 App）
 
-用户要求重置前端设计规范，并把前端范围收窄到仅移动端 App；`apps/api` 后端由隔壁会话负责。视觉基线改为 Claude（`od-ds-claude`，暖纸 + 陶土 + 衬线/无衬线分工），只保留 Android/Tauri 移动壳与导入/候选/进度/报告/设置五个界面；桌面工作台冻结。交付规范正文 [frontend-design-spec-mobile.md](design/frontend-design-spec-mobile.md)、规范站与现状审计/token 契约（`docs/design/mobile-reset/`）；Apple 草案归档到 `docs/design/archive/`。规范层已同批完成迁移落地，实施与验收记录见 [implementation-20261023.md](design/mobile-reset/implementation-20261023.md)。同日第二轮完成 `--ui-*` 别名重构（共享组件/共享 CSS 消费别名，旧变量重映射删除）；桌面 `pioneer-design.json` / `verify-round2-primitives.cjs` 按 [ADR-0005](adr/0005-frontend-contract-retirement.md) 保留到桌面入口正式下线，最早 2026-11-06 复审。
+用户要求重置前端设计规范，并把前端范围收窄到仅移动端 App；`apps/api` 后端由隔壁会话负责。视觉基线改为 Claude（`od-ds-claude`，暖纸 + 陶土 + 衬线/无衬线分工），只保留 Android/Tauri 移动壳与导入/候选/进度/报告/设置五个界面；桌面工作台冻结。交付规范正文 [frontend-design-spec-mobile.md](design/frontend-design-spec-mobile.md)、规范站与现状审计/token 契约（`docs/design/mobile-reset/`）；Apple 草案归档到 `docs/design/archive/`。规范层已同批完成迁移落地，实施与验收记录见 [implementation-20261023.md](design/mobile-reset/implementation-20261023.md)。同日第二轮完成 `--ui-*` 别名重构（共享组件/共享 CSS 消费别名，旧变量重映射删除）；桌面 `pioneer-design.json` / `verify-round2-primitives.cjs` 按 [ADR-0005](adr/0005-frontend-contract-retirement.md) 保留到桌面入口正式下线，最早 2026-11-06 复审；客户端定义见 [ADR-0004](adr/0004-client-is-android-app.md)。
 
 ## 2026-10-19 S3 内部交付
 

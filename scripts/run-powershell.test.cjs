@@ -69,6 +69,14 @@ test('both npm entries fall back and only apply mobile icons after success', {
   const bin = path.join(root, 'bin')
   fs.mkdirSync(scripts)
   fs.mkdirSync(bin)
+  // check.sh may bootstrap Node separately from the existing npm installation.
+  const npm = process.env.PATH.split(path.delimiter)
+    .map(directory => path.resolve(directory, 'npm'))
+    .find(candidate => {
+      try { fs.accessSync(candidate, fs.constants.X_OK); return true } catch { return false }
+    })
+  assert.ok(npm, 'npm must be available on the original PATH')
+  fs.symlinkSync(fs.realpathSync(npm), path.join(bin, 'npm'))
   fs.copyFileSync(path.join(__dirname, 'run-powershell.cjs'), path.join(scripts, 'run-powershell.cjs'))
   fs.writeFileSync(path.join(scripts, 'apply-brand-android-icons.cjs'),
     'require("node:fs").writeFileSync(process.env.ICON_MARKER, "applied")')

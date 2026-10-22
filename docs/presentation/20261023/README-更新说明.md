@@ -15,6 +15,10 @@
 
 PPTX/PDF 是**整页渲染版本**，不可逐字编辑；HTML 是唯一源文件。
 
+## 1.1 配套评审视频（在 main，不在本目录）
+
+`showcase/privacytrace/delivery/PrivacyTrace-1080p.mp4`：120.000 s / 1920×1080 / 30 fps / 15,207,468 B / SHA-256 `8c61fd272be4dfa4ea450db7c37458777f22283970f671e22789e9b60fe1bcf4`。同目录 `manifest.json` 记录源与校验。视频已随 main 入库，本目录只放汇报 PPT 三件套；报名系统上传仍需负责人操作。
+
 ## 2. 每页数字的来源（改数先改这里）
 
 | 页 | 内容 | 来源（仓库内） |

@@ -7,6 +7,8 @@
  * coarse-pointer fields, soft-keyboard reservation, evidence focus/scroll
  * restore, one analysis start despite a lost response, and no browser API.
  * The full round-2 shell/touch/back matrix lives in verify-frontend-round2.cjs.
+ * verifyIssueFixes() adds the #239/#243/#248/#249 mobile regressions, each on
+ * its own production-Vue page with its own controlled native bridge.
  *
  * Everything runs against production Vue with a mocked native bridge; no APK,
  * model, Docker or Android device/IME execution.
@@ -153,6 +155,237 @@ function bridge(options) {
     else throw new Error('Unexpected workflow action ' + action)
     return { json: JSON.stringify({ origin: context.origin, draft: context.draft, data }) }
   } }
+}
+
+/**
+ * #239/#243/#248/#249 regressions on the production mobile shell.
+ *
+ * Each scenario owns its own controlled bridge and page, so a failure names one
+ * issue. This is the interface-contract regression ADR-0004 names: production Vue
+ * plus a native bridge stand-in, not a device, real model or APK run. The bridge
+ * keeps the draft and answers AnalysisTransport.workflow's envelope instead of
+ * exposing a hidden flow API.
+ */
+function issueBridge(options) {
+  globalThis.isTauri = true
+  const context = { origin: 'https://analysis.example/', draft: 'i'.repeat(32), state: 'SERVER_CONFIRMED', cleanupPending: false }
+  const ledger = globalThis.mobileCalls = []
+  const queues = JSON.parse(JSON.stringify({ fetch: options.fetch ?? {}, extract: options.extract ?? {}, collect: options.collect ?? [] }))
+  let configured = false, jobReads = 0
+  const job = { id: 'j'.repeat(32), state: 'QUEUED', error: null }
+  const draft = {
+    id: context.draft, name: 'com.example.issue-fixes', uploaded: true, revision: 1, apk_sha256: 'd'.repeat(64),
+    sources: (options.sources ?? []).map(item => ({ source_type: 'OFFICIAL_WEB_POLICY', version: 'UNKNOWN', region: '', product: '', ...item })),
+    candidates: options.candidates ?? [],
+    jobs: options.progress ? [{ job_id: job.id, request_id: 'r'.repeat(32), revision: 1, events: [{ state: 'QUEUED', at: '2026-10-23T00:00:00Z' }] }] : [],
+  }
+  const take = (kind, id) => { const list = queues[kind][id]; return Array.isArray(list) && list.length ? list.shift() : undefined }
+  globalThis.__TAURI_INTERNALS__ = { invoke: async (command, args = {}) => {
+    const method = command.split('|')[1]
+    ledger.push({ method, action: args.action, args })
+    if (method === 'model_status') return { configured, endpoint: configured ? 'https://model.example/v1/chat/completions' : null }
+    if (method === 'configure_model') { configured = true; return { configured, endpoint: 'https://model.example/v1/chat/completions' } }
+    if (method === 'upload_selected') {
+      // #243 acceptance: a freshly chosen instance must start clean instead of
+      // inheriting the previous material's model answer.
+      if (options.newMaterial) {
+        context.draft = 'n'.repeat(32); draft.id = context.draft
+        draft.sources = []; draft.candidates = []; draft.jobs = []; draft.revision = 1
+      }
+      return context
+    }
+    if (method === 'refresh_upload') return context
+    if (method === 'delete_upload') return { ...context, state: 'DELETED' }
+    if (method === 'cancel') return
+    if (method === 'collect_policy') return { text: queues.collect.length ? queues.collect.shift() : '' }
+    if (method !== 'workflow') throw new Error('Unexpected native method ' + method)
+    const action = args.action, input = JSON.parse(args.payload)
+    let data = draft
+    if (action === 'taxonomy') data = { data_types: [] }
+    else if (action === 'read' || action === 'discover') data = draft
+    else if (action === 'fetch') {
+      const source = draft.sources.find(item => item.id === input.source)
+      if (!source) throw new Error('Missing source ' + input.source)
+      Object.assign(source, take('fetch', input.source) ?? { status: 'failed', error_code: 'FETCH_FAILED', text: '' })
+      draft.revision += 1
+    }
+    else if (action === 'extract') {
+      const source = draft.sources.find(item => item.id === input.source)
+      if (!source) throw new Error('Missing source ' + input.source)
+      const outcome = take('extract', input.source) ?? { audit: { status: 'SUCCESS' } }
+      source.model_audit = outcome.audit ?? { status: 'SUCCESS' }
+      draft.candidates.push(...(outcome.candidates ?? []))
+      draft.revision += 1
+    }
+    else if (action === 'import') { draft.sources.push(...input.results.map(item => ({ ...item.source, status: 'manual', version: 'UNKNOWN', provenance: 'EXTERNAL_CHAT_EXPORT' }))); draft.revision += 1 }
+    else if (action === 'candidates') { draft.candidates = input.candidates; draft.revision += 1 }
+    else if (action === 'start') { draft.jobs.push({ job_id: job.id, request_id: input.request_id, revision: draft.revision, events: [{ state: 'QUEUED', at: '2026-10-23T00:00:00Z' }] }); draft.revision += 1 }
+    else if (action === 'job') { jobReads += 1; if (options.advanceAfter && jobReads > options.advanceAfter) job.state = 'STATIC_ANALYSIS'; data = { ...job } }
+    else throw new Error('Unexpected workflow action ' + action)
+    return { json: JSON.stringify({ origin: context.origin, draft: context.draft, data }) }
+  } }
+}
+
+async function verifyIssueFixes(browser, origin) {
+  const sentence = fixtures.policySentence
+  const collector = (title, text) => JSON.stringify({ version: 'privacytrace-policy-collector/1', results: [{ state: 'PROVIDED', source: { id: 'policy-collected', title, source_type: 'OFFICIAL_WEB_POLICY', text } }] })
+  const count = (page, action) => page.evaluate(name => globalThis.mobileCalls.filter(call => call.action === name).length, action)
+  const payloadOf = (page, action) => page.evaluate(name => {
+    const call = globalThis.mobileCalls.find(item => item.action === name)
+    return call ? JSON.parse(call.args.payload) : null
+  }, action)
+  const settleCollect = (page, expected) => page.waitForFunction(value => document.querySelector('#collector-result')?.value === value, expected, { timeout: 10000 })
+  const first = collector('第一次受控政策', sentence)
+  const second = collector('第二次受控政策', sentence + '\n（补充一行用于区分两次收集。）')
+  const scenarios = [
+    {
+      issue: '#239', title: 'a successful reload on the progress step resumes the poll',
+      options: { sources: [{ id: 'policy', title: '有效正文来源', url: 'https://policy.example/a', text: sentence, status: 'manual' }], progress: true, advanceAfter: 1 },
+      async run(page) {
+        await page.getByRole('button', { name: '恢复当前实例材料', exact: true }).click()
+        await waitTitle(page, '扫描与对照进度', 12000)
+        assert.equal((await page.locator('.m-eyebrow').innerText()).trim(), '等待处理', 'restore reads the queued job once')
+        const reads = await count(page, 'job')
+        await page.getByRole('button', { name: '服务与存储设置' }).click()
+        const sheet = page.locator('dialog.ui-sheet.m-settings-dialog')
+        await sheet.waitFor({ timeout: 5000 })
+        await sheet.getByRole('button', { name: '重新读取材料', exact: true }).click()
+        await page.waitForFunction(() => document.querySelector('.m-eyebrow')?.textContent?.trim() === '隔离扫描 APK', null, { timeout: 20000 })
+        assert.equal(await count(page, 'job'), reads + 1, 'only the resumed automatic poll reads the job, with no extra click')
+      },
+    },
+    {
+      issue: '#243', title: 'a remount and a repeated identical collect both refill the assistant box',
+      options: { sources: [{ id: 'policy', title: '有效正文来源', url: 'https://policy.example/a', text: sentence, status: 'manual' }], collect: [first, first, second], newMaterial: true },
+      async run(page) {
+        const openModel = async () => page.getByText('使用手机上的个人模型', { exact: true }).click()
+        const openAssist = async () => page.getByText('找不到政策？使用网页辅助收集', { exact: true }).click()
+        await page.getByRole('button', { name: '恢复当前实例材料', exact: true }).click()
+        await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
+        await openModel()
+        await page.getByRole('button', { name: '设置模型配置', exact: true }).click()
+        await page.getByLabel('模型名称', { exact: true }).fill('compatible-chat')
+        await page.getByLabel('应用名称或包名', { exact: true }).fill('com.example.mobile.ok')
+        await page.getByRole('button', { name: '使用个人模型收集一次', exact: true }).click()
+        await openAssist()
+        await settleCollect(page, first)
+        await page.getByRole('button', { name: '自动准备政策并继续', exact: true }).click()
+        await waitTitle(page, '核对政策声明', 12000)
+        await page.getByRole('button', { name: '返回上一步' }).click()
+        await waitTitle(page, 'APK 与政策材料', 12000)
+        await openAssist()
+        assert.equal(await page.evaluate(() => document.querySelector('#collector-result')?.value), first, 'returning to the material step must refill the retained result')
+        await openModel()
+        await page.evaluate(() => { const box = document.querySelector('#collector-result'); box.value = ''; box.dispatchEvent(new Event('input', { bubbles: true })) })
+        assert.equal(await page.evaluate(() => document.querySelector('#collector-result')?.value), '')
+        await page.getByRole('button', { name: '使用个人模型收集一次', exact: true }).click()
+        await settleCollect(page, first)
+        await page.getByRole('button', { name: '使用个人模型收集一次', exact: true }).click()
+        await settleCollect(page, second)
+        await page.getByRole('button', { name: '检查回填内容', exact: true }).click()
+        await page.getByRole('button', { name: '确认并补入材料', exact: true }).click()
+        await page.waitForFunction(() => document.body.innerText.includes('来源和未检查候选已补入'), null, { timeout: 10000 })
+        assert.equal(await count(page, 'import'), 1, 'the refilled box still imports through the production confirmation path')
+        // #243 acceptance 3: deleting the old material and choosing a new instance
+        // must not carry the retained answer into the new draft.
+        await page.getByRole('button', { name: '删除远端材料', exact: true }).click()
+        await page.getByRole('button', { name: '选择应用并上传', exact: true }).waitFor({ timeout: 10000 })
+        await page.getByRole('button', { name: '选择应用并上传', exact: true }).click()
+        await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 10000 })
+        await page.waitForTimeout(200)
+        assert.equal(await page.evaluate(() => document.querySelector('#collector-result')?.value ?? '<missing>'), '', 'a new material instance must start with an empty assistant box')
+        assert.equal(await count(page, 'import'), 1, 'the previous model answer must never be imported into the new material automatically')
+        assert.equal(await page.evaluate(() => document.querySelectorAll('.m-source-row').length), 0, 'the new instance starts without the previous material sources')
+      },
+    },
+    {
+      issue: '#248', title: 'both candidate retry buttons call the bridge for the selected source',
+      options: {
+        sources: [
+          { id: 'a', title: '有效正文来源', url: 'https://policy.example/a', text: sentence, status: 'manual', model_audit: { status: 'FAILED' } },
+          { id: 'b', title: '抓取失败来源', url: 'https://policy.example/b', text: '', status: 'failed' },
+        ],
+        candidates: [{ id: 'c1', source_id: 'a', excerpt: sentence, data_type: 'LOCATION', polarity: 'AFFIRMATIVE', subject: 'HOST_APP', checked: false, action: 'ACCESS' }],
+        fetch: { b: [{ status: 'failed', error_code: 'FETCH_FAILED', text: '' }] },
+        extract: { a: [{ audit: { status: 'SUCCESS' } }] },
+      },
+      async run(page) {
+        await page.getByRole('button', { name: '恢复当前实例材料', exact: true }).click()
+        await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
+        await page.getByRole('button', { name: '自动准备政策并继续', exact: true }).click()
+        await waitTitle(page, '核对政策声明', 12000)
+        await page.getByRole('tab', { name: '政策原文', exact: true }).click()
+        const extract = page.getByRole('button', { name: '重新提取候选', exact: true })
+        const fetch = page.getByRole('button', { name: '重新获取来源', exact: true })
+        assert.equal(await extract.isDisabled(), false, 'source A keeps the extraction retry enabled')
+        const extracts = await count(page, 'extract')
+        await extract.click()
+        await page.waitForFunction(before => globalThis.mobileCalls.filter(call => call.action === 'extract').length > before, extracts, { timeout: 10000 })
+        assert.equal((await payloadOf(page, 'extract')).source, 'a', 'the extraction retry targets the selected source')
+        await page.waitForFunction(() => document.body.innerText.includes('候选仍需检查'), null, { timeout: 10000 })
+        await page.locator('.source-tabs button').nth(1).click()
+        assert.equal(await extract.isDisabled(), true, 'a failed source must not offer candidate extraction')
+        assert.equal(await fetch.isDisabled(), false)
+        const fetches = await count(page, 'fetch')
+        await fetch.click()
+        await page.waitForFunction(before => globalThis.mobileCalls.filter(call => call.action === 'fetch').length > before, fetches, { timeout: 10000 })
+        assert.equal((await payloadOf(page, 'fetch')).source, 'b', 'the fetch retry targets the selected source')
+        assert.equal(await count(page, 'extract'), extracts + 1, 'fetching a source does not spend an extra model call')
+        await page.waitForFunction(() => document.body.innerText.includes('仍未取得正文'), null, { timeout: 10000 })
+      },
+    },
+    {
+      issue: '#249', title: 'a material without any policy body cannot offer the start action',
+      options: {
+        sources: [{ id: 'empty', title: '缺正文来源', url: 'https://policy.example/empty', text: '', status: 'url_only' }],
+        fetch: { empty: [{ status: 'failed', error_code: 'FETCH_FAILED', text: '' }, { status: 'ready', text: sentence }] },
+        extract: { empty: [{ audit: { status: 'SUCCESS' } }] },
+      },
+      async run(page) {
+        await page.getByRole('button', { name: '恢复当前实例材料', exact: true }).click()
+        await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
+        await page.getByRole('button', { name: '自动准备政策并继续', exact: true }).click()
+        const alert = page.getByRole('alert')
+        await alert.waitFor({ timeout: 10000 })
+        assert.ok((await alert.innerText()).includes('正文'), 'the blocked start states that a policy body is required')
+        assert.equal(await page.evaluate(() => document.getElementById('page-title')?.textContent?.trim()), 'APK 与政策材料', 'a body-less material stays on the material step')
+        assert.equal(await count(page, 'candidates'), 0, 'no candidate save is sent for a material the server must reject')
+        assert.equal(await count(page, 'start'), 0)
+        await page.getByRole('button', { name: '核对政策声明', exact: true }).click()
+        await waitTitle(page, '核对政策声明', 8000)
+        const start = page.getByRole('button', { name: '保存候选并开始分析', exact: true })
+        assert.equal(await start.isDisabled(), true, 'the start action is disabled while every source lacks text')
+        assert.ok((await page.locator('main').innerText()).includes('可对照的政策正文'), 'the candidate step explains the missing prerequisite')
+        await page.getByRole('button', { name: '修改材料', exact: true }).click()
+        await waitTitle(page, 'APK 与政策材料', 8000)
+        await page.getByRole('button', { name: '自动准备政策并继续', exact: true }).click()
+        await waitTitle(page, '核对政策声明', 12000)
+        assert.equal(await start.isDisabled(), false, 'a fetched body restores the existing start action')
+        await start.click()
+        await page.waitForFunction(() => globalThis.mobileCalls.some(call => call.action === 'start'), null, { timeout: 10000 })
+        assert.equal(await count(page, 'candidates'), 1)
+        await waitTitle(page, '扫描与对照进度', 12000)
+      },
+    },
+  ]
+  const checks = [], failures = []
+  for (const scenario of scenarios) {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true })
+    const errors = []
+    try {
+      const page = await context.newPage()
+      page.on('pageerror', error => errors.push(error.message))
+      await page.addInitScript(issueBridge, scenario.options)
+      await page.goto(origin)
+      await scenario.run(page)
+      assert.deepEqual(errors, [], 'no page errors')
+      checks.push(`${scenario.issue} ${scenario.title}`)
+    } catch (error) {
+      failures.push(`${scenario.issue}: ${error.message.split('\n')[0]}`)
+    } finally { await context.close() }
+  }
+  if (failures.length) throw new Error('issue regressions failed:\n  - ' + failures.join('\n  - '))
+  return checks
 }
 
 async function verifyCoarsePointer(browser, origin) {
@@ -406,6 +639,7 @@ async function main() {
     assert.deepEqual(api, [], 'the native shell must not use browser HTTP credentials')
     assert.deepEqual(errors, [])
     checks.push('native bridge: exactly one start after a lost response, candidate payload and report read recorded, zero browser API requests')
+    checks.push(...await verifyIssueFixes(browser, origin))
     checks.push(...await verifyCoarsePointer(browser, origin))
     fs.writeFileSync(path.join(output, 'walkthrough.json'), JSON.stringify({
       result: 'PASS',

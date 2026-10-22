@@ -6,7 +6,7 @@ import { collectionInstructions, confirmExternal, previewExternal } from '../pol
 import type { ExternalInput, ImportPreview } from '../policyAssist'
 import { frontendCopy } from '../copy'
 import { sourceTypes } from '../workflow'
-const props = defineProps<{ busy?: boolean; sourceCount: number; initialResult?: string }>()
+const props = defineProps<{ busy?: boolean; sourceCount: number; initialResult?: string; resultToken?: number }>()
 const emit = defineEmits<{ import: [ExternalInput] }>()
 const app = ref('')
 const prompt = ref('')
@@ -14,7 +14,10 @@ const raw = ref('')
 const preview = ref<ImportPreview | null>(null)
 const error = ref('')
 const message = ref('')
-watch(() => props.initialResult, value => { if (value) raw.value = value })
+// The assistant is remounted whenever the material step re-renders, so the
+// retained result must arrive on mount too. resultToken makes a repeated
+// identical answer a new delivery instead of an unchanged string ref (#243).
+watch(() => [props.initialResult, props.resultToken] as const, ([value]) => { if (value) raw.value = value }, { immediate: true })
 watch(raw, () => { preview.value = null; error.value = ''; message.value = '' })
 watch(app, () => { prompt.value = ''; message.value = '' })
 async function copyInstructions() {

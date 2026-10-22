@@ -4,9 +4,26 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 export PYTHONUTF8=1 PYTHONIOENCODING=utf-8
 # Bootstrap into ignored, project-local caches only; no global configuration changes.
 if ! command -v uv >/dev/null 2>&1; then
-  python3 -m venv .themasterplan/cache/check-tools
-  .themasterplan/cache/check-tools/bin/python -m pip install --disable-pip-version-check uv==0.11.23
-  export PATH="$PWD/.themasterplan/cache/check-tools/bin:$PATH"
+  venv=.themasterplan/cache/check-tools
+  bootstrap_python=$(command -v python3 || command -v python || true)
+  if [[ -z "$bootstrap_python" ]]; then
+    printf '%s\n' 'scripts/check.sh: no python3/python on PATH; install Python or uv first.' >&2
+    exit 1
+  fi
+  "$bootstrap_python" -m venv "$venv"
+  # A Windows venv puts its interpreter in Scripts/, a POSIX venv in bin/.
+  if [[ -x "$venv/bin/python" ]]; then
+    venv_bin="$venv/bin"
+    venv_python="$venv/bin/python"
+  elif [[ -x "$venv/Scripts/python.exe" ]]; then
+    venv_bin="$venv/Scripts"
+    venv_python="$venv/Scripts/python.exe"
+  else
+    printf '%s\n' "scripts/check.sh: unexpected venv layout under $venv" >&2
+    exit 1
+  fi
+  "$venv_python" -m pip install --disable-pip-version-check uv==0.11.23
+  export PATH="$PWD/$venv_bin:$PATH"
 fi
 if ! command -v node >/dev/null 2>&1 || (( $(node -p 'process.versions.node.split(".")[0]') < 24 )); then
   npm install --prefix .themasterplan/cache/node --no-save --package-lock=false node@24.17.0

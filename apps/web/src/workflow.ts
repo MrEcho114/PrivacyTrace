@@ -28,7 +28,6 @@ export const sourceTypes: Record<SourceType, string> = {
   OFFICIAL_WEB_POLICY: '官网政策', SDK_POLICY: 'SDK 自有政策', STORE_POLICY: '应用商店政策', IN_APP_POLICY: '应用内政策',
 }
 export const dataTypes: Record<string, string> = { location: '位置信息', device_id: '设备标识', camera: '相机', contacts: '联系人' }
-export const stageNames = ['核对输入', '静态线索', '政策候选', '规则对照', '报告']
 export const exampleSources: PolicySource[] = [
   { id: 'host', title: '纸舟地图隐私政策', url: 'https://example.com/paperboat/privacy', type: 'OFFICIAL_WEB_POLICY',
     text: '纸舟地图隐私政策\n\n一、附近地点\n当您主动打开“附近地点”时，我们会读取您的位置信息，用于展示周边地点。关闭该功能后，不再读取位置信息。\n\n二、设备与账号\n我们不会读取您的通讯录。用于统计的设备标识由第三方统计服务处理。\n\n三、第三方服务\n第三方服务的处理方式，请查阅对应服务的隐私政策及附件列表。',

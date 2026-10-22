@@ -3,7 +3,6 @@
 // 2026-10-22: #167 adopted into #165; the ten unused keys were deleted after
 // confirming no component referenced them. New names live in frontendCopy.
 export const copy = {
-  "importTitle": "导入分析材料",
   "importDescription": "准备 APK 和各份政策，也可以先用示例熟悉对照流程。",
   "apkHelp": "文件还不会上传；这里只显示名称和大小，刷新后需重新选择。",
   "apkPlaceholder": "选择本地 APK 文件",
@@ -12,7 +11,6 @@ export const copy = {
   "tryDemo": "体验示例",
   "realReports": "已有报告",
   "nextCandidates": "检查候选",
-  "candidateTitle": "检查政策候选",
   "candidateHelp": "对照原文，检查每条候选的内容和适用条件。检查这些条款不代表政策全文已复核。",
   "nextProgress": "进入流程演示",
   "addCandidate": "添加候选",
@@ -23,20 +21,14 @@ export const copy = {
   "quoteNotFound": "未在当前来源中找到这句话，请核对原文。",
   "quoteUnavailable": "来源获取失败，请先重试，再核对原句。",
   "quoteMatched": "已在当前来源中找到原句。",
-  "emptyCandidates": "这份来源还没有候选。复制正文中的原句，点击“添加候选”后粘贴。",
-  "progressTitle": "分析流程演示",
   "progressDescription": "手动切换阶段，了解分析顺序。这里不会执行 APK 扫描。",
   "nextStage": "进入下一阶段",
   "failStage": "标记当前阶段失败",
   "cancel": "取消",
   "retry": "重试",
-  "cancelled": "已取消",
-  "stageFailed": "示例阶段失败",
   "viewReport": "查看报告",
   "reportTitle": "分析报告",
-  "reportDescription": "逐项查看静态线索、政策声明和对应依据。静态线索不证明实际采集。",
   "reportHelp": "这是固定示例报告，修改材料或候选不会改变这里的结果。",
-  "viewEvidence": "查看线索详情",
   "settingsTitle": "服务与存储设置",
   "settingsDescription": "设置本项目的模型连接、检查服务，或清除浏览器中的示例草稿。",
   "storageHelp": "自动保存示例选项和阅读进度。自填文本只在本次打开期间保留，刷新后会丢失。",
@@ -51,8 +43,6 @@ export const copy = {
   "fileTooLarge": "文件超出大小限制",
   "draftRestored": "已恢复示例进度与选项",
   "sourceScopeUnknown": "适用范围不明",
-  "attachmentsUnknown": "附件未检查",
-  "fixedReport": "固定示例内容",
   "refreshConnection": "测试连接",
   "close": "关闭",
   "back": "返回",
@@ -63,7 +53,9 @@ export const copy = {
 // Adopted #167 vocabulary. Every runtime page, the report shell and the
 // independent design foundation read names from here; no component keeps its
 // own step, stage or page-title list.
+const steps = ['APK 与政策材料', '核对政策声明', '扫描与对照进度', '对照报告'] as const
 const reportTitleParts = ['APP', '隐私收集越权报告'] as const
+const reportTitle = reportTitleParts.join(' ')
 
 export type JobStage =
   | 'QUEUED' | 'INTAKE' | 'STATIC_ANALYSIS' | 'POLICY_PARSING'
@@ -83,21 +75,21 @@ const stageNames: Record<JobStage, string> = {
 }
 
 export const frontendCopy = {
-  steps: ['APK 与政策材料', '核对政策声明', '扫描与对照进度', '对照报告'],
+  steps,
   brandSubtitle: '隐私权限使用与隐私声明对照',
-  reportTitle: reportTitleParts.join(' '),
+  reportTitle,
   reportTitleParts,
   comparisonTitle: '数据类型与政策声明对照',
   reportScope: '对照 APK 中的权限、调用位置与政策原文。',
   comparisonScope: '六种结论只回答政策是否提到相应数据类型，不作合规判断。',
   demoBadge: '示例体验 · 固定材料',
+  // Step labels and page h1s share one literal: pageTitles derives from steps.
   pageTitles: {
-    import: 'APK 与政策材料',
-    candidates: '核对政策声明',
-    progress: '扫描与对照进度',
-    report: reportTitleParts.join(' '),
+    import: steps[0],
+    candidates: steps[1],
+    progress: steps[2],
+    report: reportTitle,
     reports: '本机存档报告',
-    settings: '服务与存储设置',
   },
   stages: stageNames,
   stageOrder: Object.keys(stageNames) as JobStage[],

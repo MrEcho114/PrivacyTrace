@@ -312,6 +312,41 @@ function assertFile(relativePath, label, errors) {
   return true
 }
 
+function checkManifest(report) {
+  const manifestPath = resolve('brand/SHA256SUMS')
+  if (!assertFile('brand/SHA256SUMS', 'brand manifest', report.errors)) return
+  const entries = fs.readFileSync(manifestPath, 'utf8').split(/\r?\n/).filter(Boolean).map((line) => {
+    const match = line.trim().match(/^([0-9a-f]{64})\s{2}(.+)$/)
+    return match ? { hash: match[1], path: match[2] } : null
+  })
+  if (entries.some((entry) => !entry)) {
+    report.errors.push('brand/SHA256SUMS has malformed lines; expected "<sha256>  <path>"')
+    return
+  }
+  const listed = new Set()
+  for (const entry of entries) {
+    listed.add(entry.path)
+    const filePath = resolve('brand/' + entry.path)
+    if (!assertFile(`brand/${entry.path}`, 'brand manifest entry', report.errors)) continue
+    const actual = sha256(fs.readFileSync(filePath))
+    if (actual !== entry.hash) {
+      report.errors.push(`brand/SHA256SUMS mismatch: ${entry.path} (listed ${entry.hash}, actual ${actual})`)
+    }
+  }
+  const assets = []
+  const walk = (dir) => {
+    for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, item.name)
+      if (item.isDirectory()) walk(full)
+      else assets.push(posix(path.relative(resolve('brand'), full)))
+    }
+  }
+  walk(resolve('brand'))
+  const unlisted = assets.filter((asset) => asset !== 'README.md' && asset !== 'SHA256SUMS' && !listed.has(asset))
+  if (unlisted.length) report.errors.push(`brand assets missing from SHA256SUMS: ${unlisted.join(', ')}`)
+  if (!report.errors.length) report.checks.push(`brand manifest: ${entries.length} files match SHA256SUMS`)
+}
+
 function checkWebCopies(report) {
   if (!isDirectory(resolve('apps/web/public/brand'))) {
     report.errors.push('Web brand directory is missing: apps/web/public/brand')
@@ -668,6 +703,12 @@ function buildReport() {
   }
 
   checkApplyHelp(report)
+
+  try {
+    checkManifest(report)
+  } catch (error) {
+    report.errors.push(`Brand manifest verification crashed: ${error.message}`)
+  }
 
   try {
     checkWebCopies(report)

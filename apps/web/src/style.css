@@ -12,7 +12,7 @@ button:disabled { opacity: .6; cursor: wait; }
 :focus-visible { outline: 3px solid var(--navy); outline-offset: 4px; }
 .topbar { height: 82px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding: 0 max(6vw, 24px); background: var(--surface); }
 .brand { color: var(--ink); text-decoration: none; font-size: 1.4375rem; font-weight: 750; display: flex; align-items: center; gap: 12px; }
-.brand-icon { display: grid; place-items: center; width: 38px; height: 42px; background: var(--navy); color: var(--surface); border-radius: 12px 12px 20px 20px; font-size: min(1.5rem, 26px); }
+.brand-icon { display: grid; place-items: center; width: 38px; height: 42px; }
 main { max-width: 1160px; margin: 0 auto; padding: 40px 24px; }
 .intro { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin: 10px 0 30px; }
 .eyebrow { font-size: 0.75rem; letter-spacing: 2px; font-weight: 700; color: var(--muted); }
@@ -115,7 +115,7 @@ mark { background: var(--notice); color: var(--ink); }
   background: linear-gradient(90deg, var(--pt-stripe-1) 0 25%, var(--pt-stripe-2) 25% 50%, var(--pt-stripe-3) 50% 75%, var(--pt-stripe-4) 75% 100%);
 }
 .workbench .workspace-brand { font-family: var(--pt-font-display); font-weight: 600; color: var(--pt-ink); }
-.workbench .brand-mark { background: var(--pt-structure); color: var(--pt-paper); border-radius: 0; }
+.workbench .brand-mark { background: none; color: inherit; border-radius: 0; }
 .workbench .workspace-purpose { color: var(--pt-ink); border-left-color: var(--pt-structure); }
 .workbench .workspace-bar .status-tag { background: var(--pt-paper); border: 1px solid var(--pt-structure); border-radius: 0; }
 .workbench .workspace-bar > .ui-button { margin-left: auto; }
@@ -135,7 +135,8 @@ mark { background: var(--notice); color: var(--ink); }
   background: transparent; color: var(--pt-muted); text-align: left;
   /* px, not rem: the nav is chrome and must stay below the px type scale when
      the reader raises the root font size to 200%. */
-  font-size: 13px; line-height: 1.5;
+  /* clamp: chrome scales a little at 200% but never past the 22px section title */
+  font-size: clamp(12px, 0.8125rem, 15px); line-height: 1.5;
 }
 .workbench .flow-nav button[aria-current] { border-left-color: var(--pt-structure); color: var(--pt-ink); font-weight: 700; }
 /* CJK labels wrap on narrow screens; balance the lines so a lone trailing
@@ -149,7 +150,7 @@ mark { background: var(--notice); color: var(--ink); }
 }
 .workbench .flow-nav button[aria-current] .flow-step-number { background: var(--pt-structure); border-color: var(--pt-structure); color: var(--pt-paper); }
 .workbench .sidebar-actions { display: grid; gap: 4px; padding-top: 16px; border-top: 1px solid var(--pt-rule); }
-.workbench .sidebar-actions .ui-button, .workbench .nav-item { font-size: 13px; }
+.workbench .sidebar-actions .ui-button, .workbench .nav-item { font-size: clamp(12px, 0.8125rem, 15px); }
 .workbench .sidebar-actions .ui-button { justify-content: flex-start; padding-left: 9px; text-align: left; }
 .workbench .nav-item { border-left: 3px solid transparent; padding-left: 9px; border-radius: 0; color: var(--pt-muted); }
 .workbench .nav-item.active { background: transparent; border-left-color: var(--pt-structure); color: var(--pt-ink); font-weight: 700; }
@@ -315,7 +316,7 @@ mark { background: var(--notice); color: var(--ink); }
   .workbench .workspace-layout { grid-template-columns: minmax(0, 1fr); }
   .workbench .workspace-sidebar { border-right: 0; border-bottom: 1px solid var(--pt-rule); padding: 8px 12px 10px; gap: 8px; }
   .workbench .flow-nav ol { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
-  .workbench .flow-nav button { grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 6px 4px; border-left: 0; border-bottom: 2px solid transparent; font-size: 12px; }
+  .workbench .flow-nav button { grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 6px 4px; border-left: 0; border-bottom: 2px solid transparent; font-size: clamp(11px, 0.75rem, 13px); }
   .workbench .flow-nav button[aria-current] { border-left-color: transparent; border-bottom-color: var(--pt-structure); }
   .workbench .flow-step-number { width: auto; height: auto; border: 0; font-size: 0.625rem; color: var(--pt-muted); }
   .workbench .flow-nav button[aria-current] .flow-step-number { background: transparent; color: var(--pt-ink); }

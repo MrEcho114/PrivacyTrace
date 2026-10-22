@@ -694,7 +694,9 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
 <template>
   <div class="shell">
     <header v-if="!mobile && !embedded" class="topbar"><a class="brand" href="#"><span class="brand-icon"><BrandMark /></span>PrivacyTrace</a><span class="subtle">{{ frontendCopy.brandSubtitle }}</span></header>
-    <main>
+    <!-- The workbench archive and the mobile shell already own a <main>
+         landmark; the embedded body must not nest a second one. -->
+    <component :is="embedded || mobile ? 'div' : 'main'">
       <section v-if="!mobile && !embedded" class="intro">
         <div><h1 id="page-title" tabindex="-1">{{ frontendCopy.reportTitle }}</h1><p class="lead">{{ frontendCopy.reportScope }} {{ frontendCopy.facts.staticRuntime }}</p></div>
       </section>
@@ -877,7 +879,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         <p>PrivacyTrace · 每条结论保留证据来源，推断与声明单独记录。</p>
         <p class="subtle ai-disclosure">报告的隐私核验结果由 Consistency Engine 输出；部分工程代码使用 AI 辅助，范围和核实状态见仓库披露记录。</p>
       </footer>
-    </main>
+    </component>
   </div>
 </template>
 

@@ -31,7 +31,7 @@ p { line-height: 1.7; }
 .skip-link:focus { opacity: 1; pointer-events: auto; }
 .workspace-bar { min-height: 64px; display: flex; align-items: center; padding: 12px 32px; padding: max(12px, env(safe-area-inset-top, 0px)) max(32px, env(safe-area-inset-right, 0px)) 12px max(32px, env(safe-area-inset-left, 0px)); gap: var(--space-32); border-bottom: 1px solid var(--border); background: var(--surface); }
 .workspace-brand { display: flex; gap: var(--space-12); align-items: center; min-width: 0; overflow-wrap: anywhere; text-decoration: none; font-size: 1.125rem; font-weight: 600; color: var(--ink); }
-.brand-mark { background: var(--navy); color: var(--surface); border-radius: 8px; display: grid; place-items: center; width: 30px; height: 30px; font-size: min(1.125rem, 20px); }
+.brand-mark { display: grid; place-items: center; width: 30px; height: 30px; }
 .workspace-purpose { color: var(--muted); border-left: 1px solid var(--border); padding-left: 24px; font-size: 0.8125rem; }
 .workspace-bar > .ui-button { margin-left: auto; }
 /* #165: the desktop task index is one narrow column (~176px); the main area

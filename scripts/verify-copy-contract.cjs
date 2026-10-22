@@ -119,12 +119,6 @@ async function assertSingleMarker(page, label) {
   }
   checks.push(`${label}: single 示例体验 · 固定材料 marker, no retired example markers`)
 }
-async function assertUnifiedStateLine(page, selector, label) {
-  const text = await page.locator(selector).first().innerText()
-  assert.equal(text.replace(/\s+/g, ' ').trim(), unifiedLine, `${label}: source-state line must use the unified #167 format`)
-  assert.doesNotMatch(text, /已复核/, `${label}: an unknown review fact must never read 已复核`)
-  checks.push(`${label}: unified source-state line ${unifiedLine}`)
-}
 
 async function textStep(page, buttonName, expectedTitle, index, label) {
   await page.getByRole('button', { name: buttonName, exact: true }).click()
@@ -264,7 +258,8 @@ async function main() {
     checks.push('report: expanded source facts keep the unified line and never claim 已复核')
 
     assert.equal(await page.locator('#example-evidence').count(), 1, 'report: exactly one evidence region')
-    assert.equal(await page.locator('.report-action .ui-button.primary').count(), 1, 'report: exactly one red primary action')
+    assert.equal(await page.locator('.ui-button.primary').count(), 1, 'report: exactly one red primary action on the page')
+    assert.equal(await page.locator('.report-action .ui-button.primary').count(), 1, 'report: the one red primary sits in the action area')
     const selected = page.locator('.comparison-table [aria-pressed="true"]')
     assert.equal(await selected.count(), 1, 'report: exactly one row is the current selection')
     assert.equal(await selected.getAttribute('aria-controls'), 'example-evidence', 'report: the selected row controls the evidence region')
@@ -273,6 +268,15 @@ async function main() {
     await page.waitForFunction(() => document.querySelector('#example-evidence-title')?.textContent.includes('设备标识'))
     assert.equal(await page.locator('.comparison-table [aria-pressed="true"]').count(), 1, 'report: switching keeps one current selection')
     assert.equal(await secondRowButton.getAttribute('aria-pressed'), 'true', 'report: the clicked row becomes current')
+    // #165: the current row is marked by text + a reserved 3px edge, not fill.
+    const selectedEdge = await secondRowButton.evaluate((button) => {
+      const cell = button.closest('tr')?.querySelector('td.finding-type')
+      if (!cell) return null
+      const style = getComputedStyle(cell)
+      return { width: style.borderLeftWidth, color: style.borderLeftColor }
+    })
+    assert.ok(selectedEdge && parseFloat(selectedEdge.width) >= 3, `report: the selected row keeps a 3px edge (got ${selectedEdge && selectedEdge.width})`)
+    assert.ok(selectedEdge && selectedEdge.color !== 'rgba(0, 0, 0, 0)', 'report: the selected row edge has a visible colour')
     assert.ok((await page.locator('.report-action .action-label').innerText()).includes('设备标识'), 'report: the primary action names the selected object')
     await page.locator('#example-evidence').getByRole('button', { name: '返回刚才的操作', exact: true }).click()
     assert.equal(await secondRowButton.evaluate((element) => element === document.activeElement), true, 'report: 返回刚才的操作 restores the triggering row focus')
@@ -282,7 +286,6 @@ async function main() {
     // scroll container before the top frame, then keep the interacted frame.
     await resetScroll(page)
     await capture(page, 'report-1440-top')
-    await capture(page, 'report-1440', true)
 
     // ---- five viewports + 200% root text -----------------------------------
     for (const [width, height] of viewports) {
@@ -298,9 +301,28 @@ async function main() {
       const railRows = await page.evaluate(() => new Set([...document.querySelectorAll('nav.flow-nav button')].map((button) => Math.round(button.getBoundingClientRect().top))).size)
       assert.equal(railRows, width <= 896 ? 1 : 4, `report@${width}: the same flow DOM is one horizontal row below 896px and a sidebar column above it`)
       await assertFlowNav(page, 3, `report@${width}`)
+      const geometry = await page.evaluate(() => {
+        const columns = document.querySelector('.report-columns')
+        const findings = document.querySelector('.report-conclusions')
+        const evidence = document.querySelector('#example-evidence')
+        return {
+          template: columns ? getComputedStyle(columns).gridTemplateColumns : '',
+          findings: findings ? findings.getBoundingClientRect().toJSON() : null,
+          evidence: evidence ? evidence.getBoundingClientRect().toJSON() : null,
+        }
+      })
+      const tracks = geometry.template.split(' ').filter(Boolean).map(parseFloat)
+      if (width > 896) {
+        assert.equal(tracks.length, 2, `report@${width}: the report keeps two grid tracks (got ${geometry.template})`)
+        assert.ok(Math.abs(tracks[0] / tracks[1] - 1.15) < 0.03, `report@${width}: the conclusion/evidence tracks stay about 1.15:1 (got ${tracks.join(' / ')})`)
+        assert.ok(geometry.findings && geometry.evidence && geometry.evidence.x > geometry.findings.x, `report@${width}: evidence sits beside the conclusions`)
+      } else {
+        assert.equal(tracks.length, 1, `report@${width}: the report collapses to one track (got ${geometry.template})`)
+        assert.ok(geometry.findings && geometry.evidence && geometry.evidence.y > geometry.findings.y, `report@${width}: evidence stacks below the conclusions`)
+      }
+      await capture(page, `report-${width}`)
       await resetScroll(page)
       await capture(page, `report-${width}-top`)
-      await capture(page, `report-${width}`)
       if (width === 1280) {
         const firstEntry = page.locator('.report-conclusions tbody tr').first().getByRole('button').first()
         const box = await firstEntry.boundingBox()
@@ -331,6 +353,11 @@ async function main() {
         const innerWidth = await page.evaluate(() => window.innerWidth)
         assert.ok(box && box.height >= 56, `report@${width} 200%: the red primary keeps the 56px touch height (got ${box && Math.round(box.height)})`)
         assert.ok(box && box.width <= innerWidth, `report@${width} 200%: the red primary is not clipped horizontally`)
+        const clipped = await page.evaluate(() => {
+          const nodes = [document.querySelector('.page-heading h1'), document.querySelector('.report-action .action-label')]
+          return nodes.filter(Boolean).map((node) => ({ text: (node.textContent || '').trim().slice(0, 24), scroll: node.scrollWidth, client: node.clientWidth }))
+        })
+        for (const node of clipped) assert.ok(node.scroll <= node.client + 1, `report@${width} 200%: "${node.text}" must not be clipped (${node.scroll} > ${node.client})`)
         await capture(page, `report-${width}-200`)
       } finally {
         await zoom.evaluate((element) => element.remove())

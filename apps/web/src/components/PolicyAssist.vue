@@ -50,7 +50,7 @@ function submit() {
         <p>确认来源类型后补入当前材料。{{ frontendCopy.facts.assistUnreviewed }}</p>
         <p v-if="!preview.sources.length" class="field-help">本次没有取得政策来源，只记录收集失败或离线结果。</p>
         <UiField v-for="row in preview.sources" :key="row.index" :label="`${row.title}：来源类型`" :id="'collector-type-' + row.index"><select :id="'collector-type-' + row.index" v-model="row.type"><option value="" disabled>请选择已确认的来源类型</option><option v-for="(label, type) in sourceTypes" :key="type" :value="type">{{ label }}</option></select></UiField>
-        <UiButton variant="primary" @click="submit">确认并补入材料</UiButton>
+        <UiButton @click="submit">确认并补入材料</UiButton>
       </div>
     </fieldset>
     <p v-if="error" class="error-text" role="alert">{{ error }}</p>

@@ -65,6 +65,10 @@ jobs:
       - name: Run frontend walkthrough
         run: npm run acceptance:frontend
 
+      # #165/#167/#169: copy contract, report layout geometry and brand surface.
+      - name: Verify copy contract and brand surface
+        run: npm run acceptance:copy
+
       - name: Run wide hierarchy regression
         run: npm run acceptance:hierarchy
 
@@ -104,6 +108,9 @@ jobs:
             tmp/issue143-hierarchy/screenshots/
             tmp/issue146-motion/verification.json
             tmp/issue146-motion/screenshots/
+            docs/acceptance/issue165/
+            tmp/issue144-round2/
+            tmp/brand-assets/
             tmp/frontend-preview/verification.json
             tmp/frontend-preview/preview.log
             tmp/issue44-live-proof/fixtures/verification.json

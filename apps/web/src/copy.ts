@@ -1,7 +1,7 @@
 // Initial copy: Gemini 3.8 Flash Medium. Edited on 2026-10-13 for clarity;
 // scope and evidence limits checked against the implementation.
-// 2026-10-22: #167 adopted into #165; the ten unused keys were deleted after
-// confirming no component referenced them. New names live in frontendCopy.
+// 2026-10-22: #167 adopted into #165; 21 unreferenced keys were removed after
+// confirming no component read them. New names live in frontendCopy.
 export const copy = {
   "importDescription": "准备 APK 和各份政策，也可以先用示例熟悉对照流程。",
   "apkHelp": "文件还不会上传；这里只显示名称和大小，刷新后需重新选择。",

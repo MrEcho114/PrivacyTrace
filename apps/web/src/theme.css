@@ -1,6 +1,9 @@
 /* Pioneer roles: docs/design/issue142-theme-and-primitives.md. One source for all entries. */
 @font-face { font-family: 'Noto Sans SC'; src: url('/fonts/NotoSansSC-Variable.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
 @font-face { font-family: 'Noto Serif SC'; src: url('/fonts/NotoSerifSC-Variable.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
+/* macOS renders Noto heavier than the design target; the shell and the mobile
+   entry both inherit from html, so one declaration covers both surfaces. */
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 :root {
   --canvas: #f6f5f1; --surface: #fdfcfa; --surface-muted: #eeedea;
   --ink: #2c3547; --muted: #64696f; --navy: #333c50; --border: #d9d7d2;

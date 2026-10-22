@@ -236,7 +236,7 @@ h1 { font-family: var(--pt-font-display); font-size: var(--pt-type-report); lett
 .pt-selected-context .pt-evidence-title { margin: .4rem 0; }
 .pt-selected-context > p:last-child { margin: .25rem 0 0; font-size: .8125rem; }
 .pt-report-actions { flex-direction: column; gap: .625rem; align-items: stretch; }
-.pt-report-actions .pt-action-context { font-size: .8125rem; margin: 0; }
+.pt-report-actions .pt-action-context { font-variant-numeric: tabular-nums; font-size: .8125rem; margin: 0; }
 .pt-report-actions > .ui-button { order: 0; width: 100%; }
 .pt-report-info { margin-top: .75rem; padding-top: .75rem; border-top: 1px solid var(--pt-rule); }
 .pt-report-info summary { min-height: var(--pt-control); display: list-item; align-content: center; }

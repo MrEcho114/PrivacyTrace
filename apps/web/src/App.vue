@@ -887,7 +887,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
 .job-error-card .error-msg { margin: 4px 0; color: #72200b; font-size: 14px; }
 .job-error-card .error-detail { margin-top: 6px; font-size: 12px; }
 .policy-jump-btn { margin-top: 10px; font-size: 12px; padding: 6px 10px; display: inline-block; }
-.origin-timestamp { font-size: 12px; color: #52665a; margin-top: 4px; }
+.origin-timestamp { font-size: 12px; color: #52665a; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .ai-disclosure { margin-top: 4px; font-size: 12px; color: var(--muted); }
 /* Shared Concept C mark replaces the letter tile; the 38×42 slot from style.css
    stays, with the 30px optical graphic centred inside it. */

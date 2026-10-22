@@ -35,7 +35,7 @@ p { line-height: 1.7; }
 .badge-stack .badge.persisted_replay { color: var(--ink); border-color: var(--border); background: var(--notice); }
 .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 20px 0 30px; }
 .metrics>div { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; display: flex; align-items: center; gap: 18px; }
-.metrics strong { font-size: 2rem; color: var(--ink); }
+.metrics strong { font-size: 2rem; color: var(--ink); font-variant-numeric: tabular-nums; }
 .metrics span { font-size: 0.8125rem; color: var(--muted); }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 18px; }
 .report-section { background: var(--surface); padding: 24px; border-radius: var(--radius-panel); border: 1px solid var(--border); }
@@ -260,7 +260,7 @@ mark { background: var(--notice); color: var(--ink); }
 .workbench .page .report-conclusions .status-tag { font-size: var(--pt-type-status); padding: 2px 8px; border-width: 2px; }
 .workbench .page .comparison-scope { margin: 0; padding: 10px 16px; border-top: 1px solid var(--pt-rule); color: var(--pt-muted); font-size: 0.8125rem; line-height: 1.7; }
 .workbench .page .report-action { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 16px; border-top: 1px solid var(--pt-structure); }
-.workbench .page .report-action .action-context { margin: 0; font-size: 0.8125rem; color: var(--pt-ink); }
+.workbench .page .report-action .action-context { margin: 0; font-size: 0.8125rem; color: var(--pt-ink); font-variant-numeric: tabular-nums; }
 .workbench .page .report-action .ui-button.primary { width: 100%; }
 .workbench .page .text-link {
   border: 0; background: transparent; padding: 4px 0; min-height: 36px;

@@ -105,6 +105,9 @@ function mount(jobs: Array<{ id: string; state: string }> = [], fixture: Record<
       if (name === './sdkEvidence') return sdkEvidenceExports
       // Component imports are used by the template/render path, not by setup();
       // the mount helper exercises setup only (issue #144 extraction).
+      // BrandMark renders in the top bar, so give it a stub instead of
+      // `undefined` to keep the render path warning-free.
+      if (name === './components/BrandMark.vue') return { name: 'BrandMark', render: () => null }
       if (name.startsWith('./components/')) return {}
       if (name === 'vue') return { ...vue, onMounted() {}, onBeforeUnmount(fn: () => void) { unmount = fn } }
       throw new Error(`Unexpected import: ${name}`)

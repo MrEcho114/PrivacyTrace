@@ -126,11 +126,11 @@ html.mobile-shell body { margin: 0; background: var(--mt-bg, var(--canvas)); ove
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 2px;
   width: 100%;
   min-height: var(--mt-stepnav, 48px);
   height: var(--mt-stepnav, 48px);
-  padding: 0 var(--mt-space-4, 4px);
+  padding: 0 2px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -146,14 +146,14 @@ html.mobile-shell body { margin: 0; background: var(--mt-bg, var(--canvas)); ove
   display: grid;
   place-items: center;
   flex: none;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border: 1px solid var(--mt-border-control, var(--control));
   border-radius: var(--mt-radius-circle, 50%);
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-variant-numeric: tabular-nums;
 }
-.m-step-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.m-step-label { min-width: 0; font-size: 0.75rem; overflow: visible; text-overflow: clip; }
 /* 当前: 陶土文字 + 2px 下划线（形状冗余，不只靠颜色）；完成: ✓ + muted；
    不可达: meta + 禁用。整条轨道不用藏青整块底。 */
 .m-step[aria-current="step"] { color: var(--mt-accent-text, var(--navy)); font-weight: 500; }
@@ -1176,4 +1176,27 @@ body.is-mobile-app {
   --pt-type-reading: var(--mt-text-body-l); --pt-type-action: var(--mt-text-control);
   --pt-type-report-mobile: var(--mt-text-title-l); --pt-type-finding-mobile: var(--mt-text-title-s);
   --pt-type-panel-mobile: var(--mt-text-title-s);
+}
+
+/* ---------- interface polish: typography + numeric stability ---------- */
+/* Headings wrap as a phrase, body copy avoids orphans. The font-smoothing root and
+   tabular step numbers already come from theme.css / the step rail. */
+.m-appbar h1,
+.m-card h2,
+.m-empty-card h2,
+.m-section-head h2,
+.m-settings-section h2,
+.mobile-workspace .m-report .mobile-report-summary .reading-identity h2,
+.mobile-workspace .m-report .review-panel h2 {
+  text-wrap: balance;
+}
+.mobile-workspace p,
+.mobile-workspace dd,
+.mobile-workspace li {
+  text-wrap: pretty;
+}
+.mobile-workspace .m-report .mobile-report-summary .reading-counts dd,
+.mobile-workspace .m-report .mobile-report-summary .reading-raw-time,
+.mobile-workspace .m-report .reading-counts dd {
+  font-variant-numeric: tabular-nums;
 }

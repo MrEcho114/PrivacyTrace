@@ -153,6 +153,16 @@ python .scratch\issue197\proposed\03-pdf-check.py .scratch\issue197\proposed\03-
 
 未做的检查：未对成品包整体复算哈希（包正被并发重建，数值立即过期）；未运行 `bash scripts/check.sh` 以外的专项验收入口（本票无源码改动）。
 
+### 本地闸门与 CI
+
+- `bash scripts/preflight.sh`（base `912b523`）：`All checks passed!`
+- `bash scripts/check.sh`：`PrivacyTrace checks passed.`
+  - `pytest apps/api/tests`：1619 passed, 200 skipped（10:14）
+  - `pytest tests/e2e`：61 passed, 4 skipped（15.08s）
+  - `ruff check` 两段：All checks passed；`verify-user-study-pack.py`、`export-schema.py` 与契约 diff：无差异
+  - `@privacytrace/web`：137 pass / 0 fail；`npm run build` 成功
+- 中央 CI（PR #245，head `3327fae`）：`themasterplan-check`、`acceptance`、`actual-linux-deployment`（9m43s）、`linux-images-and-smoke`、六场景、十二场景全部 pass，`challenger` 按配置 skipping。无重跑，期间未改代码。
+
 ## 九、已知风险
 
 1. **包在并发变动**。2026-10-23 02:02–02:13 之间 `07` 的 md 与 docx、`00_材料清单.md`、`source/README.md`、`App.vue`、`contracts.generated.ts`、`05/验收摘要.md` 都被其他票改过，还出现了 `deccced-anon-b4/` 工作副本；ZIP 已重命名为 `PrivacyTrace_322234.zip.stale-before-PT-906-B3`。本页任何哈希都不是当前值。

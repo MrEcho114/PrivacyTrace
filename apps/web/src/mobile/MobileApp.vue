@@ -330,7 +330,7 @@ onBeforeUnmount(() => {
       <template v-else-if="state.step === 'progress'">
         <section class="m-card m-status-card" :class="{ failed }">
           <p class="m-eyebrow" role="status">{{ stageLabel }}</p>
-          <h2>{{ job?.state === 'SUCCEEDED' ? '报告已生成' : failed ? '本次分析未完成' : '正在分析当前材料' }}</h2>
+          <h2>{{ job?.state === 'SUCCEEDED' ? frontendCopy.stages.SUCCEEDED : failed ? '本次分析未完成' : '正在分析当前材料' }}</h2>
           <p v-if="job?.id" class="hash">{{ job.id }}</p>
           <p v-if="failed" class="m-error" role="alert">本次分析未完成，可刷新状态或重试为新的分析。</p>
           <p v-if="job?.state === 'SUCCEEDED'" class="m-help">阶段已完成。查看报告中的证据依据与政策原句。</p>

@@ -134,7 +134,7 @@ mark { background: var(--notice); color: var(--ink); }
   background: transparent; color: var(--pt-muted); text-align: left;
   font-size: 0.8125rem; line-height: 1.5;
 }
-.workbench .flow-nav button[aria-current] { border-left-color: var(--pt-action); color: var(--pt-ink); font-weight: 700; }
+.workbench .flow-nav button[aria-current] { border-left-color: var(--pt-structure); color: var(--pt-ink); font-weight: 700; }
 .workbench .flow-nav button:disabled { color: var(--pt-muted); cursor: not-allowed; }
 .workbench .flow-nav button:disabled .flow-step-number { border-style: dashed; }
 .workbench .flow-step-number {
@@ -293,7 +293,7 @@ mark { background: var(--notice); color: var(--ink); }
   .workbench .workspace-sidebar { border-right: 0; border-bottom: 1px solid var(--pt-rule); padding: 8px 12px 10px; gap: 8px; }
   .workbench .flow-nav ol { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
   .workbench .flow-nav button { grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 6px 4px; border-left: 0; border-bottom: 2px solid transparent; font-size: 0.75rem; }
-  .workbench .flow-nav button[aria-current] { border-left-color: transparent; border-bottom-color: var(--pt-action); }
+  .workbench .flow-nav button[aria-current] { border-left-color: transparent; border-bottom-color: var(--pt-structure); }
   .workbench .flow-step-number { width: auto; height: auto; border: 0; font-size: 0.625rem; color: var(--pt-muted); }
   .workbench .flow-nav button[aria-current] .flow-step-number { background: transparent; color: var(--pt-ink); }
   .workbench .sidebar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-top: 0; padding-top: 0; }

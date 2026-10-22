@@ -45,7 +45,10 @@ test('R3 Disclosure: footer compiles with a visible project-level AI usage state
   const template = parsed.descriptor.template.content
   assert.match(template, /<footer>[\s\S]*?class="subtle ai-disclosure"[\s\S]*?<\/footer>/)
   assert.match(template, /部分工程代码使用 AI 辅助/)
-  assert.match(template, /范围和核实状态见仓库披露记录/)
+  // The footer names both disclosure entry points so it resolves inside the repo and inside
+  // the submission package (PT-906-B3 / #222); pin the entry points, not the exact wording.
+  assert.match(template, /07_AI工具使用补充说明/)
+  assert.match(template, /仓库披露记录/)
   const compiled = compileTemplate({
     source: template,
     filename: appVuePath,

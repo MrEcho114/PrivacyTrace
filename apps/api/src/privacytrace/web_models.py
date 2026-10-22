@@ -15,6 +15,11 @@ PolicySourceProvenance = Literal[
 ]
 
 
+def normalize_condition(value: str | None) -> str | None:
+    """An empty condition declares no condition; keep one stored representation."""
+    return None if value == "" else value
+
+
 class WebCandidate(Model):
     id: str = Field(min_length=1, max_length=100)
     source_id: str = Field(min_length=1, max_length=100)
@@ -29,6 +34,11 @@ class WebCandidate(Model):
     ambiguity_flags: list[Literal["CATCH_ALL", "UNCLEAR_ACTION"]] = Field(default_factory=list)
     start_offset: int | None = Field(default=None, ge=0, strict=True)
     checked: bool = False
+
+    @field_validator("condition", mode="before")
+    @classmethod
+    def normalize_empty_condition(cls, value):
+        return normalize_condition(value)
 
 
 class WebSource(Model):
@@ -88,6 +98,11 @@ class ExternalClaimInput(Model):
     condition: str | None = Field(default=None, max_length=1000)
     declared_purpose: str | None = Field(default=None, max_length=1000)
     declared_recipient: str | None = Field(default=None, max_length=1000)
+
+    @field_validator("condition", mode="before")
+    @classmethod
+    def normalize_empty_condition(cls, value):
+        return normalize_condition(value)
 
 
 class ExternalPolicyExportInput(Model):

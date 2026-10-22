@@ -51,6 +51,7 @@ from .web_models import (
     StartInput,
     WebCandidate,
     WebSource,
+    normalize_condition,
 )
 
 TERMINAL = {"SUCCEEDED", "FAILED", "CANCELLED"}
@@ -1213,22 +1214,25 @@ class WebIntake:
                         "excerpt": excerpt,
                     }
                 )
+                claim_fields = {
+                    k: candidate[k]
+                    for k in (
+                        "data_type",
+                        "polarity",
+                        "subject",
+                        "action",
+                        "condition",
+                        "declared_purpose",
+                        "declared_recipient",
+                        "ambiguity_flags",
+                    )
+                }
+                # Drafts saved before the empty-condition normalization still hold "".
+                claim_fields["condition"] = normalize_condition(claim_fields["condition"])
                 claims.append(
                     PolicyClaim.model_validate(
                         {
-                            **{
-                                k: candidate[k]
-                                for k in (
-                                    "data_type",
-                                    "polarity",
-                                    "subject",
-                                    "action",
-                                    "condition",
-                                    "declared_purpose",
-                                    "declared_recipient",
-                                    "ambiguity_flags",
-                                )
-                            },
+                            **claim_fields,
                             "id": "web-claim-" + candidate["id"],
                             "document_id": document_id,
                             "evidence_ids": [sentence_id],

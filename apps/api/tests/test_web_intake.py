@@ -42,12 +42,12 @@ def new_draft(client):
     return response.json()
 
 
-def candidates(draft, checked=True, excerpt="我们不会读取联系人。"):
+def candidates(draft, checked=True, excerpt="我们不会读取联系人。", candidate_id="quote1"):
     return {
         "revision": draft["revision"],
         "candidates": [
             {
-                "id": "quote1",
+                "id": candidate_id,
                 "source_id": "a",
                 "excerpt": excerpt,
                 "data_type": "CONTACTS",
@@ -148,6 +148,22 @@ def test_quote_scope_and_revision_are_validated_before_scanning(tmp_path):
         ).status_code
         == 409
     )
+
+
+def test_candidate_empty_condition_is_stored_as_absent(tmp_path):
+    """#247: the save route accepts the same absent condition as the legacy import."""
+    app = create_app(tmp_path)
+    client = TestClient(app)
+    draft = new_draft(client)
+    endpoint = f"/api/v1/web/drafts/{draft['id']}"
+    payload = candidates(draft)
+    payload["candidates"][0]["condition"] = ""
+    response = client.post(endpoint + "/candidates", headers=HEADERS, json=payload)
+    assert response.status_code == 200, response.text
+    updated = response.json()
+    assert updated["candidates"][0]["condition"] is None
+    capture = app.state.web_intake.captures(updated, require_checked=False)[0]
+    assert capture["claims"][0].condition is None
 
 
 def test_failed_source_retained_and_manual_fallback(tmp_path):

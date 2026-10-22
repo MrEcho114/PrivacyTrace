@@ -1,0 +1,131 @@
+{
+  "passed": true,
+  "commit": "65b49f7ffecd8aee5eede21d69b310300dd32ca6",
+  "policy_model_mode": "LOCAL_HTTP_FIXTURES_WITH_TEST_DNS_TARGET",
+  "apk_mode": "CONSTRUCTED_BINARY_APK_ON_ORDINARY_LANE",
+  "scanner": "RESTRICTED_DOCKER",
+  "sources": [
+    {
+      "title": "人工政策 A",
+      "status": "ready",
+      "requested_url": "http://policy.privacytrace.test/policy/host",
+      "final_url": "http://policy.privacytrace.test/policy/host",
+      "hash": "0c362fe8fb3796b593580c314f391ff807e4e0f03015ca0210cfeecbdb1412b9",
+      "captured_at": "2026-10-21T18:44:11.757316+00:00",
+      "model_audit": {
+        "schema_version": 1,
+        "status": "SUCCESS",
+        "model": "http-fixture",
+        "prompt_version": "1.0.0",
+        "ruleset_version": "0.3.0",
+        "prompt_sha256": "4efe5e3f4a997ada60a931aef8aa01db8b7136c36289ac53033be6d614c25c92",
+        "endpoint_identifier": "96fa11a76b9dbe6b1f0c1135dea7e74397b5949f6682d6975a535da1b66e46b4",
+        "document_sha256": "0c362fe8fb3796b593580c314f391ff807e4e0f03015ca0210cfeecbdb1412b9",
+        "duration_ms": 26,
+        "attempts": 1,
+        "prompt_tokens": 100,
+        "completion_tokens": 50,
+        "total_tokens": 150,
+        "cached_spans": 0,
+        "processed_spans": 1,
+        "rejected_count": 0,
+        "extracted_candidates": 2,
+        "limited_candidates": 0,
+        "requires_human_review": true,
+        "attempt_id": "bb51647eb5b141f3941e7428bda0680f"
+      }
+    },
+    {
+      "title": "人工政策 B",
+      "status": "ready",
+      "requested_url": "http://policy.privacytrace.test/policy/sdk",
+      "final_url": "http://policy.privacytrace.test/policy/sdk",
+      "hash": "d8008047644828f5981dd7194449406deb4e265396e74497251d9d82c7f0cbec",
+      "captured_at": "2026-10-21T18:44:11.782046+00:00",
+      "model_audit": {
+        "schema_version": 1,
+        "status": "SUCCESS",
+        "model": "http-fixture",
+        "prompt_version": "1.0.0",
+        "ruleset_version": "0.3.0",
+        "prompt_sha256": "4efe5e3f4a997ada60a931aef8aa01db8b7136c36289ac53033be6d614c25c92",
+        "endpoint_identifier": "96fa11a76b9dbe6b1f0c1135dea7e74397b5949f6682d6975a535da1b66e46b4",
+        "document_sha256": "d8008047644828f5981dd7194449406deb4e265396e74497251d9d82c7f0cbec",
+        "duration_ms": 24,
+        "attempts": 1,
+        "prompt_tokens": 100,
+        "completion_tokens": 50,
+        "total_tokens": 150,
+        "cached_spans": 0,
+        "processed_spans": 1,
+        "rejected_count": 0,
+        "extracted_candidates": 1,
+        "limited_candidates": 0,
+        "requires_human_review": true,
+        "attempt_id": "f53dd772c9814e82a1988a18e192d0ed"
+      }
+    },
+    {
+      "title": "失败来源保留",
+      "status": "failed",
+      "requested_url": "http://127.0.0.1/private",
+      "final_url": null,
+      "hash": null,
+      "captured_at": null,
+      "model_audit": {}
+    }
+  ],
+  "candidates": 3,
+  "browser_recovery": [
+    "candidate edit/add/delete persisted",
+    "cancel then new retry job",
+    "manual text replaces failed source",
+    "material edits invalidate later steps",
+    "policy HTML rendered as text"
+  ],
+  "draft_revision": 14,
+  "job_id": "da1e659098a3444e8d2c12d184005b9e",
+  "events": [
+    {
+      "state": "QUEUED",
+      "at": "2026-10-21T18:44:15.184840+00:00"
+    },
+    {
+      "state": "INTAKE",
+      "at": "2026-10-21T18:44:15.210950+00:00"
+    },
+    {
+      "state": "STATIC_ANALYSIS",
+      "at": "2026-10-21T18:44:15.223335+00:00"
+    },
+    {
+      "state": "POLICY_PARSING",
+      "at": "2026-10-21T18:44:20.914296+00:00"
+    },
+    {
+      "state": "EVALUATING",
+      "at": "2026-10-21T18:44:20.926497+00:00"
+    },
+    {
+      "state": "REPORTING",
+      "at": "2026-10-21T18:44:20.938273+00:00"
+    },
+    {
+      "state": "SUCCEEDED",
+      "at": "2026-10-21T18:44:20.950766+00:00"
+    }
+  ],
+  "isolation": {
+    "container_created": true,
+    "input_removed": true,
+    "cleanup_verified": true
+  },
+  "page_errors": [],
+  "viewports": [
+    1440,
+    1920,
+    1280,
+    768,
+    390
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "role": "scan",
+  "root_filesystem_id": "6c6e0d8f2fa87515",
+  "daemon_id": "2caf0c09-4857-40bb-a118-c7ba5781ff8e",
+  "utc": "2026-10-21T16:56:46.836560+00:00",
+  "roles": [
+    {
+      "instance": "I",
+      "role": "runner",
+      "image_id": "sha256:f3c096ba44865e6bbf2b8add04c61b32bac97baf83dc5804e404040ffe1bedda",
+      "nonroot_user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": true
+    },
+    {
+      "instance": "J",
+      "role": "runner",
+      "image_id": "sha256:f3c096ba44865e6bbf2b8add04c61b32bac97baf83dc5804e404040ffe1bedda",
+      "nonroot_user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": true
+    }
+  ]
+}

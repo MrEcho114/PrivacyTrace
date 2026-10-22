@@ -1,0 +1,274 @@
+{
+  "checks": [
+    {
+      "command": "GET /_health/live and GET /api/v1/health via the configured origin",
+      "detail": {
+        "instance_hint": "see PT_ACCEPTANCE_INSTANCE_ID"
+      },
+      "duration_s": 0.105,
+      "name": "r2.tls_and_health",
+      "notes": "internal probe hidden; remote mode confirmed; base=https://privacytrace.test:58742",
+      "result_digest": "sha256:d764584ae0c817e7",
+      "started_at": "2026-10-21T19:24:31Z",
+      "status": "PASS",
+      "ticket": "R2"
+    },
+    {
+      "command": "apk_fixture_builder.apk_bytes / package_set_archive",
+      "detail": {
+        "package_set_sha256": "d4b7cb6886dab0b16732eebcafcfb8ce36df00505d5cca88789da42419ca0534",
+        "single_sha256": "7abc27d59a498184cb0b1e1530df73357d2c3cc4af69bbb299aa37ada0574801"
+      },
+      "duration_s": 0.0,
+      "name": "r2.synthetic_fixtures",
+      "notes": "single sha256:7abc27d59a49 set sha256:d4b7cb6886da",
+      "result_digest": "sha256:4d73745ea216a627",
+      "started_at": "2026-10-21T19:24:32Z",
+      "status": "PASS",
+      "ticket": "R2"
+    },
+    {
+      "command": "draft -> POST /apk -> /start -> GET /jobs/{id} -> GET /jobs/{id}/report",
+      "detail": {
+        "input_sha256": "7abc27d59a498184cb0b1e1530df73357d2c3cc4af69bbb299aa37ada0574801",
+        "job_id": "95ad8ba550b84457a5d2580039e0b747",
+        "report_bytes": 6843,
+        "scope": {
+          "draft_id": "0b17631844484d60aef64b445e66a941",
+          "job_id": "95ad8ba550b84457a5d2580039e0b747",
+          "name": "acceptance-scope-a",
+          "revision": 2,
+          "token_fingerprint": "a3357ede5cd3"
+        }
+      },
+      "duration_s": 5.537,
+      "name": "r2.scope_a_single_apk",
+      "notes": "single APK report readable; states=QUEUED->SUCCEEDED",
+      "result_digest": "sha256:a8b5db2b242fe675",
+      "started_at": "2026-10-21T19:24:32Z",
+      "status": "PASS",
+      "ticket": "R2"
+    },
+    {
+      "command": "draft -> POST /apk -> POST /sources/discover -> DELETE /drafts/{id}",
+      "detail": {
+        "discover_status": 200,
+        "release_status": 200,
+        "scope": {
+          "draft_id": "37bcaad1f2b0478e9bff92674c9aab04",
+          "job_id": "",
+          "name": "acceptance-scope-discovery",
+          "revision": 3,
+          "token_fingerprint": "c13ef7f5133a"
+        },
+        "sources": 1,
+        "upload_status": 200
+      },
+      "duration_s": 2.011,
+      "name": "r2.policy_discovery_without_docker_socket",
+      "notes": "policy discovery ran without a Docker socket; sources=1",
+      "result_digest": "sha256:a1377b9d6025851f",
+      "started_at": "2026-10-21T19:24:37Z",
+      "status": "PASS",
+      "ticket": "R2"
+    },
+    {
+      "command": "draft -> POST /package-set -> /start -> GET /jobs/{id}/report",
+      "detail": {
+        "input_sha256": "d4b7cb6886dab0b16732eebcafcfb8ce36df00505d5cca88789da42419ca0534",
+        "job_id": "50c1b79364c44198a9891e7c3a92f898",
+        "report_bytes": 12583,
+        "scope": {
+          "draft_id": "2c646f0e83044658a82748bd4fbaebae",
+          "job_id": "50c1b79364c44198a9891e7c3a92f898",
+          "name": "acceptance-scope-b",
+          "revision": 2,
+          "token_fingerprint": "ccd0dfcc3e6a"
+        },
+        "split_count": 2,
+        "split_names": [
+          "config.en",
+          "feature_camera"
+        ]
+      },
+      "duration_s": 10.668,
+      "name": "r2.scope_b_base_and_splits",
+      "notes": "base+splits report has 2 splits",
+      "result_digest": "sha256:c6e5936dae33ea72",
+      "started_at": "2026-10-21T19:24:39Z",
+      "status": "PASS",
+      "ticket": "R2"
+    },
+    {
+      "command": "token A vs draft B and token B vs job A",
+      "detail": {
+        "cross_scope_delete": 403,
+        "cross_scope_job": 403,
+        "cross_scope_read": 403,
+        "cross_scope_report": 403,
+        "unauthenticated": 401
+      },
+      "duration_s": 0.271,
+      "name": "r2.scope_isolation",
+      "notes": "all cross-scope and unauthenticated reads rejected",
+      "result_digest": "sha256:047a48910762de40",
+      "started_at": "2026-10-21T19:24:50Z",
+      "status": "PASS",
+      "ticket": "R2"
+    },
+    {
+      "command": "same capability against another instance",
+      "detail": {
+        "codes": [
+          404,
+          404,
+          404
+        ]
+      },
+      "duration_s": 0.22,
+      "name": "r2.cross_instance",
+      "notes": "cross-instance job, report and draft rejected",
+      "result_digest": "sha256:5964536b8dc9fbbd",
+      "started_at": "2026-10-21T19:24:50Z",
+      "status": "PASS",
+      "ticket": "R2"
+    },
+    {
+      "command": "GET /api/v1/jobs, /api/v1/web/settings, /api/v1/jobs/{id} (no token)",
+      "detail": {
+        "admin_settings": 403,
+        "jobs_listing": 403,
+        "local_header": 403
+      },
+      "duration_s": 0.161,
+      "name": "r2.management_surface",
+      "notes": "management surface shielded",
+      "result_digest": "sha256:6490d4871807ff70",
+      "started_at": "2026-10-21T19:24:50Z",
+      "status": "PASS",
+      "ticket": "R2"
+    },
+    {
+      "command": "Expect:100-continue declared-length admission refusal (not streamed-body coverage)",
+      "detail": {
+        "status": 413
+      },
+      "duration_s": 0.102,
+      "name": "r2.oversize_rejection",
+      "notes": "oversize draft declared length rejected pre-parse",
+      "result_digest": "sha256:47fcdf41ffd343da",
+      "started_at": "2026-10-21T19:24:50Z",
+      "status": "PASS",
+      "ticket": "R2"
+    },
+    {
+      "command": "POST /package-set with base declaring isSplitRequired but no split",
+      "detail": {
+        "code": "MISSING_REQUIRED_SPLIT",
+        "status": 400
+      },
+      "duration_s": 1.904,
+      "name": "r2.invalid_split_dependency",
+      "notes": "HTTP 400 MISSING_REQUIRED_SPLIT",
+      "result_digest": "sha256:7df6441b8fba0e11",
+      "started_at": "2026-10-21T19:24:50Z",
+      "status": "PASS",
+      "ticket": "R2"
+    },
+    {
+      "command": "Expect:100-continue, existing draft/token, 151MiB declared APK length",
+      "detail": {
+        "status": 413
+      },
+      "duration_s": 0.103,
+      "name": "r2.authorized_oversize_upload",
+      "notes": "authorized oversized upload refused",
+      "result_digest": "sha256:1b4389ce367ee6fb",
+      "started_at": "2026-10-21T19:24:52Z",
+      "status": "PASS",
+      "ticket": "R2"
+    },
+    {
+      "command": "fetch literal loopback policy URL",
+      "detail": {
+        "code": "PUBLIC_URL_REQUIRED"
+      },
+      "duration_s": 0.161,
+      "name": "r2.private_source_refusal",
+      "notes": "loopback source rejected before fetch",
+      "result_digest": "sha256:0f9c1131a4e01dcd",
+      "started_at": "2026-10-21T19:24:52Z",
+      "status": "PASS",
+      "ticket": "R2"
+    },
+    {
+      "command": "GET /api/v1/health repeated past PRIVACYTRACE_RATE_LIMIT",
+      "detail": {
+        "limited": 43
+      },
+      "duration_s": 3.5,
+      "name": "r2.rate_limit",
+      "notes": "43/70 responses were 429",
+      "result_digest": "sha256:fffe7ce9e59e5b19",
+      "started_at": "2026-10-21T19:24:53Z",
+      "status": "PASS",
+      "ticket": "R2"
+    }
+  ],
+  "environment": {
+    "allow_destructive": true,
+    "allow_writes": true,
+    "cpu_count": 8,
+    "cpu_model": "13th Gen Intel(R) Core(TM) i9-13900H",
+    "cwd": "<private-home>/pt136-deploy",
+    "disk": {
+      "filesystem": "ext2/ext3",
+      "free_bytes": 921927675904,
+      "path": "<private-home>/pt136-deploy",
+      "total_bytes": 1081101176832
+    },
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "machine": "x86_64",
+    "memory_bytes": 16770527232,
+    "os": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "release": "6.18.33.2-microsoft-standard-WSL2",
+    "system": "Linux",
+    "tools": {
+      "compose": "5.5.0",
+      "docker_client": "29.7.2",
+      "docker_server": "29.7.2",
+      "git": "git version 2.43.0",
+      "python": "Python 3.12.3",
+      "topology_base_url": "https://privacytrace.test:58742"
+    },
+    "topology_configured": true,
+    "wsl": true
+  },
+  "finished_at": "2026-10-21T19:24:56Z",
+  "notes": "Synthetic APK/package-set inputs only (apk_fixture_builder); no real APK is used. Tokens are never written to the receipt.",
+  "receipt_version": 1,
+  "scope": "r2-dual-scope-business-loop",
+  "source_sha": "65b49f7ffecd8aee5eede21d69b310300dd32ca6",
+  "started_at": "2026-10-21T19:24:31Z",
+  "summary": {
+    "by_ticket": {
+      "R2": {
+        "fail": 0,
+        "not_tested": 0,
+        "pass": 13,
+        "skip": 0
+      }
+    },
+    "conclusion": "ALL_PASS",
+    "evidence_free": false,
+    "fail": 0,
+    "not_tested": 0,
+    "pass": 13,
+    "pass_rate_of_verified": 1.0,
+    "skip": 0,
+    "total": 13,
+    "untested_scopes": 0,
+    "verified": 13
+  },
+  "untested": []
+}

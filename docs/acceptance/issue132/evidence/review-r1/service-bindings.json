@@ -1,0 +1,294 @@
+{
+  "record_kind": "OBSERVED_SERVICE_BINDINGS",
+  "environment": "Fresh I/J and two dedicated WSL filesystems; same immutable product image IDs as prior run",
+  "observations": [
+    {
+      "record_kind": "OBSERVED_SERVICE_BINDINGS",
+      "role": "control",
+      "observed_at_utc": "2026-10-21T16:52:03.995603+00:00",
+      "daemon_id": "6ca6dfbb-8825-4bf5-aa43-d3d809d48d85",
+      "targets": [
+        {
+          "alias": "I-api",
+          "host": "10.32.1.2",
+          "port": 8000,
+          "expected": "refused",
+          "namespace_pid": 2465,
+          "source": "docker inspect container interface; service wildcard TCP listener",
+          "listeners_sha256": "0a3d7e06278c57a43e7503eb7635046d26a834dd4aa5ac1b7bc7762af15c4819",
+          "route_control": {
+            "port": 49340,
+            "body_sha256": "989c94cbba1262fe15ee2eb7a4cdc255f7a74e45aebeb41b63978398aa752ee4"
+          }
+        },
+        {
+          "alias": "I-postgres",
+          "host": "10.32.0.3",
+          "port": 5432,
+          "expected": "refused",
+          "namespace_pid": 1522,
+          "source": "docker inspect container interface; service wildcard TCP listener",
+          "listeners_sha256": "f831fd7255eaa7f4be15dff7191f6df4179a8bba6c60a93feddbf80c2b2e6775",
+          "route_control": {
+            "port": 49341,
+            "body_sha256": "c0578f7cf9a8f951e89c00748415d171c7bf5efd20fe3237ff02d8e9656ae060"
+          }
+        },
+        {
+          "alias": "I-broker",
+          "host": "10.32.0.2",
+          "port": 6379,
+          "expected": "refused",
+          "namespace_pid": 1459,
+          "source": "docker inspect container interface; service wildcard TCP listener",
+          "listeners_sha256": "26f98304081f4080288cd386b385a867b4217c9485eabdfcfbc67ab1868d1e83",
+          "route_control": {
+            "port": 49342,
+            "body_sha256": "7acf151e9f6a48f22600cd1e02ff495aa476545e7ac2dd1dc1bfccb15ea82969"
+          }
+        },
+        {
+          "alias": "I-gateway",
+          "host": "10.229.56.10",
+          "port": 8443,
+          "expected": "mtls",
+          "namespace_pid": 8239,
+          "source": "docker inspect container interface; service wildcard TCP listener",
+          "listeners_sha256": "bf2d7aeca721336b371a1a9787c27e04646bc7d86f447f523f22b330cd103115",
+          "route_control": {
+            "port": 49343,
+            "body_sha256": "8a1bd45ec74d036ffbb1ed81ef2f318f19686e7ba3689d69c11d0f4cd0066a8c"
+          }
+        },
+        {
+          "alias": "J-api",
+          "host": "10.32.4.2",
+          "port": 8000,
+          "expected": "refused",
+          "namespace_pid": 9535,
+          "source": "docker inspect container interface; service wildcard TCP listener",
+          "listeners_sha256": "38f289894336ba86f9c0a2815086be69cae47646a273167cc6f1259af28d221c",
+          "route_control": {
+            "port": 49344,
+            "body_sha256": "f193eb56badc3e7a6fd4c0aa62259c78efa9cd3a9bc21a467cf914b67441f653"
+          }
+        },
+        {
+          "alias": "J-postgres",
+          "host": "10.32.3.3",
+          "port": 5432,
+          "expected": "refused",
+          "namespace_pid": 8870,
+          "source": "docker inspect container interface; service wildcard TCP listener",
+          "listeners_sha256": "f98fdc4f91387a2cd9297207b10a3ef1d4f2d173dedfab23dba57aae5ba5fc57",
+          "route_control": {
+            "port": 49345,
+            "body_sha256": "5cf96900a1f0538746d3ea3bcfbf75892dcbfeeb4a378e127db1e1752f69a358"
+          }
+        },
+        {
+          "alias": "J-broker",
+          "host": "10.32.3.2",
+          "port": 6379,
+          "expected": "refused",
+          "namespace_pid": 8790,
+          "source": "docker inspect container interface; service wildcard TCP listener",
+          "listeners_sha256": "1e2272aeaa22f30bd6958e6da708ce2464c338818d1d4d3065c1c8e2998dbac9",
+          "route_control": {
+            "port": 49346,
+            "body_sha256": "0d0b8c329ade042650c2ff488f17f08c174ac2a9de457fc726e8730c05105865"
+          }
+        },
+        {
+          "alias": "J-gateway",
+          "host": "10.202.124.10",
+          "port": 8443,
+          "expected": "mtls",
+          "namespace_pid": 9288,
+          "source": "docker inspect container interface; service wildcard TCP listener",
+          "listeners_sha256": "10c6c6ab04380c18730ddbb82098ed591a69e926dc5b2161c0b9ff5da5a128f5",
+          "route_control": {
+            "port": 49347,
+            "body_sha256": "6b83a2aa390828992c66a48d1f7e25a0b716d6a2d0988c9b6cae86a4dc7cf519"
+          }
+        },
+        {
+          "alias": "control-daemon-http",
+          "host": "172.31.144.2",
+          "port": 2375,
+          "expected": "refused",
+          "namespace_pid": 42,
+          "source": "actual daemon host interface; Unix socket only, TCP ports not listening",
+          "listeners_sha256": "e62061c49968aef4994620d535c8dde532fb694d3a8e12c0747d249262347ed5",
+          "route_control": {
+            "port": 49348,
+            "body_sha256": "93a37abc570fffc62d09007df338d163574f9356a75304219216cccbcb31e9f7"
+          }
+        },
+        {
+          "alias": "control-daemon-tls",
+          "host": "172.31.144.2",
+          "port": 2376,
+          "expected": "refused",
+          "namespace_pid": 42,
+          "source": "actual daemon host interface; Unix socket only, TCP ports not listening",
+          "listeners_sha256": "e62061c49968aef4994620d535c8dde532fb694d3a8e12c0747d249262347ed5",
+          "route_control": {
+            "port": 49349,
+            "body_sha256": "20e40efdd36c344168969d7ddf0f08a88919171716fbcc02446d203251740fec"
+          }
+        }
+      ],
+      "canary_local_positive": true,
+      "canaries_are_temporary_same_ip_listeners_not_tunnels": true
+    },
+    {
+      "record_kind": "OBSERVED_SERVICE_BINDINGS",
+      "role": "scan",
+      "observed_at_utc": "2026-10-21T16:52:53.467065+00:00",
+      "daemon_id": "2caf0c09-4857-40bb-a118-c7ba5781ff8e",
+      "targets": [
+        {
+          "alias": "I-runner",
+          "host": "172.31.145.2",
+          "port": 8444,
+          "expected": "mtls",
+          "namespace_pid": 1522,
+          "source": "actual Runner bind env and host namespace listener",
+          "listeners_sha256": "8c637f3b2162185524e667441dc157f47e5774e599a01620b71ce6b96665e3f9",
+          "route_control": {
+            "port": 49340,
+            "body_sha256": "2dae792011adb5f5f56582943ec249c4cdb27508d3dc40317ec4f2311debbedf"
+          }
+        },
+        {
+          "alias": "J-runner",
+          "host": "172.31.145.3",
+          "port": 8444,
+          "expected": "mtls",
+          "namespace_pid": 1932,
+          "source": "actual Runner bind env and host namespace listener",
+          "listeners_sha256": "0e9392944e1cbc4650256502ac3719187093a7b5630ecf6e4a6ab2f83cd69786",
+          "route_control": {
+            "port": 49341,
+            "body_sha256": "f97336623a9814a5f0f26253d70176f3c69072eb287d8d036a7b5c4115c1095e"
+          }
+        },
+        {
+          "alias": "scan-daemon-http",
+          "host": "172.31.145.2",
+          "port": 2375,
+          "expected": "refused",
+          "namespace_pid": 43,
+          "source": "actual daemon host interface; Unix socket only, TCP ports not listening",
+          "listeners_sha256": "0e9392944e1cbc4650256502ac3719187093a7b5630ecf6e4a6ab2f83cd69786",
+          "route_control": {
+            "port": 49342,
+            "body_sha256": "3731810fb986b9c384d4046e73cf8d14a2b1780f4c7cbcd7033742ec0c6bc3c0"
+          }
+        },
+        {
+          "alias": "scan-daemon-tls",
+          "host": "172.31.145.2",
+          "port": 2376,
+          "expected": "refused",
+          "namespace_pid": 43,
+          "source": "actual daemon host interface; Unix socket only, TCP ports not listening",
+          "listeners_sha256": "0e9392944e1cbc4650256502ac3719187093a7b5630ecf6e4a6ab2f83cd69786",
+          "route_control": {
+            "port": 49343,
+            "body_sha256": "6cde3ae74b01c3af7d0f1b72dd3f946ae93ca58ee4a75d0ef28eb1f2118a8223"
+          }
+        }
+      ],
+      "canary_local_positive": true,
+      "canaries_are_temporary_same_ip_listeners_not_tunnels": true
+    }
+  ],
+  "targets": [
+    {
+      "alias": "I-api",
+      "host": "10.32.1.2",
+      "port": 8000,
+      "source": "docker inspect container interface; service wildcard TCP listener"
+    },
+    {
+      "alias": "I-postgres",
+      "host": "10.32.0.3",
+      "port": 5432,
+      "source": "docker inspect container interface; service wildcard TCP listener"
+    },
+    {
+      "alias": "I-broker",
+      "host": "10.32.0.2",
+      "port": 6379,
+      "source": "docker inspect container interface; service wildcard TCP listener"
+    },
+    {
+      "alias": "I-gateway",
+      "host": "10.229.56.10",
+      "port": 8443,
+      "source": "docker inspect container interface; service wildcard TCP listener"
+    },
+    {
+      "alias": "J-api",
+      "host": "10.32.4.2",
+      "port": 8000,
+      "source": "docker inspect container interface; service wildcard TCP listener"
+    },
+    {
+      "alias": "J-postgres",
+      "host": "10.32.3.3",
+      "port": 5432,
+      "source": "docker inspect container interface; service wildcard TCP listener"
+    },
+    {
+      "alias": "J-broker",
+      "host": "10.32.3.2",
+      "port": 6379,
+      "source": "docker inspect container interface; service wildcard TCP listener"
+    },
+    {
+      "alias": "J-gateway",
+      "host": "10.202.124.10",
+      "port": 8443,
+      "source": "docker inspect container interface; service wildcard TCP listener"
+    },
+    {
+      "alias": "control-daemon-http",
+      "host": "172.31.144.2",
+      "port": 2375,
+      "source": "actual daemon host interface; Unix socket only, TCP ports not listening"
+    },
+    {
+      "alias": "control-daemon-tls",
+      "host": "172.31.144.2",
+      "port": 2376,
+      "source": "actual daemon host interface; Unix socket only, TCP ports not listening"
+    },
+    {
+      "alias": "I-runner",
+      "host": "172.31.145.2",
+      "port": 8444,
+      "source": "actual Runner bind env and host namespace listener"
+    },
+    {
+      "alias": "J-runner",
+      "host": "172.31.145.3",
+      "port": 8444,
+      "source": "actual Runner bind env and host namespace listener"
+    },
+    {
+      "alias": "scan-daemon-http",
+      "host": "172.31.145.2",
+      "port": 2375,
+      "source": "actual daemon host interface; Unix socket only, TCP ports not listening"
+    },
+    {
+      "alias": "scan-daemon-tls",
+      "host": "172.31.145.2",
+      "port": 2376,
+      "source": "actual daemon host interface; Unix socket only, TCP ports not listening"
+    }
+  ]
+}

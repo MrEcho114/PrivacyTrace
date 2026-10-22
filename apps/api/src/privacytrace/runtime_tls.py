@@ -111,6 +111,19 @@ class NoRedirect(HTTPRedirectHandler):
         return None
 
 
+def _set_read_timeout(response, remaining):
+    try:
+        stream = getattr(response, "fp", None)
+        raw = getattr(stream, "raw", None)
+        sock = getattr(raw, "_sock", None)
+        setter = getattr(sock, "settimeout", None)
+        if not callable(setter):
+            raise RuntimeUnavailable("Private runtime read timeout unavailable")
+        setter(remaining)
+    except (AttributeError, OSError, TypeError, ValueError):
+        raise RuntimeUnavailable("Private runtime read timeout unavailable") from None
+
+
 class PrivateClient:
     def __init__(self, endpoint, tls, *, timeout=200):
         self.endpoint = private_endpoint(endpoint)
@@ -168,7 +181,7 @@ class PrivateClient:
                         raise RuntimeUnavailable("Private runtime response exceeds limits")
                     # urllib's timeout is a per-socket wait. Keep the original
                     # request deadline across headers and successive TLS reads.
-                    response.fp.raw._sock.settimeout(remaining)
+                    _set_read_timeout(response, remaining)
                     block = response.read1(min(65536, MAX_JSON + 1 - count))
                     if not block:
                         break

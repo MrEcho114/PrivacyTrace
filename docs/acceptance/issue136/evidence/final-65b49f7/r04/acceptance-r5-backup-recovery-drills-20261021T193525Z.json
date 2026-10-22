@@ -1,0 +1,164 @@
+{
+  "checks": [
+    {
+      "command": "quiesce -> snapshot -> delete -> fresh migrated DB/volume -> restore/readback",
+      "detail": {
+        "backup_bytes": 69510,
+        "backup_sha256": "8fe4beb17c77c819fa6764ce82aed3f4cc3bd655d31c297741191bc82b34503d",
+        "fresh_database": true,
+        "independent_deletion_journal": true,
+        "manifest": {
+          "files": 10,
+          "manifest_sha256": "ed87e4218e77b836fd88b12e34c3c5addc352b5bc71c4b6f9b6b2cf01d4e00c3"
+        },
+        "readback": {
+          "deleted_material_absent": true,
+          "retained_hash_verified": true
+        },
+        "restore": {
+          "deletions": 19,
+          "restored": true
+        },
+        "separate_material_volume": true
+      },
+      "duration_s": 39.874,
+      "name": "r5.snapshot_restore_deletion_replay",
+      "notes": "snapshot and deletion replay read back",
+      "result_digest": "sha256:af7b3cdef148c63c",
+      "started_at": "2026-10-21T19:30:13Z",
+      "status": "PASS",
+      "ticket": "R5"
+    },
+    {
+      "command": "separate deployment drill",
+      "detail": {
+        "new_control_peer_ready": 200,
+        "new_credentials": "ready and real scan succeeded",
+        "new_leaf_sha256": "1904d76956a581dba91560df4777980beba462e30ee2374c0ac77f21cf38ccc3",
+        "old_broker_password": "rejected:AUTH",
+        "old_control_peer_status": 403,
+        "old_database_password": "authentication rejected"
+      },
+      "duration_s": 47.028,
+      "name": "r5.credential_rotation",
+      "notes": "actual deployment drill completed",
+      "result_digest": "sha256:b1d7b1a761a01d6a",
+      "started_at": "2026-10-21T19:30:53Z",
+      "status": "PASS",
+      "ticket": "R5"
+    },
+    {
+      "command": "separate deployment drill",
+      "detail": {
+        "actual_enospc": {
+          "bytes": 536821760,
+          "errno": 28
+        },
+        "drafts_purged": {
+          "errors": [],
+          "purged": 0,
+          "remaining": 0
+        },
+        "filesystem": "disposable tmpfs",
+        "limit_bytes": 536870912,
+        "retained_hash_verified": true,
+        "upload_after_space_released": 200,
+        "upload_refusal_code": "MATERIAL_DISK_SPACE_REACHED",
+        "upload_refusal_status": 507
+      },
+      "duration_s": 37.372,
+      "name": "r5.disk_full",
+      "notes": "actual deployment drill completed",
+      "result_digest": "sha256:a82e1e1ddcb35269",
+      "started_at": "2026-10-21T19:31:41Z",
+      "status": "PASS",
+      "ticket": "R5"
+    },
+    {
+      "command": "separate deployment drill",
+      "detail": {
+        "candidate": {
+          "api_image_id": "sha256:be0a73da42e0f74c6d8e2c0e08e7b4c0b4298cdb323ef0bb43c104881dfb97e0",
+          "migration": "0080_05",
+          "protocol": 1,
+          "retained_report_readable": true
+        },
+        "previous": {
+          "api_image_id": "sha256:d008032ee3934478e3c6938cc5e7945d0d4cf8242414509a246fdcf1cf7c5c1b",
+          "migration": "0080_05",
+          "protocol": 1,
+          "retained_report_readable": true
+        },
+        "rollback": {
+          "api_image_id": "sha256:d008032ee3934478e3c6938cc5e7945d0d4cf8242414509a246fdcf1cf7c5c1b",
+          "migration": "0080_05",
+          "protocol": 1,
+          "retained_report_readable": true
+        }
+      },
+      "duration_s": 63.328,
+      "name": "r5.upgrade_rollback",
+      "notes": "actual deployment drill completed",
+      "result_digest": "sha256:efb156a4594fdc5f",
+      "started_at": "2026-10-21T19:32:18Z",
+      "status": "PASS",
+      "ticket": "R5"
+    }
+  ],
+  "environment": {
+    "allow_destructive": true,
+    "allow_writes": true,
+    "cpu_count": 8,
+    "cpu_model": "13th Gen Intel(R) Core(TM) i9-13900H",
+    "cwd": "<private-home>/pt136-deploy",
+    "disk": {
+      "filesystem": "ext2/ext3",
+      "free_bytes": 921927675904,
+      "path": "<private-home>/pt136-deploy",
+      "total_bytes": 1081101176832
+    },
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "machine": "x86_64",
+    "memory_bytes": 16770527232,
+    "os": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "release": "6.18.33.2-microsoft-standard-WSL2",
+    "system": "Linux",
+    "tools": {
+      "compose": "5.5.0",
+      "docker_client": "29.7.2",
+      "docker_server": "29.7.2",
+      "git": "git version 2.43.0",
+      "python": "Python 3.12.3",
+      "topology_base_url": "https://privacytrace.test:58742"
+    },
+    "topology_configured": true,
+    "wsl": true
+  },
+  "finished_at": "2026-10-21T19:33:22Z",
+  "notes": "",
+  "receipt_version": 1,
+  "scope": "r5-backup-recovery-drills",
+  "source_sha": "65b49f7ffecd8aee5eede21d69b310300dd32ca6",
+  "started_at": "2026-10-21T19:30:13Z",
+  "summary": {
+    "by_ticket": {
+      "R5": {
+        "fail": 0,
+        "not_tested": 0,
+        "pass": 4,
+        "skip": 0
+      }
+    },
+    "conclusion": "ALL_PASS",
+    "evidence_free": false,
+    "fail": 0,
+    "not_tested": 0,
+    "pass": 4,
+    "pass_rate_of_verified": 1.0,
+    "skip": 0,
+    "total": 4,
+    "untested_scopes": 0,
+    "verified": 4
+  },
+  "untested": []
+}

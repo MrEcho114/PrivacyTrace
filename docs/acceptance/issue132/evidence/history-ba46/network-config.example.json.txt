@@ -1,0 +1,25 @@
+{
+  "disposable": true,
+  "adb_env": "PT_ADB",
+  "serial_env": "PT_ADB_SERIAL",
+  "instances": {
+    "I": {
+      "origin": "https://localhost:18443",
+      "instance_id": "00000000-0000-4000-8000-000000000001",
+      "ca_file": "tmp/issue132/I-ca.pem",
+      "token_env": "PT132_I_TOKEN"
+    },
+    "J": {
+      "origin": "https://localhost:19443",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "ca_file": "tmp/issue132/J-ca.pem",
+      "token_env": "PT132_J_TOKEN"
+    }
+  },
+  "mtls_probes": [
+    {"alias": "I-gateway", "origin": "https://172.31.142.2:34443", "connect_host": "127.0.0.1", "connect_port": 45443},
+    {"alias": "J-gateway", "origin": "https://172.31.142.2:34444", "connect_host": "127.0.0.1", "connect_port": 45444},
+    {"alias": "I-runner", "origin": "https://172.31.143.2:8444", "connect_host": "127.0.0.1", "connect_port": 45445},
+    {"alias": "J-runner", "origin": "https://172.31.143.3:8444", "connect_host": "127.0.0.1", "connect_port": 45446}
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "instance": "I",
+      "delete_http": 200,
+      "cleanup_pending": false,
+      "old_material_http": 404
+    },
+    {
+      "instance": "J",
+      "delete_http": 200,
+      "cleanup_pending": false,
+      "old_material_http": 404
+    }
+  ],
+  "utc": "2026-10-21T16:56:34.313859+00:00"
+}

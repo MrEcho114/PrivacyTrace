@@ -6,6 +6,7 @@ import os
 import stat
 from uuid import uuid4
 
+from .capacity import CapacityRefused
 from .deletion_journal import fsync_directory
 from .policy_intake import read_safe
 from .web_intake import WebIntake
@@ -101,13 +102,21 @@ class PostgresWebIntake(WebIntake):
             used += info.st_size
             count += 1
             if count >= self.MAX_OBJECTS or used + incoming_bytes > self.MAX_OBJECT_BYTES:
-                raise ValueError("Private material capacity reached; operator action required")
+                raise CapacityRefused(
+                    "PRIVATE_MATERIAL_CAPACITY_REACHED",
+                    "Private material capacity reached; operator action required",
+                )
         if incoming_bytes > self.MAX_OBJECT_BYTES:
-            raise ValueError("Private material capacity reached; operator action required")
+            raise CapacityRefused(
+                "PRIVATE_MATERIAL_CAPACITY_REACHED",
+                "Private material capacity reached; operator action required",
+            )
 
     def _save(self, draft):
         if self.store.document_bytes(draft["id"]) > 128 * 1024 * 1024:
-            raise ValueError("Input history quota reached; create a new draft")
+            raise CapacityRefused(
+                "INPUT_HISTORY_QUOTA_REACHED", "Input history quota reached; create a new draft"
+            )
         return super()._save(draft)
 
     def get_draft_token_digest(self, draft_id):

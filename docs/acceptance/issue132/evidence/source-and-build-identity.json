@@ -1,0 +1,254 @@
+{
+  "record_kind": "SOURCE_AND_BUILD_IDENTITY",
+  "candidate_base": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+  "component_builds": {
+    "api_runner_scanner": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+    "web_android": "0ad5f565dc6f414ac2b9c35661296dc9352e3fef"
+  },
+  "equivalence": [
+    {
+      "path": "apps/api/src",
+      "built_from": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "23d8ea30ab99947dd62b00d643f804621b338049",
+      "identical": true
+    },
+    {
+      "path": "apps/api/migrations",
+      "built_from": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "b0869bee9e8f3a8a646f7f6bb27c63bcee31ee0e",
+      "identical": true
+    },
+    {
+      "path": "apps/api/pyproject.toml",
+      "built_from": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "3ed47647179630e15db7cd2b06d4ec608f7a91d5",
+      "identical": true
+    },
+    {
+      "path": "apps/api/uv.lock",
+      "built_from": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "b3c21bd84c2f80e65b52b4c2616ea8c4c8fe25e8",
+      "identical": true
+    },
+    {
+      "path": "deploy/Dockerfile",
+      "built_from": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "25ab6838dfcff13ad3c21ab09f198de7d6c91bab",
+      "identical": true
+    },
+    {
+      "path": "deploy/Runner.Dockerfile",
+      "built_from": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "4b0e54b231d670426e0f046de1955b2a4905f0ad",
+      "identical": true
+    },
+    {
+      "path": "deploy/Scan.Dockerfile",
+      "built_from": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "1f08c5143d2e32d1f4279c24a8196b97ad651946",
+      "identical": true
+    },
+    {
+      "path": "deploy/compose.yaml",
+      "built_from": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "80ab786df4a1ac37e754348c08099d8e0c25ad7b",
+      "identical": true
+    },
+    {
+      "path": "deploy/runner.compose.yaml",
+      "built_from": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "4e4aa9226348dcf025a3d140b8a9e2de9a438ed9",
+      "identical": true
+    },
+    {
+      "path": "deploy/relay.py",
+      "built_from": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "3590e3d3ae4d84db61ffd1f83e4119ac7bee01b7",
+      "identical": true
+    },
+    {
+      "path": "packages/contracts",
+      "built_from": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "92fde22916ffd179fc58f4009b4d6d4304641fa6",
+      "identical": true
+    },
+    {
+      "path": "rules",
+      "built_from": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "d91a15373f5f318ab98411ef0ce00174ebcb550d",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile",
+      "built_from": "0ad5f565dc6f414ac2b9c35661296dc9352e3fef",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "72eb68427eb6f7bad4d58cc76c65a65d29e7eae5",
+      "identical": true
+    },
+    {
+      "path": "apps/web/src",
+      "built_from": "0ad5f565dc6f414ac2b9c35661296dc9352e3fef",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "9e624303538f46db2b041daae8286367826223a5",
+      "identical": true
+    },
+    {
+      "path": "apps/web/package.json",
+      "built_from": "0ad5f565dc6f414ac2b9c35661296dc9352e3fef",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "37f10f17dcec9991f2b8a0f6a67b3faea5a68dfd",
+      "identical": true
+    },
+    {
+      "path": "package-lock.json",
+      "built_from": "0ad5f565dc6f414ac2b9c35661296dc9352e3fef",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "48c5fccee15b77f77f3de52d29126f0a95d12dd5",
+      "identical": true
+    },
+    {
+      "path": "experiments/android-package-probe/core",
+      "built_from": "0ad5f565dc6f414ac2b9c35661296dc9352e3fef",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "b0cedb703edbd622b2433d0371d48415833cf0c4",
+      "identical": true
+    },
+    {
+      "path": "experiments/android-package-probe/tauri-plugin",
+      "built_from": "0ad5f565dc6f414ac2b9c35661296dc9352e3fef",
+      "candidate": "798ecf2e1ee65d60dcd5500ab1cb56b05c80cdf1",
+      "git_object": "08ff40de456c1ebc1172b5656525ddc184f6c8a8",
+      "identical": true
+    }
+  ],
+  "contract_hashes": {
+    "packages/contracts/evaluation-input.schema.json": "d70239c36fa5b1ec791e297bc61d64ae0713e55a9194a05b9ea913a298b438cd",
+    "packages/contracts/evaluation-result.schema.json": "ecab4389ac09ec7bd52ba6ae3663c8c334a4b112c2d227007ff58c2c0642118c",
+    "packages/contracts/jobs-response.schema.json": "82ee4e240ccb3bf2c300d3c96bed64770c22424343bb17d2b8ce395bfae4e2d1",
+    "packages/contracts/report.schema.json": "6c0ebca11914a20a5af6a10f5fd8ec36ed464b9ba9cea8196476484c62c65740",
+    "packages/contracts/review-request.schema.json": "05cbe796d835402160a7edb13d2768ad5a293ab675cc9fc6f8b0451d5eb115bc",
+    "packages/contracts/sdk-signatures.schema.json": "f0f607af3ac76cda711c5aea9fbb31d62334e2cd712a90071eb14d46c069ccd3",
+    "packages/contracts/web-candidate-input.schema.json": "fb179178f12e6d0b6cb8f15dfec1833477e22f671ed297a5a36497f1ec36cd7c",
+    "packages/contracts/web-draft-input.schema.json": "bf40bbbf144686a960365fce01b99858a974adea0b3a0ccf11bc6f26561304d6",
+    "packages/contracts/web-external-collection-input.schema.json": "6effa36c5a25859b6ce483ec5509046985b96f46b2f8f64b5175057e570d3259",
+    "packages/contracts/web-external-policy-input.schema.json": "ab205fc0c138d0d73f7650b34c50031f28ac9fa20ec1de7e5baab676b3da7b46",
+    "packages/contracts/web-model-settings.schema.json": "0e92f4dbc14eda1dd6e4349f807f42c2e76cb22d29fd90b5375ac68450884138",
+    "packages/contracts/web-start-input.schema.json": "f1b0a06dfc8bd3f299184ac7f9906e2c23463bdfe89c56e63e518b2030f72d93"
+  },
+  "runtime_contract_sha256": "e2d5f757229d4b250bda319b2c713f1e32aa3c34431722b877d7169c9f6395f6",
+  "rules": {
+    "sdk-signatures.v0.1.json": {
+      "sha256": "dd1e139654b85f9fb0e92780e7544f539f7ab3d8f5e6f076e384d14760e4aad9",
+      "version": "0.1.0"
+    },
+    "taxonomy.v0.2.json": {
+      "sha256": "609e47941bbbb2d29eeac91cdc4644d3920614f9c3da043c8dbc3cbd652f060a",
+      "version": "0.2.0"
+    },
+    "taxonomy.v0.1.json": {
+      "sha256": "5302cde8f86acaaf71814b28e3aa89a426060467b0748281e3d2c7e55f6fc213",
+      "version": "0.1.0"
+    },
+    "sdk-signatures.v1.0.json": {
+      "sha256": "f4987d328ac7b6697cd3fd92c4f6327cfdeea84566ad6e9934c8aa5bc14150e4",
+      "version": "1.0.0"
+    },
+    "taxonomy.v0.3.json": {
+      "sha256": "e63297c70dcb3ec67b797e315fdfe469d617296b7bd51084a5ed8e950f513951",
+      "version": "0.3.0"
+    }
+  },
+  "runtime_versions": {
+    "postgresql": "17.9",
+    "migration": "0080_05",
+    "redis": "7.4.8",
+    "celery": "5.6.3",
+    "runner_protocol": 1,
+    "docker": "29.9.1",
+    "provenance": "Read from the same immutable API/DB/broker image IDs in the prior run; final topology receipts independently identify these images. No replacement version probes after cleanup."
+  },
+  "device": {
+    "alias": "PrivacyTrace132",
+    "kind": "LDPlayer14 dedicated emulator",
+    "api": 34,
+    "android": "14",
+    "abi": "x86_64",
+    "webview": "146.0.7680.119",
+    "display": "720x1280 dpi240",
+    "cpu": 2,
+    "memory_mib": 4096,
+    "build_fingerprint": "samsung/star2qltezh/star2qltechn:14/UQ1A.240205.07131809/ucsm.20260713.180933:user/release-keys",
+    "fingerprint_provenance": "Original tool capture 2026-10-21T11:23:08.665Z recovered from own session; emulator self-report, not Samsung hardware"
+  },
+  "client": {
+    "apk_sha256": "5713eacc19875fe9c61ab5af7a9b9e599b9686224e1f909c7bc726370fee5826",
+    "signer_der_sha256": "d667b75442f507cfbcf075b95bb614bbfc10c7742c94f62e9004c10adf709109",
+    "signature_log_private_sha256": "815d3d9b67264872c65e9bb126a185fa1f0ceedb51089cac5fb471a37fb20930",
+    "signature_verification": "apksigner in network-none/read-only/nonroot/cap-drop-ALL container",
+    "network_security_xml_sha256": "4ecbdd1ddbe1d5c1deb61063a98df65da8e0fac1b08c440b5b4ac8defa5cbec7",
+    "trust": "system by default; localhost only additionally trusts four explicit test CAs; cleartext disabled; CA/time/SAN checks active",
+    "test_ca_fingerprints": [
+      {
+        "alias": "first-I",
+        "pem_sha256": "e484dfb21f96833f98c6f6ab38f023cd0452da2e4dc9b13f779b66a908c7624f",
+        "der_sha256": "cd2640fedc53fecc6e842de63d3810f078712f460e90f069c0caf52557cf9729"
+      },
+      {
+        "alias": "first-J",
+        "pem_sha256": "564c9ce60154319cbf8748e8de0db222f593cc13d0a91812a9a28728e6f1fc78",
+        "der_sha256": "aabcad1c16baf995d1f2be95bd9856f02f5439443c05c03581d6cfe14ca61dab"
+      },
+      {
+        "alias": "dedicated-I",
+        "pem_sha256": "18cb1a500d5cb84dc92668c28d9ce7946542a97f9f1fe5e368f4f11569616d61",
+        "der_sha256": "ea6f130b42290b35bd66cde08012aff5a8d6e6c92cf12714264daba74045262e"
+      },
+      {
+        "alias": "dedicated-J",
+        "pem_sha256": "5fdaa531c885df866562de8f229370eacb12f8a5acde1e78537b5781edef8bfa",
+        "der_sha256": "8af9cb1c6b172b4327e7392adf1399e61f040a725a2df1ecd62b81b8497c19c8"
+      }
+    ],
+    "supplemental_default_apk_sha256": "bf7f619302af6e56d91b0c825b71a7635b28aa0f98c4eba6e8271df1dd1ac4b8",
+    "default_trust_limit": "Supplement rejects first-run private CA only; final cases use configured trust, no system/public-trust claim"
+  },
+  "fixture_signer_der_sha256": "46938490e9b6723058665c507c04541942f5b78fc829e26c6fb9a2c659fcb843",
+  "fixture_source_sha256": {
+    "AndroidManifest.xml": "e7bdcf00fa077866515824d62e14a0941d559a73aaa819e11310aed67ce70559",
+    "MainActivity.java": "1c5c6fcc86d4bd166d96dfbc7d4255f092f01839d9e77348ebc7923aceef63e5",
+    "SplitManifest.xml": "2e4085e453aef59c81bb1eb98d802022533eb08431bf79b989ef4e19b85992c0"
+  },
+  "build_tools": {
+    "jdk": "17",
+    "android_platform": "36",
+    "android_build_tools": "36.0.0",
+    "ndk": "27.2.12479018",
+    "rust": "1.90.0",
+    "node_build": "24.17.0",
+    "node_host_automation": "24.19.0",
+    "gradle": "9.6.1"
+  },
+  "registry_digests": null,
+  "image_identity_scope": "Locally built immutable Docker image IDs in topology receipts; no registry push/digest claimed",
+  "model_endpoint_kind": "EXTERNAL_CHAT_EXPORT controlled local declaration/manual candidate; no external model",
+  "virtualization": {
+    "control": "PrivacyTrace132-Control Ubuntu24.04.5 WSL2",
+    "scan": "PrivacyTrace132-Scan Ubuntu24.04.5 WSL2",
+    "separate_root_filesystems": true,
+    "separate_docker_data_and_sockets": true,
+    "shared_wsl_kernel": true,
+    "physical_hosts": false
+  }
+}

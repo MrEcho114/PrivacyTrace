@@ -40,7 +40,7 @@ def free_port():
         return sock.getsockname()[1]
 
 
-def available_subnet():
+def available_subnet(avoid=()):
     identifiers = execute(["docker", "network", "ls", "-q"]).splitlines()
     networks = json.loads(execute(["docker", "network", "inspect", *identifiers]))
     occupied = [
@@ -49,6 +49,7 @@ def available_subnet():
         for item in (network.get("IPAM", {}).get("Config") or [])
         if item.get("Subnet")
     ]
+    occupied += [ipaddress.ip_network(prefix + ".0/24") for prefix in avoid]
     for _ in range(200):
         prefix = f"10.{secrets.randbelow(40) + 200}.{secrets.randbelow(250)}"
         candidate = ipaddress.ip_network(prefix + ".0/24")
@@ -153,6 +154,10 @@ def create(api_image, web_image, runner_image, scanner_image):
 def _populate(root, project, api_image, web_image, runner_image, scanner_image):
     instance = str(uuid4())
     subnet = available_subnet()
+    # Docker honours a fixed client address only on a network with a user-configured
+    # subnet, and the capacity drill claims one client address per identity, so the
+    # laboratory pins the api bridge instead of letting the daemon auto-allocate it.
+    api_subnet = available_subnet(avoid=(subnet,))
     gateway, runner_ip = subnet + ".10", subnet + ".40"
     image_ids = {
         name: execute(["docker", "image", "inspect", image, "--format", "{{.Id}}"])
@@ -309,6 +314,7 @@ def _populate(root, project, api_image, web_image, runner_image, scanner_image):
         "PT_GATEWAY_HOST_IP": "127.0.0.1",
         "PT_CONTROL_SUBNET": subnet + ".0/24",
         "PT_CONTROL_GATEWAY_IP": subnet + ".1",
+        "PT_API_SUBNET": api_subnet + ".0/24",
         "PT_SECRETS_DIR": str(private),
     }
     (root / "deployment.env").write_text("\n".join(f"{k}={v}" for k, v in env.items()) + "\n")
@@ -386,6 +392,9 @@ def _populate(root, project, api_image, web_image, runner_image, scanner_image):
                 "runner_key": "runner_key.pem",
             }.items()
         },
+    }
+    override["networks"] = {
+        "api": {"ipam": {"config": [{"subnet": api_subnet + ".0/24"}]}}
     }
     # Compose merges port sequences by key; !override is unavailable in JSON.
     # Reset web ports in an initial YAML override, then add our ephemeral port.

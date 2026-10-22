@@ -1,0 +1,21 @@
+{
+  "generated_utc": "2026-10-21T11:50:22.510596+00:00",
+  "certificates": {
+    "positive": {
+      "der_sha256": "e7a5ded48fbe0af12dc1a2ad22f1887254620306e334a506e06203207f94b232",
+      "description": "notBefore=Oct 21 11:33:36 2026 GMT\nnotAfter=Oct 23 11:33:36 2026 GMT\nsubject=CN = web\nX509v3 Subject Alternative Name: \n    DNS:privacytrace.test, DNS:localhost, IP Address:127.0.0.1\n"
+    },
+    "bad-ca": {
+      "der_sha256": "df2d43d22e1a2c01ec3682918067ca6da414f3a3c6243921c29f445aea6b6135",
+      "description": "notBefore=Oct 21 11:50:22 2026 GMT\nnotAfter=Oct 23 11:50:22 2026 GMT\nsubject=CN = Untrusted PT132 test CA\nX509v3 Subject Alternative Name: \n    DNS:localhost\n"
+    },
+    "bad-host": {
+      "der_sha256": "0adfb8737d193fb4a28c311369f619a6387d87f4af96df62bb9a4acebe1c2192",
+      "description": "notBefore=Oct 21 11:50:22 2026 GMT\nnotAfter=Oct 23 11:50:22 2026 GMT\nsubject=CN = localhost\nX509v3 Subject Alternative Name: \n    DNS:wrong-host.invalid\n"
+    },
+    "expired": {
+      "der_sha256": "06cd18455b64da1c70abd569bf06099c898913fb225851b89a628d9dc77f8a10",
+      "description": "notBefore=Jan  1 00:00:00 2020 GMT\nnotAfter=Jan  2 00:00:00 2020 GMT\nsubject=CN = localhost\nX509v3 Subject Alternative Name: \n    DNS:localhost\n"
+    }
+  }
+}

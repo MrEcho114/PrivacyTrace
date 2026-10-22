@@ -1,0 +1,458 @@
+{
+  "group": "f05-precommit-failed",
+  "case_passed": false,
+  "records": [
+    {
+      "private_locator": "f05-precommit-result.json",
+      "private_capture_sha256": "60386a149d908a9e984c4bfa186b89a9c22704013969c5567daa5ad6feeaa07b",
+      "observation": {
+        "operation_alias": "45c3422d75aa",
+        "completed_output_sha256": "22903cb0531459f88f1d983eb82a74b8157067ce939756bab1fb93090c582e29",
+        "receipt_keys": [
+          "cleanup_verified",
+          "container",
+          "container_created",
+          "exit_state",
+          "image_id",
+          "input_removed",
+          "isolation",
+          "mounts",
+          "request_id",
+          "user",
+          "version"
+        ],
+        "has_actual_scan_result": true,
+        "observation": {
+          "at_utc": "2026-10-21T09:04:58.059342+00:00",
+          "source_sha": "ffadeb06af70072b5ee2d931ee565e5b7e546acd",
+          "persistent": {
+            "jobs": [
+              {
+                "state": "CANCELLED",
+                "has_report": false,
+                "execution_state": "REVOKED",
+                "fence": 2,
+                "attempt": 1,
+                "job_alias": "b123f956ac36"
+              },
+              {
+                "state": "QUEUED",
+                "has_report": false,
+                "execution_state": "REVOKED",
+                "fence": 1,
+                "attempt": 0,
+                "job_alias": "be2909b12f02"
+              },
+              {
+                "state": "CANCELLED",
+                "has_report": false,
+                "execution_state": "REVOKED",
+                "fence": 1,
+                "attempt": 0,
+                "job_alias": "9d3714364832"
+              },
+              {
+                "state": "SUCCEEDED",
+                "has_report": false,
+                "execution_state": "REVOKED",
+                "fence": 2,
+                "attempt": 1,
+                "job_alias": "8bbdeb8bd7af"
+              },
+              {
+                "state": "SUCCEEDED",
+                "has_report": true,
+                "execution_state": "SUCCEEDED",
+                "fence": 1,
+                "attempt": 1,
+                "job_alias": "fb1cb3e9595f"
+              },
+              {
+                "state": "STATIC_ANALYSIS",
+                "has_report": false,
+                "execution_state": "RUNNING",
+                "fence": 1,
+                "attempt": 1,
+                "job_alias": "ee6927db792b"
+              }
+            ],
+            "counts": {
+              "intake_documents": 17,
+              "outbox_events": 6,
+              "runner_materials": 3,
+              "deletion_intents": 5,
+              "upload_reservations": 0
+            },
+            "scopes": [
+              {
+                "kind": "DRAFT",
+                "tombstone": false,
+                "scope_alias": "8628d29ffe11"
+              },
+              {
+                "kind": "JOB",
+                "tombstone": false,
+                "scope_alias": "fb1cb3e9595f"
+              },
+              {
+                "kind": "DRAFT",
+                "tombstone": true,
+                "scope_alias": "ec62f50247b1"
+              },
+              {
+                "kind": "JOB",
+                "tombstone": true,
+                "scope_alias": "9d3714364832"
+              },
+              {
+                "kind": "JOB",
+                "tombstone": true,
+                "scope_alias": "8bbdeb8bd7af"
+              },
+              {
+                "kind": "DRAFT",
+                "tombstone": true,
+                "scope_alias": "b27e7a795af3"
+              },
+              {
+                "kind": "JOB",
+                "tombstone": true,
+                "scope_alias": "be2909b12f02"
+              },
+              {
+                "kind": "DRAFT",
+                "tombstone": false,
+                "scope_alias": "0b2968b9f815"
+              },
+              {
+                "kind": "JOB",
+                "tombstone": false,
+                "scope_alias": "b123f956ac36"
+              },
+              {
+                "kind": "JOB",
+                "tombstone": false,
+                "scope_alias": "ee6927db792b"
+              }
+            ],
+            "material_files": 45
+          },
+          "runner": [
+            {
+              "state": "DONE",
+              "error": null,
+              "has_receipt": true,
+              "result_sha256": "c14af2cb4c89e1295df362a13a61f16640a3e67caf387754f8fed35b25995859"
+            },
+            {
+              "state": "DONE",
+              "error": null,
+              "has_receipt": true,
+              "result_sha256": "5ed27216f4e115c1c098b1a11bf69aa5d11e60e268012ee4eed5fdd6b5e674d2"
+            },
+            {
+              "state": "DONE",
+              "error": "CANCELLED",
+              "has_receipt": true,
+              "result_sha256": "19aabea96d02d2c41d2df1ac90350e5d3a823115db3bef05ba81693f0d78f663"
+            },
+            {
+              "state": "DONE",
+              "error": null,
+              "has_receipt": true,
+              "result_sha256": "22903cb0531459f88f1d983eb82a74b8157067ce939756bab1fb93090c582e29"
+            }
+          ],
+          "active_scanners": [],
+          "captured_private_scopes": 4,
+          "case_passed": false,
+          "last_60s_request_groups": [
+            {
+              "actor": "UNKNOWN",
+              "scope_alias": null,
+              "method": "GET",
+              "route": "/api/v1/web/drafts/{id}",
+              "status": 200,
+              "count": 23,
+              "first_epoch": 1792573471.996091,
+              "last_epoch": 1792573492.9959002
+            },
+            {
+              "actor": "UNKNOWN",
+              "scope_alias": null,
+              "method": "GET",
+              "route": "/api/v1/jobs/{id}",
+              "status": 200,
+              "count": 12,
+              "first_epoch": 1792573472.0676284,
+              "last_epoch": 1792573493.039637
+            },
+            {
+              "actor": "UNKNOWN",
+              "scope_alias": null,
+              "method": "GET",
+              "route": "/api/v1/jobs/{id}/report",
+              "status": 409,
+              "count": 1,
+              "first_epoch": 1792573472.151172,
+              "last_epoch": 1792573472.151172
+            },
+            {
+              "actor": "UNKNOWN",
+              "scope_alias": null,
+              "method": "GET",
+              "route": "/api/v1/mobile-capabilities",
+              "status": 200,
+              "count": 23,
+              "first_epoch": 1792573473.1392817,
+              "last_epoch": 1792573493.1303058
+            },
+            {
+              "actor": "UNKNOWN",
+              "scope_alias": null,
+              "method": "POST",
+              "route": "/api/v1/jobs/{id}/retry",
+              "status": 200,
+              "count": 1,
+              "first_epoch": 1792573473.317559,
+              "last_epoch": 1792573473.317559
+            },
+            {
+              "actor": "UNKNOWN",
+              "scope_alias": null,
+              "method": "GET",
+              "route": "/api/v1/web/drafts/{id}",
+              "status": 429,
+              "count": 1,
+              "first_epoch": 1792573493.1555338,
+              "last_epoch": 1792573493.1555338
+            }
+          ],
+          "request_window_end_epoch": 1792573493.1555338
+        }
+      }
+    },
+    {
+      "private_locator": "f05-precommit-revoked.json",
+      "private_capture_sha256": "5145b9a67ceb973b471230c45463c1ec70b6976083f2a16b478e6a3ca28d722d",
+      "observation": {
+        "at_utc": "2026-10-21T09:07:02.345168+00:00",
+        "source_sha": "ffadeb06af70072b5ee2d931ee565e5b7e546acd",
+        "persistent": {
+          "jobs": [
+            {
+              "state": "CANCELLED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 2,
+              "attempt": 1,
+              "job_alias": "b123f956ac36"
+            },
+            {
+              "state": "QUEUED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 1,
+              "attempt": 0,
+              "job_alias": "be2909b12f02"
+            },
+            {
+              "state": "CANCELLED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 1,
+              "attempt": 0,
+              "job_alias": "9d3714364832"
+            },
+            {
+              "state": "SUCCEEDED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 2,
+              "attempt": 1,
+              "job_alias": "8bbdeb8bd7af"
+            },
+            {
+              "state": "SUCCEEDED",
+              "has_report": true,
+              "execution_state": "SUCCEEDED",
+              "fence": 1,
+              "attempt": 1,
+              "job_alias": "fb1cb3e9595f"
+            },
+            {
+              "state": "QUEUED",
+              "has_report": false,
+              "execution_state": "RETRY",
+              "fence": 2,
+              "attempt": 1,
+              "job_alias": "ee6927db792b"
+            }
+          ],
+          "counts": {
+            "intake_documents": 17,
+            "outbox_events": 6,
+            "runner_materials": 3,
+            "deletion_intents": 5,
+            "upload_reservations": 0
+          },
+          "scopes": [
+            {
+              "kind": "DRAFT",
+              "tombstone": false,
+              "scope_alias": "8628d29ffe11"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": false,
+              "scope_alias": "fb1cb3e9595f"
+            },
+            {
+              "kind": "DRAFT",
+              "tombstone": true,
+              "scope_alias": "ec62f50247b1"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "9d3714364832"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "8bbdeb8bd7af"
+            },
+            {
+              "kind": "DRAFT",
+              "tombstone": true,
+              "scope_alias": "b27e7a795af3"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "be2909b12f02"
+            },
+            {
+              "kind": "DRAFT",
+              "tombstone": false,
+              "scope_alias": "0b2968b9f815"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": false,
+              "scope_alias": "b123f956ac36"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": false,
+              "scope_alias": "ee6927db792b"
+            }
+          ],
+          "material_files": 45
+        },
+        "runner": [
+          {
+            "state": "DONE",
+            "error": null,
+            "has_receipt": true,
+            "result_sha256": "c14af2cb4c89e1295df362a13a61f16640a3e67caf387754f8fed35b25995859"
+          },
+          {
+            "state": "DONE",
+            "error": null,
+            "has_receipt": true,
+            "result_sha256": "5ed27216f4e115c1c098b1a11bf69aa5d11e60e268012ee4eed5fdd6b5e674d2"
+          },
+          {
+            "state": "DONE",
+            "error": "CANCELLED",
+            "has_receipt": true,
+            "result_sha256": "19aabea96d02d2c41d2df1ac90350e5d3a823115db3bef05ba81693f0d78f663"
+          },
+          {
+            "state": "DONE",
+            "error": null,
+            "has_receipt": true,
+            "result_sha256": "22903cb0531459f88f1d983eb82a74b8157067ce939756bab1fb93090c582e29"
+          }
+        ],
+        "active_scanners": [],
+        "captured_private_scopes": 4,
+        "case_passed": false,
+        "last_60s_request_groups": [
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "GET",
+            "route": "/api/v1/web/drafts/{id}",
+            "status": 200,
+            "count": 23,
+            "first_epoch": 1792573471.996091,
+            "last_epoch": 1792573492.9959002
+          },
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "GET",
+            "route": "/api/v1/jobs/{id}",
+            "status": 200,
+            "count": 12,
+            "first_epoch": 1792573472.0676284,
+            "last_epoch": 1792573493.039637
+          },
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "GET",
+            "route": "/api/v1/jobs/{id}/report",
+            "status": 409,
+            "count": 1,
+            "first_epoch": 1792573472.151172,
+            "last_epoch": 1792573472.151172
+          },
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "GET",
+            "route": "/api/v1/mobile-capabilities",
+            "status": 200,
+            "count": 23,
+            "first_epoch": 1792573473.1392817,
+            "last_epoch": 1792573493.1303058
+          },
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "POST",
+            "route": "/api/v1/jobs/{id}/retry",
+            "status": 200,
+            "count": 1,
+            "first_epoch": 1792573473.317559,
+            "last_epoch": 1792573473.317559
+          },
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "GET",
+            "route": "/api/v1/web/drafts/{id}",
+            "status": 429,
+            "count": 1,
+            "first_epoch": 1792573493.1555338,
+            "last_epoch": 1792573493.1555338
+          },
+          {
+            "actor": "UNKNOWN",
+            "scope_alias": null,
+            "method": "GET",
+            "route": "/api/v1/mobile-capabilities",
+            "status": 429,
+            "count": 2,
+            "first_epoch": 1792573498.5731294,
+            "last_epoch": 1792573500.1527393
+          }
+        ],
+        "request_window_end_epoch": 1792573500.1527393
+      }
+    }
+  ]
+}

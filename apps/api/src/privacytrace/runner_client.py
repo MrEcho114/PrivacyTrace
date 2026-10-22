@@ -53,14 +53,21 @@ class RunnerClient:
     def _deadline(self, timeout):
         if type(timeout) not in (int, float) or not math.isfinite(timeout) or timeout <= 0:
             raise ValueError("Invalid runner operation deadline")
-        return time.monotonic() + min(timeout, self.remote.timeout)
+        transport_timeout = getattr(self.remote, "timeout", None)
+        if (
+            type(transport_timeout) not in (int, float)
+            or not math.isfinite(transport_timeout)
+            or transport_timeout <= 0
+        ):
+            raise ValueError("Invalid runner transport timeout")
+        return time.monotonic() + min(timeout, transport_timeout)
 
-    @staticmethod
-    def _remaining(deadline):
+    def _remaining(self, deadline):
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise RuntimeUnavailable("Runner operation deadline exhausted")
-        return remaining
+        # Subtracting a rounded absolute deadline can slightly exceed the cap.
+        return min(remaining, self.remote.timeout)
 
     def _response(self, value, *, timeout=None):
         response = self.remote.json("/v1/run", data=manifest(value), timeout=timeout)

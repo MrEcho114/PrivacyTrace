@@ -1,0 +1,63 @@
+{
+  "started_at": "2026-10-21T15:11:00.831184+00:00",
+  "checks": [
+    {
+      "task": "I-Android-B",
+      "operation": "old-draft-material-revoked",
+      "http": 404,
+      "generic_denial": true,
+      "body_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d"
+    },
+    {
+      "task": "I-Android-B",
+      "operation": "old-job-material-revoked",
+      "http": 404,
+      "generic_denial": true,
+      "body_sha256": "4b24bcb7b21a5fb9065016ad64a3c5a6cf580bb7879369dab80fd59d5c896229"
+    },
+    {
+      "task": "I-Android-B",
+      "operation": "old-job-material-revoked/report",
+      "http": 404,
+      "generic_denial": true,
+      "body_sha256": "4b24bcb7b21a5fb9065016ad64a3c5a6cf580bb7879369dab80fd59d5c896229"
+    },
+    {
+      "task": "J-Android-B",
+      "operation": "old-draft-material-revoked",
+      "http": 404,
+      "generic_denial": true,
+      "body_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d"
+    },
+    {
+      "task": "J-Android-B",
+      "operation": "old-job-material-revoked",
+      "http": 404,
+      "generic_denial": true,
+      "body_sha256": "4b24bcb7b21a5fb9065016ad64a3c5a6cf580bb7879369dab80fd59d5c896229"
+    },
+    {
+      "task": "J-Android-B",
+      "operation": "old-job-material-revoked/report",
+      "http": 404,
+      "generic_denial": true,
+      "body_sha256": "4b24bcb7b21a5fb9065016ad64a3c5a6cf580bb7879369dab80fd59d5c896229"
+    },
+    {
+      "task": "J-independent-A",
+      "operation": "delete-with-own-capability",
+      "http": 200,
+      "cleanup_pending": false,
+      "body_sha256": "3f0b06066395fc5aa1121d5f6cf529a48e95ebe0cba3429742f5123c0ff2e9ca"
+    },
+    {
+      "task": "J-independent-A",
+      "operation": "old-draft-material-revoked",
+      "http": 404,
+      "generic_denial": true,
+      "body_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d"
+    }
+  ],
+  "finished_at": "2026-10-21T15:11:52.108790+00:00",
+  "passed": true
+}

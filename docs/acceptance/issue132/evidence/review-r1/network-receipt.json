@@ -1,0 +1,609 @@
+{
+  "started_at": "2026-10-21T16:53:34.433306+00:00",
+  "record_kind": "ANDROID_NETWORK_SUBSET",
+  "scenario_status": "NOT_RUN",
+  "scope": "Installed app UID. Public HTTPS/loopback/temporary-tunnel subsets are separate from direct observed service addresses. Each direct target needs a successful no-tunnel route control on the identical IP before denial counts.",
+  "binding_receipt_sha256": "625462964a2ecbae649989aba6b2c62fcc7038e05cb0dc729d99140a4668c402",
+  "direct_targets": [
+    {
+      "alias": "I-api",
+      "host": "10.32.1.2",
+      "port": 8000,
+      "route_control_port": 49340,
+      "route_proven": false,
+      "transport": "DIRECT_LITERAL_IP_NO_TUNNEL",
+      "status": "BLOCKED",
+      "reason": "DIRECT_ROUTE_NOT_PROVEN"
+    },
+    {
+      "alias": "I-postgres",
+      "host": "10.32.0.3",
+      "port": 5432,
+      "route_control_port": 49341,
+      "route_proven": false,
+      "transport": "DIRECT_LITERAL_IP_NO_TUNNEL",
+      "status": "BLOCKED",
+      "reason": "DIRECT_ROUTE_NOT_PROVEN"
+    },
+    {
+      "alias": "I-broker",
+      "host": "10.32.0.2",
+      "port": 6379,
+      "route_control_port": 49342,
+      "route_proven": false,
+      "transport": "DIRECT_LITERAL_IP_NO_TUNNEL",
+      "status": "BLOCKED",
+      "reason": "DIRECT_ROUTE_NOT_PROVEN"
+    },
+    {
+      "alias": "I-gateway",
+      "host": "10.229.56.10",
+      "port": 8443,
+      "route_control_port": 49343,
+      "route_proven": false,
+      "transport": "DIRECT_LITERAL_IP_NO_TUNNEL",
+      "status": "BLOCKED",
+      "reason": "DIRECT_ROUTE_NOT_PROVEN"
+    },
+    {
+      "alias": "J-api",
+      "host": "10.32.4.2",
+      "port": 8000,
+      "route_control_port": 49344,
+      "route_proven": false,
+      "transport": "DIRECT_LITERAL_IP_NO_TUNNEL",
+      "status": "BLOCKED",
+      "reason": "DIRECT_ROUTE_NOT_PROVEN"
+    },
+    {
+      "alias": "J-postgres",
+      "host": "10.32.3.3",
+      "port": 5432,
+      "route_control_port": 49345,
+      "route_proven": false,
+      "transport": "DIRECT_LITERAL_IP_NO_TUNNEL",
+      "status": "BLOCKED",
+      "reason": "DIRECT_ROUTE_NOT_PROVEN"
+    },
+    {
+      "alias": "J-broker",
+      "host": "10.32.3.2",
+      "port": 6379,
+      "route_control_port": 49346,
+      "route_proven": false,
+      "transport": "DIRECT_LITERAL_IP_NO_TUNNEL",
+      "status": "BLOCKED",
+      "reason": "DIRECT_ROUTE_NOT_PROVEN"
+    },
+    {
+      "alias": "J-gateway",
+      "host": "10.202.124.10",
+      "port": 8443,
+      "route_control_port": 49347,
+      "route_proven": false,
+      "transport": "DIRECT_LITERAL_IP_NO_TUNNEL",
+      "status": "BLOCKED",
+      "reason": "DIRECT_ROUTE_NOT_PROVEN"
+    },
+    {
+      "alias": "control-daemon-http",
+      "host": "172.31.144.2",
+      "port": 2375,
+      "route_control_port": 49348,
+      "route_proven": false,
+      "transport": "DIRECT_LITERAL_IP_NO_TUNNEL",
+      "status": "BLOCKED",
+      "reason": "DIRECT_ROUTE_NOT_PROVEN"
+    },
+    {
+      "alias": "control-daemon-tls",
+      "host": "172.31.144.2",
+      "port": 2376,
+      "route_control_port": 49349,
+      "route_proven": false,
+      "transport": "DIRECT_LITERAL_IP_NO_TUNNEL",
+      "status": "BLOCKED",
+      "reason": "DIRECT_ROUTE_NOT_PROVEN"
+    },
+    {
+      "alias": "I-runner",
+      "host": "172.31.145.2",
+      "port": 8444,
+      "route_control_port": 49340,
+      "route_proven": false,
+      "transport": "DIRECT_LITERAL_IP_NO_TUNNEL",
+      "status": "BLOCKED",
+      "reason": "DIRECT_ROUTE_NOT_PROVEN"
+    },
+    {
+      "alias": "J-runner",
+      "host": "172.31.145.3",
+      "port": 8444,
+      "route_control_port": 49341,
+      "route_proven": false,
+      "transport": "DIRECT_LITERAL_IP_NO_TUNNEL",
+      "status": "BLOCKED",
+      "reason": "DIRECT_ROUTE_NOT_PROVEN"
+    },
+    {
+      "alias": "scan-daemon-http",
+      "host": "172.31.145.2",
+      "port": 2375,
+      "route_control_port": 49342,
+      "route_proven": false,
+      "transport": "DIRECT_LITERAL_IP_NO_TUNNEL",
+      "status": "BLOCKED",
+      "reason": "DIRECT_ROUTE_NOT_PROVEN"
+    },
+    {
+      "alias": "scan-daemon-tls",
+      "host": "172.31.145.2",
+      "port": 2376,
+      "route_control_port": 49343,
+      "route_proven": false,
+      "transport": "DIRECT_LITERAL_IP_NO_TUNNEL",
+      "status": "BLOCKED",
+      "reason": "DIRECT_ROUTE_NOT_PROVEN"
+    }
+  ],
+  "script_sha256": "b38f35ae768a75df36796afab331d57125bf34a4574e73d06ad9566cb93a94d1",
+  "source_commit": "ba46f2ac1fc402368528d86dde5e136e4c1b3bc1",
+  "source_dirty": true,
+  "checks": [
+    {
+      "name": "I GET /api/v1/health absent",
+      "kind": "public-entry",
+      "expected": 200,
+      "actual_http": 200,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "5c928044ba898ac7747698b981e0ee81d2c5d3d5b48bc34075a0f661d9a7f29d",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "I GET /api/v1/mobile-capabilities absent",
+      "kind": "public-entry",
+      "expected": 200,
+      "actual_http": 200,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "68d85b275b235e455b45f0533c7e4d69d3d2b7c60429dc9924f25683adf142b5",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "I GET /_health/live absent",
+      "kind": "public-entry",
+      "expected": 404,
+      "actual_http": 404,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "1227cdc57554f62299e7785de9e9540ed21ee2f84cb9e8ba8a5e4c6e11f47a7d",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "I GET /_health/ready absent",
+      "kind": "public-entry",
+      "expected": 404,
+      "actual_http": 404,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "1227cdc57554f62299e7785de9e9540ed21ee2f84cb9e8ba8a5e4c6e11f47a7d",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "I GET /api/v1/web/settings absent",
+      "kind": "public-entry",
+      "expected": 403,
+      "actual_http": 403,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "1c1d576f0d1fab492e401762475488d66f7e63c6f66bd67bf4dbbb29deec1422",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "I GET /api/v1/web/settings own-task",
+      "kind": "public-entry",
+      "expected": 403,
+      "actual_http": 403,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "1c1d576f0d1fab492e401762475488d66f7e63c6f66bd67bf4dbbb29deec1422",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "I POST /api/v1/web/settings absent",
+      "kind": "public-entry",
+      "expected": 403,
+      "actual_http": 403,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "1c1d576f0d1fab492e401762475488d66f7e63c6f66bd67bf4dbbb29deec1422",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "I POST /api/v1/web/settings own-task",
+      "kind": "public-entry",
+      "expected": 403,
+      "actual_http": 403,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "1c1d576f0d1fab492e401762475488d66f7e63c6f66bd67bf4dbbb29deec1422",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "I GET /api/v1/jobs absent",
+      "kind": "public-entry",
+      "expected": 403,
+      "actual_http": 403,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "0f84e057238bac4cfcb575a6c8472d49e0f9bf25eb1dde0d6eb77310a7c0928c",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "I GET /api/v1/jobs own-task",
+      "kind": "public-entry",
+      "expected": 403,
+      "actual_http": 403,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "0f84e057238bac4cfcb575a6c8472d49e0f9bf25eb1dde0d6eb77310a7c0928c",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "J GET /api/v1/health absent",
+      "kind": "public-entry",
+      "expected": 200,
+      "actual_http": 200,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "5c928044ba898ac7747698b981e0ee81d2c5d3d5b48bc34075a0f661d9a7f29d",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "J GET /api/v1/mobile-capabilities absent",
+      "kind": "public-entry",
+      "expected": 200,
+      "actual_http": 200,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "e3ba118531ff1bd1fe2b0a1326740181c66643559583abffce76dc9ecd9cefc0",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "J GET /_health/live absent",
+      "kind": "public-entry",
+      "expected": 404,
+      "actual_http": 404,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "1227cdc57554f62299e7785de9e9540ed21ee2f84cb9e8ba8a5e4c6e11f47a7d",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "J GET /_health/ready absent",
+      "kind": "public-entry",
+      "expected": 404,
+      "actual_http": 404,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "1227cdc57554f62299e7785de9e9540ed21ee2f84cb9e8ba8a5e4c6e11f47a7d",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "J GET /api/v1/web/settings absent",
+      "kind": "public-entry",
+      "expected": 403,
+      "actual_http": 403,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "1c1d576f0d1fab492e401762475488d66f7e63c6f66bd67bf4dbbb29deec1422",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "J GET /api/v1/web/settings own-task",
+      "kind": "public-entry",
+      "expected": 403,
+      "actual_http": 403,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "1c1d576f0d1fab492e401762475488d66f7e63c6f66bd67bf4dbbb29deec1422",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "J POST /api/v1/web/settings absent",
+      "kind": "public-entry",
+      "expected": 403,
+      "actual_http": 403,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "1c1d576f0d1fab492e401762475488d66f7e63c6f66bd67bf4dbbb29deec1422",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "J POST /api/v1/web/settings own-task",
+      "kind": "public-entry",
+      "expected": 403,
+      "actual_http": 403,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "1c1d576f0d1fab492e401762475488d66f7e63c6f66bd67bf4dbbb29deec1422",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "J GET /api/v1/jobs absent",
+      "kind": "public-entry",
+      "expected": 403,
+      "actual_http": 403,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "0f84e057238bac4cfcb575a6c8472d49e0f9bf25eb1dde0d6eb77310a7c0928c",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "J GET /api/v1/jobs own-task",
+      "kind": "public-entry",
+      "expected": 403,
+      "actual_http": 403,
+      "curl_exit": 0,
+      "passed": true,
+      "stdout_sha256": "0f84e057238bac4cfcb575a6c8472d49e0f9bf25eb1dde0d6eb77310a7c0928c",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "api",
+      "kind": "device-loopback-only",
+      "expected": "connection refused",
+      "actual_http": 0,
+      "curl_exit": 7,
+      "passed": true,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "2d54655bebdc95ba05fb2c3e86410884ad3f0eab265cce712f65e01ec06fe1ef"
+    },
+    {
+      "name": "postgres",
+      "kind": "device-loopback-only",
+      "expected": "connection refused",
+      "actual_http": 0,
+      "curl_exit": 7,
+      "passed": true,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "90a5ba041bac1da26040bfbe1014e35b4bfe93b28ec7dee536fb37775d38e3d9"
+    },
+    {
+      "name": "broker",
+      "kind": "device-loopback-only",
+      "expected": "connection refused",
+      "actual_http": 0,
+      "curl_exit": 7,
+      "passed": true,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "60f8e6059040d8c8043f7d24117717819d797319976b4afe01cfe6c79945afb5"
+    },
+    {
+      "name": "runner",
+      "kind": "device-loopback-only",
+      "expected": "connection refused",
+      "actual_http": 0,
+      "curl_exit": 7,
+      "passed": true,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "ef50779d424de87ad67c34fafdf88ecb8fb9f9c58a7eae910999ceed5f550173"
+    },
+    {
+      "name": "gateway",
+      "kind": "device-loopback-only",
+      "expected": "connection refused",
+      "actual_http": 0,
+      "curl_exit": 7,
+      "passed": true,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "076cee4eaf8ac1c6c04bd2fe421fbec40339b1b5b829688274b2a52327e6fcdc"
+    },
+    {
+      "name": "daemon-http",
+      "kind": "device-loopback-only",
+      "expected": "connection refused",
+      "actual_http": 0,
+      "curl_exit": 7,
+      "passed": true,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "c26e35565237b49a3dd04e2360a1b497f748d231bf26bea7f69b8c2e0f292c3f"
+    },
+    {
+      "name": "daemon-tls",
+      "kind": "device-loopback-only",
+      "expected": "connection refused",
+      "actual_http": 0,
+      "curl_exit": 7,
+      "passed": true,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "a39572de94688ccc07454e7811e7df67925ad9d0bf7c1f03263c24cce4225cd4"
+    },
+    {
+      "name": "I-gateway",
+      "kind": "operator-only-probe-tunnel",
+      "expected": "client certificate required; no management response",
+      "actual_http": 0,
+      "curl_exit": 56,
+      "passed": true,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "20c86362724382eaca6f5eb7416313256709656e466385ce1cb3678b22505e38"
+    },
+    {
+      "name": "J-gateway",
+      "kind": "operator-only-probe-tunnel",
+      "expected": "client certificate required; no management response",
+      "actual_http": 0,
+      "curl_exit": 56,
+      "passed": true,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "20c86362724382eaca6f5eb7416313256709656e466385ce1cb3678b22505e38"
+    },
+    {
+      "name": "I-runner",
+      "kind": "operator-only-probe-tunnel",
+      "expected": "client certificate required; no management response",
+      "actual_http": 0,
+      "curl_exit": 56,
+      "passed": true,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "20c86362724382eaca6f5eb7416313256709656e466385ce1cb3678b22505e38"
+    },
+    {
+      "name": "J-runner",
+      "kind": "operator-only-probe-tunnel",
+      "expected": "client certificate required; no management response",
+      "actual_http": 0,
+      "curl_exit": 56,
+      "passed": true,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "20c86362724382eaca6f5eb7416313256709656e466385ce1cb3678b22505e38"
+    },
+    {
+      "name": "I-api direct route control",
+      "kind": "direct-route-control",
+      "expected": 200,
+      "actual_http": 0,
+      "curl_exit": 28,
+      "passed": false,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "53c44bb11dbabaa14105ff6c425d1921b6d7a5dc0fcdf26aead5642a3742c73f"
+    },
+    {
+      "name": "I-postgres direct route control",
+      "kind": "direct-route-control",
+      "expected": 200,
+      "actual_http": 0,
+      "curl_exit": 28,
+      "passed": false,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "185eb6efeb1bd27ac7ecd69da75e877e9ef1427b4725e725d7741f7ae8e727c3"
+    },
+    {
+      "name": "I-broker direct route control",
+      "kind": "direct-route-control",
+      "expected": 200,
+      "actual_http": 0,
+      "curl_exit": 28,
+      "passed": false,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "364a9856ff3484a17c25f8f60ea49329d98586ed17ee78ae0fc6ee25642e4286"
+    },
+    {
+      "name": "I-gateway direct route control",
+      "kind": "direct-route-control",
+      "expected": 200,
+      "actual_http": 0,
+      "curl_exit": 28,
+      "passed": false,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "e485ca285e6b44bd61eb9adea256dd4e1a8e16e4e1f53255569c2eef30f77e23"
+    },
+    {
+      "name": "J-api direct route control",
+      "kind": "direct-route-control",
+      "expected": 200,
+      "actual_http": 0,
+      "curl_exit": 28,
+      "passed": false,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "a704fc50ed5b592aaeaf78e88d003a9b6c669e2ef5dc4bad7ae54912d5b99699"
+    },
+    {
+      "name": "J-postgres direct route control",
+      "kind": "direct-route-control",
+      "expected": 200,
+      "actual_http": 0,
+      "curl_exit": 28,
+      "passed": false,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "692da82cd45f767ea99a8234f606829cf1a07ed6977e28dac1e3d2d2a508484b"
+    },
+    {
+      "name": "J-broker direct route control",
+      "kind": "direct-route-control",
+      "expected": 200,
+      "actual_http": 0,
+      "curl_exit": 28,
+      "passed": false,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "4f3942631c7403fa31db40db31dff71312dfff4819b14ca6b4a034becb35b235"
+    },
+    {
+      "name": "J-gateway direct route control",
+      "kind": "direct-route-control",
+      "expected": 200,
+      "actual_http": 0,
+      "curl_exit": 28,
+      "passed": false,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "6ca68b0beb1792e1d4be0745d6fba15cada73039a8e1f6e3a72bba1ac1e55c7f"
+    },
+    {
+      "name": "control-daemon-http direct route control",
+      "kind": "direct-route-control",
+      "expected": 200,
+      "actual_http": 0,
+      "curl_exit": 28,
+      "passed": false,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "5174fc8b7597b077ceb4560da9e6fb7432cdec667295ac44c8e780dc2e50b3c7"
+    },
+    {
+      "name": "control-daemon-tls direct route control",
+      "kind": "direct-route-control",
+      "expected": 200,
+      "actual_http": 0,
+      "curl_exit": 28,
+      "passed": false,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "7ad46b9d894dc348a381f796d6eef7cdf5d8dedb06c688c569b7dc30e1d16018"
+    },
+    {
+      "name": "I-runner direct route control",
+      "kind": "direct-route-control",
+      "expected": 200,
+      "actual_http": 0,
+      "curl_exit": 28,
+      "passed": false,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "1b9a322c028058dd8ef2d7c0779dde56961dfcbca796e7a924c220bc8e7145b7"
+    },
+    {
+      "name": "J-runner direct route control",
+      "kind": "direct-route-control",
+      "expected": 200,
+      "actual_http": 0,
+      "curl_exit": 28,
+      "passed": false,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "b4910fef95ea06d341a88a358157841e47076f2e6572ca17141a2cc0f1cfefad"
+    },
+    {
+      "name": "scan-daemon-http direct route control",
+      "kind": "direct-route-control",
+      "expected": 200,
+      "actual_http": 0,
+      "curl_exit": 28,
+      "passed": false,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "09988317f7b7042f1e039ca3d5df28e4df9c7facdd5d67bab24e3c60f3eddaff"
+    },
+    {
+      "name": "scan-daemon-tls direct route control",
+      "kind": "direct-route-control",
+      "expected": 200,
+      "actual_http": 0,
+      "curl_exit": 28,
+      "passed": false,
+      "stdout_sha256": "86406d4a0ac283443ebd0b3215b9f9338aef254a3e1d1e333bb23a09ebaed08a",
+      "stderr_sha256": "c24d178ec163e30cbce3f61a55b2b2bed1363ef18240d9964cb8f254ad9bb113"
+    }
+  ],
+  "error": null,
+  "cleanup": "CALLER_OWNS_PUBLIC_CA_FILES_REVERSES_AND_TEMPORARY_TUNNELS",
+  "installed_nonroot_app_uid": true,
+  "finished_at": "2026-10-21T16:54:08.362805+00:00",
+  "subset_status": "BLOCKED"
+}

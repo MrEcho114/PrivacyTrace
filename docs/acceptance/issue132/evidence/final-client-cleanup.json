@@ -1,0 +1,22 @@
+{
+  "actual_android": true,
+  "checks": [
+    {
+      "instance": "I",
+      "utc": "2026-10-21T15:09:39.639Z",
+      "native_delete_confirmed": true,
+      "cleanup_pending": false,
+      "context_cleared": true,
+      "body_sha256": "a4aa0c0b0e1c1d55cc38d5b340d60069112a95928e97c6ac774a4576aefbfb7a"
+    },
+    {
+      "instance": "J",
+      "utc": "2026-10-21T15:10:14.468Z",
+      "native_delete_confirmed": true,
+      "cleanup_pending": false,
+      "context_cleared": true,
+      "body_sha256": "a4aa0c0b0e1c1d55cc38d5b340d60069112a95928e97c6ac774a4576aefbfb7a"
+    }
+  ],
+  "passed": true
+}

@@ -1,0 +1,162 @@
+{
+  "role": "control",
+  "root_filesystem_id": "49b00133c5417d04",
+  "daemon_id": "6ca6dfbb-8825-4bf5-aa43-d3d809d48d85",
+  "utc": "2026-10-21T16:56:35.225142+00:00",
+  "roles": [
+    {
+      "instance": "I",
+      "role": "web",
+      "image_id": "sha256:79de0e5adb90803d6b79f6c8b3e55a32f715867da0939db40b50559ba71d9591",
+      "nonroot_user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false
+    },
+    {
+      "instance": "I",
+      "role": "gateway",
+      "image_id": "sha256:160d7b1fa1323dca784ba355418d6e6a1c5b4a409406e77904e79b7480a70a7a",
+      "nonroot_user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false
+    },
+    {
+      "instance": "I",
+      "role": "api",
+      "image_id": "sha256:160d7b1fa1323dca784ba355418d6e6a1c5b4a409406e77904e79b7480a70a7a",
+      "nonroot_user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false
+    },
+    {
+      "instance": "I",
+      "role": "worker",
+      "image_id": "sha256:160d7b1fa1323dca784ba355418d6e6a1c5b4a409406e77904e79b7480a70a7a",
+      "nonroot_user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false
+    },
+    {
+      "instance": "I",
+      "role": "dispatcher",
+      "image_id": "sha256:160d7b1fa1323dca784ba355418d6e6a1c5b4a409406e77904e79b7480a70a7a",
+      "nonroot_user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false
+    },
+    {
+      "instance": "I",
+      "role": "postgres",
+      "image_id": "sha256:c7526c0f6c3f30260a563d7bcf8ad778effac59a44f8ffa86678c35418338609",
+      "nonroot_user": "70:70",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false
+    },
+    {
+      "instance": "I",
+      "role": "redis",
+      "image_id": "sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6",
+      "nonroot_user": "999:999",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false
+    },
+    {
+      "instance": "J",
+      "role": "web",
+      "image_id": "sha256:79de0e5adb90803d6b79f6c8b3e55a32f715867da0939db40b50559ba71d9591",
+      "nonroot_user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false
+    },
+    {
+      "instance": "J",
+      "role": "api",
+      "image_id": "sha256:160d7b1fa1323dca784ba355418d6e6a1c5b4a409406e77904e79b7480a70a7a",
+      "nonroot_user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false
+    },
+    {
+      "instance": "J",
+      "role": "worker",
+      "image_id": "sha256:160d7b1fa1323dca784ba355418d6e6a1c5b4a409406e77904e79b7480a70a7a",
+      "nonroot_user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false
+    },
+    {
+      "instance": "J",
+      "role": "dispatcher",
+      "image_id": "sha256:160d7b1fa1323dca784ba355418d6e6a1c5b4a409406e77904e79b7480a70a7a",
+      "nonroot_user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false
+    },
+    {
+      "instance": "J",
+      "role": "gateway",
+      "image_id": "sha256:160d7b1fa1323dca784ba355418d6e6a1c5b4a409406e77904e79b7480a70a7a",
+      "nonroot_user": "10001:10001",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false
+    },
+    {
+      "instance": "J",
+      "role": "postgres",
+      "image_id": "sha256:c7526c0f6c3f30260a563d7bcf8ad778effac59a44f8ffa86678c35418338609",
+      "nonroot_user": "70:70",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false
+    },
+    {
+      "instance": "J",
+      "role": "redis",
+      "image_id": "sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6",
+      "nonroot_user": "999:999",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "socket": false
+    }
+  ]
+}

@@ -1,0 +1,181 @@
+{
+  "checks": [
+    {
+      "command": "inspect roles, readiness and HTTPS resources",
+      "detail": {
+        "frontend_lock_sha256": "3e0b6b0e1530706f4bc1d6277345a3acdc8957eeafc97849f8d6c31f68967cba",
+        "migration": "0080_05",
+        "protocol": 1,
+        "python_lock_sha256": "87ab885734deec6287ed796695de069d1679d9768ca3afb0808448e142be4a53",
+        "resources": {
+          "/": 200,
+          "/api/v1/demo/report": 200,
+          "/api/v1/health": 200,
+          "/api/v1/taxonomy": 200
+        },
+        "roles": {
+          "api": {
+            "cap_drop": [
+              "ALL"
+            ],
+            "image_id": "sha256:71efa8593448d79f64c79d3b96d51b4faaed96ea1830cb43d7f05b4f06fbefc1",
+            "memory_limit": 805306368,
+            "pids_limit": 128,
+            "read_only": true,
+            "socket": false,
+            "source_revision": "99598d0e8108e40d37d2ad66a979bbf1630ef509",
+            "user": "10001:10001"
+          },
+          "dispatcher": {
+            "cap_drop": [
+              "ALL"
+            ],
+            "image_id": "sha256:71efa8593448d79f64c79d3b96d51b4faaed96ea1830cb43d7f05b4f06fbefc1",
+            "memory_limit": 268435456,
+            "pids_limit": 128,
+            "read_only": true,
+            "socket": false,
+            "source_revision": "99598d0e8108e40d37d2ad66a979bbf1630ef509",
+            "user": "10001:10001"
+          },
+          "gateway": {
+            "cap_drop": [
+              "ALL"
+            ],
+            "image_id": "sha256:71efa8593448d79f64c79d3b96d51b4faaed96ea1830cb43d7f05b4f06fbefc1",
+            "memory_limit": 268435456,
+            "pids_limit": 128,
+            "read_only": true,
+            "socket": false,
+            "source_revision": "99598d0e8108e40d37d2ad66a979bbf1630ef509",
+            "user": "10001:10001"
+          },
+          "postgres": {
+            "cap_drop": [
+              "ALL"
+            ],
+            "image_id": "sha256:c7526c0f6c3f30260a563d7bcf8ad778effac59a44f8ffa86678c35418338609",
+            "memory_limit": 805306368,
+            "pids_limit": 128,
+            "read_only": true,
+            "socket": false,
+            "source_revision": "UNLABELLED",
+            "user": "70:70"
+          },
+          "redis": {
+            "cap_drop": [
+              "ALL"
+            ],
+            "image_id": "sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6",
+            "memory_limit": 268435456,
+            "pids_limit": 128,
+            "read_only": true,
+            "socket": false,
+            "source_revision": "UNLABELLED",
+            "user": "999:999"
+          },
+          "runner": {
+            "cap_drop": [
+              "ALL"
+            ],
+            "image_id": "sha256:252df3d30424624ce4f6590555e1e66291bda2b5b45bee1bfb4c3cf6ba825553",
+            "memory_limit": 1073741824,
+            "pids_limit": 256,
+            "read_only": true,
+            "socket": true,
+            "source_revision": "99598d0e8108e40d37d2ad66a979bbf1630ef509",
+            "user": "10001:10001"
+          },
+          "web": {
+            "cap_drop": [
+              "ALL"
+            ],
+            "image_id": "sha256:0b5c0d871598460975d796bcdca3570459d9e3ebcb5bacd70b7bad59e4455d91",
+            "memory_limit": 268435456,
+            "pids_limit": 128,
+            "read_only": true,
+            "socket": false,
+            "source_revision": "99598d0e8108e40d37d2ad66a979bbf1630ef509",
+            "user": "10001:10001"
+          },
+          "worker": {
+            "cap_drop": [
+              "ALL"
+            ],
+            "image_id": "sha256:71efa8593448d79f64c79d3b96d51b4faaed96ea1830cb43d7f05b4f06fbefc1",
+            "memory_limit": 805306368,
+            "pids_limit": 128,
+            "read_only": true,
+            "socket": false,
+            "source_revision": "99598d0e8108e40d37d2ad66a979bbf1630ef509",
+            "user": "10001:10001"
+          }
+        },
+        "scanner_image_id": "sha256:fee629ea9bbfdebe630bafbd4d879744349e80e2ad0c26a1ec81ba9742b92486"
+      },
+      "duration_s": 6.023,
+      "name": "r1.full_topology",
+      "notes": "all roles ready; packaged resources available",
+      "result_digest": "sha256:c7ed537fefe2f0ad",
+      "started_at": "2026-10-22T03:10:11Z",
+      "status": "PASS",
+      "ticket": "R1"
+    }
+  ],
+  "environment": {
+    "allow_destructive": true,
+    "allow_writes": true,
+    "cpu_count": 8,
+    "cpu_model": "13th Gen Intel(R) Core(TM) i9-13900H",
+    "cwd": "<private-home>/pkg-coldstart-e17/PrivacyTrace_322234/01_\u4f5c\u54c1\u53ca\u6210\u679c\u6587\u4ef6/source",
+    "disk": {
+      "filesystem": "ext2/ext3",
+      "free_bytes": 917746761728,
+      "path": "<private-home>/pkg-coldstart-e17/PrivacyTrace_322234/01_\u4f5c\u54c1\u53ca\u6210\u679c\u6587\u4ef6/source",
+      "total_bytes": 1081101176832
+    },
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "machine": "x86_64",
+    "memory_bytes": 16770527232,
+    "os": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "release": "6.18.33.2-microsoft-standard-WSL2",
+    "system": "Linux",
+    "tools": {
+      "compose": "5.5.0",
+      "docker_client": "29.7.2",
+      "docker_server": "29.7.2",
+      "git": "git version 2.43.0",
+      "python": "Python 3.12.3",
+      "topology_base_url": "https://privacytrace.test:59814"
+    },
+    "topology_configured": true,
+    "wsl": true
+  },
+  "finished_at": "2026-10-22T03:20:13Z",
+  "notes": "",
+  "receipt_version": 1,
+  "scope": "r1-full-deployment",
+  "source_sha": "99598d0e8108e40d37d2ad66a979bbf1630ef509",
+  "started_at": "2026-10-22T03:10:11Z",
+  "summary": {
+    "by_ticket": {
+      "R1": {
+        "fail": 0,
+        "not_tested": 0,
+        "pass": 1,
+        "skip": 0
+      }
+    },
+    "conclusion": "ALL_PASS",
+    "evidence_free": false,
+    "fail": 0,
+    "not_tested": 0,
+    "pass": 1,
+    "pass_rate_of_verified": 1.0,
+    "skip": 0,
+    "total": 1,
+    "untested_scopes": 0,
+    "verified": 1
+  },
+  "untested": []
+}

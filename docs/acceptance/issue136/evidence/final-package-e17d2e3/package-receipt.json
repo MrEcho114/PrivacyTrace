@@ -1,0 +1,14 @@
+{
+  "package": "PrivacyTrace_322234-final-e17d2e3.zip",
+  "root": "PrivacyTrace_322234",
+  "source_head": "e17d2e3535ab295cb4905e18f56e309c02c95174",
+  "sha256": "fa8ceb5f2dac95568d9a8e9bed4cec3581286396b7cfa8f534ddf179c40cd94a",
+  "bytes": 41038618,
+  "uncompressed_bytes": 45224737,
+  "file_entries": 590,
+  "zip_entries": 590,
+  "directory_entries_in_manifest_only": 95,
+  "crc_testzip": null,
+  "created_utc": "2026-10-22",
+  "notes": "Rebuilt candidate package from e17d2e3; not the original 64,261,830 B package."
+}

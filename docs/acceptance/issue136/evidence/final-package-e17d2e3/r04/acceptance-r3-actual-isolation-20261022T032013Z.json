@@ -1,0 +1,132 @@
+{
+  "checks": [
+    {
+      "command": "Runner ledger -> Docker inspect attestations",
+      "detail": {
+        "actual_inspect": {
+          "cleanup_verified": true,
+          "container": "privacytrace-53e49759e12b4340a1d9b5bf2a586280",
+          "container_created": true,
+          "exit_state": {
+            "ExitCode": 0,
+            "OOMKilled": false,
+            "Running": false
+          },
+          "image_id": "sha256:fee629ea9bbfdebe630bafbd4d879744349e80e2ad0c26a1ec81ba9742b92486",
+          "input_removed": true,
+          "isolation": {
+            "CapAdd": null,
+            "CapDrop": [
+              "ALL"
+            ],
+            "Memory": 1073741824,
+            "MemorySwap": 1073741824,
+            "NanoCpus": 1000000000,
+            "NetworkMode": "none",
+            "PidsLimit": 32,
+            "Privileged": false,
+            "ReadonlyRootfs": true,
+            "SecurityOpt": [
+              "no-new-privileges:true"
+            ]
+          },
+          "mounts": [
+            {
+              "destination": "/input/sample.apk",
+              "read_only": true
+            }
+          ],
+          "request_id": "7342d24e-2991-5f80-b474-3b055fa5b974",
+          "user": "65534:65534",
+          "version": 1
+        },
+        "api_worker_socket": false,
+        "credential_mounts": false,
+        "image_id": "sha256:fee629ea9bbfdebe630bafbd4d879744349e80e2ad0c26a1ec81ba9742b92486",
+        "scan_count": 2,
+        "scan_host_separate": false,
+        "scan_inputs": [
+          "synthetic single APK",
+          "synthetic base + config.en + feature_camera"
+        ],
+        "scan_request_ids": [
+          "7342d24e-2991-5f80-b474-3b055fa5b974",
+          "8249d90e-33be-5d56-b2b3-46255d2a3375"
+        ]
+      },
+      "duration_s": 4.638,
+      "name": "r3.actual_scan_isolation",
+      "notes": "actual scan policy and cleanup verified",
+      "result_digest": "sha256:6b3e3f71b9d8a8b7",
+      "started_at": "2026-10-22T03:11:42Z",
+      "status": "PASS",
+      "ticket": "R3"
+    }
+  ],
+  "environment": {
+    "allow_destructive": true,
+    "allow_writes": true,
+    "cpu_count": 8,
+    "cpu_model": "13th Gen Intel(R) Core(TM) i9-13900H",
+    "cwd": "<private-home>/pkg-coldstart-e17/PrivacyTrace_322234/01_\u4f5c\u54c1\u53ca\u6210\u679c\u6587\u4ef6/source",
+    "disk": {
+      "filesystem": "ext2/ext3",
+      "free_bytes": 917746761728,
+      "path": "<private-home>/pkg-coldstart-e17/PrivacyTrace_322234/01_\u4f5c\u54c1\u53ca\u6210\u679c\u6587\u4ef6/source",
+      "total_bytes": 1081101176832
+    },
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "machine": "x86_64",
+    "memory_bytes": 16770527232,
+    "os": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "release": "6.18.33.2-microsoft-standard-WSL2",
+    "system": "Linux",
+    "tools": {
+      "compose": "5.5.0",
+      "docker_client": "29.7.2",
+      "docker_server": "29.7.2",
+      "git": "git version 2.43.0",
+      "python": "Python 3.12.3",
+      "topology_base_url": "https://privacytrace.test:59814"
+    },
+    "topology_configured": true,
+    "waivers": [
+      {
+        "authorization": "https://github.com/MrEcho114/PrivacyTrace/issues/81#issuecomment-6294554745",
+        "blocks_this_acceptance": false,
+        "id": "dedicated-scan-host-verification",
+        "production_requirement_unchanged": true,
+        "scope": "Independent scan host/VM separation and cross-host firewall persistence testing",
+        "status": "WAIVED_BY_USER"
+      }
+    ],
+    "wsl": true
+  },
+  "finished_at": "2026-10-22T03:20:13Z",
+  "notes": "Dedicated-host separation was explicitly waived by the user; see waivers.",
+  "receipt_version": 1,
+  "scope": "r3-actual-isolation",
+  "source_sha": "99598d0e8108e40d37d2ad66a979bbf1630ef509",
+  "started_at": "2026-10-22T03:11:42Z",
+  "summary": {
+    "by_ticket": {
+      "R3": {
+        "fail": 0,
+        "not_tested": 0,
+        "pass": 1,
+        "skip": 0
+      }
+    },
+    "conclusion": "ALL_PASS",
+    "evidence_free": false,
+    "fail": 0,
+    "not_tested": 0,
+    "pass": 1,
+    "pass_rate_of_verified": 1.0,
+    "skip": 0,
+    "total": 1,
+    "untested_scopes": 0,
+    "verified": 1
+  },
+  "untested": []
+}

@@ -6,6 +6,11 @@ import type { LiveDraft } from '../liveApi'
 import type { ExternalInput } from '../policyAssist'
 import type { MobileBridge, Upload, ModelStatus } from './bridge'
 
+// A native poll sends five HTTP reads. Keep the first progress read responsive,
+// then leave room for two clients sharing the default 60/minute IP budget.
+const FIRST_POLL_MS = 10_000, POLL_INTERVAL_MS = 25_000
+type Request = <T>(name: string, body?: object) => Promise<T>
+
 export function createMobileFlow(bridge: MobileBridge) {
   const state = reactive(freshWorkflow())
   const context = ref<Upload | null>(null), draft = ref<LiveDraft | null>(null)
@@ -13,6 +18,8 @@ export function createMobileFlow(bridge: MobileBridge) {
   const busy = ref(false), error = ref(''), notice = ref('')
   const model = ref<ModelStatus>({ configured: false, endpoint: null }), modelResult = ref('')
   let generation = 0, pendingStart: { revision: number; request_id: string } | null = null
+  let busyPolls = 0
+  let restoring = false
   let timer: ReturnType<typeof setTimeout> | undefined
   // Background polling is not abortable through the native bridge, so every
   // foreground action invalidates in-flight poll results with an epoch. A late
@@ -23,9 +30,18 @@ export function createMobileFlow(bridge: MobileBridge) {
     pollEpoch += 1
     clearTimeout(timer)
   }
-  function schedulePoll(delay = 1500) {
+  function schedule(current: number, first = false) {
+    if (current !== generation) return
     clearTimeout(timer)
-    timer = setTimeout(() => { void poll(true) }, delay)
+    if ((!job.value && !restoring) || terminal()) return
+    const throttled = error.value === 'SERVER_BUSY'
+    if (error.value && !throttled) return
+    busyPolls = throttled ? Math.min(busyPolls + 1, 3) : 0
+    // Native currently exposes a busy code, not response headers. Default to
+    // the server's current 60s window; never replay a failed write operation.
+    const delay = throttled ? 60_000 * 2 ** (busyPolls - 1) : first ? FIRST_POLL_MS : POLL_INTERVAL_MS
+    const jitter = first && !throttled ? 0 : Math.floor(Math.random() * (throttled ? 10_000 : 4_000))
+    timer = setTimeout(() => poll(true), delay + jitter)
   }
   function apply(value: LiveDraft) {
     draft.value = value
@@ -44,7 +60,7 @@ export function createMobileFlow(bridge: MobileBridge) {
     if (!context.value || response.origin !== context.value.origin || response.draft !== context.value.draft) throw new Error('INSTANCE_MISMATCH')
     return response.data
   }
-  async function run(action: (request: <T>(name: string, body?: object) => Promise<T>, check: () => void) => Promise<void>) {
+  async function run(action: (request: Request, check: () => void) => Promise<void>) {
     if (busy.value) return
     stopPoll()
     busy.value = true; error.value = ''
@@ -62,7 +78,6 @@ export function createMobileFlow(bridge: MobileBridge) {
       if (current === generation) {
         busy.value = false
         if (typeof document !== 'undefined' && document.activeElement === document.body) document.getElementById('page-title')?.focus({ preventScroll: true })
-        if (job.value && !terminal()) schedulePoll()
       }
     }
   }
@@ -71,6 +86,21 @@ export function createMobileFlow(bridge: MobileBridge) {
     notice.value = '已停止当前请求。服务可能已保存结果，请刷新确认；停止读取不等于取消分析或删除材料。'
     await bridge.cancel().catch(() => {})
   }
+  async function readSelection(request: Request, check: () => void) {
+    const restored = await request<LiveDraft>('read')
+    apply(restored)
+    taxonomy.value = await request<Taxonomy>('taxonomy')
+    if (restored.jobs.length) {
+      state.step = 'progress'
+      try { job.value = await request<AnalysisJob>('job') }
+      catch (cause) {
+        check()
+        if (cause === 'SERVER_BUSY' || (cause instanceof Error && cause.message === 'SERVER_BUSY')) throw cause
+        notice.value = '材料已恢复，历史任务暂未读到。请刷新进度重试；未创建新的分析。'
+      }
+    }
+    check(); restoring = false
+  }
   async function select(restore = false) {
     const current = generation
     await run(async (request, check) => {
@@ -78,18 +108,12 @@ export function createMobileFlow(bridge: MobileBridge) {
       check()
       // Native lifecycle cancellation rejects the selected result as well.
       context.value = selected; draft.value = null; job.value = null; report.value = null; pendingStart = null
-      state.step = 'import'; notice.value = ''
+      state.step = 'import'; notice.value = ''; restoring = false
       if (selected.state !== 'SERVER_CONFIRMED') throw new Error('服务器尚未确认完整上传，请刷新确认。')
-      const restored = await request<LiveDraft>('read')
-      apply(restored)
-      taxonomy.value = await request<Taxonomy>('taxonomy')
-      if (restored.jobs.length) {
-        state.step = 'progress'
-        try { job.value = await request<AnalysisJob>('job') }
-        catch { check(); notice.value = '材料已恢复，历史任务暂未读到。请刷新进度重试；未创建新的分析。' }
-      }
+      restoring = true
+      await readSelection(request, check)
     })
-    if (current === generation && job.value && !terminal()) schedulePoll()
+    schedule(current, true)
   }
   async function refresh() { await run(async request => { apply(await request<LiveDraft>('read')); notice.value = '已读取服务保存的材料。' }) }
   async function importCollected(input: ExternalInput) {
@@ -154,12 +178,17 @@ export function createMobileFlow(bridge: MobileBridge) {
       }
       state.step = 'progress'
     })
-    if (current === generation && job.value && !terminal()) schedulePoll()
+    schedule(current, true)
   }
   async function poll(background = false) {
     const current = generation
     if (background) {
       if (busy.value) return
+      if (restoring) {
+        await run(async (request, check) => { await readSelection(request, check) })
+        schedule(current)
+        return
+      }
       const epoch = ++pollEpoch
       try {
         const [nextJob, latest] = await Promise.all([bridgeRequest<AnalysisJob>('job'), bridgeRequest<LiveDraft>('read')])
@@ -167,29 +196,32 @@ export function createMobileFlow(bridge: MobileBridge) {
         job.value = nextJob
         apply(latest)
         error.value = ''
-        if (!terminal()) schedulePoll()
+        schedule(current)
       } catch (cause) {
         if (current !== generation || epoch !== pollEpoch || busy.value) return
         if (cause instanceof Error && ['CANCELLED', 'INSTANCE_MISMATCH'].includes(cause.message)) return
-        error.value = cause instanceof Error ? cause.message : '暂时无法刷新进度。'
-        if (job.value && !terminal()) schedulePoll(3000)
+        error.value = typeof cause === 'string' ? cause : cause instanceof Error ? cause.message : '暂时无法刷新进度。'
+        schedule(current)
       }
       return
     }
-    await run(async request => { job.value = await request<AnalysisJob>('job'); apply(await request<LiveDraft>('read')) })
-    if (current === generation && job.value && !terminal() && !error.value) schedulePoll()
+    await run(async (request, check) => {
+      if (restoring) await readSelection(request, check)
+      else { job.value = await request<AnalysisJob>('job'); apply(await request<LiveDraft>('read')) }
+    })
+    schedule(current)
   }
   async function control(action: 'cancel-job' | 'retry-job') {
     const current = generation
     await run(async request => { job.value = await request<AnalysisJob>(action); state.step = 'progress' })
-    if (current === generation && job.value && !terminal()) schedulePoll()
+    schedule(current, true)
   }
   async function openReport() { await run(async request => { report.value = await request<Report>('report'); state.step = 'report' }) }
   async function remove() {
     await run(async (_, check) => {
       const result = await bridge.remove()
       check()
-      if (result.state === 'DELETED') { context.value = null; draft.value = null; job.value = null; report.value = null; state.step = 'import'; notice.value = result.cleanupPending ? '访问已撤销，服务器物理清理仍待完成。' : '服务器已确认删除。' }
+      if (result.state === 'DELETED') { restoring = false; context.value = null; draft.value = null; job.value = null; report.value = null; state.step = 'import'; notice.value = result.cleanupPending ? '访问已撤销，服务器物理清理仍待完成。' : '服务器已确认删除。' }
     })
   }
   async function settings(configure = false) {

@@ -10,6 +10,7 @@ from uuid import uuid4
 import sqlalchemy as sa
 from pydantic_core import to_json
 
+from .capacity import CapacityRefused
 from .deletion_journal import DeletionJournal, fsync_directory
 from .material_lifecycle import MaterialLifecycle
 from .postgres_execution import ACTIVE, PostgresExecution
@@ -283,7 +284,11 @@ class DurableWebIntake(PostgresWebIntake):
                     )
                 )
                 if active >= self.MAX_ACTIVE_JOBS:
-                    raise ValueError("Durable task admission capacity reached")
+                    raise CapacityRefused(
+                        "ADMISSION_CAPACITY_REACHED",
+                        "Durable task admission capacity reached",
+                        retry_after=5,
+                    )
                 snapshot = json.loads(
                     to_json({"version": 1, "job_id": job.id, "draft": draft, "captures": captures})
                 )

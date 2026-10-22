@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
-from .receipt import Check, CheckRecorder, Receipt, collect_environment
+from .receipt import Check, CheckRecorder, Receipt, collect_environment, origin
 from .redaction import (
     RECEIPT_AUDIT_CATEGORIES,
     SOURCE_AUDIT_CATEGORIES,
@@ -315,29 +315,50 @@ def _measure(topology, scale, *, repetitions, budget_s):
     return check, sample
 
 
-def _backpressure(topology: Topology) -> Check:
-    recorder = CheckRecorder(
-        "r6.queue_backpressure",
-        "submit N concurrent jobs at concurrency 1; record queue depth and refusals",
-        ticket=TICKET,
-    )
-    if not (topology.configured and topology.allow_writes):
-        return recorder.skip("needs a writable real topology")
+def _capacity(topology: Topology) -> list[Check]:
+    """Three separate budgets: draft admission, queue admission, test disk."""
     import os
 
-    from .backpressure_drill import drill
+    from . import capacity_drill
     from .provision import Laboratory
 
+    drills = (
+        (
+            "r6.capacity_draft_admission",
+            "exhaust the per-client and whole-laboratory draft budgets",
+            "admission",
+        ),
+        (
+            "r6.capacity_queue_backpressure",
+            "hold the consumer, exhaust the active-job budget, drain at concurrency 1",
+            "queue",
+        ),
+        (
+            "r6.capacity_disk_budget",
+            "exhaust a size-limited test disk and observe the upload refusal",
+            "disk",
+        ),
+    )
+    checks: list[Check] = []
     state = os.environ.get("PT_ACCEPTANCE_LAB_STATE")
-    if not state:
-        return recorder.skip("an owned laboratory is required")
-    try:
-        return recorder.pass_(
-            "real queue drained at sampled scanner concurrency 1",
-            **drill(Laboratory(state), topology),
-        )
-    except Exception as error:
-        return recorder.fail(type(error).__name__)
+    for name, description, function in drills:
+        recorder = CheckRecorder(name, description, ticket=TICKET)
+        if not (topology.configured and topology.allow_writes):
+            checks.append(recorder.skip("needs a writable real topology"))
+            continue
+        if not state:
+            checks.append(recorder.skip("an owned laboratory is required"))
+            continue
+        try:
+            checks.append(
+                recorder.pass_(
+                    "real capacity boundary observed",
+                    **getattr(capacity_drill, function)(Laboratory(state), topology),
+                )
+            )
+        except Exception as error:  # noqa: BLE001 - a failed drill is evidence
+            checks.append(recorder.fail(type(error).__name__, **origin(error)))
+    return checks
 
 
 def _tracked_paths() -> list[str]:
@@ -512,7 +533,7 @@ def collect() -> tuple[list[Check], dict[str, Any]]:
         checks.append(check)
         if sample is not None:
             samples.append(sample)
-    checks.append(_backpressure(topology))
+    checks.extend(_capacity(topology))
     checks.append(_secret_audit())
     checks.append(_build_context_audit())
     return checks, {

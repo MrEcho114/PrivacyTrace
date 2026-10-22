@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-21T15:38:58.318409+00:00",
+  "distribution_role": "control",
+  "daemon_id": "96b98944-e422-45d0-bec0-2a5e7dc8a08b",
+  "no_containers_or_volumes": true,
+  "finished_at": "2026-10-21T15:39:00.614912+00:00",
+  "private_namespace_and_veth_removed": true,
+  "passed": true
+}

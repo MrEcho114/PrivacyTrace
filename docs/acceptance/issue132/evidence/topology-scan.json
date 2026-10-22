@@ -1,0 +1,77 @@
+{
+  "utc": "2026-10-21T14:33:10.118827+00:00",
+  "distribution_role": "scan",
+  "root_filesystem_id": "dbb93f153c951951",
+  "daemon_id": "3ca39dbf-3b9e-4712-9d11-344a6dfa2f4b",
+  "docker_version": "29.9.1",
+  "swap_limit_supported": true,
+  "network_namespace": "net:[4026533511]",
+  "mount_namespace": "mnt:[4026533635]",
+  "labs": {
+    "15519290-863f-4d5a-b536-c05fa3326a28": {
+      "project": "pt81-485595698e9b-scan",
+      "instance_id": "15519290-863f-4d5a-b536-c05fa3326a28",
+      "roles": {
+        "runner": {
+          "image_id": "sha256:f3c096ba44865e6bbf2b8add04c61b32bac97baf83dc5804e404040ffe1bedda",
+          "source_revision": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+          "user": "10001:10001",
+          "read_only": true,
+          "cap_drop": [
+            "ALL"
+          ],
+          "no_new_privileges": true,
+          "socket": true,
+          "memory": 1073741824,
+          "memory_swap": -1,
+          "pids": 256,
+          "network_mode": "host",
+          "published_ports": {},
+          "bind_destinations": [
+            "/run/secrets/gateway_ca",
+            "/run/secrets/gateway_cert",
+            "/run/secrets/gateway_key",
+            "/run/secrets/runner_ca",
+            "/run/secrets/runner_cert",
+            "/run/secrets/runner_key",
+            "/var/run/docker.sock",
+            "<owned-scanner-workspace>"
+          ]
+        }
+      }
+    },
+    "82620638-24a3-4c55-a0ec-a7033ed073be": {
+      "project": "pt81-522f693a4d44-scan",
+      "instance_id": "82620638-24a3-4c55-a0ec-a7033ed073be",
+      "roles": {
+        "runner": {
+          "image_id": "sha256:f3c096ba44865e6bbf2b8add04c61b32bac97baf83dc5804e404040ffe1bedda",
+          "source_revision": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+          "user": "10001:10001",
+          "read_only": true,
+          "cap_drop": [
+            "ALL"
+          ],
+          "no_new_privileges": true,
+          "socket": true,
+          "memory": 1073741824,
+          "memory_swap": -1,
+          "pids": 256,
+          "network_mode": "host",
+          "published_ports": {},
+          "bind_destinations": [
+            "/run/secrets/gateway_ca",
+            "/run/secrets/gateway_cert",
+            "/run/secrets/gateway_key",
+            "/run/secrets/runner_ca",
+            "/run/secrets/runner_cert",
+            "/run/secrets/runner_key",
+            "/var/run/docker.sock",
+            "<owned-scanner-workspace>"
+          ]
+        }
+      }
+    }
+  },
+  "listeners": "State  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess\nLISTEN 0      8       172.31.143.3:8444      0.0.0.0:*          \nLISTEN 0      8       172.31.143.2:8444      0.0.0.0:*          \n"
+}

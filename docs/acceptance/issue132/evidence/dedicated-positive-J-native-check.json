@@ -1,0 +1,12 @@
+{
+  "label": "dedicated-positive-J",
+  "origin": "https://localhost:57313",
+  "expected": "CAPABILITIES",
+  "observed": {
+    "error": "CANCELLED"
+  },
+  "capabilitiesAccepted": true,
+  "passed": true,
+  "utc": "2026-10-21T14:10:24.201Z",
+  "actual_android": true
+}

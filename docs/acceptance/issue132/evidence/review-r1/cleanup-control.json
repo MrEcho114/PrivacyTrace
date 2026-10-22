@@ -1,0 +1,42 @@
+{
+  "record_kind": "REVIEW_RUN_RESOURCE_CLEANUP",
+  "role": "control",
+  "remaining_project_resources": [
+    {
+      "project": "pt81-1653d6fd30dc",
+      "kind": "container",
+      "remaining": 0
+    },
+    {
+      "project": "pt81-1653d6fd30dc",
+      "kind": "volume",
+      "remaining": 0
+    },
+    {
+      "project": "pt81-1653d6fd30dc",
+      "kind": "network",
+      "remaining": 0
+    },
+    {
+      "project": "pt81-407525c8cbd5",
+      "kind": "container",
+      "remaining": 0
+    },
+    {
+      "project": "pt81-407525c8cbd5",
+      "kind": "volume",
+      "remaining": 0
+    },
+    {
+      "project": "pt81-407525c8cbd5",
+      "kind": "network",
+      "remaining": 0
+    }
+  ],
+  "own_private_labs_removed": true,
+  "own_daemon_stop_requested": true,
+  "own_canaries_and_forwards_stopped": true,
+  "own_namespace_veth_rules_removed": true,
+  "passed": true,
+  "utc": "2026-10-21T16:56:46.382512+00:00"
+}

@@ -1,0 +1,99 @@
+{
+  "record_kind": "SANITIZED_REPORT_PROJECTION",
+  "checks": [
+    {
+      "instance": "I",
+      "native_report_private_sha256": "ddec31e0977023e769929d87e6770538076d0b4097b850f27ab67f423fe6530b",
+      "actual_android_drill": {
+        "actual_android": true,
+        "utc": "2026-10-21T14:32:41.160Z",
+        "policy_quote_exact": true,
+        "api_dex_location": true,
+        "policy_view_sha256": "c5c48c35209be5bf7bd2d6ddbab952cf15548061295388a05d76127778bb5a2d",
+        "api_view_sha256": "20ff2d2d5b93d6216c182c3e51207969d6408b4aad70904d32a85c855d160bd0"
+      },
+      "policy": {
+        "artifact_sha256": "1be4bc0b826f7adba437d8e9fdae21cc017e492bcb6269521df29a0db6c3f122",
+        "text_length_codepoints": 38,
+        "start_offset": 25,
+        "end_offset": 34,
+        "excerpt_length_codepoints": 9,
+        "excerpt_sha256": "4aa012c4ea8035784a35aae20f85bd72eff3e4779e8d003748dba1c52d9deae3",
+        "exact_source_slice": true,
+        "claim_linked_to_sentence": true,
+        "claim_polarity": "UNKNOWN",
+        "source_type": "OFFICIAL_WEB_POLICY",
+        "origin_description": "Self-authored controlled research declaration; importer tag is not official verification",
+        "full_text_published": false
+      },
+      "api": {
+        "kind": "API",
+        "status": "STATIC_POTENTIAL",
+        "source": "base:classes.dex",
+        "locator": "apk_sha256=909250568f133f9dfefa0730a919cbd63028d833f7b2ed74db5f8b99fd15e45b;split=base;dex=classes.dex;caller=Lorg/privacytrace/probe/fixture/MainActivity;->potentialCamera()V;offset_bytes=0;target=Landroid/hardware/Camera;->open()Landroid/hardware/Camera;",
+        "excerpt": "invoke-static Landroid/hardware/Camera;->open()Landroid/hardware/Camera;",
+        "api_call": {
+          "target_descriptor": "Landroid/hardware/Camera;->open()Landroid/hardware/Camera;",
+          "rule_id": "android.camera.open",
+          "ruleset_version": "0.3.0",
+          "context": {}
+        },
+        "package_split": "base"
+      },
+      "tools": {
+        "jadx": "UNAVAILABLE_BYTECODE_FALLBACK",
+        "ruleset": "0.3.0",
+        "androguard": "4.1.3",
+        "sdk_signatures": "1.0.0"
+      },
+      "interpretation": "Static potential only; three nonempty comparison rows remain INSUFFICIENT_EVIDENCE"
+    },
+    {
+      "instance": "J",
+      "native_report_private_sha256": "bc3baeea9725b6a4bd1666fcda769dfecb3bd9bd50820dc5ec7bda69d4282f19",
+      "actual_android_drill": {
+        "actual_android": true,
+        "utc": "2026-10-21T14:38:07.536Z",
+        "policy_quote_exact": true,
+        "api_dex_location": true,
+        "policy_view_sha256": "eefbf733843d73ab510188cd146981bf279c230431a3774d51dc34eb46e4c302",
+        "api_view_sha256": "ab238effad88ab85a13637cbcc968e7a4ad53bc175638dcc8b2efee662c7dfc7"
+      },
+      "policy": {
+        "artifact_sha256": "1be4bc0b826f7adba437d8e9fdae21cc017e492bcb6269521df29a0db6c3f122",
+        "text_length_codepoints": 38,
+        "start_offset": 25,
+        "end_offset": 34,
+        "excerpt_length_codepoints": 9,
+        "excerpt_sha256": "4aa012c4ea8035784a35aae20f85bd72eff3e4779e8d003748dba1c52d9deae3",
+        "exact_source_slice": true,
+        "claim_linked_to_sentence": true,
+        "claim_polarity": "UNKNOWN",
+        "source_type": "OFFICIAL_WEB_POLICY",
+        "origin_description": "Self-authored controlled research declaration; importer tag is not official verification",
+        "full_text_published": false
+      },
+      "api": {
+        "kind": "API",
+        "status": "STATIC_POTENTIAL",
+        "source": "base:classes.dex",
+        "locator": "apk_sha256=909250568f133f9dfefa0730a919cbd63028d833f7b2ed74db5f8b99fd15e45b;split=base;dex=classes.dex;caller=Lorg/privacytrace/probe/fixture/MainActivity;->potentialCamera()V;offset_bytes=0;target=Landroid/hardware/Camera;->open()Landroid/hardware/Camera;",
+        "excerpt": "invoke-static Landroid/hardware/Camera;->open()Landroid/hardware/Camera;",
+        "api_call": {
+          "target_descriptor": "Landroid/hardware/Camera;->open()Landroid/hardware/Camera;",
+          "rule_id": "android.camera.open",
+          "ruleset_version": "0.3.0",
+          "context": {}
+        },
+        "package_split": "base"
+      },
+      "tools": {
+        "jadx": "UNAVAILABLE_BYTECODE_FALLBACK",
+        "ruleset": "0.3.0",
+        "androguard": "4.1.3",
+        "sdk_signatures": "1.0.0"
+      },
+      "interpretation": "Static potential only; three nonempty comparison rows remain INSUFFICIENT_EVIDENCE"
+    }
+  ]
+}

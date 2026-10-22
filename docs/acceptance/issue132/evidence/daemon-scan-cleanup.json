@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-21T15:38:58.437911+00:00",
+  "distribution_role": "scan",
+  "daemon_id": "3ca39dbf-3b9e-4712-9d11-344a6dfa2f4b",
+  "no_containers_or_volumes": true,
+  "finished_at": "2026-10-21T15:39:00.797899+00:00",
+  "private_namespace_and_veth_removed": true,
+  "passed": true
+}

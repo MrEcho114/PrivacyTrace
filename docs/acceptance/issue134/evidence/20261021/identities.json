@@ -1,0 +1,140 @@
+{
+  "baseline_source": "ffadeb06af70072b5ee2d931ee565e5b7e546acd",
+  "cgroup_version": "1",
+  "client": {
+    "apk_sha256": "c4b2a4477577b295ea61ee702cb2dd50be9b703f4fd786e1ea4d7af02f117fd5",
+    "device": "Android 14 / API 34 / x86_64; owned AVD privacytrace-issue134-f",
+    "product_source_local_commit": "b1329ca3244c6cc2dbbf221f111cc3e960f6c7ba",
+    "public_ca_pem_sha256": "403b53241df0d464d0d5733ee97eab56cc84c26d64ba00d0652f528b4ec22afa",
+    "signing_cert_sha256": "29738abe6887d00558ddf660772b825a77727ec1fb0c695d08f9ebfdf70d7515",
+    "trust_difference": "Debug overlay trusts this lane CA only for exact 127.0.0.1; chain/hostname checks stay enabled; cleartext disabled"
+  },
+  "daemon_id_sha256": "7e7e608abfe9c61eda9d30927a9dfaf97eb4d5de398f6db06145e350c830fd94",
+  "daemon_separate": true,
+  "docker_version": "28.5.2",
+  "file_sha256": {
+    "apps/api/src/privacytrace/runner_client.py": "978fad63cbf02b01a442384546e3e6d27b6e67b8e990c0b350da38ed0557315a",
+    "apps/api/src/privacytrace/runtime_tls.py": "99bba48e3851e00ec7881b85a9a540fb29de653d9cf4345d6da5ce1b139cc4e7",
+    "apps/api/src/privacytrace/runtime_worker.py": "fd29fe8f564b30be4bd9b109e16760a2b88b8815e7e7b5cd1d4db71bd8d6dc7e",
+    "apps/api/tests/test_issue134_runner_deadline.py": "6e29456d9e259546fcb3d6a12bcdb0276424f6cdb06681788a373031fcf875b7",
+    "apps/api/tests/test_runtime_worker.py": "87538c07e3a5b8c27eb27f75ad4403180355af8ffa2e51e16aef561cd9c4e536",
+    "deploy/runtime-contract.json": "e2d5f757229d4b250bda319b2c713f1e32aa3c34431722b877d7169c9f6395f6",
+    "packages/contracts/evaluation-input.schema.json": "d70239c36fa5b1ec791e297bc61d64ae0713e55a9194a05b9ea913a298b438cd",
+    "packages/contracts/evaluation-result.schema.json": "ecab4389ac09ec7bd52ba6ae3663c8c334a4b112c2d227007ff58c2c0642118c",
+    "packages/contracts/jobs-response.schema.json": "82ee4e240ccb3bf2c300d3c96bed64770c22424343bb17d2b8ce395bfae4e2d1",
+    "packages/contracts/report.schema.json": "6c0ebca11914a20a5af6a10f5fd8ec36ed464b9ba9cea8196476484c62c65740",
+    "packages/contracts/review-request.schema.json": "05cbe796d835402160a7edb13d2768ad5a293ab675cc9fc6f8b0451d5eb115bc",
+    "packages/contracts/sdk-signatures.schema.json": "f0f607af3ac76cda711c5aea9fbb31d62334e2cd712a90071eb14d46c069ccd3",
+    "packages/contracts/web-candidate-input.schema.json": "fb179178f12e6d0b6cb8f15dfec1833477e22f671ed297a5a36497f1ec36cd7c",
+    "packages/contracts/web-draft-input.schema.json": "bf40bbbf144686a960365fce01b99858a974adea0b3a0ccf11bc6f26561304d6",
+    "packages/contracts/web-external-collection-input.schema.json": "6effa36c5a25859b6ce483ec5509046985b96f46b2f8f64b5175057e570d3259",
+    "packages/contracts/web-external-policy-input.schema.json": "ab205fc0c138d0d73f7650b34c50031f28ac9fa20ec1de7e5baab676b3da7b46",
+    "packages/contracts/web-model-settings.schema.json": "0e92f4dbc14eda1dd6e4349f807f42c2e76cb22d29fd90b5375ac68450884138",
+    "packages/contracts/web-start-input.schema.json": "f1b0a06dfc8bd3f299184ac7f9906e2c23463bdfe89c56e63e518b2030f72d93",
+    "rules/sdk-signatures.v1.0.json": "f4987d328ac7b6697cd3fd92c4f6327cfdeea84566ad6e9934c8aa5bc14150e4",
+    "rules/taxonomy.v0.3.json": "e63297c70dcb3ec67b797e315fdfe469d617296b7bd51084a5ed8e950f513951"
+  },
+  "fixture": {
+    "apk_sha256": "9add4377c27b8326221f031157759e0da9a6b2815686008964933cdabde9c0f8",
+    "expected": {
+      "caller": "Lorg/privacytrace/issue134/fixture/IdentifierFixture;->potentialIdentifierAccess(Landroid/telephony/TelephonyManager;)Ljava/lang/String;",
+      "data_type": "DEVICE_IDENTIFIER",
+      "package_name": "org.privacytrace.issue134.fixture",
+      "policy_quote": "This controlled fixture may access device identifiers.",
+      "policy_state": "UNREVIEWED",
+      "runtime_access": "NOT_EXECUTED",
+      "target": "Landroid/telephony/TelephonyManager;->getDeviceId()Ljava/lang/String;"
+    }
+  },
+  "kernel": "5.15.167.4-microsoft-standard-WSL2",
+  "kernel_separate": false,
+  "local_product_fix_source": "393d108686e3c7cf6c32c5799d4fe9015dce9950",
+  "migration_actual": "0080_05",
+  "protocol": 1,
+  "roles": {
+    "api": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "image_id": "sha256:044e68f5509606cd318ab708078542e72e0e0ae00ff8612db9680c5e6c880101",
+      "privileged": false,
+      "readonly_root": true,
+      "source_revision": "393d108686e3c7cf6c32c5799d4fe9015dce9950",
+      "user": "10001:10001"
+    },
+    "dispatcher": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "image_id": "sha256:044e68f5509606cd318ab708078542e72e0e0ae00ff8612db9680c5e6c880101",
+      "privileged": false,
+      "readonly_root": true,
+      "source_revision": "393d108686e3c7cf6c32c5799d4fe9015dce9950",
+      "user": "10001:10001"
+    },
+    "gateway": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "image_id": "sha256:044e68f5509606cd318ab708078542e72e0e0ae00ff8612db9680c5e6c880101",
+      "privileged": false,
+      "readonly_root": true,
+      "source_revision": "393d108686e3c7cf6c32c5799d4fe9015dce9950",
+      "user": "10001:10001"
+    },
+    "postgres": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "image_id": "sha256:8bb11c4aae5819656e9a197dda176d826f62da8ad5eb5612702a60a2533302ee",
+      "privileged": false,
+      "readonly_root": true,
+      "source_revision": null,
+      "user": "70:70"
+    },
+    "redis": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "image_id": "sha256:9210b8dc25f122eb00e5572dcc7147c8e11fb1a08308b088e06c9d5dd2aa49d6",
+      "privileged": false,
+      "readonly_root": true,
+      "source_revision": null,
+      "user": "999:999"
+    },
+    "runner": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "image_id": "sha256:34372944b4fb0d1156c8d1d30776ee9db3d3c6ed8fe4003640439350f3ec1be3",
+      "privileged": false,
+      "readonly_root": true,
+      "source_revision": "393d108686e3c7cf6c32c5799d4fe9015dce9950",
+      "user": "10001:10001"
+    },
+    "web": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "image_id": "sha256:b9f00d960a7736265d59afb588e8274d40c5dbe9cccff0baa61593cf1657cd1e",
+      "privileged": false,
+      "readonly_root": true,
+      "source_revision": "ffadeb06af70072b5ee2d931ee565e5b7e546acd",
+      "user": "10001:10001"
+    },
+    "worker": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "image_id": "sha256:044e68f5509606cd318ab708078542e72e0e0ae00ff8612db9680c5e6c880101",
+      "privileged": false,
+      "readonly_root": true,
+      "source_revision": "393d108686e3c7cf6c32c5799d4fe9015dce9950",
+      "user": "10001:10001"
+    }
+  },
+  "scanner_image_id": "sha256:9c89315740fd05fb55f3a6a1a6861b4ecc819ee504955680335eff86df29e018",
+  "source_sha": "393d108686e3c7cf6c32c5799d4fe9015dce9950",
+  "storage_driver": "vfs",
+  "transport_note": "Git HTTP unavailable; GitHub connector delivery uses an independently verified identical Git tree. Local source/image commits and remote commit metadata are recorded separately."
+}

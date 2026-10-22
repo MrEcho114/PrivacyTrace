@@ -105,6 +105,29 @@ def disk_full(lab, topology):
     previous = next(
         m["Name"] for m in inspected["Mounts"] if m["Destination"] == "/var/lib/privacytrace"
     )
+    # Earlier drills in this laboratory may have retained drafts from an aborted
+    # run; the disposable intake state is cleared so the disk boundary, not a
+    # stale draft quota, is what this drill measures.
+    purged = json.loads(
+        lab.python(
+            # The durable intake owns draft deletion; the API layer exposes it only
+            # for that service, and capability tokens of drafts left by earlier
+            # drills are gone. The disposable laboratory state is cleared directly.
+            "import json\n"
+            "from privacytrace.durable_intake import DurableWebIntake\n"
+            "from privacytrace.main import app\n"
+            "service = DurableWebIntake(app.state.job_store)\n"
+            "ids = service.store.draft_ids()\n"
+            "errors = []\n"
+            "for draft_id in ids:\n"
+            "    try:\n"
+            "        service.delete_draft(draft_id)\n"
+            "    except Exception as exc:\n"
+            "        errors.append(type(exc).__name__)\n"
+            "print(json.dumps({'purged': len(ids) - len(errors), 'errors': errors,\n"
+            "    'remaining': len(service.store.draft_ids())}))\n"
+        )
+    )
     volume = lab.project + "_enospc_" + uuid4().hex[:8]
     execute(
         [
@@ -125,6 +148,26 @@ def disk_full(lab, topology):
         ]
     )
     lab.run("stop", *SERVICES)
+    # A tmpfs volume is only mounted while a container holds it: without this
+    # keeper the copied store is unmounted and discarded the moment the copy
+    # container exits, and every draft committed before the swap loses its
+    # material objects.
+    keeper = execute(
+        [
+            "docker",
+            "run",
+            "--detach",
+            "--label",
+            f"com.docker.compose.project={lab.project}",
+            "--volume",
+            f"{volume}:/target",
+            "--entrypoint",
+            "/opt/venv/bin/python",
+            inspected["Config"]["Image"],
+            "-c",
+            "import time;time.sleep(3600)",
+        ]
+    )
     try:
         lab.run(
             "run",
@@ -136,7 +179,14 @@ def disk_full(lab, topology):
             f"{volume}:/target",
             "api",
             "-c",
-            "import shutil;shutil.copytree('/source','/target',dirs_exist_ok=True)",
+            # The API runs as uid 10001, but this copy runs as root: without the
+            # ownership pass every copied directory stays root-owned and the first
+            # draft write after the swap fails with EACCES instead of reaching the
+            # size limit the drill is about.
+            "import os,shutil;shutil.copytree('/source','/target',dirs_exist_ok=True)\n"
+            "for base,dirs,files in os.walk('/target'):\n"
+            " os.chown(base,10001,10001)\n"
+            " for entry in dirs+files: os.chown(os.path.join(base,entry),10001,10001)\n",
         )
         override["volumes"] = {"materials": {"name": volume, "external": True}}
         path.write_text(json.dumps(override))
@@ -159,7 +209,12 @@ def disk_full(lab, topology):
         )
         full = json.loads(lab.python(fill))
         refused = upload_apk(topology, target, fixture.single_apk)
-        assert refused.status in {409, 503, 507}, f"full filesystem returned {refused.status}"
+        # A full material volume is storage exhaustion, and uploads are the seam that
+        # fills it: the route must say 507 with a disk code instead of the generic 409
+        # upload rejection that used to swallow every ValueError/OSError.
+        code = (refused.json or {}).get("detail") if isinstance(refused.json, dict) else None
+        assert refused.status == 507, f"full filesystem returned {refused.status}: {code}"
+        assert code in {"MATERIAL_DISK_SPACE_REACHED", "PRIVATE_MATERIAL_DISK_FULL"}, code
         lab.python(
             "import os;from pathlib import Path;"
             "(Path(os.environ['PRIVACYTRACE_STORE_ROOT'])/'.owned-enospc').unlink()"
@@ -176,16 +231,19 @@ def disk_full(lab, topology):
         assert digest == fixture.single_sha256
         assert not cleanup_created_scopes()
         return {
+            "drafts_purged": purged,
             "filesystem": "disposable tmpfs",
             "limit_bytes": 512 * 1024 * 1024,
             "actual_enospc": full,
             "upload_refusal_status": refused.status,
+            "upload_refusal_code": code,
             "upload_after_space_released": 200,
             "retained_hash_verified": True,
         }
     finally:
         # Restore the source volume even when a check fails. The original volume
         # was read-only during the copy and is never filled or deleted.
+        execute(["docker", "rm", "--force", keeper])
         lab.run("stop", *SERVICES)
         path.write_text(json.dumps(original))
         _recreate(lab)

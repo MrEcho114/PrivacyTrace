@@ -1,0 +1,71 @@
+{
+  "checks": [
+    {
+      "command": "GET /_health/live and GET /api/v1/health via the configured origin",
+      "detail": {},
+      "duration_s": 0.104,
+      "name": "r2.tls_and_health",
+      "notes": "live=404 health=502",
+      "result_digest": "sha256:a03e536a16f7d36d",
+      "started_at": "2026-10-21T18:56:55Z",
+      "status": "FAIL",
+      "ticket": "R2"
+    }
+  ],
+  "environment": {
+    "allow_destructive": true,
+    "allow_writes": true,
+    "cpu_count": 8,
+    "cpu_model": "13th Gen Intel(R) Core(TM) i9-13900H",
+    "cwd": "<private-home>/pt136-deploy",
+    "disk": {
+      "filesystem": "ext2/ext3",
+      "free_bytes": 921942695936,
+      "path": "<private-home>/pt136-deploy",
+      "total_bytes": 1081101176832
+    },
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "machine": "x86_64",
+    "memory_bytes": 16770527232,
+    "os": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "release": "6.18.33.2-microsoft-standard-WSL2",
+    "system": "Linux",
+    "tools": {
+      "compose": "5.5.0",
+      "docker_client": "29.7.2",
+      "docker_server": "29.7.2",
+      "git": "git version 2.43.0",
+      "python": "Python 3.12.3",
+      "topology_base_url": "https://privacytrace.test:59130"
+    },
+    "topology_configured": true,
+    "wsl": true
+  },
+  "finished_at": "2026-10-21T18:56:55Z",
+  "notes": "Synthetic APK/package-set inputs only (apk_fixture_builder); no real APK is used. Tokens are never written to the receipt.",
+  "receipt_version": 1,
+  "scope": "r2-dual-scope-business-loop",
+  "source_sha": "65b49f7ffecd8aee5eede21d69b310300dd32ca6",
+  "started_at": "2026-10-21T18:56:55Z",
+  "summary": {
+    "by_ticket": {
+      "R2": {
+        "fail": 1,
+        "not_tested": 0,
+        "pass": 0,
+        "skip": 0
+      }
+    },
+    "conclusion": "FAILURES",
+    "evidence_free": false,
+    "fail": 1,
+    "not_tested": 0,
+    "pass": 0,
+    "pass_rate_of_verified": 0.0,
+    "skip": 0,
+    "total": 1,
+    "untested_scopes": 0,
+    "verified": 1
+  },
+  "untested": []
+}

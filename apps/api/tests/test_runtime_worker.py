@@ -173,3 +173,54 @@ def test_consumer_emits_only_fixed_diagnostic_without_private_exception_text(
     assert messages == ["privacytrace.worker." + code]
     assert "secret" not in caplog.text
     assert instance not in caplog.text and event["event_id"] not in caplog.text
+
+
+def test_independent_worker_apps_do_not_share_captured_instance_config(monkeypatch):
+    from privacytrace import runtime_health, runtime_worker
+
+    executed, acknowledged = [], []
+    monkeypatch.setattr(
+        runtime_worker, "execute", lambda message, config: executed.append(config.instance_id)
+    )
+    monkeypatch.setenv("PRIVACYTRACE_PUBLISH_HEALTH", "1")
+    monkeypatch.setattr(
+        runtime_health,
+        "acknowledge_challenge",
+        lambda url, instance, challenge: acknowledged.append(instance),
+    )
+    apps = []
+    try:
+        for _ in range(6):
+            instance = str(uuid4())
+            app = runtime_worker.create_worker_app(
+                BrokerConfig("redis://u:p@127.0.0.1:1/15", instance)
+            )
+            apps.append(app)
+            event = {
+                "version": 1,
+                "event_type": "privacytrace.job.ready",
+                "instance_id": instance,
+                "job_id": "registration-only",
+                "event_id": str(uuid4()),
+            }
+            challenge = {
+                "version": 1,
+                "instance_id": instance,
+                "challenge_id": str(uuid4()),
+                "issued_at": 12345,
+            }
+            for name, payload, request_id in (
+                (TASK_NAME, event, event["event_id"]),
+                (PROBE_TASK_NAME, challenge, challenge["challenge_id"]),
+            ):
+                task = app.tasks[name]
+                task.push_request(id=request_id)
+                try:
+                    task.run(payload)
+                finally:
+                    task.pop_request()
+            assert executed[-1:] == [instance], "Consumer captured another app's config"
+            assert acknowledged[-1:] == [instance], "Health task captured another app's config"
+    finally:
+        for app in apps:
+            app.close()

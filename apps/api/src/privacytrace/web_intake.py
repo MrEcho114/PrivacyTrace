@@ -23,6 +23,7 @@ from uuid import uuid4
 import anyio
 
 from . import pipeline
+from .capacity import CapacityRefused
 from .isolated_scan import MAX_INPUT, ScanError, inspect_package_isolated
 from .job_store import JobStore
 from .models import AnalysisJob, EvaluationInput, PolicyClaim, PolicyDocument
@@ -229,7 +230,9 @@ class WebIntake:
         if revision > self.MAX_REVISIONS:
             raise ValueError("Input revision limit reached; create a new draft")
         if sum(p.stat().st_size for p in directory.glob("revision-*.json")) > 128 * 1024 * 1024:
-            raise ValueError("Input history quota reached; create a new draft")
+            raise CapacityRefused(
+                "INPUT_HISTORY_QUOTA_REACHED", "Input history quota reached; create a new draft"
+            )
         snapshot = self._safe(directory / f"revision-{revision}.json")
         if self._document_exists(snapshot):
             raise ValueError("Input revision already exists")
@@ -394,7 +397,7 @@ class WebIntake:
             drafts = [p / "current.json" for p in self._draft_directories()
                       if self._document_exists(p / "current.json")]
             if len(drafts) >= self.MAX_DRAFTS:
-                raise ValueError("Local draft quota reached")
+                raise CapacityRefused("DRAFT_QUOTA_REACHED", "Local draft quota reached")
             # Derived by the transport middleware from the trusted client peer.
             owner_hash = hashlib.sha256(owner_ip.encode()).hexdigest() if owner_ip else None
             if token_digest is not None and owner_hash:
@@ -407,7 +410,9 @@ class WebIntake:
                     ):
                         owned += 1
                 if owned >= self.MAX_DRAFTS_PER_IP:
-                    raise ValueError("Client draft quota reached")
+                    raise CapacityRefused(
+                        "CLIENT_DRAFT_QUOTA_REACHED", "Client draft quota reached"
+                    )
             draft_id = uuid4().hex
             directory = self.directory(draft_id)
             directory.mkdir(mode=0o700)

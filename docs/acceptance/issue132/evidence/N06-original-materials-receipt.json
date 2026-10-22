@@ -1,0 +1,392 @@
+{
+  "started_at": "2026-10-21T14:46:14.670802+00:00",
+  "purpose": "Both real original IDs/capabilities sent to the other independently persisted instance; exact nonexistent-resource denial, separate from existing-target 403 matrices",
+  "checks": [
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 1,
+      "method": "GET",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 2,
+      "method": "DELETE",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 3,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 4,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 5,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 6,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 7,
+      "method": "GET",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 8,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 9,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 10,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 11,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 12,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 13,
+      "method": "GET",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "e9794a033abd00210494bc52e577ad41bbb61195ddfa8384fb291039b56ec082",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 14,
+      "method": "GET",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "e9794a033abd00210494bc52e577ad41bbb61195ddfa8384fb291039b56ec082",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 15,
+      "method": "GET",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "e9794a033abd00210494bc52e577ad41bbb61195ddfa8384fb291039b56ec082",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 16,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "e9794a033abd00210494bc52e577ad41bbb61195ddfa8384fb291039b56ec082",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 17,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "e9794a033abd00210494bc52e577ad41bbb61195ddfa8384fb291039b56ec082",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 18,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "e9794a033abd00210494bc52e577ad41bbb61195ddfa8384fb291039b56ec082",
+      "passed": true
+    },
+    {
+      "direction": "I-original-to-J",
+      "endpoint": 19,
+      "method": "DELETE",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "e9794a033abd00210494bc52e577ad41bbb61195ddfa8384fb291039b56ec082",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 1,
+      "method": "GET",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 2,
+      "method": "DELETE",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 3,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 4,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 5,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 6,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 7,
+      "method": "GET",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 8,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 9,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 10,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 11,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 12,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "d379110370ae1554c23114744603385ce25cbd6edd0bf2b950a93317e03f2e9d",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 13,
+      "method": "GET",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "e9794a033abd00210494bc52e577ad41bbb61195ddfa8384fb291039b56ec082",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 14,
+      "method": "GET",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "e9794a033abd00210494bc52e577ad41bbb61195ddfa8384fb291039b56ec082",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 15,
+      "method": "GET",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "e9794a033abd00210494bc52e577ad41bbb61195ddfa8384fb291039b56ec082",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 16,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "e9794a033abd00210494bc52e577ad41bbb61195ddfa8384fb291039b56ec082",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 17,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "e9794a033abd00210494bc52e577ad41bbb61195ddfa8384fb291039b56ec082",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 18,
+      "method": "POST",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "e9794a033abd00210494bc52e577ad41bbb61195ddfa8384fb291039b56ec082",
+      "passed": true
+    },
+    {
+      "direction": "J-original-to-I",
+      "endpoint": 19,
+      "method": "DELETE",
+      "expected_http": 404,
+      "actual_http": 404,
+      "exact_generic_denial": true,
+      "response_sha256": "e9794a033abd00210494bc52e577ad41bbb61195ddfa8384fb291039b56ec082",
+      "passed": true
+    }
+  ],
+  "unchanged": {
+    "I": true,
+    "J": true
+  },
+  "finished_at": "2026-10-21T14:53:01.620633+00:00",
+  "passed": true
+}

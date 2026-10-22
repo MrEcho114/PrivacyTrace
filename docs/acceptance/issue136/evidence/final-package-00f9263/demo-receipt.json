@@ -1,0 +1,24 @@
+{
+  "package_root": "<package-extract>/PrivacyTrace_322234",
+  "page": "file://<package-extract>/PrivacyTrace_322234/01_作品及成果文件/demo-web/web/comparison.html",
+  "status": 200,
+  "title": "PrivacyTrace 六场景公平比较",
+  "h1": "OFFLINE REPLAY · 六场景三方案比较",
+  "table_rows": 18,
+  "offline": true,
+  "blocked_requests": [],
+  "console_errors": [],
+  "viewport_overflow_390": 1848,
+  "duration_ms": 403,
+  "screenshots": {
+    "demo-1440.png": {
+      "bytes": 229746,
+      "sha256": "e52658de4387f85d3ece7766e4633d64e3e19d310fb5d147cf927068325915af"
+    },
+    "demo-390.png": {
+      "bytes": 233345,
+      "sha256": "877a862ad2accc228b7762df7773776c1779da93c84090a9b9a46c207b48e03e"
+    }
+  },
+  "result": "PASS"
+}

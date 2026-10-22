@@ -1,0 +1,31 @@
+{
+  "case_passed": false,
+  "server_source_sha": "ffadeb06af70072b5ee2d931ee565e5b7e546acd",
+  "client_source_commit": "858c62d2c78cb13022cbc66b6c1feaac35a0da18",
+  "client_flow_sha256": "f983761596d74444d0909de74a2893202f05a68f4dc1397d7f0cb2a1724efc1c",
+  "client_apk_sha256": "93874b0f700a6b7b540c05df9d5ad7b09168f0534fb20d1ef84f7c9d0a049847",
+  "signer_certificate_sha256": "29738abe6887d00558ddf660772b825a77727ec1fb0c695d08f9ebfdf70d7515",
+  "ca_pem_sha256": "3d5be4e997dbf6686e07b11a0ec2fad91fe78bfdda960770c30c31cc662191bb",
+  "fixture_apk_sha256": "10434889a570ad8b54ed963a87e9bcc170575acd7f6621a7e336739b469346ac",
+  "delay": {
+    "image_id": "sha256:24d5ce4ea8321e759dd925a09148452aa27cae8868a4c3baf29d5ccf86acc6bb",
+    "delay_seconds": 80,
+    "scanner": "real apk_worker after controlled delay"
+  },
+  "boundary": "Same product flow; new disposable exact-host CA in generated debug overlay; no TLS bypass.",
+  "driver_bootstrap_failure": "Cold WebView socket absent on first action; retained as driver failure, bounded readiness added.",
+  "delay_bootstrap_failure": "Fresh lab lacked e-private directory; retained as driver failure; create mode700 parent first.",
+  "post_review_web_tests": {
+    "passed": 112,
+    "failed": 0,
+    "skipped": 0,
+    "log_sha256": "d2c946d3454d8c1e991c92a1127153732e0288d7f43e97dfc1ad06ecd577a0e1"
+  },
+  "failed_provision_smoke": {
+    "injection_log_sha256": "5516860312a155d807e22dc76d2b4fb699758c0e76244ad656c8162fcb77a0c3",
+    "cleanup": {
+      "failed_provision_removed": true,
+      "case_passed": false
+    }
+  }
+}

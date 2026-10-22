@@ -1,0 +1,8 @@
+**
+!apps/
+!apps/api/
+!apps/api/src/
+!apps/api/src/privacytrace/
+!apps/api/src/privacytrace/runner_client.py
+!apps/api/src/privacytrace/runtime_tls.py
+!apps/api/src/privacytrace/runtime_worker.py

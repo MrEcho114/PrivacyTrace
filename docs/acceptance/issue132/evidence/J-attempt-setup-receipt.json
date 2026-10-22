@@ -1,0 +1,25 @@
+{
+  "purpose": "quiescent real failed extraction attempt for N05 target",
+  "events": [
+    {
+      "method": "GET",
+      "status": 200,
+      "body_sha256": "11314cde87afbe186674dff4b992304f4c7599a958f84c6d4bf30fc168bf0ce3"
+    },
+    {
+      "method": "POST",
+      "status": 200,
+      "body_sha256": "390cbba056562c5ac8d02e5c04e3f050079dbc8f179746c926d7bd3ebed768a3"
+    },
+    {
+      "method": "POST",
+      "status": 409,
+      "body_sha256": "cece88e0517dcb39387664340451a00c133328ee8c7ea62067d28bdd64c62779"
+    },
+    {
+      "method": "GET",
+      "status": 200,
+      "body_sha256": "b6cbf1ef86fd302611831be6a09a467327f94b7113b4b7756aedfe7fa8fe3113"
+    }
+  ]
+}

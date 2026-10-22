@@ -1,0 +1,12 @@
+{
+  "label": "latest-default-untrusted-ca",
+  "origin": "https://localhost:38319",
+  "expected": "SERVER_TLS_REJECTED",
+  "observed": {
+    "error": "SERVER_TLS_REJECTED"
+  },
+  "capabilitiesAccepted": false,
+  "passed": true,
+  "utc": "2026-10-21T13:30:17.593Z",
+  "actual_android": true
+}

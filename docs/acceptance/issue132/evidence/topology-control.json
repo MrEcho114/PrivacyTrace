@@ -1,0 +1,397 @@
+{
+  "utc": "2026-10-21T14:33:10.056245+00:00",
+  "distribution_role": "control",
+  "root_filesystem_id": "698f31ca623a3881",
+  "daemon_id": "96b98944-e422-45d0-bec0-2a5e7dc8a08b",
+  "docker_version": "29.9.1",
+  "swap_limit_supported": true,
+  "network_namespace": "net:[4026533553]",
+  "mount_namespace": "mnt:[4026533639]",
+  "labs": {
+    "82620638-24a3-4c55-a0ec-a7033ed073be": {
+      "project": "pt81-522f693a4d44",
+      "instance_id": "82620638-24a3-4c55-a0ec-a7033ed073be",
+      "roles": {
+        "web": {
+          "image_id": "sha256:79de0e5adb90803d6b79f6c8b3e55a32f715867da0939db40b50559ba71d9591",
+          "source_revision": "0ad5f565dc6f414ac2b9c35661296dc9352e3fef",
+          "user": "10001:10001",
+          "read_only": true,
+          "cap_drop": [
+            "ALL"
+          ],
+          "no_new_privileges": true,
+          "socket": false,
+          "memory": 268435456,
+          "memory_swap": -1,
+          "pids": 128,
+          "network_mode": "pt81-522f693a4d44_api",
+          "published_ports": {
+            "2019/tcp": null,
+            "443/tcp": null,
+            "443/udp": null,
+            "80/tcp": null,
+            "8080/tcp": [
+              {
+                "HostIp": "127.0.0.1",
+                "HostPort": "80"
+              }
+            ],
+            "8443/tcp": [
+              {
+                "HostIp": "127.0.0.1",
+                "HostPort": "443"
+              },
+              {
+                "HostIp": "127.0.0.1",
+                "HostPort": "41859"
+              }
+            ]
+          },
+          "bind_destinations": [
+            "/etc/caddy/Caddyfile",
+            "/run/secrets/web_cert",
+            "/run/secrets/web_key"
+          ]
+        },
+        "gateway": {
+          "image_id": "sha256:160d7b1fa1323dca784ba355418d6e6a1c5b4a409406e77904e79b7480a70a7a",
+          "source_revision": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+          "user": "10001:10001",
+          "read_only": true,
+          "cap_drop": [
+            "ALL"
+          ],
+          "no_new_privileges": true,
+          "socket": false,
+          "memory": 268435456,
+          "memory_swap": -1,
+          "pids": 128,
+          "network_mode": "pt81-522f693a4d44_control",
+          "published_ports": {
+            "8000/tcp": null,
+            "8443/tcp": null
+          },
+          "bind_destinations": [
+            "/run/secrets/gateway_tls_ca",
+            "/run/secrets/gateway_tls_cert",
+            "/run/secrets/gateway_tls_key",
+            "/run/secrets/material_key",
+            "/run/secrets/runtime_database_url"
+          ]
+        },
+        "api": {
+          "image_id": "sha256:160d7b1fa1323dca784ba355418d6e6a1c5b4a409406e77904e79b7480a70a7a",
+          "source_revision": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+          "user": "10001:10001",
+          "read_only": true,
+          "cap_drop": [
+            "ALL"
+          ],
+          "no_new_privileges": true,
+          "socket": false,
+          "memory": 805306368,
+          "memory_swap": -1,
+          "pids": 128,
+          "network_mode": "pt81-522f693a4d44_api",
+          "published_ports": {
+            "8000/tcp": null
+          },
+          "bind_destinations": [
+            "/run/secrets/control_tls_ca",
+            "/run/secrets/control_tls_cert",
+            "/run/secrets/control_tls_key",
+            "/run/secrets/material_key",
+            "/run/secrets/runtime_database_url",
+            "/run/secrets/runtime_health_url"
+          ]
+        },
+        "worker": {
+          "image_id": "sha256:160d7b1fa1323dca784ba355418d6e6a1c5b4a409406e77904e79b7480a70a7a",
+          "source_revision": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+          "user": "10001:10001",
+          "read_only": true,
+          "cap_drop": [
+            "ALL"
+          ],
+          "no_new_privileges": true,
+          "socket": false,
+          "memory": 805306368,
+          "memory_swap": -1,
+          "pids": 128,
+          "network_mode": "pt81-522f693a4d44_control",
+          "published_ports": {
+            "8000/tcp": null
+          },
+          "bind_destinations": [
+            "/run/secrets/control_tls_ca",
+            "/run/secrets/control_tls_cert",
+            "/run/secrets/control_tls_key",
+            "/run/secrets/material_key",
+            "/run/secrets/runtime_broker_url",
+            "/run/secrets/runtime_database_url"
+          ]
+        },
+        "dispatcher": {
+          "image_id": "sha256:160d7b1fa1323dca784ba355418d6e6a1c5b4a409406e77904e79b7480a70a7a",
+          "source_revision": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+          "user": "10001:10001",
+          "read_only": true,
+          "cap_drop": [
+            "ALL"
+          ],
+          "no_new_privileges": true,
+          "socket": false,
+          "memory": 268435456,
+          "memory_swap": -1,
+          "pids": 128,
+          "network_mode": "pt81-522f693a4d44_database",
+          "published_ports": {
+            "8000/tcp": null
+          },
+          "bind_destinations": [
+            "/run/secrets/runtime_broker_url",
+            "/run/secrets/runtime_database_url"
+          ]
+        },
+        "redis": {
+          "image_id": "sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6",
+          "source_revision": "UNLABELLED",
+          "user": "999:999",
+          "read_only": true,
+          "cap_drop": [
+            "ALL"
+          ],
+          "no_new_privileges": true,
+          "socket": false,
+          "memory": 268435456,
+          "memory_swap": -1,
+          "pids": 128,
+          "network_mode": "pt81-522f693a4d44_database",
+          "published_ports": {
+            "6379/tcp": null
+          },
+          "bind_destinations": [
+            "/run/secrets/redis_config"
+          ]
+        },
+        "postgres": {
+          "image_id": "sha256:c7526c0f6c3f30260a563d7bcf8ad778effac59a44f8ffa86678c35418338609",
+          "source_revision": "UNLABELLED",
+          "user": "70:70",
+          "read_only": true,
+          "cap_drop": [
+            "ALL"
+          ],
+          "no_new_privileges": true,
+          "socket": false,
+          "memory": 805306368,
+          "memory_swap": -1,
+          "pids": 128,
+          "network_mode": "pt81-522f693a4d44_database",
+          "published_ports": {
+            "5432/tcp": null
+          },
+          "bind_destinations": [
+            "/run/secrets/postgres_password"
+          ]
+        }
+      },
+      "migration": "0080_05",
+      "config_sha256": {
+        "deployment.env": "b7f86861fcb502eda6552550ee2a77ba32232c9b836cc67d8e0e619c921f5674",
+        "laboratory.json": "ceeaf66e46f0780068538a2919d13993424295dc2ced6af1324f42b604e04dcd",
+        "Caddyfile": "3bb6b3733ede51ed49270279960fae276fdc49254c43af1983cd44b7c41ec7e2",
+        "public-ca.pem": "18cb1a500d5cb84dc92668c28d9ce7946542a97f9f1fe5e368f4f11569616d61"
+      }
+    },
+    "15519290-863f-4d5a-b536-c05fa3326a28": {
+      "project": "pt81-485595698e9b",
+      "instance_id": "15519290-863f-4d5a-b536-c05fa3326a28",
+      "roles": {
+        "web": {
+          "image_id": "sha256:79de0e5adb90803d6b79f6c8b3e55a32f715867da0939db40b50559ba71d9591",
+          "source_revision": "0ad5f565dc6f414ac2b9c35661296dc9352e3fef",
+          "user": "10001:10001",
+          "read_only": true,
+          "cap_drop": [
+            "ALL"
+          ],
+          "no_new_privileges": true,
+          "socket": false,
+          "memory": 268435456,
+          "memory_swap": -1,
+          "pids": 128,
+          "network_mode": "pt81-485595698e9b_api",
+          "published_ports": {
+            "2019/tcp": null,
+            "443/tcp": null,
+            "443/udp": null,
+            "80/tcp": null,
+            "8080/tcp": null,
+            "8443/tcp": [
+              {
+                "HostIp": "127.0.0.1",
+                "HostPort": "57313"
+              }
+            ]
+          },
+          "bind_destinations": [
+            "/etc/caddy/Caddyfile",
+            "/run/secrets/web_cert",
+            "/run/secrets/web_key"
+          ]
+        },
+        "api": {
+          "image_id": "sha256:160d7b1fa1323dca784ba355418d6e6a1c5b4a409406e77904e79b7480a70a7a",
+          "source_revision": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+          "user": "10001:10001",
+          "read_only": true,
+          "cap_drop": [
+            "ALL"
+          ],
+          "no_new_privileges": true,
+          "socket": false,
+          "memory": 805306368,
+          "memory_swap": -1,
+          "pids": 128,
+          "network_mode": "pt81-485595698e9b_api",
+          "published_ports": {
+            "8000/tcp": null
+          },
+          "bind_destinations": [
+            "/run/secrets/control_tls_ca",
+            "/run/secrets/control_tls_cert",
+            "/run/secrets/control_tls_key",
+            "/run/secrets/material_key",
+            "/run/secrets/runtime_database_url",
+            "/run/secrets/runtime_health_url"
+          ]
+        },
+        "worker": {
+          "image_id": "sha256:160d7b1fa1323dca784ba355418d6e6a1c5b4a409406e77904e79b7480a70a7a",
+          "source_revision": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+          "user": "10001:10001",
+          "read_only": true,
+          "cap_drop": [
+            "ALL"
+          ],
+          "no_new_privileges": true,
+          "socket": false,
+          "memory": 805306368,
+          "memory_swap": -1,
+          "pids": 128,
+          "network_mode": "pt81-485595698e9b_control",
+          "published_ports": {
+            "8000/tcp": null
+          },
+          "bind_destinations": [
+            "/run/secrets/control_tls_ca",
+            "/run/secrets/control_tls_cert",
+            "/run/secrets/control_tls_key",
+            "/run/secrets/material_key",
+            "/run/secrets/runtime_broker_url",
+            "/run/secrets/runtime_database_url"
+          ]
+        },
+        "dispatcher": {
+          "image_id": "sha256:160d7b1fa1323dca784ba355418d6e6a1c5b4a409406e77904e79b7480a70a7a",
+          "source_revision": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+          "user": "10001:10001",
+          "read_only": true,
+          "cap_drop": [
+            "ALL"
+          ],
+          "no_new_privileges": true,
+          "socket": false,
+          "memory": 268435456,
+          "memory_swap": -1,
+          "pids": 128,
+          "network_mode": "pt81-485595698e9b_database",
+          "published_ports": {
+            "8000/tcp": null
+          },
+          "bind_destinations": [
+            "/run/secrets/runtime_broker_url",
+            "/run/secrets/runtime_database_url"
+          ]
+        },
+        "gateway": {
+          "image_id": "sha256:160d7b1fa1323dca784ba355418d6e6a1c5b4a409406e77904e79b7480a70a7a",
+          "source_revision": "d3c397c8e0b8e8e7586cbc67219ca87d9c495a3b",
+          "user": "10001:10001",
+          "read_only": true,
+          "cap_drop": [
+            "ALL"
+          ],
+          "no_new_privileges": true,
+          "socket": false,
+          "memory": 268435456,
+          "memory_swap": -1,
+          "pids": 128,
+          "network_mode": "pt81-485595698e9b_control",
+          "published_ports": {
+            "8000/tcp": null
+          },
+          "bind_destinations": [
+            "/run/secrets/gateway_tls_ca",
+            "/run/secrets/gateway_tls_cert",
+            "/run/secrets/gateway_tls_key",
+            "/run/secrets/material_key",
+            "/run/secrets/runtime_database_url"
+          ]
+        },
+        "postgres": {
+          "image_id": "sha256:c7526c0f6c3f30260a563d7bcf8ad778effac59a44f8ffa86678c35418338609",
+          "source_revision": "UNLABELLED",
+          "user": "70:70",
+          "read_only": true,
+          "cap_drop": [
+            "ALL"
+          ],
+          "no_new_privileges": true,
+          "socket": false,
+          "memory": 805306368,
+          "memory_swap": -1,
+          "pids": 128,
+          "network_mode": "pt81-485595698e9b_database",
+          "published_ports": {
+            "5432/tcp": null
+          },
+          "bind_destinations": [
+            "/run/secrets/postgres_password"
+          ]
+        },
+        "redis": {
+          "image_id": "sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6",
+          "source_revision": "UNLABELLED",
+          "user": "999:999",
+          "read_only": true,
+          "cap_drop": [
+            "ALL"
+          ],
+          "no_new_privileges": true,
+          "socket": false,
+          "memory": 268435456,
+          "memory_swap": -1,
+          "pids": 128,
+          "network_mode": "pt81-485595698e9b_database",
+          "published_ports": {
+            "6379/tcp": null
+          },
+          "bind_destinations": [
+            "/run/secrets/redis_config"
+          ]
+        }
+      },
+      "migration": "0080_05",
+      "config_sha256": {
+        "deployment.env": "4a1e966953a05aa9344e83ba57b73b1d941890b764b29c1b650cc42778914c66",
+        "laboratory.json": "534a0bb67153804cce0a2ab6a69e71b3ffae825baac644780baead87c2b8c435",
+        "Caddyfile": "3bb6b3733ede51ed49270279960fae276fdc49254c43af1983cd44b7c41ec7e2",
+        "public-ca.pem": "5fdaa531c885df866562de8f229370eacb12f8a5acde1e78537b5781edef8bfa"
+      }
+    }
+  },
+  "listeners": "State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess\nLISTEN 0      100     172.31.142.2:41859      0.0.0.0:*          \nLISTEN 0      100     172.31.142.2:34444      0.0.0.0:*          \nLISTEN 0      100     172.31.142.2:34443      0.0.0.0:*          \nLISTEN 0      5       10.211.159.1:8444       0.0.0.0:*          \nLISTEN 0      4096       127.0.0.1:57313      0.0.0.0:*          \nLISTEN 0      4096       127.0.0.1:41859      0.0.0.0:*          \nLISTEN 0      4096       127.0.0.1:80         0.0.0.0:*          \nLISTEN 0      4096       127.0.0.1:443        0.0.0.0:*          \nLISTEN 0      5        10.234.43.1:8444       0.0.0.0:*          \nLISTEN 0      100     172.31.142.2:57313      0.0.0.0:*          \n"
+}

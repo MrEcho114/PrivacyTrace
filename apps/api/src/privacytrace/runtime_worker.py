@@ -143,8 +143,10 @@ def execute(message, config):
 def create_worker_app(config):
     app = create_celery_app(config)
 
+    # These task bodies close over this app's instance-specific configuration.
     @app.task(
         name=TASK_NAME,
+        shared=False,
         bind=True,
         acks_late=True,
         reject_on_worker_lost=True,
@@ -172,6 +174,7 @@ def create_worker_app(config):
 
     @app.task(
         name=PROBE_TASK_NAME,
+        shared=False,
         bind=True,
         acks_late=True,
         reject_on_worker_lost=True,

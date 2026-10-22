@@ -19,21 +19,32 @@ export function createMobileFlow(bridge: MobileBridge) {
   const model = ref<ModelStatus>({ configured: false, endpoint: null }), modelResult = ref('')
   let generation = 0, pendingStart: { revision: number; request_id: string } | null = null
   let busyPolls = 0
+  let quickPolls = 0
   let restoring = false
   let timer: ReturnType<typeof setTimeout> | undefined
+  // Background polling is not abortable through the native bridge, so every
+  // foreground action invalidates in-flight poll results with an epoch. A late
+  // poll must never overwrite a newer cancellation, retry, instance or removal.
+  let pollEpoch = 0
   const terminal = () => !!job.value && ['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(job.value.state)
-  function schedule(current: number, first = false) {
+  function stopPoll() {
+    pollEpoch += 1
+    clearTimeout(timer)
+  }
+  function schedule(current: number, first = false, quick = false) {
     if (current !== generation) return
     clearTimeout(timer)
     if ((!job.value && !restoring) || terminal()) return
     const throttled = error.value === 'SERVER_BUSY'
     if (error.value && !throttled) return
     busyPolls = throttled ? Math.min(busyPolls + 1, 3) : 0
+    if (quick) quickPolls = 2
     // Native currently exposes a busy code, not response headers. Default to
     // the server's current 60s window; never replay a failed write operation.
-    const delay = throttled ? 60_000 * 2 ** (busyPolls - 1) : first ? FIRST_POLL_MS : POLL_INTERVAL_MS
+    let delay = throttled ? 60_000 * 2 ** (busyPolls - 1) : first ? FIRST_POLL_MS : POLL_INTERVAL_MS
+    if (!throttled && quickPolls > 0) { quickPolls -= 1; delay = 1_500 }
     const jitter = first && !throttled ? 0 : Math.floor(Math.random() * (throttled ? 10_000 : 4_000))
-    timer = setTimeout(poll, delay + jitter)
+    timer = setTimeout(() => poll(true), delay + jitter)
   }
   function apply(value: LiveDraft) {
     draft.value = value
@@ -47,9 +58,14 @@ export function createMobileFlow(bridge: MobileBridge) {
       recipient: c.declared_recipient ?? '', startOffset: c.start_offset ?? undefined, ambiguityFlags: c.ambiguity_flags }))
     if (!state.sources.some(s => s.id === state.sourceId)) state.sourceId = state.sources[0]?.id ?? ''
   }
+  async function bridgeRequest<T>(name: string, body?: object): Promise<T> {
+    const response = await bridge.request<T>(name, body)
+    if (!context.value || response.origin !== context.value.origin || response.draft !== context.value.draft) throw new Error('INSTANCE_MISMATCH')
+    return response.data
+  }
   async function run(action: (request: Request, check: () => void) => Promise<void>) {
     if (busy.value) return
-    clearTimeout(timer)
+    stopPoll()
     busy.value = true; error.value = ''
     const current = generation
     const active = () => { if (generation !== current) throw new Error('CANCELLED') }
@@ -61,10 +77,15 @@ export function createMobileFlow(bridge: MobileBridge) {
     }
     try { await action(request, active) }
     catch (cause) { if (current === generation) error.value = typeof cause === 'string' ? cause : cause instanceof Error ? cause.message : '操作未完成，请刷新确认。' }
-    finally { if (current === generation) busy.value = false }
+    finally {
+      if (current === generation) {
+        busy.value = false
+        if (typeof document !== 'undefined' && document.activeElement === document.body) document.getElementById('page-title')?.focus({ preventScroll: true })
+      }
+    }
   }
   async function stop() {
-    generation++; clearTimeout(timer); busy.value = false
+    generation++; stopPoll(); busy.value = false
     notice.value = '已停止当前请求。服务可能已保存结果，请刷新确认；停止读取不等于取消分析或删除材料。'
     await bridge.cancel().catch(() => {})
   }
@@ -160,10 +181,33 @@ export function createMobileFlow(bridge: MobileBridge) {
       }
       state.step = 'progress'
     })
-    schedule(current, true)
+    schedule(current, true, true)
   }
-  async function poll() {
+  async function poll(background = false) {
     const current = generation
+    if (background) {
+      if (busy.value) return
+      if (restoring) {
+        await run(async (request, check) => { await readSelection(request, check) })
+        schedule(current)
+        return
+      }
+      const epoch = ++pollEpoch
+      try {
+        const [nextJob, latest] = await Promise.all([bridgeRequest<AnalysisJob>('job'), bridgeRequest<LiveDraft>('read')])
+        if (current !== generation || epoch !== pollEpoch || busy.value) return
+        job.value = nextJob
+        apply(latest)
+        error.value = ''
+        schedule(current)
+      } catch (cause) {
+        if (current !== generation || epoch !== pollEpoch || busy.value) return
+        if (cause instanceof Error && ['CANCELLED', 'INSTANCE_MISMATCH'].includes(cause.message)) return
+        error.value = typeof cause === 'string' ? cause : cause instanceof Error ? cause.message : '暂时无法刷新进度。'
+        schedule(current)
+      }
+      return
+    }
     await run(async (request, check) => {
       if (restoring) await readSelection(request, check)
       else { job.value = await request<AnalysisJob>('job'); apply(await request<LiveDraft>('read')) }
@@ -173,7 +217,7 @@ export function createMobileFlow(bridge: MobileBridge) {
   async function control(action: 'cancel-job' | 'retry-job') {
     const current = generation
     await run(async request => { job.value = await request<AnalysisJob>(action); state.step = 'progress' })
-    schedule(current, true)
+    schedule(current, true, true)
   }
   async function openReport() { await run(async request => { report.value = await request<Report>('report'); state.step = 'report' }) }
   async function remove() {

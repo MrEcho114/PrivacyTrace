@@ -45,6 +45,10 @@ function laboratory(random = () => 0) {
     const bridge = {
       async restore() { restores++; consume(2); return context }, async cancel() {},
       async remove() { return { ...context, state: 'DELETED' } },
+      // Native model calls do not consume the HTTP budget the poll shares.
+      async modelStatus() { return { configured: false, endpoint: null } },
+      async configureModel() { return { configured: true, endpoint: 'https://model.example/v1/chat/completions' } },
+      async collect() { return '{"version":"privacytrace-policy-collector/1","results":[]}' },
       async request(action) {
         inFlight += 1
         peak = Math.max(peak, inFlight)
@@ -257,4 +261,54 @@ test('persistent native busy stays bounded, visible and does not loop forever', 
   }
   assert.equal(flow.error.value, 'BUSY_OR_INACTIVE')
   assert.equal(lab.scheduled.size, 0, 'no unbounded retry loop once the bounded retries are spent')
+})
+
+// #239: a successful foreground read or model settings update must hand the
+// running job back to the automatic poll instead of leaving the progress page on
+// a stale stage until the user presses "刷新进度" by hand.
+test('a successful foreground read or model settings update resumes polling', async () => {
+  for (const action of ['refresh', 'settings']) {
+    const lab = laboratory(), { flow, actions, id, peak } = lab.client()
+    await flow.select(true)
+    assert.equal(lab.scheduled.size, 1, 'restore leaves exactly one automatic poll')
+    await flow[action](true)
+    assert.equal(flow.error.value, '')
+    assert.equal(lab.scheduled.size, 1, `${action} must leave exactly one timer instead of stopping the loop`)
+    const reads = actions.filter(item => item.action === 'job').length
+    await lab.advance(lab.next())
+    assert.equal(actions.filter(item => item.action === 'job').length, reads + 1, `${action} must resume automatic job reads`)
+    assert.equal(flow.error.value, '')
+    assert.equal(flow.job.value.id, id)
+    assert.equal(peak(), 1, 'resumed reads stay sequential through the native gate')
+  }
+})
+
+test('stop, delete and a terminal job never revive automatic polling', async () => {
+  const lab = laboratory(), { flow, finish } = lab.client()
+  await flow.select(true)
+  await flow.stop()
+  assert.equal(lab.scheduled.size, 0, 'stop clears the pending poll')
+  await flow.remove()
+  assert.equal(flow.job.value, null)
+  assert.equal(lab.scheduled.size, 0, 'deleting the material leaves nothing to poll')
+  await flow.refresh()
+  assert.equal(lab.scheduled.size, 0, 'a reload without a job must not invent a poll')
+  const second = laboratory(), rest = second.client()
+  await rest.flow.select(true)
+  rest.finish()
+  await second.advance(second.next())
+  assert.equal(rest.flow.job.value.state, 'SUCCEEDED')
+  assert.equal(second.scheduled.size, 0, 'a terminal job ends the poll loop')
+  await rest.flow.refresh()
+  assert.equal(second.scheduled.size, 0, 'a foreground action must not revive a finished job')
+})
+
+test('a late automatic read cannot add a second timer after a foreground action', async () => {
+  const lab = laboratory(), { flow, blockNext } = lab.client()
+  await flow.select(true)
+  const release = blockNext('job'), pending = flow.poll(true)
+  await flow.refresh()
+  assert.equal(lab.scheduled.size, 1, 'the foreground action owns the only pending timer')
+  release(); await pending
+  assert.equal(lab.scheduled.size, 1, 'the superseded read must leave the new timer alone')
 })

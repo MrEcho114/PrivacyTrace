@@ -82,6 +82,10 @@ export function createMobileFlow(bridge: MobileBridge) {
       if (current === generation) {
         busy.value = false
         if (typeof document !== 'undefined' && document.activeElement === document.body) document.getElementById('page-title')?.focus({ preventScroll: true })
+        // stopPoll() ran when this action started, so a read or settings change
+        // must hand the still-running job back to the poll. Terminal, deleted and
+        // superseded states are rejected inside schedule() (#239).
+        schedule(current, true)
       }
     }
   }

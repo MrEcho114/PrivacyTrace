@@ -735,11 +735,11 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           <p class="error-msg">{{ parsedJobError.message }}</p>
           <p v-if="parsedJobError.primary_error" class="error-detail subtle">根因：{{ parsedJobError.primary_error }}</p>
         </div>
-        <p v-if="activeJob.state === 'FAILED' || activeJob.state === 'CANCELLED'">本任务没有可展示的成功报告。可以重试为一次新的分析，或删除这条本机记录。</p>
+        <p v-if="activeJob.state === 'FAILED' || activeJob.state === 'CANCELLED'">本任务没有可展示的成功报告。可以重新分析，或删除这条本机记录。</p>
         <!-- Destructive actions stay terminal-only: deleting a running job would leave a tombstone
              while the worker may still be writing. Running jobs keep the cancel button above. -->
         <div v-if="terminal(activeJob)" class="job-terminal-actions" @keydown.esc="cancelDelete">
-          <button v-if="activeJob.state === 'FAILED' || activeJob.state === 'CANCELLED'" ref="retryJobEl" data-testid="retry-job" :disabled="loading" @click="retryTerminal">重试为新的分析</button>
+          <button v-if="activeJob.state === 'FAILED' || activeJob.state === 'CANCELLED'" ref="retryJobEl" data-testid="retry-job" :disabled="loading" @click="retryTerminal">重新分析</button>
           <button v-if="!confirmDelete" ref="deleteTriggerEl" data-testid="delete-job" :disabled="loading" @click="askDelete">删除任务</button>
           <span v-else class="job-delete-confirm" role="group" aria-label="删除任务确认" aria-describedby="job-delete-warning">
             <button ref="confirmDeleteEl" data-testid="delete-confirm" :disabled="loading" @click="removeJob">确认删除</button>
@@ -782,7 +782,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
             </div>
             <div v-if="!mobile" class="report-evidence-column">
               <EvidencePanel v-if="selected && report" :issue="selected" :report="report" :taxonomy="taxonomy" :status-labels="statusLabels" :kind-labels="kindLabels" :source-labels="sourceLabels" @close="returnToTrigger()" @open-policy="openPolicy" />
-              <div v-else class="report-evidence-empty"><h2>证据详情</h2><p>尚无证据；未知与未检查项仍保留。</p></div>
+              <div v-else class="report-evidence-empty"><h2>证据详情</h2><p>选择任一条目查看对应证据；未知与未检查项仍保留。</p></div>
             </div>
           </div>
         </section>

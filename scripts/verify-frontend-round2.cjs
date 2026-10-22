@@ -763,11 +763,11 @@ async function main() {
     await failPage.getByText('本次分析未完成', { exact: false }).first().waitFor({ timeout: 20000 })
     const failure = await failPage.evaluate(() => ({
       alert: Boolean(document.querySelector('.m-status-card [role="alert"]')),
-      retry: [...document.querySelectorAll('.m-actionbar .ui-button')].some(button => button.textContent.includes('重试为新的分析')),
+      retry: [...document.querySelectorAll('.m-actionbar .ui-button')].some(button => button.textContent.includes('重新分析')),
       report: [...document.querySelectorAll('.m-actionbar .ui-button')].every(button => !button.textContent.includes('查看报告')),
     }))
     assert.equal(failure.alert, true, 'the failed progress state must expose role=alert')
-    assert.equal(failure.retry, true, 'a terminal failure must offer 重试为新的分析')
+    assert.equal(failure.retry, true, 'a terminal failure must offer 重新分析')
     assert.equal(failure.report, true, 'a failed job must not offer 查看报告')
     await assertNoPageOverflow(failPage, 'progress/failed/390')
     await shot(failPage, '390-progress-failed.png', { scenario: 'progress/failed', state: 'mock job FAILED: alert + retry action' })

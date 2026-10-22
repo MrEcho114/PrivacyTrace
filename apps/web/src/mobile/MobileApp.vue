@@ -318,7 +318,7 @@ onBeforeUnmount(() => {
           <p class="m-eyebrow" role="status">{{ stageLabel }}</p>
           <h2>{{ job?.state === 'SUCCEEDED' ? frontendCopy.stages.SUCCEEDED : failed ? '本次分析未完成' : '正在分析当前材料' }}</h2>
           <p v-if="job?.id" class="hash">{{ job.id }}</p>
-          <p v-if="failed" class="m-error" role="alert">本次分析未完成，可刷新状态或重试为新的分析。</p>
+          <p v-if="failed" class="m-error" role="alert">本次分析未完成，可刷新状态或重新分析。</p>
           <p v-if="job?.state === 'SUCCEEDED'" class="m-help">阶段已完成。报告里有证据位置与政策原句。</p>
         </section>
         <section class="m-section" aria-labelledby="m-timeline-title">
@@ -368,7 +368,7 @@ onBeforeUnmount(() => {
         <UiButton variant="primary" :disabled="busy" :busy="busy" @click="flow.begin">保存候选并开始分析</UiButton>
       </template>
       <template v-else-if="state.step === 'progress'">
-        <UiButton v-if="(job && !terminal) || failed" :disabled="busy" @click="progressSecondary">{{ job && !terminal ? '取消分析' : '重试为新的分析' }}</UiButton>
+        <UiButton v-if="(job && !terminal) || failed" :disabled="busy" @click="progressSecondary">{{ job && !terminal ? '取消分析' : '重新分析' }}</UiButton>
         <UiButton variant="primary" :disabled="busy" :busy="busy" @click="progressPrimary">{{ job?.state === 'SUCCEEDED' ? '查看报告' : '刷新进度' }}</UiButton>
       </template>
     </footer>

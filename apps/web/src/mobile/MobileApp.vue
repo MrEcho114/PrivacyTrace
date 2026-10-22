@@ -25,6 +25,8 @@ const modelPrompt = computed(() => appHint.value.trim() ? collectionInstructions
 const labels = computed(() => Object.fromEntries(taxonomy.value?.data_types.map(t => [t.id, t.label]) ?? []))
 const terminal = computed(() => !!job.value && ['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(job.value.state))
 const stepLabels = frontendCopy.steps
+// Claude 的 4×48 步骤轨放不下 #167 的长文案；可见标签用短名，完整名称保留在 aria-label。
+const shortStepLabels = ['APK', '核对', '扫描', '报告']
 const pageTitles: Record<Step, string> = {
   import: frontendCopy.pageTitles.import,
   candidates: frontendCopy.pageTitles.candidates,
@@ -252,9 +254,9 @@ onBeforeUnmount(() => {
     <nav class="m-steps" aria-label="创建流程">
       <ol>
         <li v-for="(label, index) in stepLabels" :key="steps[index]">
-          <button type="button" class="m-step" :class="{ current: index === currentIndex, complete: index < currentIndex }" :aria-current="index === currentIndex ? 'step' : undefined" :disabled="stepDisabled(index)" @click="navigate(steps[index])">
+          <button type="button" class="m-step" :class="{ current: index === currentIndex, complete: index < currentIndex }" :aria-current="index === currentIndex ? 'step' : undefined" :aria-label="label" :disabled="stepDisabled(index)" @click="navigate(steps[index])">
             <span class="m-step-number" aria-hidden="true">{{ index < currentIndex ? '✓' : index + 1 }}</span>
-            <span class="m-step-label">{{ label }}</span>
+            <span class="m-step-label">{{ shortStepLabels[index] ?? label }}</span>
           </button>
         </li>
       </ol>

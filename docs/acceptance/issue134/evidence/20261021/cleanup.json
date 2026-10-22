@@ -1,0 +1,28 @@
+{
+  "active_scanners": 0,
+  "counts": {
+    "intake_documents": 0,
+    "runner_materials": 0,
+    "runtime_inputs": 0,
+    "upload_reservations": 0
+  },
+  "drafts_revoked": 3,
+  "note": "Scheduling/deletion facts were retained until the disposable DB was removed. Private audit/build artifacts are retained in ignored local storage; no private PKI, DB or raw access material is in this packet.",
+  "operator_cleanup_not_F05_F06_acceptance": true,
+  "raw_readback": {
+    "captured_mtime_utc": "2026-10-21T13:30:40+00:00",
+    "private_basename": "cleanup-readback.json",
+    "sha256": "184453c1606cfedfe28f7789c0ac30fd68d6b424a5545c576e70cf1d2df2c579"
+  },
+  "reports": 0,
+  "resources": {
+    "adb_target": "emulator-5640",
+    "at_utc": "2026-10-21T13:32:02.4933101Z",
+    "avd_removed": true,
+    "avd_stop": "OWNED_EMU_KILL",
+    "controllers": 0,
+    "named_volumes": 0,
+    "status": "REMOVED_AND_READ_BACK"
+  },
+  "tombstones": 6
+}

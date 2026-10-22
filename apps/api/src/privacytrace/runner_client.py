@@ -1,8 +1,10 @@
 """Control-plane client for a fixed authenticated runner; never imports Docker commands."""
 
 import json
+import math
 import os
 import re
+import time
 from pathlib import Path
 from uuid import UUID, uuid4, uuid5
 
@@ -48,8 +50,27 @@ class RunnerClient:
         except (KeyError, OSError, TypeError):
             raise ValueError("Private runtime runner configuration required") from None
 
-    def _response(self, value):
-        response = self.remote.json("/v1/run", data=manifest(value))
+    def _deadline(self, timeout):
+        if type(timeout) not in (int, float) or not math.isfinite(timeout) or timeout <= 0:
+            raise ValueError("Invalid runner operation deadline")
+        transport_timeout = getattr(self.remote, "timeout", None)
+        if (
+            type(transport_timeout) not in (int, float)
+            or not math.isfinite(transport_timeout)
+            or transport_timeout <= 0
+        ):
+            raise ValueError("Invalid runner transport timeout")
+        return time.monotonic() + min(timeout, transport_timeout)
+
+    def _remaining(self, deadline):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeUnavailable("Runner operation deadline exhausted")
+        # Subtracting a rounded absolute deadline can slightly exceed the cap.
+        return min(remaining, self.remote.timeout)
+
+    def _response(self, value, *, timeout=None):
+        response = self.remote.json("/v1/run", data=manifest(value), timeout=timeout)
         try:
             if (
                 type(response) is not dict
@@ -101,6 +122,7 @@ class RunnerClient:
             raise ScanError("WORKER_INVALID_OUTPUT", "Dedicated runner response rejected") from None
 
     def inspect_metadata(self, path, *, timeout=120):
+        deadline = self._deadline(timeout)
         # Called only by trusted intake code with its server-created upload path.
         path = Path(path).absolute()
         draft_id = path.relative_to((self.store.root / "web").absolute()).parts[0]
@@ -117,7 +139,7 @@ class RunnerClient:
             "files": [file],
         }
         try:
-            result = self._response(value)
+            result = self._response(value, timeout=self._remaining(deadline))
         except (RuntimeUnavailable, PermissionError):
             raise ScanError(
                 "ISOLATION_UNAVAILABLE", "Dedicated metadata inspection unavailable"
@@ -126,6 +148,7 @@ class RunnerClient:
 
     def scanner(self, draft, lease):
         def scan(path, *, timeout=120, cancelled=lambda: False):
+            deadline = self._deadline(timeout)
             if cancelled():
                 raise ScanError("CANCELLED", "Analysis cancelled")
             directory = self.store.root / "web" / draft["id"]
@@ -168,7 +191,7 @@ class RunnerClient:
                 "files": files,
             }
             try:
-                return self._response(value)
+                return self._response(value, timeout=self._remaining(deadline))
             except PermissionError:
                 # The database remains the final arbiter after revocation.
                 from .postgres_execution import LeaseLost

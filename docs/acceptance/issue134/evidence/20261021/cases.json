@@ -1,0 +1,61 @@
+{
+  "cases": {
+    "F01": {
+      "observed": [
+        "Confirmed Android task survives API stop/start and produces a nonempty report, initial and combined candidate"
+      ],
+      "remaining": [
+        "Lost/unconfirmed acknowledgement with idempotent recovery",
+        "All original variants and final-combination external Android/Web evidence"
+      ],
+      "status": "NOT_RUN"
+    },
+    "F02": {
+      "observed": [
+        "PENDING/0 with publisher stopped",
+        "Broker interruption during pending delivery",
+        "DELIVERED with worker gated, publisher and broker separately stopped/restored",
+        "Same queued task later produces one report; attempt/fence remain 1"
+      ],
+      "remaining": [
+        "Complete separately identified component/timing variants with final-combination external observation and bounded-error/retry evidence"
+      ],
+      "status": "NOT_RUN"
+    },
+    "F03": {
+      "component_only": [
+        "Real DB lease recovery/fencing and Runner revocation/crash tests in the 238-case suite"
+      ],
+      "remaining": [
+        "Android worker and Runner interruption after acquire, before/after actual lease expiry, and each stale-authority variant"
+      ],
+      "status": "NOT_RUN"
+    },
+    "F04": {
+      "component_only": [
+        "Real repeated RPC cached result; DB stale-fence rejection in the 238-case suite"
+      ],
+      "remaining": [
+        "Actual same-delivery duplication and old result after a new attempt completes, with Android/Web/index/event/material observations"
+      ],
+      "status": "NOT_RUN"
+    },
+    "F07": {
+      "component_only": [
+        "Actual Docker timeout/invalid-output/OOM and Runner hard-crash orphan recovery in the 238-case suite"
+      ],
+      "host_reboot": {
+        "reason": "No independent-kernel disposable VM. Nested daemon shares the host kernel. Never shut down shared WSL/host/daemon for this step.",
+        "status": "BLOCKED"
+      },
+      "remaining": [
+        "Actual Android main-flow scan timeout/crash and live-container external inspect/cleanup variants"
+      ],
+      "status": "NOT_RUN"
+    }
+  },
+  "denominator": 5,
+  "full_case_passes": 0,
+  "historical_failures_retained": true,
+  "partial_observations_do_not_count_as_passed": true
+}

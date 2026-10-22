@@ -879,8 +879,8 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
 .job-terminal-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
 .job-terminal-actions button { margin-left: 0; }
 .job-delete-confirm { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.job-state:focus, .evidence-panel:focus, .policy-document:focus, .notice[tabindex="-1"]:focus, .state.error:focus { outline: 2px solid var(--navy); outline-offset: 3px; }
-.job-delete-warning { color: var(--error); margin: 8px 0 0; }
+.job-state:focus, .evidence-panel:focus, .policy-document:focus, .notice[tabindex="-1"]:focus, .state.error:focus { outline: 2px solid var(--ui-accent); outline-offset: 3px; }
+.job-delete-warning { color: var(--ui-danger-text); margin: 8px 0 0; }
 .candidate-nav button { padding: 4px 10px; font-size: 12px; }
 .job-error-card { background: #fff1ed; border: 1px solid #f4c7bb; border-radius: 8px; padding: 14px; margin-top: 12px; }
 .job-error-card .error-code { font-weight: bold; color: #a33215; display: inline-block; margin-bottom: 6px; font-size: 13px; }
@@ -888,7 +888,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
 .job-error-card .error-detail { margin-top: 6px; font-size: 12px; }
 .policy-jump-btn { margin-top: 10px; font-size: 12px; padding: 6px 10px; display: inline-block; }
 .origin-timestamp { font-size: 12px; color: #52665a; margin-top: 4px; font-variant-numeric: tabular-nums; }
-.ai-disclosure { margin-top: 4px; font-size: 12px; color: var(--muted); }
+.ai-disclosure { margin-top: 4px; font-size: 12px; color: var(--ui-muted); }
 /* Shared Concept C mark replaces the letter tile; the 38×42 slot from style.css
    stays, with the 30px optical graphic centred inside it. */
 .brand-icon { background: none; border-radius: 0; padding: 6px 4px; }

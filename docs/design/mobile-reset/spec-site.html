@@ -1,0 +1,2504 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="description" content="PrivacyTrace 移动端 App 的 Claude 视觉基线规范：设计原则、颜色、排版、间距、移动壳、真实界面预览、组件标本与验收清单。">
+<title>PrivacyTrace 移动端设计规范 · Claude 基线</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════════════
+   自托管字体 —— 只用仓库已有文件，相对路径，无 CDN、无网络请求。
+   加载失败时静默回落到系统字体，不阻塞任何内容。
+   ═══════════════════════════════════════════════════════════════════════ */
+@font-face {
+  font-family: 'PT Sans SC';
+  src: url('../../../apps/web/public/fonts/NotoSansSC-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'PT Serif SC';
+  src: url('../../../apps/web/public/fonts/NotoSerifSC-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Token —— 与 docs/design/frontend-design-spec-mobile.md 一致。
+   规范站内以省略前缀的方式书写：bg 即 --mt-bg。
+   ═══════════════════════════════════════════════════════════════════════ */
+:root {
+  /* 结构面 */
+  --bg: #f5f4ed;
+  --surface: #faf9f5;
+  --surface-warm: #e8e6dc;
+  --state-press: rgba(20,20,19,.12);
+  /* 文字三级 */
+  --fg: #141413;
+  --fg-2: #3d3d3a;
+  --muted: #5e5d59;
+  --caption: #6b6a63;
+  --meta: #87867f;
+  /* 描边 */
+  --border: #f0eee6;
+  --border-soft: #e8e6dc;
+  --border-control: #87867f;
+  /* 强调 */
+  --accent: #c96442;
+  --accent-strong: #b04b25;
+  --accent-strong-hover: #a24522;
+  --accent-strong-active: #974120;
+  --accent-text: #a8431f;
+  --accent-on: #faf9f5;
+  --focus: #1f6fb2;
+  /* 语义 */
+  --success: #0f7a3c;
+  --success-bg: #eef6e8;
+  --warn: #8a5a00;
+  --warn-bg: #fbf3d9;
+  --danger: #b53333;
+  --danger-bg: #fbeceb;
+  --info: #1f6fb2;
+  --info-bg: #eaf2fb;
+  --neutral: #3d3d3a;
+  --neutral-bg: #e8e6dc;
+  /* 深色（仅报告封面/空态） */
+  --dark-bg: #141413;
+  --dark-surface: #30302e;
+  --dark-text: #faf9f5;
+  --dark-muted: #b0aea5;
+  --dark-accent: #d97757;
+  /* 几何 */
+  --radius-tag: 6px;
+  --radius-control: 12px;
+  --radius-field: 12px;
+  --radius-card: 16px;
+  --radius-sheet: 24px;
+  --gutter: 16px;
+  --touch: 48px;
+  --appbar: 56px;
+  --stepnav: 48px;
+  --actionbar: 64px;
+  --input-size: 16px;
+  --content-max: 560px;
+  /* 字体 */
+  --font-serif: 'PT Serif SC', 'Noto Serif SC', 'Songti SC', Georgia, serif;
+  --font-sans: 'PT Sans SC', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-mono: 'SF Mono', 'Cascadia Mono', ui-monospace, Consolas, 'Courier New', monospace;
+  --ease: cubic-bezier(.2, 0, 0, 1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   基础
+   ═══════════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+p { margin: 0; }
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  margin: 0;
+}
+ul, ol { margin: 0; }
+a {
+  color: var(--fg-2);
+  text-decoration: underline;
+  text-decoration-color: var(--border-control);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+a:hover { color: var(--accent-text); text-decoration-color: currentColor; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+svg { display: block; }
+code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fg-2);
+  overflow-wrap: anywhere;
+}
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -64px;
+  z-index: 60;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-control);
+  font-size: 14px;
+  text-decoration: none;
+  color: var(--fg);
+}
+.skip-link:focus { top: 8px; }
+
+.wrap { width: min(1120px, calc(100% - 64px)); margin-inline: auto; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.sr-note { font-size: 12px; line-height: 1.45; color: var(--caption); }
+.note {
+  max-width: 68ch;
+  margin: 16px 0;
+  padding-left: 16px;
+  border-left: 2px solid var(--border-soft);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--caption);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   文档头
+   ═══════════════════════════════════════════════════════════════════════ */
+.site-head { border-bottom: 1px solid var(--border-soft); }
+.site-head-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 24px;
+  padding: 20px 0;
+}
+.brand { display: flex; align-items: baseline; gap: 10px; font-size: 14px; }
+.brand-name { font-family: var(--font-serif); font-size: 17px; letter-spacing: .01em; }
+.brand-sep { color: var(--meta); }
+.brand-sub { color: var(--caption); }
+.head-meta {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--caption);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   封面
+   ═══════════════════════════════════════════════════════════════════════ */
+.cover { padding: 80px 0 64px; }
+.overline {
+  margin: 0 0 24px;
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--caption);
+}
+.cover-rule { width: 48px; height: 2px; background: var(--accent); margin: 0 0 28px; }
+.cover-title {
+  max-width: 24ch;
+  margin: 0 0 20px;
+  font-size: 32px;
+  line-height: 1.15;
+  letter-spacing: -.01em;
+}
+.cover-sub { max-width: 56ch; font-size: 17px; line-height: 1.75; color: var(--muted); }
+.cover-meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px 24px;
+  margin: 36px 0 0;
+  padding: 20px 0 0;
+  border-top: 1px solid var(--border);
+}
+.cover-meta div { min-width: 0; }
+.cover-meta dt {
+  margin: 0 0 4px;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 500;
+  letter-spacing: .02em;
+  color: var(--caption);
+}
+.cover-meta dd {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--fg-2);
+  overflow-wrap: anywhere;
+}
+.claim {
+  max-width: 720px;
+  margin: 40px 0 0;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+}
+.claim-label {
+  margin: 0 0 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--caption);
+}
+.claim p { font-family: var(--font-serif); font-size: 17px; line-height: 1.75; }
+
+.contents { margin: 56px 0 0; padding: 24px 0 0; border-top: 1px solid var(--border); }
+.contents-title { margin: 0 0 8px; font-size: 20px; line-height: 1.3; }
+.contents ol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 48px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.contents li { border-bottom: 1px solid var(--border); }
+.contents a {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 12px 0;
+  text-decoration: none;
+}
+.contents a:hover .toc-name { color: var(--accent-text); }
+.toc-no {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--caption);
+  font-variant-numeric: tabular-nums;
+}
+.toc-name { font-size: 16px; line-height: 1.4; color: var(--fg); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   章节骨架
+   ═══════════════════════════════════════════════════════════════════════ */
+.chapter { padding: 64px 0 8px; border-top: 1px solid var(--border-soft); }
+.chapter-head { display: flex; align-items: baseline; gap: 16px; margin: 0 0 12px; }
+.chapter-no {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: .06em;
+  color: var(--caption);
+  font-variant-numeric: tabular-nums;
+}
+.chapter-title { margin: 0; font-size: 24px; line-height: 1.25; letter-spacing: -.005em; }
+.chapter-lead { max-width: 64ch; margin: 0 0 40px; font-size: 16px; line-height: 1.6; color: var(--muted); }
+.subhead { margin: 48px 0 8px; font-size: 20px; line-height: 1.3; }
+.sub-lead { max-width: 64ch; margin: 0 0 24px; font-size: 14px; line-height: 1.45; color: var(--muted); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   01 原则
+   ═══════════════════════════════════════════════════════════════════════ */
+.principles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 56px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--border);
+}
+.principle {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+.principle-no {
+  margin: 0;
+  padding-top: 5px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--caption);
+  font-variant-numeric: tabular-nums;
+}
+.principle h3 { margin: 0 0 8px; font-size: 17px; line-height: 1.4; }
+.principle p { margin: 0 0 8px; font-size: 14px; line-height: 1.6; color: var(--fg-2); }
+.principle .land {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--caption);
+}
+.principle .land span { font-weight: 500; white-space: nowrap; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   02 颜色
+   ═══════════════════════════════════════════════════════════════════════ */
+.swatch-group { margin: 40px 0 0; }
+.swatch-group-title { margin: 0 0 16px; font-size: 17px; line-height: 1.4; }
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.swatch {
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  break-inside: avoid;
+}
+.chip {
+  display: block;
+  height: 52px;
+  margin: 0 0 10px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(20, 20, 19, .10);
+}
+.swatch-name {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--fg);
+}
+.swatch-hex {
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--caption);
+  font-variant-numeric: tabular-nums;
+}
+.swatch-ratio { margin: 0 0 6px; font-size: 12px; line-height: 1.4; color: var(--fg-2); }
+.swatch-ratio b { font-weight: 500; }
+.swatch-use { margin: 0; font-size: 12px; line-height: 1.45; color: var(--caption); }
+
+.dark-sample {
+  margin: 16px 0 0;
+  padding: 24px;
+  background: var(--dark-bg);
+  border-radius: var(--radius-card);
+  color: var(--dark-text);
+  break-inside: avoid;
+}
+.dark-sample h3 { margin: 0 0 6px; font-size: 20px; line-height: 1.3; color: var(--dark-text); }
+.dark-sample p { max-width: 60ch; font-size: 14px; line-height: 1.6; color: var(--dark-muted); }
+.dark-sample p.accent { margin-top: 8px; color: var(--dark-accent); }
+.dark-chips { display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0 0; }
+.dark-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--dark-muted);
+}
+.dark-chip i { width: 20px; height: 20px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(250, 249, 245, .18); }
+
+.table-wrap { max-width: 100%; margin: 24px 0 0; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.45; }
+caption {
+  caption-side: bottom;
+  padding: 12px 0 0;
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--caption);
+}
+th {
+  padding: 0 12px 10px;
+  border-bottom: 1px solid var(--border-control);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .02em;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--caption);
+}
+td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th:first-child, td:first-child { padding-left: 0; }
+th:last-child, td:last-child { padding-right: 0; }
+td.ratio { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pass { color: var(--success); font-weight: 500; }
+.pass-large { color: var(--warn); font-weight: 500; }
+.dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(20, 20, 19, .14);
+  vertical-align: -1px;
+}
+.pair { white-space: nowrap; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   03 排版
+   ═══════════════════════════════════════════════════════════════════════ */
+.type-list { border-top: 1px solid var(--border); }
+.type-row {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 40px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--border);
+  break-inside: avoid;
+}
+.type-meta { margin: 0; font-size: 12px; line-height: 1.6; color: var(--caption); }
+.type-meta .type-name {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--fg);
+}
+.type-meta span { display: block; }
+.type-sample { min-width: 0; }
+.type-note { margin-top: 8px !important; font-size: 12px; line-height: 1.45; color: var(--caption); }
+.t-display { font-family: var(--font-serif); font-size: 32px; line-height: 1.15; font-weight: 500; letter-spacing: -.01em; }
+.t-title-l { font-family: var(--font-serif); font-size: 24px; line-height: 1.25; font-weight: 500; }
+.t-title-m { font-family: var(--font-serif); font-size: 20px; line-height: 1.3; font-weight: 500; }
+.t-title-s { font-family: var(--font-serif); font-size: 17px; line-height: 1.4; font-weight: 500; }
+.t-body-l { font-family: var(--font-sans); font-size: 17px; line-height: 1.75; font-weight: 400; }
+.t-body { font-family: var(--font-sans); font-size: 16px; line-height: 1.6; font-weight: 400; }
+.t-control { font-family: var(--font-sans); font-size: 16px; line-height: 1.25; font-weight: 500; }
+.t-caption { font-family: var(--font-sans); font-size: 14px; line-height: 1.45; font-weight: 400; color: var(--muted); }
+.t-label { font-family: var(--font-sans); font-size: 12px; line-height: 1.35; font-weight: 500; }
+.t-overline {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--caption);
+}
+.t-mono {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.mono-board {
+  margin: 8px 0 0;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+}
+.mono-board h3 { margin: 0 0 12px; font-size: 17px; line-height: 1.4; }
+.mono-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 24px;
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--fg-2);
+  font-variant-numeric: tabular-nums;
+}
+.mono-line:last-child { margin-bottom: 0; }
+.mono-hash { overflow-wrap: anywhere; }
+.font-notes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin: 32px 0 0;
+  padding: 20px 0 0;
+  border-top: 1px solid var(--border);
+}
+.font-notes h3 {
+  margin: 0 0 6px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 500;
+  letter-spacing: .02em;
+  color: var(--caption);
+}
+.font-notes p { font-size: 14px; line-height: 1.55; color: var(--fg-2); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   04 间距 / 圆角 / 层级
+   ═══════════════════════════════════════════════════════════════════════ */
+.space-scale { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--border); }
+.space-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 88px;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.space-label { font-family: var(--font-mono); font-size: 12px; color: var(--fg-2); font-variant-numeric: tabular-nums; }
+.space-bar { height: 8px; background: var(--surface-warm); border-radius: 2px; }
+.space-use { font-size: 12px; line-height: 1.4; text-align: right; color: var(--caption); }
+.defs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 24px 0 0; padding: 0; }
+.def { min-width: 0; padding: 12px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--radius-control); }
+.def dt { margin: 0 0 4px; font-size: 12px; line-height: 1.35; color: var(--caption); }
+.def dd { margin: 0; font-family: var(--font-mono); font-size: 14px; line-height: 1.5; color: var(--fg); }
+
+.radius-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 24px 0 0; }
+.radius-item { min-width: 0; }
+.radius-tile {
+  height: 88px;
+  margin: 0 0 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-control);
+  border-radius: var(--r, 12px);
+}
+.radius-meta { margin: 0 0 2px; font-family: var(--font-mono); font-size: 12px; line-height: 1.4; color: var(--fg-2); }
+.radius-use { margin: 0; font-size: 12px; line-height: 1.45; color: var(--caption); }
+
+.layer-stage {
+  display: grid;
+  gap: 16px;
+  margin: 24px 0 0;
+  padding: 24px;
+  background: var(--surface-warm);
+  border-radius: var(--radius-card);
+}
+.layer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding: 16px;
+  background: var(--surface);
+  border-radius: var(--radius-control);
+}
+.layer-l0 { background: var(--bg); box-shadow: none; }
+.layer-l1 { border: 1px solid var(--border-soft); }
+.layer-l2 { box-shadow: 0 0 0 1px rgba(20, 20, 19, .08); }
+.layer-l3 { box-shadow: 0 4px 24px rgba(20, 20, 19, .05); }
+.layer-l4 { border-top: 1px solid var(--border-soft); box-shadow: 0 -8px 32px rgba(20, 20, 19, .18); }
+.layer-name { font-size: 14px; line-height: 1.4; font-weight: 500; color: var(--fg); }
+.layer-spec { font-family: var(--font-mono); font-size: 12px; line-height: 1.4; color: var(--caption); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   05 移动壳
+   ═══════════════════════════════════════════════════════════════════════ */
+.shell { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 56px; align-items: start; margin: 0; }
+.shell-diagram {
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-card);
+}
+.band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 12px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.band-safe { height: 24px; background: var(--surface-warm); color: var(--caption); font-family: var(--font-mono); }
+.band-appbar { height: 56px; background: var(--surface); border-bottom: 1px solid var(--border-soft); }
+.band-steps { height: 48px; background: var(--surface); border-bottom: 1px solid var(--border-soft); }
+.band-content { position: relative; height: 240px; background: var(--bg); }
+.band-action {
+  height: 64px;
+  background: var(--surface);
+  border-top: 1px solid var(--border-soft);
+  box-shadow: 0 -1px 2px rgba(20, 20, 19, .06);
+}
+.band-home { height: 28px; background: var(--surface); }
+.band-label { color: var(--fg-2); }
+.band-measure { font-family: var(--font-mono); color: var(--caption); font-variant-numeric: tabular-nums; }
+.touch-square {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px dashed var(--border-control);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--caption);
+}
+.shell-caption { margin: 12px 0 0; font-size: 12px; line-height: 1.45; color: var(--caption); }
+.shell-legend { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--border); }
+.shell-legend li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.shell-legend .no {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--caption);
+  font-variant-numeric: tabular-nums;
+}
+.shell-legend b { display: block; margin: 0 0 2px; font-size: 14px; line-height: 1.4; font-weight: 500; color: var(--fg); }
+.shell-legend p { font-size: 14px; line-height: 1.5; color: var(--muted); }
+.points { display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px; margin: 40px 0 0; padding: 0; border-top: 1px solid var(--border); }
+.point { padding: 16px 0; border-bottom: 1px solid var(--border); }
+.point h3 { margin: 0 0 6px; font-family: var(--font-sans); font-size: 16px; line-height: 1.4; font-weight: 500; }
+.point p { font-size: 14px; line-height: 1.6; color: var(--muted); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   06 手机框
+   ═══════════════════════════════════════════════════════════════════════ */
+.frames {
+  --s: .875;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 40px 24px;
+  margin: 8px 0 0;
+}
+.phone-figure { flex: none; width: calc(390px * var(--s)); margin: 0; }
+.phone-cap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.phone-cap-no { font-family: var(--font-mono); font-size: 12px; color: var(--caption); font-variant-numeric: tabular-nums; }
+.phone-cap-name { font-family: var(--font-serif); font-size: 17px; line-height: 1.4; font-weight: 500; color: var(--fg); }
+.phone-note { margin: 12px 0 0; font-size: 12px; line-height: 1.45; color: var(--caption); }
+.phone {
+  position: relative;
+  width: 100%;
+  height: calc(844px * var(--s));
+}
+.phone-device {
+  width: 390px;
+  height: 844px;
+  padding: 12px;
+  border-radius: 56px;
+  background: var(--dark-bg);
+  box-shadow: 0 0 0 1px rgba(20, 20, 19, .18), 0 18px 40px -30px rgba(20, 20, 19, .40);
+  transform: scale(var(--s));
+  transform-origin: top left;
+}
+.ph-island {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  z-index: 5;
+  width: 124px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--dark-bg);
+  transform: translateX(-50%);
+}
+.ph-screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  border-radius: 44px;
+}
+.ph-status {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  justify-content: space-between;
+  height: 47px;
+  padding: 18px 24px 0;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--fg);
+}
+.ph-status-icons { display: inline-flex; align-items: center; gap: 6px; }
+.ph-status svg { width: 17px; height: 11px; fill: currentColor; }
+.ph-status .battery { width: 25px; }
+.ph-appbar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  height: 56px;
+  padding: 0 4px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-soft);
+}
+.ph-appbar .ph-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0 6px;
+  overflow: hidden;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ph-icon { display: grid; flex: none; place-items: center; width: 48px; height: 48px; color: var(--fg); }
+.ph-icon svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ph-steps {
+  display: grid;
+  flex: none;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+  height: 48px;
+  padding: 0 8px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-soft);
+}
+.ph-step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 0 2px;
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.ph-step-num {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border-soft);
+  border-radius: 50%;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.ph-step.current { color: var(--accent-text); font-weight: 500; }
+.ph-step.current::after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  bottom: 0;
+  left: 8px;
+  height: 2px;
+  background: var(--accent-text);
+}
+.ph-step.current .ph-step-num { border-color: var(--accent-text); color: var(--accent-text); }
+.ph-step.done { color: var(--caption); }
+.ph-step.done .ph-step-num { color: var(--caption); }
+.ph-step.off { color: var(--meta); }
+.ph-step.off .ph-step-num { border-color: var(--border); color: var(--meta); }
+.ph-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px 16px;
+}
+.ph-card { flex: none; padding: 16px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; }
+.ph-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; }
+.ph-h2 { margin: 0; font-family: var(--font-serif); font-size: 17px; line-height: 1.4; font-weight: 500; }
+.ph-card > .ph-h2 { margin-bottom: 8px; }
+.ph-name { margin: 0 0 4px; font-family: var(--font-mono); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.ph-hash { margin: 0 0 6px; font-family: var(--font-mono); font-size: 12px; line-height: 1.5; color: var(--caption); overflow-wrap: anywhere; }
+.ph-help { margin: 0; font-size: 14px; line-height: 1.45; color: var(--muted); }
+.ph-meta { margin: 2px 0 0; font-size: 12px; line-height: 1.35; color: var(--caption); overflow-wrap: anywhere; }
+.ph-quiet {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  min-height: 48px;
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 500;
+  color: var(--accent-text);
+}
+.ph-section { display: flex; flex: none; flex-direction: column; gap: 8px; }
+.ph-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 2px; }
+.ph-section-head span { font-size: 12px; line-height: 1.35; color: var(--caption); }
+.ph-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20px;
+  gap: 8px;
+  align-items: center;
+  min-height: 56px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+}
+.ph-row strong { display: block; margin: 0 0 2px; font-size: 16px; line-height: 1.3; font-weight: 500; }
+.ph-row-sub { display: block; overflow-wrap: anywhere; font-size: 12px; line-height: 1.35; color: var(--muted); }
+.ph-chevron {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: var(--caption);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ph-details {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  font-size: 16px;
+  line-height: 1.25;
+  font-weight: 500;
+  color: var(--fg-2);
+}
+.ph-action {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-height: 64px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border-soft);
+  box-shadow: 0 -1px 2px rgba(20, 20, 19, .06);
+}
+.ph-btn {
+  display: grid;
+  place-items: center;
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 16px;
+  line-height: 1.25;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.ph-btn.quiet { flex: none; padding: 0 12px; background: transparent; color: var(--accent-text); }
+.ph-btn.primary { flex: 1; background: var(--accent-strong); color: var(--accent-on); }
+.ph-home { position: relative; flex: none; height: 28px; }
+.ph-home::after {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  width: 134px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--fg);
+  opacity: .85;
+  transform: translateX(-50%);
+}
+.ph-context {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+}
+.ph-context > div { min-width: 0; }
+.ph-tabs {
+  display: flex;
+  flex: none;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface-warm);
+  border-radius: 12px;
+}
+.ph-tab {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  min-height: 48px;
+  border-radius: 9px;
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 500;
+  color: var(--muted);
+}
+.ph-tab.on { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(20, 20, 19, .06); }
+.ph-context-line { margin: 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+.ph-summary { margin: 0; font-size: 14px; line-height: 1.4; color: var(--fg-2); }
+.ph-cand { flex: none; padding: 12px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; }
+.ph-cand-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ph-cand-head strong { font-size: 16px; line-height: 1.3; font-weight: 500; }
+.ph-cand-quote {
+  display: -webkit-box;
+  margin: 4px 0 0;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--fg-2);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.ph-sample { display: flex; align-items: center; gap: 12px; }
+.ph-appicon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--surface-warm);
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--fg);
+}
+.ph-sample-body { min-width: 0; }
+.ph-metrics { display: grid; flex: none; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ph-metric { padding: 12px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; }
+.ph-metric b { display: block; font-family: var(--font-mono); font-size: 20px; line-height: 1.2; font-weight: 400; font-variant-numeric: tabular-nums; }
+.ph-metric span { display: block; margin-top: 2px; font-size: 12px; line-height: 1.35; color: var(--caption); }
+.ph-issue { flex: none; padding: 12px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; }
+.ph-issue-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ph-issue-head strong { font-size: 16px; line-height: 1.3; font-weight: 500; }
+.ph-issue-meta { margin: 4px 0 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+.ph-issue-action { display: flex; align-items: center; gap: 4px; margin: 6px 0 0; font-size: 14px; line-height: 1.35; font-weight: 500; color: var(--fg-2); }
+.ph-issue-action svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--caption);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ph-coverage { flex: none; padding: 16px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; }
+.ph-coverage .ph-h2 { margin-bottom: 4px; }
+.ph-coverage p { font-size: 14px; line-height: 1.45; color: var(--muted); }
+.ph-coverage .ph-meta { margin-top: 6px; }
+
+/* 标签（规范站与手机框共用） */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tag.neutral { background: var(--neutral-bg); color: var(--neutral); }
+.tag.info { background: var(--info-bg); color: var(--info); }
+.tag.warn { background: var(--warn-bg); color: var(--warn); }
+.tag.success { background: var(--success-bg); color: var(--success); }
+.tag.danger { background: var(--danger-bg); color: var(--danger); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   07 组件标本
+   ═══════════════════════════════════════════════════════════════════════ */
+.specimen { padding: 24px 0; border-top: 1px solid var(--border); }
+.specimen-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; margin: 0 0 4px; }
+.specimen-head h3 { margin: 0; font-size: 17px; line-height: 1.4; }
+.specimen-id { font-family: var(--font-mono); font-size: 12px; color: var(--caption); }
+.specimen-lead { max-width: 68ch; margin: 0 0 20px; font-size: 14px; line-height: 1.55; color: var(--muted); }
+.specimen-stage { margin: 0 0 12px; }
+.spec-rule {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  margin: 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg-2);
+}
+.spec-rule b { padding-top: 2px; font-size: 12px; line-height: 1.35; font-weight: 500; letter-spacing: .02em; color: var(--caption); white-space: nowrap; }
+
+.btn {
+  display: grid;
+  grid-template-areas: 'stack';
+  place-items: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.25;
+  font-weight: 500;
+  color: var(--fg);
+  text-align: center;
+}
+.btn > * { grid-area: stack; }
+.btn.primary { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--accent-on); }
+.btn.primary.is-pressed { background: var(--accent-strong-active); border-color: var(--accent-strong-active); transform: scale(.98); }
+.btn.secondary { background: var(--surface); border-color: var(--border-control); color: var(--fg); }
+.btn.secondary.is-pressed { background: color-mix(in srgb, var(--surface), var(--state-press)); transform: scale(.98); }
+.btn.quiet { padding: 0 12px; background: transparent; color: var(--accent-text); }
+.btn.quiet.is-pressed { background: var(--state-press); text-decoration: underline; }
+.btn.danger { background: var(--danger); border-color: var(--danger); color: var(--accent-on); }
+.btn.danger.is-pressed {
+  background-image: linear-gradient(rgba(20, 20, 19, .12), rgba(20, 20, 19, .12));
+  transform: scale(.98);
+}
+.btn.is-disabled { background: var(--surface-warm); border-color: transparent; color: var(--meta); }
+.btn.quiet.is-disabled { background: transparent; text-decoration: none; }
+.btn.is-waiting .btn-label { visibility: hidden; }
+.btn-wait { display: none; align-items: center; gap: 6px; }
+.btn.is-waiting .btn-wait { display: inline-flex; }
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: pt-spin 800ms linear infinite;
+}
+@keyframes pt-spin { to { transform: rotate(360deg); } }
+
+.btn-matrix {
+  display: grid;
+  grid-template-columns: 104px repeat(4, minmax(128px, 1fr));
+  gap: 12px;
+  min-width: 640px;
+  align-items: center;
+}
+.matrix-head { margin: 0; font-size: 12px; line-height: 1.35; font-weight: 500; color: var(--caption); }
+.matrix-row-label { margin: 0; font-family: var(--font-mono); font-size: 12px; line-height: 1.4; color: var(--fg-2); }
+.matrix-note { margin: 12px 0 0; font-size: 12px; line-height: 1.5; color: var(--caption); }
+
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field-label { margin: 0; font-size: 14px; line-height: 1.35; font-weight: 500; letter-spacing: .02em; color: var(--fg); }
+.field-input {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 12px;
+  overflow-wrap: anywhere;
+  background: var(--surface);
+  border: 1px solid var(--border-control);
+  border-radius: 12px;
+  font-size: 16px;
+  line-height: 1.25;
+  color: var(--fg);
+}
+.field-help { margin: 0; font-size: 12px; line-height: 1.45; color: var(--caption); }
+.field.is-focus .field-input { border-color: var(--focus); outline: 2px solid var(--focus); outline-offset: 2px; }
+.field.is-error .field-input { border-color: var(--danger); }
+.field.is-error .field-help { color: var(--danger); }
+.field.is-disabled .field-input { background: var(--surface-warm); border-color: var(--border-soft); color: var(--meta); }
+
+.tag-set { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.tag-item { display: grid; gap: 6px; justify-items: start; }
+.tag-note { font-size: 12px; line-height: 1.45; color: var(--caption); }
+
+.rows { overflow: hidden; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; }
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20px;
+  gap: 12px;
+  align-items: center;
+  min-height: 56px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+.row:first-child { border-top: 0; }
+.row-main { min-width: 0; }
+.row-main b { display: block; margin: 0 0 2px; font-size: 16px; line-height: 1.3; font-weight: 500; }
+.row-main span { display: block; overflow-wrap: anywhere; font-size: 14px; line-height: 1.45; color: var(--muted); }
+
+.bar-demo { overflow: hidden; background: var(--bg); border: 1px solid var(--border-control); border-radius: 16px; }
+.bar-demo-body { min-height: 96px; padding: 16px; font-size: 14px; line-height: 1.55; color: var(--caption); }
+.bar-demo-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 64px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border-soft);
+  box-shadow: 0 -1px 2px rgba(20, 20, 19, .06);
+}
+.bar-demo-bar .btn { width: auto; }
+.bar-demo-bar .btn.quiet { flex: none; }
+.bar-demo-bar .btn.primary { flex: 1; }
+
+.sheet-stage { padding: 24px 16px 0; overflow: hidden; background: var(--surface-warm); border-radius: 16px; }
+.sheet {
+  padding: 10px 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-bottom: 0;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -8px 32px rgba(20, 20, 19, .18);
+}
+.sheet-handle { width: 36px; height: 4px; margin: 0 auto 8px; border-radius: 999px; background: var(--border-soft); }
+.sheet-head { display: flex; align-items: flex-start; gap: 12px; }
+.sheet-title { flex: 1; min-width: 0; margin: 0; padding-top: 3px; font-family: var(--font-serif); font-size: 20px; line-height: 1.3; font-weight: 500; }
+.sheet-close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: -10px -10px 0 0;
+  color: var(--fg);
+}
+.sheet-close svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+.sheet-desc { margin: 0 0 12px; font-size: 12px; line-height: 1.45; color: var(--muted); }
+.sheet-section { padding: 16px 0; border-top: 1px solid var(--border); }
+.sheet-sub { margin: 0 0 6px; font-family: var(--font-sans); font-size: 16px; line-height: 1.4; font-weight: 500; }
+.sheet-section p { font-size: 14px; line-height: 1.55; color: var(--muted); }
+.sheet-section p.strong { color: var(--fg); font-weight: 500; }
+
+.notices { display: grid; gap: 12px; }
+.notice {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+  padding: 12px;
+  background: var(--info-bg);
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--info);
+}
+.notice.error { background: var(--danger-bg); color: var(--danger); }
+.notice.info { background: var(--info-bg); color: var(--info); }
+.notice p { margin: 0; }
+.notice-action { font-size: 14px; line-height: 1.35; font-weight: 500; text-decoration: underline; white-space: nowrap; }
+.notice-busy { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   08 无障碍与验收
+   ═══════════════════════════════════════════════════════════════════════ */
+.a11y-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; margin: 0; padding: 0; border-top: 1px solid var(--border); }
+.a11y-item { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--border); }
+.a11y-item .mark {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border-control);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--caption);
+}
+.a11y-item h3 { margin: 0 0 4px; font-family: var(--font-sans); font-size: 16px; line-height: 1.4; font-weight: 500; }
+.a11y-item p { font-size: 14px; line-height: 1.55; color: var(--muted); }
+
+.checklist { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--border-control); }
+.checklist li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg-2);
+  break-inside: avoid;
+}
+.checkbox {
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+  border: 1px solid var(--border-control);
+  border-radius: 2px;
+}
+.checklist strong { font-weight: 500; color: var(--fg); }
+.checklist code { font-size: 12px; color: var(--muted); }
+.checklist-foot { margin: 16px 0 0; font-size: 12px; line-height: 1.5; color: var(--caption); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   09 迁移
+   ═══════════════════════════════════════════════════════════════════════ */
+.migrate-table { min-width: 720px; }
+.migrate-table td:nth-child(2) { font-family: var(--font-mono); font-size: 12px; line-height: 1.5; color: var(--muted); }
+.migrate-table td:nth-child(3) { font-family: var(--font-mono); font-size: 12px; line-height: 1.5; color: var(--fg-2); }
+.scope {
+  margin: 40px 0 0;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+}
+.scope h3 { margin: 0 0 8px; font-size: 20px; line-height: 1.3; }
+.scope p { max-width: 68ch; font-size: 16px; line-height: 1.6; color: var(--fg-2); }
+.scope p b { font-weight: 500; color: var(--fg); }
+.scope ul { margin: 12px 0 0; padding: 0 0 0 20px; }
+.scope li { font-size: 14px; line-height: 1.7; color: var(--muted); }
+.next-steps { margin: 32px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--border); }
+.next-steps li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg-2);
+}
+.next-steps .no { font-family: var(--font-mono); font-size: 12px; color: var(--caption); font-variant-numeric: tabular-nums; }
+.next-steps b { font-weight: 500; color: var(--fg); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   页脚
+   ═══════════════════════════════════════════════════════════════════════ */
+.site-foot { margin-top: 64px; padding: 24px 0 48px; border-top: 1px solid var(--border-soft); }
+.site-foot p { max-width: 80ch; font-size: 12px; line-height: 1.6; color: var(--caption); }
+.site-foot p + p { margin-top: 6px; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   响应式
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1040px) {
+  .frames { --s: .8; }
+  .shell { grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 40px; }
+}
+@media (max-width: 960px) {
+  .principles { grid-template-columns: 1fr; gap: 0; }
+  .points { grid-template-columns: 1fr; gap: 0; }
+  .shell { grid-template-columns: 1fr; }
+  .shell-diagram { max-width: 420px; }
+  .cover-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .font-notes { grid-template-columns: 1fr; }
+  .a11y-grid { grid-template-columns: 1fr; gap: 0; }
+  .type-row { grid-template-columns: 160px minmax(0, 1fr); gap: 24px; }
+}
+@media (max-width: 760px) {
+  .wrap { width: calc(100% - 40px); }
+  .cover { padding: 56px 0 48px; }
+  .cover-title { font-size: 24px; line-height: 1.25; }
+  .claim { padding: 20px; }
+  .contents ol { grid-template-columns: 1fr; }
+  .chapter { padding: 48px 0 0; }
+  .chapter-lead { margin-bottom: 32px; }
+  .swatches { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .type-row { grid-template-columns: 1fr; gap: 12px; }
+  .defs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .radius-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fields { grid-template-columns: 1fr; }
+  .frames { --s: .86; flex-direction: column; align-items: center; }
+  .phone-figure { width: calc(390px * var(--s)); }
+  .layer-stage { padding: 16px; }
+  .spec-rule { grid-template-columns: 1fr; gap: 4px; }
+  .space-row { grid-template-columns: 56px minmax(0, 1fr); }
+  .space-use { display: none; }
+  .bar-demo-bar { flex-wrap: wrap; }
+  .bar-demo-bar .btn { width: 100%; }
+  .notice { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) {
+  .wrap { width: calc(100% - 32px); }
+  .cover-title { font-size: 22px; line-height: 1.25; }
+  .frames { --s: .72; }
+  .defs { grid-template-columns: 1fr; }
+  .radius-grid { grid-template-columns: 1fr; }
+  .defs, .radius-grid { gap: 12px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   打印：隐藏导航，避免色块与标本跨页断裂
+   ═══════════════════════════════════════════════════════════════════════ */
+@media print {
+  @page { margin: 16mm; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .site-head, .contents, .skip-link { display: none; }
+  .wrap { width: auto; max-width: none; }
+  .cover { padding-top: 0; }
+  .chapter { padding-top: 32px; border-top-color: #d8d6cc; }
+  .swatch, .dark-sample, .specimen, .type-row, .layer, .principle, .a11y-item, .checklist li, .phone-figure, .mono-board, .claim, .scope { break-inside: avoid; page-break-inside: avoid; }
+  .chapter-head, .subhead, .specimen-head, .type-meta { break-after: avoid; page-break-after: avoid; }
+  .table-wrap { overflow: visible; }
+  .migrate-table { min-width: 0; }
+  a { text-decoration: none; color: inherit; }
+  .phone-device { box-shadow: none; }
+  .frames { display: block; }
+  .phone-figure { margin: 0 auto 24px; }
+  #acceptance { break-before: page; page-break-before: always; }
+  #acceptance .checklist { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main">跳到规范正文</a>
+
+<header class="site-head">
+  <div class="wrap site-head-inner">
+    <div class="brand">
+      <span class="brand-name">PrivacyTrace</span>
+      <span class="brand-sep" aria-hidden="true">/</span>
+      <span class="brand-sub">移动端设计规范</span>
+    </div>
+    <p class="head-meta">v0.1 · 2026-10-23 · 仅移动端 App</p>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ══════════════ 封面 ══════════════ -->
+  <section class="cover wrap" id="cover" aria-labelledby="cover-title">
+    <p class="overline">Design specification · Mobile only</p>
+    <div class="cover-rule" aria-hidden="true"></div>
+    <h1 class="cover-title" id="cover-title">PrivacyTrace 移动端设计规范 · Claude 基线</h1>
+    <p class="cover-sub">仅 Android / Tauri 移动 App；后端不在本规范。桌面工作台冻结，不随本次重置改版。</p>
+
+    <dl class="cover-meta">
+      <div><dt>版本</dt><dd>0.1</dd></div>
+      <div><dt>日期</dt><dd>2026-10-23</dd></div>
+      <div><dt>适用范围</dt><dd>仅 Android / Tauri 移动 App</dd></div>
+      <div><dt>设计基线</dt><dd>od-ds-claude · 版式参考 od-mobile-app</dd></div>
+    </dl>
+
+    <figure class="claim">
+      <figcaption class="claim-label">设计主张</figcaption>
+      <p>证据优先于装饰。暖纸底、单一陶土强调；衬线承担内容，无衬线承担操作。</p>
+    </figure>
+
+    <nav class="contents" aria-label="章节导航">
+      <h2 class="contents-title">目录</h2>
+      <ol>
+        <li><a href="#principles"><span class="toc-no">01</span><span class="toc-name">设计原则</span></a></li>
+        <li><a href="#color"><span class="toc-no">02</span><span class="toc-name">色彩</span></a></li>
+        <li><a href="#type"><span class="toc-no">03</span><span class="toc-name">排版</span></a></li>
+        <li><a href="#space"><span class="toc-no">04</span><span class="toc-name">间距、圆角、层级</span></a></li>
+        <li><a href="#shell"><span class="toc-no">05</span><span class="toc-name">移动壳解剖</span></a></li>
+        <li><a href="#frames"><span class="toc-no">06</span><span class="toc-name">手机框预览</span></a></li>
+        <li><a href="#components"><span class="toc-no">07</span><span class="toc-name">组件标本</span></a></li>
+        <li><a href="#a11y"><span class="toc-no">08</span><span class="toc-name">无障碍与验收</span></a></li>
+        <li><a href="#migration"><span class="toc-no">09</span><span class="toc-name">迁移说明</span></a></li>
+      </ol>
+    </nav>
+  </section>
+
+  <!-- ══════════════ 01 设计原则 ══════════════ -->
+  <section class="chapter wrap" id="principles" aria-labelledby="principles-title">
+    <header class="chapter-head">
+      <p class="chapter-no">01</p>
+      <h2 class="chapter-title" id="principles-title">设计原则</h2>
+    </header>
+    <p class="chapter-lead">六条优先级。规范之间冲突时按此顺序裁决：内容先于装饰，事实先于颜色，边界先于阴影。</p>
+
+    <ol class="principles">
+      <li class="principle">
+        <p class="principle-no">01</p>
+        <div>
+          <h3>内容先行</h3>
+          <p>证据、政策原文、哈希与状态是画面主体。先排文字与事实，再决定分隔与留白；没有装饰插画、没有 emoji、没有庆祝动画。</p>
+          <p class="land"><span>落地</span>每个区块先写标题、事实、状态，再补描边或图标；删掉装饰后页面仍然完整。</p>
+        </div>
+      </li>
+      <li class="principle">
+        <p class="principle-no">02</p>
+        <div>
+          <h3>一种强调</h3>
+          <p>陶土只承担两种角色：主操作面与当前选中。每屏强调面 ≤2 处，其余层级靠字重、间距与描边拉开；文字操作另用强调文字色。</p>
+          <p class="land"><span>落地</span>一屏一个 primary 按钮；当前步骤用下划线 + 强调文字色，不整条填色。</p>
+        </div>
+      </li>
+      <li class="principle">
+        <p class="principle-no">03</p>
+        <div>
+          <h3>衬线讲内容，无衬线做操作</h3>
+          <p>页面标题、分区标题、卡片标题、结论句用衬线；按钮、字段、标签、导航、状态用无衬线；等宽只给哈希、包名、网址与代码。</p>
+          <p class="land"><span>落地</span>同一个卡片里，标题是衬线 17/500，正文是 16/400，操作是 16/500 无衬线。</p>
+        </div>
+      </li>
+      <li class="principle">
+        <p class="principle-no">04</p>
+        <div>
+          <h3>边界优先于阴影</h3>
+          <p>层级用 1px 描边与表面色差表达。阴影只给真正浮起的层：bottom sheet 与底部操作栏；不用重投影模拟卡片浮起。</p>
+          <p class="land"><span>落地</span>卡片 = 象牙白 + 1px 暖砂描边 + 16 圆角；可点卡片按下才加 1px 环影。</p>
+        </div>
+      </li>
+      <li class="principle">
+        <p class="principle-no">05</p>
+        <div>
+          <h3>事实不靠颜色</h3>
+          <p>UNKNOWN、PARTIAL、UNREVIEWED、附件未检查必须有文字。颜色只是冗余编码，不能从颜色推断结论，也不能把未知升级成安全。</p>
+          <p class="land"><span>落地</span>状态标签里必须有状态词；只有色块没有文字的标签视为缺陷。</p>
+        </div>
+      </li>
+      <li class="principle">
+        <p class="principle-no">06</p>
+        <div>
+          <h3>克制动效</h3>
+          <p>只动颜色、透明度、4px 位移与按下缩放，单次不超过 200ms。prefers-reduced-motion 下全部即时到位，不保留位移与旋转。</p>
+          <p class="land"><span>落地</span>按下 120ms 回落，步骤切换 160–200ms，退场 150ms；不做视差、不做自动播放。</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ══════════════ 02 色彩 ══════════════ -->
+  <section class="chapter wrap" id="color" aria-labelledby="color-title">
+    <header class="chapter-head">
+      <p class="chapter-no">02</p>
+      <h2 class="chapter-title" id="color-title">色彩</h2>
+    </header>
+    <p class="chapter-lead">暖纸底，所有中性色带黄褐底调，没有冷灰蓝。站内 token 名省略前缀，写作 <code>bg</code> 即主规范里的 <code>--mt-bg</code>。</p>
+
+    <div class="swatch-group">
+      <h3 class="swatch-group-title">结构面</h3>
+      <ul class="swatches">
+        <li class="swatch">
+          <span class="chip" style="background:#f5f4ed"></span>
+          <p class="swatch-name">bg</p>
+          <p class="swatch-hex">#f5f4ed</p>
+          <p class="swatch-ratio"><b>16.72</b> 正文对比</p>
+          <p class="swatch-use">页面底色。卡片不得与画布同色，靠描边分层。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#faf9f5"></span>
+          <p class="swatch-name">surface</p>
+          <p class="swatch-hex">#faf9f5</p>
+          <p class="swatch-ratio">非文本 · 不单独配色</p>
+          <p class="swatch-use">卡片、顶栏、底栏、字段、sheet 的表面。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#e8e6dc"></span>
+          <p class="swatch-name">surface-warm</p>
+          <p class="swatch-hex">#e8e6dc</p>
+          <p class="swatch-ratio">非文本 · 不单独配色</p>
+          <p class="swatch-use">禁用底、选中底、分段控件底、骨架屏。</p>
+        </li>
+      </ul>
+    </div>
+
+    <div class="swatch-group">
+      <h3 class="swatch-group-title">文字三级</h3>
+      <ul class="swatches">
+        <li class="swatch">
+          <span class="chip" style="background:#141413"></span>
+          <p class="swatch-name">fg</p>
+          <p class="swatch-hex">#141413</p>
+          <p class="swatch-ratio"><b>16.72</b> 于画布</p>
+          <p class="swatch-use">标题、主正文、关键值。不用于大面积背景。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#3d3d3a"></span>
+          <p class="swatch-name">fg-2</p>
+          <p class="swatch-hex">#3d3d3a</p>
+          <p class="swatch-ratio">对比度未单列</p>
+          <p class="swatch-use">次级正文、表格正文、按钮文字、行内次级操作。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#5e5d59"></span>
+          <p class="swatch-name">muted</p>
+          <p class="swatch-hex">#5e5d59</p>
+          <p class="swatch-ratio"><b>5.98</b> 于画布</p>
+          <p class="swatch-use">辅助说明、来源行副文案、正文里的解释。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#6b6a63"></span>
+          <p class="swatch-name">caption</p>
+          <p class="swatch-hex">#6b6a63</p>
+          <p class="swatch-ratio"><b>4.93</b> 于画布</p>
+          <p class="swatch-use">≤14px 的三级文字、时间戳、单位。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#87867f"></span>
+          <p class="swatch-name">meta</p>
+          <p class="swatch-hex">#87867f</p>
+          <p class="swatch-ratio"><b>3.47</b> 于卡片</p>
+          <p class="swatch-use">仅非文本与 ≥24px 大字；不得做正文或 12px 标签。</p>
+        </li>
+      </ul>
+    </div>
+
+    <div class="swatch-group">
+      <h3 class="swatch-group-title">描边</h3>
+      <ul class="swatches">
+        <li class="swatch">
+          <span class="chip" style="background:#f0eee6"></span>
+          <p class="swatch-name">border</p>
+          <p class="swatch-hex">#f0eee6</p>
+          <p class="swatch-ratio">装饰 · 不承担识别</p>
+          <p class="swatch-use">卡片内分隔线、行内细线；不能当控件边界。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#e8e6dc"></span>
+          <p class="swatch-name">border-soft</p>
+          <p class="swatch-hex">#e8e6dc</p>
+          <p class="swatch-ratio">装饰 · 不承担识别</p>
+          <p class="swatch-use">卡片边、列表行线、sheet 顶边。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#87867f"></span>
+          <p class="swatch-name">border-control</p>
+          <p class="swatch-hex">#87867f</p>
+          <p class="swatch-ratio"><b>3.47</b> 于卡片 · 非文本</p>
+          <p class="swatch-use">按钮、字段、分段控件的可见边界。</p>
+        </li>
+      </ul>
+    </div>
+
+    <div class="swatch-group">
+      <h3 class="swatch-group-title">强调</h3>
+      <ul class="swatches">
+        <li class="swatch">
+          <span class="chip" style="background:#c96442"></span>
+          <p class="swatch-name">accent</p>
+          <p class="swatch-hex">#c96442</p>
+          <p class="swatch-ratio"><b>3.54</b> 对画布 / <b>3.70</b> 对卡片</p>
+          <p class="swatch-use">仅大字号（≥24px）与非文本：图标、选中标记、进度。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#b04b25"></span>
+          <p class="swatch-name">accent-strong</p>
+          <p class="swatch-hex">#b04b25</p>
+          <p class="swatch-ratio"><b>5.14</b> 象牙白字于其上</p>
+          <p class="swatch-use">主按钮实心底、需要 AA 的强调面。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#a24522"></span>
+          <p class="swatch-name">accent-strong-hover</p>
+          <p class="swatch-hex">#a24522</p>
+          <p class="swatch-ratio">悬停态 · 仅指针设备</p>
+          <p class="swatch-use">主按钮悬停；触屏不出现该状态。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#974120"></span>
+          <p class="swatch-name">accent-strong-active</p>
+          <p class="swatch-hex">#974120</p>
+          <p class="swatch-ratio">按下态</p>
+          <p class="swatch-use">主按钮按下；同时 scale(.98)。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#a8431f"></span>
+          <p class="swatch-name">accent-text</p>
+          <p class="swatch-hex">#a8431f</p>
+          <p class="swatch-ratio"><b>5.46</b> 于画布</p>
+          <p class="swatch-use">文字操作、链接、quiet 按钮、当前步骤。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#faf9f5"></span>
+          <p class="swatch-name">accent-on</p>
+          <p class="swatch-hex">#faf9f5</p>
+          <p class="swatch-ratio"><b>5.14</b> 作为文字于 accent-strong</p>
+          <p class="swatch-use">实心强调面上的文字；不用于浅色底。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#1f6fb2"></span>
+          <p class="swatch-name">focus</p>
+          <p class="swatch-hex">#1f6fb2</p>
+          <p class="swatch-ratio"><b>5.01</b> 于卡片</p>
+          <p class="swatch-use">焦点环与信息语义；系统里唯一的冷色。</p>
+        </li>
+      </ul>
+    </div>
+
+    <div class="swatch-group">
+      <h3 class="swatch-group-title">语义（文本档 / 底档）</h3>
+      <ul class="swatches">
+        <li class="swatch">
+          <span class="chip" style="background:#0f7a3c"></span>
+          <p class="swatch-name">success</p>
+          <p class="swatch-hex">#0f7a3c</p>
+          <p class="swatch-ratio"><b>4.91</b> 于 success-bg</p>
+          <p class="swatch-use">已完成、已获取、已检查；必须带文字。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#eef6e8"></span>
+          <p class="swatch-name">success-bg</p>
+          <p class="swatch-hex">#eef6e8</p>
+          <p class="swatch-ratio"><b>4.91</b> 配 success 文字</p>
+          <p class="swatch-use">成功状态标签与提示底；不单独使用。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#8a5a00"></span>
+          <p class="swatch-name">warn</p>
+          <p class="swatch-hex">#8a5a00</p>
+          <p class="swatch-ratio"><b>5.34</b> 于 warn-bg</p>
+          <p class="swatch-use">等待、待复核、PARTIAL；不表示结论。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#fbf3d9"></span>
+          <p class="swatch-name">warn-bg</p>
+          <p class="swatch-hex">#fbf3d9</p>
+          <p class="swatch-ratio"><b>5.34</b> 配 warn 文字</p>
+          <p class="swatch-use">等待/待复核标签底。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#b53333"></span>
+          <p class="swatch-name">danger</p>
+          <p class="swatch-hex">#b53333</p>
+          <p class="swatch-ratio"><b>5.25</b> 于 danger-bg</p>
+          <p class="swatch-use">失败、冲突、解析错误；不夸张、不报警式闪烁。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#fbeceb"></span>
+          <p class="swatch-name">danger-bg</p>
+          <p class="swatch-hex">#fbeceb</p>
+          <p class="swatch-ratio"><b>5.25</b> 配 danger 文字</p>
+          <p class="swatch-use">错误提示与失败标签底。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#1f6fb2"></span>
+          <p class="swatch-name">info</p>
+          <p class="swatch-hex">#1f6fb2</p>
+          <p class="swatch-ratio"><b>4.68</b> 于 info-bg</p>
+          <p class="swatch-use">进行中、信息性判定；与焦点同色。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#eaf2fb"></span>
+          <p class="swatch-name">info-bg</p>
+          <p class="swatch-hex">#eaf2fb</p>
+          <p class="swatch-ratio"><b>4.68</b> 配 info 文字</p>
+          <p class="swatch-use">进行中标签与信息提示底。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#3d3d3a"></span>
+          <p class="swatch-name">neutral</p>
+          <p class="swatch-hex">#3d3d3a</p>
+          <p class="swatch-ratio"><b>8.71</b> 于 neutral-bg</p>
+          <p class="swatch-use">未知、未开始、中性元数据（UNKNOWN）。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#e8e6dc"></span>
+          <p class="swatch-name">neutral-bg</p>
+          <p class="swatch-hex">#e8e6dc</p>
+          <p class="swatch-ratio"><b>8.71</b> 配 neutral 文字</p>
+          <p class="swatch-use">中性标签底；与 surface-warm 同值。</p>
+        </li>
+      </ul>
+    </div>
+
+    <div class="swatch-group">
+      <h3 class="swatch-group-title">深色（仅报告封面 / 空状态）</h3>
+      <ul class="swatches">
+        <li class="swatch">
+          <span class="chip" style="background:#141413"></span>
+          <p class="swatch-name">dark-bg</p>
+          <p class="swatch-hex">#141413</p>
+          <p class="swatch-ratio">非文本 · 深色区底</p>
+          <p class="swatch-use">报告封面与空状态；单屏不超过一段。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#30302e"></span>
+          <p class="swatch-name">dark-surface</p>
+          <p class="swatch-hex">#30302e</p>
+          <p class="swatch-ratio">非文本 · 嵌套面</p>
+          <p class="swatch-use">深色区里的次级面与分隔。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#faf9f5"></span>
+          <p class="swatch-name">dark-text</p>
+          <p class="swatch-hex">#faf9f5</p>
+          <p class="swatch-ratio">深色区主文字</p>
+          <p class="swatch-use">深色底上的标题与正文。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#b0aea5"></span>
+          <p class="swatch-name">dark-muted</p>
+          <p class="swatch-hex">#b0aea5</p>
+          <p class="swatch-ratio">深色区辅助文字</p>
+          <p class="swatch-use">深色底上的说明与元数据。</p>
+        </li>
+        <li class="swatch">
+          <span class="chip" style="background:#d97757"></span>
+          <p class="swatch-name">dark-accent</p>
+          <p class="swatch-hex">#d97757</p>
+          <p class="swatch-ratio">深色区强调文字</p>
+          <p class="swatch-use">深色底上唯一可用的陶土色。</p>
+        </li>
+      </ul>
+    </div>
+
+    <div class="dark-sample">
+      <h3>报告封面</h3>
+      <p>深色只出现在报告封面与空状态，数据区回到暖纸底。深色区文字用 dark-text，辅助文字用 dark-muted，强调用 dark-accent。</p>
+      <p class="accent">静态线索 · 政策声明 · 两者分列</p>
+      <div class="dark-chips">
+        <span class="dark-chip"><i style="background:#141413"></i>dark-bg</span>
+        <span class="dark-chip"><i style="background:#30302e"></i>dark-surface</span>
+        <span class="dark-chip"><i style="background:#faf9f5"></i>dark-text</span>
+        <span class="dark-chip"><i style="background:#b0aea5"></i>dark-muted</span>
+        <span class="dark-chip"><i style="background:#d97757"></i>dark-accent</span>
+      </div>
+    </div>
+
+    <h3 class="subhead" id="contrast">对比度</h3>
+    <p class="sub-lead">门槛：文本 ≥4.5:1，非文本与图形 ≥3:1。下列数值与主规范附录 B 一致，实现阶段用脚本复算，不手工改数。</p>
+    <div class="table-wrap">
+      <table>
+        <caption>对比度按 WCAG 2.1 相对亮度公式计算；标「仅大字/非文本」的组合不得用于小字号正文。</caption>
+        <thead>
+          <tr><th scope="col">用途</th><th scope="col">前景</th><th scope="col">背景</th><th scope="col">对比度</th><th scope="col">门槛</th><th scope="col">结论</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>正文</td><td class="pair"><span class="dot" style="background:#141413"></span>#141413</td><td class="pair"><span class="dot" style="background:#f5f4ed"></span>#f5f4ed</td><td class="ratio">16.72</td><td>≥4.5</td><td class="pass">通过</td></tr>
+          <tr><td>次级正文</td><td class="pair"><span class="dot" style="background:#5e5d59"></span>#5e5d59</td><td class="pair"><span class="dot" style="background:#f5f4ed"></span>#f5f4ed</td><td class="ratio">5.98</td><td>≥4.5</td><td class="pass">通过</td></tr>
+          <tr><td>三级正文</td><td class="pair"><span class="dot" style="background:#6b6a63"></span>#6b6a63</td><td class="pair"><span class="dot" style="background:#f5f4ed"></span>#f5f4ed</td><td class="ratio">4.93</td><td>≥4.5</td><td class="pass">通过</td></tr>
+          <tr><td>主按钮文字</td><td class="pair"><span class="dot" style="background:#faf9f5"></span>#faf9f5</td><td class="pair"><span class="dot" style="background:#b04b25"></span>#b04b25</td><td class="ratio">5.14</td><td>≥4.5</td><td class="pass">通过</td></tr>
+          <tr><td>强调文字（小字号）</td><td class="pair"><span class="dot" style="background:#a8431f"></span>#a8431f</td><td class="pair"><span class="dot" style="background:#f5f4ed"></span>#f5f4ed</td><td class="ratio">5.46</td><td>≥4.5</td><td class="pass">通过</td></tr>
+          <tr><td>状态 · 成功</td><td class="pair"><span class="dot" style="background:#0f7a3c"></span>#0f7a3c</td><td class="pair"><span class="dot" style="background:#eef6e8"></span>#eef6e8</td><td class="ratio">4.91</td><td>≥4.5</td><td class="pass">通过</td></tr>
+          <tr><td>状态 · 警告</td><td class="pair"><span class="dot" style="background:#8a5a00"></span>#8a5a00</td><td class="pair"><span class="dot" style="background:#fbf3d9"></span>#fbf3d9</td><td class="ratio">5.34</td><td>≥4.5</td><td class="pass">通过</td></tr>
+          <tr><td>状态 · 危险</td><td class="pair"><span class="dot" style="background:#b53333"></span>#b53333</td><td class="pair"><span class="dot" style="background:#fbeceb"></span>#fbeceb</td><td class="ratio">5.25</td><td>≥4.5</td><td class="pass">通过</td></tr>
+          <tr><td>状态 · 信息</td><td class="pair"><span class="dot" style="background:#1f6fb2"></span>#1f6fb2</td><td class="pair"><span class="dot" style="background:#eaf2fb"></span>#eaf2fb</td><td class="ratio">4.68</td><td>≥4.5</td><td class="pass">通过</td></tr>
+          <tr><td>状态 · 中性</td><td class="pair"><span class="dot" style="background:#3d3d3a"></span>#3d3d3a</td><td class="pair"><span class="dot" style="background:#e8e6dc"></span>#e8e6dc</td><td class="ratio">8.71</td><td>≥4.5</td><td class="pass">通过</td></tr>
+          <tr><td>焦点环</td><td class="pair"><span class="dot" style="background:#1f6fb2"></span>#1f6fb2</td><td class="pair"><span class="dot" style="background:#faf9f5"></span>#faf9f5</td><td class="ratio">5.01</td><td>≥3</td><td class="pass">通过</td></tr>
+          <tr><td>陶土强调（仅大字 / 图形）</td><td class="pair"><span class="dot" style="background:#c96442"></span>#c96442</td><td class="pair"><span class="dot" style="background:#f5f4ed"></span>#f5f4ed</td><td class="ratio">3.54</td><td>≥3</td><td class="pass-large">仅大字 / 非文本</td></tr>
+          <tr><td>元数据（仅 ≥24px / 非文本）</td><td class="pair"><span class="dot" style="background:#87867f"></span>#87867f</td><td class="pair"><span class="dot" style="background:#faf9f5"></span>#faf9f5</td><td class="ratio">3.47</td><td>≥3</td><td class="pass-large">仅大字 / 非文本</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">表外组合（如 fg-2 于画布）不承担小字号正文的验收基线；实现阶段由对比度脚本统一复算并写入契约，不靠肉眼判断。</p>
+  </section>
+
+  <!-- ══════════════ 03 排版 ══════════════ -->
+  <section class="chapter wrap" id="type" aria-labelledby="type-title">
+    <header class="chapter-head">
+      <p class="chapter-no">03</p>
+      <h2 class="chapter-title" id="type-title">排版</h2>
+    </header>
+    <p class="chapter-lead">衬线只讲内容，无衬线只做操作，等宽只给机器字符串。中文正文行高不低于 1.5；展示级才允许 -0.01em 字距。</p>
+
+    <div class="type-list">
+      <div class="type-row">
+        <p class="type-meta"><span class="type-name">display</span><span>32 / 1.15 / 500</span><span>PT Serif SC · 衬线</span></p>
+        <div class="type-sample">
+          <p class="t-display">隐私声明对照</p>
+          <p class="type-note">封面与空状态主标题，一屏最多一处；不用于列表与卡片。</p>
+        </div>
+      </div>
+      <div class="type-row">
+        <p class="type-meta"><span class="type-name">title-l</span><span>24 / 1.25 / 500</span><span>PT Serif SC · 衬线</span></p>
+        <div class="type-sample">
+          <p class="t-title-l">检查政策候选</p>
+          <p class="type-note">报告与设置这类整页标题；单行不缩放。</p>
+        </div>
+      </div>
+      <div class="type-row">
+        <p class="type-meta"><span class="type-name">title-m</span><span>20 / 1.3 / 500</span><span>PT Serif SC · 衬线</span></p>
+        <div class="type-sample">
+          <p class="t-title-m">应用与政策</p>
+          <p class="type-note">顶栏标题、分区标题；与 56 顶栏垂直居中。</p>
+        </div>
+      </div>
+      <div class="type-row">
+        <p class="type-meta"><span class="type-name">title-s</span><span>17 / 1.4 / 500</span><span>PT Serif SC · 衬线</span></p>
+        <div class="type-sample">
+          <p class="t-title-s">第三方 SDK 归属</p>
+          <p class="type-note">卡片与列表容器标题；允许两行，超出省略并可读全文。</p>
+        </div>
+      </div>
+      <div class="type-row">
+        <p class="type-meta"><span class="type-name">body-l</span><span>17 / 1.75 / 400</span><span>PT Sans SC · 无衬线</span></p>
+        <div class="type-sample">
+          <p class="t-body-l">静态线索不证明实际采集；权限是能力，invoke 是静态潜在线索。普通用户的正常阅读不应该被压缩。</p>
+          <p class="type-note">政策原文与报告引文；报告阅读区可换阅读衬线，字阶不变。</p>
+        </div>
+      </div>
+      <div class="type-row">
+        <p class="type-meta"><span class="type-name">body</span><span>16 / 1.6 / 400</span><span>PT Sans SC · 无衬线</span></p>
+        <div class="type-sample">
+          <p class="t-body">材料保存在当前分析服务，长期保留至主动删除。更换文件请重新选择应用。</p>
+          <p class="type-note">工作区正文与说明；移动端最小正文档。</p>
+        </div>
+      </div>
+      <div class="type-row">
+        <p class="type-meta"><span class="type-name">control</span><span>16 / 1.25 / 500</span><span>PT Sans SC · 无衬线</span></p>
+        <div class="type-sample">
+          <p class="t-control">保存候选并开始分析</p>
+          <p class="type-note">按钮、字段、标签、导航；字重 500，不靠加粗制造层级。</p>
+        </div>
+      </div>
+      <div class="type-row">
+        <p class="type-meta"><span class="type-name">caption</span><span>14 / 1.45 / 400</span><span>PT Sans SC · 无衬线</span></p>
+        <div class="type-sample">
+          <p class="t-caption">完整度未知 · 未复核 · 附件未检查</p>
+          <p class="type-note">元数据与辅助说明；这一档也承担状态后缀。</p>
+        </div>
+      </div>
+      <div class="type-row">
+        <p class="type-meta"><span class="type-name">label</span><span>12 / 1.35 / 500</span><span>PT Sans SC · 无衬线</span></p>
+        <div class="type-sample">
+          <p><span class="tag warn t-label">UNREVIEWED · 未复核</span></p>
+          <p class="type-note">状态标签、小标注；字段标签另用 caption 14/500，必须与文字事实同时出现。</p>
+        </div>
+      </div>
+      <div class="type-row">
+        <p class="type-meta"><span class="type-name">overline</span><span>11 / 1.5 / 500 / 0.05em</span><span>PT Sans SC · 无衬线</span></p>
+        <div class="type-sample">
+          <p class="t-overline">Analysis stage · Static evidence</p>
+          <p class="type-note">章节小标与全大写拉丁标签；中文不强制大写与加宽。</p>
+        </div>
+      </div>
+      <div class="type-row">
+        <p class="type-meta"><span class="type-name">mono</span><span>14 / 1.6 / 400</span><span>PT Mono · 等宽</span></p>
+        <div class="type-sample">
+          <p class="t-mono">com.paperboat.map · v1.4.2 · 1,284 条候选 · 9:41</p>
+          <p class="type-note">哈希、包名、网址、代码；数字一律 tabular-nums。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="mono-board">
+      <h3>机器字符串样张</h3>
+      <p class="mono-line"><span>1,284</span><span>38</span><span>9:41</span><span>v1.4.2</span><span>2 份来源</span></p>
+      <p class="mono-line mono-hash">APK SHA-256 4f9c0b7e2a1d8c63b5e0f7a29d4c1b8e60f3a5d7c2b9e14f80a6d3c5b7e29f14</p>
+      <p class="mono-line mono-hash">com.paperboat.map</p>
+      <p class="type-note">样张字符串为示例，不对应任何真实安装包或真实分析结果。</p>
+    </div>
+
+    <div class="font-notes">
+      <div>
+        <h3>自托管</h3>
+        <p>只用仓库已有文件：<code>apps/web/public/fonts/NotoSansSC-Variable.woff2</code> 与 <code>NotoSerifSC-Variable.woff2</code>，可变字重 100–900，<code>font-display: swap</code>。</p>
+      </div>
+      <div>
+        <h3>命名与回落</h3>
+        <p>规范站 <code>@font-face</code> 用 <code>PT Sans SC</code> / <code>PT Serif SC</code> 作为 family 名；产品内通过 <code>--mt-font-sans</code> / <code>--mt-font-serif</code> 语义别名引用。加载失败回落到系统黑体与宋体，不阻塞阅读。</p>
+      </div>
+      <div>
+        <h3>许可</h3>
+        <p>Noto Sans SC 与 Noto Serif SC 为 SIL Open Font License 1.1，许可文本保留在 <code>apps/web/public/fonts/licenses/</code>。不新增字体文件、不接字体 CDN、不发网络请求。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ 04 间距、圆角、层级 ══════════════ -->
+  <section class="chapter wrap" id="space" aria-labelledby="space-title">
+    <header class="chapter-head">
+      <p class="chapter-no">04</p>
+      <h2 class="chapter-title" id="space-title">间距、圆角、层级</h2>
+    </header>
+    <p class="chapter-lead">4px 基数、8px 节奏。留白负责分组，描边负责边界，阴影只负责「浮起」这一件事。</p>
+
+    <h3 class="subhead">间距阶梯</h3>
+    <p class="sub-lead">条形长度按 4 倍绘制，便于比较；实际取值就是左侧数字。</p>
+    <ul class="space-scale">
+      <li class="space-row"><span class="space-label">4</span><span class="space-bar" style="width:16px"></span><span class="space-use">图标与文字</span></li>
+      <li class="space-row"><span class="space-label">8</span><span class="space-bar" style="width:32px"></span><span class="space-use">同组控件间距</span></li>
+      <li class="space-row"><span class="space-label">12</span><span class="space-bar" style="width:48px"></span><span class="space-use">卡片内小节间距</span></li>
+      <li class="space-row"><span class="space-label">16</span><span class="space-bar" style="width:64px"></span><span class="space-use">页面边距 / 卡片内边距</span></li>
+      <li class="space-row"><span class="space-label">20</span><span class="space-bar" style="width:80px"></span><span class="space-use">带主操作的卡片内边距</span></li>
+      <li class="space-row"><span class="space-label">24</span><span class="space-bar" style="width:96px"></span><span class="space-use">分区之间</span></li>
+      <li class="space-row"><span class="space-label">32</span><span class="space-bar" style="width:128px"></span><span class="space-use">章节上下留白</span></li>
+      <li class="space-row"><span class="space-label">40</span><span class="space-bar" style="width:160px"></span><span class="space-use">大分区间距</span></li>
+      <li class="space-row"><span class="space-label">48</span><span class="space-bar" style="width:192px"></span><span class="space-use">触控高度 / 大留白</span></li>
+    </ul>
+
+    <dl class="defs">
+      <div class="def"><dt>页面边距</dt><dd>16</dd></div>
+      <div class="def"><dt>卡片内边距</dt><dd>16 / 20</dd></div>
+      <div class="def"><dt>内容最大宽</dt><dd>560</dd></div>
+      <div class="def"><dt>最小触控</dt><dd>48 × 48</dd></div>
+    </dl>
+
+    <h3 class="subhead">圆角</h3>
+    <p class="sub-lead">同一类组件固定一档，不允许「全站一个圆角」。不使用小于 6px 的卡片或按钮圆角。</p>
+    <div class="radius-grid">
+      <div class="radius-item"><div class="radius-tile" style="--r:6px"></div><p class="radius-meta">6 · tag</p><p class="radius-use">状态标签、微型容器</p></div>
+      <div class="radius-item"><div class="radius-tile" style="--r:12px"></div><p class="radius-meta">12 · control / field</p><p class="radius-use">按钮、输入、分段控件</p></div>
+      <div class="radius-item"><div class="radius-tile" style="--r:16px"></div><p class="radius-meta">16 · card</p><p class="radius-use">卡片、列表容器、通知</p></div>
+      <div class="radius-item"><div class="radius-tile" style="--r:24px"></div><p class="radius-meta">24 · sheet</p><p class="radius-use">bottom sheet 顶部两角</p></div>
+    </div>
+
+    <h3 class="subhead">层级 L0–L4</h3>
+    <p class="sub-lead">用描边与表面色差分层，不用重投影。下图置于暖砂底上，便于看清边界。</p>
+    <div class="layer-stage">
+      <div class="layer layer-l0"><span class="layer-name">L0 · 平面</span><span class="layer-spec">无描边、无阴影</span></div>
+      <div class="layer layer-l1"><span class="layer-name">L1 · 描边</span><span class="layer-spec">1px border-soft</span></div>
+      <div class="layer layer-l2"><span class="layer-name">L2 · 环影</span><span class="layer-spec">0 0 0 1px rgba(20,20,19,.08)</span></div>
+      <div class="layer layer-l3"><span class="layer-name">L3 · 轻浮起</span><span class="layer-spec">0 4px 24px rgba(20,20,19,.05)</span></div>
+      <div class="layer layer-l4"><span class="layer-name">L4 · sheet</span><span class="layer-spec">0 -8px 32px rgba(20,20,19,.18)</span></div>
+    </div>
+    <p class="note">底部操作栏单独一档：顶边 1px + 向上 <code>0 -1px 2px rgba(20,20,19,.06)</code>，与 L3 区分。卡片默认无阴影，按下才加 L2 环影。</p>
+  </section>
+
+  <!-- ══════════════ 05 移动壳解剖 ══════════════ -->
+  <section class="chapter wrap" id="shell" aria-labelledby="shell-title">
+    <header class="chapter-head">
+      <p class="chapter-no">05</p>
+      <h2 class="chapter-title" id="shell-title">移动壳解剖</h2>
+    </header>
+    <p class="chapter-lead">Android 竖屏，edge-to-edge。壳本身不滚动，只有内容区滚动；底栏固定，键盘弹起时整条上移。</p>
+
+    <div class="shell">
+      <div>
+        <div class="shell-diagram" role="img" aria-label="移动壳分区示意：安全区 24、顶栏 56、步骤导航 48、内容区、底部操作栏 64、底部安全区">
+          <div class="band band-safe"><span>safe-top</span><span class="band-measure">env()</span></div>
+          <div class="band band-appbar"><span class="band-label">顶栏 · 应用与政策</span><span class="band-measure">56</span></div>
+          <div class="band band-steps"><span class="band-label">步骤导航 · 导入 候选 进度 报告</span><span class="band-measure">48</span></div>
+          <div class="band band-content">
+            <span class="touch-square">48</span>
+          </div>
+          <div class="band band-action"><span class="band-label">底部操作栏</span><span class="band-measure">64</span></div>
+          <div class="band band-home"><span>safe-bottom</span><span class="band-measure">env()</span></div>
+        </div>
+        <p class="shell-caption">示意按逻辑像素绘制；内容区标注的是最小触控 48，不代表内容只有 48 高。</p>
+      </div>
+
+      <ol class="shell-legend">
+        <li><span class="no">01</span><div><b>安全区 safe-top</b><p>顶栏背景延伸到状态栏后；内边距用 <code>max(16px, env(safe-area-inset-top))</code>，系统栏图标必须是深色。</p></div></li>
+        <li><span class="no">02</span><div><b>顶栏 56</b><p>左返回 48×48（导入步隐藏），标题 title-m 衬线，右设置 48×48；吸顶，底部 1px 描边。</p></div></li>
+        <li><span class="no">03</span><div><b>步骤导航 48</b><p>四步等宽：导入 / 候选 / 进度 / 报告。当前项强调文字色 + 2px 下划线，完整项 ✓，不可达项禁用。</p></div></li>
+        <li><span class="no">04</span><div><b>内容区</b><p>左右边距 16，内容最大宽 560（≥600 视口只增外边距）；底部预留「底栏 + 24」。</p></div></li>
+        <li><span class="no">05</span><div><b>底部操作栏 64</b><p>只放本步主操作与一个次操作；主按钮 flex:1、48 高；报告步不显示底栏，保持阅读态。</p></div></li>
+        <li><span class="no">06</span><div><b>安全区 safe-bottom</b><p>底栏高度 64 + <code>env(safe-area-inset-bottom)</code>；键盘弹起时整条上移，主操作不被遮挡。</p></div></li>
+      </ol>
+    </div>
+
+    <div class="points">
+      <div class="point"><h3>返回</h3><p>系统返回键与应用内返回箭头走同一条链：导入 ← 候选 ← 进度 ← 报告。sheet 打开时先关 sheet 再退步，根步交给系统退出。</p></div>
+      <div class="point"><h3>滚动恢复</h3><p>每步记住 <code>scrollY</code>；切换后先把焦点放到标题（<code>preventScroll</code>），再恢复位置，不为后退重复压栈。</p></div>
+      <div class="point"><h3>焦点</h3><p>新步骤焦点落在 <code>h1</code>，不落在第一个输入框；sheet 关闭后焦点归还触发按钮；只有 <code>:focus-visible</code> 显示 2px 环。</p></div>
+      <div class="point"><h3>软键盘</h3><p>输入字号 16px 防聚焦缩放；<code>--keyboard-inset</code> 把底栏与 sheet 抬起；底部内容不被固定层压住。</p></div>
+      <div class="point"><h3>edge-to-edge</h3><p>左右内边距用 <code>max(16px, env(safe-area-inset-left))</code>；内容不做双栏，宽屏只加外边距。</p></div>
+      <div class="point"><h3>触控 48</h3><p>图标按钮、步骤项、列表行、按钮都不低于 48×48；相邻目标间距 ≥8，整行可点时不再套小按钮。</p></div>
+    </div>
+  </section>
+
+  <!-- ══════════════ 06 手机框预览 ══════════════ -->
+  <section class="chapter wrap" id="frames" aria-labelledby="frames-title">
+    <header class="chapter-head">
+      <p class="chapter-no">06</p>
+      <h2 class="chapter-title" id="frames-title">手机框预览</h2>
+    </header>
+    <p class="chapter-lead">三台手机框（逻辑尺寸 390×844），展示导入、候选、报告三步的真实文案与结构。框体为版式示意，真机是 Android 系统栏与返回手势，不代表 iPhone 目标平台；页面按比例缩放，状态一律带文字。</p>
+
+    <div class="frames">
+      <figure class="phone-figure">
+        <figcaption class="phone-cap"><span class="phone-cap-no">01</span><span class="phone-cap-name">导入</span></figcaption>
+        <div class="phone">
+          <div class="phone-device">
+            <span class="ph-island" aria-hidden="true"></span>
+            <div class="ph-screen">
+              <div class="ph-status" aria-hidden="true">
+                <span>9:41</span>
+                <span class="ph-status-icons">
+                  <svg viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx="0.6"/><rect x="4" y="5" width="3" height="6" rx="0.6"/><rect x="8" y="3" width="3" height="8" rx="0.6"/><rect x="12" y="0" width="3" height="11" rx="0.6"/></svg>
+                  <svg viewBox="0 0 17 11"><path d="M8.5 1.5C5.5 1.5 2.7 2.6.5 4.6L2 6.1C3.8 4.5 6.1 3.6 8.5 3.6s4.7.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6 5 9.1c1-.9 2.2-1.4 3.5-1.4s2.5.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2s-3.6.7-5 2zM6.5 10.6l2 2 2-2c-.5-.5-1.2-.8-2-.8s-1.5.3-2 .8z"/></svg>
+                  <svg class="battery" viewBox="0 0 25 11"><rect x="0.5" y="0.5" width="21" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-opacity="0.45"/><rect x="22" y="3.5" width="1.5" height="4" rx="0.4" fill-opacity="0.45"/><rect x="2" y="2" width="18" height="7" rx="1.4"/></svg>
+                </span>
+              </div>
+
+              <div class="ph-appbar">
+                <span class="ph-icon" aria-hidden="true"></span>
+                <p class="ph-title">应用与政策</p>
+                <span class="ph-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+                </span>
+              </div>
+
+              <div class="ph-steps">
+                <span class="ph-step current"><span class="ph-step-num">1</span><span>导入</span></span>
+                <span class="ph-step off"><span class="ph-step-num">2</span><span>候选</span></span>
+                <span class="ph-step off"><span class="ph-step-num">3</span><span>进度</span></span>
+                <span class="ph-step off"><span class="ph-step-num">4</span><span>报告</span></span>
+              </div>
+
+              <div class="ph-main">
+                <div class="ph-card">
+                  <div class="ph-card-head">
+                    <p class="ph-h2">当前分析材料</p>
+                    <span class="ph-quiet">删除远端材料</span>
+                  </div>
+                  <p class="ph-name">纸舟地图 · 材料版本 3</p>
+                  <p class="ph-hash">APK SHA-256 4f9c0b7e2a1d8c63b5e0f7a29d4c1b8e60f3a5d7c2b9e14f80a6d3c5b7e29f14</p>
+                  <p class="ph-help">材料保存在当前分析服务，长期保留至主动删除。更换文件请重新选择应用。</p>
+                </div>
+
+                <div class="ph-section">
+                  <div class="ph-section-head"><p class="ph-h2">政策来源</p><span>2 份来源</span></div>
+                  <div class="ph-row">
+                    <div>
+                      <strong>隐私政策</strong>
+                      <span class="ph-row-sub">已获取网页正文 · 完整度未知 · 未复核 · 附件未检查</span>
+                    </div>
+                    <svg class="ph-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+                  </div>
+                  <div class="ph-row">
+                    <div>
+                      <strong>用户协议</strong>
+                      <span class="ph-row-sub">仅有链接，尚无正文 · 完整度未知 · 未复核 · 附件未检查</span>
+                    </div>
+                    <svg class="ph-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+                  </div>
+                </div>
+
+                <div class="ph-details">
+                  <span>使用手机上的个人模型</span>
+                  <svg class="ph-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+                </div>
+              </div>
+
+              <div class="ph-action">
+                <span class="ph-btn quiet">重新读取材料</span>
+                <span class="ph-btn primary">自动准备政策并继续</span>
+              </div>
+              <div class="ph-home" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+        <p class="phone-note">重点：材料身份、政策来源与「完整度未知 · 未复核 · 附件未检查」同时出现在首屏，不折叠进详情。</p>
+      </figure>
+
+      <figure class="phone-figure">
+        <figcaption class="phone-cap"><span class="phone-cap-no">02</span><span class="phone-cap-name">候选</span></figcaption>
+        <div class="phone">
+          <div class="phone-device">
+            <span class="ph-island" aria-hidden="true"></span>
+            <div class="ph-screen">
+              <div class="ph-status" aria-hidden="true">
+                <span>9:41</span>
+                <span class="ph-status-icons">
+                  <svg viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx="0.6"/><rect x="4" y="5" width="3" height="6" rx="0.6"/><rect x="8" y="3" width="3" height="8" rx="0.6"/><rect x="12" y="0" width="3" height="11" rx="0.6"/></svg>
+                  <svg viewBox="0 0 17 11"><path d="M8.5 1.5C5.5 1.5 2.7 2.6.5 4.6L2 6.1C3.8 4.5 6.1 3.6 8.5 3.6s4.7.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6 5 9.1c1-.9 2.2-1.4 3.5-1.4s2.5.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2s-3.6.7-5 2zM6.5 10.6l2 2 2-2c-.5-.5-1.2-.8-2-.8s-1.5.3-2 .8z"/></svg>
+                  <svg class="battery" viewBox="0 0 25 11"><rect x="0.5" y="0.5" width="21" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-opacity="0.45"/><rect x="22" y="3.5" width="1.5" height="4" rx="0.4" fill-opacity="0.45"/><rect x="2" y="2" width="18" height="7" rx="1.4"/></svg>
+                </span>
+              </div>
+
+              <div class="ph-appbar">
+                <span class="ph-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg></span>
+                <p class="ph-title">检查政策候选</p>
+                <span class="ph-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+                </span>
+              </div>
+
+              <div class="ph-steps">
+                <span class="ph-step done"><span class="ph-step-num">✓</span><span>导入</span></span>
+                <span class="ph-step current"><span class="ph-step-num">2</span><span>候选</span></span>
+                <span class="ph-step off"><span class="ph-step-num">3</span><span>进度</span></span>
+                <span class="ph-step off"><span class="ph-step-num">4</span><span>报告</span></span>
+              </div>
+
+              <div class="ph-main">
+                <div class="ph-context">
+                  <div>
+                    <p class="ph-name">纸舟地图</p>
+                    <p class="ph-meta">材料版本 3</p>
+                  </div>
+                  <span class="ph-quiet">更换</span>
+                </div>
+
+                <div class="ph-tabs">
+                  <span class="ph-tab">政策原文</span>
+                  <span class="ph-tab on">候选声明 3</span>
+                </div>
+
+                <p class="ph-context-line">官网政策 · 示例 1.0 · 正文完整度未知 · 全文未复核 · 附件未检查</p>
+                <p class="ph-summary">已检查 1 / 3 条</p>
+
+                <article class="ph-cand">
+                  <div class="ph-cand-head"><strong>位置信息</strong><span class="tag success">已检查</span></div>
+                  <p class="ph-cand-quote">当您主动打开“附近地点”时，我们会读取您的位置信息，用于展示周边地点。</p>
+                </article>
+                <article class="ph-cand">
+                  <div class="ph-cand-head"><strong>设备标识</strong><span class="tag warn">待检查</span></div>
+                  <p class="ph-cand-quote">用于统计的设备标识由第三方统计服务处理。</p>
+                </article>
+                <article class="ph-cand">
+                  <div class="ph-cand-head"><strong>联系人</strong><span class="tag warn">待检查</span></div>
+                  <p class="ph-cand-quote">我们不会读取您的通讯录。</p>
+                </article>
+              </div>
+
+              <div class="ph-action">
+                <span class="ph-btn quiet">修改材料</span>
+                <span class="ph-btn primary">保存候选并开始分析</span>
+              </div>
+              <div class="ph-home" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+        <p class="phone-note">重点：来源标签页、来源上下文与候选逐条状态同屏；未检查不隐藏，也不自动升级为已复核。</p>
+      </figure>
+
+      <figure class="phone-figure">
+        <figcaption class="phone-cap"><span class="phone-cap-no">03</span><span class="phone-cap-name">报告</span></figcaption>
+        <div class="phone">
+          <div class="phone-device">
+            <span class="ph-island" aria-hidden="true"></span>
+            <div class="ph-screen">
+              <div class="ph-status" aria-hidden="true">
+                <span>9:41</span>
+                <span class="ph-status-icons">
+                  <svg viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx="0.6"/><rect x="4" y="5" width="3" height="6" rx="0.6"/><rect x="8" y="3" width="3" height="8" rx="0.6"/><rect x="12" y="0" width="3" height="11" rx="0.6"/></svg>
+                  <svg viewBox="0 0 17 11"><path d="M8.5 1.5C5.5 1.5 2.7 2.6.5 4.6L2 6.1C3.8 4.5 6.1 3.6 8.5 3.6s4.7.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6 5 9.1c1-.9 2.2-1.4 3.5-1.4s2.5.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2s-3.6.7-5 2zM6.5 10.6l2 2 2-2c-.5-.5-1.2-.8-2-.8s-1.5.3-2 .8z"/></svg>
+                  <svg class="battery" viewBox="0 0 25 11"><rect x="0.5" y="0.5" width="21" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-opacity="0.45"/><rect x="22" y="3.5" width="1.5" height="4" rx="0.4" fill-opacity="0.45"/><rect x="2" y="2" width="18" height="7" rx="1.4"/></svg>
+                </span>
+              </div>
+
+              <div class="ph-appbar">
+                <span class="ph-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg></span>
+                <p class="ph-title">对照报告</p>
+                <span class="ph-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+                </span>
+              </div>
+
+              <div class="ph-steps">
+                <span class="ph-step done"><span class="ph-step-num">✓</span><span>导入</span></span>
+                <span class="ph-step done"><span class="ph-step-num">✓</span><span>候选</span></span>
+                <span class="ph-step done"><span class="ph-step-num">✓</span><span>进度</span></span>
+                <span class="ph-step current"><span class="ph-step-num">4</span><span>报告</span></span>
+              </div>
+
+              <div class="ph-main">
+                <div class="ph-card ph-sample">
+                  <div class="ph-appicon" aria-hidden="true">纸</div>
+                  <div class="ph-sample-body">
+                    <p class="ph-h2">纸舟地图</p>
+                    <p class="ph-meta">com.paperboat.map · v1.4.2</p>
+                  </div>
+                </div>
+
+                <div class="ph-metrics">
+                  <div class="ph-metric"><b>4</b><span>涉及的数据类型</span></div>
+                  <div class="ph-metric"><b>2</b><span>独立政策来源</span></div>
+                  <div class="ph-metric"><b>9</b><span>可查看的证据</span></div>
+                </div>
+
+                <div class="ph-section-head"><p class="ph-h2">隐私声明对照</p><span>点开看代码定位与原句</span></div>
+
+                <article class="ph-issue">
+                  <div class="ph-issue-head"><strong>位置信息</strong><span class="tag warn">PARTIAL</span></div>
+                  <p class="ph-issue-meta">完整度未知 · 未复核 · 附件未检查</p>
+                  <p class="ph-issue-action">查看证据<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></p>
+                </article>
+                <article class="ph-issue">
+                  <div class="ph-issue-head"><strong>通讯录</strong><span class="tag neutral">UNREVIEWED</span></div>
+                  <p class="ph-issue-meta">完整度未知 · 未复核 · 附件未检查</p>
+                  <p class="ph-issue-action">查看证据<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></p>
+                </article>
+
+                <div class="ph-coverage">
+                  <p class="ph-h2">DEX 处理范围：PARTIAL</p>
+                  <p>DEX 处理有未完成部分；已扫描与失败范围分别列出，不合并成结论。</p>
+                  <p class="ph-meta">分析阶段 · 报告已生成</p>
+                </div>
+              </div>
+
+              <div class="ph-home" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+        <p class="phone-note">重点：报告步没有底部操作栏；状态词与计数先于细节展开，证据入口保留在原位。</p>
+      </figure>
+    </div>
+
+    <p class="note">阶段已完成。查看报告中的证据依据与政策原句。框内文案取自 <code>apps/web/src/mobile/MobileApp.vue</code> 与报告组件；计数、哈希与来源状态为示例数据。</p>
+  </section>
+
+  <!-- ══════════════ 07 组件标本 ══════════════ -->
+  <section class="chapter wrap" id="components" aria-labelledby="components-title">
+    <header class="chapter-head">
+      <p class="chapter-no">07</p>
+      <h2 class="chapter-title" id="components-title">组件标本</h2>
+    </header>
+    <p class="chapter-lead">七组几何与状态的实物样张。标本是静态展示，不是可操作控件；每个标本下方给出一行使用规则。</p>
+
+    <article class="specimen">
+      <div class="specimen-head"><h3>按钮</h3><span class="specimen-id">48 高 · 圆角 12</span></div>
+      <p class="specimen-lead">四种变体 × 四种状态。一屏只应有一个 primary；等待态宽度由两个文案的较大者决定，切换时不回流。</p>
+      <div class="specimen-stage">
+        <div class="table-wrap">
+          <div class="btn-matrix" role="group" aria-label="按钮变体与状态矩阵">
+            <p class="matrix-row-label" aria-hidden="true">变体 / 状态</p>
+            <p class="matrix-head">默认</p>
+            <p class="matrix-head">按下</p>
+            <p class="matrix-head">禁用</p>
+            <p class="matrix-head">等待</p>
+
+            <p class="matrix-row-label">primary</p>
+            <span class="btn primary">开始分析</span>
+            <span class="btn primary is-pressed">开始分析</span>
+            <span class="btn primary is-disabled">开始分析</span>
+            <span class="btn primary is-waiting"><span class="btn-label">开始分析</span><span class="btn-wait"><span class="spinner" aria-hidden="true"></span>处理中</span></span>
+
+            <p class="matrix-row-label">secondary</p>
+            <span class="btn secondary">修改材料</span>
+            <span class="btn secondary is-pressed">修改材料</span>
+            <span class="btn secondary is-disabled">修改材料</span>
+            <span class="btn secondary is-waiting"><span class="btn-label">修改材料</span><span class="btn-wait"><span class="spinner" aria-hidden="true"></span>处理中</span></span>
+
+            <p class="matrix-row-label">quiet</p>
+            <span class="btn quiet">删除远端材料</span>
+            <span class="btn quiet is-pressed">删除远端材料</span>
+            <span class="btn quiet is-disabled">删除远端材料</span>
+            <span class="btn quiet is-waiting"><span class="btn-label">删除远端材料</span><span class="btn-wait"><span class="spinner" aria-hidden="true"></span>处理中</span></span>
+
+            <p class="matrix-row-label">danger</p>
+            <span class="btn danger">删除任务</span>
+            <span class="btn danger is-pressed">删除任务</span>
+            <span class="btn danger is-disabled">删除任务</span>
+            <span class="btn danger is-waiting"><span class="btn-label">删除任务</span><span class="btn-wait"><span class="spinner" aria-hidden="true"></span>处理中</span></span>
+          </div>
+        </div>
+        <p class="matrix-note">矩阵四列等宽，默认与等待两列宽度一致：等待态只是把标签换成「处理中」+ 16px 指示器，按钮盒尺寸不变。</p>
+      </div>
+      <p class="spec-rule"><b>使用规则</b><span>48 高、圆角 12、内边距 20；只有 primary 用实心陶土，quiet 用强调文字色。等待态保持文案占位与 <code>aria-busy</code>，禁用态必须有 <code>disabled</code> 或 <code>aria-disabled</code>，不进 Tab 序列。</span></p>
+    </article>
+
+    <article class="specimen">
+      <div class="specimen-head"><h3>字段</h3><span class="specimen-id">56 高 · 圆角 12 · 输入 16</span></div>
+      <p class="specimen-lead">默认、焦点、错误、禁用。焦点不改变布局尺寸；错误只用颜色不够，必须带一句人话。</p>
+      <div class="specimen-stage">
+        <div class="fields">
+          <div class="field">
+            <p class="field-label">应用名称或包名</p>
+            <div class="field-input">com.paperboat.map</div>
+            <p class="field-help">标签 14/500；输入值 16px，防聚焦缩放。</p>
+          </div>
+          <div class="field is-focus">
+            <p class="field-label">应用名称或包名</p>
+            <div class="field-input">com.paperboat.map</div>
+            <p class="field-help">焦点：描边转焦点蓝 + 2px 外环，盒尺寸不变。</p>
+          </div>
+          <div class="field is-error">
+            <p class="field-label">政策原句</p>
+            <div class="field-input">未在当前来源中找到这段原句。</div>
+            <p class="field-help">错误：说明原因并给出下一步，不只把边框变红。</p>
+          </div>
+          <div class="field is-disabled">
+            <p class="field-label">模型名称</p>
+            <div class="field-input">本机尚未配置</div>
+            <p class="field-help">禁用：暖砂底 + meta 字，不参与 Tab 序列。</p>
+          </div>
+        </div>
+      </div>
+      <p class="spec-rule"><b>使用规则</b><span>输入值 16px；标签与输入之间 6–8；帮助文案 12px。错误文案通过 <code>aria-describedby</code> 关联，占位符不代替标签。</span></p>
+    </article>
+
+    <article class="specimen">
+      <div class="specimen-head"><h3>状态标签</h3><span class="specimen-id">五色语义 · 圆角 6</span></div>
+      <p class="specimen-lead">五种语义各自有文本档与底档。顺序固定：先事实，再完整度，再复核，再附件。</p>
+      <div class="specimen-stage">
+        <div class="tag-set">
+          <div class="tag-item"><span class="tag neutral">UNKNOWN</span><p class="tag-note">未知 / 未开始 · neutral</p></div>
+          <div class="tag-item"><span class="tag info">进行中</span><p class="tag-note">信息性判定 · info</p></div>
+          <div class="tag-item"><span class="tag warn">PARTIAL</span><p class="tag-note">等待 / 待复核 · warn</p></div>
+          <div class="tag-item"><span class="tag success">已检查</span><p class="tag-note">已完成 / 已获取 · success</p></div>
+          <div class="tag-item"><span class="tag danger">获取失败</span><p class="tag-note">失败 / 冲突 · danger</p></div>
+        </div>
+      </div>
+      <p class="spec-rule"><b>使用规则</b><span>标签不交互、不做成按钮；必须带状态词。颜色只是冗余编码，删掉颜色后语义仍然完整。同一行多个标签保持稳定顺序。</span></p>
+    </article>
+
+    <article class="specimen">
+      <div class="specimen-head"><h3>列表行</h3><span class="specimen-id">56 高 · 整行可点</span></div>
+      <p class="specimen-lead">标题、状态后缀、右侧 chevron。整行是一个触控目标，不再套小按钮。</p>
+      <div class="specimen-stage">
+        <div class="rows">
+          <div class="row">
+            <div class="row-main"><b>隐私政策</b><span>已获取网页正文 · 完整度未知 · 未复核 · 附件未检查</span></div>
+            <svg class="ph-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+          </div>
+          <div class="row">
+            <div class="row-main"><b>用户协议</b><span>仅有链接，尚无正文 · 完整度未知 · 未复核 · 附件未检查</span></div>
+            <svg class="ph-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+          </div>
+          <div class="row">
+            <div class="row-main"><b>云点统计服务说明</b><span>SDK 自有政策 · 示例 1.0 · 正文完整度未知</span></div>
+            <svg class="ph-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+          </div>
+        </div>
+      </div>
+      <p class="spec-rule"><b>使用规则</b><span>最小高 56；主文案 16/500，副文案 14 muted；按下层用 state-press（.12），不做上移。chevron 只做方向提示，<code>aria-hidden</code>。</span></p>
+    </article>
+
+    <article class="specimen">
+      <div class="specimen-head"><h3>底部操作栏</h3><span class="specimen-id">64 + safe-bottom</span></div>
+      <p class="specimen-lead">只放本步的主操作与一个次操作。主按钮吃掉剩余宽度，次操作按内容宽度。</p>
+      <div class="specimen-stage">
+        <div class="bar-demo">
+          <div class="bar-demo-body">内容区底部预留「底栏 + 24」。报告步不显示这条栏，避免把阅读态变成操作态。</div>
+          <div class="bar-demo-bar">
+            <span class="btn quiet">修改材料</span>
+            <span class="btn primary">保存候选并开始分析</span>
+          </div>
+        </div>
+      </div>
+      <p class="spec-rule"><b>使用规则</b><span>主按钮 48 高、<code>flex: 1</code>；次操作用文字按钮（quiet / accent-text），不加描边，不与主操作争夺边界。键盘弹起时整条随 <code>--keyboard-inset</code> 上移，内容不被遮挡。</span></p>
+    </article>
+
+    <article class="specimen">
+      <div class="specimen-head"><h3>Sheet 与设置页</h3><span class="specimen-id">圆角 24 · 把手 36×4</span></div>
+      <p class="specimen-lead">证据与政策详情用 bottom sheet；设置用全屏 detail。两者共享标题、关闭键与分区节奏。</p>
+      <div class="specimen-stage">
+        <div class="sheet-stage">
+          <div class="sheet">
+            <div class="sheet-handle" aria-hidden="true"></div>
+            <div class="sheet-head">
+              <p class="sheet-title">服务与存储设置</p>
+              <span class="sheet-close" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></span>
+            </div>
+            <p class="sheet-desc">检查本机模型连接、当前分析材料的保存范围与证据边界。</p>
+            <div class="sheet-section">
+              <p class="sheet-sub">模型连接</p>
+              <p class="strong">本机已配置模型</p>
+              <p>Key 在系统窗口输入并保存在本机。仅把完整收集指令和应用线索发送给所选模型；服务是否具备联网能力，以实际结果为准。</p>
+            </div>
+            <div class="sheet-section">
+              <p class="sheet-sub">材料与存储</p>
+              <p>当前材料保存在以下分析服务，长期保留至主动删除。删除后原始材料与分析结果不可恢复。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="spec-rule"><b>使用规则</b><span>顶部两角 24，内部滚动，最大高 <code>min(88dvh, 720px)</code>；关闭 48×48，Esc 与返回键等效；关闭后焦点归还触发按钮。</span></p>
+    </article>
+
+    <article class="specimen">
+      <div class="specimen-head"><h3>通知与错误</h3><span class="specimen-id">圆角 12 · 语义底</span></div>
+      <p class="specimen-lead">通知留在内容区，不取代内容；关键失败不用 toast 一闪而过。</p>
+      <div class="specimen-stage">
+        <div class="notices">
+          <div class="notice"><p>正在处理当前请求。</p><span class="notice-action">停止本次请求</span></div>
+          <div class="notice info"><p>尚未取得正文；下一步会尝试自动查找，也可以使用下方辅助入口。</p></div>
+          <div class="notice error"><p><b>本次分析未完成。</b>可刷新状态或重试为新的分析。静态线索不证明实际采集。</p><span class="notice-action">重试为新的分析</span></div>
+        </div>
+      </div>
+      <p class="spec-rule"><b>使用规则</b><span>普通通知用 info 底（进行中）或 neutral 底；错误用 danger 底 + <code>role="alert"</code>，文案写清「发生了什么 + 可以做什么」，不用「出错了」。</span></p>
+    </article>
+  </section>
+
+  <!-- ══════════════ 08 无障碍与验收 ══════════════ -->
+  <section class="chapter wrap" id="a11y" aria-labelledby="a11y-title">
+    <header class="chapter-head">
+      <p class="chapter-no">08</p>
+      <h2 class="chapter-title" id="a11y-title">无障碍与验收</h2>
+    </header>
+    <p class="chapter-lead">无障碍是验收项，不是附加项。下列每一条都能在真机尺寸与键盘操作下复现，也能被脚本或截图证据检查。</p>
+
+    <div class="a11y-grid">
+      <div class="a11y-item"><span class="mark" aria-hidden="true">48</span><div><h3>触控 48</h3><p>按钮、图标按钮、步骤项、列表行都不低于 48×48 CSS px，相邻目标间距 ≥8。小于 48 的可点区域视为缺陷。</p></div></div>
+      <div class="a11y-item"><span class="mark" aria-hidden="true">16</span><div><h3>输入 16</h3><p>输入值 16px 起，禁止 <code>user-scalable=no</code>。聚焦时页面不缩放，软键盘弹起后主操作仍可达。</p></div></div>
+      <div class="a11y-item"><span class="mark" aria-hidden="true">200</span><div><h3>200% 根字号</h3><p>根字号放大到 200% 时，320 与 390 宽度下无页面级横向滚动、无内容裁切；底栏按内容增高。</p></div></div>
+      <div class="a11y-item"><span class="mark" aria-hidden="true">4.5</span><div><h3>对比度</h3><p>正文 ≥4.5:1，大字与图形/控件边界 ≥3:1。数字由脚本复算，不用设计工具取色肉眼判断。</p></div></div>
+      <div class="a11y-item"><span class="mark" aria-hidden="true">F</span><div><h3>焦点环</h3><p><code>:focus-visible</code> 2px 焦点蓝环 + 2px 偏移；任何底色上都可辨。步骤切换焦点落在标题，sheet 关闭后归还。</p></div></div>
+      <div class="a11y-item"><span class="mark" aria-hidden="true">T</span><div><h3>状态不靠颜色</h3><p>UNKNOWN、PARTIAL、UNREVIEWED、附件未检查都带文字；选中态同时有下划线或 ✓，删掉颜色仍能读出状态。</p></div></div>
+      <div class="a11y-item"><span class="mark" aria-hidden="true">M</span><div><h3>reduced-motion</h3><p><code>prefers-reduced-motion: reduce</code> 下时长归零，取消位移、缩放与旋转，保留即时可见的最终状态。</p></div></div>
+    </div>
+
+    <div id="acceptance">
+      <h3 class="subhead">验收清单</h3>
+      <p class="sub-lead">打印本页即为验收表。每一项都需要截图、录屏或命令输出作为证据；打勾不代表艺术通过，只代表规则可复现。</p>
+      <ol class="checklist">
+        <li><span class="checkbox" aria-hidden="true"></span><span><strong>作用域与取色。</strong>移动根内无硬编码十六进制颜色；共享组件只通过语义别名取色，桌面 Pioneer 断言不被改动。</span></li>
+        <li><span class="checkbox" aria-hidden="true"></span><span><strong>对比度。</strong>正文 ≥4.5:1，控件边界与焦点环 ≥3:1；陶土只出现在大字与非文本。</span></li>
+        <li><span class="checkbox" aria-hidden="true"></span><span><strong>视口与缩放。</strong>320、390、200% 根字号、横屏与 600+ 视口无页面级横向溢出；内容最大宽 560。</span></li>
+        <li><span class="checkbox" aria-hidden="true"></span><span><strong>触控与键盘。</strong>触控 ≥48，输入 16px，软键盘弹起时底栏与主操作仍可达且不被遮挡。</span></li>
+        <li><span class="checkbox" aria-hidden="true"></span><span><strong>动效偏好。</strong><code>prefers-reduced-motion: reduce</code> 下无动画、无位移、无缩放。</span></li>
+        <li><span class="checkbox" aria-hidden="true"></span><span><strong>状态冗余。</strong>状态标签、错误提示、选中/完成态都有文字或形状冗余，不只靠颜色。</span></li>
+        <li><span class="checkbox" aria-hidden="true"></span><span><strong>返回与焦点。</strong>返回、滚动恢复、焦点归还、sheet 焦点陷阱按第 05 章行为可复现。</span></li>
+        <li><span class="checkbox" aria-hidden="true"></span><span><strong>底栏出现规则。</strong>底栏只出现在非报告步；报告步为阅读态，设置入口留在顶栏。</span></li>
+        <li><span class="checkbox" aria-hidden="true"></span><span><strong>深色范围。</strong>深色只出现在报告封面与空状态，数据区回到暖纸底；单屏不超过一段。</span></li>
+        <li><span class="checkbox" aria-hidden="true"></span><span><strong>资源与外链。</strong>无字体 CDN 与外链资源；只使用仓库既有 Noto 变量字体与本地图标，页面不发网络请求。</span></li>
+        <li><span class="checkbox" aria-hidden="true"></span><span><strong>数值一致。</strong>契约快照与本规范的 token、几何值一致；neutral 标签的 8.71 与主规范附录 B 一致。</span></li>
+        <li><span class="checkbox" aria-hidden="true"></span><span><strong>证据保留。</strong>新旧截图并存，历史证据未被覆盖；<code>scripts/check.sh</code> 与移动验收通过。</span></li>
+      </ol>
+      <p class="checklist-foot">限制：本轮没有真机验证、读屏人工测试与低亮度实拍；对比度是静态计算值，不替代实机检查。</p>
+    </div>
+  </section>
+
+  <!-- ══════════════ 09 迁移说明 ══════════════ -->
+  <section class="chapter wrap" id="migration" aria-labelledby="migration-title">
+    <header class="chapter-head">
+      <p class="chapter-no">09</p>
+      <h2 class="chapter-title" id="migration-title">迁移说明</h2>
+    </header>
+    <p class="chapter-lead">从 Pioneer / round2 的暖灰藏青，切到 Claude 的暖纸陶土。替换视觉层并补少量移动交互规则，不推翻已经成立的工程约束。</p>
+
+    <div class="table-wrap">
+      <table class="migrate-table">
+        <caption>旧值取自 apps/web/src/theme.css 现状；新值以本规范为准。工程约束（48dp 触控、56dp 顶栏、edge-to-edge、返回与滚动恢复）继续有效。</caption>
+        <thead>
+          <tr><th scope="col">维度</th><th scope="col">现状 Pioneer / round2</th><th scope="col">Claude 移动基线</th><th scope="col">说明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>画布</td><td>#f6f5f1</td><td>#f5f4ed</td><td>暖纸底，去掉偏冷的灰。</td></tr>
+          <tr><td>卡片表面</td><td>#fdfcfa</td><td>#faf9f5</td><td>与画布只差一档，靠描边分层。</td></tr>
+          <tr><td>主操作</td><td>藏青 #333c50</td><td>实心陶土 #b04b25</td><td>象牙白字 5.14:1；品牌陶土只留大字与非文本。</td></tr>
+          <tr><td>标题</td><td>Noto Serif 600 / 1.25rem</td><td>title-m 20 / 1.3 / 500 衬线</td><td>衬线只用一个字重，不靠加粗拉层级。</td></tr>
+          <tr><td>正文</td><td>0.875rem（14）/ 1.65</td><td>body 16 / 1.6</td><td>正文字号上调，行高按中文阅读重算。</td></tr>
+          <tr><td>卡片圆角</td><td>12</td><td>16</td><td>同一类组件固定一档。</td></tr>
+          <tr><td>Sheet 圆角</td><td>20</td><td>24</td><td>只圆顶部两角。</td></tr>
+          <tr><td>控件圆角</td><td>10</td><td>12</td><td>按钮、字段、分段控件统一。</td></tr>
+          <tr><td>分隔与层级</td><td>1px 阴影 #m-shadow-bar</td><td>1px 描边 + 环影</td><td>只有 sheet 用向上浮起；卡片默认无阴影。</td></tr>
+          <tr><td>状态色</td><td>mint / notice / rose</td><td>success / warn / danger / info / neutral</td><td>文本档与底档成对；颜色只做冗余编码。</td></tr>
+          <tr><td>深色</td><td>无</td><td>#141413 仅报告封面</td><td>单屏 ≤1 段，数据区不用黑底。</td></tr>
+          <tr><td>范围</td><td>桌面 + 移动 Web + 壳</td><td>仅移动 App</td><td>桌面工作台冻结，不做被动换肤。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="scope">
+      <h3>本轮边界</h3>
+      <p><b>本轮只交付规范层，不改产品代码。</b>规范站是单文件 HTML，离线可开、可打印；没有改 <code>apps/web</code>、没有新增依赖、没有启动服务、没有联网。</p>
+      <ul>
+        <li>不修改 <code>apps/web/src</code> 的任何样式、组件或断言；桌面 Pioneer 契约保持原样。</li>
+        <li>不改主题文件的变量作用域；<code>--mt-*</code> 如何落到移动根，留给实现阶段。</li>
+        <li>不改 <code>scripts/</code>、不改验收脚本、不改截图证据；旧截图继续作为历史保留。</li>
+        <li>不做真机验证与读屏人工测试；本文档中的行为描述是目标态，不是现状。</li>
+      </ul>
+    </div>
+
+    <h3 class="subhead">建议实施顺序</h3>
+    <p class="sub-lead">以下是实现阶段的路标，本轮不执行；每一步都应先有可复现的断言，再改视觉。</p>
+    <ol class="next-steps">
+      <li><span class="no">01</span><span><b>契约先行。</b>把 token、几何与状态写进机器可读契约，先接断言，再改组件。</span></li>
+      <li><span class="no">02</span><span><b>Token 层。</b>在移动根声明 <code>--mt-*</code>，共享组件改为消费语义别名，桌面根不动。</span></li>
+      <li><span class="no">03</span><span><b>基础组件。</b>按钮 → 字段 → 状态标签 → 卡片与列表行 → 顶栏、步骤导航、操作栏 → sheet，一次只改一个。</span></li>
+      <li><span class="no">04</span><span><b>五个界面。</b>导入 → 候选 → 进度 → 报告 → 设置；空态、错误、加载一起改。</span></li>
+      <li><span class="no">05</span><span><b>验收与证据。</b>重拍 320 / 390、200% 根字号、横屏、600+ 视口截图，跑移动验收，旧证据不覆盖。</span></li>
+    </ol>
+  </section>
+
+</main>
+
+<footer class="site-foot wrap">
+  <p>PrivacyTrace 移动端设计规范 · Claude 基线 · v0.1 · 2026-10-23</p>
+  <p>单文件离线规范站：CSS、SVG 全部内联，无脚本、无外链、无网络请求。设计基线参考 Claude 设计体系（MIT）与移动应用模板（MIT，只借手机框与单屏叙事）；字体 Noto Sans SC / Noto Serif SC（SIL OFL 1.1）。</p>
+  <p>本轮只交付规范层，不改产品代码。</p>
+</footer>
+
+</body>
+</html>

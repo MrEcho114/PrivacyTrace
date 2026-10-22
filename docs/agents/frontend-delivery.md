@@ -18,6 +18,10 @@
 
 `npm run acceptance:preview` 验证进程生命周期与检查恢复，运行前停止已有受管预览。两种验收已接入浏览器 CI；视觉质量仍由截图审阅判断。
 
+## Claude 移动视觉与 #165
+
+移动壳在 `body.is-mobile-app` 下把 #165 的 `--pt-*` 语义层映射到 Claude `--mt-*`：品牌/文案/结构保留，颜色、字号与控件档位换为 Claude。共享组件消费 `--ui-*`，移动专属样式消费 `--mt-*`；桌面无 body class 时继续使用 #165/Pioneer 值。桌面契约退役条件见 [ADR-0004](../adr/0004-frontend-contract-retirement.md)。
+
 ## Gemini 文案与外部 skill
 
 需要 Gemini 文案时，先准备 [事实简报模板](frontend-copy-brief.md)，从代码和接口核实能力、失败、取消、恢复、持久化与示例行为。简报使用功能事实和文案键名，记录用户已授权的目的地、发送内容及同范围纠错边界；需要扩大范围时按实际授权处理。采用最新生成结果，事实错误反馈 Gemini 修订，保留生成与修订记录。

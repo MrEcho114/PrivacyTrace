@@ -38,27 +38,31 @@ function focusInitial(event: Event) {
   </DialogRoot>
 </template>
 <style scoped>
-.ui-sheet-overlay { position: fixed; inset: 0; z-index: 100; background: var(--m-scrim); animation: m-sheet-fade var(--m-duration-enter) var(--m-ease-decelerate); }
+/* Shared component: consume the semantic aliases from docs/design/frontend-design-spec-mobile.md
+   §11.3. The old token stays as the fallback so desktop and mobile keep their current values
+   until the `--ui-*` layer in theme.css is authored; once it exists the alias wins. */
+.ui-sheet-overlay { position: fixed; inset: 0; z-index: 100; background: var(--ui-scrim); animation: m-sheet-fade var(--ui-duration-enter) var(--ui-ease-decelerate); }
 .ui-sheet {
   position: fixed; inset-inline: 0; bottom: 0; z-index: 101;
   display: flex; flex-direction: column; width: min(100%, 640px); max-height: min(88dvh, 720px);
   margin-inline: auto; padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
-  background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-bottom: 0;
-  border-radius: var(--m-sheet-radius) var(--m-sheet-radius) 0 0; box-shadow: var(--m-shadow-sheet);
-  box-sizing: border-box; animation: m-sheet-rise var(--m-duration-enter) var(--m-ease-decelerate);
+  background: var(--ui-surface); color: var(--ui-fg); border: 1px solid var(--ui-border-soft); border-bottom: 0;
+  border-radius: var(--ui-radius-sheet) var(--ui-radius-sheet) 0 0; box-shadow: var(--ui-shadow-sheet);
+  box-sizing: border-box; animation: m-sheet-rise var(--ui-duration-enter) var(--ui-ease-decelerate);
 }
 .ui-sheet--detail { animation-name: m-sheet-fade; }
-.ui-sheet-handle { flex: none; width: 36px; height: 4px; margin: 10px auto 2px; border-radius: 999px; background: var(--border); }
+.ui-sheet--detail .ui-sheet-close { order: -1; margin: -10px 0 0 -10px; }
+.ui-sheet-handle { flex: none; width: 36px; height: 4px; margin: 10px auto 2px; border-radius: 999px; background: var(--ui-handle); }
 .ui-sheet-head { flex: none; display: flex; align-items: flex-start; gap: var(--space-12); padding: 4px var(--m-gutter) 12px; }
-.ui-sheet-title { flex: 1; min-width: 0; margin: 0; font-family: var(--font-display); font-size: var(--m-font-title); font-weight: 600; line-height: 1.35; }
+.ui-sheet-title { flex: 1; min-width: 0; margin: 0; font-family: var(--ui-font-display); font-size: var(--m-font-title); font-weight: 600; line-height: 1.35; }
 .ui-sheet-close {
-  display: grid; place-items: center; flex: none; width: var(--m-touch); height: var(--m-touch);
+  display: grid; place-items: center; flex: none; width: var(--ui-touch); height: var(--ui-touch);
   margin: -10px -10px 0 0; padding: 0; border: 0; border-radius: 999px; background: transparent;
-  color: var(--ink); touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  color: var(--ui-fg); touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
-.ui-sheet-close:active { background: var(--m-state-press); }
-@media (hover: hover) and (pointer: fine) { .ui-sheet-close:hover { background: var(--m-state-hover); } }
-.ui-sheet-description { flex: none; margin: 0; padding: 0 var(--m-gutter) 12px; color: var(--muted); font-size: var(--m-caption); line-height: 1.5; }
+.ui-sheet-close:active { background: var(--ui-state-press); }
+@media (hover: hover) and (pointer: fine) { .ui-sheet-close:hover { background: var(--ui-state-hover); } }
+.ui-sheet-description { flex: none; margin: 0; padding: 0 var(--m-gutter) 12px; color: var(--ui-muted); font-size: var(--m-caption); line-height: 1.5; }
 .ui-sheet-description-empty { display: none; }
 .ui-sheet-body {
   flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;

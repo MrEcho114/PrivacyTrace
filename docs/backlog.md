@@ -1,5 +1,9 @@
 # PT 任务清单
 
+## 2026-10-23 前端设计规范重置（仅移动端 App）
+
+用户要求重置前端设计规范，并把前端范围收窄到仅移动端 App；`apps/api` 后端由隔壁会话负责。视觉基线改为 Claude（`od-ds-claude`，暖纸 + 陶土 + 衬线/无衬线分工），只保留 Android/Tauri 移动壳与导入/候选/进度/报告/设置五个界面；桌面工作台冻结。交付规范正文 [frontend-design-spec-mobile.md](design/frontend-design-spec-mobile.md)、规范站与现状审计/token 契约（`docs/design/mobile-reset/`）；Apple 草案归档到 `docs/design/archive/`。规范层已同批完成迁移落地，实施与验收记录见 [implementation-20261023.md](design/mobile-reset/implementation-20261023.md)。同日第二轮完成 `--ui-*` 别名重构（共享组件/共享 CSS 消费别名，旧变量重映射删除）；桌面 `pioneer-design.json` / `verify-round2-primitives.cjs` 按 [ADR-0004](adr/0004-frontend-contract-retirement.md) 保留到桌面入口正式下线，最早 2026-11-06 复审。
+
 ## 2026-10-19 S3 内部交付
 
 用户明确本次仅完成内部交付，正式提交另行跟踪。固定六场景离线包、原评测、120 秒影片/源码和说明材料的版本、摘要及运行入口见 [S3 内部交付](stages/s3-internal-delivery-20261019.md)，状态与最终验证见 [#5 当前记录](https://github.com/MrEcho114/PrivacyTrace/issues/5#issuecomment-6260049721)。#107 接替正式提交/回执入口（#20 已于 2026-10-19 关闭），#74 继续跟踪赛事指南；内部阶段关闭不代表已参赛、公开许可获准或 main 全仓冻结。下方原排期及快照保留原日期。

@@ -31,6 +31,8 @@ npm run android:prepare
 npm run android:build
 ```
 
+`android:prepare` 通过 `scripts/run-powershell.cjs` 自动选择 `pwsh` 或 Windows 自带的 `powershell`，不要求 PowerShell 7。
+
 固定版本沿用 #71：Tauri 2.12.4、CLI 2.12.3，Android 初始化脚本固定 API36，并关闭备份和明文传输。本轮不以补齐额外工具链或物理设备矩阵阻塞开发交付；完整 APK/实际设备验证结果须单独记录。
 
 ## 本轮关键验证

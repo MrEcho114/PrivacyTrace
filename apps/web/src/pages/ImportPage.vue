@@ -113,5 +113,5 @@ function onTextInput(source: PolicySource) {
   </div>
 </template>
 <style scoped>
-.file-drop:focus-within { outline: 2px solid var(--navy); outline-offset: 3px; }
+.file-drop:focus-within { outline: 2px solid var(--ui-focus); outline-offset: 3px; }
 </style>

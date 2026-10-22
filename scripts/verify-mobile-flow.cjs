@@ -19,6 +19,7 @@ const net = require('node:net')
 const { spawn } = require('node:child_process')
 const { chromium } = require('playwright')
 const { spawnOptions, stopChildren } = require('./lib/process-control.cjs')
+const { assertMobileDesign } = require('./lib/frontend-guards.cjs')
 const root = path.resolve(__dirname, '..'), output = path.join(root, 'tmp/issue72-native')
 fs.mkdirSync(output, { recursive: true })
 const source = fs.readFileSync(path.join(__dirname, 'verify-frontend-flow.cjs'), 'utf8')
@@ -92,6 +93,10 @@ async function shot(page, name) {
 }
 async function waitTitle(page, title, timeout = 10000) {
   await page.waitForFunction(expected => document.getElementById('page-title')?.textContent?.trim() === expected, title, { timeout })
+}
+async function checkMobileDesign(page) {
+  await page.mouse.move(0, 0)
+  await assertMobileDesign(page)
 }
 
 function bridge(options) {
@@ -249,6 +254,7 @@ async function main() {
     assert.equal(mobileSymbol.status(), 200, 'the mobile shell must load the same-origin brand symbol')
     assert.ok((await mobileSymbol.body()).toString('utf8').includes('<svg'), 'the brand symbol must be SVG markup')
     checks.push('brand: mobile import slot decodes the same-origin symbol with no letter placeholder')
+    await checkMobileDesign(page)
     for (const width of [320, 390, 768]) {
       await page.setViewportSize({ width, height: 844 })
       await page.evaluate(() => document.fonts.ready)
@@ -287,6 +293,7 @@ async function main() {
     assert.equal(await page.locator('.m-appbar-brand').count(), 0, 'non-import steps replace the brand slot with the back button')
     assert.equal(await page.getByRole('button', { name: '返回上一步' }).count(), 1, 'non-import steps keep the back arrow')
     assert.equal(await page.evaluate(() => document.querySelectorAll('.mobile-panel-tabs button').length), 2, 'candidates: Android segmented control must render')
+    await checkMobileDesign(page)
     await page.locator('.source-tabs button').nth(1).click()
     await page.getByRole('tab', { name: '政策原文', exact: true }).click()
     for (const width of [320, 390, 768]) {

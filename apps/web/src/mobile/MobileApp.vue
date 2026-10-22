@@ -216,6 +216,8 @@ const progressSecondary = () => {
 
 onMounted(() => {
   document.documentElement.classList.add('mobile-shell')
+  // 移动 token 作用域（main.ts 只在 Tauri 里挂；浏览器 harness 走这里兜底）。
+  document.body.classList.add('is-mobile-app')
   history.replaceState({ ...(typeof history.state === 'object' && history.state ? history.state : {}), pt: state.step }, '')
   window.addEventListener('popstate', onPopState)
   void flow.settings()
@@ -225,6 +227,7 @@ onBeforeUnmount(() => {
   actionbarObserver?.disconnect()
   document.documentElement.style.removeProperty('--m-actionbar-actual')
   document.documentElement.classList.remove('mobile-shell')
+  document.body.classList.remove('is-mobile-app')
   void flow.stop()
 })
 </script>

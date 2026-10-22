@@ -2,16 +2,17 @@
   "result": "PASS",
   "issue": 144,
   "round": 2,
-  "source_sha": "376d65813e9c",
-  "captured_at": "2026-10-21T16:30:29.912Z",
+  "source_sha": "017f031dbf84",
+  "captured_at": "2026-10-22T15:49:35.761Z",
   "platform": "Chromium headless browser simulation, 390x844/320x568/768x1024/844x390, deviceScaleFactor 1",
   "scope": "production Vue mobile shell + mocked native bridge + deterministic fixtures; no APK scan, model, Docker, Android device or real IME execution",
   "checks": [
-    "390x844 shell: 56px serif app bar, one-row 4-step rail, fixed 64px action bar, 48px targets, 100dvh, viewport/theme/zoom contract",
-    "import/selected/390: 4 visible fields >= 16px",
+    "390x844 shell: 56px Claude serif app bar 20/500 over ivory surface, one-row 4-step rail, fixed 64px action bar, 48px targets, 100dvh, viewport/theme/zoom contract",
+    "import/selected/390: 4 visible fields >= 16px and >= 56px high",
     "settings: full-screen page-like sheet, scroll body, Escape/hardware back close, focus returns to trigger",
     "candidates/390: 27 controls >= 48x48",
-    "candidates/390: 8 visible fields >= 16px",
+    "candidates/390: 8 visible fields >= 16px and >= 56px high",
+    "candidates: status tag 24 high / 6 radius / 12px label with text",
     "keyboard focus: global focus ring stays visible on the first focusable control",
     "hardware back: candidate -> import, title focus, forward restores the exact per-step scroll position",
     "progress: timeline/status semantics; automatic polling keeps scroll and focus",
@@ -37,8 +38,8 @@
       "state": "no material selected",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "390-import-selected.png",
@@ -47,8 +48,8 @@
       "state": "material selected + policy sources",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "390-settings.png",
@@ -57,8 +58,8 @@
       "state": "page-like full-screen dialog",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "390-candidates.png",
@@ -67,8 +68,8 @@
       "state": "one extracted candidate + editor",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "390-progress.png",
@@ -77,8 +78,8 @@
       "state": "static analysis stage, timeline and polling",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "390-report.png",
@@ -87,8 +88,8 @@
       "state": "PARTIAL coverage, issue list, evidence entry points",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "390-evidence-sheet.png",
@@ -97,8 +98,8 @@
       "state": "bottom sheet open over the report",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "320-import.png",
@@ -107,8 +108,8 @@
       "state": "320px narrowest boundary with selected material",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "320-candidates.png",
@@ -117,8 +118,8 @@
       "state": "320px segmented control and list rows",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "320-progress.png",
@@ -127,8 +128,8 @@
       "state": "320px timeline",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "320-report.png",
@@ -137,8 +138,8 @@
       "state": "320px report cards",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "768-import.png",
@@ -147,8 +148,8 @@
       "state": "768px tablet in the mobile shell",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "768-candidates.png",
@@ -157,8 +158,8 @@
       "state": "768px segmented control",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "768-report.png",
@@ -167,8 +168,8 @@
       "state": "768px report",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "844x390-import.png",
@@ -177,8 +178,8 @@
       "state": "phone landscape",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "844x390-candidates.png",
@@ -187,8 +188,8 @@
       "state": "phone landscape segmented control",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "844x390-report.png",
@@ -197,8 +198,8 @@
       "state": "phone landscape report",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "390-import-200.png",
@@ -207,8 +208,8 @@
       "state": "200% root font (system text scaling), selected material",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "390-candidates-200.png",
@@ -217,8 +218,8 @@
       "state": "200% root font segmented control and rows",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "390-report-200.png",
@@ -227,8 +228,8 @@
       "state": "200% root font report cards and evidence rows",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "390-keyboard.png",
@@ -237,8 +238,8 @@
       "state": "simulated 460px visual-viewport keyboard (not a real IME); focused field scrolled above it",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "390-reduced-motion.png",
@@ -247,8 +248,8 @@
       "state": "prefers-reduced-motion: reduce",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     },
     {
       "file": "390-progress-failed.png",
@@ -257,8 +258,8 @@
       "state": "mock job FAILED: alert + retry action",
       "platform": "Chromium headless browser simulation (not Android WebView / device)",
       "fixture": "mocked native bridge + deterministic report/taxonomy fixture; no APK/model/Docker execution",
-      "source_sha": "376d65813e9c",
-      "captured_at": "2026-10-21T16:30:29.912Z"
+      "source_sha": "017f031dbf84",
+      "captured_at": "2026-10-22T15:49:35.761Z"
     }
   ],
   "ledger_summary": {

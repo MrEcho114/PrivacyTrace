@@ -4,7 +4,9 @@ defineProps<{ label: string; id: string; help?: string; error?: string }>()
 <template><div class="ui-field"><label :for="id">{{ label }}</label><slot :describedby="error || help ? id + '-help' : undefined" /><p v-if="error || help" :id="id + '-help'" class="field-help" :class="{ 'error-text': error }">{{ error || help }}</p></div></template>
 <style>
 /* Keep placeholder hints on the same readable muted token instead of the
-   browser default; the default can fall below 4.5:1 on the warm surface. */
+   browser default; the default can fall below 4.5:1 on the warm surface.
+   Shared component: --ui-muted is the §11.3 alias; --muted stays as the
+   fallback until theme.css declares the alias layer. */
 .ui-field input::placeholder,
-.ui-field textarea::placeholder { color: var(--muted); opacity: 1; }
+.ui-field textarea::placeholder { color: var(--ui-muted); opacity: 1; }
 </style>

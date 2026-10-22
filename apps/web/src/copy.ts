@@ -27,7 +27,6 @@ export const copy = {
   "cancel": "取消",
   "retry": "重试",
   "viewReport": "查看报告",
-  "reportTitle": "分析报告",
   "reportHelp": "这是固定示例报告，修改材料或候选不会改变这里的结果。",
   "settingsTitle": "服务与存储设置",
   "settingsDescription": "设置本项目的模型连接、检查服务，或清除浏览器中的示例草稿。",

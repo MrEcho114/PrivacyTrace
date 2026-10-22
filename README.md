@@ -173,10 +173,10 @@ CI 通过、真实 Docker 运行、受控评测、离线验收和正式提交是
 
 这一节是项目自己的披露，不是赛事官方表格，也不表示通过 GB 45438-2025 或其他法规认证。
 
-- 项目历史记录涉及 Google Gemini、OpenAI Codex、Anthropic Claude 与 DeepSeek Harness，用途包括部分接口胶水层、数据契约生成、展示文案与视频分镜、测试模板。具体型号、文件、时间与人工修改范围以日志、PR 和仓库内 [披露记录](docs/ai-usage-disclosure.md) 为准；参赛包内另见 `07_AI工具使用补充说明/`。不能因此宣称 AI 完全没参与其他环节，也不给出未经复算的比例。
+- 项目历史记录涉及 Google Gemini 和 OpenAI Codex，用途包括部分接口胶水层、数据契约生成和测试模板。具体型号、文件、时间与人工修改范围以日志、PR 和 [披露记录](docs/ai-usage-disclosure.md) 为准；不能因此宣称 AI 完全没参与其他环节，也不给出未经复算的比例。
 - 团队承担了架构、规则与界面设计、代码审查和项目管理。Git 作者提交数不等于 AI／人工代码行比例，也不等于“100% 独立完成”。
 - 类型契约生成文件、Web 报告页脚和阶段 provenance 文件都记录了 AI 辅助情况；阶段性 provenance 不能自动代表全项目范围。
-- 参赛名单、指导教师审核与正式申报仍待实际确认，见仓库内 [披露记录](docs/ai-usage-disclosure.md)、参赛包内 `07_AI工具使用补充说明/` 与 [赛事材料 #74](https://github.com/MrEcho114/PrivacyTrace/issues/74)。
+- 参赛名单、指导教师审核与正式申报仍待实际确认，见 [披露记录](docs/ai-usage-disclosure.md) 与 [赛事材料 #74](https://github.com/MrEcho114/PrivacyTrace/issues/74)。
 
 ## 安全声明
 

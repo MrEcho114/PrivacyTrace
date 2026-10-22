@@ -4,9 +4,18 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const assert = require('node:assert/strict');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
+const { loopbackOrigin } = require('./lib/local-ports.cjs');
 
 async function main() {
   const output = process.argv[2] || 'tmp/browser-proof';
+  // Ports are configurable so this lane can run beside a developer's own services
+  // or outside a Windows WinNAT reserved range; the historical defaults stay.
+  // `PRIVACYTRACE_API_ORIGIN` already names the API origin for the Vite proxy, so
+  // it overrides the whole API origin; the ports cover the other two services.
+  const apiOrigin = process.env.PRIVACYTRACE_API_ORIGIN
+    || loopbackOrigin('PRIVACYTRACE_CONTROLLED_API_PORT', 'PRIVACYTRACE_API_PORT', 8000);
+  const webOrigin = loopbackOrigin('PRIVACYTRACE_CONTROLLED_WEB_PORT', 'PRIVACYTRACE_WEB_PORT', 5173);
+  const viewerOrigin = loopbackOrigin('PRIVACYTRACE_CONTROLLED_VIEWER_PORT', 'PRIVACYTRACE_VIEWER_PORT', 8765);
   fs.mkdirSync(output, { recursive: true });
   const browser = await chromium.launch({ headless: true,
     ...(process.env.PRIVACYTRACE_CHROMIUM ? { executablePath: process.env.PRIVACYTRACE_CHROMIUM } : {}) });
@@ -15,14 +24,14 @@ async function main() {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   const checks = [];
-  const jobs = (await (await fetch('http://127.0.0.1:8000/api/v1/jobs')).json()).jobs;
+  const jobs = (await (await fetch(`${apiOrigin}/api/v1/jobs`)).json()).jobs;
   const c02 = jobs.find(job => job.sample_id === 'C02');
   const c06 = jobs.find(job => job.sample_id === 'C06');
   assert(c02 && c06);
-  const report = await (await fetch(`http://127.0.0.1:8000/api/v1/jobs/${c02.id}/report`)).json();
+  const report = await (await fetch(`${apiOrigin}/api/v1/jobs/${c02.id}/report`)).json();
   const reportUrl = `**/api/v1/jobs/${c02.id}/report`;
   try {
-    await page.goto('http://127.0.0.1:5173/#reports');
+    await page.goto(`${webOrigin}/#reports`);
     await page.locator(`option[value="job:${c02.id}"]`).waitFor({ state: 'attached' });
     await page.locator('#report-source').selectOption(`job:${c02.id}`);
     await page.getByText('CONTROLLED_APK · 自建受控场景', { exact: true }).waitFor();
@@ -123,12 +132,12 @@ async function main() {
     await page.locator('#report-source').selectOption('job:ui-validation-queued');
     await page.getByRole('button', { name: '取消任务', exact: true }).click();
     await page.locator('.job-state').getByText(/已取消/).waitFor();
-    const cancelledJob = await (await fetch('http://127.0.0.1:8000/api/v1/jobs/ui-validation-queued')).json();
+    const cancelledJob = await (await fetch(`${apiOrigin}/api/v1/jobs/ui-validation-queued`)).json();
     assert.equal(cancelledJob.state, 'CANCELLED');
     checks.push('separate UI fixtures: failed job visible without report, actual HTTP cancel persisted CANCELLED');
 
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto('http://127.0.0.1:8765');
+    await page.goto(`${viewerOrigin}/`);
     await page.getByText('OFFLINE REPLAY · 离线回放', { exact: true }).waitFor();
     assert.equal(await page.locator('.review-panel').count(), 0);
     assert.equal(await page.locator('option[value="demo:synthetic"]').count(), 0);
@@ -136,17 +145,18 @@ async function main() {
       await page.locator('#report-source').selectOption(`job:${job.id}`);
       await page.getByRole('heading', { name: job.sample_id, exact: true }).waitFor();
       assert((await page.getByLabel('报告生成来源').innerText()).includes('回放包生成时点'));
-      const saved = await (await fetch(`http://127.0.0.1:8000/api/v1/jobs/${job.id}/report`)).json();
+      const saved = await (await fetch(`${apiOrigin}/api/v1/jobs/${job.id}/report`)).json();
       assert((await page.getByLabel('报告生成来源').innerText()).includes(saved.tools.analysis_generated_at));
     }
-    const rejected = await fetch(`http://127.0.0.1:8765/api/v1/jobs/${c02.id}/reviews`, { method: 'POST' });
+    const rejected = await fetch(`${viewerOrigin}/api/v1/jobs/${c02.id}/reviews`, { method: 'POST' });
     assert.equal(rejected.status, 405);
-    await page.goto('http://127.0.0.1:8765/comparison.html');
+    await page.goto(`${viewerOrigin}/comparison.html`);
     assert.equal(await page.locator('tbody tr').count(), 18);
     checks.push('offline six-source viewing, analysis/package timestamps, no writable controls, POST405, 18 comparison rows');
     assert.deepEqual(errors, []);
     fs.writeFileSync(path.join(output, 'browser-proof.json'), JSON.stringify({ passed: true,
       browser: browser.version(), checks, page_errors: errors,
+      origins: { api: apiOrigin, web: webOrigin, viewer: viewerOrigin },
       ui_fixtures_are_not_evaluation_samples: true }, null, 2));
     console.log(JSON.stringify({ passed: true, checks, page_errors: errors }));
   } finally { await browser.close(); }

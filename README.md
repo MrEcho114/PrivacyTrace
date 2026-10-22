@@ -2,12 +2,12 @@
 
 PrivacyTrace 读取 Android 安装包里能静态看到的隐私线索，和隐私政策原文对照，把每条线索落到代码位置与政策原句上。它回答“代码里有没有这个线索、政策里有没有这句话”，不判断应用是否真的收集或外传数据，也不判断安全性和合法性。
 
-项目准备参加 2026 年第十四届数媒竞赛，正在做提交前的最终端到端验收。Web 工作台、API、隔离扫描和部署基线已经在 main 上，Android 客户端的主流程也已合入；完整验收矩阵还没有跑完，进度以 [#128](https://github.com/MrEcho114/PrivacyTrace/issues/128) 的当前记录为准。项目内部节点是 10 月 23 日 18:00 冻结功能、22:00 前完成验包；正式报名和提交由 [#107](https://github.com/MrEcho114/PrivacyTrace/issues/107) 跟踪，工程节点不等于赛事结果。
+项目准备参加 2026 年第十四届数媒竞赛，正在做提交前的最终端到端验收。唯一客户端是 Android App：[`apps/mobile`](apps/mobile) 的 Tauri 2 壳加载移动界面；第一次接触产品的正规路径就是它，零安装路径是断网只读的离线回放包，二者之外不宣称第三个入口。Web 构建产物是 App 的界面层与工程验收介质，不是第二个产品入口。API、隔离扫描与部署基线已经在 main 上，Android 客户端的主流程也已合入；完整验收矩阵还没有跑完，进度以 [#128](https://github.com/MrEcho114/PrivacyTrace/issues/128) 的当前记录为准。项目内部节点是 10 月 23 日 18:00 冻结功能、22:00 前完成验包；正式报名和提交由 [#107](https://github.com/MrEcho114/PrivacyTrace/issues/107) 跟踪，工程节点不等于赛事结果。
 
 ## 现在能用到什么
 
-- **看演示**：不用 APK、Docker 或模型 Key，浏览器里用固定材料走完导入、候选、进度、报告四步，查看代码线索、政策原句和证据定位。演示数据不是一次真实扫描。
-- **在 Web 上分析真实 APK**：上传单个 APK 或 base 加全部 splits，从 manifest 提取政策候选网址并抓取正文，也可以手工补入；确认候选后在 Docker 隔离 Worker 里静态扫描，再查看作业、报告和证据下钻。
+- **工程演示夹具**（界面上仍叫「体验示例」）：不用 APK、Docker 或模型 Key，在浏览器里用固定材料走完导入、候选、进度、报告四步，查看代码线索、政策原句和证据定位。它是工程用途的夹具，不是客户端，也不表示正在分析所选 APK。
+- **工程与本机复核**：在浏览器工作台上传单个 APK 或 base 加全部 splits，从 manifest 提取政策候选网址并抓取正文，也可以手工补入；确认候选后在 Docker 隔离 Worker 里静态扫描，再查看作业、报告和证据下钻。这条通道用于工程调试与本机复核，不是客户端。
 - **Android 客户端**：Tauri 2 客户端可以选择已安装应用、确认包集合、上传、补政策、发起分析并打开同一任务的报告。主流程已合入 main，本机端到端验收还在 #128 进行。
 - **受控评测**：六个源码场景（C01–C06）和扩展版新增的 C07–C12，合计十二个源码场景；三种方案使用同一份材料对照，报告可以打包成断网只读回放。
 - **部署基线**：API、Web、PostgreSQL、Redis、Celery 和 Runner 的容器配置与验收脚本已经就位；生产启动门禁保持关闭，没有公网实例。
@@ -85,14 +85,14 @@ uv run --project apps/api --locked --extra worker python -m privacytrace.pipelin
 
 | 层 | 技术 | 职责 |
 | --- | --- | --- |
-| Web | Vue 3、TypeScript、Vite | 材料工作台、任务状态、报告与证据下钻 |
-| Android | Tauri 2、原生 Kotlin 模块 | 选应用、读包集合、HTTPS 上传、政策补入、报告 |
+| Web | Vue 3、TypeScript、Vite | App 的界面层（Web 构建产物是 Android 壳的界面来源）：材料工作台、任务状态、报告与证据下钻；不是第二个客户端 |
+| Android | Tauri 2、原生 Kotlin 模块 | 唯一客户端：选应用、读包集合、HTTPS 上传、政策补入、报告 |
 | API | Python、FastAPI、Pydantic | 输入与政策处理、作业与持久任务、规则对照、报告模型 |
 | 静态分析 | Androguard、受限 Docker Worker | Manifest/DEX 解析、规则约束的敏感调用线索 |
 | 部署运行时 | PostgreSQL、Redis、Celery、mTLS Runner | 持久任务、投递、隔离执行、健康检查 |
 | 存储与回放 | 本机 JSON、PostgreSQL、离线只读包 | 作业存档、版本与哈希核对、断网展示 |
 
-主线是：APK 与政策材料 → 本机或部署 API → 隔离扫描 → 静态证据与政策候选对照 → Web 或 Android 报告。本机模式默认回环地址、JSON 存储、没有账号；部署模式才接 PostgreSQL、Celery 和 Runner，任务访问靠随任务发放的访问材料，仍然不建账号。目前两种模式都没有公网实例。
+主线是：APK 与政策材料 → 本机或部署 API → 隔离扫描 → 静态证据与政策候选对照 → App 报告；同一份报告也可以在浏览器工作台或离线回放包里只读复核。本机模式默认回环地址、JSON 存储、没有账号；部署模式才接 PostgreSQL、Celery 和 Runner，任务访问靠随任务发放的访问材料，仍然不建账号。目前两种模式都没有公网实例。
 
 ## 能力与边界
 
@@ -151,6 +151,8 @@ uv run --project apps/api --locked --extra worker pytest apps/api/tests
 npm run typecheck
 npm run build
 ```
+
+移动端两套验收名称不互换、也不能互相替代：`npm run acceptance:mobile` 是**界面契约回归**（生产 Vue 界面 + 受控原生桥替身，不跑 APK、模型或真机）；真实安装包在设备上的矩阵是**客户端实机验收**，入口见 [客户端实机验收执行器](deploy/acceptance/mobile/README.md)。浏览器加模拟原生桥的走查不能记为真机通过。
 
 CI 通过、真实 Docker 运行、受控评测、离线验收和正式提交是不同证据，不能互相替代。
 

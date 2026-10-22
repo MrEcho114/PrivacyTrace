@@ -10,7 +10,7 @@
 1. 系统字段定稿 278 字（汉字 223），可直接粘贴，见第二节。
 2. `03` 新增一节的全文见第三节，五个三级小节，原「能做什么 / 边界 / 组成」正文未改动，只改了一行目录说明（见第六节）。
 3. 包内 `03` 没有 tracked 源，只活在 `.scratch/package-final/` 的打包副本里，而且那个包正被 B3/B4 并发重建。本页交定稿文本、排版源与执行步骤，由打包会话（B5）并入并重冻结。
-4. PDF 已实测产出：2 页 A4、397,107 B、SHA-256 `17E2221B…`，元数据只剩 `/Title`，字节级零工具链残留。第 1、2 页均渲染后逐页看过。
+4. PDF 已实测产出：2 页 A4、410,444 B、SHA-256 `D343F116…`；早期排版稿（397,107 B / `17E2221B…`）已作废，**以随包实物为准**。元数据只剩 `/Title`，字节级零工具链残留。第 1、2 页均渲染后逐页看过。
 
 ## 二、系统字段定稿（「创意来源」，278 字）
 
@@ -71,6 +71,8 @@ APK 的静态内容可以定位到字节偏移。政策原文可以定位到码�
 生成式 AI 用于样板代码与文档排版等辅助环节，工具清单和代表性工作流见 `07_AI工具使用补充说明/`。AI 输出进入代码或文档前由团队筛选、修改与重写。本文的技术口径与数字以仓库实现和随包收据为准。
 ```
 
+> **口径说明（不属于 03 正文）**：上面这段的 `1578 passed / 179 skipped` 与 `65` 项端到端引用的是包内 `05_补充成果材料/验收摘要.md` 的 R01 收据（`deccced` 重建时点）。本票随后在 base `912b523` 上复跑的本地闸门为 `1619 passed, 200 skipped` 与 `61 passed, 4 skipped`（见「本地闸门与 CI」）。两组数字是不同时点的不同运行，不能互相替代；对外引用必须带来源，且 **skip 不计入「通过」**。
+
 ## 四、定稿取舍
 
 | 决定 | 取值 | 理由 |
@@ -90,7 +92,7 @@ APK 的静态内容可以定位到字节偏移。政策原文可以定位到码�
 
 - 双向对齐：`apps/api/src/privacytrace/apk_worker.py:509-512`（`offset_bytes`、`caller`、`target`）；`apps/api/src/privacytrace/policy_intake.py:436-453`（`start_offset`/`end_offset`/`codepoints`）；`apps/api/src/privacytrace/models.py:54-66`、`:288-294`（区间切出的文本必须等于原句）。
 - 状态分域：`models.py:24-30`（`MatchStatus` 六值）、`:56-57`（`STATIC_POTENTIAL`/`DECLARED`）、`:68-72`（混用报错）、`:111-114`（四字段锁 `UNKNOWN`）、`:126-129`（政策侧四组状态）。
-- 离线回放：`scripts/export-offline.py:114`、`:156-158`（双时点与 `OFFLINE_REPLAY`）；`apps/api/src/privacytrace/pipeline.py:177`；`demo-web/viewer.py:11-23`、`:35-36`（哈希校验、POST 405）。
+- 离线回放：`scripts/export-offline.py:114`、`:156-158`（双时点与 `OFFLINE_REPLAY`）；`apps/api/src/privacytrace/pipeline.py:177`；`01_作品及成果文件/demo-web/viewer.py:11-23`、`:35-36`（包内路径，哈希校验与 POST 405；仓库内对应实现是 `scripts/offline-viewer.py`）。
 - 受控评测：`benchmarks/controlled-v2/README.md`（真值冻结口径）；`benchmarks/locator-reference-v1/README.md:4`（`dexdump -d` 独立于被测扫描器）；`01_作品及成果文件/source/README.md:117`（12/12、2/12、4/12 及其口径）。
 - 实现方案与技术栈：`01_作品及成果文件/source/README.md:86-95`、`:12`、`:99`；`rules/taxonomy.v0.3.json:2`；`rules/sdk-signatures.v1.0.json:2-3`。
 - 完成状态：`05_补充成果材料/验收摘要.md:23-27`；`deployment-summary.json:53-71`（`ALL_REQUIRED_CHECKS_PASS_WITH_WAIVER`、豁免 `dedicated-scan-host-verification`）；`source/README.md:113`（内部验包 ≠ 已发布/已提交）。
@@ -100,7 +102,7 @@ APK 的静态内容可以定位到字节偏移。政策原文可以定位到码�
 
 1. 用第三节全文替换 `03_作品介绍文档/作品介绍.md`，插入位置见该节开头说明。
 2. 唯一一处对既有正文的改动：`## 组成` 里 `03_作品介绍文档/` 那行由「本文件」改为「本文件及其 PDF 导出（正文一致，Markdown 为源；PDF 另含界面预览图）」。原因是补了 PDF，目录只写「本文件」会与实际内容矛盾。
-3. 新增 `03_作品介绍文档/作品介绍.pdf`。制品与排版源在打包会话的工作目录 `.scratch/issue197/proposed/`：`03-作品介绍.pdf`（397,107 B，`17E2221B…`）、`03-作品介绍-print.html`、`03-pdf-scrub.py`、`03-pdf-check.py`。
+3. 新增 `03_作品介绍文档/作品介绍.pdf`。制品与排版源在打包会话的工作目录 `.scratch/issue197/proposed/`：`03-作品介绍.pdf`（**410,444 B，`D343F116…`**，早期稿 397,107 B 作废）、`03-作品介绍-print.html`、`03-pdf-scrub.py`、`03-pdf-check.py`。
 4. 重冻结时一并重算 `00_材料清单.md` 与 ZIP 哈希。**`828c5224…94ab1` / 41,192,137 B 与「630 文件 / 97 目录」口径自本批改动起失效**。
 5. `.scratch/audit-materials/` 与 `audit-rules/rules-20261023.md:91` 引用的是基线 `deccced`，不是 `deccced-anon`，不能当 anon 的新校验清单。
 
@@ -143,7 +145,7 @@ python .scratch\issue197\proposed\03-pdf-check.py .scratch\issue197\proposed\03-
 | 项 | 结果 |
 | --- | --- |
 | 系统字段字数 | 278 含标点 / 223 汉字 / 8 句（≤300 预算） |
-| PDF 规格 | 2 页，209.9 × 297.0 mm（A4），397,107 B |
+| PDF 规格 | 2 页，209.9 × 297.0 mm（A4），410,444 B（`D343F116…`） |
 | PDF 字体 | 全部嵌入，渲染器 `missingFonts` 为空，文本可检索 |
 | PDF 元数据 | 仅 `/Title`；无 `/Metadata`；工具链字符串 0 命中 |
 | 视觉审查 | 第 1、2 页渲染图逐页看过：无溢出、无缺字、图注不与正文挤压 |

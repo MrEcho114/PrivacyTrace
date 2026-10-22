@@ -71,6 +71,8 @@ APK 的静态内容可以定位到字节偏移。政策原文可以定位到码�
 生成式 AI 用于样板代码与文档排版等辅助环节，工具清单和代表性工作流见 `07_AI工具使用补充说明/`。AI 输出进入代码或文档前由团队筛选、修改与重写。本文的技术口径与数字以仓库实现和随包收据为准。
 ```
 
+> **口径说明（不属于 03 正文）**：上面这段的 `1578 passed / 179 skipped` 与 `65` 项端到端引用的是包内 `05_补充成果材料/验收摘要.md` 的 R01 收据（`deccced` 重建时点）。本票随后在 base `912b523` 上复跑的本地闸门为 `1619 passed, 200 skipped` 与 `61 passed, 4 skipped`（见「本地闸门与 CI」）。两组数字是不同时点的不同运行，不能互相替代；对外引用必须带来源，且 **skip 不计入「通过」**。
+
 ## 四、定稿取舍
 
 | 决定 | 取值 | 理由 |
@@ -90,7 +92,7 @@ APK 的静态内容可以定位到字节偏移。政策原文可以定位到码�
 
 - 双向对齐：`apps/api/src/privacytrace/apk_worker.py:509-512`（`offset_bytes`、`caller`、`target`）；`apps/api/src/privacytrace/policy_intake.py:436-453`（`start_offset`/`end_offset`/`codepoints`）；`apps/api/src/privacytrace/models.py:54-66`、`:288-294`（区间切出的文本必须等于原句）。
 - 状态分域：`models.py:24-30`（`MatchStatus` 六值）、`:56-57`（`STATIC_POTENTIAL`/`DECLARED`）、`:68-72`（混用报错）、`:111-114`（四字段锁 `UNKNOWN`）、`:126-129`（政策侧四组状态）。
-- 离线回放：`scripts/export-offline.py:114`、`:156-158`（双时点与 `OFFLINE_REPLAY`）；`apps/api/src/privacytrace/pipeline.py:177`；`demo-web/viewer.py:11-23`、`:35-36`（哈希校验、POST 405）。
+- 离线回放：`scripts/export-offline.py:114`、`:156-158`（双时点与 `OFFLINE_REPLAY`）；`apps/api/src/privacytrace/pipeline.py:177`；`01_作品及成果文件/demo-web/viewer.py:11-23`、`:35-36`（包内路径，哈希校验与 POST 405；仓库内对应实现是 `scripts/offline-viewer.py`）。
 - 受控评测：`benchmarks/controlled-v2/README.md`（真值冻结口径）；`benchmarks/locator-reference-v1/README.md:4`（`dexdump -d` 独立于被测扫描器）；`01_作品及成果文件/source/README.md:117`（12/12、2/12、4/12 及其口径）。
 - 实现方案与技术栈：`01_作品及成果文件/source/README.md:86-95`、`:12`、`:99`；`rules/taxonomy.v0.3.json:2`；`rules/sdk-signatures.v1.0.json:2-3`。
 - 完成状态：`05_补充成果材料/验收摘要.md:23-27`；`deployment-summary.json:53-71`（`ALL_REQUIRED_CHECKS_PASS_WITH_WAIVER`、豁免 `dedicated-scan-host-verification`）；`source/README.md:113`（内部验包 ≠ 已发布/已提交）。

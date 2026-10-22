@@ -60,6 +60,36 @@ def create_draft(client: TestClient) -> dict:
 # ==============================================================================
 
 
+@pytest.mark.parametrize("endpoint", ["apk", "package-set"])
+def test_duplicate_apk_file_names_return_400_and_roll_back(tmp_path, endpoint):
+    client = TestClient(create_app(tmp_path))
+    draft = create_draft(client)
+    draft_id = draft["id"]
+    url = f"/api/v1/web/drafts/{draft_id}/{endpoint}"
+    valid_archive = package_set_archive(apks={"base.apk": apk_bytes()})
+    draft_dir = tmp_path / "web" / draft_id
+    original_files = {p.relative_to(draft_dir): p.read_bytes()
+                      for p in draft_dir.rglob("*") if p.is_file()}
+    duplicate_archive = package_set_archive(apks={
+        "a/split.apk": b"first APK", "b/split.apk": b"second APK",
+    })
+
+    response = client.post(url, headers=HEADERS, content=duplicate_archive)
+
+    assert response.status_code == 400, response.text
+    assert "CORRUPTED_FILE" in response.text
+    current = client.get(f"/api/v1/web/drafts/{draft_id}", headers=HEADERS).json()
+    assert current == draft
+    assert {p.relative_to(draft_dir): p.read_bytes()
+            for p in draft_dir.rglob("*") if p.is_file()} == original_files
+    assert not list(draft_dir.glob("packages.pending.*"))
+    assert not list(draft_dir.glob("upload.pending.*"))
+
+    retry = client.post(url, headers=HEADERS, content=valid_archive)
+    assert retry.status_code == 200, retry.text
+    assert retry.json()["uploaded"] is True
+
+
 def test_single_apk_intake_via_package_set_endpoint(tmp_path: Path):
     """Single APK uploaded via /package-set sets up package_set and input.apk."""
     app = create_app(tmp_path)

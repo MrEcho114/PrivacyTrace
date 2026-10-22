@@ -1,7 +1,7 @@
 """Package set models, AXML split detector, and integrity validation engine.
 
 PT-MOB-102 (Issue #70): Validates base APK presence, package homogeneity,
-version code consistency, split name uniqueness, SHA-256 digests, and size quotas.
+version code consistency, split and file name uniqueness, SHA-256 digests, and size quotas.
 """
 
 from __future__ import annotations
@@ -117,6 +117,7 @@ class PackageSet(Model):
         if self.base.version_code != self.version_code:
             raise ValueError("base version_code does not match package set")
         seen_splits = set()
+        seen_file_names = {self.base.file_name}
         for split in self.splits:
             if split.part != PackagePart.SPLIT:
                 raise ValueError(f"split file '{split.file_name}' must have part=SPLIT")
@@ -131,6 +132,9 @@ class PackageSet(Model):
             if not SPLIT_NAME_REGEX.fullmatch(split.split_name):
                 raise ValueError(f"split name '{split.split_name}' contains invalid characters")
             seen_splits.add(split.split_name)
+            if split.file_name in seen_file_names:
+                raise ValueError(f"duplicate APK file name '{split.file_name}'")
+            seen_file_names.add(split.file_name)
         expected_size = self.base.size_bytes + sum(s.size_bytes for s in self.splits)
         if self.total_size_bytes != expected_size:
             raise ValueError(
@@ -469,9 +473,10 @@ def validate_package_set(
         )
     base = base_files[0]
 
-    # Rule 5, 6, 7: Split Package, VersionCode, and SplitName Uniqueness
+    # Rule 5, 6, 7: Split Package, VersionCode, SplitName and FileName Uniqueness
     splits = [f for f in files if f.part == PackagePart.SPLIT]
     seen_splits = set()
+    seen_file_names = {base.file_name}
     for split in splits:
         if split.package_name != base.package_name:
             raise PackageSetIntegrityError(
@@ -505,6 +510,11 @@ def validate_package_set(
                 f"Duplicate split name '{split.split_name}' in '{split.file_name}'",
             )
         seen_splits.add(split.split_name)
+        if split.file_name in seen_file_names:
+            raise PackageSetIntegrityError(
+                "CORRUPTED_FILE", f"Duplicate APK file name '{split.file_name}'"
+            )
+        seen_file_names.add(split.file_name)
 
     validate_split_dependencies(base.dependencies, {s.split_name: s.dependencies for s in splits})
 

@@ -16,6 +16,14 @@ const javascript = ts.transpileModule(compiled.content, {
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
 }).outputText
 
+// #167: go() indexes the shared workflow step keys, and the component renders
+// frontendCopy/policyStateLine from the real copy module.
+const copyCode = ts.transpileModule(fs.readFileSync(path.join(__dirname, '../src/copy.ts'), 'utf8'), {
+  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+}).outputText
+const copyExports = {}
+vm.runInNewContext(copyCode, { exports: copyExports })
+
 for (const status of ['manual', 'ready']) {
   for (const failedRefresh of [true, false]) {
     test(`${status} source refresh ${failedRefresh ? 'failure preserves candidates' : 'success extracts new text'}`, async () => {
@@ -39,7 +47,9 @@ for (const status of ['manual', 'ready']) {
               return { ...draft, candidates: [{ ...draft.candidates[0], id: 'replacement' }] }
             },
           }
-          if (name === './api' || name === './workflow' || name.endsWith('.vue')) return {}
+          if (name === './workflow') return { steps: ['import', 'candidates', 'progress', 'report'] }
+          if (name === './copy') return copyExports
+          if (name === './api' || name.endsWith('.vue')) return {}
           throw new Error(`Unexpected import: ${name}`)
         },
       }

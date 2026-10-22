@@ -47,6 +47,12 @@ test('legacy summaries and invalid extra fields are preserved for server validat
 const file = path.join(__dirname, '../src/LiveWorkflow.vue')
 const { descriptor } = parse(fs.readFileSync(file, 'utf8'), { filename: file })
 const script = compile(compileScript(descriptor, { id: 'policy-assist-test' }).content)
+
+// #167: go() indexes the shared workflow step keys, and the component renders
+// frontendCopy/policyStateLine from the real copy module.
+const copyCode = compile(fs.readFileSync(path.join(__dirname, '../src/copy.ts'), 'utf8'))
+const copyExports = {}
+vm.runInNewContext(copyCode, { exports: copyExports })
 function harness(api = {}, storage = '') {
   const callbacks = []
   const mounted = []
@@ -63,7 +69,9 @@ function harness(api = {}, storage = '') {
         ...api,
       }
       if (name === './api') return { async loadTaxonomy() { return { data_types: [] } } }
-      if (name === './workflow' || name.endsWith('.vue')) return {}
+      if (name === './workflow') return { steps: ['import', 'candidates', 'progress', 'report'] }
+      if (name === './copy') return copyExports
+      if (name.endsWith('.vue')) return {}
       throw new Error(name)
     } }
   vm.runInNewContext(script, context, { filename: file })

@@ -53,6 +53,17 @@ const sdkEvidenceCode = ts.transpileModule(
 const sdkEvidenceExports: Record<string, unknown> = {}
 vm.runInNewContext(sdkEvidenceCode, { exports: sdkEvidenceExports })
 
+// #167: App.vue takes the report title and the unified policy state line from
+// the copy module; compile the real module instead of stubbing its text.
+const copyCode = ts.transpileModule(
+  fs.readFileSync(path.join(__dirname, '../src/copy.ts'), 'utf8'),
+  { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } },
+).outputText
+const copyExports: Record<string, unknown> = {}
+vm.runInNewContext(copyCode, { exports: copyExports })
+assert.ok(copyExports.frontendCopy, 'copyExports must export frontendCopy')
+assert.equal(typeof copyExports.policyStateLine, 'function', 'copyExports must export policyStateLine')
+
 const templateCode = compileTemplate({
   source: descriptor.template.content,
   filename: file,
@@ -89,6 +100,7 @@ function mount(jobs: Array<{ id: string; state: string }> = [], fixture: Record<
     require: (name: string) => {
       if (name === './api') return api
       if (name === './types') return typesExports
+      if (name === './copy') return copyExports
       if (name === './workflow') return { sourceStatusLabels: typesExports.sourceStatusLabels }
       if (name === './sdkEvidence') return sdkEvidenceExports
       // Component imports are used by the template/render path, not by setup();

@@ -135,6 +135,9 @@ mark { background: var(--notice); color: var(--ink); }
   font-size: 0.8125rem; line-height: 1.5;
 }
 .workbench .flow-nav button[aria-current] { border-left-color: var(--pt-structure); color: var(--pt-ink); font-weight: 700; }
+/* CJK labels wrap on narrow screens; balance the lines so a lone trailing
+   character never orphans (ui-ux-pro-max: orphan heading line balance). */
+.workbench .flow-step-name { text-wrap: balance; }
 .workbench .flow-nav button:disabled { color: var(--pt-muted); cursor: not-allowed; }
 .workbench .flow-nav button:disabled .flow-step-number { border-style: dashed; }
 .workbench .flow-step-number {
@@ -154,6 +157,7 @@ mark { background: var(--notice); color: var(--ink); }
 .workbench .workspace-content .page-heading h1 {
   font-family: var(--pt-font-display); font-size: var(--pt-type-report);
   line-height: 1.25; font-weight: 600; letter-spacing: 0; margin: 0 0 10px;
+  text-wrap: balance;
 }
 .workbench .workspace-content .page-heading p { color: var(--pt-muted); font-size: var(--pt-type-reading); line-height: 1.7; max-width: 70ch; margin: 0; }
 .workbench .page .panel-heading h2 { font-family: var(--pt-font-body); font-size: var(--pt-type-panel); font-weight: 700; line-height: 1.4; letter-spacing: 0; }

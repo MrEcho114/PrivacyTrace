@@ -16,6 +16,14 @@ const javascript = ts.transpileModule(compiled.content, {
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
 }).outputText
 
+// #167: the report reads its heading, table labels and unified source state
+// from the real copy module; the old mock only knew the deleted legacy keys.
+const copyCode = ts.transpileModule(fs.readFileSync(path.join(__dirname, '../src/copy.ts'), 'utf8'), {
+  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+}).outputText
+const copyExports = {}
+vm.runInNewContext(copyCode, { exports: copyExports })
+
 const exampleRows = [
   { id: 'host-row', type: '位置信息', source: 'host', signal: '', status: '', tone: 'success', explanation: '', locator: '', code: '', quote: '' },
   { id: 'sdk-row', type: '设备标识', source: 'sdk', signal: '', status: '', tone: 'wait', explanation: '', locator: '', code: '', quote: '' },
@@ -31,7 +39,7 @@ function mount() {
     exports: {},
     require: name => {
       if (name === '../components/UiButton.vue' || name === '../components/StatusTag.vue') return { default: {} }
-      if (name === '../copy') return { copy: { viewEvidence: '查看依据', close: '关闭' } }
+      if (name === '../copy') return copyExports
       if (name === '../workflow') return { exampleRows, exampleSources }
       if (name === 'vue') return { ...vue, onMounted() {}, onBeforeUnmount() {} }
       throw new Error(`Unexpected import: ${name}`)

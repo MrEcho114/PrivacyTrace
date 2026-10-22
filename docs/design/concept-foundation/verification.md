@@ -48,7 +48,7 @@
 
 ### 命令与结果
 
-记录来源：`docs/acceptance/issue165/20261022.md` 与 `docs/acceptance/issue165/copy-contract.json`。验收对象为产品代码 `cdbb2d5`（含 merge `origin/main` `e17d2e3` 后的移动轮询与视觉/标准审阅修复）；此后只提交验收记录与截图，不再改 `apps/web/src`。`copy-contract.json` 在干净工作树运行，记录 `dirty=false`。
+记录来源：`docs/acceptance/issue165/20261022.md` 与 `docs/acceptance/issue165/copy-contract.json`。验收对象为产品代码 `cdbb2d5`（含 merge `origin/main` `e17d2e3` 后的移动轮询与视觉/标准审阅修复）；此后只提交验收记录与截图，不再改 `apps/web/src`。`copy-contract.json` 在干净工作树运行，记录 `commit=639eee1`、`dirty=false`；`639eee1` 只比 `cdbb2d5` 多文档提交，产品代码一致。
 
 | 命令 | 结果 | 关键计数 | 证据 |
 | --- | --- | --- | --- |

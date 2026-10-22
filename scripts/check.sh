@@ -38,10 +38,11 @@ if [[ "${PRIVACYTRACE_DOCKER_TESTS:-0}" == "1" ]]; then
 from pathlib import Path
 import subprocess
 from privacytrace.isolated_scan import docker_prefix
+from privacytrace.wsl import wsl_distro
 prefix = docker_prefix()
 root = str(Path.cwd())
 if prefix[0].lower().endswith("wsl.exe"):
-    root = subprocess.check_output(["wsl.exe", "-d", "Ubuntu-24.04", "--exec", "wslpath", "-a", root], text=True).strip()
+    root = subprocess.check_output(["wsl.exe", "-d", wsl_distro(), "--exec", "wslpath", "-a", root], text=True).strip()
 subprocess.run(prefix + ["build", "--file", root + "/apps/api/worker.Dockerfile", "--tag", "privacytrace-worker:s1", root], check=True)
 PY
 fi

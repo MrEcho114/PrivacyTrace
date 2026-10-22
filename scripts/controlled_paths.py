@@ -4,6 +4,8 @@ import os
 import subprocess
 from pathlib import Path
 
+from privacytrace.wsl import wsl_distro
+
 
 def output_user():
     """Let an unprivileged Linux caller write its own bind-mounted output."""
@@ -16,7 +18,7 @@ def daemon_path(path):
     path = Path(path).absolute()
     if os.name == "nt":
         return subprocess.check_output(
-            ["wsl.exe", "-d", "Ubuntu-24.04", "--exec", "wslpath", "-a", str(path)],
+            ["wsl.exe", "-d", wsl_distro(), "--exec", "wslpath", "-a", str(path)],
             text=True,
         ).strip()
     return str(path)

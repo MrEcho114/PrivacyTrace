@@ -15,7 +15,7 @@
 
 ## 可重复构建
 
-在仓库根目录执行。需要 Python/uv、本地 Docker，以及 Windows 上现有的 Ubuntu-24.04 WSL daemon；不切换远端 Docker，不修改全局配置。
+在仓库根目录执行。需要 Python/uv、本地 Docker，以及 Windows 上现有的 WSL daemon（默认发行版名 `Ubuntu-24.04`，用 `PRIVACYTRACE_WSL_DISTRO` 指定实际名称）；不切换远端 Docker，不修改全局配置。
 
 ```powershell
 uv sync --project apps/api --locked --extra worker
@@ -34,8 +34,10 @@ uv run --project apps/api --locked --extra worker python scripts/build-controlle
 uv run --project apps/api --locked --extra worker python -m privacytrace.controlled --features benchmarks/controlled/features/C02.json --artifacts tmp/build-a --store-dir tmp/c02/jobs
 
 # 构建既有隔离 worker（Windows；Linux 可直接 docker build）
-$taskRoot = (wsl.exe -d Ubuntu-24.04 --exec wslpath -a $PWD.Path).Trim()
-wsl.exe -d Ubuntu-24.04 --exec docker build -f "$taskRoot/apps/api/worker.Dockerfile" -t privacytrace-worker:s1 $taskRoot
+# 发行版名与 API 使用同一个变量；下面的示例值对应该主机的主发行版
+$distro = if ($env:PRIVACYTRACE_WSL_DISTRO) { $env:PRIVACYTRACE_WSL_DISTRO } else { 'Ubuntu-24.04' }
+$taskRoot = (wsl.exe -d $distro --exec wslpath -a $PWD.Path).Trim()
+wsl.exe -d $distro --exec docker build -f "$taskRoot/apps/api/worker.Dockerfile" -t privacytrace-worker:s1 $taskRoot
 
 # 全六场景，先执行 C02/C06；输出目录须不存在
 uv run --project apps/api --locked --extra worker python -m privacytrace.benchmark run --artifacts tmp/build-a --output tmp/evaluation

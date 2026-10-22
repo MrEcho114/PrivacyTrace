@@ -21,7 +21,10 @@ const { chromium } = require('playwright')
 const { spawnOptions, stopChildren } = require('./lib/process-control.cjs')
 
 const root = path.resolve(__dirname, '..')
-const evidenceDir = path.join(root, 'docs/acceptance/issue144/round2')
+// #165: the #144 round-2 screenshots under docs/acceptance/issue144 are historical
+// evidence and keep their original SHA/state. Re-runs write to tmp/ instead; the
+// #165 acceptance record references the new captures from docs/acceptance/issue165.
+const evidenceDir = path.join(root, 'tmp/issue144-round2/evidence')
 fs.mkdirSync(evidenceDir, { recursive: true })
 const sourceSha = execFileSync('git', ['rev-parse', '--short=12', 'HEAD'], { cwd: root }).toString().trim()
 const capturedAt = new Date().toISOString()
@@ -236,7 +239,7 @@ async function selectAndPrepare(page) {
   await page.getByRole('button', { name: '选择应用并上传', exact: true }).click()
   await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
   await page.getByRole('button', { name: '自动准备政策并继续', exact: true }).click()
-  await waitTitle(page, '检查政策候选', 12000)
+  await waitTitle(page, '核对政策声明', 12000)
 }
 
 async function openEvidenceSheet(page) {
@@ -314,6 +317,8 @@ async function main() {
         actionbarBottom: actionbar ? Math.round(actionbar.getBoundingClientRect().bottom) : 0,
         primaryHeight: primary ? Math.round(primary.getBoundingClientRect().height) : 0,
         primaryDisabled: primary ? primary.disabled : null,
+        primaryActions: actionbar ? actionbar.querySelectorAll('.ui-button.primary').length : 0,
+        prepareDisabled: actionbar ? [...actionbar.querySelectorAll('.ui-button')].every(button => button.disabled) : null,
         viewport, theme,
         appbarColor: getComputedStyle(appbar).backgroundColor,
         shellHeight: Math.round(document.querySelector('.mobile-workspace').getBoundingClientRect().height),
@@ -334,19 +339,24 @@ async function main() {
     assert.deepEqual(frame.settingsSize, [48, 48], `settings icon button must be 48x48 (got ${frame.settingsSize.join('x')})`)
     assert.equal(frame.actionbarPosition, 'fixed', 'the action bar must be fixed to the viewport bottom')
     assert.ok(Math.abs(frame.actionbarBottom - 844) <= 1, `action bar must sit on the bottom edge (bottom ${frame.actionbarBottom})`)
-    assert.ok(frame.primaryHeight >= 48, `primary action must be at least 48px tall (got ${frame.primaryHeight})`)
-    assert.equal(frame.primaryDisabled, true, 'the import primary action waits for a material')
+    // #165: before any material is chosen the action bar keeps no red primary at
+    // all (the prepare action turns primary only when it can act). The guard
+    // therefore pins "no primary in the empty state" and checks the actionable
+    // primary's size in the selected state below.
+    assert.equal(frame.primaryActions, 0, 'no red primary action before a material is selected')
+    assert.equal(frame.primaryDisabled, null, 'the empty state keeps no primary action to disable')
+    assert.equal(frame.prepareDisabled, true, 'the import action bar waits for a material')
     assert.match(frame.viewport, /viewport-fit=cover/, 'viewport meta must opt into safe-area insets')
     assert.match(frame.viewport, /interactive-widget=resizes-content/, 'viewport meta must resize for the soft keyboard')
     assert.doesNotMatch(frame.viewport, /user-scalable=no|maximum-scale=1/, 'zoom must stay available')
-    assert.equal(frame.theme, '#fdfcfa', 'theme-color must match the app bar')
-    assert.equal(frame.appbarColor, 'rgb(253, 252, 250)', 'app bar must use --surface')
+    assert.equal(frame.theme, '#ece5d6', 'theme-color must match the adopted #165 cream app bar (--pt-header)')
+    assert.equal(frame.appbarColor, 'rgb(236, 229, 214)', 'app bar must use --pt-header with the four-colour identity band')
     assert.ok(frame.shellHeight >= 844, `shell must fill 100dvh (got ${frame.shellHeight})`)
     assert.equal(frame.skip, true, 'the shell must keep the skip link')
     assert.equal(frame.navLabel, '创建流程', 'the step rail must be a labelled navigation landmark')
     assert.equal(frame.actionbarLabel, '当前步骤操作', 'the fixed action bar must expose a group label')
     assert.equal(frame.titleOutline, 'none', 'programmatic title focus must not paint a control-like focus ring')
-    await assertSingleTitle(page, '应用与政策', 'import/empty')
+    await assertSingleTitle(page, 'APK 与政策材料', 'import/empty')
     await assertNoPageOverflow(page, 'import/empty/390')
     await shot(page, '390-import-empty.png', { scenario: 'import', state: 'no material selected' })
     checks.push('390x844 shell: 56px serif app bar, one-row 4-step rail, fixed 64px action bar, 48px targets, 100dvh, viewport/theme/zoom contract')
@@ -354,7 +364,16 @@ async function main() {
     // ---- import selected ---------------------------------------------------
     await page.getByRole('button', { name: '选择应用并上传', exact: true }).click()
     await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
-    await assertSingleTitle(page, '应用与政策', 'import/selected')
+    await assertSingleTitle(page, 'APK 与政策材料', 'import/selected')
+    const selectedFrame = await page.evaluate(() => {
+      const primaries = [...document.querySelectorAll('.m-actionbar .ui-button.primary')]
+      const primary = primaries[0]
+      return primary ? { count: primaries.length, height: Math.round(primary.getBoundingClientRect().height), disabled: primary.disabled } : null
+    })
+    assert.ok(selectedFrame, 'the actionable import state must expose one red primary action')
+    assert.equal(selectedFrame.count, 1, 'exactly one red primary action in the action bar')
+    assert.ok(selectedFrame.height >= 48, `the actionable primary must be at least 48px tall (got ${selectedFrame.height})`)
+    assert.equal(selectedFrame.disabled, false, 'the actionable primary must be enabled once a material is selected')
     assert.equal(await page.evaluate(() => document.querySelectorAll('.m-source-row').length), 2, 'both policy sources must render as collapsible rows')
     assert.equal(await page.evaluate(() => document.querySelectorAll('.m-steps button[disabled]').length), 2, 'candidates becomes reachable, progress/report stay disabled')
     await assertNoPageOverflow(page, 'import/selected/390')
@@ -379,7 +398,9 @@ async function main() {
         close: dialog.querySelector('.ui-sheet-close')?.getAttribute('aria-label'),
         scrollable: getComputedStyle(body).overflowY === 'auto' && getComputedStyle(body).overscrollBehavior === 'contain',
         focusInside: Boolean(document.activeElement?.closest('dialog.ui-sheet.m-settings-dialog')),
-        sections: dialog.querySelectorAll('.m-settings-section').length,
+        // #167 de-duplicated the repeated evidence-boundary section; the sheet now
+        // carries exactly the model and the material/storage facts.
+        sections: [...dialog.querySelectorAll('.m-settings-section h2')].map(heading => heading.textContent?.trim()),
       }
     })
     assert.equal(settingsState.detail, true, 'settings must use the page-like full-screen sheet variant')
@@ -388,7 +409,7 @@ async function main() {
     assert.equal(settingsState.close, '关闭', 'settings close control must be labelled 关闭')
     assert.equal(settingsState.scrollable, true, 'settings body must scroll')
     assert.equal(settingsState.focusInside, true, 'settings focus must move into the dialog')
-    assert.equal(settingsState.sections, 3, 'settings must keep the model/material/evidence sections')
+    assert.deepEqual(settingsState.sections, ['模型连接', '材料与存储'], 'settings must keep the model and material/storage sections once each')
     await assertNoPageOverflow(page, 'settings/390')
     await shot(page, '390-settings.png', { scenario: 'settings', state: 'page-like full-screen dialog' })
     await page.keyboard.press('Escape')
@@ -400,13 +421,13 @@ async function main() {
     await settings.waitFor()
     await hardwareBack(page)
     assert.equal(await settings.count(), 0, 'hardware back must close the settings dialog first')
-    await waitTitle(page, '应用与政策')
+    await waitTitle(page, 'APK 与政策材料')
     checks.push('settings: full-screen page-like sheet, scroll body, Escape/hardware back close, focus returns to trigger')
 
     // ---- candidates --------------------------------------------------------
     await page.getByRole('button', { name: '自动准备政策并继续', exact: true }).click()
-    await waitTitle(page, '检查政策候选', 12000)
-    await assertSingleTitle(page, '检查政策候选', 'candidates')
+    await waitTitle(page, '核对政策声明', 12000)
+    await assertSingleTitle(page, '核对政策声明', 'candidates')
     assert.equal(await page.evaluate(() => Boolean(document.querySelector('.m-context'))), true, 'candidates must show the compact material context row')
     assert.equal(await page.evaluate(() => document.querySelector('.m-context').textContent.includes('材料版本')), true, 'context row must show the material revision')
     assert.equal(await page.evaluate(() => document.querySelectorAll('.flow-footer').length), 0, 'the candidate page footer must be gone inside the shell')
@@ -447,11 +468,11 @@ async function main() {
     await page.evaluate(() => window.scrollTo(0, 320))
     await page.waitForTimeout(150)
     await hardwareBack(page)
-    await waitTitle(page, '应用与政策')
+    await waitTitle(page, 'APK 与政策材料')
     assert.equal(await focusedTitle(page), true, 'hardware back must focus the app bar title')
     await page.evaluate(() => history.forward())
     await page.waitForTimeout(400)
-    await waitTitle(page, '检查政策候选')
+    await waitTitle(page, '核对政策声明')
     const restored = await page.evaluate(() => Math.round(scrollY))
     assert.ok(Math.abs(restored - 320) <= 4, `forward navigation must restore the candidates scroll position (got ${restored})`)
     assert.equal(await focusedTitle(page), true, 'forward navigation must focus the app bar title')
@@ -459,8 +480,11 @@ async function main() {
 
     // ---- progress + polling stability -------------------------------------
     await page.getByRole('button', { name: '保存候选并开始分析', exact: true }).click()
-    await waitTitle(page, '分析进度', 12000)
-    await page.getByText('静态扫描', { exact: false }).first().waitFor({ timeout: 8000 })
+    await waitTitle(page, '扫描与对照进度', 12000)
+    // The real mobile flow records discrete server stages: the first automatic
+    // poll is 10s after the start (FIRST_POLL_MS), so wait for that poll instead
+    // of a static fake stage list.
+    await page.getByText('隔离扫描 APK', { exact: false }).first().waitFor({ timeout: 20000 })
     const progress = await page.evaluate(() => ({
       context: Boolean(document.querySelector('.m-context')),
       dots: document.querySelectorAll('.m-timeline-dot').length,
@@ -476,18 +500,21 @@ async function main() {
     // Polling must not move the reader or steal focus.
     await page.evaluate(() => window.scrollTo(0, 0))
     await page.getByRole('button', { name: '服务与存储设置' }).focus()
-    await page.waitForFunction(() => [...document.querySelectorAll('.m-actionbar .ui-button')].some(button => button.textContent.includes('查看报告')), null, { timeout: 10000 })
+    // The second automatic poll (25s interval, +jitter) reaches SUCCEEDED and
+    // exposes the report action; wait for the real polling contract, not a
+    // static control, then assert it moved neither scroll nor focus.
+    await page.waitForFunction(() => [...document.querySelectorAll('.m-actionbar .ui-button')].some(button => button.textContent.includes('查看报告')), null, { timeout: 45000 })
     assert.equal(await page.evaluate(() => Math.round(scrollY)), 0, 'data polling must not reset the scroll position')
     assert.equal(await focusedMeta(page), '服务与存储设置', 'data polling must not steal focus')
     checks.push('progress: timeline/status semantics; automatic polling keeps scroll and focus')
 
     // hardware back progress -> candidates, forward, then open the report
     await hardwareBack(page)
-    await waitTitle(page, '检查政策候选')
+    await waitTitle(page, '核对政策声明')
     await page.evaluate(() => history.forward())
-    await waitTitle(page, '分析进度')
+    await waitTitle(page, '扫描与对照进度')
     await page.getByRole('button', { name: '查看报告', exact: true }).click()
-    await waitTitle(page, '对照报告', 12000)
+    await waitTitle(page, 'APP 隐私收集越权报告', 12000)
     const reportState = await page.evaluate(() => ({
       actionbar: Boolean(document.querySelector('.m-actionbar')),
       rows: document.querySelectorAll('.m-issue-list .evidence-button').length,
@@ -501,14 +528,21 @@ async function main() {
     await assertNoPageOverflow(page, 'report/390')
     checks.push(await assertTouchTargets(page, 'report/390'))
     await shot(page, '390-report.png', { scenario: 'report', state: 'PARTIAL coverage, issue list, evidence entry points' })
-    // The provenance disclosure keeps the UNKNOWN/UNREVIEWED facts, on demand.
+    // The provenance disclosure keeps the unified source-state facts, on demand:
+    // #167 replaced the raw UNREVIEWED/NOT_CHECKED labels with the canonical line,
+    // and missing facts stay unknown rather than being promoted to reviewed.
     const summary = page.locator('.provenance > summary').first()
     await summary.scrollIntoViewIfNeeded()
     await page.waitForTimeout(150)
     await summary.click()
     await page.waitForTimeout(150)
-    assert.equal(await page.evaluate(() => document.body.innerText.includes('UNREVIEWED') && document.body.innerText.includes('NOT_CHECKED')), true, 'expanded provenance must keep UNREVIEWED and 附件 NOT_CHECKED facts')
-    checks.push('report: PARTIAL coverage visible; UNREVIEWED/NOT_CHECKED facts stay in the expandable provenance section')
+    const provenanceText = await page.locator('.provenance').innerText()
+    assert.ok(provenanceText.includes('来源未复核'), 'expanded provenance must keep the 来源未复核 fact')
+    assert.ok(provenanceText.includes('附件未检查'), 'expanded provenance must keep the 附件未检查 fact')
+    assert.ok(provenanceText.includes('正文不完整'), 'expanded provenance must map PARTIAL completeness to 正文不完整')
+    assert.ok(provenanceText.includes('提取 PARTIAL'), 'expanded provenance must keep the extraction status as a separate fact')
+    assert.ok(!provenanceText.includes('来源已复核'), 'a PARTIAL extraction must never be promoted to 来源已复核')
+    checks.push('report: PARTIAL coverage visible; 来源未复核/正文完整度未知/附件未检查 facts stay in the expandable provenance section')
 
     // ---- evidence bottom sheet --------------------------------------------
     const { trigger, before } = await openEvidenceSheet(page)
@@ -572,29 +606,29 @@ async function main() {
     await page.locator('dialog.ui-sheet.m-evidence-sheet').waitFor()
     await hardwareBack(page)
     assert.equal(await page.locator('dialog.ui-sheet.m-evidence-sheet').count(), 0, 'hardware back must close the evidence sheet first')
-    await waitTitle(page, '对照报告')
+    await waitTitle(page, 'APP 隐私收集越权报告')
     await hardwareBack(page)
-    await waitTitle(page, '分析进度')
+    await waitTitle(page, '扫描与对照进度')
     checks.push('evidence sheet: scrim/handle/close, focus in and back to trigger, exact scroll restore, Escape + hardware back close it before stepping')
 
     // ---- in-app back arrow: report -> progress ----------------------------
     await page.getByRole('button', { name: '查看报告', exact: true }).click()
-    await waitTitle(page, '对照报告')
+    await waitTitle(page, 'APP 隐私收集越权报告')
     await page.getByRole('button', { name: '返回上一步' }).click()
-    await waitTitle(page, '分析进度')
+    await waitTitle(page, '扫描与对照进度')
     assert.equal(await focusedTitle(page), true, 'the in-app back arrow must focus the page title')
     checks.push('in-app back arrow: report -> progress with title focus')
 
     // ---- 320x568 ----------------------------------------------------------
     await page.setViewportSize({ width: 320, height: 568 })
     await page.evaluate(() => window.scrollTo(0, 0))
-    await page.getByRole('button', { name: '更换', exact: true }).click()
-    await waitTitle(page, '应用与政策')
+    await page.getByRole('button', { name: '更换材料', exact: true }).click()
+    await waitTitle(page, 'APK 与政策材料')
     await page.evaluate(() => window.scrollTo(0, 0))
     await assertNoPageOverflow(page, 'import/320')
     await shot(page, '320-import.png', { scenario: 'import', state: '320px narrowest boundary with selected material' })
-    await page.getByRole('button', { name: '候选', exact: true }).click()
-    await waitTitle(page, '检查政策候选')
+    await page.getByRole('button', { name: '核对政策声明', exact: true }).click()
+    await waitTitle(page, '核对政策声明')
     const rail320 = await page.evaluate(() => {
       const buttons = [...document.querySelectorAll('.m-steps button')]
       return { rows: new Set(buttons.map(button => Math.round(button.getBoundingClientRect().top))).size, scroll: document.documentElement.scrollWidth }
@@ -602,39 +636,39 @@ async function main() {
     assert.equal(rail320.rows, 1, 'the step rail must stay one row at 320px')
     await assertNoPageOverflow(page, 'candidates/320')
     await shot(page, '320-candidates.png', { scenario: 'candidates', state: '320px segmented control and list rows' })
-    await page.getByRole('button', { name: '进度', exact: true }).click()
-    await waitTitle(page, '分析进度')
+    await page.getByRole('button', { name: '扫描与对照进度', exact: true }).click()
+    await waitTitle(page, '扫描与对照进度')
     await assertNoPageOverflow(page, 'progress/320')
     await shot(page, '320-progress.png', { scenario: 'progress', state: '320px timeline' })
-    await page.getByRole('button', { name: '报告', exact: true }).click()
-    await waitTitle(page, '对照报告')
+    await page.getByRole('button', { name: '对照报告', exact: true }).click()
+    await waitTitle(page, 'APP 隐私收集越权报告')
     await assertNoPageOverflow(page, 'report/320')
     await shot(page, '320-report.png', { scenario: 'report', state: '320px report cards' })
     checks.push('320x568: one-row rail + import/candidates/progress/report without horizontal overflow')
 
     // ---- 768x1024 --------------------------------------------------------
     await page.setViewportSize({ width: 768, height: 1024 })
-    await page.getByRole('button', { name: '导入', exact: true }).click()
-    await waitTitle(page, '应用与政策')
+    await page.getByRole('button', { name: 'APK 与政策材料', exact: true }).click()
+    await waitTitle(page, 'APK 与政策材料')
     await page.evaluate(() => window.scrollTo(0, 0))
     await assertNoPageOverflow(page, 'import/768')
     await shot(page, '768-import.png', { scenario: 'import', state: '768px tablet in the mobile shell' })
-    await page.getByRole('button', { name: '候选', exact: true }).click()
-    await waitTitle(page, '检查政策候选')
+    await page.getByRole('button', { name: '核对政策声明', exact: true }).click()
+    await waitTitle(page, '核对政策声明')
     const segmented768 = await page.evaluate(() => Boolean(document.querySelector('.mobile-panel-tabs')?.getClientRects().length))
     assert.equal(segmented768, true, 'the segmented control must stay visible on a 768px touch tablet')
     await assertNoPageOverflow(page, 'candidates/768')
     await shot(page, '768-candidates.png', { scenario: 'candidates', state: '768px segmented control' })
-    await page.getByRole('button', { name: '报告', exact: true }).click()
-    await waitTitle(page, '对照报告')
+    await page.getByRole('button', { name: '对照报告', exact: true }).click()
+    await waitTitle(page, 'APP 隐私收集越权报告')
     await assertNoPageOverflow(page, 'report/768')
     await shot(page, '768-report.png', { scenario: 'report', state: '768px report' })
     checks.push('768x1024: shell rails stay one row, segmented control stays active, no page overflow')
 
     // ---- 844x390 landscape ----------------------------------------------
     await page.setViewportSize({ width: 844, height: 390 })
-    await page.getByRole('button', { name: '导入', exact: true }).click()
-    await waitTitle(page, '应用与政策')
+    await page.getByRole('button', { name: 'APK 与政策材料', exact: true }).click()
+    await waitTitle(page, 'APK 与政策材料')
     await page.evaluate(() => window.scrollTo(0, 0))
     await assertNoPageOverflow(page, 'import/844x390')
     const landscape = await page.evaluate(() => {
@@ -644,12 +678,12 @@ async function main() {
     assert.equal(landscape.actionbarVisible, true, 'the action bar must stay reachable in landscape')
     assert.ok(landscape.actionbarHeight >= 64, `landscape action bar must keep its 64px minimum (got ${landscape.actionbarHeight})`)
     await shot(page, '844x390-import.png', { scenario: 'import', state: 'phone landscape' })
-    await page.getByRole('button', { name: '候选', exact: true }).click()
-    await waitTitle(page, '检查政策候选')
+    await page.getByRole('button', { name: '核对政策声明', exact: true }).click()
+    await waitTitle(page, '核对政策声明')
     await assertNoPageOverflow(page, 'candidates/844x390')
     await shot(page, '844x390-candidates.png', { scenario: 'candidates', state: 'phone landscape segmented control' })
-    await page.getByRole('button', { name: '报告', exact: true }).click()
-    await waitTitle(page, '对照报告')
+    await page.getByRole('button', { name: '对照报告', exact: true }).click()
+    await waitTitle(page, 'APP 隐私收集越权报告')
     await assertNoPageOverflow(page, 'report/844x390')
     await shot(page, '844x390-report.png', { scenario: 'report', state: 'phone landscape report' })
     checks.push('844x390 landscape: safe-area shell, one-row rail, fixed 64px action bar, no horizontal overflow')
@@ -657,8 +691,8 @@ async function main() {
     // ---- 200% root font --------------------------------------------------
     await page.setViewportSize({ width: 390, height: 844 })
     await page.evaluate(() => { document.documentElement.style.fontSize = '32px' })
-    await page.getByRole('button', { name: '导入', exact: true }).click()
-    await waitTitle(page, '应用与政策')
+    await page.getByRole('button', { name: 'APK 与政策材料', exact: true }).click()
+    await waitTitle(page, 'APK 与政策材料')
     await page.evaluate(() => window.scrollTo(0, 0))
     const largeText = await page.evaluate(() => {
       const bar = document.querySelector('.m-actionbar')
@@ -669,20 +703,20 @@ async function main() {
     assert.ok(largeText.padding >= largeText.bar + 16, `the content must reserve the grown action bar (padding ${largeText.padding}, bar ${largeText.bar})`)
     await assertNoPageOverflow(page, 'import/200%')
     await shot(page, '390-import-200.png', { scenario: 'import', state: '200% root font (system text scaling), selected material' })
-    await page.getByRole('button', { name: '候选', exact: true }).click()
-    await waitTitle(page, '检查政策候选')
+    await page.getByRole('button', { name: '核对政策声明', exact: true }).click()
+    await waitTitle(page, '核对政策声明')
     await assertNoPageOverflow(page, 'candidates/200%')
     await shot(page, '390-candidates-200.png', { scenario: 'candidates', state: '200% root font segmented control and rows' })
-    await page.getByRole('button', { name: '报告', exact: true }).click()
-    await waitTitle(page, '对照报告')
+    await page.getByRole('button', { name: '对照报告', exact: true }).click()
+    await waitTitle(page, 'APP 隐私收集越权报告')
     await assertNoPageOverflow(page, 'report/200%')
     await shot(page, '390-report-200.png', { scenario: 'report', state: '200% root font report cards and evidence rows' })
     await page.evaluate(() => { document.documentElement.style.fontSize = '' })
     checks.push('200% root font: import/candidates/report stay inside 390x844 without horizontal overflow')
 
     // ---- simulated soft keyboard ----------------------------------------
-    await page.getByRole('button', { name: '候选', exact: true }).click()
-    await waitTitle(page, '检查政策候选')
+    await page.getByRole('button', { name: '核对政策声明', exact: true }).click()
+    await waitTitle(page, '核对政策声明')
     await page.locator('#candidate-quote').focus()
     const keyboard = await page.evaluate(async () => {
       const viewport = window.visualViewport
@@ -756,8 +790,10 @@ async function main() {
     await failPage.goto(origin)
     await selectAndPrepare(failPage)
     await failPage.getByRole('button', { name: '保存候选并开始分析', exact: true }).click()
-    await waitTitle(failPage, '分析进度', 12000)
-    await failPage.getByText('本次分析未完成', { exact: false }).first().waitFor({ timeout: 10000 })
+    await waitTitle(failPage, '扫描与对照进度', 12000)
+    // The first automatic poll is 10s after start; the mocked bridge reports the
+    // failure on that poll. Wait for the real poll instead of a static banner.
+    await failPage.getByText('本次分析未完成', { exact: false }).first().waitFor({ timeout: 20000 })
     const failure = await failPage.evaluate(() => ({
       alert: Boolean(document.querySelector('.m-status-card [role="alert"]')),
       retry: [...document.querySelectorAll('.m-actionbar .ui-button')].some(button => button.textContent.includes('重试为新的分析')),
@@ -810,7 +846,7 @@ async function main() {
 
     console.log('Issue #144 round-2 mobile shell passed (Chromium simulation, mocked native bridge):')
     for (const check of checks) console.log('  - ' + check)
-    console.log(`\n${captions.length} screenshots + walkthrough written to docs/acceptance/issue144/round2/`)
+    console.log(`\n${captions.length} screenshots + walkthrough written to tmp/issue144-round2/evidence/ (the historical #144 record under docs/acceptance/issue144 is unchanged)`)
     console.log(`source SHA ${sourceSha}; Android device items NOT_RUN.`)
   } finally {
     await browser?.close()

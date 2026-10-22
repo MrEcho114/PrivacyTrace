@@ -222,6 +222,33 @@ async function main() {
     await page.goto(origin)
     await page.getByRole('button', { name: '选择应用并上传', exact: true }).click()
     await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
+    // #169 mobile brand slot: the import step shows the same-origin symbol in the
+    // 48x48 app-bar slot (no letter placeholder); later steps keep the back button.
+    const mobileBrand = await page.evaluate(async () => {
+      const slot = document.querySelector('.m-appbar-brand')
+      const image = slot?.querySelector('img.brand-mark-image')
+      if (!image) return null
+      let decoded = false
+      try { await image.decode(); decoded = true } catch {}
+      const rect = image.getBoundingClientRect()
+      return {
+        complete: image.complete, currentSrc: image.currentSrc,
+        naturalWidth: image.naturalWidth, naturalHeight: image.naturalHeight,
+        width: Math.round(rect.width), height: Math.round(rect.height),
+        slotText: (slot.textContent || '').trim(), decoded,
+      }
+    })
+    assert.ok(mobileBrand, 'mobile import must render the brand slot')
+    assert.equal(mobileBrand.complete, true, 'mobile brand image must finish loading')
+    assert.ok(mobileBrand.currentSrc.endsWith('/brand/privacy-trace-symbol.svg'), `mobile brand must resolve the same-origin symbol (got ${mobileBrand.currentSrc})`)
+    assert.ok(mobileBrand.naturalWidth > 0 && mobileBrand.naturalHeight > 0, 'mobile brand image must decode to real pixels')
+    assert.ok(mobileBrand.width > 0 && mobileBrand.height > 0, 'mobile brand slot renders a positive box')
+    assert.equal(mobileBrand.slotText, '', 'mobile brand slot must not keep a letter placeholder')
+    assert.equal(mobileBrand.decoded, true, 'mobile brand img.decode() must resolve')
+    const mobileSymbol = await page.request.get(origin + '/brand/privacy-trace-symbol.svg')
+    assert.equal(mobileSymbol.status(), 200, 'the mobile shell must load the same-origin brand symbol')
+    assert.ok((await mobileSymbol.body()).toString('utf8').includes('<svg'), 'the brand symbol must be SVG markup')
+    checks.push('brand: mobile import slot decodes the same-origin symbol with no letter placeholder')
     for (const width of [320, 390, 768]) {
       await page.setViewportSize({ width, height: 844 })
       await page.evaluate(() => document.fonts.ready)
@@ -256,7 +283,9 @@ async function main() {
     checks.push('import: 200% root font keeps 320/390 free of page overflow with the model fields open')
     await page.setViewportSize({ width: 390, height: 844 })
     await page.getByRole('button', { name: '自动准备政策并继续', exact: true }).click()
-    await waitTitle(page, '检查政策候选', 12000)
+    await waitTitle(page, '核对政策声明', 12000)
+    assert.equal(await page.locator('.m-appbar-brand').count(), 0, 'non-import steps replace the brand slot with the back button')
+    assert.equal(await page.getByRole('button', { name: '返回上一步' }).count(), 1, 'non-import steps keep the back arrow')
     assert.equal(await page.evaluate(() => document.querySelectorAll('.mobile-panel-tabs button').length), 2, 'candidates: Android segmented control must render')
     await page.locator('.source-tabs button').nth(1).click()
     await page.getByRole('tab', { name: '政策原文', exact: true }).click()
@@ -320,10 +349,10 @@ async function main() {
     assert.ok(Math.abs(reset.barBottom - 844) <= 1, 'the action bar must return to the bottom edge')
     checks.push('soft keyboard: --keyboard-inset reserves the IME height, lifts the action bar, keeps the field reachable, releases on close')
     await page.getByRole('button', { name: '保存候选并开始分析', exact: true }).click()
-    await waitTitle(page, '分析进度', 12000)
+    await waitTitle(page, '扫描与对照进度', 12000)
     await page.getByRole('button', { name: '查看报告', exact: true }).waitFor({ timeout: 12000 })
     await page.getByRole('button', { name: '查看报告', exact: true }).click()
-    await waitTitle(page, '对照报告', 12000)
+    await waitTitle(page, 'APP 隐私收集越权报告', 12000)
     for (const width of [320, 390, 768]) {
       await page.setViewportSize({ width, height: 844 })
       await page.evaluate(() => document.fonts.ready)

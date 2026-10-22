@@ -477,6 +477,7 @@ class WebIntake:
                 )
 
             seen = set()
+            seen_apk_names = set()
             total_uncompressed = 0
             apk_entries = []
 
@@ -516,6 +517,12 @@ class WebIntake:
                     )
 
                 if name.lower().endswith(".apk") and not name.endswith("/"):
+                    file_basename = PurePosixPath(name).name
+                    if file_basename in seen_apk_names:
+                        raise PackageSetIntegrityError(
+                            "CORRUPTED_FILE", "Archive contains duplicate APK file names"
+                        )
+                    seen_apk_names.add(file_basename)
                     apk_entries.append(entry)
 
             if not apk_entries:

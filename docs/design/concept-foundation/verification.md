@@ -41,3 +41,120 @@
 - 完整导入→候选→进度→报告新视觉与#167全站文案接入：留给DS后续开发；既有业务回归通过不表示这些页面已改为本次视觉/文案。
 - 没有合并、部署、发布或关闭原任务；skipped不计入通过。
 - 无新增运行依赖，复用已选Vue/UiButton/UiField/StatusTag和Pioneer本地字体。此次构建的独立设计资产约17.30kB JS / 17.17kB CSS（gzip7.19 / 4.12kB，另有与现有入口共享的Vue/控件chunk）；这不是整站包体差值。
+
+## 2026-10-22 DS 接入
+
+本节记录 `codex/design-integration-165` 本轮把 #165 布局与 #167 文案接进真实业务入口后的实际检查。上面的“已执行”一节只证明设计基座版本，不代替本节。
+
+### 命令与结果
+
+记录来源：`docs/acceptance/issue165/20261022.md` 与 `docs/acceptance/issue165/copy-contract.json`（随守卫同步提交在 `d486d88`）。验收对象为产品代码 `cbf056a` + 守卫同步 `d486d88`；`d486d88` 与后续 `5781ffc`（补品牌截图、微调一个测试）都不含 `apps/web/src` 变更，产品代码与验收时一致。运行时守卫/测试/文档改动尚未提交，`copy-contract.json` 因此记录 `dirty=true`。
+
+| 命令 | 结果 | 关键计数 | 证据 |
+| --- | --- | --- | --- |
+| `npm run test --workspace @privacytrace/web` | PASS | 132/132（126 既有 + 6 copy-contract） | 终端输出 `tests 132 / pass 132 / fail 0` |
+| `PRIVACYTRACE_FRONTEND_URL=http://127.0.0.1:5191 npm run acceptance:frontend` | PASS（exit 0） | frontend-flow：brand 103 项、reports 15 项移动断言；policy-assist：10 项真实 HTTP/UI | `tmp/issue44-ui/verification.json`、`tmp/issue72-policy-assist/verification.json` |
+| `node scripts/verify-copy-contract.cjs`（无 env，自启 dev server） | PASS | 39 checks / 15 条截图记录 | [copy-contract.json](acceptance/issue165/copy-contract.json)、[截图目录](acceptance/issue165/screenshots/) |
+| `PRIVACYTRACE_FRONTEND_URL=http://127.0.0.1:5191 node scripts/verify-issue143-hierarchy.cjs` | PASS | 11 checks | `tmp/issue143-hierarchy/verification.json` |
+| `PRIVACYTRACE_FRONTEND_URL=http://127.0.0.1:5191 node scripts/verify-issue146-motion.cjs` | PASS | 20 checks | `tmp/issue146-motion/verification.json` |
+| `PRIVACYTRACE_FRONTEND_URL=http://127.0.0.1:5191 node scripts/verify-issue145-a11y.cjs` | PASS | 14 checks | `tmp/issue145-a11y/verification.json` |
+| `node scripts/verify-mobile-flow.cjs` | PASS | 13 组（含移动品牌位） | `tmp/issue72-native/walkthrough.json` |
+| `node scripts/verify-mobile-reading.cjs` | PASS | 7 checks / 8 screenshots | `tmp/mobile-reading/verification.json` |
+| `node scripts/verify-frontend-round2.cjs` | PASS | 21 checks / 23 screenshots | `tmp/issue144-round2/evidence/mobile-round2-walkthrough.json` |
+| `node scripts/verify-round2-primitives.cjs` | PASS | 15/15 | 终端输出 |
+| `npm run build && node scripts/verify-design-foundation.cjs` | PASS | 158 checks / 28 screenshots | `tmp/concept-foundation/verification.json` |
+| `node scripts/verify-browser-acceptance.cjs` | PASS（exit 0，TC-01～TC-05 全跑） | 见运行日志 | `tmp/browser-acceptance.log`；`evidence/` 历史 receipt 未被覆盖 |
+| `node scripts/verify-frontend-preview.cjs` | PASS | preview 生命周期/所有权/失败恢复 | `tmp/frontend-preview/verification.json` |
+| `node scripts/verify-live-flow.cjs` | NOT_RUN | 本机无 Docker（`docker` 命令不存在） | 见下方 NOT_RUN |
+| `bash scripts/check.sh`（Git for Windows Bash，在 `5781ffc` 工作区） | PASS（exit 0，末行 `PrivacyTrace checks passed.`） | 含 API pytest、tests/e2e、ruff、schema 导出、品牌资产校验、前端 132/132 单测与构建 | Lead 执行的权威检查输出 |
+
+本节按已提交的验收记录填写，未把 NOT_RUN 写成通过；`acceptance:frontend` 因本机 5184 被其他 worktree 占用，显式复用 5191 受管预览。权威 `bash scripts/check.sh` 由 Lead 在 `5781ffc` 工作区执行并通过，见上表。
+
+### 检查项
+
+| 检查项 | 期望（脚本断言） | 结果 |
+| --- | --- | --- |
+| 单 `#page-title` | 六个面（导入/候选/进度/示例报告/设置/存档）每次恰好一个 `#page-title`，文本来自 `frontendCopy.pageTitles`；同时恰好一个 `h1` | PASS（六个面逐一断言） |
+| 单流程导航 | 恰好一个 `nav.flow-nav`、四个步骤、恰好一个 `aria-current="step"`；旧 `.step-nav` 为 0 | PASS（导入/候选/进度/报告/存档逐一断言） |
+| 五视口（1440 / 1280 / 768 / 390 / 320） | 每个视口无横向滚动；`.report-columns` 在 ≤896px 为 `stacked`、以上为 `columns`；流程条保持一行 | PASS（1440/1280/768/390/320 无横滚；`.report-columns` 与断点一致；流程条单行） |
+| 200% 根文字（320 / 390 视口） | 无横向滚动，红色主操作仍可见 | PASS（390/320 均无横滚，主操作可见） |
+| 单示例标记 | 恰好一个“示例体验 · 固定材料”；已退役标记（固定示例内容 / 示例阶段已切换 / 仅示例有效）为 0 | PASS |
+| 表头与 `data-label` | 对照表表头为 `数据类型` / `证据`，每个单元格都有 `data-label`；已退役的 `依据` / `隐私数据` 不回归 | PASS（旧标签 0 处） |
+| 统一来源状态行 | 导入每个来源、候选来源条、报告来源摘要与实际值展开行都渲染 `来源未复核 · 正文完整度未知 · 附件未检查`，且不出现“已复核” | PASS（三处入口 + 展开的逐来源行） |
+| 单红主操作与对象 | 示例报告恰好一个红色主操作，文案包含当前选中对象；切换条目后对象同步 | PASS（切换后文案变为“设备标识”） |
+| 选择与证据区 | 恰好一个条目为当前选择（`aria-pressed`），其 `aria-controls` 指向唯一证据区；切换后仍只有一个当前项；“返回刚才的操作”把焦点还给触发行 | PASS |
+| 存档嵌入 | 存档页单 h1（本机存档报告）、无当前流程步、嵌入视图不渲染第二品牌栏与第二 hero | PASS（1440/390 无横滚） |
+| 设置弹窗 | 打开后仍只有一个 h1；1440/390 无横向滚动 | PASS |
+| 无业务请求 | 示例流程不调用 scan/report API；存档只读取任务列表；浏览器无页面错误 | PASS（示例流程 ledger 为空；存档请求仅 `/api/v1/jobs`；`pageErrors: []`） |
+
+### 截图
+
+[`docs/acceptance/issue165/screenshots/`](acceptance/issue165/screenshots/) 目录内共 17 张：本节 copy-contract 产出 14 个文件（`copy-contract.json` 记录 15 条，其中 `report-1440.png` 出现两次：一次视口图、一次整页图），另有 3 张 #169 品牌截图（见 #169 节）：
+
+- [import-1440](acceptance/issue165/screenshots/import-1440.png)、[candidates-1440](acceptance/issue165/screenshots/candidates-1440.png)、[progress-1440](acceptance/issue165/screenshots/progress-1440.png)
+- [report-1440](acceptance/issue165/screenshots/report-1440.png)（整页）、[report-1280](acceptance/issue165/screenshots/report-1280.png)、[report-768](acceptance/issue165/screenshots/report-768.png)、[report-390](acceptance/issue165/screenshots/report-390.png)、[report-320](acceptance/issue165/screenshots/report-320.png)
+- [report-390-200](acceptance/issue165/screenshots/report-390-200.png)、[report-320-200](acceptance/issue165/screenshots/report-320-200.png)（200% 根文字）
+- [settings-1440](acceptance/issue165/screenshots/settings-1440.png)、[settings-390](acceptance/issue165/screenshots/settings-390.png)
+- [archive-1440](acceptance/issue165/screenshots/archive-1440.png)、[archive-390](acceptance/issue165/screenshots/archive-390.png)
+
+其他脚本截图位置：`tmp/issue44-ui/screenshots/`、`tmp/concept-foundation/`、`tmp/issue144-round2/evidence/`、`tmp/mobile-reading/`、`tmp/issue72-native/`、`tmp/issue143-hierarchy/`、`tmp/issue145-a11y/`、`tmp/issue146-motion/`、`tmp/issue72-policy-assist/`。`docs/acceptance/issue144/round2/` 为历史证据，本轮未替换。所有截图都是 Chromium 合成示例，不是真机或真实扫描证据。
+
+### 失败与修复记录
+
+- 实现缺陷（已修复并复跑）：`label.text-upload` 在 390px 仍是 44px，Lead 在 `style.css` 的 ≤896px/coarse 媒体块补 48px（`24ee58b`），并给 Reka 传送到 `<body>` 的设置弹窗单独补 48px（`8d63e49`）；`MobileApp.vue` 进度卡硬编码“报告已生成”，改为 `frontendCopy.stages.SUCCEEDED`（`a0ab4db`）。
+- 验收脚本问题（非产品缺陷）：`verify-browser-acceptance` 首次并行运行因端口/时序竞争失败，串行重跑 exit 0，失败日志保留在 `tmp/browser-acceptance.log`；`verify-frontend-preview` 首次运行因 `dev:stop` 与所有权控制面收尾竞争留下孤儿 daemon，人工确认后终止并清理 `tmp/frontend-preview/state.json`，重跑通过；`verify-frontend-round2` 的输出改到 `tmp/issue144-round2/evidence/`，未替换 `docs/acceptance/issue144/round2/` 历史截图。
+- 守卫断言按合同同步：9 个旧浏览器守卫与单测 mock 因四步名/报告名/表头/状态行/证据区结构变化而失效，已按用户采纳的新合同同步，未删除测试面、未放宽行为断言；分类明细见 `20261022.md` §3。品牌 `<img>` 的 `naturalWidth` 口径修正属于守卫问题，不改变产品断言强度。
+
+### NOT_RUN
+
+- 真实 APK / 真实受限 Docker 扫描 / 真实模型服务：`verify-live-flow.cjs` NOT_RUN（本机无 Docker）。
+- Android WebView、真机、真实软键盘 IME、安全区（display cutout）、系统字体缩放、TalkBack：NOT_RUN；移动相关脚本只是 Chromium 模拟。
+- 真实离线导出包（`?presentation=offline` 由导出包写入 meta）：NOT_RUN；离线顶栏断言用 Playwright 注入 meta 模拟。
+- 真实读屏（NVDA/VoiceOver）：NOT_RUN。
+- 合并、发布、部署：未执行，也不在本记录声明范围内。
+
+## #169 品牌接入（2026-10-22）
+
+品牌工作在本分支继续交付：`afaa300`（入库 Concept C 资产并接入 Web 图标）、`286fae1`（三处顶栏品牌位）、`cbf056a`（Android 图标覆盖管线与校验接线）、`5781ffc`（补品牌顶栏截图并静音品牌桩告警）。验收记录见 `docs/acceptance/issue165/20261022.md` §4.3 与 `tmp/brand-assets/verification.json`。本节只记 #169，不回填 #165 的数字。
+
+### 资产与接入事实
+
+- `brand/` 源资产 29 个文件（除 `brand/README.md` 与 `brand/SHA256SUMS` 外），随图标包原字节入库；`brand/SHA256SUMS` 是逐文件清单，`cd brand && sha256sum -c SHA256SUMS` 可复核（本轮未另行执行该命令，见下）。
+- `apps/web/public/brand/` 的 4 个分发副本由 `verify-brand-assets.cjs` 逐字节比对源文件（symbol SVG、favicon SVG、icon-192、icon-512）。
+- `brand/android/res/` 20 个 launcher 资源：2 个 adaptive XML、3 个 drawable 矢量、5 个密度各 3 张位图；`scripts/apply-brand-android-icons.cjs` 负责覆盖，`scripts/verify-brand-assets.cjs` 已由 `scripts/check.sh` 第 43 行接线。
+- 三处顶栏品牌位：工作台 `.workspace-brand .brand-mark`（`WorkflowApp.vue`）、离线报告 `.topbar .brand-icon`（`App.vue`）、移动 `.m-appbar-brand`（`MobileApp.vue`，仅导入步渲染）；图标 link 在 `apps/web/index.html`（favicon SVG、512 PNG、apple-touch-icon 192）。
+
+### 检查项
+
+| 检查项 | 结果 |
+| --- | --- |
+| favicon / 512 PNG / apple-touch-icon / symbol 同源 200，内容可解析 | PASS（`verify-frontend-flow.cjs` 品牌断言，随 103 项一起运行） |
+| 工作台品牌 `<img>`：`complete`、`currentSrc`、`decode()`、渲染框、`naturalWidth>0`，品牌槽无字母占位，链接 accessible name 保留 | PASS |
+| 1440/1280/768/390/320 与 200% 根文字下，品牌不遮挡标题与“项目设置”按钮 | PASS |
+| 移动 appbar 导入步品牌 `<img>` 解码、同源资产 200、无字母占位；非导入步不渲染品牌槽且保留返回按钮 | PASS（`verify-mobile-flow.cjs` 13 组） |
+| 离线报告入口 `.topbar .brand-icon` 品牌 `<img>` 解码、同源资产 200、无字母占位 | PASS（`verify-issue143-hierarchy.cjs` 11 checks） |
+| Web 分发副本与 `brand/` 源逐字节一致（4 对） | PASS（17 checks / 46 文件 / 幂等 true） |
+| Android 源 20 个文件齐全，adaptive XML 结构合法、`@drawable` 引用存在且为有效 vector | PASS（同上） |
+| 覆盖管线在模拟 res 树上：文件集合一致、逐字节哈希一致、保留无关模板资源、二次运行幂等 | PASS（同上） |
+| 覆盖管线失败用例：目标目录缺失、模板漂移（缺 `ic_launcher_round.xml`）均以非零退出并给出原因 | PASS（exit 1 / matched true） |
+
+品牌颜色与尺寸规则记录在 `brand/README.md` §3–§4；本轮校验针对文件一致性与 Android 资源结构，没有逐色值/逐尺寸的浏览器取证，按“静态资源规则”而非“视觉验收”理解。
+
+### 截图与证据
+
+- 品牌专属截图（由 brand-topbar 的真实 Chromium 断言运行产出，`5781ffc` 入库）：
+  - [brand-topbar-1440.png](acceptance/issue165/screenshots/brand-topbar-1440.png)：工作台顶栏品牌位
+  - [brand-mobile-390.png](acceptance/issue165/screenshots/brand-mobile-390.png)：移动 appbar 品牌位
+  - [brand-offline-1440.png](acceptance/issue165/screenshots/brand-offline-1440.png)：离线报告顶栏品牌位
+- 其余品牌断言随 `verify-frontend-flow`、`verify-mobile-flow`、`verify-issue143-hierarchy` 运行，截图在各脚本的 `captureWidths` 输出目录（如 `tmp/issue44-ui/screenshots/`）。
+- `tmp/brand-assets/verification.json`：17 项检查、46 个文件哈希、2 个失败用例、`idempotent: true`、`errors: []`。
+
+### NOT_RUN
+
+- Android Gradle `assemble`/构建、APK 打包与实机安装。
+- 真实设备 Launcher 的圆形/圆角裁剪、主题图标（monochrome/themed icon）与不同厂商桌面效果。
+- Tauri `android init` 重初始化流程的端到端验收；本轮只验证资源映射与覆盖脚本在模拟 res 树上的行为。
+- Tauri 平台图标重新生成（`tauri icon`）；本轮只替换源 `apps/mobile/src-tauri/icons/icon.png`。
+- 真实浏览器标签页、Safari apple-touch-icon、PWA 主屏图标的渲染截图；本轮只验证 link 路径与文件一致性。
+- `brand/SHA256SUMS` 的全量复核命令本轮未单独执行；资产一致性以 `verify-brand-assets.cjs` 的哈希比对为准。
+- 部署与商店资源提交。

@@ -373,7 +373,11 @@ class DurableWebIntake(PostgresWebIntake):
             snapshot = self.input_snapshot(lease.job_id)
             draft_id = snapshot["draft"]["id"]
             current = self._get(draft_id)
-            run = next(row for row in current["jobs"] if row["job_id"] == lease.job_id)
+            run = next(
+                (row for row in current["jobs"] if row["job_id"] == lease.job_id), None
+            )
+            if run is None:
+                raise KeyError(f"job {lease.job_id} is not part of draft {draft_id}")
             if run["events"] and run["events"][-1]["state"] == execution["state"]:
                 return
             self._event(draft_id, lease.job_id, execution["state"])

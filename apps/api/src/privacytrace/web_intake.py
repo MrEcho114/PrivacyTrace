@@ -1669,7 +1669,9 @@ class WebIntake:
     def _event(self, draft_id, job_id, state):
         with self.data_store._transaction():
             draft = self._get(draft_id)
-            run = next(r for r in draft["jobs"] if r["job_id"] == job_id)
+            run = next((r for r in draft["jobs"] if r["job_id"] == job_id), None)
+            if run is None:
+                raise KeyError(f"job {job_id} is not part of draft {draft_id}")
             run["events"].append({"state": state, "at": now()})
             self._write_private(self.directory(draft_id) / "current.json", draft)
 

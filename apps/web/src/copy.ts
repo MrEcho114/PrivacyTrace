@@ -78,8 +78,8 @@ export const frontendCopy = {
   reportTitle,
   reportTitleParts,
   comparisonTitle: '数据类型与政策声明对照',
-  reportScope: '对照 APK 中的权限、调用位置与政策原文。',
-  comparisonScope: '六种结论只回答政策是否提到相应数据类型，不作合规判断。',
+  reportScope: '对照 APK 的权限、调用位置和政策原文。',
+  comparisonScope: '六种结论回答政策是否提到相应数据类型。',
   demoBadge: '示例体验 · 固定材料',
   // Step labels and page h1s share one literal: pageTitles derives from steps.
   pageTitles: {
@@ -100,11 +100,11 @@ export const frontendCopy = {
     coverage: '规则集覆盖有限，没有命中规则不代表没有隐私行为。',
     sdkAttribution: 'SDK 归属只按公开包前缀匹配，不代表实际收集或外传。',
     notDeclared: '“未找到声明”需要适用版本、完整正文、提取成功、全文复核、附件齐全五项同时成立；缺一项只能算证据不足。',
-    candidateUnconfirmed: '候选尚未确认对应关系，确认后才进入对照。',
+    candidateUnconfirmed: '确认对应关系后，才会进入对照。',
     noCandidates: '没有候选只说明这份来源还没整理，不代表政策没有声明。',
     archiveNoRescan: '查看本机存档不会重新扫描。',
     modelTextOnly: '模型只接收政策文本，APK 不发送给模型。',
-    mobileModelInput: '收集模型只接收完整收集指令和应用线索，APK 文件本身不发送；服务是否具备联网能力，以实际结果为准。',
+    mobileModelInput: '模型只接收完整的收集指令和应用线索，不会收到 APK 文件。模型服务能否联网，取决于实际配置。',
     assistUnreviewed: '网页补入的来源仍是未复核。',
   },
 } as const

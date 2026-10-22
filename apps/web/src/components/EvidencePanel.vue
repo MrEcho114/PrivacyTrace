@@ -19,6 +19,8 @@ const props = withDefaults(defineProps<{
   heading?: boolean
 }>(), { heading: true })
 const emit = defineEmits<{ close: []; openPolicy: [string] }>()
+const claimValue: Record<string, string> = { AFFIRMED: '肯定', NEGATED: '否定', APP: '应用自身', THIRD_PARTY: '第三方', ACCESS: '访问', UNKNOWN: '未知' }
+function claimLabel(value: string | null | undefined) { return claimValue[value ?? 'UNKNOWN'] ?? '未知' }
 
 const label = (id: string) => props.taxonomy?.data_types.find(item => item.id === id)?.label ?? id
 const documentFor = (item: Evidence) => props.report.policy_documents.find(doc => doc.id === item.document_id)
@@ -97,7 +99,7 @@ watch(() => [props.issue, props.report], () => { candidatePage.value = 0 })
       <p class="subtle">{{ frontendCopy.facts.candidateUnconfirmed }} 以下仅按相同数据类型展示候选原句，不改变结论或结论证据引用。SDK 自有政策不能替代宿主声明；候选提取仍需人工核验。</p>
       <div class="evidence-grid"><article v-for="candidate in relatedCandidates" :key="candidate.claim.id" class="evidence-card">
         <strong>{{ candidate.claim.id }} · {{ candidate.document ? sourceLabels[candidate.document.source_type] : '来源待补充' }}</strong>
-        <p>极性 {{ candidate.claim.polarity ?? 'UNKNOWN' }} · 主体 {{ candidate.claim.subject ?? 'UNKNOWN' }} · 动作 {{ candidate.claim.action ?? 'UNKNOWN' }}</p>
+        <p>极性 {{ claimLabel(candidate.claim.polarity) }} · 主体 {{ claimLabel(candidate.claim.subject) }} · 动作 {{ claimLabel(candidate.claim.action) }}</p>
         <p>条件：{{ candidate.claim.condition || '未提取条件（不代表无条件）' }}</p>
         <p v-if="candidate.claim.action === 'UNKNOWN'" class="subtle">动作尚未确认，不能视为声明了实际访问。</p>
         <p>{{ docState(candidate.document) }} · 提取 {{ candidate.document?.extraction_status ?? '未知' }}</p>

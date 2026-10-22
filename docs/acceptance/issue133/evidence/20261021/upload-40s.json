@@ -1,0 +1,334 @@
+{
+  "group": "upload-40s",
+  "case_passed": false,
+  "records": [
+    {
+      "private_locator": "upload-delay.json",
+      "private_capture_sha256": "92be774e00ef1fd854a5e346b80d2f17720ce4614d2ef7e117b08f119991bdf2",
+      "observation": {
+        "image_id": "sha256:86e76a00ae91127480862f2248266b3adc6198c65f7734bb6283a40fcae071f5",
+        "delay_seconds": 40,
+        "scanner": "real apk_worker after controlled delay"
+      }
+    },
+    {
+      "private_locator": "f05-upload-active.json",
+      "private_capture_sha256": "4e71ef9cbd5ab9ff100da4188965da72d964c04a7a095f346c3337e33eb081fd",
+      "observation": {
+        "at_utc": "2026-10-21T10:16:00.210651+00:00",
+        "source_sha": "ffadeb06af70072b5ee2d931ee565e5b7e546acd",
+        "persistent": {
+          "jobs": [
+            {
+              "state": "STATIC_ANALYSIS",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 2,
+              "attempt": 1,
+              "job_alias": "cc09806d787b"
+            },
+            {
+              "state": "CANCELLED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 2,
+              "attempt": 1,
+              "job_alias": "b123f956ac36"
+            },
+            {
+              "state": "SUCCEEDED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 2,
+              "attempt": 1,
+              "job_alias": "539d52808876"
+            },
+            {
+              "state": "QUEUED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 1,
+              "attempt": 0,
+              "job_alias": "be2909b12f02"
+            },
+            {
+              "state": "CANCELLED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 2,
+              "attempt": 1,
+              "job_alias": "6ceb23753030"
+            },
+            {
+              "state": "CANCELLED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 1,
+              "attempt": 0,
+              "job_alias": "9d3714364832"
+            },
+            {
+              "state": "SUCCEEDED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 2,
+              "attempt": 1,
+              "job_alias": "8bbdeb8bd7af"
+            },
+            {
+              "state": "SUCCEEDED",
+              "has_report": true,
+              "execution_state": "SUCCEEDED",
+              "fence": 1,
+              "attempt": 1,
+              "job_alias": "fb1cb3e9595f"
+            },
+            {
+              "state": "SUCCEEDED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 2,
+              "attempt": 1,
+              "job_alias": "4c8db27501f4"
+            },
+            {
+              "state": "REPORTING",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 4,
+              "attempt": 2,
+              "job_alias": "ee6927db792b"
+            },
+            {
+              "state": "CANCELLED",
+              "has_report": false,
+              "execution_state": "REVOKED",
+              "fence": 1,
+              "attempt": 0,
+              "job_alias": "fe92e7038e16"
+            }
+          ],
+          "counts": {
+            "intake_documents": 11,
+            "outbox_events": 11,
+            "runner_materials": 1,
+            "deletion_intents": 16,
+            "upload_reservations": 1,
+            "runtime_inputs": 1
+          },
+          "scopes": [
+            {
+              "kind": "DRAFT",
+              "tombstone": false,
+              "scope_alias": "8628d29ffe11"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": false,
+              "scope_alias": "fb1cb3e9595f"
+            },
+            {
+              "kind": "DRAFT",
+              "tombstone": true,
+              "scope_alias": "ec62f50247b1"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "9d3714364832"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "8bbdeb8bd7af"
+            },
+            {
+              "kind": "DRAFT",
+              "tombstone": true,
+              "scope_alias": "b27e7a795af3"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "be2909b12f02"
+            },
+            {
+              "kind": "DRAFT",
+              "tombstone": true,
+              "scope_alias": "0b2968b9f815"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "b123f956ac36"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "ee6927db792b"
+            },
+            {
+              "kind": "DRAFT",
+              "tombstone": true,
+              "scope_alias": "aa8f70a0b141"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "4c8db27501f4"
+            },
+            {
+              "kind": "DRAFT",
+              "tombstone": true,
+              "scope_alias": "61b7a30600db"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "539d52808876"
+            },
+            {
+              "kind": "DRAFT",
+              "tombstone": true,
+              "scope_alias": "62ea6e9e2f55"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "fe92e7038e16"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "6ceb23753030"
+            },
+            {
+              "kind": "JOB",
+              "tombstone": true,
+              "scope_alias": "cc09806d787b"
+            },
+            {
+              "kind": "DRAFT",
+              "tombstone": false,
+              "scope_alias": "f133f425ea1c"
+            }
+          ],
+          "material_files": 30
+        },
+        "runner": [
+          {
+            "state": "RUNNING",
+            "error": null,
+            "has_receipt": false,
+            "result_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        ],
+        "active_scanners": [
+          {
+            "network": "none",
+            "read_only": true,
+            "cap_drop": [
+              "ALL"
+            ],
+            "privileged": false
+          }
+        ],
+        "captured_private_scopes": 7,
+        "case_passed": false,
+        "last_60s_request_groups": [
+          {
+            "actor": "ANDROID_NATIVE",
+            "scope_alias": null,
+            "method": "GET",
+            "route": "/api/v1/mobile-capabilities",
+            "status": 200,
+            "count": 2,
+            "first_epoch": 1792577745.9512513,
+            "last_epoch": 1792577755.1439602
+          },
+          {
+            "actor": "ANDROID_NATIVE",
+            "scope_alias": null,
+            "method": "POST",
+            "route": "/api/v1/web/drafts",
+            "status": 200,
+            "count": 1,
+            "first_epoch": 1792577755.2101285,
+            "last_epoch": 1792577755.2101285
+          }
+        ],
+        "request_window_end_epoch": 1792577755.2101285
+      }
+    },
+    {
+      "private_locator": "f05-upload-stop.log",
+      "private_capture_sha256": "07123b5fc8e183e13f3c7618f3d3335bed216c78ac8f0d984e428d515441096f",
+      "observation": {
+        "action": "stop-upload",
+        "at_utc": "2026-10-21T10:16:03.184Z",
+        "body_sha256": "eb24e81facc801e75e1e4d4ddcd0a187714e3799852cdfa3423ed613e90ddc56",
+        "driver_sha256": "1aba800887024d7d5ec8875386509ae317fbf4d8a5db05a4e98c2301a8f93c47",
+        "shows_report_button": false,
+        "shows_cancelled": false,
+        "shows_error": true,
+        "status": "OBSERVED",
+        "case_passed": false,
+        "visible_job_aliases": []
+      }
+    },
+    {
+      "private_locator": "f06-upload-restore.log",
+      "private_capture_sha256": "cd9d12633a01a6aa7fd70b7e5cf060f44486c1cc44616936111e13bb96632ba1",
+      "observation": {
+        "action": "restore-pending",
+        "at_utc": "2026-10-21T10:16:21.119Z",
+        "body_sha256": "a6ba476afcb2717d488827d02f00a0ae2e61b70f8a77979192cc5e9ec32113e1",
+        "driver_sha256": "1aba800887024d7d5ec8875386509ae317fbf4d8a5db05a4e98c2301a8f93c47",
+        "shows_report_button": false,
+        "shows_cancelled": false,
+        "shows_error": true,
+        "status": "OBSERVED",
+        "case_passed": false,
+        "visible_job_aliases": [
+          "f133f425ea1c"
+        ]
+      }
+    },
+    {
+      "private_locator": "f06-upload-delete.log",
+      "private_capture_sha256": "46a986ec2cfd5472bfb6c3e7d0af860e6336ff8910f2866ca1549939b9542c31",
+      "observation": {
+        "action": "delete",
+        "at_utc": "2026-10-21T10:16:46.339Z",
+        "body_sha256": "a4aa0c0b0e1c1d55cc38d5b340d60069112a95928e97c6ac774a4576aefbfb7a",
+        "driver_sha256": "1aba800887024d7d5ec8875386509ae317fbf4d8a5db05a4e98c2301a8f93c47",
+        "shows_report_button": false,
+        "shows_cancelled": false,
+        "shows_error": false,
+        "status": "OBSERVED",
+        "case_passed": false,
+        "visible_job_aliases": []
+      }
+    },
+    {
+      "private_locator": "f06-upload-replay.json",
+      "private_capture_sha256": "39476e52cb0029667c562643a500a04a8c214da226db153927d5c7c89a96539a",
+      "observation": {
+        "scope": "D8",
+        "old_access": [
+          {
+            "method": "GET",
+            "route": "/api/v1/web/drafts/{id}",
+            "status": 404
+          },
+          {
+            "method": "POST",
+            "route": "/api/v1/web/drafts/{id}/start",
+            "status": 404
+          }
+        ],
+        "all_rejected": true
+      }
+    }
+  ]
+}

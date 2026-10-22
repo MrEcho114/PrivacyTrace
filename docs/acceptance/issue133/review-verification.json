@@ -1,0 +1,82 @@
+{
+  "case_passed": false,
+  "review_url": "https://github.com/MrEcho114/PrivacyTrace/pull/148#pullrequestreview-5600338024",
+  "base_sha": "4f88ac18c28ae270559af9217ecacaa1ff7cb451",
+  "source_sha256": {
+    "apps/web/src/mobile/flow.ts": "ea67645ba1f9be3b63b41f34e47c64d75ee097171a9d75eda5a6fefce8318b31",
+    "apps/web/tests/mobile-polling.test.cjs": "f4258c564468d2c3462451cc67aea7d9d60bdca04f3ee363843a25c0d73c43f9"
+  },
+  "completed_checks": [
+    {
+      "command": "node --test apps/web/tests/mobile-polling.test.cjs",
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "Actual flow/Vue, simulated native fan-out and shared rolling budget, deterministic timers/RNG; not Android acceptance",
+      "log_sha256": "c5a9a837872323cb1f8334fa1e794e4505808fb5c5eb8633c6b2302d5da505b0"
+    },
+    {
+      "command": "npm run acceptance:mobile",
+      "status": "PASSED",
+      "scope": "Existing browser walkthrough with controlled native bridge",
+      "log_sha256": "386df86eacc3e17fc016974bca51590bbf4454694ae24adb4c172b70eb35ae53"
+    },
+    {
+      "command": "npm run build",
+      "status": "PASSED",
+      "log_sha256": "b3b70811c5597d2ed637cfcb351da6db87a577ddc9b96345159e0e4a0f20a9a6"
+    },
+    {
+      "command": "python -m deploy.acceptance.issue133.verify docs/acceptance/issue133/evidence/20261021",
+      "status": "PASSED",
+      "read_back": 22,
+      "scope": "Historical packet integrity, not current candidate acceptance"
+    },
+    {
+      "command": "PRIVACYTRACE_DOCKER_TESTS=0 bash scripts/check.sh",
+      "status": "PASSED",
+      "log_sha256": "8e0cbcac25b1d309774083d1ce4fa329b2b5f4e5629d3243319b222a8093936f",
+      "scope": "Disposable executable Linux checkout; Docker-specific cases remain skipped"
+    }
+  ],
+  "red_runs": {
+    "original_4f88ac1": {
+      "failed_cases": 3,
+      "log_sha256": "8e52780df9e8466105bd0aa4b7329f983abfe821384ec61dbf4c0246c3e915dc"
+    },
+    "generation_guard_before_fix": {
+      "failed_cases": 1,
+      "log_sha256": "12c32dc047fe8ba26804cd3ba2d7b99a033a52e4f98c935c164a1c2d4ab7e9f4"
+    },
+    "startup_budget_before_25s": {
+      "failed_cases": 1,
+      "log_sha256": "39378c620eb9c3dc601e57467108fa092beb23fddb11b38ddc5508cba8afc746"
+    },
+    "restore_busy_before_fix": {
+      "failed_cases": 4,
+      "log_sha256": "d2cc974be244fbbc636fc0439c098dd332aab2929d9c6a621f3494667bc1219f"
+    }
+  },
+  "original_apk_evidence_reused_as_current_pass": false,
+  "whole_case_pass_count": 0,
+  "whole_case_denominator": 3,
+  "native_retry_after_header_exposed": false,
+  "busy_fallback_seconds": 60,
+  "more_than_two_clients_guaranteed": false,
+  "superseded_local_attempts": [
+    {
+      "stage": "Dependency bootstrap",
+      "status": "CANCELLED",
+      "reason": "Slow dependency downloads; replaced only the owned check helper using cached locked dependencies and the existing proxy"
+    },
+    {
+      "stage": "First cached helper authority entry",
+      "status": "FAILED",
+      "api_passed": 1514,
+      "api_skipped": 196,
+      "api_failed": 8,
+      "reason": "Owned helper omitted local Docker socket/shared scan paths; actual metadata inspection unavailable",
+      "log_sha256": "7ff40993a20bc4b61d7028b4e22343f82c7ce074c9c571b2ecab983e1417d522"
+    }
+  ]
+}

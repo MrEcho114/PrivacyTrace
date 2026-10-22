@@ -1,0 +1,10 @@
+{
+  "package_name": "org.privacytrace.issue133.fixture",
+  "version_code": "1",
+  "caller": "Lorg/privacytrace/issue133/fixture/IdentifierFixture;->potentialIdentifierAccess(Landroid/telephony/TelephonyManager;)Ljava/lang/String;",
+  "target": "Landroid/telephony/TelephonyManager;->getDeviceId()Ljava/lang/String;",
+  "data_type": "DEVICE_IDENTIFIER",
+  "policy_quote": "This controlled fixture may access device identifiers.",
+  "policy_state": "UNREVIEWED",
+  "runtime_access": "NOT_EXECUTED"
+}

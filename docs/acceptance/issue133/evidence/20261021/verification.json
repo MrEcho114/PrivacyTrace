@@ -1,0 +1,56 @@
+{
+  "case_passed": false,
+  "source_base_sha": "ffadeb06af70072b5ee2d931ee565e5b7e546acd",
+  "client_flow_sha256": "f983761596d74444d0909de74a2893202f05a68f4dc1397d7f0cb2a1724efc1c",
+  "runs": [
+    {
+      "command": "PRIVACYTRACE_DOCKER_TESTS=1 bash scripts/check.sh",
+      "status": "FAILED",
+      "api_passed": 1535,
+      "api_skipped": 179,
+      "api_failed": 4,
+      "reason": "Docker Desktop cgroup v1 lacks cgroup v2 probe files; pipeline stops at API pytest"
+    },
+    {
+      "command": "PRIVACYTRACE_DOCKER_TESTS=0 bash scripts/check.sh (bind-mounted checkout)",
+      "status": "FAILED",
+      "reason": "Noexec bind mount caused esbuild EACCES"
+    },
+    {
+      "command": "PRIVACYTRACE_DOCKER_TESTS=0 bash scripts/check.sh (executable private checkout)",
+      "status": "PASSED",
+      "api_passed": 1522,
+      "api_skipped": 196,
+      "e2e_passed": 61,
+      "e2e_skipped": 4,
+      "web_passed": 112,
+      "web_skipped": 0,
+      "ruff": "PASSED",
+      "contracts_diff": "NONE",
+      "typecheck_build": "PASSED"
+    },
+    {
+      "command": "npm run acceptance:mobile",
+      "status": "PASSED",
+      "boundary": "Controlled bridge development walkthrough; not actual Android acceptance"
+    },
+    {
+      "command": "ruff check --config apps/api/pyproject.toml deploy/acceptance/issue133",
+      "status": "PASSED"
+    },
+    {
+      "command": "python -m deploy.acceptance.issue133.verify docs/acceptance/issue133/evidence/20261021",
+      "status": "PASSED",
+      "boundary": "Readback and digest only; not case PASSED"
+    }
+  ],
+  "private_log_sha256": {
+    "check-linux.log": "be9ea6f28c4e32a4c2e84522a1edea35eb15360d7ec1bae9dcd193e075dda7cd",
+    "check-nondocker.log": "facc76f614d00ba92fb655b983f1b6df8285b6e24f40740c609cdcfdf8958040",
+    "check-exec.log": "2abe1aa67e32d1ba93491bce97f16f8f73b1be6afa02918235704b7482ce053c",
+    "web-tests.log": "7beed946996295eeb49b77fc3c615ffe074457c8246ba0e5d269707c7f648201",
+    "fixed-web-build.log": "29484e217865384f701642dcbcc6b49fd6a6d7ef46a2bb62e29cf8aefd286056",
+    "mobile-flow-check.log": "386df86eacc3e17fc016974bca51590bbf4454694ae24adb4c172b70eb35ae53",
+    "polling-unit-red.log": "d88373489f087f5a58d9b2c94108e1c4a0706d1c17778fe83d357b8f00eed538"
+  }
+}

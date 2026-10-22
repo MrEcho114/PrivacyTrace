@@ -14,6 +14,11 @@ PolicySourceProvenance = Literal[
     "MANUAL_INPUT",
 ]
 
+# Evidence.id allows 100 characters and sentence evidence ids are this prefix plus
+# the candidate id, so the public candidate bound must be 87, not 100.
+WEB_SENTENCE_ID_PREFIX = "web-sentence-"
+WEB_CANDIDATE_ID_MAX = 100 - len(WEB_SENTENCE_ID_PREFIX)
+
 
 def normalize_condition(value: str | None) -> str | None:
     """An empty condition declares no condition; keep one stored representation."""
@@ -21,7 +26,7 @@ def normalize_condition(value: str | None) -> str | None:
 
 
 class WebCandidate(Model):
-    id: str = Field(min_length=1, max_length=100)
+    id: str = Field(min_length=1, max_length=WEB_CANDIDATE_ID_MAX)
     source_id: str = Field(min_length=1, max_length=100)
     excerpt: str = Field(min_length=1, max_length=5000)
     data_type: str = Field(min_length=1, max_length=100)

@@ -42,6 +42,7 @@ from .policy_llm_extractor import (
 )
 from .resources import taxonomy
 from .web_models import (
+    WEB_SENTENCE_ID_PREFIX,
     CandidateInput,
     DraftInput,
     ExternalCollectionResult,
@@ -1200,7 +1201,7 @@ class WebIntake:
                     start = text.index(excerpt)
                 if text[start : start + len(excerpt)] != excerpt:
                     raise ValueError("Candidate quote does not match its source")
-                sentence_id = "web-sentence-" + candidate["id"]
+                sentence_id = WEB_SENTENCE_ID_PREFIX + candidate["id"]
                 evidence.append(
                     {
                         "id": sentence_id,

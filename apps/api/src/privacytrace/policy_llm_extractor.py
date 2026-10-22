@@ -5,6 +5,7 @@ and graceful offline fallback.
 """
 
 import hashlib
+import http.client
 import ipaddress
 import json
 import math
@@ -105,6 +106,78 @@ class LLMClientProtocol(Protocol):
         ...
 
 
+# Chunk size for bounded response-body reads; small enough to re-check the deadline often.
+_RESPONSE_CHUNK_BYTES = 65536
+
+
+class _DeadlineSocket:
+    """Socket wrapper that re-arms the remaining total budget before every read.
+
+    A socket timeout caps one blocking ``recv`` only, and one outer read can hide many of
+    them: chunked framing reads the chunk-size line (extensions included) and the trailer
+    with ``readline``, and ``HTTPResponse.read1`` may call ``recv`` repeatedly for a single
+    chunk. Trickling those bytes just under the socket timeout therefore has to be bounded
+    where the reads actually happen, not once per outer chunk.
+    """
+
+    def __init__(self, sock: Any, deadline: float, idle_timeout: float):
+        self._sock = sock
+        self._deadline = deadline
+        self._idle_timeout = idle_timeout
+
+    def __getattr__(self, name: str) -> Any:
+        # Every other socket operation (sendall, close, settimeout, ...) is the real socket's.
+        return getattr(self._sock, name)
+
+    def _arm(self) -> None:
+        remaining = self._deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("LLM response exceeded the total time budget")
+        self._sock.settimeout(min(self._idle_timeout, remaining))
+
+    def recv(self, *args: Any, **kwargs: Any) -> bytes:
+        self._arm()
+        return self._sock.recv(*args, **kwargs)
+
+    def recv_into(self, *args: Any, **kwargs: Any) -> int:
+        self._arm()
+        return self._sock.recv_into(*args, **kwargs)
+
+    def makefile(self, *args: Any, **kwargs: Any) -> Any:
+        # http.client builds its reader from this socket, so its raw layer must stay bounded
+        # as well; keep the reference counting of the original makefile.
+        handle = self._sock.makefile(*args, **kwargs)
+        raw = getattr(handle, "raw", None)
+        if getattr(raw, "_sock", None) is not None:
+            raw._sock = self
+        return handle
+
+
+def _install_deadline_socket(sock: Any, deadline: float, idle_timeout: float) -> Any:
+    """Wrap a live socket so every later read is bounded by the remaining total budget."""
+    if sock is None or isinstance(sock, _DeadlineSocket):
+        return sock
+    return _DeadlineSocket(sock, deadline, idle_timeout)
+
+
+def _arm_read_timeout(response: Any, remaining: float) -> None:
+    """Re-arm the socket wait for one read against the remaining total budget.
+
+    The deadline socket installed by ``UrllibLLMClient.call`` already arms every single
+    read; this coarse per-chunk arming also holds when that layer is unavailable.
+    """
+    stream = getattr(response, "fp", None)
+    raw = getattr(stream, "raw", None)
+    sock = getattr(raw, "_sock", None)
+    setter = getattr(sock, "settimeout", None)
+    if not callable(setter):
+        return
+    try:
+        setter(remaining)
+    except (OSError, ValueError):
+        pass
+
+
 class LLMResponseTooLarge(ValueError):
     """Untrusted model response exceeds the byte limit."""
 
@@ -155,6 +228,7 @@ class UrllibLLMClient:
         max_output_tokens: int = 2048,
         max_response_bytes: int = 2 * 1024 * 1024,
         thinking_mode: bool | None = None,
+        deadline: float | None = None,
     ):
         self.max_output_tokens = max_output_tokens
         self.max_response_bytes = max_response_bytes
@@ -164,8 +238,33 @@ class UrllibLLMClient:
         self.api_base = resolve_api_base(api_base)
         self.model = model
         self.timeout = timeout
+        # Absolute monotonic instant for the whole call, including the response body.
+        # None means "this client's timeout is also its total budget".
+        self.deadline = deadline
         self.temperature = temperature
         self.thinking_mode = thinking_mode
+
+    def _read_response_body(self, resp: Any, deadline: float) -> bytes:
+        """Read the body in chunks, stopping at the whole-call deadline.
+
+        ``timeout`` is a per-socket wait, so a peer that trickles small chunks can keep a
+        single ``resp.read()`` alive past the total budget; each chunk therefore re-checks
+        the deadline and re-arms the socket wait against what is left of it.
+        """
+        limit = self.max_response_bytes + 1
+        chunks: list[bytes] = []
+        received = 0
+        while received < limit:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError("LLM response body exceeded the total time budget")
+            _arm_read_timeout(resp, min(self.timeout, remaining))
+            chunk = resp.read1(min(_RESPONSE_CHUNK_BYTES, limit - received))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            received += len(chunk)
+        return b"".join(chunks)
 
     def call(self, system_prompt: str, user_prompt: str) -> tuple[str, dict[str, int]]:
         if not self.api_key and not self.api_base.startswith("http://"):
@@ -202,8 +301,42 @@ class UrllibLLMClient:
                     request.full_url, code, "LLM endpoint redirects are forbidden", headers, fp
                 )
 
-        with urllib.request.build_opener(NoRedirect()).open(req, timeout=self.timeout) as resp:
-            raw = resp.read(self.max_response_bytes + 1)
+        deadline = self.deadline
+        if deadline is None:
+            deadline = time.monotonic() + self.timeout
+        idle_timeout = self.timeout
+
+        class DeadlineConnectionMixin:
+            """Bound response status/header parsing by the same absolute deadline."""
+
+            def getresponse(self, *args: Any, **kwargs: Any) -> Any:
+                # Reached once the socket is connected (and TLS-wrapped for HTTPS), before
+                # http.client reads the status line and headers.
+                self.sock = _install_deadline_socket(self.sock, deadline, idle_timeout)
+                return super().getresponse(*args, **kwargs)
+
+        class DeadlineHTTPConnection(DeadlineConnectionMixin, http.client.HTTPConnection):
+            pass
+
+        class DeadlineHTTPSConnection(DeadlineConnectionMixin, http.client.HTTPSConnection):
+            pass
+
+        class DeadlineHTTPHandler(urllib.request.HTTPHandler):
+            def http_open(self, request):
+                return self.do_open(DeadlineHTTPConnection, request)
+
+        class DeadlineHTTPSHandler(urllib.request.HTTPSHandler):
+            def https_open(self, request):
+                # Mirrors HTTPSHandler.https_open of the supported interpreters.
+                return self.do_open(DeadlineHTTPSConnection, request, context=self._context)
+
+        connect_timeout = max(0.001, min(idle_timeout, deadline - time.monotonic()))
+        opener = urllib.request.build_opener(
+            NoRedirect(), DeadlineHTTPHandler(), DeadlineHTTPSHandler()
+        )
+        with opener.open(req, timeout=connect_timeout) as resp:
+            # Leaving the block on any failure closes the response and its connection.
+            raw = self._read_response_body(resp, deadline)
             if len(raw) > self.max_response_bytes:
                 raise LLMResponseTooLarge("RESPONSE_TOO_LARGE")
             data = json.loads(raw.decode("utf-8"))
@@ -391,6 +524,10 @@ class _CallBudget:
     def remaining_seconds(self) -> float:
         return max(0.001, self.max_elapsed_seconds - (time.monotonic() - self.started))
 
+    def deadline(self) -> float:
+        """Absolute monotonic instant when the whole extraction budget expires."""
+        return self.started + self.max_elapsed_seconds
+
 
 class PolicyLLMExtractor:
     """Extracts candidate policy claims using an LLM with strict validation."""
@@ -476,6 +613,9 @@ class PolicyLLMExtractor:
 
         raw_items = None
         tokens = {}
+        # An injected client may outlive this extraction; its call-scoped deadline is
+        # restored below instead of being left behind as stale state.
+        previous_deadline = client.deadline if isinstance(client, UrllibLLMClient) else None
 
         for attempt in range(1, self.config.max_retries + 1):
             reason = budget.exhaustion_reason()
@@ -486,6 +626,9 @@ class PolicyLLMExtractor:
             telemetry.attempts = attempt
             if isinstance(client, UrllibLLMClient):
                 client.timeout = min(self.config.timeout_seconds, budget.remaining_seconds())
+                # The socket timeout only caps one wait; the absolute deadline caps the
+                # whole call, including a response body that keeps trickling bytes.
+                client.deadline = budget.deadline()
             try:
                 raw_text, call_tokens = client.call(SYSTEM_PROMPT, user_prompt)
                 if not isinstance(raw_text, str) or (
@@ -511,6 +654,11 @@ class PolicyLLMExtractor:
                 telemetry.errors.append(f"Attempt {attempt}: {safe_llm_error_code(exc)}")
                 if isinstance(exc, (LLMResponseTooLarge, LLMCandidateLimit)):
                     break
+
+        if isinstance(client, UrllibLLMClient):
+            # The deadline is scoped to this extraction; a reused client must not keep a
+            # stale instant that would fail its next call before it starts.
+            client.deadline = previous_deadline
 
         telemetry.duration_ms = int((time.monotonic() - start_time) * 1000)
 

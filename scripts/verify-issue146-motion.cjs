@@ -15,10 +15,14 @@ const path = require('node:path')
 const { spawn, execFileSync } = require('node:child_process')
 const crypto = require('node:crypto')
 const { stopChildren, spawnOptions } = require('./lib/process-control.cjs')
+const { resolvePort } = require('./lib/local-ports.cjs')
 
 const output = path.resolve('tmp/issue146-motion')
 const screenshots = path.join(output, 'screenshots')
-const origin = process.env.PRIVACYTRACE_FRONTEND_URL || 'http://127.0.0.1:5184'
+// Assigned in main(): the fixed 5184 default lands inside the Windows
+// Hyper-V/WinNAT reserved range, so the port is allocated unless the caller
+// points the suite at an explicitly served frontend.
+let origin = process.env.PRIVACYTRACE_FRONTEND_URL || ''
 
 // Deterministic report shape follows apps/web/src/contracts.generated.ts; a drift
 // shows up as a failed selector instead of a silently skipped assertion.
@@ -467,9 +471,9 @@ async function main() {
   let browser
   try {
     if (!process.env.PRIVACYTRACE_FRONTEND_URL) {
-      try { await fetch(origin, { signal: AbortSignal.timeout(1000) }); throw new Error('Port 5184 is already occupied. Set PRIVACYTRACE_FRONTEND_URL only for an explicitly chosen server.') }
-      catch (error) { if (!['TypeError', 'TimeoutError'].includes(error.name)) throw error }
-      const child = spawn('npm run dev', spawnOptions(path.resolve(__dirname, '..'), { PRIVACYTRACE_WEB_PORT: '5184' }))
+      const port = await resolvePort('PRIVACYTRACE_WEB_PORT')
+      origin = `http://127.0.0.1:${port}`
+      const child = spawn('npm run dev', spawnOptions(path.resolve(__dirname, '..'), { PRIVACYTRACE_WEB_PORT: String(port) }))
       children.push(child)
       let log = ''
       child.stdout.on('data', chunk => { log += chunk })

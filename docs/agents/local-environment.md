@@ -24,7 +24,8 @@
 
 - **发布分支前的快速闸门**（约十秒）：`bash scripts/preflight.sh`。它用仓库自己的 ruff 配置扫 `deploy` 与 `tests/e2e`，并对分支改动过的文件做语法检查。它不替代权威检查，只防止 lint/语法错误进 PR、白烧一轮 CI。
 - **合并前的权威检查**：Git for Windows Bash 里 `bash scripts/check.sh`（`"C:\Program Files\Git\bin\bash.exe"`）。
-- `scripts/check.ps1` 只是把同一入口委托给 Git Bash，本身兼容 Windows PowerShell 5.1；只有命令名 `pwsh` 需要 PowerShell 7。本机没有 `pwsh` 时用 `powershell -NoProfile -File scripts/check.ps1`，或直接走 Git Bash。
+- **5xxx 端口不可直接绑定**：本机 WinNAT/Hyper-V 保留 5041–5757（`netsh interface ipv4 show excludedportrange protocol=tcp`），固定 51xx/52xx 端口的脚本会报 `EACCES` 而不是占用。`dev:start`/`dev:status`/`dev:stop` 默认 5184，可用 `PRIVACYTRACE_WEB_PORT` 固定；前端验收脚本不设置变量时向系统申请空闲端口，各自的固定变量是：流程/层级/动效/无障碍用 `PRIVACYTRACE_WEB_PORT`，浏览器验收与挑战套件用 `PRIVACYTRACE_ACCEPTANCE_WEB_PORT`，真实链路用 `PRIVACYTRACE_LIVE_WEB_PORT`，设计基座用 `PRIVACYTRACE_DESIGN_PORT`，预览生命周期验收的场景端口用 `PRIVACYTRACE_PREVIEW_PORT`。`scripts/validate-spec30.py` 仍固定 5173，不在本轮修复范围。
+- `scripts/check.ps1` 只是把同一入口委托给 Git Bash，本身兼容 Windows PowerShell 5.1；只有命令名 `pwsh` 需要 PowerShell 7。本机没有 `pwsh` 时用 `powershell -NoProfile -File scripts/check.ps1`，或直接走 Git Bash。`apps/mobile` 的 `android:prepare` 通过 `scripts/run-powershell.cjs` 在运行时选择 `pwsh` 或 `powershell`，不再要求单独安装 PowerShell 7。
 - 检查跑在慢盘（如 D: 上的 worktree）可能让整套测试明显变慢；e2e 的等待预算已改成 `PRIVACYTRACE_E2E_JOB_BUDGET_SECONDS`（默认 60s），慢机直接调大，不要改测试。
 - **开或刷新 PR 前先 rebase 到最新 `main`**：GitHub 取 **base 分支**的 workflow 文件、取 head 的代码。main 新增的 CI 步骤会在旧 head 上报 `Missing script`（#175 实际踩到），看起来像自己的改动坏了。
 

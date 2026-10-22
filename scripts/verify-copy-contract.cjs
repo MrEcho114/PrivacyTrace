@@ -23,9 +23,9 @@
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
-const net = require('node:net')
 const { spawn, execFileSync } = require('node:child_process')
 const { chromium } = require('playwright')
+const { freePort } = require('./lib/local-ports.cjs')
 const { spawnOptions, stopChildren } = require('./lib/process-control.cjs')
 
 const root = path.resolve(__dirname, '..')
@@ -131,14 +131,6 @@ async function textStep(page, buttonName, expectedTitle, index, label) {
   await page.waitForFunction((expected) => document.getElementById('page-title')?.textContent?.trim() === expected, expectedTitle, { timeout: 10000 })
   await assertPageTitle(page, expectedTitle, label)
   await assertFlowNav(page, index, label)
-}
-
-async function freePort() {
-  const server = net.createServer()
-  await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve) })
-  const port = server.address().port
-  await new Promise((resolve) => server.close(resolve))
-  return port
 }
 
 async function main() {

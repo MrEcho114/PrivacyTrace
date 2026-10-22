@@ -10,7 +10,7 @@
 
 ## 预览与验证
 
-`npm run dev:start`、`dev:status`、`dev:stop` 管理此工作树的前端预览，默认端口 5184；可通过 `PRIVACYTRACE_WEB_PORT` 选择端口。日志位于忽略的 `tmp/frontend-preview/preview.log`，进程身份记录同目录。工具只向身份验证通过的管理进程请求停止；端口被其他服务占用时退出，不终止监听者。
+`npm run dev:start`、`dev:status`、`dev:stop` 管理此工作树的前端预览，默认端口 5184；可通过 `PRIVACYTRACE_WEB_PORT` 选择端口。Windows 的 Hyper-V/WSL2/WinNAT 会保留大段 TCP 端口（本机为 5041–5757），落在保留段内绑定会报 `EACCES` 而不是 `EADDRINUSE`；此时默认端口自动换成系统分配的空闲端口，显式设置的 `PRIVACYTRACE_WEB_PORT` 则原样使用并在不可绑定时报出准确原因。日志位于忽略的 `tmp/frontend-preview/preview.log`，进程身份记录同目录。工具只向身份验证通过的管理进程请求停止；端口被其他服务占用时退出，不终止监听者。
 
 需要保留预览时运行 `npm run check`：暂停受管预览，委托同一个权威 `scripts/check.ps1` 或 `scripts/check.sh`，成功或失败后恢复原端口与接口地址。直接权威入口仍可使用；手动启动的预览不受工具管理，需由启动者先停止，以免 Windows 的 esbuild 文件锁影响 `npm ci`。
 

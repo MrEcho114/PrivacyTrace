@@ -6,12 +6,15 @@ const { spawn } = require('node:child_process')
 const { stripVTControlCharacters } = require('node:util')
 const { chromium } = require('playwright')
 const { stopChildren, spawnOptions } = require('./lib/process-control.cjs')
+const { resolvePort } = require('./lib/local-ports.cjs')
 
 const root = path.resolve(__dirname, '..')
 const output = path.join(root, 'tmp/concept-foundation')
 fs.mkdirSync(output, { recursive: true })
-const port = process.env.PRIVACYTRACE_DESIGN_PORT || '5192'
-const origin = 'http://127.0.0.1:' + port
+// Assigned in main(): the fixed 5192 default lands inside the Windows
+// Hyper-V/WinNAT reserved range, so the preview port is allocated per run.
+let port
+let origin
 const checks = []
 const captures = []
 function check(name, condition) { assert.ok(condition, name); checks.push(name) }
@@ -63,7 +66,9 @@ async function designContract(page) {
   assert.equal(actual.panelBorder, '1px'); assert.equal(actual.radius, '0px')
 }
 async function main() {
-  const server = spawn(process.execPath, [path.join(root, 'node_modules/vite/bin/vite.js'), 'preview', '--host', '127.0.0.1', '--port', port, '--strictPort'],
+  port = await resolvePort('PRIVACYTRACE_DESIGN_PORT')
+  origin = 'http://127.0.0.1:' + port
+  const server = spawn(process.execPath, [path.join(root, 'node_modules/vite/bin/vite.js'), 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
     { ...spawnOptions(path.join(root, 'apps/web')), shell: false, windowsHide: true })
   let log = ''
   server.stdout.on('data', chunk => { log += stripVTControlCharacters(String(chunk)) })

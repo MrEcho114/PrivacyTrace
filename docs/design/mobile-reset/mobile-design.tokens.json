@@ -1,0 +1,716 @@
+{
+  "meta": {
+    "name": "PrivacyTrace Mobile Design Tokens",
+    "version": "0.1.0",
+    "baseline": "od-ds-claude",
+    "scope": "mobile-app-only",
+    "source": "apps/web/src/theme.css (Pioneer + round2 --m-*), apps/web/src/mobile/mobile.css, scripts/fixtures/pioneer-design.json, docs/design/frontend-design-spec-mobile.md §4–§9；作用域：桌面 :root 旧别名保持旧值，移动根 .mobile-workspace 使用 --mt-*，共享组件消费语义别名",
+    "generatedAt": "2026-10-22T13:54:11Z",
+    "cssNamespace": "--mt-",
+    "cssVarOverrides": {
+      "dark-bg": "--mt-bg-inverse",
+      "dark-surface": "--mt-surface-dark",
+      "dark-text": "--mt-fg-inverse",
+      "dark-muted": "--mt-muted-inverse",
+      "dark-accent": "--mt-accent-inverse"
+    },
+    "note": "唯一 light 主题；dark-* 只用于深色章节（报告封面/空状态），不是主题切换。accent 与 meta 仅限 ≥24px 大字或非文本。border-inverse / danger-active / handle / state-* 与 elevation.shadow-bar 是规范 §4.2/§7.3/§8.1/§8.6 的补充项，不在目标色表原清单内。旧别名保持旧值服务桌面，--mt-* 只在 .mobile-workspace 作用域生效。contrast[].ratio 由同目录 contrast.mjs 按 WCAG 2.1 相对亮度公式实算，保留两位。"
+  },
+  "colors": {
+    "bg": "#f5f4ed",
+    "surface": "#faf9f5",
+    "surface-warm": "#e8e6dc",
+    "fg": "#141413",
+    "fg-2": "#3d3d3a",
+    "muted": "#5e5d59",
+    "caption": "#6b6a63",
+    "meta": "#87867f",
+    "border": "#f0eee6",
+    "border-soft": "#e8e6dc",
+    "border-control": "#87867f",
+    "border-inverse": "rgba(250,249,245,.16)",
+    "accent": "#c96442",
+    "accent-strong": "#b04b25",
+    "accent-strong-hover": "#a24522",
+    "accent-strong-active": "#974120",
+    "accent-text": "#a8431f",
+    "accent-on": "#faf9f5",
+    "focus": "#1f6fb2",
+    "success": "#0f7a3c",
+    "success-bg": "#eef6e8",
+    "warn": "#8a5a00",
+    "warn-bg": "#fbf3d9",
+    "danger": "#b53333",
+    "danger-bg": "#fbeceb",
+    "danger-active": "#a92e2e",
+    "info": "#1f6fb2",
+    "info-bg": "#eaf2fb",
+    "neutral-fg": "#3d3d3a",
+    "neutral-bg": "#e8e6dc",
+    "handle": "#d1cfc5",
+    "state-hover": "rgba(20,20,19,.06)",
+    "state-press": "rgba(20,20,19,.12)",
+    "state-selected": "rgba(20,20,19,.08)",
+    "scrim": "rgba(20,20,19,.45)",
+    "dark-bg": "#141413",
+    "dark-surface": "#30302e",
+    "dark-text": "#faf9f5",
+    "dark-muted": "#b0aea5",
+    "dark-accent": "#d97757"
+  },
+  "typography": {
+    "rootPx": 16,
+    "families": {
+      "serif": {
+        "stack": "\"Anthropic Serif\", Georgia, \"Noto Serif SC\", \"Songti SC\", serif",
+        "usage": "页面标题、卡片标题、封面/空状态主标题；Anthropic Serif 仅作首选名，实际回落 Georgia / 自托管 Noto Serif SC"
+      },
+      "sans": {
+        "stack": "\"Anthropic Sans\", Inter, \"Noto Sans SC\", \"Microsoft YaHei\", system-ui, -apple-system, sans-serif",
+        "usage": "UI 控件、正文、标签；Anthropic Sans 仅作首选名，实际回落 Inter / 自托管 Noto Sans SC / 系统中文字体"
+      },
+      "reading": {
+        "stack": "\"Noto Serif SC\", Georgia, \"Songti SC\", serif",
+        "usage": "政策原文、报告引文、长文阅读；与 UI 无衬线明确分工"
+      },
+      "mono": {
+        "stack": "\"SF Mono\", \"JetBrains Mono\", ui-monospace, Consolas, monospace",
+        "usage": "哈希、包名、URL、代码片段；不得用于正文"
+      }
+    },
+    "scale": {
+      "display": {
+        "size": "2rem",
+        "px": 32,
+        "lineHeight": 1.15,
+        "lineHeightPx": 36.8,
+        "weight": 500,
+        "family": "serif",
+        "tracking": "-0.01em",
+        "usage": "封面/空状态主标题；每屏至多一处"
+      },
+      "title-l": {
+        "size": "1.5rem",
+        "px": 24,
+        "lineHeight": 1.25,
+        "lineHeightPx": 30,
+        "weight": 500,
+        "family": "serif",
+        "tracking": "0",
+        "usage": "页面标题（报告、设置、空状态副标题）"
+      },
+      "title-m": {
+        "size": "1.25rem",
+        "px": 20,
+        "lineHeight": 1.3,
+        "lineHeightPx": 26,
+        "weight": 500,
+        "family": "serif",
+        "tracking": "0",
+        "usage": "顶栏标题、分区标题、sheet 标题"
+      },
+      "title-s": {
+        "size": "1.0625rem",
+        "px": 17,
+        "lineHeight": 1.4,
+        "lineHeightPx": 23.8,
+        "weight": 500,
+        "family": "serif",
+        "tracking": "0",
+        "usage": "卡片标题、来源标题、列表分组标题"
+      },
+      "body-l": {
+        "size": "1.0625rem",
+        "px": 17,
+        "lineHeight": 1.75,
+        "lineHeightPx": 29.75,
+        "weight": 400,
+        "family": "sans",
+        "readingFamily": "reading",
+        "tracking": "0",
+        "usage": "政策正文与报告引文用 reading 衬线；其他长正文可用 sans"
+      },
+      "body": {
+        "size": "1rem",
+        "px": 16,
+        "lineHeight": 1.6,
+        "lineHeightPx": 25.6,
+        "weight": 400,
+        "family": "sans",
+        "tracking": "0",
+        "usage": "工作区正文、说明、卡片正文、列表行文案"
+      },
+      "control": {
+        "size": "1rem",
+        "px": 16,
+        "lineHeight": 1.25,
+        "lineHeightPx": 20,
+        "weight": 500,
+        "family": "sans",
+        "tracking": "0",
+        "usage": "按钮、输入值、标签、导航项"
+      },
+      "caption": {
+        "size": ".875rem",
+        "px": 14,
+        "lineHeight": 1.45,
+        "lineHeightPx": 20.3,
+        "weight": 400,
+        "family": "sans",
+        "tracking": "0",
+        "usage": "元数据、辅助说明、来源行副文案、时间戳"
+      },
+      "label": {
+        "size": ".75rem",
+        "px": 12,
+        "lineHeight": 1.35,
+        "lineHeightPx": 16.2,
+        "weight": 500,
+        "family": "sans",
+        "tracking": ".01em",
+        "usage": "状态标签、小标注（字段标签用 caption 14/500）"
+      },
+      "overline": {
+        "size": ".6875rem",
+        "px": 11,
+        "lineHeight": 1.5,
+        "lineHeightPx": 16.5,
+        "weight": 500,
+        "family": "sans",
+        "tracking": ".05em",
+        "usage": "章节小标；中文不强制全大写"
+      },
+      "mono": {
+        "size": ".875rem",
+        "px": 14,
+        "lineHeight": 1.6,
+        "lineHeightPx": 22.4,
+        "weight": 400,
+        "family": "mono",
+        "tracking": "0",
+        "usage": "哈希、包名、URL、代码片段；overflow-wrap: anywhere"
+      }
+    }
+  },
+  "space": {
+    "base": 4,
+    "scale": {
+      "4": "4px",
+      "8": "8px",
+      "12": "12px",
+      "16": "16px",
+      "20": "20px",
+      "24": "24px",
+      "32": "32px",
+      "40": "40px",
+      "48": "48px"
+    },
+    "semantics": {
+      "pageGutter": "16px",
+      "cardPadding": "16px",
+      "cardPaddingRoomy": "20px",
+      "sectionGap": "24px",
+      "sectionGapLarge": "32px"
+    }
+  },
+  "radius": {
+    "tag": "6px",
+    "control": "12px",
+    "field": "12px",
+    "card": "16px",
+    "sheet": "24px",
+    "pill": "999px",
+    "circle": "50%"
+  },
+  "elevation": {
+    "l0": "none",
+    "l1": "1px solid var(--mt-border-soft)",
+    "l2": "0 0 0 1px rgba(20,20,19,.08)",
+    "l3": "0 4px 24px rgba(20,20,19,.05)",
+    "l4": "0 -8px 32px rgba(20,20,19,.18)",
+    "shadow-bar": "0 -1px 2px rgba(20,20,19,.06)"
+  },
+  "motion": {
+    "duration": {
+      "press": "120ms",
+      "enter": "200ms",
+      "exit": "150ms",
+      "reduced": "0ms"
+    },
+    "easing": {
+      "standard": "cubic-bezier(.2, 0, 0, 1)",
+      "decelerate": "cubic-bezier(0, 0, 0, 1)"
+    },
+    "reducedMotion": {
+      "duration": "0ms",
+      "transform": "none",
+      "usage": "prefers-reduced-motion: reduce 下全部时长归零，取消位移与缩放，保留即时可见状态"
+    },
+    "allowedProperties": [
+      "transform",
+      "opacity",
+      "background-color",
+      "border-color",
+      "box-shadow"
+    ]
+  },
+  "layout": {
+    "appbar": "56px",
+    "stepnav": "48px",
+    "actionbarMinHeight": "64px",
+    "touchTarget": "48px",
+    "inputFontSize": "16px",
+    "inputHeight": "56px",
+    "contentHeight": "100dvh",
+    "contentMaxWidth": "560px",
+    "contentMaxWidthViewport": "600px",
+    "gutter": "16px",
+    "safeTop": "env(safe-area-inset-top, 0px)",
+    "safeBottom": "env(safe-area-inset-bottom, 0px)",
+    "keyboardInset": "var(--keyboard-inset, 0px)"
+  },
+  "components": {
+    "button": {
+      "height": "48px",
+      "minWidth": "48px",
+      "paddingX": "20px",
+      "radius": "control",
+      "font": "control",
+      "groupGap": "8px",
+      "focusRing": "2px solid var(--mt-focus)",
+      "focusOffset": "2px",
+      "variants": {
+        "primary": {
+          "background": "accent-strong",
+          "foreground": "accent-on",
+          "hoverBackground": "accent-strong-hover",
+          "activeBackground": "accent-strong-active",
+          "hoverMedia": "(hover: hover) and (pointer: fine)",
+          "pressedTransform": "scale(.98)",
+          "disabledBackground": "surface-warm",
+          "disabledForeground": "meta"
+        },
+        "secondary": {
+          "background": "surface",
+          "foreground": "fg-2",
+          "border": "1px solid var(--mt-border-control)",
+          "activeBackground": "state-press",
+          "pressedTransform": "scale(.98)",
+          "disabledBackground": "surface-warm",
+          "disabledForeground": "meta"
+        },
+        "quiet": {
+          "background": "transparent",
+          "foreground": "accent-text",
+          "activeBackground": "state-press",
+          "disabledForeground": "meta"
+        },
+        "danger": {
+          "background": "danger",
+          "foreground": "accent-on",
+          "activeBackground": "danger-active",
+          "pressedTransform": "scale(.98)"
+        }
+      }
+    },
+    "field": {
+      "height": "56px",
+      "radius": "field",
+      "font": "control",
+      "background": "surface",
+      "border": "1px solid var(--mt-border-control)",
+      "focusRing": "2px solid var(--mt-focus)",
+      "labelFont": "caption",
+      "labelWeight": 500,
+      "helpFont": "label",
+      "errorFont": "label",
+      "errorColor": "danger",
+      "disabledBackground": "surface-warm",
+      "disabledForeground": "meta",
+      "textareaMinHeight": "96px",
+      "placeholderColor": "muted"
+    },
+    "tag": {
+      "height": "24px",
+      "paddingX": "10px",
+      "radius": "tag",
+      "font": "label",
+      "tones": {
+        "neutral": {
+          "background": "neutral-bg",
+          "foreground": "neutral-fg"
+        },
+        "info": {
+          "background": "info-bg",
+          "foreground": "info"
+        },
+        "wait": {
+          "background": "warn-bg",
+          "foreground": "warn"
+        },
+        "success": {
+          "background": "success-bg",
+          "foreground": "success"
+        },
+        "error": {
+          "background": "danger-bg",
+          "foreground": "danger"
+        }
+      }
+    },
+    "card": {
+      "background": "surface",
+      "border": "1px solid var(--mt-border-soft)",
+      "radius": "card",
+      "padding": [
+        "16px",
+        "20px"
+      ],
+      "shadow": "none",
+      "titleFont": "title-s",
+      "bodyFont": "body",
+      "metaFont": "caption",
+      "pressed": "elevation.l2 + scale(.995)"
+    },
+    "listRow": {
+      "minHeight": "56px",
+      "paddingY": "12px",
+      "titleFont": "body",
+      "titleWeight": 500,
+      "metaFont": "caption",
+      "metaColor": "muted",
+      "chevronSize": "20px",
+      "pressedBackground": "state-press"
+    },
+    "appbar": {
+      "height": "56px",
+      "safeTop": "env(safe-area-inset-top, 0px)",
+      "borderBottom": "1px solid var(--mt-border-soft)",
+      "titleFont": "title-m",
+      "iconButtonSize": "48px"
+    },
+    "stepnav": {
+      "height": "48px",
+      "current": {
+        "color": "accent-text",
+        "underline": "2px"
+      },
+      "complete": {
+        "color": "muted",
+        "marker": "✓"
+      },
+      "disabled": {
+        "color": "meta"
+      },
+      "redundancy": "当前=文字/下划线，完成=✓，不可达=禁用；不能只靠颜色"
+    },
+    "actionbar": {
+      "minHeight": "64px",
+      "safeBottom": "env(safe-area-inset-bottom, 0px)",
+      "borderTop": "1px solid var(--mt-border-soft)",
+      "shadow": "elevation.shadow-bar",
+      "primaryHeight": "48px",
+      "paddingX": "16px",
+      "keyboardInset": "var(--mt-keyboard-inset, 0px)"
+    },
+    "sheet": {
+      "background": "surface",
+      "topRadius": "sheet",
+      "corners": "top-left top-right",
+      "shadow": "elevation.l4",
+      "scrim": "scrim",
+      "maxHeight": "min(88dvh, 720px)",
+      "titleFont": "title-m",
+      "closeSize": "48px",
+      "handle": {
+        "width": "36px",
+        "height": "4px",
+        "color": "handle"
+      }
+    },
+    "settings": {
+      "height": "100dvh",
+      "radius": "0",
+      "shadow": "none",
+      "titleFont": "title-l"
+    },
+    "states": {
+      "focus": {
+        "outline": "2px solid var(--mt-focus)",
+        "offset": "2px",
+        "visibleOnly": ":focus-visible"
+      },
+      "press": {
+        "immediateMs": 16,
+        "buttonScale": 0.98,
+        "rowOverlay": "state-press",
+        "layoutImpact": "none"
+      },
+      "hover": {
+        "background": "state-hover",
+        "media": "(hover: hover) and (pointer: fine)",
+        "note": "触屏不启用 sticky hover；按下层替代 hover"
+      },
+      "disabled": {
+        "background": "surface-warm",
+        "foreground": "meta",
+        "wcagExempt": true
+      },
+      "selected": {
+        "color": "accent-text",
+        "surfaceOverlay": "state-selected",
+        "redundancy": "2px 下划线或 ✓"
+      }
+    }
+  },
+  "contrast": [
+    {
+      "fg": "#141413",
+      "bg": "#f5f4ed",
+      "ratio": 16.72,
+      "min": 4.5,
+      "pass": true,
+      "usage": "正文 --mt-fg 对画布 --mt-bg"
+    },
+    {
+      "fg": "#141413",
+      "bg": "#faf9f5",
+      "ratio": 17.5,
+      "min": 4.5,
+      "pass": true,
+      "usage": "正文 --mt-fg 对卡片 --mt-surface"
+    },
+    {
+      "fg": "#3d3d3a",
+      "bg": "#f5f4ed",
+      "ratio": 9.88,
+      "min": 4.5,
+      "pass": true,
+      "usage": "次级正文 --mt-fg-2 对画布"
+    },
+    {
+      "fg": "#3d3d3a",
+      "bg": "#faf9f5",
+      "ratio": 10.34,
+      "min": 4.5,
+      "pass": true,
+      "usage": "次级正文 --mt-fg-2 对卡片"
+    },
+    {
+      "fg": "#5e5d59",
+      "bg": "#f5f4ed",
+      "ratio": 5.98,
+      "min": 4.5,
+      "pass": true,
+      "usage": "辅助文字 --mt-muted 对画布"
+    },
+    {
+      "fg": "#5e5d59",
+      "bg": "#faf9f5",
+      "ratio": 6.26,
+      "min": 4.5,
+      "pass": true,
+      "usage": "辅助文字 --mt-muted 对卡片"
+    },
+    {
+      "fg": "#6b6a63",
+      "bg": "#f5f4ed",
+      "ratio": 4.93,
+      "min": 4.5,
+      "pass": true,
+      "usage": "三级文字 --mt-caption 对画布"
+    },
+    {
+      "fg": "#6b6a63",
+      "bg": "#faf9f5",
+      "ratio": 5.15,
+      "min": 4.5,
+      "pass": true,
+      "usage": "三级文字 --mt-caption 对卡片"
+    },
+    {
+      "fg": "#a8431f",
+      "bg": "#f5f4ed",
+      "ratio": 5.46,
+      "min": 4.5,
+      "pass": true,
+      "usage": "强调文字/链接 --mt-accent-text 对画布"
+    },
+    {
+      "fg": "#c96442",
+      "bg": "#f5f4ed",
+      "ratio": 3.54,
+      "min": 3,
+      "pass": true,
+      "usage": "品牌强调 --mt-accent 对画布：仅 ≥24px 大字或非文本"
+    },
+    {
+      "fg": "#c96442",
+      "bg": "#faf9f5",
+      "ratio": 3.7,
+      "min": 3,
+      "pass": true,
+      "usage": "品牌强调 --mt-accent 对卡片：仅 ≥24px 大字或非文本"
+    },
+    {
+      "fg": "#faf9f5",
+      "bg": "#b04b25",
+      "ratio": 5.14,
+      "min": 4.5,
+      "pass": true,
+      "usage": "主按钮象牙白字 --mt-accent-on 对 --mt-accent-strong"
+    },
+    {
+      "fg": "#faf9f5",
+      "bg": "#a24522",
+      "ratio": 5.84,
+      "min": 4.5,
+      "pass": true,
+      "usage": "主按钮 hover 态 --mt-accent-on 对 --mt-accent-strong-hover"
+    },
+    {
+      "fg": "#faf9f5",
+      "bg": "#974120",
+      "ratio": 6.45,
+      "min": 4.5,
+      "pass": true,
+      "usage": "主按钮 active 态 --mt-accent-on 对 --mt-accent-strong-active"
+    },
+    {
+      "fg": "#0f7a3c",
+      "bg": "#eef6e8",
+      "ratio": 4.91,
+      "min": 4.5,
+      "pass": true,
+      "usage": "成功文字 --mt-success 对 --mt-success-bg"
+    },
+    {
+      "fg": "#8a5a00",
+      "bg": "#fbf3d9",
+      "ratio": 5.34,
+      "min": 4.5,
+      "pass": true,
+      "usage": "警告/待复核 --mt-warn 对 --mt-warn-bg"
+    },
+    {
+      "fg": "#b53333",
+      "bg": "#fbeceb",
+      "ratio": 5.25,
+      "min": 4.5,
+      "pass": true,
+      "usage": "危险/失败文字 --mt-danger 对 --mt-danger-bg"
+    },
+    {
+      "fg": "#1f6fb2",
+      "bg": "#eaf2fb",
+      "ratio": 4.68,
+      "min": 4.5,
+      "pass": true,
+      "usage": "信息/进行中 --mt-info 对 --mt-info-bg"
+    },
+    {
+      "fg": "#3d3d3a",
+      "bg": "#e8e6dc",
+      "ratio": 8.71,
+      "min": 4.5,
+      "pass": true,
+      "usage": "中性/未知 --mt-neutral-fg 对 --mt-neutral-bg"
+    },
+    {
+      "fg": "#1f6fb2",
+      "bg": "#f5f4ed",
+      "ratio": 4.79,
+      "min": 3,
+      "pass": true,
+      "usage": "焦点环 --mt-focus 对画布（非文本 3:1）"
+    },
+    {
+      "fg": "#1f6fb2",
+      "bg": "#faf9f5",
+      "ratio": 5.01,
+      "min": 3,
+      "pass": true,
+      "usage": "焦点环 --mt-focus 对卡片（非文本 3:1）"
+    },
+    {
+      "fg": "#1f6fb2",
+      "bg": "#e8e6dc",
+      "ratio": 4.22,
+      "min": 3,
+      "pass": true,
+      "usage": "焦点环 --mt-focus 对暖砂 --mt-surface-warm（非文本 3:1）"
+    },
+    {
+      "fg": "#87867f",
+      "bg": "#faf9f5",
+      "ratio": 3.47,
+      "min": 3,
+      "pass": true,
+      "usage": "控件边 --mt-border-control 对卡片（非文本 3:1）"
+    },
+    {
+      "fg": "#87867f",
+      "bg": "#faf9f5",
+      "ratio": 3.47,
+      "min": 3,
+      "pass": true,
+      "usage": "元数据 --mt-meta 对卡片：仅非文本或 ≥24px 大字，不得用于正文/12px 标签"
+    },
+    {
+      "fg": "#faf9f5",
+      "bg": "#141413",
+      "ratio": 17.5,
+      "min": 4.5,
+      "pass": true,
+      "usage": "深色章节正文 --mt-fg-inverse 对 --mt-bg-inverse"
+    },
+    {
+      "fg": "#b0aea5",
+      "bg": "#141413",
+      "ratio": 8.29,
+      "min": 4.5,
+      "pass": true,
+      "usage": "深色章节辅助文字 --mt-muted-inverse 对 --mt-bg-inverse"
+    },
+    {
+      "fg": "#d97757",
+      "bg": "#141413",
+      "ratio": 5.9,
+      "min": 4.5,
+      "pass": true,
+      "usage": "深色章节强调 --mt-accent-inverse 对 --mt-bg-inverse"
+    },
+    {
+      "fg": "#faf9f5",
+      "bg": "#30302e",
+      "ratio": 12.55,
+      "min": 4.5,
+      "pass": true,
+      "usage": "深色章节卡片正文 --mt-fg-inverse 对 --mt-surface-dark"
+    },
+    {
+      "fg": "#faf9f5",
+      "bg": "#b53333",
+      "ratio": 5.72,
+      "min": 4.5,
+      "pass": true,
+      "usage": "危险实心按钮象牙白字 --mt-accent-on 对 --mt-danger"
+    },
+    {
+      "fg": "#6b6a63",
+      "bg": "#e8e6dc",
+      "ratio": 4.34,
+      "min": 4.5,
+      "pass": false,
+      "usage": "按 D1 定案：暖砂仅用于禁用/骨架/分区带，非禁用 14px 三级文字禁止使用；--mt-caption 对 --mt-surface-warm 仅作禁用态豁免（4.34，pass:false）"
+    },
+    {
+      "fg": "#87867f",
+      "bg": "#e8e6dc",
+      "ratio": 2.92,
+      "min": 3,
+      "pass": false,
+      "usage": "按 D1 定案：暖砂仅用于禁用/骨架/分区带，非禁用图标/描边禁止使用；--mt-meta 对 --mt-surface-warm 仅作禁用态豁免（2.92，pass:false）"
+    }
+  ]
+}

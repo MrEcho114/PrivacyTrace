@@ -1,25 +1,31 @@
 /*
- * Android portrait shell for the Tauri entry (#144).
- * Contract: `.scratch/round2/lead/docs/design/frontend-round2-android-pioneer.md`
- * §2.1 / §4 / §4.5. Every size/colour below consumes the shared `--m-*` tokens
- * owned by A in `theme.css`; this file adds no second palette and no reset.
+ * Android portrait shell for the Tauri entry (#144) — Claude 移动基线。
  *
- * The shell scrolls the document (body) on purpose: the Tauri WebView keeps
- * native scroll restoration and the report's evidence focus/scroll contract
- * (`App.vue`) works unchanged. The app bar is sticky, the action bar is fixed.
+ * 视觉契约：docs/design/frontend-design-spec-mobile.md §4–§10 + 附录 A（颜色、
+ * 字号阶梯、几何、组件、状态、阅读、无障碍）。壳的工程合同仍归 round2
+ * （docs/design/frontend-round2-android-pioneer.md §2.1/§4）：56dp 顶栏、48dp
+ * 触控、edge-to-edge 安全区、字节级拉伸的 100dvh。本文件替换它的视觉层。
+ *
+ * 取值全部消费 theme.css 的 `--mt-*`；旧的 `--m-*` / Pioneer 变量留在回退位，
+ * 便于 token 层只落一半时退到 round-2 值而不是 `initial`。本文件不定义任何
+ * 调色板，也不硬编码色值：颜色只来自 token（或旧 token 回退）。
+ *
+ * 壳沿用文档级（body）滚动：Tauri WebView 的原生滚动恢复与 `App.vue` 的证据
+ * 焦点/滚动合同依赖它（`window.scrollY/scrollTo`）。顶栏 sticky、操作栏 fixed。
  */
 
 /* ---------- platform layer (only while the Tauri shell is mounted) ---------- */
-html.mobile-shell { background: var(--canvas); overscroll-behavior: none; }
-html.mobile-shell body { margin: 0; background: var(--canvas); overscroll-behavior-y: none; }
+html.mobile-shell { background: var(--mt-bg, var(--canvas)); overscroll-behavior: none; }
+html.mobile-shell body { margin: 0; background: var(--mt-bg, var(--canvas)); overscroll-behavior-y: none; }
 .mobile-workspace {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: var(--canvas);
-  color: var(--ink);
-  font-size: var(--m-body);
-  line-height: var(--m-line-body);
+  background: var(--mt-bg, var(--canvas));
+  color: var(--mt-fg, var(--ink));
+  font-family: var(--mt-font-sans, var(--font-body));
+  font-size: var(--mt-text-body, var(--m-body));
+  line-height: 1.6;
 }
 .mobile-workspace *,
 .ui-sheet * { -webkit-tap-highlight-color: transparent; }
@@ -37,21 +43,40 @@ html.mobile-shell body { margin: 0; background: var(--canvas); overscroll-behavi
 .mobile-workspace h3,
 .mobile-workspace p { overflow-wrap: anywhere; }
 .mobile-workspace .hash,
-.ui-sheet .hash { overflow-wrap: anywhere; }
+.ui-sheet .hash {
+  overflow-wrap: anywhere;
+  font-family: var(--mt-font-mono, var(--font-code));
+  font-size: var(--mt-text-mono, var(--m-caption));
+  line-height: 1.6;
+}
 
-/* ---------- top app bar: 56px + safe-top, sticky ---------- */
+/* ---------- focus: 2px --mt-focus, offset 2, never changes layout (§7.2/§10) ---------- */
+.mobile-workspace :focus-visible,
+.ui-sheet :focus-visible {
+  outline: 2px solid var(--mt-focus, var(--navy));
+  outline-offset: 2px;
+}
+/* 步骤切换把焦点程序化地放到 h1#page-title（读屏地标），滚动落点是
+   #workspace-content。两者都不是键盘控件，所以不画控件式焦点环；真正的键盘
+   :focus-visible 仍走上面的规则。 */
+.m-appbar h1:focus,
+.m-appbar h1:focus-visible,
+.m-main:focus,
+.m-main:focus-visible { outline: none; }
+
+/* ---------- top app bar: 56 + safe-top, sticky, 1px border, no shadow (§6.2) ---------- */
 .m-appbar {
   position: sticky;
   top: 0;
   z-index: 30;
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  min-height: calc(var(--m-appbar-height) + env(safe-area-inset-top, 0px));
-  padding: env(safe-area-inset-top, 0px) max(var(--m-gutter), env(safe-area-inset-right, 0px)) 0 max(var(--m-gutter), env(safe-area-inset-left, 0px));
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  box-shadow: var(--m-shadow-bar);
+  gap: var(--mt-space-4, var(--space-4));
+  min-height: calc(var(--mt-appbar, var(--m-appbar-height)) + var(--mt-safe-top, env(safe-area-inset-top, 0px)));
+  padding: var(--mt-safe-top, env(safe-area-inset-top, 0px)) max(var(--mt-gutter, var(--m-gutter)), var(--mt-safe-right, env(safe-area-inset-right, 0px)), calc((100% - var(--mt-content-max, 560px)) / 2)) 0 max(var(--mt-gutter, var(--m-gutter)), var(--mt-safe-left, env(safe-area-inset-left, 0px)), calc((100% - var(--mt-content-max, 560px)) / 2));
+  background: var(--mt-surface, var(--surface));
+  border-bottom: 1px solid var(--mt-border-soft, var(--border));
+  box-shadow: none;
   box-sizing: border-box;
 }
 .m-appbar h1 {
@@ -59,60 +84,60 @@ html.mobile-shell body { margin: 0; background: var(--canvas); overscroll-behavi
   min-width: 0;
   margin: 0;
   padding: 8px 0;
-  font-family: var(--font-display);
-  font-size: var(--m-font-title);
+  font-family: var(--mt-font-serif, var(--font-display));
+  font-size: var(--mt-text-title-m, var(--m-font-title));
   font-weight: 500;
   line-height: 1.3;
   letter-spacing: 0;
-  color: var(--ink);
+  color: var(--mt-fg, var(--ink));
 }
-/* The shell moves focus to the h1 when a step changes (screen-reader landmark,
-   not a keyboard control). A visible ring on a programmatic heading focus reads
-   like a stray input outline; interactive controls keep the global focus ring. */
-.m-appbar h1:focus { outline: none; }
 .m-icon-button {
   display: grid;
   place-items: center;
   flex: none;
-  width: var(--m-touch);
-  height: var(--m-touch);
+  width: var(--mt-touch, var(--m-touch));
+  height: var(--mt-touch, var(--m-touch));
   padding: 0;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--mt-radius-circle, 50%);
   background: transparent;
-  color: var(--ink);
+  color: var(--mt-fg-2, var(--ink));
 }
 .m-icon-button .ui-icon { width: 24px; height: 24px; }
-.m-icon-button:active { background: var(--m-state-press); }
-.m-appbar-spacer { flex: none; width: var(--m-touch); height: var(--m-touch); }
+.m-icon-button:active { background: var(--mt-state-press, var(--m-state-press)); }
+.m-appbar-spacer { flex: none; width: var(--mt-touch, var(--m-touch)); height: var(--mt-touch, var(--m-touch)); }
 @media (hover: hover) and (pointer: fine) {
-  .m-icon-button:hover { background: var(--m-state-hover); }
+  .m-icon-button:hover { background: var(--mt-state-hover, var(--m-state-hover)); }
 }
 
-/* ---------- compact 4-step rail: one row at 320px, never a 2x2 grid ---------- */
-.m-steps { background: var(--canvas); border-bottom: 1px solid var(--border); }
+/* ---------- step rail: one 48 row, four 48x48 targets, never a 2x2 grid (§6.2/§8.5) ---------- */
+.m-steps { background: var(--mt-bg, var(--canvas)); border-bottom: 1px solid var(--mt-border-soft, var(--border)); }
 .m-steps ol {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 2px;
+  gap: var(--mt-space-8, var(--space-8));
   margin: 0;
-  padding: 4px max(8px, calc(var(--m-gutter) - 8px));
+  padding: 0 max(var(--mt-space-8, var(--space-8)), calc((100% - var(--mt-content-max, 560px)) / 2));
   list-style: none;
 }
 .m-steps li { min-width: 0; }
 .m-step {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   width: 100%;
-  min-height: var(--m-touch);
-  padding: 4px 2px;
+  min-height: var(--mt-stepnav, 48px);
+  height: var(--mt-stepnav, 48px);
+  padding: 0 var(--mt-space-4, 4px);
   border: 0;
-  border-radius: 10px;
+  border-radius: 0;
   background: transparent;
-  color: var(--muted);
-  font-size: var(--m-caption);
+  color: var(--mt-muted, var(--muted));
+  font-family: var(--mt-font-sans, var(--font-body));
+  font-size: var(--mt-text-control, var(--m-body));
+  font-weight: 400;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
@@ -123,111 +148,178 @@ html.mobile-shell body { margin: 0; background: var(--canvas); overscroll-behavi
   flex: none;
   width: 22px;
   height: 22px;
-  border: 1px solid var(--border);
-  border-radius: 50%;
+  border: 1px solid var(--mt-border-control, var(--control));
+  border-radius: var(--mt-radius-circle, 50%);
   font-size: 0.6875rem;
   font-variant-numeric: tabular-nums;
 }
-.m-step-label { overflow: hidden; text-overflow: ellipsis; }
-.m-step[aria-current="step"] { background: var(--m-state-selected); color: var(--ink); font-weight: 600; }
-.m-step[aria-current="step"] .m-step-number { background: var(--navy); border-color: var(--navy); color: var(--surface); }
-.m-step.complete { color: var(--success); }
-.m-step.complete .m-step-number { background: var(--mint); border-color: var(--mint); color: var(--success); }
-.m-step:disabled { opacity: .55; cursor: default; }
-.m-step:active:not(:disabled) { background: var(--m-state-press); }
+.m-step-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* 当前: 陶土文字 + 2px 下划线（形状冗余，不只靠颜色）；完成: ✓ + muted；
+   不可达: meta + 禁用。整条轨道不用藏青整块底。 */
+.m-step[aria-current="step"] { color: var(--mt-accent-text, var(--navy)); font-weight: 500; }
+.m-step[aria-current="step"] .m-step-number { border-color: currentColor; color: currentColor; background: transparent; }
+.m-step[aria-current="step"]::after {
+  content: "";
+  position: absolute;
+  right: var(--mt-space-4, 4px);
+  bottom: 0;
+  left: var(--mt-space-4, 4px);
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+}
+.m-step.complete { color: var(--mt-muted, var(--muted)); }
+.m-step.complete .m-step-number {
+  background: transparent;
+  border-color: var(--mt-border-soft, var(--border));
+  color: var(--mt-muted, var(--muted));
+}
+.m-step:disabled { color: var(--mt-meta, var(--muted)); opacity: 1; cursor: default; }
+.m-step:disabled .m-step-number { border-color: var(--mt-border-soft, var(--border)); color: var(--mt-meta, var(--muted)); }
+.m-step:active:not(:disabled) { background: var(--mt-state-press, var(--m-state-press)); }
 @media (hover: hover) and (pointer: fine) {
-  .m-step:not(:disabled):hover { background: var(--m-state-hover); }
+  .m-step:not(:disabled):hover { background: var(--mt-state-hover, var(--m-state-hover)); }
 }
 
-/* ---------- scrolling content ---------- */
+/* ---------- scrolling content: single column, content max 560, body 16/1.6 ---------- */
 .m-main {
   flex: 1 0 auto;
   width: 100%;
-  max-width: 720px;
+  max-width: calc(var(--mt-content-max, 560px) + 2 * var(--mt-gutter, var(--m-gutter)));
   margin: 0 auto;
-  padding: 12px max(var(--m-gutter), env(safe-area-inset-right, 0px)) calc(var(--m-actionbar-actual, var(--m-actionbar-min-height)) + 24px + env(safe-area-inset-bottom, 0px)) max(var(--m-gutter), env(safe-area-inset-left, 0px));
+  padding: var(--mt-space-16, 16px) max(var(--mt-gutter, var(--m-gutter)), var(--mt-safe-right, env(safe-area-inset-right, 0px))) calc(var(--m-actionbar-actual, var(--mt-actionbar, var(--m-actionbar-min-height))) + var(--mt-space-24, 24px) + var(--mt-safe-bottom, env(safe-area-inset-bottom, 0px))) max(var(--mt-gutter, var(--m-gutter)), var(--mt-safe-left, env(safe-area-inset-left, 0px)));
   box-sizing: border-box;
 }
-.m-report-step .m-main { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
-/* Step change: one 160ms fade/4px rise, opacity plus a tiny offset. The content
-   is readable on the first frame; no height animation. */
+/* 报告是阅读态：没有固定操作栏，底部只留安全区。 */
+.m-report-step .m-main { padding-bottom: calc(var(--mt-space-24, 24px) + var(--mt-safe-bottom, env(safe-area-inset-bottom, 0px))); }
+/* 步骤切换：一次 200ms 的透明度 + 4px 微升，首帧即可读，不做高度动画。 */
 @keyframes m-step-enter {
   from { opacity: .55; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.m-main.m-step-enter { animation: m-step-enter 160ms var(--m-ease-decelerate); }
-.m-main:focus { outline: none; }
+.m-main.m-step-enter { animation: m-step-enter var(--mt-duration-enter, var(--m-duration-enter)) var(--mt-ease-decelerate, var(--m-ease-decelerate)); }
 
 /* ---------- compact material context (one line + expandable identity) ---------- */
-.m-context {
+.mobile-workspace .m-context.material-context {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 2px 8px;
-  margin: 0 0 12px;
-  padding: 8px 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--m-card-radius);
+  gap: 2px var(--mt-space-8, var(--space-8));
+  margin: 0 0 var(--mt-space-16, 16px);
+  padding: var(--mt-space-4, 4px) var(--mt-space-8, 8px) var(--mt-space-4, 4px) var(--mt-space-16, 16px);
+  background: var(--mt-surface, var(--surface));
+  border: 1px solid var(--mt-border-soft, var(--border));
+  border-radius: var(--mt-radius-card, var(--m-card-radius));
 }
+.mobile-workspace .material-context .material-identity strong {
+  font-size: var(--mt-text-body, var(--m-body));
+  font-weight: 500;
+  color: var(--mt-fg, var(--ink));
+}
+.mobile-workspace .material-context .material-identity > span,
+.mobile-workspace .material-context .material-affordance {
+  color: var(--mt-muted, var(--muted));
+  font-size: var(--mt-text-caption, var(--m-caption));
+  line-height: 1.45;
+}
+.mobile-workspace .material-context .material-facts {
+  border-top: 1px solid var(--mt-border, var(--border));
+  color: var(--mt-fg-2, var(--ink));
+  font-size: var(--mt-text-caption, var(--m-caption));
+  line-height: 1.45;
+}
+.mobile-workspace .material-context .material-facts dt { color: var(--mt-muted, var(--muted)); }
 .m-context-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.m-context-name { font-size: 0.9375rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.m-context-meta { color: var(--muted); font-size: var(--m-caption); overflow-wrap: anywhere; }
-.m-text-button {
-  min-width: var(--m-touch);
-  min-height: var(--m-touch);
-  padding: 0 8px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--navy);
-  font-size: var(--m-body);
-  font-weight: 600;
-}
-.m-text-button:active { background: var(--m-state-press); }
-@media (hover: hover) and (pointer: fine) {
-  .m-text-button:hover { background: var(--m-state-hover); }
-}
 .m-context-details { grid-column: 1 / -1; min-width: 0; }
 .m-context-details summary {
   display: flex;
   align-items: center;
-  min-height: var(--m-touch);
-  color: var(--muted);
-  font-size: var(--m-caption);
+  min-height: var(--mt-touch, var(--m-touch));
+  color: var(--mt-muted, var(--muted));
+  font-size: var(--mt-text-caption, var(--m-caption));
   cursor: pointer;
 }
-.m-context-details p { margin: 0 0 6px; font-size: var(--m-caption); color: var(--muted); }
+.m-context-details p { margin: 0 0 6px; font-size: var(--mt-text-caption, var(--m-caption)); color: var(--mt-muted, var(--muted)); }
+/* 文字按钮：透明底 + accent-text，不带描边；48 的命中区不缩。 */
+.m-text-button {
+  min-width: var(--mt-touch, var(--m-touch));
+  min-height: var(--mt-touch, var(--m-touch));
+  padding: 0 var(--mt-space-8, 8px);
+  border: 0;
+  border-radius: var(--mt-radius-control, var(--radius-panel));
+  background: transparent;
+  color: var(--mt-accent-text, var(--navy));
+  font-size: var(--mt-text-control, var(--m-body));
+  font-weight: 500;
+}
+.m-text-button:active { background: var(--mt-state-press, var(--m-state-press)); }
+@media (hover: hover) and (pointer: fine) {
+  .m-text-button:hover { background: var(--mt-state-hover, var(--m-state-hover)); }
+}
 
-/* ---------- cards, sections, rows ---------- */
+/* ---------- cards, sections, rows (§8.4) ---------- */
 .m-card {
   min-width: 0;
-  margin: 0 0 12px;
-  padding: 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--m-card-radius);
+  margin: 0 0 var(--mt-space-16, 16px);
+  padding: var(--mt-space-16, 16px);
+  background: var(--mt-surface, var(--surface));
+  border: 1px solid var(--mt-border-soft, var(--border));
+  border-radius: var(--mt-radius-card, var(--m-card-radius));
 }
-.m-card h2 { margin: 0 0 8px; font-family: var(--font-display); font-size: var(--m-font-title); font-weight: 600; line-height: 1.3; }
-.m-card p { margin: 6px 0; color: var(--muted); font-size: var(--m-body); line-height: var(--m-line-body); }
-.m-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.m-card h2 {
+  margin: 0 0 var(--mt-space-8, 8px);
+  font-family: var(--mt-font-serif, var(--font-display));
+  font-size: var(--mt-text-title-s, var(--m-font-section));
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--mt-fg, var(--ink));
+}
+.m-card p {
+  margin: 6px 0;
+  color: var(--mt-fg-2, var(--ink));
+  font-size: var(--mt-text-body, var(--m-body));
+  line-height: 1.6;
+}
+.m-card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--mt-space-8, 8px); flex-wrap: wrap; }
 .m-card-head h2 { margin: 0; }
 .m-card-head .ui-button { margin-left: auto; }
-.m-empty-card .m-button-row { margin-top: 12px; }
-.m-material-name { color: var(--ink) !important; font-family: var(--font-code); font-size: 0.8125rem !important; }
-.m-help { margin: 6px 0; color: var(--muted); font-size: var(--m-caption); line-height: var(--m-line-body); }
-.m-section { margin: 0 0 12px; }
-.m-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 6px 2px 8px; }
-.m-section-head h2 { margin: 0; font-size: var(--m-font-section); font-weight: 600; }
-.m-button-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.m-empty-card .m-button-row { margin-top: var(--mt-space-16, 16px); }
+/* 空态：衬线 title-l 24 + body 16 + 一个主操作（§8.7）。 */
+.m-empty-card h2 {
+  font-size: var(--mt-text-title-l, 1.5rem);
+  line-height: 1.25;
+  font-weight: 500;
+}
+.m-material-name {
+  color: var(--mt-fg, var(--ink)) !important;
+  font-family: var(--mt-font-mono, var(--font-code));
+  font-size: var(--mt-text-mono, var(--m-caption)) !important;
+}
+/* `.m-card p` 的 (0,1,1) 会压过裸类名，辅助文案统一带上作用域前缀。 */
+.mobile-workspace .m-help {
+  margin: 6px 0;
+  color: var(--mt-muted, var(--muted));
+  font-size: var(--mt-text-caption, var(--m-caption));
+  line-height: 1.45;
+}
+.m-section { margin: 0 0 var(--mt-space-16, 16px); }
+.m-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--mt-space-8, 8px); margin: 6px 2px var(--mt-space-8, 8px); }
+.m-section-head h2 {
+  margin: 0;
+  font-family: var(--mt-font-serif, var(--font-display));
+  font-size: var(--mt-text-title-m, var(--m-font-title));
+  font-weight: 500;
+  line-height: 1.3;
+}
+.m-button-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mt-space-8, 8px); }
 
 .m-source-row,
 .m-details {
   min-width: 0;
-  margin: 0 0 8px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--m-card-radius);
+  margin: 0 0 var(--mt-space-8, 8px);
+  background: var(--mt-surface, var(--surface));
+  border: 1px solid var(--mt-border-soft, var(--border));
+  border-radius: var(--mt-radius-card, var(--m-card-radius));
   overflow: hidden;
 }
 .m-details > summary { cursor: pointer; }
@@ -236,131 +328,209 @@ html.mobile-shell body { margin: 0; background: var(--canvas); overscroll-behavi
   list-style: none;
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: var(--m-touch);
-  padding: 8px 12px;
-  color: var(--ink);
-  font-size: var(--m-body);
+  gap: var(--mt-space-8, 8px);
+  min-height: 56px;
+  padding: var(--mt-space-8, 8px) var(--mt-space-16, 16px);
+  color: var(--mt-fg, var(--ink));
+  font-size: var(--mt-text-body, var(--m-body));
   font-weight: 500;
 }
 .m-source-row summary::-webkit-details-marker,
 .m-details > summary::-webkit-details-marker { display: none; }
 .m-row-main { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
-.m-row-main strong { font-size: 0.9375rem; font-weight: 600; overflow-wrap: anywhere; }
-.m-row-sub { color: var(--muted); font-size: var(--m-caption); line-height: 1.45; overflow-wrap: anywhere; }
-.m-chevron { flex: none; color: var(--muted); width: 24px; height: 24px; transition: transform var(--m-duration-exit) var(--m-ease-standard); }
+.m-row-main strong { font-size: var(--mt-text-body, var(--m-body)); font-weight: 500; overflow-wrap: anywhere; }
+.m-row-sub { color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); line-height: 1.45; overflow-wrap: anywhere; }
+.m-chevron {
+  flex: none;
+  color: var(--mt-muted, var(--muted));
+  width: var(--mt-chevron, 20px);
+  height: var(--mt-chevron, 20px);
+  transition: transform var(--mt-duration-exit, var(--m-duration-exit)) var(--mt-ease-standard, var(--m-ease-standard));
+}
 details[open] > summary .m-chevron { transform: rotate(90deg); }
-.m-row-body { min-width: 0; padding: 0 12px 12px; }
-.m-row-body p { margin: 4px 0; }
+.m-row-body { min-width: 0; padding: 0 var(--mt-space-16, 16px) var(--mt-space-16, 16px); }
+.m-row-body p {
+  margin: 4px 0;
+  color: var(--mt-fg-2, var(--ink));
+  font-size: var(--mt-text-body, var(--m-body));
+  line-height: 1.6;
+}
 .m-details > .field-help,
 .m-details > .m-help,
 .m-details > p,
 .m-details > .m-button-row,
 .m-details > .mobile-field,
 .m-details > .ui-button,
-.m-details > pre { margin-left: 12px; margin-right: 12px; }
-.m-details > .ui-button { margin-bottom: 12px; }
-.m-details > .m-button-row { margin-bottom: 8px; }
+.m-details > pre { margin-left: var(--mt-space-16, 16px); margin-right: var(--mt-space-16, 16px); }
+.m-details > .ui-button { margin-bottom: var(--mt-space-16, 16px); }
+.m-details > .m-button-row { margin-bottom: var(--mt-space-12, 12px); }
+/* 行按下层：可点行的即时反馈（≤16ms 出现，不等过渡）。 */
+.mobile-workspace .m-source-row summary:active,
+.mobile-workspace .m-details > summary:active { background: var(--mt-state-press, var(--m-state-press)); }
 
 /* PolicyAssist (a <details> owned by the component) follows the row rhythm. */
-.mobile-workspace .policy-assist { min-width: 0; margin: 0 0 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--m-card-radius); }
-.mobile-workspace .policy-assist > summary { min-height: var(--m-touch); padding: 10px 12px; }
+.mobile-workspace .policy-assist {
+  min-width: 0;
+  margin: 0 0 var(--mt-space-8, 8px);
+  background: var(--mt-surface, var(--surface));
+  border: 1px solid var(--mt-border-soft, var(--border));
+  border-radius: var(--mt-radius-card, var(--m-card-radius));
+}
+.mobile-workspace .policy-assist > summary { min-height: 56px; padding: var(--mt-space-12, 12px) var(--mt-space-16, 16px); }
 .mobile-workspace .policy-assist > p,
-.mobile-workspace .policy-assist > fieldset { margin-left: 12px; margin-right: 12px; }
+.mobile-workspace .policy-assist > fieldset { margin-left: var(--mt-space-16, 16px); margin-right: var(--mt-space-16, 16px); }
 
 /* Candidate / report lists are full-row tap targets with a chevron. */
-.mobile-workspace .candidate-list { display: flex; flex-direction: column; gap: 8px; max-height: none; overflow: visible; padding: 0; margin: 0; }
+.mobile-workspace .candidate-list { display: flex; flex-direction: column; gap: var(--mt-space-8, 8px); max-height: none; overflow: visible; padding: 0; margin: 0; }
 .mobile-workspace .candidate-item {
   position: relative;
   grid-template-columns: minmax(0, 1fr);
-  padding: 12px 40px 12px 14px;
-  border-radius: var(--m-card-radius);
-  transition: background-color var(--m-duration-press) var(--m-ease-standard), border-color var(--m-duration-press) var(--m-ease-standard);
+  min-height: 56px;
+  padding: var(--mt-space-12, 12px) calc(var(--mt-chevron, 20px) + var(--mt-space-24, 24px)) var(--mt-space-12, 12px) var(--mt-space-16, 16px);
+  border: 1px solid var(--mt-border-soft, var(--border));
+  border-radius: var(--mt-radius-card, var(--m-card-radius));
+  background: var(--mt-surface, var(--surface));
 }
-.mobile-workspace .candidate-item.selected { background: var(--m-state-selected); border-color: var(--navy); box-shadow: inset 3px 0 var(--navy); }
-.mobile-workspace .candidate-item:active { background: var(--m-state-press); }
-.mobile-workspace .candidate-chevron { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); color: var(--muted); }
+/* 选中：陶土文字 + 2px 下划线 + 轻状态层，不用藏青整块底（§8.5 形状冗余）。 */
+.mobile-workspace .candidate-item.selected {
+  border-color: var(--mt-accent-text, var(--navy));
+  background: var(--mt-state-selected, var(--m-state-selected));
+  box-shadow: inset 0 -2px 0 var(--mt-accent-text, var(--navy));
+}
+.mobile-workspace .candidate-item.selected .candidate-item-heading strong { color: var(--mt-accent-text, var(--navy)); }
+.mobile-workspace .candidate-item:active { background: var(--mt-state-press, var(--m-state-press)); }
+.mobile-workspace .candidate-chevron { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); color: var(--mt-muted, var(--muted)); width: var(--mt-chevron, 20px); height: var(--mt-chevron, 20px); }
 .mobile-workspace .candidate-item-heading { flex-direction: row; align-items: center; flex-wrap: wrap; }
-.mobile-workspace .candidate-summary { flex-direction: column; gap: 2px; }
+.mobile-workspace .candidate-item-heading strong { font-size: var(--mt-text-body, var(--m-body)); font-weight: 500; }
+.mobile-workspace .candidate-quote-preview { color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); line-height: 1.45; }
+.mobile-workspace .candidate-summary { flex-direction: column; gap: 2px; color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); }
 .mobile-workspace .candidate-summary span { display: block; }
-.mobile-workspace .candidate-editor { border-top: 0; margin-top: 12px; padding-top: 0; }
-.mobile-workspace .candidate-editor .ui-button { min-height: var(--m-touch); }
+.mobile-workspace .candidate-editor { border-top: 0; margin-top: var(--mt-space-12, 12px); padding-top: 0; }
+.mobile-workspace .candidate-editor .ui-button { min-height: var(--mt-touch, var(--m-touch)); }
+.mobile-workspace .panel-heading h2,
+.mobile-workspace .candidate-editor-heading h3 {
+  font-family: var(--mt-font-serif, var(--font-display));
+  font-size: var(--mt-text-title-s, var(--m-font-section));
+  font-weight: 500;
+  line-height: 1.4;
+}
+.mobile-workspace .candidate-editor-heading h3 span { color: var(--mt-muted, var(--muted)); font-weight: 400; }
 @media (hover: hover) and (pointer: fine) {
-  .mobile-workspace .candidate-item:hover { background: var(--m-state-hover); }
+  .mobile-workspace .candidate-item:hover { background: var(--mt-state-hover, var(--m-state-hover)); }
 }
 
-/* Android segmented control for the two candidate panels (all widths). */
+/* Android segmented control for the two candidate panels (all widths).
+   选中项用陶土文字 + 2px 下划线，不再用整块浅底 + 投影。 */
 .mobile-workspace .mobile-panel-tabs {
   display: flex;
-  gap: 4px;
-  margin: 12px 0;
-  padding: 4px;
-  background: var(--surface-muted);
-  border-radius: var(--m-card-radius);
+  gap: var(--mt-space-4, 4px);
+  margin: var(--mt-space-12, 12px) 0;
+  padding: var(--mt-space-4, 4px);
+  background: var(--mt-surface, var(--surface));
+  border: 1px solid var(--mt-border-soft, var(--border));
+  border-radius: var(--mt-radius-control, var(--radius-panel));
 }
 .mobile-workspace .mobile-panel-tabs button {
+  position: relative;
   flex: 1;
-  min-height: var(--m-touch);
-  padding: 4px 8px;
+  min-height: var(--mt-touch, var(--m-touch));
+  padding: var(--mt-space-4, 4px) var(--mt-space-8, 8px);
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--mt-radius-control, var(--radius));
   background: transparent;
-  color: var(--muted);
-  font-size: var(--m-body);
-  font-weight: 500;
+  color: var(--mt-muted, var(--muted));
+  font-size: var(--mt-text-control, var(--m-body));
+  font-weight: 400;
 }
+.mobile-workspace .mobile-panel-tabs button:active { background: var(--mt-state-press, var(--m-state-press)); }
 .mobile-workspace .mobile-panel-tabs button.selected {
-  background: var(--surface);
-  color: var(--ink);
-  font-weight: 600;
-  box-shadow: var(--m-shadow-bar);
+  background: transparent;
+  color: var(--mt-accent-text, var(--navy));
+  font-weight: 500;
+  box-shadow: inset 0 -2px 0 currentColor;
 }
 .mobile-workspace .candidate-grid { grid-template-columns: minmax(0, 1fr); }
 .mobile-workspace .original-panel { position: static; }
 .mobile-workspace .candidate-grid[data-tab="original"] .candidates-panel,
 .mobile-workspace .candidate-grid[data-tab="candidates"] .original-panel { display: none; }
 .mobile-workspace .candidate-grid[data-tab="original"] .policy-reading { max-height: none; overflow: visible; }
-.mobile-workspace .policy-reading { max-height: 320px; padding: 12px 0; font-size: 0.9375rem; line-height: var(--m-line-body); overflow-y: auto; overscroll-behavior: contain; }
-.mobile-workspace .source-tabs { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 4px; scrollbar-width: thin; }
-.mobile-workspace .source-tabs button { flex: 1 0 40%; min-width: 0; min-height: var(--m-touch); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 政策原文/报告引文：body-l 17/1.75 + 阅读衬线（§5.2 / §8.8）。 */
+.mobile-workspace .policy-reading {
+  max-height: 320px;
+  padding: var(--mt-space-12, 12px) 0;
+  font-family: var(--mt-font-reading, var(--mt-font-serif, var(--font-display)));
+  font-size: var(--mt-text-body-l, 1.0625rem);
+  line-height: 1.75;
+  color: var(--mt-fg, var(--ink));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.mobile-workspace .source-tabs { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: var(--mt-space-4, 4px); scrollbar-width: thin; }
+.mobile-workspace .source-tabs button {
+  flex: 1 0 40%;
+  min-width: 0;
+  min-height: var(--mt-touch, var(--m-touch));
+  border: 1px solid var(--mt-border-soft, var(--border));
+  border-radius: var(--mt-radius-control, var(--radius));
+  background: transparent;
+  color: var(--mt-fg-2, var(--ink));
+  font-size: var(--mt-text-control, var(--m-body));
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mobile-workspace .source-tabs button:active { background: var(--mt-state-press, var(--m-state-press)); }
+.mobile-workspace .source-tabs button.selected {
+  border-color: var(--mt-border-control, var(--control));
+  background: var(--mt-surface, var(--surface));
+  color: var(--mt-accent-text, var(--navy));
+  font-weight: 500;
+  box-shadow: inset 0 -2px 0 currentColor;
+}
 
 /* Report issue rows: the whole Android row opens the evidence sheet. */
-.m-issue-list { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.m-issue-card { min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--m-card-radius); overflow: hidden; }
-.m-issue-row {
+.m-issue-list { display: flex; flex-direction: column; gap: var(--mt-space-8, 8px); min-width: 0; }
+.m-issue-card { min-width: 0; background: var(--mt-surface, var(--surface)); border: 1px solid var(--mt-border-soft, var(--border)); border-radius: var(--mt-radius-card, var(--m-card-radius)); overflow: hidden; }
+/* `.evidence-button` 在 style.css 里固定 12px，需要带作用域压过它。 */
+.mobile-workspace .m-issue-row {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 6px;
   width: 100%;
   min-height: 72px;
-  padding: 12px 14px;
+  padding: var(--mt-space-12, 12px) var(--mt-space-16, 16px);
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--ink);
+  color: var(--mt-fg, var(--ink));
+  font-size: var(--mt-text-body, var(--m-body));
+  line-height: 1.6;
   text-align: left;
   white-space: normal;
 }
-.m-issue-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; min-width: 0; }
-.m-issue-head strong { font-size: 0.9375rem; }
+.m-issue-head { display: flex; align-items: center; justify-content: space-between; gap: var(--mt-space-8, 8px); flex-wrap: wrap; min-width: 0; }
+.m-issue-head strong { font-size: var(--mt-text-body, var(--m-body)); font-weight: 500; }
 .mobile-workspace .tag { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
-.m-issue-meta { min-width: 0; color: var(--muted); font-size: var(--m-caption); overflow-wrap: anywhere; }
-.m-issue-action { display: flex; align-items: center; gap: 4px; color: var(--navy); font-size: var(--m-body); font-weight: 600; }
-.m-issue-action .ui-icon { flex: none; color: var(--navy); }
-.m-issue-row:active { background: var(--m-state-press); }
+.m-issue-meta { min-width: 0; color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); line-height: 1.45; overflow-wrap: anywhere; }
+.m-issue-action { display: flex; align-items: center; gap: var(--mt-space-4, 4px); color: var(--mt-accent-text, var(--navy)); font-size: var(--mt-text-body, var(--m-body)); font-weight: 500; }
+.m-issue-action .m-chevron { flex: none; color: var(--mt-accent-text, var(--navy)); }
+.m-issue-row:active { background: var(--mt-state-press, var(--m-state-press)); }
 @media (hover: hover) and (pointer: fine) {
-  .m-issue-row:hover { background: var(--m-state-hover); }
+  .m-issue-row:hover { background: var(--mt-state-hover, var(--m-state-hover)); }
 }
 
 /* ---------- import / progress state copy ---------- */
+/* 普通通知：info 底 + info 文本；暖砂底只留给禁用/骨架/分区带（§4.4/§8.7）。 */
 .m-notice {
-  margin: 0 0 12px;
-  padding: 10px 12px;
-  background: var(--notice);
-  border-radius: var(--m-card-radius);
-  font-size: var(--m-body);
-  line-height: var(--m-line-body);
+  margin: 0 0 var(--mt-space-16, 16px);
+  padding: var(--mt-space-12, 12px);
+  background: var(--mt-info-bg, var(--slate));
+  color: var(--mt-info, var(--ink));
+  border-radius: var(--mt-radius-control, var(--radius));
+  font-size: var(--mt-text-caption, var(--m-caption));
+  line-height: 1.45;
 }
 /* Busy feedback: the live text and the stop button are siblings, so the button
    never sits inside a role=status region (D #145). */
@@ -369,7 +539,7 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--mt-space-8, 8px);
 }
 .m-busy-notice > span { flex: 1 1 12rem; min-width: 0; }
 /* Candidate source context: several facts on one line need separators, not a
@@ -378,85 +548,218 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 8px;
-  margin: 4px 0 8px;
-  color: var(--muted);
-  font-size: var(--m-caption);
-  line-height: 1.5;
+  gap: var(--mt-space-4, 4px) var(--mt-space-8, 8px);
+  margin: var(--mt-space-4, 4px) 0 var(--mt-space-8, 8px);
+  color: var(--mt-muted, var(--muted));
+  font-size: var(--mt-text-caption, var(--m-caption));
+  line-height: 1.45;
 }
 .mobile-workspace .source-context-meta {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 4px 8px;
-  color: var(--muted);
+  gap: var(--mt-space-4, 4px) var(--mt-space-8, 8px);
+  color: var(--mt-muted, var(--muted));
 }
-.m-notice .ui-button { margin-left: 8px; }
-.m-error { color: var(--error); font-size: var(--m-body); line-height: var(--m-line-body); }
-.m-message { margin: 8px 0 0; }
-.m-eyebrow { margin: 0 0 4px; color: var(--muted); font-size: var(--m-caption); letter-spacing: .04em; }
-.m-status-card.failed { border-color: var(--rose); }
+.m-notice .ui-button { margin-left: var(--mt-space-8, 8px); }
+.mobile-workspace .m-error { color: var(--mt-danger, var(--error)); font-size: var(--mt-text-body, var(--m-body)); line-height: 1.6; }
+/* 独立错误块：语义底 + 文本档 + 12 内边距，role=alert 由模板给出。 */
+.m-error.m-message {
+  padding: var(--mt-space-12, 12px);
+  background: var(--mt-danger-bg, var(--rose));
+  border-radius: var(--mt-radius-control, var(--radius));
+  font-size: var(--mt-text-caption, var(--m-caption));
+  line-height: 1.45;
+}
+.m-message { margin: var(--mt-space-8, 8px) 0 0; }
+.mobile-workspace .m-eyebrow { margin: 0 0 var(--mt-space-4, 4px); color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-overline, var(--m-caption)); font-weight: 500; letter-spacing: .04em; line-height: 1.5; }
+.m-status-card.failed { border-color: var(--mt-danger, var(--error)); }
+.m-status-card.failed .m-error {
+  margin: var(--mt-space-8, 8px) 0 0;
+  padding: var(--mt-space-12, 12px);
+  background: var(--mt-danger-bg, var(--rose));
+  border-radius: var(--mt-radius-control, var(--radius));
+  font-size: var(--mt-text-caption, var(--m-caption));
+  line-height: 1.45;
+}
 .m-status-card h2 { margin-bottom: 6px; }
 
 /* ---------- progress timeline ---------- */
-.m-timeline { list-style: none; margin: 0; padding: 0 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--m-card-radius); }
-.m-timeline li { position: relative; display: flex; align-items: flex-start; gap: 12px; min-height: var(--m-touch); padding: 12px 0 12px 4px; border-bottom: 1px solid var(--border); }
+.m-timeline { list-style: none; margin: 0; padding: 0 var(--mt-space-16, 16px); background: var(--mt-surface, var(--surface)); border: 1px solid var(--mt-border-soft, var(--border)); border-radius: var(--mt-radius-card, var(--m-card-radius)); }
+.m-timeline li { position: relative; display: flex; align-items: flex-start; gap: var(--mt-space-12, 12px); min-height: 56px; padding: var(--mt-space-12, 12px) 0 var(--mt-space-12, 12px) var(--mt-space-4, 4px); border-bottom: 1px solid var(--mt-border, var(--border)); }
 .m-timeline li:last-child { border-bottom: 0; }
-.m-timeline li::before { content: ''; position: absolute; left: 9px; top: 0; bottom: 0; width: 1px; background: var(--border); }
-.m-timeline li:first-child::before { top: 24px; }
-.m-timeline li:last-child::before { bottom: calc(100% - 24px); }
-.m-timeline-dot { position: relative; z-index: 1; flex: none; width: 12px; height: 12px; margin-top: 5px; border: 2px solid var(--control); border-radius: 50%; background: var(--surface); }
-.m-timeline li.current .m-timeline-dot { border-color: var(--navy); background: var(--navy); box-shadow: 0 0 0 4px var(--m-state-selected); }
+.m-timeline li::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 1px; background: var(--mt-border, var(--border)); }
+.m-timeline li:first-child::before { top: 26px; }
+.m-timeline li:last-child::before { bottom: calc(100% - 26px); }
+.m-timeline-dot { position: relative; z-index: 1; flex: none; width: 12px; height: 12px; margin-top: 5px; border: 2px solid var(--mt-border-control, var(--control)); border-radius: var(--mt-radius-circle, 50%); background: var(--mt-surface, var(--surface)); }
+.m-timeline li.current .m-timeline-dot { border-color: var(--mt-accent, var(--navy)); background: var(--mt-accent, var(--navy)); box-shadow: 0 0 0 4px var(--mt-state-selected, var(--m-state-selected)); }
 .m-timeline-body { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
-.m-timeline-body strong { font-size: var(--m-body); }
-.m-timeline-body span { color: var(--muted); font-size: var(--m-caption); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.m-timeline li.current .m-timeline-body strong { color: var(--ink); }
+.m-timeline-body strong { font-size: var(--mt-text-body, var(--m-body)); font-weight: 500; }
+.m-timeline-body span { color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.m-timeline li.current .m-timeline-body strong { color: var(--mt-fg, var(--ink)); }
 
 /* ---------- report inside the shell (App.vue mobile body) ---------- */
 .mobile-workspace .m-report .shell { background: transparent; }
 .mobile-workspace .m-report main { max-width: none; margin: 0; padding: 0; }
 .mobile-workspace .m-report .sample-card {
-  margin: 0 0 12px;
-  padding: 14px;
-  gap: 12px;
-  border-radius: var(--m-card-radius);
+  margin: 0 0 var(--mt-space-16, 16px);
+  padding: var(--mt-space-16, 16px);
+  gap: var(--mt-space-12, 12px);
+  border-radius: var(--mt-radius-card, var(--m-card-radius));
 }
-.mobile-workspace .m-report .sample-card h2 { font-family: var(--font-display); font-size: var(--m-font-title); font-weight: 600; margin: 0; }
-.mobile-workspace .m-report .sample-card .app-icon { width: 48px; height: 48px; border-radius: var(--m-card-radius); font-size: 1.0625rem; }
-.mobile-workspace .m-report .badge { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
-.mobile-workspace .m-report .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 12px; }
-.mobile-workspace .m-report .metrics > div { flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 12px; border-radius: var(--m-card-radius); }
-.mobile-workspace .m-report .metrics strong { font-size: 1.25rem; line-height: 1.2; }
-.mobile-workspace .m-report .metrics span { font-size: var(--m-caption); }
+.mobile-workspace .m-report .sample-card h2 {
+  font-family: var(--mt-font-serif, var(--font-display));
+  font-size: var(--mt-text-title-s, var(--m-font-section));
+  font-weight: 500;
+  margin: 0;
+}
+.mobile-workspace .m-report .sample-card .app-icon { width: 48px; height: 48px; border-radius: var(--mt-radius-card, var(--m-card-radius)); font-size: 1.0625rem; }
+.mobile-workspace .m-report .badge {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  border-radius: var(--mt-radius-tag, var(--radius));
+  border-color: var(--mt-border-soft, var(--border));
+  background: var(--mt-neutral-bg, var(--surface-muted));
+  color: var(--mt-neutral-fg, var(--ink));
+  font-size: var(--mt-text-label, var(--m-caption));
+  font-weight: 500;
+}
+.mobile-workspace .m-report .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--mt-space-8, 8px); margin: 0 0 var(--mt-space-16, 16px); }
+.mobile-workspace .m-report .metrics > div { flex-direction: column; align-items: flex-start; gap: 2px; padding: var(--mt-space-12, 12px); border-radius: var(--mt-radius-card, var(--m-card-radius)); }
+.mobile-workspace .m-report .metrics strong { font-size: var(--mt-text-title-m, var(--m-font-title)); line-height: 1.2; }
+.mobile-workspace .m-report .metrics span { font-size: var(--mt-text-caption, var(--m-caption)); }
 .mobile-workspace .m-report .report-section,
 .mobile-workspace .m-report .coverage-card,
 .mobile-workspace .m-report .job-state,
 .mobile-workspace .m-report .review-panel,
 .mobile-workspace .m-report .report-provenance {
-  margin: 0 0 12px;
-  padding: 14px;
-  border-radius: var(--m-card-radius);
+  margin: 0 0 var(--mt-space-16, 16px);
+  padding: var(--mt-space-20, 20px) var(--mt-space-20, 20px);
+  border: 1px solid var(--mt-border-soft, var(--border));
+  border-radius: var(--mt-radius-card, var(--m-card-radius));
+  background: var(--mt-surface, var(--surface));
 }
 .mobile-workspace .m-report .report-section h2,
 .mobile-workspace .m-report .coverage-card h2,
 .mobile-workspace .m-report .job-state h2,
-.mobile-workspace .m-report .review-panel h2 { font-size: var(--m-font-section); }
+.mobile-workspace .m-report .review-panel h2 {
+  font-family: var(--mt-font-serif, var(--font-display));
+  font-size: var(--mt-text-title-s, var(--m-font-section));
+  font-weight: 500;
+  line-height: 1.4;
+}
 .mobile-workspace .m-report .demo-note,
 .mobile-workspace .m-report .provenance,
 .mobile-workspace .m-report .subtle,
-.mobile-workspace .m-report .field-help { font-size: var(--m-caption); }
-.mobile-workspace .m-report .report-provenance { font-size: var(--m-body); }
-.mobile-workspace .m-report .provenance { margin: 12px 0; font-size: var(--m-body); }
-.mobile-workspace .m-report .provenance > summary { display: flex; align-items: center; min-height: var(--m-touch); font-size: var(--m-body); font-weight: 600; }
-.mobile-workspace .m-report .provenance > article { padding: 8px 12px; margin: 8px 0; }
-.mobile-workspace .m-report .provenance summary { min-height: var(--m-touch); display: flex; align-items: center; }
-.mobile-workspace .m-report .section-heading { align-items: flex-start; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.mobile-workspace .m-report .field-help { font-size: var(--mt-text-caption, var(--m-caption)); }
+.mobile-workspace .m-report .subtle,
+.mobile-workspace .m-report .provenance { color: var(--mt-muted, var(--muted)); }
+.mobile-workspace .m-report .report-section p,
+.mobile-workspace .m-report .coverage-card p,
+.mobile-workspace .m-report .coverage-card li {
+  color: var(--mt-fg-2, var(--ink));
+  font-size: var(--mt-text-body, var(--m-body));
+  line-height: 1.6;
+}
+.mobile-workspace .m-report .report-provenance {
+  background: var(--mt-info-bg, var(--slate));
+  color: var(--mt-info, var(--ink));
+  font-size: var(--mt-text-caption, var(--m-caption));
+  line-height: 1.45;
+}
+.mobile-workspace .m-report .report-provenance strong { font-weight: 500; }
+/* 「报告版本、权限与全部政策快照」是报告里的最后一个折叠区块，和其他章节一样
+   用卡片承载，不再是一条裸文本行。 */
+.mobile-workspace .m-report .provenance {
+  margin: 0 0 var(--mt-space-16, 16px);
+  padding: var(--mt-space-16, 16px) var(--mt-space-20, 20px);
+  background: var(--mt-surface, var(--surface));
+  border: 1px solid var(--mt-border-soft, var(--border));
+  border-radius: var(--mt-radius-card, var(--m-card-radius));
+  font-size: var(--mt-text-body, var(--m-body));
+}
+.mobile-workspace .m-report .provenance > summary { display: flex; align-items: center; min-height: 56px; color: var(--mt-fg-2, var(--ink)); font-size: var(--mt-text-body, var(--m-body)); font-weight: 500; }
+.mobile-workspace .m-report .provenance > article { padding: var(--mt-space-8, 8px) var(--mt-space-16, 16px); margin: var(--mt-space-8, 8px) 0; border-left: 2px solid var(--mt-border-soft, var(--border)); }
+.mobile-workspace .m-report .provenance summary { min-height: var(--mt-touch, var(--m-touch)); display: flex; align-items: center; }
+.mobile-workspace .m-report .section-heading { align-items: flex-start; flex-wrap: wrap; gap: var(--mt-space-8, 8px); margin-bottom: var(--mt-space-12, 12px); }
 .mobile-workspace .m-report .section-heading h2 { margin: 0; }
-.mobile-workspace .m-report .evidence-card { padding: 12px; }
-.mobile-workspace .m-report .review-panel label { font-size: var(--m-body); }
+.mobile-workspace .m-report .evidence-card { padding: var(--mt-space-16, 16px); border-color: var(--mt-border-soft, var(--border)); border-radius: var(--mt-radius-card, var(--m-card-radius)); }
+.mobile-workspace .m-report .review-panel label { font-size: var(--mt-text-caption, var(--m-caption)); font-weight: 500; color: var(--mt-fg, var(--ink)); }
 .mobile-workspace .m-report .review-panel button.primary { width: 100%; }
-.mobile-workspace .m-report footer { margin: 16px 0 8px; text-align: left; font-size: var(--m-caption); }
+.mobile-workspace .m-report footer { margin: var(--mt-space-16, 16px) 0 var(--mt-space-8, 8px); text-align: left; font-size: var(--mt-text-caption, var(--m-caption)); color: var(--mt-muted, var(--muted)); }
+.mobile-workspace .m-report footer p { margin: 4px 0; }
 
-/* ---------- fixed bottom action bar: 48px primary, safe-bottom, keyboard-aware ---------- */
+/* 报告摘要（MobileReportSummary）自带的移动样式仍吃旧变量；这里把颜色/字号/几何
+   归到 --mt-*，不改它的结构与类名。 */
+.mobile-workspace .m-report .mobile-report-summary {
+  padding: var(--mt-space-16, 16px) var(--mt-space-16, 16px) 0;
+  margin-bottom: var(--mt-space-16, 16px);
+  border: 1px solid var(--mt-border-soft, var(--border));
+  border-radius: var(--mt-radius-card, var(--m-card-radius));
+  background: var(--mt-surface, var(--surface));
+}
+.mobile-workspace .m-report .mobile-report-summary .reading-identity h2 {
+  font-family: var(--mt-font-serif, var(--font-display));
+  font-size: var(--mt-text-title-s, var(--m-font-section));
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--mt-fg, var(--ink));
+}
+.mobile-workspace .m-report .mobile-report-summary .reading-mark {
+  border-radius: var(--mt-radius-control, var(--radius));
+  background: var(--mt-bg-inverse, var(--navy));
+  color: var(--mt-fg-inverse, var(--surface));
+  font-size: var(--mt-text-control, var(--m-body));
+  font-weight: 500;
+}
+.mobile-workspace .m-report .mobile-report-summary .reading-version,
+.mobile-workspace .m-report .mobile-report-summary .reading-boundary,
+.mobile-workspace .m-report .mobile-report-summary .reading-counts dt,
+.mobile-workspace .m-report .mobile-report-summary .reading-detail-body dt,
+.mobile-workspace .m-report .mobile-report-summary .reading-raw-time {
+  color: var(--mt-muted, var(--muted));
+  font-size: var(--mt-text-caption, var(--m-caption));
+  line-height: 1.45;
+}
+.mobile-workspace .m-report .mobile-report-summary .reading-origin > span {
+  padding: 2px 10px;
+  border: 1px solid var(--mt-border-soft, var(--border));
+  border-radius: var(--mt-radius-tag, var(--radius));
+  background: var(--mt-neutral-bg, var(--surface-muted));
+  color: var(--mt-neutral-fg, var(--ink));
+  font-size: var(--mt-text-label, var(--m-caption));
+  font-weight: 500;
+  line-height: 1.35;
+}
+.mobile-workspace .m-report .mobile-report-summary .reading-counts,
+.mobile-workspace .m-report .mobile-report-summary .reading-details { border-top-color: var(--mt-border, var(--border)); }
+.mobile-workspace .m-report .mobile-report-summary .reading-counts dd {
+  color: var(--mt-fg, var(--ink));
+  font-size: var(--mt-text-body, var(--m-body));
+  font-weight: 500;
+}
+.mobile-workspace .m-report .mobile-report-summary .reading-details > summary {
+  min-height: 56px;
+  color: var(--mt-fg-2, var(--ink));
+  font-size: var(--mt-text-body, var(--m-body));
+  font-weight: 500;
+}
+.mobile-workspace .m-report .mobile-report-summary .reading-detail-body {
+  color: var(--mt-fg-2, var(--ink));
+  font-size: var(--mt-text-caption, var(--m-caption));
+  line-height: 1.45;
+}
+.mobile-workspace .m-report .mobile-report-summary .reading-code {
+  font-family: var(--mt-font-mono, var(--font-code));
+  color: var(--mt-fg-2, var(--ink));
+  font-size: var(--mt-text-mono, var(--m-caption));
+}
+.mobile-workspace .m-report .report-table .tag.clear,
+.mobile-workspace .tag.clear { background: var(--mt-success-bg, var(--mint)); color: var(--mt-success, var(--success)); }
+.mobile-workspace .m-report .report-table .tag.review,
+.mobile-workspace .tag.review { background: var(--mt-warn-bg, var(--notice)); color: var(--mt-warn, var(--ink)); }
+
+/* ---------- fixed bottom action bar: 64 + safe-bottom, keyboard-aware (§6.2/§8.5) ---------- */
 .m-actionbar {
   position: fixed;
   right: 0;
@@ -465,19 +768,29 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
   z-index: 40;
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: calc(var(--m-actionbar-min-height) + env(safe-area-inset-bottom, 0px));
-  padding: 8px max(var(--m-gutter), env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(var(--m-gutter), env(safe-area-inset-left, 0px));
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  box-shadow: var(--m-shadow-bar);
+  gap: var(--mt-space-8, 8px);
+  min-height: calc(var(--mt-actionbar, var(--m-actionbar-min-height)) + var(--mt-safe-bottom, env(safe-area-inset-bottom, 0px)));
+  padding: var(--mt-space-8, 8px) max(var(--mt-gutter, var(--m-gutter)), var(--mt-safe-right, env(safe-area-inset-right, 0px)), calc((100% - var(--mt-content-max, 560px)) / 2)) calc(var(--mt-space-8, 8px) + var(--mt-safe-bottom, env(safe-area-inset-bottom, 0px))) max(var(--mt-gutter, var(--m-gutter)), var(--mt-safe-left, env(safe-area-inset-left, 0px)), calc((100% - var(--mt-content-max, 560px)) / 2));
+  background: var(--mt-surface, var(--surface));
+  border-top: 1px solid var(--mt-border-soft, var(--border));
+  box-shadow: var(--mt-shadow-bar, var(--m-shadow-bar));
   box-sizing: border-box;
 }
-.m-actionbar .ui-button { min-height: var(--m-touch); }
+/* 一屏一个主操作：主按钮占满剩余宽度，次操作是文字按钮（§8.1/§8.5）。
+   选择器带上 .secondary，压过下面的通用次按钮规则（portal 外无影响）。 */
+.m-actionbar .ui-button { min-height: var(--mt-touch, var(--m-touch)); min-width: 0; }
 .m-actionbar .ui-button.primary { flex: 1 1 auto; }
-.m-actionbar .ui-button:not(.primary) { flex: 0 0 auto; }
+.mobile-workspace .m-actionbar .ui-button.secondary {
+  flex: 0 0 auto;
+  padding-inline: var(--mt-space-12, 12px);
+  border-color: transparent;
+  background: transparent;
+  color: var(--mt-accent-text, var(--navy));
+}
+.mobile-workspace .m-actionbar .ui-button.secondary:active:not(:disabled) { background: var(--mt-state-press, var(--m-state-press)); }
+.mobile-workspace .m-actionbar .ui-button.secondary:disabled { background: transparent; border-color: transparent; color: var(--mt-meta, var(--muted)); }
 
-/* ---------- shared button/input contract inside the shell ---------- */
+/* ---------- shared button contract inside the shell (§8.1) ---------- */
 .mobile-workspace button,
 .mobile-workspace [role="tab"],
 .mobile-workspace summary,
@@ -485,63 +798,337 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
 .mobile-workspace label.text-upload,
 .mobile-workspace .candidate-item,
 .mobile-workspace .policy-jump-btn,
-.mobile-workspace .candidate-nav button { min-height: var(--m-touch); }
-.mobile-workspace .ui-button { border-radius: 10px; padding: 10px 14px; font-size: var(--m-body); transition: background-color var(--m-duration-press) var(--m-ease-standard), transform var(--m-duration-press) var(--m-ease-standard), border-color var(--m-duration-press) var(--m-ease-standard); }
+.mobile-workspace .candidate-nav button { min-height: var(--mt-touch, var(--m-touch)); }
+.mobile-workspace .ui-button {
+  border-radius: var(--mt-radius-control, var(--radius));
+  padding: var(--mt-space-8, 8px) var(--mt-space-20, 20px);
+  font-family: var(--mt-font-sans, var(--font-body));
+  font-size: var(--mt-text-control, var(--m-body));
+  font-weight: 500;
+  line-height: 1.25;
+  /* 不加过渡：按下层必须同帧出现（§9.1 ≤16ms），而颜色/几何的过渡会让“启用瞬间”
+     和“松手瞬间”读到中间值——48px 的命中区量出来会变成 47.04（0.98 缩放），触控
+     断言和读屏的命中区都不该依赖动画时机。 */
+}
 .mobile-workspace .ui-button:active:not(:disabled) { transform: scale(.98); }
-.mobile-workspace .ui-button:not(.primary):not(.danger):active:not(:disabled) { background: var(--m-state-press); }
+.mobile-workspace .ui-button.primary {
+  background: var(--mt-accent-strong, var(--navy));
+  border-color: var(--mt-accent-strong, var(--navy));
+  color: var(--mt-accent-on, var(--on-action));
+}
+.mobile-workspace .ui-button.primary:active:not(:disabled) {
+  background: var(--mt-accent-strong-active, var(--navy-hover));
+  border-color: var(--mt-accent-strong-active, var(--navy-hover));
+  opacity: 1;
+}
+.mobile-workspace .ui-button.secondary {
+  border-color: var(--mt-border-control, var(--control));
+  background: var(--mt-surface, var(--surface));
+  color: var(--mt-fg-2, var(--ink));
+}
+.mobile-workspace .ui-button.secondary:active:not(:disabled) { background: var(--mt-state-press, var(--m-state-press)); }
+.mobile-workspace .ui-button.quiet { border-color: transparent; background: transparent; color: var(--mt-accent-text, var(--navy)); }
+.mobile-workspace .ui-button.quiet:active:not(:disabled) { background: var(--mt-state-press, var(--m-state-press)); }
+.mobile-workspace .ui-button.danger {
+  background: var(--mt-danger, var(--danger));
+  border-color: var(--mt-danger, var(--danger));
+  color: var(--mt-accent-on, var(--on-action));
+}
+.mobile-workspace .ui-button.danger:active:not(:disabled) {
+  background: var(--mt-danger-active, var(--error));
+  border-color: var(--mt-danger-active, var(--error));
+  color: var(--mt-accent-on, var(--on-action));
+  opacity: 1;
+}
+/* 禁用：暖砂底 + meta 字（WCAG 免除项，但仍由 disabled/aria-disabled 表达）。
+   放在变体之后，才能压过 .primary/.danger 的底色。 */
+.mobile-workspace .ui-button:disabled {
+  background: var(--mt-surface-warm, var(--surface-muted));
+  border-color: var(--mt-surface-warm, var(--surface-muted));
+  color: var(--mt-meta, var(--muted));
+  opacity: 1;
+}
+.mobile-workspace .m-text-button:disabled { background: transparent; color: var(--mt-meta, var(--muted)); }
+/* 等待态：文案不动，加 16px 指示器 + aria-busy；按钮宽度不因省略号跳动。
+   UiButton 仍会渲染一个 aria-hidden 的「…」，这里换成旋转指示器。 */
+.mobile-workspace .ui-button[aria-busy="true"] { cursor: progress; }
+.mobile-workspace .ui-button[aria-busy="true"] > span[aria-hidden="true"] { display: none; }
+.mobile-workspace .ui-button[aria-busy="true"]::after {
+  content: "";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--mt-radius-circle, 50%);
+  animation: m-busy-spin 900ms linear infinite;
+}
+@keyframes m-busy-spin { to { transform: rotate(360deg); } }
+.mobile-workspace .flow-footer { display: none; }
+
+@media (hover: hover) and (pointer: fine) {
+  .mobile-workspace .ui-button.secondary:not(:disabled):hover { background: var(--mt-state-hover, var(--m-state-hover)); }
+  .mobile-workspace .ui-button.quiet:not(:disabled):hover { background: var(--mt-state-hover, var(--m-state-hover)); }
+  .mobile-workspace .ui-button.primary:not(:disabled):hover { background: var(--mt-accent-strong-hover, var(--navy-hover)); border-color: var(--mt-accent-strong-hover, var(--navy-hover)); }
+  .mobile-workspace .m-source-row summary:hover,
+  .mobile-workspace .m-details > summary:hover { background: var(--mt-state-hover, var(--m-state-hover)); }
+  .mobile-workspace .m-issue-row:hover { background: var(--mt-state-hover, var(--m-state-hover)); }
+  .mobile-workspace .source-tabs button:hover { background: var(--mt-state-hover, var(--m-state-hover)); }
+  .mobile-workspace .mobile-panel-tabs button:not(.selected):hover { background: var(--mt-state-hover, var(--m-state-hover)); }
+  .mobile-workspace .m-actionbar .ui-button.secondary:not(:disabled):hover { background: var(--mt-state-hover, var(--m-state-hover)); }
+}
+
+/* ---------- fields (§8.2): 56 high, 12 radius, 16 input, label 14/500 ---------- */
 .mobile-workspace input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
 .mobile-workspace select,
 .mobile-workspace textarea,
 .mobile-workspace .ui-field :is(input, select, textarea) {
   width: 100%;
   min-width: 0;
-  min-height: var(--m-touch);
-  font-size: max(16px, 1rem);
-  border-radius: 10px;
+  min-height: var(--mt-input-height, 56px);
+  padding: var(--mt-space-12, 12px) var(--mt-space-16, 16px);
+  border: 1px solid var(--mt-border-control, var(--control));
+  border-radius: var(--mt-radius-field, var(--mt-radius-control, var(--radius)));
+  background: var(--mt-surface, var(--surface));
+  color: var(--mt-fg-2, var(--ink));
+  font-family: var(--mt-font-sans, var(--font-body));
+  font-size: max(16px, var(--mt-input-font-size, var(--m-body)));
+  line-height: 1.6;
 }
 .mobile-workspace textarea { min-height: 96px; }
-.mobile-workspace .ui-field { margin: 12px 0; }
-.mobile-workspace .ui-field label { font-size: var(--m-body); }
-.mobile-workspace .mobile-field { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; margin: 12px 0; font-size: var(--m-body); }
-.mobile-workspace .mobile-field input { width: 100%; min-width: 0; }
-.mobile-workspace .flow-footer { display: none; }
-
-@media (hover: hover) and (pointer: fine) {
-  .mobile-workspace .ui-button:not(.primary):not(.danger):not(:disabled):hover { background: var(--m-state-hover); }
-  .mobile-workspace .ui-button.primary:not(:disabled):hover { background: var(--navy-hover); }
-  .mobile-workspace .m-source-row summary:hover,
-  .mobile-workspace .m-details > summary:hover { background: var(--m-state-hover); }
-  .mobile-workspace .m-issue-row:hover { background: var(--m-state-hover); }
+/* 焦点：描边转 focus 色 + 2px 外环，不改布局尺寸。 */
+.mobile-workspace :is(input, select, textarea):focus {
+  border-color: var(--mt-focus, var(--navy));
+  outline: 2px solid var(--mt-focus, var(--navy));
+  outline-offset: 2px;
 }
+.mobile-workspace :is(input, select, textarea):disabled {
+  background: var(--mt-surface-warm, var(--surface-muted));
+  border-color: var(--mt-surface-warm, var(--surface-muted));
+  color: var(--mt-meta, var(--muted));
+  -webkit-text-fill-color: var(--mt-meta, var(--muted));
+}
+.mobile-workspace :is(input, textarea)::placeholder { color: var(--mt-muted, var(--muted)); opacity: 1; }
+.mobile-workspace .ui-field { margin: var(--mt-space-16, 16px) 0; }
+.mobile-workspace .ui-field label {
+  color: var(--mt-fg, var(--ink));
+  font-size: var(--mt-text-caption, var(--m-caption));
+  font-weight: 500;
+  line-height: 1.45;
+}
+.mobile-workspace .field-help {
+  color: var(--mt-muted, var(--muted));
+  font-size: var(--mt-text-label, 0.75rem);
+  line-height: 1.35;
+}
+.mobile-workspace .field-help.error-text,
+.mobile-workspace .error-text { color: var(--mt-danger, var(--error)); }
+.mobile-workspace .mobile-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mt-space-8, 8px);
+  margin: var(--mt-space-16, 16px) 0;
+  color: var(--mt-fg, var(--ink));
+  font-size: var(--mt-text-caption, var(--m-caption));
+  font-weight: 500;
+  line-height: 1.45;
+}
+.mobile-workspace .mobile-field input { width: 100%; min-width: 0; }
 
-/* ---------- evidence bottom sheet (portaled outside the shell) ---------- */
-body:has(.m-evidence-sheet) .ui-sheet-overlay { background: var(--m-scrim); }
+/* ---------- evidence bottom sheet (portaled outside the shell) (§8.6) ---------- */
+body:has(.m-evidence-sheet) .ui-sheet-overlay,
+body:has(dialog.ui-sheet.ui-sheet--bottom) .ui-sheet-overlay { background: var(--mt-scrim, var(--m-scrim)); }
+/* 全屏 detail（设置）不要遮罩：它本身就是一页。 */
+html:has(dialog.ui-sheet--detail) .ui-sheet-overlay { background: transparent; pointer-events: none; }
+/* Sheet 是 portal 到 body 的，继承不到 .mobile-workspace，所以顶栏/边角/标题/
+   关闭键与 sheet 内的按钮都要在这里按 html.mobile-shell 作用域补齐。 */
+html.mobile-shell dialog.ui-sheet {
+  background: var(--mt-surface, var(--surface));
+  color: var(--mt-fg, var(--ink));
+  border-color: var(--mt-border-soft, var(--border));
+}
+html.mobile-shell dialog.ui-sheet.ui-sheet--bottom {
+  border-radius: var(--mt-radius-sheet, var(--m-sheet-radius)) var(--mt-radius-sheet, var(--m-sheet-radius)) 0 0;
+  box-shadow: var(--mt-shadow-sheet, var(--m-shadow-sheet));
+}
+html.mobile-shell .ui-sheet .ui-sheet-handle { background: var(--mt-handle, var(--border)); }
+html.mobile-shell .ui-sheet .ui-sheet-description { font-size: var(--mt-text-caption, 0.875rem); }
+html.mobile-shell .ui-sheet .ui-sheet-title {
+  font-family: var(--mt-font-serif, var(--font-display));
+  font-size: var(--mt-text-title-m, var(--m-font-title));
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--mt-fg, var(--ink));
+}
+html.mobile-shell .ui-sheet.ui-sheet--detail .ui-sheet-title { font-size: var(--mt-text-title-l, 1.5rem); }
+html.mobile-shell .ui-sheet .ui-sheet-close { width: var(--mt-touch, var(--m-touch)); height: var(--mt-touch, var(--m-touch)); color: var(--mt-fg-2, var(--ink)); }
+html.mobile-shell .ui-sheet .ui-sheet-close:active { background: var(--mt-state-press, var(--m-state-press)); }
+html.mobile-shell .ui-sheet .ui-sheet-description {
+  color: var(--mt-muted, var(--muted));
+  font-size: var(--mt-text-caption, var(--m-caption));
+  line-height: 1.45;
+}
+html.mobile-shell dialog.ui-sheet .ui-button {
+  min-height: var(--mt-touch, var(--m-touch));
+  border-radius: var(--mt-radius-control, var(--radius));
+  padding: var(--mt-space-8, 8px) var(--mt-space-20, 20px);
+  font-size: var(--mt-text-control, var(--m-body));
+  font-weight: 500;
+  line-height: 1.25;
+}
+html.mobile-shell dialog.ui-sheet .ui-button.primary {
+  background: var(--mt-accent-strong, var(--navy));
+  border-color: var(--mt-accent-strong, var(--navy));
+  color: var(--mt-accent-on, var(--on-action));
+}
+html.mobile-shell dialog.ui-sheet .ui-button.secondary {
+  border-color: var(--mt-border-control, var(--control));
+  background: var(--mt-surface, var(--surface));
+  color: var(--mt-fg-2, var(--ink));
+}
+html.mobile-shell dialog.ui-sheet .ui-button.secondary:active:not(:disabled) {
+  background: var(--mt-state-press, var(--m-state-press));
+}
+html.mobile-shell dialog.ui-sheet .ui-button.quiet:active:not(:disabled) {
+  background: var(--mt-state-press, var(--m-state-press));
+}
+html.mobile-shell dialog.ui-sheet .ui-button.quiet { border-color: transparent; background: transparent; color: var(--mt-accent-text, var(--navy)); }
+html.mobile-shell dialog.ui-sheet .ui-button.danger {
+  background: var(--mt-danger, var(--danger));
+  border-color: var(--mt-danger, var(--danger));
+  color: var(--mt-accent-on, var(--on-action));
+}
+html.mobile-shell dialog.ui-sheet .ui-button.danger:active:not(:disabled) {
+  background: var(--mt-danger-active, var(--error));
+  border-color: var(--mt-danger-active, var(--error));
+  color: var(--mt-accent-on, var(--on-action));
+  opacity: 1;
+}
+html.mobile-shell dialog.ui-sheet .ui-button:disabled {
+  background: var(--mt-surface-warm, var(--surface-muted));
+  border-color: var(--mt-surface-warm, var(--surface-muted));
+  color: var(--mt-meta, var(--muted));
+  opacity: 1;
+}
+html.mobile-shell dialog.ui-sheet .hash {
+  font-family: var(--mt-font-mono, var(--font-code));
+  font-size: var(--mt-text-mono, var(--m-caption));
+  color: var(--mt-fg-2, var(--ink));
+  overflow-wrap: anywhere;
+}
 dialog.ui-sheet.m-evidence-sheet { bottom: var(--keyboard-inset, 0px); max-height: min(88dvh, 720px); }
 html.keyboard-open dialog.ui-sheet.m-evidence-sheet { max-height: calc(100dvh - var(--keyboard-inset, 0px) - 24px); }
 .m-evidence-sheet .ui-sheet-body .evidence-panel { margin: 0; padding: 0; border: 0; background: transparent; }
-.m-evidence-sheet .ui-sheet-body .explanation { margin-top: 0; }
-.m-evidence-sheet .ui-sheet-body .evidence-grid { grid-template-columns: 1fr; gap: 12px; }
-.m-evidence-sheet .ui-sheet-body .evidence-card { padding: 12px; }
-.m-evidence-sheet .ui-sheet-body .section-heading h2 { font-size: var(--m-font-section); }
+.m-evidence-sheet .ui-sheet-body .explanation {
+  margin-top: 0;
+  padding: var(--mt-space-12, 12px);
+  background: var(--mt-info-bg, var(--slate));
+  color: var(--mt-info, var(--ink));
+  border-radius: var(--mt-radius-control, var(--radius));
+  font-size: var(--mt-text-caption, var(--m-caption));
+  line-height: 1.45;
+}
+.m-evidence-sheet .ui-sheet-body .evidence-grid { grid-template-columns: 1fr; gap: var(--mt-space-12, 12px); }
+.m-evidence-sheet .ui-sheet-body .evidence-card { padding: var(--mt-space-16, 16px); border-color: var(--mt-border-soft, var(--border)); border-radius: var(--mt-radius-card, var(--m-card-radius)); }
+.m-evidence-sheet .ui-sheet-body .section-heading h2 {
+  font-family: var(--mt-font-serif, var(--font-display));
+  font-size: var(--mt-text-title-s, var(--m-font-section));
+  font-weight: 500;
+}
 .m-evidence-sheet .ui-sheet-body button,
-.m-evidence-sheet .ui-sheet-body summary { min-height: var(--m-touch); touch-action: manipulation; }
-.m-evidence-sheet .ui-sheet-body pre { overscroll-behavior: contain; }
-.m-evidence-sheet .ui-sheet-body .candidate-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
-.m-evidence-sheet .ui-sheet-body .candidate-nav button { min-width: var(--m-touch); touch-action: manipulation; }
+.m-evidence-sheet .ui-sheet-body summary { min-height: var(--mt-touch, var(--m-touch)); touch-action: manipulation; }
+.m-evidence-sheet .ui-sheet-body pre { overscroll-behavior: contain; border-radius: var(--mt-radius-control, var(--radius)); }
+.m-evidence-sheet .ui-sheet-body .candidate-nav { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mt-space-8, 8px); margin: var(--mt-space-12, 12px) 0; }
+.m-evidence-sheet .ui-sheet-body .candidate-nav button { min-width: var(--mt-touch, var(--m-touch)); touch-action: manipulation; }
+.m-evidence-sheet .ui-sheet-body .locator { color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); overflow-wrap: anywhere; }
 
-/* ---------- settings: page-like full-screen sheet ---------- */
-dialog.ui-sheet.m-settings-dialog { background: var(--canvas); }
-.m-settings-dialog .ui-sheet-head { background: var(--surface); }
-.m-settings-dialog .ui-sheet-title { font-size: var(--m-font-title); }
-.m-settings-dialog .ui-sheet-body { padding: 0 max(var(--m-gutter), env(safe-area-inset-left, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)); }
+/* ---------- settings: page-like full-screen sheet (§8.6) ---------- */
+dialog.ui-sheet.m-settings-dialog { background: var(--mt-surface, var(--surface)); }
+dialog.ui-sheet.m-settings-dialog.ui-sheet--detail { border-radius: 0; box-shadow: none; }
+.m-settings-dialog .ui-sheet-head { background: var(--mt-surface, var(--surface)); border-bottom: 1px solid var(--mt-border, var(--border)); }
+html.mobile-shell .m-settings-dialog .ui-sheet-body { padding: 0 max(var(--mt-gutter, var(--m-gutter)), var(--mt-safe-left, env(safe-area-inset-left, 0px))) calc(var(--mt-space-24, 24px) + var(--mt-safe-bottom, env(safe-area-inset-bottom, 0px))); }
 dialog.m-settings-dialog .ui-sheet-handle { display: none; }
-.m-settings-section { padding: 16px 0; border-bottom: 1px solid var(--border); }
+.m-settings-section { padding: var(--mt-space-20, 20px) 0; border-bottom: 1px solid var(--mt-border, var(--border)); }
 .m-settings-section:last-child { border-bottom: 0; }
-.m-settings-section h2 { margin: 0 0 8px; font-size: var(--m-font-section); font-weight: 600; }
-.m-settings-section p { margin: 6px 0; font-size: var(--m-body); line-height: var(--m-line-body); }
-.m-settings-status { color: var(--ink); font-weight: 600; }
-.m-settings-section .m-button-row { margin-top: 8px; }
-.m-settings-section .ui-button { min-height: var(--m-touch); }
+.m-settings-section h2 {
+  margin: 0 0 var(--mt-space-8, 8px);
+  font-family: var(--mt-font-serif, var(--font-display));
+  font-size: var(--mt-text-title-m, var(--m-font-title));
+  font-weight: 500;
+  line-height: 1.3;
+}
+.m-settings-section p { margin: 6px 0; font-size: var(--mt-text-body, var(--m-body)); line-height: 1.6; color: var(--mt-fg-2, var(--ink)); }
+.m-settings-section .m-help { color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); }
+.m-settings-status { color: var(--mt-fg, var(--ink)); font-weight: 500; }
+.m-settings-section .m-button-row { margin-top: var(--mt-space-8, 8px); }
+.m-settings-section .ui-button { min-height: var(--mt-touch, var(--m-touch)); }
+
+/* ---------- status tags (§8.3): 24 high, 6 radius, 12/500, five tones ---------- */
+.mobile-workspace .status-tag {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 24px;
+  max-width: 100%;
+  padding: 0 10px;
+  border-radius: var(--mt-radius-tag, var(--radius));
+  background: var(--mt-neutral-bg, var(--surface-muted));
+  color: var(--mt-neutral-fg, var(--ink));
+  font-family: var(--mt-font-sans, var(--font-body));
+  font-size: var(--mt-text-label, var(--m-caption));
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 报告里的 .tag 与 StatusTag 同一套几何，但允许换行（长判定短语不能裁掉事实）。 */
+.mobile-workspace .tag {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 24px;
+  max-width: 100%;
+  padding: 2px 10px;
+  border-radius: var(--mt-radius-tag, var(--radius));
+  background: var(--mt-neutral-bg, var(--surface-muted));
+  color: var(--mt-neutral-fg, var(--ink));
+  font-family: var(--mt-font-sans, var(--font-body));
+  font-size: var(--mt-text-label, var(--m-caption));
+  font-weight: 500;
+  line-height: 1.35;
+}
+.mobile-workspace .status-tag.neutral { background: var(--mt-neutral-bg, var(--surface-muted)); color: var(--mt-neutral-fg, var(--ink)); }
+.mobile-workspace .status-tag.info { background: var(--mt-info-bg, var(--slate)); color: var(--mt-info, var(--ink)); }
+.mobile-workspace .status-tag.wait { background: var(--mt-warn-bg, var(--notice)); color: var(--mt-warn, var(--ink)); }
+.mobile-workspace .status-tag.success { background: var(--mt-success-bg, var(--mint)); color: var(--mt-success, var(--success)); }
+.mobile-workspace .status-tag.error { background: var(--mt-danger-bg, var(--rose)); color: var(--mt-danger, var(--error)); }
+
+/* 证据 sheet 经 portal 挂在 body 上，拿不到 .mobile-workspace；当前 EvidencePanel
+   里没有 StatusTag/.tag，这里按同一套 24/6/12 补 portal 兜底，避免以后加标签时
+   掉回桌面 8px 圆角 / 无固定高度。 */
+html.mobile-shell dialog.ui-sheet .status-tag,
+html.mobile-shell dialog.ui-sheet .tag {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 24px;
+  max-width: 100%;
+  padding: 2px 10px;
+  border-radius: var(--mt-radius-tag, var(--radius));
+  background: var(--mt-neutral-bg, var(--surface-muted));
+  color: var(--mt-neutral-fg, var(--ink));
+  font-family: var(--mt-font-sans, var(--font-body));
+  font-size: var(--mt-text-label, var(--m-caption));
+  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+html.mobile-shell dialog.ui-sheet .status-tag.neutral { background: var(--mt-neutral-bg, var(--surface-muted)); color: var(--mt-neutral-fg, var(--ink)); }
+html.mobile-shell dialog.ui-sheet .status-tag.info { background: var(--mt-info-bg, var(--slate)); color: var(--mt-info, var(--ink)); }
+html.mobile-shell dialog.ui-sheet .status-tag.wait { background: var(--mt-warn-bg, var(--notice)); color: var(--mt-warn, var(--ink)); }
+html.mobile-shell dialog.ui-sheet .status-tag.success { background: var(--mt-success-bg, var(--mint)); color: var(--mt-success, var(--success)); }
+html.mobile-shell dialog.ui-sheet .status-tag.error { background: var(--mt-danger-bg, var(--rose)); color: var(--mt-danger, var(--error)); }
 
 /* ---------- motion preference ---------- */
 @media (prefers-reduced-motion: reduce) {
@@ -549,4 +1136,21 @@ dialog.m-settings-dialog .ui-sheet-handle { display: none; }
   .ui-sheet * { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
   .m-main.m-step-enter { animation: none; }
   details[open] > summary .m-chevron { transition: none; }
+  .mobile-workspace .ui-button[aria-busy="true"]::after { animation: none; }
+}
+
+/* ---------- high contrast: 边界与焦点不能丢 ---------- */
+@media (forced-colors: active) {
+  .m-card,
+  .m-source-row,
+  .m-details,
+  .m-issue-card,
+  .m-timeline,
+  .mobile-workspace .candidate-item,
+  .mobile-workspace .policy-assist { border: 1px solid CanvasText; }
+  .m-step[aria-current="step"]::after { background: CanvasText; }
+  .m-appbar,
+  .m-actionbar { border-color: CanvasText; }
+  .mobile-workspace :focus-visible,
+  .ui-sheet :focus-visible { outline-color: Highlight; }
 }

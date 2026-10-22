@@ -1,4 +1,6 @@
-/* Pioneer roles: docs/design/issue142-theme-and-primitives.md. One source for all entries. */
+/* Pioneer roles: docs/design/issue142-theme-and-primitives.md. One source for all entries.
+   共享组件自本轮起消费规范 §11.3 的 `--ui-*` 语义别名（桌面映射 Pioneer、移动映射 `--mt-*`）；
+   旧变量的 body 重映射只是迁移期过渡层，等共享组件与移动样式全部迁移后删除。 */
 @font-face { font-family: 'Noto Sans SC'; src: url('/fonts/NotoSansSC-Variable.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
 @font-face { font-family: 'Noto Serif SC'; src: url('/fonts/NotoSerifSC-Variable.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
 :root {
@@ -50,4 +52,188 @@
   --font-code: Consolas, 'Courier New', monospace;
   font-family: var(--font-body);
   color: var(--ink); background: var(--canvas); line-height: 1.6;
+}
+
+/* Mobile app raw tokens — source of record: docs/design/frontend-design-spec-mobile.md
+   §4–§9 + 附录 A (Claude baseline). 命名空间隔离：`--mt-*` 只声明在 `:root`，桌面工作台
+   不消费，因此桌面视觉与 Pioneer 断言不受影响；移动壳挂载时由 body.is-mobile-app 把
+   共享组件与 round2 的旧变量重映射到这些值（见文件末尾）。字体只用仓库内自托管 Noto。 */
+:root {
+  /* 结构色（§4.1） */
+  --mt-bg: #f5f4ed; --mt-surface: #faf9f5; --mt-surface-warm: #e8e6dc;
+  --mt-bg-inverse: #141413; --mt-surface-dark: #30302e;
+  /* 文字（§4.1） */
+  --mt-fg: #141413; --mt-fg-2: #3d3d3a; --mt-muted: #5e5d59;
+  --mt-caption: #6b6a63; --mt-meta: #87867f;
+  --mt-fg-inverse: #faf9f5; --mt-muted-inverse: #b0aea5;
+  /* 描边（§4.2） */
+  --mt-border: #f0eee6; --mt-border-soft: #e8e6dc; --mt-border-control: #87867f;
+  --mt-border-inverse: rgba(250, 249, 245, .16);
+  /* 强调与焦点（§4.3） */
+  --mt-accent: #c96442; --mt-accent-strong: #b04b25;
+  --mt-accent-strong-hover: #a24522; --mt-accent-strong-active: #974120;
+  --mt-accent-text: #a8431f; --mt-accent-on: #faf9f5; --mt-accent-inverse: #d97757;
+  --mt-focus: #1f6fb2;
+  /* 语义色（§4.4，文本档 / 底档分开） */
+  --mt-success: #0f7a3c; --mt-success-bg: #eef6e8;
+  --mt-warn: #8a5a00; --mt-warn-bg: #fbf3d9;
+  --mt-danger: #b53333; --mt-danger-bg: #fbeceb; --mt-danger-active: #a92e2e;
+  --mt-info: #1f6fb2; --mt-info-bg: #eaf2fb;
+  --mt-neutral-fg: #3d3d3a; --mt-neutral-bg: #e8e6dc;
+  /* 遮罩、把手与状态层（§7.3 / §9.1） */
+  --mt-scrim: rgba(20, 20, 19, .45);
+  --mt-handle: #d1cfc5;
+  --mt-state-hover: rgba(20, 20, 19, .06);
+  --mt-state-press: rgba(20, 20, 19, .12);
+  --mt-state-selected: rgba(20, 20, 19, .08);
+  /* 层级与阴影（§7.3） */
+  --mt-shadow-1: 0 1px 2px rgba(20, 20, 19, .06);
+  --mt-shadow-bar: 0 -1px 2px rgba(20, 20, 19, .06);
+  --mt-shadow-ring: 0 0 0 1px rgba(20, 20, 19, .08);
+  --mt-shadow-3: 0 4px 24px rgba(20, 20, 19, .05);
+  --mt-shadow-sheet: 0 -8px 32px rgba(20, 20, 19, .18);
+  /* 实现补充（token-map 引用，避免同名缺失） */
+  --mt-shadow-0: none;
+  --mt-elev-1: 1px solid var(--mt-border-soft);
+  --mt-elev-2: var(--mt-shadow-ring);
+  --mt-elev-3: var(--mt-shadow-3);
+  --mt-elev-4: var(--mt-shadow-sheet);
+  /* 字体栈（§5.1；Anthropic Serif/Sans 不随包分发，仅作首选名） */
+  --mt-font-serif: "Anthropic Serif", Georgia, "Noto Serif SC", "Songti SC", serif;
+  --mt-font-sans: "Anthropic Sans", Inter, "Noto Sans SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --mt-font-reading: "Noto Serif SC", Georgia, "Songti SC", serif;
+  --mt-font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Consolas, monospace;
+  /* 字号阶梯（§5.2；统一 --mt-text-*，避免与颜色 --mt-caption 冲突） */
+  --mt-text-display: 2rem; --mt-text-title-l: 1.5rem;
+  --mt-text-title-m: 1.25rem; --mt-text-title-s: 1.0625rem;
+  --mt-text-body-l: 1.0625rem; --mt-text-body: 1rem; --mt-text-control: 1rem;
+  --mt-text-caption: .875rem; --mt-text-label: .75rem;
+  --mt-text-overline: .6875rem; --mt-text-mono: .875rem;
+  /* 间距（§6.1，4px 基数 8px 节奏） */
+  --mt-space-4: 4px; --mt-space-8: 8px; --mt-space-12: 12px; --mt-space-16: 16px;
+  --mt-space-20: 20px; --mt-space-24: 24px; --mt-space-32: 32px;
+  --mt-space-40: 40px; --mt-space-48: 48px;
+  /* 圆角（§7.1） */
+  --mt-radius-tag: 6px; --mt-radius-control: 12px; --mt-radius-card: 16px;
+  --mt-radius-sheet: 24px; --mt-radius-pill: 999px;
+  --mt-radius-circle: 50%; --mt-radius-field: 12px;
+  /* 移动壳几何（§6.2；safe/keyboard inset 由 viewport 脚本映射 --keyboard-inset） */
+  --mt-gutter: 16px; --mt-appbar: 56px; --mt-stepnav: 48px; --mt-actionbar: 64px;
+  --mt-touch: 48px; --mt-input-height: 56px; --mt-content-max: 560px; --mt-chevron: 20px;
+  --mt-input-font-size: 1rem; --mt-content-height: 100dvh; --mt-content-min-viewport: 100dvh;
+  --mt-safe-top: env(safe-area-inset-top, 0px); --mt-safe-right: env(safe-area-inset-right, 0px);
+  --mt-safe-bottom: env(safe-area-inset-bottom, 0px); --mt-safe-left: env(safe-area-inset-left, 0px);
+  --mt-keyboard-inset: 0px;
+  /* 动效（§9.2；reduced-motion 下时长归零，见下） */
+  --mt-duration-press: 120ms; --mt-duration-enter: 200ms; --mt-duration-exit: 150ms;
+  --mt-ease-standard: cubic-bezier(.2, 0, 0, 1);
+  --mt-ease-decelerate: cubic-bezier(0, 0, 0, 1);
+}
+
+/* 共享组件语义别名（规范 §11.3）：共享组件此后只消费 `--ui-*`，不直接读 Pioneer 旧变量或
+   `--mt-*`。这里把别名映射回现有 Pioneer 旧变量，桌面计算值与迁移前完全一致（视觉冻结）；
+   移动壳挂载后由文件末尾 `body.is-mobile-app` 把同一批别名重映射到 Claude `--mt-*`。新增
+   别名必须同时给出桌面根与移动根两套值，不能只写移动值。 */
+:root {
+  /* 结构面与文字 */
+  --ui-canvas: var(--canvas);
+  --ui-surface: var(--surface); --ui-surface-muted: var(--surface-muted);
+  --ui-fg: var(--ink); --ui-fg-2: var(--ink); --ui-muted: var(--muted);
+  /* 描边 */
+  --ui-border: var(--border); --ui-border-soft: var(--border); --ui-border-control: var(--control);
+  /* 强调与焦点 */
+  --ui-accent: var(--navy); --ui-accent-hover: var(--navy-hover);
+  /* 主按钮文字用 --surface（#fdfcfa）：frontend-guards.cjs 的桌面冻结断言要求
+     .ui-button.primary color = roles.surface，改用 --on-action（#f9f9f9）会破断言。 */
+  --ui-accent-text: var(--navy); --ui-accent-on: var(--surface); --ui-focus: var(--navy);
+  /* 危险按钮文字保留桌面旧值 #f9f9f9；移动端与 accent-on 同为 ivory。 */
+  --ui-danger-on: var(--on-action);
+  /* 语义色：文本档 / 底档 */
+  --ui-success: var(--success); --ui-success-bg: var(--mint);
+  --ui-warn: var(--ink); --ui-warn-bg: var(--notice);
+  --ui-danger: var(--danger); --ui-danger-text: var(--error); --ui-danger-bg: var(--rose);
+  /* 危险按钮按下是浅底（--rose），文字仍取 --error；不是 --error 实心。 */
+  --ui-danger-active: var(--rose);
+  --ui-info: var(--ink); --ui-info-bg: var(--slate);
+  --ui-neutral-fg: var(--ink); --ui-neutral-bg: var(--surface-muted);
+  /* 遮罩、形状与层级 */
+  --ui-scrim: var(--overlay);
+  --ui-radius-control: var(--radius); --ui-radius-field: var(--radius);
+  --ui-radius-tag: var(--radius); --ui-radius-card: var(--radius-panel);
+  --ui-radius-sheet: var(--m-sheet-radius);
+  --ui-shadow-ring: none;
+  --ui-shadow-sheet: var(--m-shadow-sheet); --ui-shadow-bar: var(--m-shadow-bar);
+  --ui-handle: var(--border);
+  /* 字体与动效 */
+  --ui-font-body: var(--font-body); --ui-font-display: var(--font-display);
+  --ui-font-code: var(--font-code);
+  --ui-duration-enter: var(--m-duration-enter); --ui-duration-exit: var(--m-duration-exit);
+  --ui-ease-decelerate: var(--m-ease-decelerate);
+  --ui-state-hover: var(--m-state-hover); --ui-state-press: var(--m-state-press);
+  --ui-state-selected: var(--m-state-selected);
+  /* 触控档位：fine 40/36/40；≤560px 或 coarse 提到 44/44/44（pioneer-design.json 的两档契约）。 */
+  --ui-touch: 40px; --ui-button-height: 36px; --ui-field-height: 40px;
+}
+
+/* 窄屏 / 粗指针沿用现有响应式契约：pioneer-design.json mobileButton.maxWidth=560、
+   minHeight=44，frontend-guards 在 ≤560px 断言 44px，不能压成桌面单值。 */
+@media (max-width: 560px), (pointer: coarse) {
+  :root {
+    --ui-touch: 44px; --ui-button-height: 44px;
+    /* 字段保持 40：frontend-guards 的冻结 field 断言在窄屏也要求 40，不能跟着按钮抬到 44。 */
+    --ui-field-height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --mt-duration-press: 0ms; --mt-duration-enter: 0ms; --mt-duration-exit: 0ms;
+  }
+}
+
+/* html 自身的 background/color/font-family 在 :root 上直接读旧变量，body class 覆盖不到
+   祖先元素；html.mobile-shell 由 MobileApp 同步挂载，这里直接取 Claude `--mt-*`，避免
+   edge-to-edge 或 overscroll 时露出桌面画布色。桌面无此 class，取值不变。 */
+html.mobile-shell {
+  background: var(--mt-bg); color: var(--mt-fg); font-family: var(--mt-font-sans);
+}
+
+/* 移动壳作用域：共享组件只消费 `--ui-*`，这里把同一批别名重映射到 Claude `--mt-*`。必须
+   重新声明 `--ui-*` 而不是只改旧变量：自定义属性在声明它的元素上就完成 var() 替换，body
+   上的 `--surface: var(--mt-surface)` 不会反推 `:root` 的 `--ui-surface`。UiSheet 经
+   DialogPortal 挂到 body，所以这层必须挂在 body 上而不是 .mobile-workspace 里；无 body
+   class（桌面）时 :root 的别名与旧变量都保持原值。 */
+body.is-mobile-app {
+  /* 共享组件语义别名 → Claude token（触控 48 触控 / 48 按钮 / 56 字段） */
+  --ui-canvas: var(--mt-bg);
+  --ui-surface: var(--mt-surface); --ui-surface-muted: var(--mt-surface-warm);
+  --ui-fg: var(--mt-fg); --ui-fg-2: var(--mt-fg-2); --ui-muted: var(--mt-muted);
+  --ui-border: var(--mt-border); --ui-border-soft: var(--mt-border-soft);
+  --ui-border-control: var(--mt-border-control);
+  --ui-accent: var(--mt-accent-strong); --ui-accent-hover: var(--mt-accent-strong-hover);
+  --ui-accent-text: var(--mt-accent-text); --ui-accent-on: var(--mt-accent-on);
+  --ui-danger-on: var(--mt-accent-on);
+  --ui-focus: var(--mt-focus);
+  --ui-success: var(--mt-success); --ui-success-bg: var(--mt-success-bg);
+  --ui-warn: var(--mt-warn); --ui-warn-bg: var(--mt-warn-bg);
+  --ui-danger: var(--mt-danger); --ui-danger-text: var(--mt-danger);
+  --ui-danger-bg: var(--mt-danger-bg); --ui-danger-active: var(--mt-danger-active);
+  --ui-info: var(--mt-info); --ui-info-bg: var(--mt-info-bg);
+  --ui-neutral-fg: var(--mt-neutral-fg); --ui-neutral-bg: var(--mt-neutral-bg);
+  --ui-scrim: var(--mt-scrim);
+  --ui-radius-control: var(--mt-radius-control); --ui-radius-field: var(--mt-radius-field);
+  --ui-radius-tag: var(--mt-radius-tag); --ui-radius-card: var(--mt-radius-card);
+  --ui-radius-sheet: var(--mt-radius-sheet);
+  /* 移动端可点卡片按下：描边环取常量（与 --mt-shadow-ring 同值），桌面为 none。 */
+  --ui-shadow-ring: 0 0 0 1px rgba(20, 20, 19, .08);
+  --ui-shadow-sheet: var(--mt-shadow-sheet); --ui-shadow-bar: var(--mt-shadow-bar);
+  --ui-handle: var(--mt-handle);
+  --ui-font-body: var(--mt-font-sans); --ui-font-display: var(--mt-font-serif);
+  --ui-font-code: var(--mt-font-mono);
+  --ui-duration-enter: var(--mt-duration-enter); --ui-duration-exit: var(--mt-duration-exit);
+  --ui-ease-decelerate: var(--mt-ease-decelerate);
+  --ui-state-hover: var(--mt-state-hover); --ui-state-press: var(--mt-state-press);
+  --ui-state-selected: var(--mt-state-selected);
+  --ui-touch: var(--mt-touch); --ui-button-height: var(--mt-touch);
+  --ui-field-height: var(--mt-input-height);
 }

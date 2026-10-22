@@ -57,31 +57,36 @@ defineEmits<{ changeMaterial: [] }>()
 </template>
 
 <style scoped>
-.mobile-report-summary { padding: 16px 16px 0; margin-bottom: 12px; border: 1px solid var(--border); border-radius: var(--m-card-radius); background: var(--surface); }
+/* Mobile-only component: consume the `--mt-*` Claude tokens directly (spec §11.3 prefers
+   them over the shared aliases here). Every value below is byte-identical to what
+   body.is-mobile-app previously remapped the legacy token to, so nothing shifts.
+   `--mt-border-soft` is used for hairlines on purpose: `--mt-border` (#f0eee6) sits at
+   ~1.10 contrast on the surface and would erase the dividers. */
+.mobile-report-summary { padding: 16px 16px 0; margin-bottom: 12px; border: 1px solid var(--mt-border-soft); border-radius: var(--mt-radius-card); background: var(--mt-surface); }
 .reading-identity { display: flex; align-items: center; gap: 12px; }
-.reading-mark { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 10px; background: var(--navy); color: var(--surface); font-size: 0.9375rem; font-weight: 600; }
+.reading-mark { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 10px; background: var(--mt-accent-strong); color: var(--mt-surface); font-size: 0.9375rem; font-weight: 600; }
 .reading-identity > div { min-width: 0; }
-.reading-identity h2 { margin: 0; font-family: var(--font-display); font-size: var(--m-font-title); font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
-.reading-version { margin: 2px 0 0; color: var(--muted); font-size: var(--m-caption); }
+.reading-identity h2 { margin: 0; font-family: var(--mt-font-serif); font-size: var(--mt-text-title-m); font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+.reading-version { margin: 2px 0 0; color: var(--mt-muted); font-size: var(--mt-text-caption); }
 .reading-origin { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-.reading-origin > span { padding: 3px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: var(--m-caption); line-height: 1.5; overflow-wrap: anywhere; }
-.reading-boundary { margin: 8px 0 12px; font-size: var(--m-caption); line-height: 1.6; color: var(--muted); }
-.reading-counts { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; padding: 12px 0; border-top: 1px solid var(--border); }
+.reading-origin > span { padding: 3px 8px; border: 1px solid var(--mt-border-soft); border-radius: 6px; font-size: var(--mt-text-caption); line-height: 1.5; overflow-wrap: anywhere; }
+.reading-boundary { margin: 8px 0 12px; font-size: var(--mt-text-caption); line-height: 1.6; color: var(--mt-muted); }
+.reading-counts { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; padding: 12px 0; border-top: 1px solid var(--mt-border-soft); }
 .reading-counts > div { display: flex; align-items: baseline; gap: 6px; }
-.reading-counts dt { font-size: var(--m-caption); color: var(--muted); }
+.reading-counts dt { font-size: var(--mt-text-caption); color: var(--mt-muted); }
 .reading-counts dd { margin: 0; font-size: 1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
-.reading-details { border-top: 1px solid var(--border); }
-.reading-details > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: var(--m-touch); cursor: pointer; list-style: none; font-size: var(--m-body); }
+.reading-details { border-top: 1px solid var(--mt-border-soft); }
+.reading-details > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: var(--mt-touch); cursor: pointer; list-style: none; font-size: var(--mt-text-body); }
 .reading-details > summary::-webkit-details-marker { display: none; }
 .reading-details > summary .ui-icon { width: 16px; height: 16px; flex: none; }
 .reading-details[open] > summary .ui-icon { transform: rotate(90deg); }
-.reading-detail-body { padding-bottom: 16px; font-size: var(--m-body); line-height: 1.7; }
+.reading-detail-body { padding-bottom: 16px; font-size: var(--mt-text-body); line-height: 1.7; }
 .reading-detail-body p { margin: 0 0 10px; }
 .reading-detail-body dl { margin: 16px 0 0; }
 .reading-detail-body dl > div + div { margin-top: 12px; }
-.reading-detail-body dt { color: var(--muted); font-size: var(--m-caption); }
+.reading-detail-body dt { color: var(--mt-muted); font-size: var(--mt-text-caption); }
 .reading-detail-body dd { margin: 2px 0 0; overflow-wrap: anywhere; }
-.reading-code { font-family: var(--font-code); font-size: var(--m-caption); }
-.reading-raw-time { display: block; color: var(--muted); font-size: var(--m-caption); }
+.reading-code { font-family: var(--mt-font-mono); font-size: var(--mt-text-caption); }
+.reading-raw-time { display: block; color: var(--mt-muted); font-size: var(--mt-text-caption); }
 .reading-change { margin-top: 12px; }
 </style>

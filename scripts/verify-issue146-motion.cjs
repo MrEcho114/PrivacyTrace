@@ -18,7 +18,9 @@ const { stopChildren, spawnOptions } = require('./lib/process-control.cjs')
 
 const output = path.resolve('tmp/issue146-motion')
 const screenshots = path.join(output, 'screenshots')
-const origin = process.env.PRIVACYTRACE_FRONTEND_URL || 'http://127.0.0.1:5184'
+const port = Number(process.env.PRIVACYTRACE_WEB_PORT || 5184)
+if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid PRIVACYTRACE_WEB_PORT')
+const origin = process.env.PRIVACYTRACE_FRONTEND_URL || `http://127.0.0.1:${port}`
 
 // Deterministic report shape follows apps/web/src/contracts.generated.ts; a drift
 // shows up as a failed selector instead of a silently skipped assertion.
@@ -140,15 +142,32 @@ async function verifyPointerFeedback(browser) {
   assert.notEqual(hovered, base, 'a hover-capable pointer must still get hover feedback')
   const timing = await button.evaluate(element => {
     const style = getComputedStyle(element)
-    const token = getComputedStyle(document.documentElement).getPropertyValue('--motion-color').trim()
+    // Resolve the shared colour token in the element's own cascade scope. The
+    // frozen desktop root keeps 150ms, while body.is-mobile-app maps
+    // --motion-color to --mt-duration-press (120ms, Claude spec §9.2). Reading the
+    // element scope keeps the assertion true in both scopes instead of hardcoding
+    // one of the two durations.
+    const token = style.getPropertyValue('--motion-color').trim()
+    const press = getComputedStyle(document.documentElement).getPropertyValue('--mt-duration-press').trim()
     const toMs = value => value.endsWith('ms') ? parseFloat(value) : parseFloat(value) * 1000
     const durations = style.transitionDuration.split(',').map(value => toMs(value.trim()))
-    return { property: style.transitionProperty, durations, tokenMs: toMs(token), rawToken: token }
+    return {
+      property: style.transitionProperty,
+      durations,
+      tokenMs: toMs(token),
+      rawToken: token,
+      mobileScope: document.body.classList.contains('is-mobile-app'),
+      pressMs: press ? toMs(press) : null,
+    }
   })
   assert.equal(timing.property, 'background-color, border-color', 'colour feedback animates colour properties only')
   assert.ok(timing.durations.every(ms => ms === timing.tokenMs), 'every colour transition must use the shared --motion-color token (got ' + JSON.stringify(timing.durations) + ' vs ' + timing.rawToken + ')')
+  // Scoped expectation: the mobile shell must use the 120ms press duration, the
+  // frozen desktop root keeps its 150ms. A single hardcoded number cannot hold
+  // for both scopes, so pin the resolved value per scope.
+  assert.equal(timing.tokenMs, timing.mobileScope ? timing.pressMs : 150, 'colour feedback must use its scope duration: 120ms (--mt-duration-press) inside body.is-mobile-app, 150ms on the frozen desktop root (got ' + timing.rawToken + ', mobile=' + timing.mobileScope + ', --mt-duration-press=' + timing.pressMs + 'ms)')
   await page.screenshot({ path: path.join(screenshots, 'feedback-hover-1440.png') })
-  checks.push('feedback: hover keeps the shared --motion-color colour fade; colour properties only')
+  checks.push('feedback: hover keeps the shared --motion-color colour fade (' + timing.rawToken + '); colour properties only')
 
   // The press offset has no transition, so the pressed state exists in the same
   // frame as pointerdown instead of easing in behind the colour change.
@@ -456,9 +475,9 @@ async function main() {
   let browser
   try {
     if (!process.env.PRIVACYTRACE_FRONTEND_URL) {
-      try { await fetch(origin, { signal: AbortSignal.timeout(1000) }); throw new Error('Port 5184 is already occupied. Set PRIVACYTRACE_FRONTEND_URL only for an explicitly chosen server.') }
+      try { await fetch(origin, { signal: AbortSignal.timeout(1000) }); throw new Error(`Port ${port} is already occupied. Set PRIVACYTRACE_FRONTEND_URL only for an explicitly chosen server.`) }
       catch (error) { if (!['TypeError', 'TimeoutError'].includes(error.name)) throw error }
-      const child = spawn('npm run dev', spawnOptions(path.resolve(__dirname, '..'), { PRIVACYTRACE_WEB_PORT: '5184' }))
+      const child = spawn('npm run dev', spawnOptions(path.resolve(__dirname, '..'), { PRIVACYTRACE_WEB_PORT: String(port) }))
       children.push(child)
       let log = ''
       child.stdout.on('data', chunk => { log += chunk })

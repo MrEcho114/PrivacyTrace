@@ -132,6 +132,26 @@ async function main() {
     await page.getByRole('heading', { name: '当前分析材料', exact: true }).waitFor()
     checks.push('report details retain the change-material action and preserve the current material')
 
+    // Reading typography (Claude spec §5.2/§8.8): policy prose is body-l 17/1.75 on
+    // the reading serif stack, kept distinct from the 16px sans UI. The import step
+    // is where the policy body is exposed in the mobile shell, so measure it there
+    // instead of trusting a stylesheet grep.
+    const policySource = page.locator('.mobile-workspace .m-source-row').first()
+    await policySource.locator('summary').click()
+    const reading = await policySource.locator('.policy-reading').evaluate(element => {
+      const style = getComputedStyle(element)
+      const size = Number.parseFloat(style.fontSize)
+      const line = Number.parseFloat(style.lineHeight)
+      return { size, ratio: line / size, family: style.fontFamily, length: element.innerText.length }
+    })
+    assert.equal(reading.size, 17, `policy reading must use body-l 17px (got ${reading.size})`)
+    assert.ok(Math.abs(reading.ratio - 1.75) <= 0.02, `policy reading line-height must be 1.75 (got ${reading.ratio.toFixed(2)})`)
+    assert.match(reading.family, /Noto Serif SC|Georgia|Songti SC/, `policy reading must use the reading serif stack (got ${reading.family})`)
+    assert.doesNotMatch(reading.family, /Noto Sans SC|Anthropic Sans/, `policy reading must not fall back to the UI sans stack (got ${reading.family})`)
+    assert.ok(reading.length > 0, 'policy reading must render its body text')
+    await policySource.locator('summary').click()
+    checks.push('policy reading: body-l 17/1.75 on the reading serif, not the 16px sans UI')
+
     const desktop = await browser.newPage({ viewport: { width: 1440, height: 900 } })
     desktop.on('pageerror', error => errors.push(error.message))
     await desktop.goto(origin)

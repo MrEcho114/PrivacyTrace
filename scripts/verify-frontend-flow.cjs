@@ -522,14 +522,16 @@ async function verifyMobileReport(page, requests) {
 }
 
 async function main() {
-  const origin = process.env.PRIVACYTRACE_FRONTEND_URL || 'http://127.0.0.1:5184'
+  const port = Number(process.env.PRIVACYTRACE_WEB_PORT || 5184)
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid PRIVACYTRACE_WEB_PORT')
+  const origin = process.env.PRIVACYTRACE_FRONTEND_URL || `http://127.0.0.1:${port}`
   const children = []
   let browser
   try {
     if (!process.env.PRIVACYTRACE_FRONTEND_URL) {
-      try { await fetch(origin, { signal: AbortSignal.timeout(1000) }); throw new Error('Port 5184 is already occupied. Set PRIVACYTRACE_FRONTEND_URL only for an explicitly chosen server.') }
+      try { await fetch(origin, { signal: AbortSignal.timeout(1000) }); throw new Error(`Port ${port} is already occupied. Set PRIVACYTRACE_FRONTEND_URL only for an explicitly chosen server.`) }
       catch (error) { if (!['TypeError', 'TimeoutError'].includes(error.name)) throw error }
-      const child = spawn('npm run dev', spawnOptions(path.resolve(__dirname, '..'), { PRIVACYTRACE_WEB_PORT: '5184' }))
+      const child = spawn('npm run dev', spawnOptions(path.resolve(__dirname, '..'), { PRIVACYTRACE_WEB_PORT: String(port) }))
       children.push(child)
       let serverLog = ''
       child.stdout.on('data', chunk => { serverLog += chunk })

@@ -120,12 +120,18 @@ async function assertFieldText(page, label) {
     return fields.map(element => ({
       id: element.id || element.tagName.toLowerCase(),
       size: Number.parseFloat(getComputedStyle(element).fontSize),
+      height: Number.parseFloat(element.getBoundingClientRect().height),
     }))
   })
   assert.ok(measured.length > 0, `${label}: expected visible form fields`)
   const small = measured.filter(field => field.size < 15.5)
   assert.deepEqual(small, [], `${label}: text fields below 16px would trigger WebView zoom`)
-  return `${label}: ${measured.length} visible fields >= 16px`
+  // Claude spec §8.2: fields are 56 high (textarea keeps its 96 minimum, which
+  // only makes them taller). Text fields must not shrink back to the 40px
+  // desktop/Pioneer box inside the mobile shell.
+  const short = measured.filter(field => field.height < 55.5)
+  assert.deepEqual(short.map(field => `${field.id} ${Math.round(field.height)}px`), [], `${label}: fields below the 56px Claude field height`)
+  return `${label}: ${measured.length} visible fields >= 16px and >= 56px high`
 }
 async function assertSingleTitle(page, expected, label) {
   const state = await page.evaluate(() => ({
@@ -253,14 +259,23 @@ async function openEvidenceSheet(page) {
     focusInside: Boolean(document.activeElement?.closest('dialog.ui-sheet.m-evidence-sheet')),
     closeLabel: document.querySelector('dialog.ui-sheet.m-evidence-sheet .ui-sheet-close')?.getAttribute('aria-label'),
     scrim: getComputedStyle(document.querySelector('.ui-sheet-overlay')).backgroundColor,
+    // Claude spec §7.1/§8.6: the bottom sheet carries the 24px top corners only.
+    sheetRadius: (() => {
+      const style = getComputedStyle(document.querySelector('dialog.ui-sheet.m-evidence-sheet'))
+      return [style.borderTopLeftRadius, style.borderTopRightRadius, style.borderBottomLeftRadius]
+    })(),
     backgroundHidden: document.querySelector('.mobile-workspace')?.getAttribute('aria-hidden'),
   }))
   assert.equal(state.overlay, true, 'evidence sheet: scrim overlay must render')
   assert.equal(state.handle, true, 'evidence sheet: drag handle must render')
   assert.equal(state.focusInside, true, 'evidence sheet: focus must move into the sheet')
   assert.equal(state.closeLabel, '关闭', 'evidence sheet: close control must be labelled 关闭')
-  assert.equal(state.scrim, 'rgba(44, 53, 71, 0.42)', `evidence sheet: scrim must use --m-scrim (got ${state.scrim})`)
+  // Claude spec §7.3/§8.6: the modal scrim is warm black, not Pioneer blue-grey.
+  // body.is-mobile-app maps --m-scrim to --mt-scrim rgba(20,20,19,.45).
+  assert.equal(state.scrim, 'rgba(20, 20, 19, 0.45)', `evidence sheet: scrim must use the warm-black --mt-scrim (got ${state.scrim})`)
   assert.equal(await page.evaluate(() => document.querySelector('dialog.ui-sheet.m-evidence-sheet').innerText.includes('UNKNOWN')), true, 'evidence sheet: UNKNOWN evidence wording must stay visible')
+  assert.deepEqual(state.sheetRadius.slice(0, 2), ['24px', '24px'], `evidence sheet: top corners must use --mt-radius-sheet 24px (got ${state.sheetRadius.join(' / ')})`)
+  assert.equal(state.sheetRadius[2], '0px', `evidence sheet: bottom corners stay square (got ${state.sheetRadius[2]})`)
   if (state.backgroundHidden !== null) assert.equal(state.backgroundHidden, 'true', 'evidence sheet: background must be hidden from assistive tech')
   return { trigger, before }
 }
@@ -304,6 +319,7 @@ async function main() {
         appbarHeight: Math.round(appbar.getBoundingClientRect().height),
         titleFont: style?.fontFamily || '',
         titleSize: style?.fontSize || '',
+        titleWeight: style?.fontWeight || '',
         railCount: rail.length,
         railRows: new Set(rail.map(button => Math.round(button.getBoundingClientRect().top))).size,
         railDisabled: rail.map(button => button.disabled),
@@ -313,6 +329,10 @@ async function main() {
         actionbarPosition: actionbar ? getComputedStyle(actionbar).position : '',
         actionbarBottom: actionbar ? Math.round(actionbar.getBoundingClientRect().bottom) : 0,
         primaryHeight: primary ? Math.round(primary.getBoundingClientRect().height) : 0,
+        // Claude spec §8.1: primary action is 48 high, 12 radius, 16/500 sans.
+        primaryRadius: primary ? getComputedStyle(primary).borderTopLeftRadius : '',
+        primaryFont: primary ? getComputedStyle(primary).fontSize : '',
+        primaryWeight: primary ? getComputedStyle(primary).fontWeight : '',
         primaryDisabled: primary ? primary.disabled : null,
         viewport, theme,
         appbarColor: getComputedStyle(appbar).backgroundColor,
@@ -324,8 +344,12 @@ async function main() {
       }
     })
     assert.ok(frame.appbarHeight >= 56, `app bar must be at least 56px (got ${frame.appbarHeight})`)
-    assert.match(frame.titleFont, /Noto Serif SC/, 'app bar title must use the Pioneer serif')
+    // Claude spec §5.1/§5.2: title-m stays serif 20/500; the serif stack is the
+    // Claude one (Anthropic Serif → Georgia → Noto Serif SC), so either Latin
+    // fallback is acceptable but a sans stack is not.
+    assert.match(frame.titleFont, /Noto Serif SC|Georgia/, `app bar title must use the Claude serif stack (got ${frame.titleFont})`)
     assert.equal(frame.titleSize, '20px', `app bar title must be 20px (got ${frame.titleSize})`)
+    assert.equal(frame.titleWeight, '500', `app bar title must keep serif weight 500 (got ${frame.titleWeight})`)
     assert.equal(frame.railCount, 4, 'the step rail must have four steps')
     assert.equal(frame.railRows, 1, 'the step rail must stay on one row at 390px')
     assert.equal(frame.current, 1, 'exactly one step has aria-current=step')
@@ -335,12 +359,15 @@ async function main() {
     assert.equal(frame.actionbarPosition, 'fixed', 'the action bar must be fixed to the viewport bottom')
     assert.ok(Math.abs(frame.actionbarBottom - 844) <= 1, `action bar must sit on the bottom edge (bottom ${frame.actionbarBottom})`)
     assert.ok(frame.primaryHeight >= 48, `primary action must be at least 48px tall (got ${frame.primaryHeight})`)
+    assert.equal(frame.primaryRadius, '12px', `primary action must use --mt-radius-control 12px (got ${frame.primaryRadius})`)
+    assert.equal(frame.primaryFont, '16px', `primary action label must be 16px (got ${frame.primaryFont})`)
+    assert.equal(frame.primaryWeight, '500', `primary action label must be weight 500 (got ${frame.primaryWeight})`)
     assert.equal(frame.primaryDisabled, true, 'the import primary action waits for a material')
     assert.match(frame.viewport, /viewport-fit=cover/, 'viewport meta must opt into safe-area insets')
     assert.match(frame.viewport, /interactive-widget=resizes-content/, 'viewport meta must resize for the soft keyboard')
     assert.doesNotMatch(frame.viewport, /user-scalable=no|maximum-scale=1/, 'zoom must stay available')
-    assert.equal(frame.theme, '#fdfcfa', 'theme-color must match the app bar')
-    assert.equal(frame.appbarColor, 'rgb(253, 252, 250)', 'app bar must use --surface')
+    assert.equal(frame.theme, '#f5f4ed', 'theme-color must be the warm canvas (#f5f4ed) so the status bar matches the page')
+    assert.equal(frame.appbarColor, 'rgb(250, 249, 245)', `app bar must use --mt-surface ivory #faf9f5 (got ${frame.appbarColor})`)
     assert.ok(frame.shellHeight >= 844, `shell must fill 100dvh (got ${frame.shellHeight})`)
     assert.equal(frame.skip, true, 'the shell must keep the skip link')
     assert.equal(frame.navLabel, '创建流程', 'the step rail must be a labelled navigation landmark')
@@ -349,7 +376,7 @@ async function main() {
     await assertSingleTitle(page, '应用与政策', 'import/empty')
     await assertNoPageOverflow(page, 'import/empty/390')
     await shot(page, '390-import-empty.png', { scenario: 'import', state: 'no material selected' })
-    checks.push('390x844 shell: 56px serif app bar, one-row 4-step rail, fixed 64px action bar, 48px targets, 100dvh, viewport/theme/zoom contract')
+    checks.push('390x844 shell: 56px Claude serif app bar 20/500 over ivory surface, one-row 4-step rail, fixed 64px action bar, 48px targets, 100dvh, viewport/theme/zoom contract')
 
     // ---- import selected ---------------------------------------------------
     await page.getByRole('button', { name: '选择应用并上传', exact: true }).click()
@@ -429,6 +456,25 @@ async function main() {
     await assertNoPageOverflow(page, 'candidates/390')
     checks.push(await assertTouchTargets(page, 'candidates/390'))
     checks.push(await assertFieldText(page, 'candidates/390'))
+    // Claude spec §8.3: the status tag keeps the 24px height / 6px radius /
+    // 12px label geometry and always carries text (colour is only redundant).
+    const statusTag = await page.evaluate(() => {
+      const tag = [...document.querySelectorAll('.mobile-workspace .status-tag')].find(element => element.getClientRects().length)
+      if (!tag) return null
+      const style = getComputedStyle(tag)
+      return {
+        height: Number(tag.getBoundingClientRect().height.toFixed(2)),
+        radius: style.borderTopLeftRadius,
+        size: Number.parseFloat(style.fontSize),
+        text: tag.textContent.trim(),
+      }
+    })
+    assert.ok(statusTag, 'candidates: the source/candidate status tag must render')
+    assert.ok(Math.abs(statusTag.height - 24) <= 0.5, `status tag must be 24px high (got ${statusTag.height})`)
+    assert.equal(statusTag.radius, '6px', `status tag must use --mt-radius-tag 6px (got ${statusTag.radius})`)
+    assert.equal(statusTag.size, 12, `status tag label must be 12px (got ${statusTag.size})`)
+    assert.ok(statusTag.text.length > 0, 'status tag must keep its text, colour is only redundant encoding')
+    checks.push('candidates: status tag 24 high / 6 radius / 12px label with text')
     await page.evaluate(() => window.scrollTo(0, 0))
     await shot(page, '390-candidates.png', { scenario: 'candidates', state: 'one extracted candidate + editor' })
     // Hardware-keyboard users must see where focus is: the global focus ring must
@@ -493,11 +539,17 @@ async function main() {
       rows: document.querySelectorAll('.m-issue-list .evidence-button').length,
       partial: document.body.innerText.includes('PARTIAL'),
       h1: document.querySelectorAll('h1').length,
+      // Claude spec §8.4: cards keep the 16px radius instead of the 12px Pioneer panel.
+      cardRadius: (() => {
+        const card = document.querySelector('.m-issue-card')
+        return card ? getComputedStyle(card).borderTopLeftRadius : ''
+      })(),
     }))
     assert.equal(reportState.actionbar, false, 'the report step has no fixed action bar')
     assert.ok(reportState.rows >= 2, 'the report must render issue rows as tappable buttons')
     assert.equal(reportState.partial, true, 'PARTIAL coverage must stay visible')
     assert.equal(reportState.h1, 1, 'the report keeps exactly one h1 (the app bar)')
+    assert.equal(reportState.cardRadius, '16px', `report cards must use --mt-radius-card 16px (got ${reportState.cardRadius})`)
     await assertNoPageOverflow(page, 'report/390')
     checks.push(await assertTouchTargets(page, 'report/390'))
     await shot(page, '390-report.png', { scenario: 'report', state: 'PARTIAL coverage, issue list, evidence entry points' })
@@ -538,7 +590,7 @@ async function main() {
       return { name: style.animationName, duration: style.animationDuration, iteration: style.animationIterationCount }
     })
     assert.notEqual(sheetMotion.name, 'none', 'the sheet must have an entrance transition (E #146)')
-    assert.equal(sheetMotion.duration, '0.2s', `sheet entrance must use --m-duration-enter (got ${sheetMotion.duration})`)
+    assert.equal(sheetMotion.duration, '0.2s', `sheet entrance must use the 200ms enter duration (--mt-duration-enter via --m-duration-enter; got ${sheetMotion.duration})`)
     assert.equal(sheetMotion.iteration, '1', 'sheet entrance must play once, not idle-loop')
     checks.push(await assertTouchTargets(page, 'evidence-sheet/390'))
     await assertNoPageOverflow(page, 'evidence-sheet/390')
@@ -772,9 +824,25 @@ async function main() {
     checks.push('failure: SIMULATED job failure stays on progress with role=alert, no report action, retry offered')
 
     // ---- static platform assertions --------------------------------------
+    // mobile.css now consumes the Claude --mt-* tokens directly; the round-2
+    // --m-* names stay valid because body.is-mobile-app re-maps them. Each entry
+    // still has to be a token reference, not a hardcoded pixel or colour.
     const mobileCss = fs.readFileSync(path.join(root, 'apps/web/src/mobile/mobile.css'), 'utf8')
-    for (const fragment of ['100dvh', 'env(safe-area-inset-top', 'env(safe-area-inset-bottom', 'var(--keyboard-inset', 'overscroll-behavior', '-webkit-tap-highlight-color', 'touch-action: manipulation', '@media (hover: hover) and (pointer: fine)', 'var(--m-touch', 'var(--m-scrim', 'prefers-reduced-motion']) {
-      assert.ok(mobileCss.includes(fragment), `mobile.css is missing ${fragment}`)
+    const mobileCssContract = [
+      ['100dvh', /100dvh/],
+      ['safe-area top inset', /env\(safe-area-inset-top/],
+      ['safe-area bottom inset', /env\(safe-area-inset-bottom/],
+      ['keyboard inset', /var\(--(?:mt-)?keyboard-inset/],
+      ['overscroll containment', /overscroll-behavior/],
+      ['tap highlight reset', /-webkit-tap-highlight-color/],
+      ['touch-action manipulation', /touch-action:\s*manipulation/],
+      ['fine-pointer hover gate', /@media \(hover: hover\) and \(pointer: fine\)/],
+      ['48px touch token', /var\(--(?:m|mt|ui)-touch\b/],
+      ['warm-black scrim token', /var\(--(?:m|mt|ui)-scrim\b/],
+      ['reduced motion', /prefers-reduced-motion/],
+    ]
+    for (const [label, pattern] of mobileCssContract) {
+      assert.ok(pattern.test(mobileCss), `mobile.css is missing the ${label} contract (${pattern})`)
     }
     assert.ok(!/transition\s*:\s*all/.test(mobileCss), 'mobile.css must not use transition: all')
     assert.doesNotMatch(mobileCss, /user-scalable\s*=\s*no/, 'mobile.css must not disable zoom')

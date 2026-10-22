@@ -1,0 +1,313 @@
+{
+  "version": "0.1.0",
+  "baseline": "od-ds-claude",
+  "scope": {
+    "name": "mobile-app-only",
+    "root": ".mobile-workspace",
+    "bodyClass": "is-mobile-app"
+  },
+  "tokensFile": "docs/design/mobile-reset/mobile-design.tokens.json",
+  "spec": "docs/design/frontend-design-spec-mobile.md",
+  "cssNamespace": "--mt-",
+  "note": "机器可读移动端契约，供 scripts/lib/frontend-guards.cjs 的 assertMobileDesign 读取。值来自规范 §4–§11 与 mobile-design.tokens.json；只有一个 light 主题，桌面 Pioneer 变量冻结保留。不要为了让断言变绿而改这里：要么改样式表让它符合契约，要么先改规范与 tokens 文件。",
+  "roles": {
+    "bg": "#f5f4ed",
+    "surface": "#faf9f5",
+    "surface-warm": "#e8e6dc",
+    "fg": "#141413",
+    "fg-2": "#3d3d3a",
+    "muted": "#5e5d59",
+    "caption": "#6b6a63",
+    "meta": "#87867f",
+    "border": "#f0eee6",
+    "border-soft": "#e8e6dc",
+    "border-control": "#87867f",
+    "accent": "#c96442",
+    "accent-strong": "#b04b25",
+    "accent-strong-hover": "#a24522",
+    "accent-strong-active": "#974120",
+    "accent-text": "#a8431f",
+    "accent-on": "#faf9f5",
+    "focus": "#1f6fb2",
+    "success": "#0f7a3c",
+    "success-bg": "#eef6e8",
+    "warn": "#8a5a00",
+    "warn-bg": "#fbf3d9",
+    "danger": "#b53333",
+    "danger-active": "#a92e2e",
+    "danger-bg": "#fbeceb",
+    "info": "#1f6fb2",
+    "info-bg": "#eaf2fb",
+    "neutral-fg": "#3d3d3a",
+    "neutral-bg": "#e8e6dc",
+    "handle": "#d1cfc5",
+    "scrim": "rgba(20,20,19,.45)",
+    "state-hover": "rgba(20,20,19,.06)",
+    "state-press": "rgba(20,20,19,.12)",
+    "state-selected": "rgba(20,20,19,.08)"
+  },
+  "roleAliases": {
+    "neutral": "neutral-fg"
+  },
+  "darkRoles": {
+    "bg-inverse": "#141413",
+    "surface-dark": "#30302e",
+    "fg-inverse": "#faf9f5",
+    "muted-inverse": "#b0aea5",
+    "accent-inverse": "#d97757",
+    "border-inverse": "rgba(250,249,245,.16)"
+  },
+  "typography": {
+    "rootPx": 16,
+    "families": {
+      "serif": {
+        "first": "Anthropic Serif",
+        "stack": "\"Anthropic Serif\", Georgia, \"Noto Serif SC\", \"Songti SC\", serif",
+        "usage": "页面标题、卡片标题、封面/空状态主标题"
+      },
+      "sans": {
+        "first": "Anthropic Sans",
+        "stack": "\"Anthropic Sans\", Inter, \"Noto Sans SC\", \"Microsoft YaHei\", system-ui, -apple-system, sans-serif",
+        "usage": "UI 控件、正文、标签"
+      },
+      "reading": {
+        "first": "Noto Serif SC",
+        "stack": "\"Noto Serif SC\", Georgia, \"Songti SC\", serif",
+        "usage": "政策原文、报告引文、长文阅读"
+      },
+      "mono": {
+        "first": "SF Mono",
+        "stack": "\"SF Mono\", \"JetBrains Mono\", ui-monospace, Consolas, monospace",
+        "usage": "哈希、包名、URL、代码片段；不得用于正文"
+      }
+    },
+    "scale": {
+      "display": {
+        "px": 32,
+        "lineHeight": 1.15,
+        "lineHeightPx": 36.8,
+        "weight": 500,
+        "family": "serif"
+      },
+      "title-l": {
+        "px": 24,
+        "lineHeight": 1.25,
+        "lineHeightPx": 30,
+        "weight": 500,
+        "family": "serif"
+      },
+      "title-m": {
+        "px": 20,
+        "lineHeight": 1.3,
+        "lineHeightPx": 26,
+        "weight": 500,
+        "family": "serif"
+      },
+      "title-s": {
+        "px": 17,
+        "lineHeight": 1.4,
+        "lineHeightPx": 23.8,
+        "weight": 500,
+        "family": "serif"
+      },
+      "reading": {
+        "px": 17,
+        "lineHeight": 1.75,
+        "lineHeightPx": 29.75,
+        "weight": 400,
+        "family": "reading"
+      },
+      "body": {
+        "px": 16,
+        "lineHeight": 1.6,
+        "lineHeightPx": 25.6,
+        "weight": 400,
+        "family": "sans"
+      },
+      "control": {
+        "px": 16,
+        "lineHeight": 1.25,
+        "lineHeightPx": 20,
+        "weight": 500,
+        "family": "sans"
+      },
+      "caption": {
+        "px": 14,
+        "lineHeight": 1.45,
+        "lineHeightPx": 20.3,
+        "weight": 400,
+        "family": "sans"
+      },
+      "label": {
+        "px": 12,
+        "lineHeight": 1.35,
+        "lineHeightPx": 16.2,
+        "weight": 500,
+        "family": "sans"
+      },
+      "overline": {
+        "px": 11,
+        "lineHeight": 1.5,
+        "lineHeightPx": 16.5,
+        "weight": 500,
+        "family": "sans"
+      },
+      "mono": {
+        "px": 14,
+        "lineHeight": 1.6,
+        "lineHeightPx": 22.4,
+        "weight": 400,
+        "family": "mono"
+      }
+    }
+  },
+  "geometry": {
+    "touch": 48,
+    "appbar": 56,
+    "stepnav": 48,
+    "actionbar": 64,
+    "input": 56,
+    "inputFontSize": 16,
+    "contentMax": 560,
+    "contentMinViewport": 600,
+    "gutter": 16,
+    "radius": {
+      "control": 12,
+      "field": 12,
+      "card": 16,
+      "sheet": 24,
+      "tag": 6,
+      "pill": 999
+    }
+  },
+  "states": {
+    "hover": {
+      "color": "rgba(20,20,19,.06)",
+      "media": "(hover: hover) and (pointer: fine)"
+    },
+    "press": {
+      "color": "rgba(20,20,19,.12)",
+      "buttonScale": 0.98,
+      "immediateMs": 16,
+      "durationMs": 120
+    },
+    "selected": {
+      "color": "rgba(20,20,19,.08)",
+      "textRole": "accent-text",
+      "underlinePx": 2,
+      "redundancy": "下划线或 ✓，不能只靠颜色"
+    },
+    "focus": {
+      "color": "#1f6fb2",
+      "width": 2,
+      "offset": 2,
+      "selector": ":focus-visible"
+    },
+    "disabled": {
+      "backgroundRole": "surface-warm",
+      "foregroundRole": "meta",
+      "wcagExempt": true
+    },
+    "sheet": {
+      "radius": 24,
+      "scrim": "rgba(20,20,19,.45)",
+      "shadow": "0 -8px 32px rgba(20,20,19,.18)",
+      "maxHeight": "min(88dvh, 720px)"
+    }
+  },
+  "components": {
+    "appbar": {
+      "selector": ".mobile-workspace .m-appbar",
+      "height": 56,
+      "title": {
+        "selector": ".m-appbar h1",
+        "scale": "title-m"
+      }
+    },
+    "stepnav": {
+      "selector": ".mobile-workspace .m-steps",
+      "height": 48,
+      "itemSelector": ".m-step",
+      "itemMinHeight": 48
+    },
+    "actionbar": {
+      "selector": ".mobile-workspace .m-actionbar",
+      "minHeight": 64
+    },
+    "content": {
+      "selector": ".mobile-workspace .m-main",
+      "maxWidth": 560,
+      "contentColumn": true,
+      "gutter": 16
+    },
+    "card": {
+      "selector": ".mobile-workspace .m-card",
+      "radius": 16,
+      "backgroundRole": "surface",
+      "title": {
+        "selector": ".m-card h2",
+        "scale": "title-s"
+      }
+    },
+    "button": {
+      "selector": ".mobile-workspace .ui-button",
+      "height": 48,
+      "minWidth": 48,
+      "radius": 12,
+      "fontScale": "control",
+      "paddingX": 20
+    },
+    "primary": {
+      "selector": ".mobile-workspace .ui-button.primary:not(:disabled)",
+      "backgroundRole": "accent-strong",
+      "colorRole": "accent-on"
+    },
+    "field": {
+      "selector": ".mobile-workspace .mobile-field input, .mobile-workspace .ui-field :is(input, select, textarea)",
+      "height": 56,
+      "radius": 12,
+      "fontSize": 16,
+      "backgroundRole": "surface"
+    },
+    "tag": {
+      "selector": ".mobile-workspace .status-tag, .mobile-workspace .tag",
+      "height": 24,
+      "radius": 6,
+      "fontSize": 12,
+      "paddingX": 10
+    },
+    "sheet": {
+      "selector": "dialog.ui-sheet.ui-sheet--bottom",
+      "radius": 24,
+      "backgroundRole": "surface",
+      "scrimSelector": ".ui-sheet-overlay",
+      "scrimRole": "scrim"
+    },
+    "reading": {
+      "selector": ".mobile-workspace .policy-reading",
+      "scale": "reading"
+    },
+    "listRow": {
+      "selector": ".mobile-workspace .m-row-main strong",
+      "fontSize": 16,
+      "weight": 500
+    }
+  },
+  "coverage": [
+    "tokens.roles",
+    "typography.body",
+    "typography.listRow",
+    "typography.reading",
+    "shell.appbar",
+    "shell.stepnav",
+    "shell.actionbar",
+    "content.maxWidth",
+    "component.card",
+    "component.button",
+    "component.primary",
+    "component.field",
+    "component.tag",
+    "component.sheet",
+    "focus.ring"
+  ]
+}

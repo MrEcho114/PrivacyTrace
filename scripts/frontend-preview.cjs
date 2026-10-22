@@ -4,6 +4,7 @@ const http = require('node:http')
 const { randomUUID } = require('node:crypto')
 const { fork, spawn } = require('node:child_process')
 const { isProcessAlive, stopChildren } = require('./lib/process-control.cjs')
+const { resolvePowerShell } = require('./lib/powershell.cjs')
 
 const root = path.resolve(__dirname, '..')
 const directory = path.join(root, 'tmp/frontend-preview')
@@ -55,7 +56,21 @@ async function start(port = Number(process.env.PRIVACYTRACE_WEB_PORT || 5184), a
   }
   // A TCP check also catches non-HTTP listeners. Vite strictPort handles a later race.
   const probe = http.createServer()
-  await new Promise((resolve, reject) => { probe.once('error', () => reject(new Error(`Port ${port} is occupied; no listener stopped`))); probe.listen(port, '127.0.0.1', resolve) })
+  await new Promise((resolve, reject) => {
+    probe.once('error', error => {
+      if (error.code === 'EACCES') {
+        reject(new Error(
+          `Port ${port} cannot be bound (EACCES). On Windows this usually means the port is in a reserved WinNAT/Hyper-V range; ` +
+          `set PRIVACYTRACE_WEB_PORT to a free port outside the excluded range (for example 6001).`,
+        ))
+      } else if (error.code === 'EADDRINUSE') {
+        reject(new Error(`Port ${port} is occupied; no listener stopped`))
+      } else {
+        reject(new Error(`Port ${port} probe failed (${error.code || error.message}); no listener stopped`))
+      }
+    })
+    probe.listen(port, '127.0.0.1', resolve)
+  })
   await new Promise(resolve => probe.close(resolve))
   fs.mkdirSync(directory, { recursive: true })
   const log = fs.openSync(logFile, 'a')
@@ -152,9 +167,13 @@ async function withPreviewPaused(work) {
   finally { if (previous.running) await start(previous.port, previous.apiOrigin) }
 }
 async function check() {
+  const windows = process.platform === 'win32'
+  const command = windows ? resolvePowerShell() : 'bash'
+  const args = windows
+    ? ['-NoProfile', '-File', path.join(root, 'scripts/check.ps1')]
+    : [path.join(root, 'scripts/check.sh')]
   return withPreviewPaused(() => new Promise((resolve, reject) => {
-    const windows = process.platform === 'win32'
-    const child = spawn(windows ? 'pwsh' : 'bash', windows ? ['-NoProfile', '-File', path.join(root, 'scripts/check.ps1')] : [path.join(root, 'scripts/check.sh')], { cwd: root, windowsHide: true, stdio: 'inherit' })
+    const child = spawn(command, args, { cwd: root, windowsHide: true, stdio: 'inherit' })
     child.once('error', reject)
     child.once('exit', code => code === 0 ? resolve() : reject(new Error(`Project check failed (${code})`)))
   }))

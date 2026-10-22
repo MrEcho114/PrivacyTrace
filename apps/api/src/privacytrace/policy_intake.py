@@ -69,6 +69,36 @@ CANDIDATE_FIELDS = {
 }
 
 
+def _candidate_span(candidate, text):
+    """Resolve a candidate's codepoint span, deriving one missing endpoint.
+
+    Candidates may carry both offsets, neither (then the excerpt must occur
+    exactly once), or only one endpoint -- ``WebCandidate`` exposes only
+    ``start_offset``. Rejecting that last shape would reject a legitimate
+    candidate the moment it is precise enough to name its match position, so the
+    other endpoint follows from the excerpt: ``[start, start + len(excerpt))``.
+    Callers still compare the excerpt with the resulting slice.
+    """
+    excerpt = candidate.get("excerpt")
+    start, end = candidate.get("start_offset"), candidate.get("end_offset")
+    if not (start is None or type(start) is int) or not (end is None or type(end) is int):
+        raise ValueError("Invalid candidate codepoint span")
+    if start is None and end is None:
+        if not isinstance(excerpt, str) or not excerpt or text.count(excerpt) != 1:
+            raise ValueError("Candidate excerpt must occur exactly once, or supply offsets")
+        start = text.index(excerpt)
+        end = start + len(excerpt)
+    elif start is None:
+        if not isinstance(excerpt, str) or not excerpt:
+            raise ValueError("Candidate end_offset requires an excerpt to derive start_offset")
+        start = end - len(excerpt)
+    elif end is None:
+        if not isinstance(excerpt, str) or not excerpt:
+            raise ValueError("Candidate start_offset requires an excerpt to derive end_offset")
+        end = start + len(excerpt)
+    return start, end
+
+
 def preflight_capture(raw_path, source_url, output_dir, candidates=None, *,
                       version="preflight", package=None, version_code=None,
                       product_scope=None, regions=None):
@@ -104,13 +134,7 @@ def preflight_capture(raw_path, source_url, output_dir, candidates=None, *,
             data_type = candidate.get("data_type")
             if not isinstance(data_type, str) or data_type not in valid_data_types:
                 raise ValueError("Candidate data_type is not in the active taxonomy")
-            start, end = candidate.get("start_offset"), candidate.get("end_offset")
-            if start is None and end is None:
-                excerpt = candidate.get("excerpt", "")
-                if not isinstance(excerpt, str) or not excerpt or text.count(excerpt) != 1:
-                    raise ValueError("Candidate excerpt must occur exactly once, or supply offsets")
-                start = text.index(excerpt)
-                end = start + len(excerpt)
+            start, end = _candidate_span(candidate, text)
             if type(start) is not int or type(end) is not int or not 0 <= start < end <= len(text):
                 raise ValueError("Invalid candidate codepoint span")
             if candidate.get("excerpt", text[start:end]) != text[start:end]:
@@ -160,11 +184,7 @@ _DEFAULT_SEMANTICS = {"polarity": "UNKNOWN", "subject": "UNKNOWN", "action": "UN
 
 
 def _candidate_identity(candidate, text):
-    excerpt = candidate.get("excerpt")
-    start, end = candidate.get("start_offset"), candidate.get("end_offset")
-    if start is None and end is None:
-        start = text.index(excerpt)  # The preflight has established uniqueness.
-        end = start + len(excerpt)
+    start, end = _candidate_span(candidate, text)
     evidence = (start, end, candidate["data_type"])
     semantics = tuple(
         tuple(sorted(candidate.get(name) or [])) if name == "ambiguity_flags"
@@ -427,12 +447,7 @@ def capture(
             raise ValueError("Each candidate must be an object")
         if set(candidate) - CANDIDATE_FIELDS:
             raise ValueError("Unsupported candidate fields")
-        start, end = candidate.get("start_offset"), candidate.get("end_offset")
-        if start is None and end is None:
-            excerpt = candidate.get("excerpt", "")
-            if not excerpt or text.count(excerpt) != 1:
-                raise ValueError("Candidate excerpt must occur exactly once, or supply offsets")
-            start, end = text.index(excerpt), text.index(excerpt) + len(excerpt)
+        start, end = _candidate_span(candidate, text)
         if type(start) is not int or type(end) is not int or not 0 <= start < end <= len(text):
             raise ValueError("Invalid candidate codepoint span")
         excerpt = text[start:end]

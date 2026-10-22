@@ -31,7 +31,7 @@ npm run android:prepare
 npm run android:build
 ```
 
-`android:prepare` 自动优先使用 PATH 中的 `pwsh`，未安装时回退到系统自带的 `powershell`（Windows PowerShell 5.1），无需额外安装 PowerShell 7。两者均不在 PATH 时会明确提示；初始化失败则保留失败退出码，不继续覆盖图标。
+`android:prepare` 通过 `scripts/run-powershell.cjs` 在运行时自动选择 `pwsh` 或 Windows 自带的 `powershell`（Windows PowerShell 5.1），不要求单独安装 PowerShell 7。只有 `pwsh` 不存在时才回退，脚本自身失败不会重试；两者都不在 PATH 时会给出明确提示，初始化失败保留原退出码、不继续覆盖图标。
 
 固定版本沿用 #71：Tauri 2.12.4、CLI 2.12.3，Android 初始化脚本固定 API36，并关闭备份和明文传输。本轮不以补齐额外工具链或物理设备矩阵阻塞开发交付；完整 APK/实际设备验证结果须单独记录。
 

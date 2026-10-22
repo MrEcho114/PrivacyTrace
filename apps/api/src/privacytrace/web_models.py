@@ -14,9 +14,19 @@ PolicySourceProvenance = Literal[
     "MANUAL_INPUT",
 ]
 
+# Evidence.id allows 100 characters and sentence evidence ids are this prefix plus
+# the candidate id, so the public candidate bound must be 87, not 100.
+WEB_SENTENCE_ID_PREFIX = "web-sentence-"
+WEB_CANDIDATE_ID_MAX = 100 - len(WEB_SENTENCE_ID_PREFIX)
+
+
+def normalize_condition(value: str | None) -> str | None:
+    """An empty condition declares no condition; keep one stored representation."""
+    return None if value == "" else value
+
 
 class WebCandidate(Model):
-    id: str = Field(min_length=1, max_length=100)
+    id: str = Field(min_length=1, max_length=WEB_CANDIDATE_ID_MAX)
     source_id: str = Field(min_length=1, max_length=100)
     excerpt: str = Field(min_length=1, max_length=5000)
     data_type: str = Field(min_length=1, max_length=100)
@@ -29,6 +39,11 @@ class WebCandidate(Model):
     ambiguity_flags: list[Literal["CATCH_ALL", "UNCLEAR_ACTION"]] = Field(default_factory=list)
     start_offset: int | None = Field(default=None, ge=0, strict=True)
     checked: bool = False
+
+    @field_validator("condition", mode="before")
+    @classmethod
+    def normalize_empty_condition(cls, value):
+        return normalize_condition(value)
 
 
 class WebSource(Model):
@@ -89,6 +104,11 @@ class ExternalClaimInput(Model):
     declared_purpose: str | None = Field(default=None, max_length=1000)
     declared_recipient: str | None = Field(default=None, max_length=1000)
 
+    @field_validator("condition", mode="before")
+    @classmethod
+    def normalize_empty_condition(cls, value):
+        return normalize_condition(value)
+
 
 class ExternalPolicyExportInput(Model):
     source: ExternalSourceInput
@@ -98,7 +118,7 @@ class ExternalPolicyExportInput(Model):
 
 class ExternalCollectionResult(Model):
     state: Literal["RETRIEVED", "PROVIDED", "URL_ONLY", "OFFLINE", "NOT_FOUND", "UNAVAILABLE"]
-    source: CollectedSourceInput | None
+    source: CollectedSourceInput | None = None
     observed_at: AwareDatetime | None = None
 
     @field_validator("observed_at", mode="before")

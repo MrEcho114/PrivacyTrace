@@ -24,6 +24,29 @@ RECEIPT_INVALID = "BUILD_ARTIFACT_RECEIPT_INVALID"
 HASH_MISMATCH = "BUILD_ARTIFACT_HASH_MISMATCH"
 
 
+def _acceptance_port(lane_variable, alias, default):
+    """Resolve a loopback acceptance port; the lane variable wins over the alias."""
+    raw = os.environ.get(lane_variable) or os.environ.get(alias)
+    if raw is None or raw == "":
+        return default
+    try:
+        port = int(raw)
+    except ValueError as error:
+        raise ValueError(f"{lane_variable}/{alias} must be a TCP port") from error
+    if not 1 <= port <= 65535:
+        raise ValueError(f"{lane_variable}/{alias} must be a TCP port")
+    return port
+
+
+def acceptance_ports():
+    """Resolve the API/web/viewer ports; defaults keep the 8000/5173/8765 contract."""
+    return (
+        _acceptance_port("PRIVACYTRACE_CONTROLLED_API_PORT", "PRIVACYTRACE_API_PORT", 8000),
+        _acceptance_port("PRIVACYTRACE_CONTROLLED_WEB_PORT", "PRIVACYTRACE_WEB_PORT", 5173),
+        _acceptance_port("PRIVACYTRACE_CONTROLLED_VIEWER_PORT", "PRIVACYTRACE_VIEWER_PORT", 8765),
+    )
+
+
 def _frozen_build_contract(suite=SUITE):
     return (
         json.loads((suite / "artifacts.lock.json").read_bytes()),
@@ -113,6 +136,17 @@ def main():
     stages = []
     servers = []
     logs = []
+    # The browser lane runs beside a developer's own services on a busy host and
+    # Windows WinNAT reserves whole TCP ranges, so every port is overridable.
+    # Defaults keep the historical 8000/5173/8765 contract.
+    api_port, web_port, viewer_port = acceptance_ports()
+    api_origin = f"http://127.0.0.1:{api_port}"
+    web_origin = f"http://127.0.0.1:{web_port}"
+    viewer_origin = f"http://127.0.0.1:{viewer_port}"
+    browser_env = {**os.environ, "PRIVACYTRACE_API_ORIGIN": api_origin,
+                   "PRIVACYTRACE_CONTROLLED_API_PORT": str(api_port),
+                   "PRIVACYTRACE_CONTROLLED_WEB_PORT": str(web_port),
+                   "PRIVACYTRACE_CONTROLLED_VIEWER_PORT": str(viewer_port)}
 
     def stage(name, command, env=None, timeout=900):
         started = time.monotonic()
@@ -139,7 +173,7 @@ def main():
     def python(script, *values):
         return [sys.executable, str(ROOT / "scripts" / script), *map(str, values)]
 
-    def serve(name, command, url):
+    def serve(name, command, url, env=None):
         # Refuse unknown listeners; only this run's own children are terminated.
         try:
             urllib.request.urlopen(url, timeout=1).close()
@@ -149,7 +183,8 @@ def main():
             raise ValueError("Acceptance port already in use")
         log = (output / (name + ".log")).open("wb")
         logs.append(log)
-        process = subprocess.Popen(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
+        process = subprocess.Popen(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
+                                   env=env)
         servers.append(process)
         for _ in range(100):
             if process.poll() is not None:
@@ -221,6 +256,9 @@ def main():
         if not stage("web-build", [npm, "run", "build"]):
             return 1
         if args.suite == "pt907":
+            # verify-controlled-browser.cjs is SHA-256 pinned in comparison.json and
+            # receipts and reads 127.0.0.1:8000/5173 literally, so this lane cannot
+            # be relocated; the configurable ports apply to the spec30 lane below.
             serve("api", python("serve-reports.py", "--store-dir", output / "evaluation/jobs"),
                   "http://127.0.0.1:8000/api/v1/health")
             serve("web", ["node", str(ROOT / "node_modules/vite/bin/vite.js"), "preview", "--host",
@@ -245,15 +283,17 @@ def main():
             ["node", "-e", "process.stdout.write(require(process.argv[1]).chromium.executablePath())",
              str(modules / "playwright")], text=True,
         ).strip()
-        serve("api", python("serve-reports.py", "--store-dir", output / "browser-jobs"),
-              "http://127.0.0.1:8000/api/v1/health")
+        serve("api", python("serve-reports.py", "--store-dir", output / "browser-jobs",
+                            "--port", api_port),
+              f"{api_origin}/api/v1/health")
         serve("web", ["node", str(ROOT / "node_modules/vite/bin/vite.js"), "preview", "--host",
-                       "127.0.0.1", "--port", "5173", "--strictPort", "--config",
+                       "127.0.0.1", "--port", str(web_port), "--strictPort", "--config",
                        str(ROOT / "apps/web/vite.config.ts"), str(ROOT / "apps/web")],
-              "http://127.0.0.1:5173")
-        serve("viewer", [sys.executable, str(output / "offline/viewer.py"), "--port", "8765"],
-              "http://127.0.0.1:8765/api/v1/jobs")
-        env = {**os.environ, "PLAYWRIGHT_MODULE_PATH": str(modules / "playwright"),
+              web_origin, env={**os.environ, "PRIVACYTRACE_API_ORIGIN": api_origin})
+        serve("viewer", [sys.executable, str(output / "offline/viewer.py"),
+                         "--port", str(viewer_port)],
+              f"{viewer_origin}/api/v1/jobs")
+        env = {**browser_env, "PLAYWRIGHT_MODULE_PATH": str(modules / "playwright"),
                "PRIVACYTRACE_CHROMIUM": executable}
         if not stage("controlled-browser", ["node", str(ROOT / "scripts/verify-browser.cjs"),
                                              str(output / "browser-proof")], env=env):

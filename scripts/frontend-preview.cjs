@@ -3,6 +3,8 @@ const path = require('node:path')
 const http = require('node:http')
 const { randomUUID } = require('node:crypto')
 const { fork, spawn } = require('node:child_process')
+const { assertPortBindable, resolvePort } = require('./lib/local-ports.cjs')
+const { resolvePowerShell } = require('./lib/powershell.cjs')
 const { isProcessAlive, stopChildren } = require('./lib/process-control.cjs')
 
 const root = path.resolve(__dirname, '..')
@@ -45,18 +47,27 @@ async function stop() {
   if (result.running) throw new Error('Preview child survived shutdown')
   return result
 }
-async function start(port = Number(process.env.PRIVACYTRACE_WEB_PORT || 5184), apiOrigin = process.env.PRIVACYTRACE_API_ORIGIN || 'http://127.0.0.1:8000', timeoutMs = Number(process.env.PRIVACYTRACE_PREVIEW_TIMEOUT_MS || 15000)) {
-  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid preview port')
+async function start(port, apiOrigin = process.env.PRIVACYTRACE_API_ORIGIN || 'http://127.0.0.1:8000', timeoutMs = Number(process.env.PRIVACYTRACE_PREVIEW_TIMEOUT_MS || 15000)) {
+  const configured = process.env.PRIVACYTRACE_WEB_PORT
+  // `port` wins, then an explicit environment value; undefined means "pick one".
+  const requested = port !== undefined ? port : (configured === undefined || configured === '' ? undefined : Number(configured))
+  if (requested !== undefined && (!Number.isInteger(requested) || requested < 1 || requested > 65535)) throw new Error('Invalid preview port')
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60000) throw new Error('Invalid preview startup timeout')
+  // Ownership is checked before any port probe: a second bare `npm run
+  // dev:start` must reuse the owned preview, not report its port as occupied.
   const current = await status()
   if (current.running) {
-    if (current.port !== port || current.apiOrigin !== apiOrigin) throw new Error('Owned preview already runs with different settings; stop it first')
+    if ((requested !== undefined && current.port !== requested) || current.apiOrigin !== apiOrigin) throw new Error('Owned preview already runs with different settings; stop it first')
     return current
   }
-  // A TCP check also catches non-HTTP listeners. Vite strictPort handles a later race.
-  const probe = http.createServer()
-  await new Promise((resolve, reject) => { probe.once('error', () => reject(new Error(`Port ${port} is occupied; no listener stopped`))); probe.listen(port, '127.0.0.1', resolve) })
-  await new Promise(resolve => probe.close(resolve))
+  // 5184 stays the documented default, but Windows reserves TCP blocks that
+  // include it, so an OS-refused default falls back to an ephemeral port.
+  port = requested === undefined ? await resolvePort('PRIVACYTRACE_WEB_PORT', 5184) : requested
+  if (requested === undefined && port !== 5184) console.error(`[preview] port 5184 is reserved by the OS; using ${port}. Set PRIVACYTRACE_WEB_PORT to pin a port.`)
+  // A TCP check also catches non-HTTP listeners, and it separates a real
+  // conflict (EADDRINUSE) from an OS-reserved range (EACCES). Vite strictPort
+  // handles a later race.
+  await assertPortBindable(port, 'PRIVACYTRACE_WEB_PORT')
   fs.mkdirSync(directory, { recursive: true })
   const log = fs.openSync(logFile, 'a')
   let daemon
@@ -154,7 +165,7 @@ async function withPreviewPaused(work) {
 async function check() {
   return withPreviewPaused(() => new Promise((resolve, reject) => {
     const windows = process.platform === 'win32'
-    const child = spawn(windows ? 'pwsh' : 'bash', windows ? ['-NoProfile', '-File', path.join(root, 'scripts/check.ps1')] : [path.join(root, 'scripts/check.sh')], { cwd: root, windowsHide: true, stdio: 'inherit' })
+    const child = spawn(windows ? resolvePowerShell() : 'bash', windows ? ['-NoProfile', '-File', path.join(root, 'scripts/check.ps1')] : [path.join(root, 'scripts/check.sh')], { cwd: root, windowsHide: true, stdio: 'inherit' })
     child.once('error', reject)
     child.once('exit', code => code === 0 ? resolve() : reject(new Error(`Project check failed (${code})`)))
   }))

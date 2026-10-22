@@ -27,7 +27,7 @@ export function previewExternal(raw: string): ImportPreview {
   else throw new Error('未找到政策来源，请使用收集包或既有单来源导出格式。')
   const rows: ImportPreview['sources'] = []
   sources.forEach((source, index) => {
-    if (source === null) return
+    if (source === null || source === undefined) return
     if (!source || typeof source !== 'object' || Array.isArray(source)) throw new Error('来源格式不完整，请检查收集结果。')
     const item = source as Record<string, unknown>
     rows.push({ index, title: typeof item.title === 'string' ? item.title : `来源 ${index + 1}`,

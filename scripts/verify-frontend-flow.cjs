@@ -5,6 +5,7 @@ const path = require('node:path')
 const { spawn, execFileSync } = require('node:child_process')
 const crypto = require('node:crypto')
 const { stopChildren, spawnOptions } = require('./lib/process-control.cjs')
+const { resolvePort } = require('./lib/local-ports.cjs')
 const { assertDesign, assertSurface, verifyGuardFailures } = require('./lib/frontend-guards.cjs')
 const { verifyInputRecovery } = require('./lib/frontend-regressions.cjs')
 const design = require('./fixtures/pioneer-design.json')
@@ -577,14 +578,16 @@ async function verifyMobileReport(page, requests) {
 }
 
 async function main() {
-  const origin = process.env.PRIVACYTRACE_FRONTEND_URL || 'http://127.0.0.1:5184'
+  // An explicitly chosen externally served frontend wins; otherwise allocate a
+  // port the OS will actually let us bind (the old fixed 5184 falls inside the
+  // Windows Hyper-V/WinNAT reserved range).
+  const port = process.env.PRIVACYTRACE_FRONTEND_URL ? undefined : await resolvePort('PRIVACYTRACE_WEB_PORT')
+  const origin = process.env.PRIVACYTRACE_FRONTEND_URL || `http://127.0.0.1:${port}`
   const children = []
   let browser
   try {
     if (!process.env.PRIVACYTRACE_FRONTEND_URL) {
-      try { await fetch(origin, { signal: AbortSignal.timeout(1000) }); throw new Error('Port 5184 is already occupied. Set PRIVACYTRACE_FRONTEND_URL only for an explicitly chosen server.') }
-      catch (error) { if (!['TypeError', 'TimeoutError'].includes(error.name)) throw error }
-      const child = spawn('npm run dev', spawnOptions(path.resolve(__dirname, '..'), { PRIVACYTRACE_WEB_PORT: '5184' }))
+      const child = spawn('npm run dev', spawnOptions(path.resolve(__dirname, '..'), { PRIVACYTRACE_WEB_PORT: String(port) }))
       children.push(child)
       let serverLog = ''
       child.stdout.on('data', chunk => { serverLog += chunk })

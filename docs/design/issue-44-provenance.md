@@ -1,5 +1,7 @@
 # 界面与文案来源
 
+> 2026-10-23 起，前端范围收窄到仅移动端 App，移动界面的视觉层重置为 [Claude 基线](frontend-design-spec-mobile.md)；Pioneer 仍是桌面 Web 的历史来源与业务信息层次依据。本文的颜色/字号/控件来源只对桌面与历史记录有效。
+
 此次复用用户提供的 [Pioneer 当前设计](https://www.figma.com/design/EQis9ep9ZQsEenrUVXwlFU/Pioneer?node-id=824-1279)。颜色、字号与组件状态以 Figma 当前规范页和组件页为准，而非 Pioneer 较早的 HTML 规范。
 
 | 来源节点 | 本次实现 |

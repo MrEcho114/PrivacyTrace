@@ -19,12 +19,14 @@ import { createMobileFlow } from './flow'
 import './mobile.css'
 
 const flow = createMobileFlow(mobileBridge)
-const { state, context, draft, job, report, taxonomy, busy, error, notice, model, modelResult } = flow
+const { state, context, draft, job, report, taxonomy, busy, error, notice, model, modelResult, resultToken, hasPolicyText } = flow
 const modelName = ref(''), appHint = ref('')
 const modelPrompt = computed(() => appHint.value.trim() ? collectionInstructions(appHint.value) : '')
 const labels = computed(() => Object.fromEntries(taxonomy.value?.data_types.map(t => [t.id, t.label]) ?? []))
 const terminal = computed(() => !!job.value && ['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(job.value.state))
 const stepLabels = frontendCopy.steps
+// Claude 的 4×48 步骤轨放不下 #167 的长文案；可见标签用短名，完整名称保留在 aria-label。
+const shortStepLabels = ['APK', '核对', '扫描', '报告']
 const pageTitles: Record<Step, string> = {
   import: frontendCopy.pageTitles.import,
   candidates: frontendCopy.pageTitles.candidates,
@@ -216,6 +218,8 @@ const progressSecondary = () => {
 
 onMounted(() => {
   document.documentElement.classList.add('mobile-shell')
+  // 移动 token 作用域（main.ts 只在 Tauri 里挂；浏览器 harness 走这里兜底）。
+  document.body.classList.add('is-mobile-app')
   history.replaceState({ ...(typeof history.state === 'object' && history.state ? history.state : {}), pt: state.step }, '')
   window.addEventListener('popstate', onPopState)
   void flow.settings()
@@ -225,6 +229,7 @@ onBeforeUnmount(() => {
   actionbarObserver?.disconnect()
   document.documentElement.style.removeProperty('--m-actionbar-actual')
   document.documentElement.classList.remove('mobile-shell')
+  document.body.classList.remove('is-mobile-app')
   void flow.stop()
 })
 </script>
@@ -249,9 +254,9 @@ onBeforeUnmount(() => {
     <nav class="m-steps" aria-label="创建流程">
       <ol>
         <li v-for="(label, index) in stepLabels" :key="steps[index]">
-          <button type="button" class="m-step" :class="{ current: index === currentIndex, complete: index < currentIndex }" :aria-current="index === currentIndex ? 'step' : undefined" :disabled="stepDisabled(index)" @click="navigate(steps[index])">
+          <button type="button" class="m-step" :class="{ current: index === currentIndex, complete: index < currentIndex }" :aria-current="index === currentIndex ? 'step' : undefined" :aria-label="label" :disabled="stepDisabled(index)" @click="navigate(steps[index])">
             <span class="m-step-number" aria-hidden="true">{{ index < currentIndex ? '✓' : index + 1 }}</span>
-            <span class="m-step-label">{{ label }}</span>
+            <span class="m-step-label">{{ shortStepLabels[index] ?? label }}</span>
           </button>
         </li>
       </ol>
@@ -298,7 +303,7 @@ onBeforeUnmount(() => {
           </article>
           <p v-if="!hasSources" class="m-help">尚未补入政策。下一步会尝试自动查找；也可以使用下方辅助入口。</p>
         </section>
-        <PolicyAssist v-if="context" :busy="busy" :source-count="draft?.sources.length ?? 0" :initial-result="modelResult" @import="flow.importCollected" />
+        <PolicyAssist v-if="context" :busy="busy" :source-count="draft?.sources.length ?? 0" :initial-result="modelResult" :result-token="resultToken" @import="flow.importCollected" />
         <details v-if="context" class="m-details m-model">
           <summary>使用手机上的个人模型</summary>
           <p class="m-help">Key 在系统窗口输入并保存在本机。</p>
@@ -311,7 +316,10 @@ onBeforeUnmount(() => {
         </details>
       </template>
 
-      <CandidatePage v-else-if="state.step === 'candidates' && context" mobile :state="state" :busy="busy" :type-labels="labels" @back="navigate('import')" @next="flow.begin" @persist-candidates="flow.save" />
+      <template v-else-if="state.step === 'candidates' && context">
+        <p v-if="!hasPolicyText" class="m-notice m-message" role="status">当前没有可对照的政策正文，保存候选并开始分析会被服务拒绝。请返回材料页重新获取网址，或粘贴／导入政策文本。</p>
+        <CandidatePage mobile :state="state" :busy="busy" :type-labels="labels" @back="navigate('import')" @next="flow.begin" @persist-candidates="flow.save" @retry-source="flow.retrySource" @retry-model="flow.retryModel" />
+      </template>
 
       <template v-else-if="state.step === 'progress'">
         <section class="m-card m-status-card" :class="{ failed }">
@@ -365,7 +373,7 @@ onBeforeUnmount(() => {
       </template>
       <template v-else-if="state.step === 'candidates'">
         <UiButton :disabled="busy" @click="navigate('import')">修改材料</UiButton>
-        <UiButton variant="primary" :disabled="busy" :busy="busy" @click="flow.begin">保存候选并开始分析</UiButton>
+        <UiButton variant="primary" :disabled="busy || !hasPolicyText" :busy="busy" @click="flow.begin">保存候选并开始分析</UiButton>
       </template>
       <template v-else-if="state.step === 'progress'">
         <UiButton v-if="(job && !terminal) || failed" :disabled="busy" @click="progressSecondary">{{ job && !terminal ? '取消分析' : '重新分析' }}</UiButton>

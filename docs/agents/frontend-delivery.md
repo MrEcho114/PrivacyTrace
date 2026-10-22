@@ -2,6 +2,8 @@
 
 前端页面、样式或组件任务按此流程执行。任务授权与完成标准仍由根部 AGENTS.md 和 `core/workflow.md` 管理。
 
+客户端定义以 [ADR-0004](../adr/0004-client-is-android-app.md) 为准：客户端仅指 Android App；桌面 Web 工作台是工程验收介质与离线回放载体，不是客户端，但仍是部署拓扑必需件。
+
 ## 先看代表页面
 
 1. 读取当前设计来源；本工作台为 [Pioneer 来源](../design/issue-44-provenance.md)。保留用户要求固定的颜色、字体、字号和控件，调整布局与信息层次。
@@ -10,13 +12,17 @@
 
 ## 预览与验证
 
-`npm run dev:start`、`dev:status`、`dev:stop` 管理此工作树的前端预览，默认端口 5184；可通过 `PRIVACYTRACE_WEB_PORT` 选择端口。日志位于忽略的 `tmp/frontend-preview/preview.log`，进程身份记录同目录。工具只向身份验证通过的管理进程请求停止；端口被其他服务占用时退出，不终止监听者。
+`npm run dev:start`、`dev:status`、`dev:stop` 管理此工作树的前端预览，默认端口 5184；可通过 `PRIVACYTRACE_WEB_PORT` 选择端口。Windows 的 Hyper-V/WSL2/WinNAT 会保留大段 TCP 端口（本机为 5041–5757），落在保留段内绑定会报 `EACCES` 而不是 `EADDRINUSE`；此时默认端口自动换成系统分配的空闲端口，显式设置的 `PRIVACYTRACE_WEB_PORT` 则原样使用并在不可绑定时报出准确原因。日志位于忽略的 `tmp/frontend-preview/preview.log`，进程身份记录同目录。工具只向身份验证通过的管理进程请求停止；端口被其他服务占用时退出，不终止监听者。
 
 需要保留预览时运行 `npm run check`：暂停受管预览，委托同一个权威 `scripts/check.ps1` 或 `scripts/check.sh`，成功或失败后恢复原端口与接口地址。直接权威入口仍可使用；手动启动的预览不受工具管理，需由启动者先停止，以免 Windows 的 esbuild 文件锁影响 `npm ci`。
 
 `npm run acceptance:frontend` 在五种尺寸检查关键标题、表单和操作的可见性与命中位置，并核对 [Pioneer 契约](../../scripts/fixtures/pioneer-design.json)，同时输出两类截图。它会故意制造隐藏、遮挡、颜色和组件漂移，证明守卫能够拒绝回归。核对规范时只修改授权的契约项及来源记录，不以更新全部快照掩盖变化。
 
 `npm run acceptance:preview` 验证进程生命周期与检查恢复，运行前停止已有受管预览。两种验收已接入浏览器 CI；视觉质量仍由截图审阅判断。
+
+## Claude 移动视觉与 #165
+
+移动壳在 `body.is-mobile-app` 下把 #165 的 `--pt-*` 语义层映射到 Claude `--mt-*`：品牌/文案/结构保留，颜色、字号与控件档位换为 Claude。共享组件消费 `--ui-*`，移动专属样式消费 `--mt-*`；桌面无 body class 时继续使用 #165/Pioneer 值。桌面契约退役条件见 [ADR-0005](../adr/0005-frontend-contract-retirement.md)。
 
 ## Gemini 文案与外部 skill
 

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "web:build": "npm --prefix ../.. run build",
-    "android:prepare": "node ../../scripts/run-powershell.cjs -NoProfile -File prepare-android.ps1 && node ../../scripts/apply-brand-android-icons.cjs",
+    "android:prepare": "node ../../scripts/run-powershell.cjs prepare-android.ps1 && node ../../scripts/apply-brand-android-icons.cjs",
     "android:build": "tauri android build --debug",
     "tauri": "tauri"
   },

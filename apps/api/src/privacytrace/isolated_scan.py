@@ -10,6 +10,7 @@ import time
 from pathlib import Path
 
 from .scan_workspace import DEFAULT_QUOTA, ScanError, ScanWorkspace, safe_path
+from .wsl import wsl_distro
 
 ROOT = Path(__file__).resolve().parents[4]
 MAX_INPUT = 150 * 1024 * 1024
@@ -46,7 +47,7 @@ def docker_prefix():
         "docker",
         "--host=unix:///var/run/docker.sock",
     ]
-    return ["wsl.exe", "-d", "Ubuntu-24.04", "--exec", *local] if os.name == "nt" else local
+    return ["wsl.exe", "-d", wsl_distro(), "--exec", *local] if os.name == "nt" else local
 
 
 def command(args, timeout=30):
@@ -194,7 +195,7 @@ def scan_isolated(
         mount = str(copied)
         if os.name == "nt":
             mount = command(
-                ["wsl.exe", "-d", "Ubuntu-24.04", "--exec", "wslpath", "-u", mount]
+                ["wsl.exe", "-d", wsl_distro(), "--exec", "wslpath", "-u", mount]
             ).strip()
         if "," in mount:
             raise ScanError("UNSAFE_WORKSPACE", "Docker mount path cannot contain a comma")
@@ -204,7 +205,7 @@ def scan_isolated(
         config_mount = str(client_config)
         if os.name == "nt":
             config_mount = command(
-                ["wsl.exe", "-d", "Ubuntu-24.04", "--exec", "wslpath", "-u", config_mount]
+                ["wsl.exe", "-d", wsl_distro(), "--exec", "wslpath", "-u", config_mount]
             ).strip()
         docker += ["--config", config_mount]
         image_id = command([*docker, "image", "inspect", image, "--format", "{{.Id}}"]).strip()

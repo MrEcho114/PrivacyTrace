@@ -18,6 +18,7 @@ from .job_store import JobStore
 from .models import EvaluationInput
 from .policy_intake import digest, read_safe
 from .resources import ACTIVE_SDK_SIGNATURES_VERSION, ROOT, SDK_SIGNATURE_FILES, taxonomy
+from .wsl import wsl_distro
 
 SCHEMES = ("permission_keyword", "api_flat", "privacytrace")
 SCHEME_INPUTS = {
@@ -53,7 +54,7 @@ def schemes(report):
     def local(path):
         if docker[0].lower().endswith("wsl.exe"):
             return subprocess.check_output(
-                ["wsl.exe", "-d", "Ubuntu-24.04", "--exec", "wslpath", "-a", str(path)], text=True
+                ["wsl.exe", "-d", wsl_distro(), "--exec", "wslpath", "-a", str(path)], text=True
             ).strip()
         return str(path)
 

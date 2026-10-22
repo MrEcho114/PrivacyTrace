@@ -1,5 +1,7 @@
 # 前端打磨第二轮：Pioneer × 真实 Android 竖屏
 
+> 2026-10-23 起，本轮的视觉层（颜色、字号、控件视觉）由 [移动端 Claude 规范](frontend-design-spec-mobile.md) 取代；本文的 Android 壳与交互工程合同（56dp 顶栏、48dp 触控、edge-to-edge、返回/滚动恢复、sheet 行为）继续有效。实施时两者冲突以新规范为准。
+
 状态：2026-10-21 第二轮设计合同。父票 [#141](https://github.com/MrEcho114/PrivacyTrace/issues/141)，子票 #142–#146。
 基线与集成：`origin/main` `6e0122d1a84999de82c458f51c826248698c97dc`；集成分支 `codex/frontend-round2`。
 本文件之后的修改必须同步更新「实现差异」一节；不得把未实现的条目写成已完成。

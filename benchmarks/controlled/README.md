@@ -15,7 +15,7 @@
 
 ## 可重复构建
 
-在仓库根目录执行。需要 Python/uv、本地 Docker，以及 Windows 上现有的 Ubuntu-24.04 WSL daemon；不切换远端 Docker，不修改全局配置。
+在仓库根目录执行。需要 Python/uv、本地 Docker，以及 Windows 上现有的 WSL daemon（默认发行版名 `Ubuntu-24.04`，用 `PRIVACYTRACE_WSL_DISTRO` 指定实际名称）；不切换远端 Docker，不修改全局配置。
 
 ```powershell
 uv sync --project apps/api --locked --extra worker
@@ -34,8 +34,10 @@ uv run --project apps/api --locked --extra worker python scripts/build-controlle
 uv run --project apps/api --locked --extra worker python -m privacytrace.controlled --features benchmarks/controlled/features/C02.json --artifacts tmp/build-a --store-dir tmp/c02/jobs
 
 # 构建既有隔离 worker（Windows；Linux 可直接 docker build）
-$taskRoot = (wsl.exe -d Ubuntu-24.04 --exec wslpath -a $PWD.Path).Trim()
-wsl.exe -d Ubuntu-24.04 --exec docker build -f "$taskRoot/apps/api/worker.Dockerfile" -t privacytrace-worker:s1 $taskRoot
+# 发行版名与 API 使用同一个变量；下面的示例值对应该主机的主发行版
+$distro = if ($env:PRIVACYTRACE_WSL_DISTRO) { $env:PRIVACYTRACE_WSL_DISTRO } else { 'Ubuntu-24.04' }
+$taskRoot = (wsl.exe -d $distro --exec wslpath -a $PWD.Path).Trim()
+wsl.exe -d $distro --exec docker build -f "$taskRoot/apps/api/worker.Dockerfile" -t privacytrace-worker:s1 $taskRoot
 
 # 全六场景，先执行 C02/C06；输出目录须不存在
 uv run --project apps/api --locked --extra worker python -m privacytrace.benchmark run --artifacts tmp/build-a --output tmp/evaluation
@@ -70,7 +72,7 @@ python tmp/offline/viewer.py --port 8765
 
 浏览器分别打开 5173（本地 CLI 已生成报告）和 8765（离线回放）。两者显示不同来源；回放同时显示原分析和打包时间、无 demo／复核写控件。报告不会因打开页面重新扫描。回放只需要 Python 3.11+ 标准库，无 API 服务、Node 或模型密钥；启动时校验精确文件清单及 SHA256，只服务 loopback，拒绝 POST。
 
-实际浏览器验收脚本为 `scripts/verify-browser.cjs`，需要预先安装的 Playwright 1.62.1 和 Chromium；`PLAYWRIGHT_MODULE_PATH` / `PRIVACYTRACE_CHROMIUM` 可指定本机安装。先用 `uv run --project apps/api --locked --extra worker python scripts/prepare-browser-check.py --store-dir tmp/evaluation/jobs --output tmp/browser-jobs` 创建独立作业副本（另含 queued/failed 界面材料），API 改用 `--store-dir tmp/browser-jobs`。启动上述三服务后执行 `node scripts/verify-browser.cjs tmp/browser-proof`。长文本／2000 条候选是界面测试材料，不加入六场景评测集。脚本覆盖代码／原文下钻、分页、390px 视口、异常 HTTP、请求取消与来源切换、防止旧响应覆盖、离线六来源及只读拒绝。
+实际浏览器验收脚本为 `scripts/verify-browser.cjs`，需要预先安装的 Playwright 1.62.1 和 Chromium；`PLAYWRIGHT_MODULE_PATH` / `PRIVACYTRACE_CHROMIUM` 可指定本机安装。先用 `uv run --project apps/api --locked --extra worker python scripts/prepare-browser-check.py --store-dir tmp/evaluation/jobs --output tmp/browser-jobs` 创建独立作业副本（另含 queued/failed 界面材料），API 改用 `--store-dir tmp/browser-jobs`。三个服务默认仍是 8000 / 5173 / 8765；本机端口冲突或命中 Windows 保留段时可用 `PRIVACYTRACE_CONTROLLED_API_PORT` / `PRIVACYTRACE_CONTROLLED_WEB_PORT` / `PRIVACYTRACE_CONTROLLED_VIEWER_PORT`（或仓库别名 `PRIVACYTRACE_API_PORT` / `PRIVACYTRACE_WEB_PORT` / `PRIVACYTRACE_VIEWER_PORT`）改端口，API 也可用已有的 `PRIVACYTRACE_API_ORIGIN` 直接指定 origin。`scripts/validate-spec30.py --suite spec30` 用同一组变量启动三个服务并把实际 API origin 传给 Vite 代理；`--suite pt907` 的 `verify-controlled-browser.cjs` 因 SHA-256 固化在 comparison.json 与历史收据中，仍固定 8000/5173，不能迁移。启动上述三服务后执行 `node scripts/verify-browser.cjs tmp/browser-proof`。长文本／2000 条候选是界面测试材料，不加入六场景评测集。脚本覆盖代码／原文下钻、分页、390px 视口、异常 HTTP、请求取消与来源切换、防止旧响应覆盖、离线六来源及只读拒绝。
 
 独立断网验收须在线预备 **测试环境** 的 Playwright 1.62.1、Linux Chromium 与系统库，然后运行：
 

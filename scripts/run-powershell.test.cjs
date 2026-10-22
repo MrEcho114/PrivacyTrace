@@ -6,7 +6,7 @@ const os = require('node:os')
 const path = require('node:path')
 const { spawnSync } = require('node:child_process')
 const { test } = require('node:test')
-const { runPowerShell } = require('./run-powershell.cjs')
+const { runPowerShell, main, OPTIONS } = require('./run-powershell.cjs')
 
 const ROOT = path.resolve(__dirname, '..')
 const ARGS = ['-NoProfile', '-File', 'a directory/prepare-android.ps1', 'space & $value']
@@ -18,7 +18,7 @@ test('prefers pwsh and forwards arguments without a shell', () => {
     calls.push(args)
     return { status: 0 }
   }), 0)
-  assert.deepEqual(calls, [['pwsh', ARGS, { stdio: 'inherit', shell: false }]])
+  assert.deepEqual(calls, [['pwsh', ARGS, OPTIONS]])
 })
 
 test('uses Windows PowerShell when pwsh is missing', () => {
@@ -28,7 +28,7 @@ test('uses Windows PowerShell when pwsh is missing', () => {
     return command === 'pwsh' ? MISSING : { status: 0 }
   }), 0)
   assert.deepEqual(calls, ['pwsh', 'powershell'].map(command =>
-    [command, ARGS, { stdio: 'inherit', shell: false }]))
+    [command, ARGS, OPTIONS]))
 })
 
 for (const command of ['pwsh', 'powershell']) {
@@ -56,6 +56,26 @@ test('reports missing interpreters, launch errors and signal termination', t => 
   assert.match(messages.pop(), /permission denied/)
   assert.equal(runPowerShell(ARGS, () => ({ status: null, signal: 'SIGTERM' })), 1)
   assert.match(messages.pop(), /SIGTERM/)
+})
+
+test('maps the script argument to -NoProfile -File with the resolved path', () => {
+  const calls = []
+  assert.equal(main(['a directory/prepare-android.ps1', 'space & $value'], (command, args, options) => {
+    calls.push([command, args, options])
+    return { status: 0 }
+  }), 0)
+  assert.deepEqual(calls, [[
+    'pwsh',
+    ['-NoProfile', '-File', path.resolve('a directory/prepare-android.ps1'), 'space & $value'],
+    OPTIONS,
+  ]])
+})
+
+test('refuses to launch without a script path', t => {
+  const messages = []
+  t.mock.method(console, 'error', message => messages.push(message))
+  assert.equal(main([], () => assert.fail('spawn must not run without a script')), 2)
+  assert.match(messages.pop(), /Usage: node scripts\/run-powershell\.cjs <script\.ps1>/)
 })
 
 // Exercise the actual npm entry points with executable doubles on POSIX CI.
@@ -107,7 +127,7 @@ process.exit(Number(process.env.PS_EXIT))
       })
       assert.equal(result.status, status, result.error?.message || result.stderr)
       assert.deepEqual(JSON.parse(fs.readFileSync(call, 'utf8')), {
-        args: ['-NoProfile', '-File', 'prepare-android.ps1'], cwd,
+        args: ['-NoProfile', '-File', path.join(cwd, 'prepare-android.ps1')], cwd,
       })
       assert.equal(fs.existsSync(marker), directory === 'apps/mobile' && status === 0)
     }
@@ -128,10 +148,52 @@ test('real Windows PowerShell 5.1 works with no pwsh on PATH', {
   assert.equal(spawnSync('pwsh', ['-NoProfile'], { env }).error?.code, 'ENOENT')
   for (const status of [0, 23]) {
     const result = spawnSync(process.execPath, [
-      path.join(__dirname, 'run-powershell.cjs'), '-NoProfile', '-NonInteractive',
-      '-File', script, 'space & $value', String(status),
+      path.join(__dirname, 'run-powershell.cjs'), script, 'space & $value', String(status),
     ], { cwd: root, env, encoding: 'utf8' })
     assert.equal(result.status, status, result.error?.message || result.stderr)
     assert.equal(result.stdout.trim().replace(/\r/g, ''), '5\nspace & $value')
+  }
+})
+
+// The POSIX test above is skipped on Windows, so the windows-powershell CI job
+// would otherwise never validate the two package.json entries themselves. Run
+// them for real here: `npm` is a batch file, hence shell: true.
+test('both npm entries run prepare-android.ps1 from their package directory', {
+  skip: process.platform !== 'win32',
+}, t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'android prepare '))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  fs.mkdirSync(path.join(root, 'scripts'))
+  fs.copyFileSync(path.join(__dirname, 'run-powershell.cjs'), path.join(root, 'scripts', 'run-powershell.cjs'))
+  fs.writeFileSync(path.join(root, 'scripts', 'apply-brand-android-icons.cjs'),
+    'require("node:fs").writeFileSync(process.env.ICON_MARKER, "applied")')
+  const stub = [
+    'param([string]$Tag)',
+    '[System.IO.File]::WriteAllText($env:PS_CALL, (Get-Location).Path + "|" + $Tag)',
+    'exit ([int]$env:PS_EXIT)',
+    '',
+  ].join('\n')
+  const call = path.join(root, 'call.txt')
+  const marker = path.join(root, 'icons.txt')
+  for (const directory of ['apps/mobile', 'experiments/android-package-probe/bridge-harness']) {
+    const cwd = path.join(root, directory)
+    fs.mkdirSync(cwd, { recursive: true })
+    fs.copyFileSync(path.join(ROOT, directory, 'package.json'), path.join(cwd, 'package.json'))
+    fs.writeFileSync(path.join(cwd, 'prepare-android.ps1'), stub)
+    for (const status of [0, 23]) {
+      fs.rmSync(call, { force: true })
+      fs.rmSync(marker, { force: true })
+      // One command string: `npm` is a batch file, and a separate argv would be
+      // concatenated unquoted by cmd.exe, breaking on the space in the temp path.
+      const result = spawnSync(`npm --prefix "${cwd}" run android:prepare`, {
+        cwd: root,
+        shell: true,
+        encoding: 'utf8',
+        env: { ...process.env, PS_CALL: call, ICON_MARKER: marker, PS_EXIT: String(status) },
+      })
+      assert.equal(result.status, status, result.error?.message || result.stderr)
+      assert.equal(fs.readFileSync(call, 'utf8').split('|')[0], cwd)
+      assert.equal(fs.existsSync(marker), directory === 'apps/mobile' && status === 0)
+    }
   }
 })

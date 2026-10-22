@@ -145,7 +145,7 @@ def check_pr_template():
 
     # Check unverified walkthrough note
     assert (
-        "在真实成员试用前将测试结果准确标记为文档场景走查" in content
+        "在真实成员试用前将测试结果准确标记为文档案例检查" in content
     ), "Missing walkthrough classification note in unverified section"
 
     print("PULL_REQUEST_TEMPLATE.md: ALL REQUIRED SECTIONS AND CRITERIA PRESENT")
@@ -455,10 +455,10 @@ def check_evidence_boundaries():
     with open(os.path.join(ROOT_DIR, 'AGENTS.md'), 'r', encoding='utf-8') as f:
         agents_content = f.read()
 
-    assert '文档场景走查' in workflow_content, (
-        "Missing '文档场景走查' in skills-workflow.md"
+    assert '文档案例检查' in workflow_content, (
+        "Missing '文档案例检查' in skills-workflow.md"
     )
-    assert '文档场景走查' in pr_content, "Missing '文档场景走查' in PULL_REQUEST_TEMPLATE.md"
+    assert '文档案例检查' in pr_content, "Missing '文档案例检查' in PULL_REQUEST_TEMPLATE.md"
     assert '静态证据不能证明运行时已发生数据收集或外传' in workflow_content, (
         "Missing static evidence boundary rule in skills-workflow.md"
     )

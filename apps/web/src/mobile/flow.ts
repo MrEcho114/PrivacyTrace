@@ -1,7 +1,7 @@
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { freshWorkflow } from '../workflow'
 import type { Candidate } from '../workflow'
-import type { AnalysisJob, Report, Taxonomy, WebCandidate } from '../types'
+import type { AnalysisJob, Report, Taxonomy, WebCandidate, WebSource } from '../types'
 import type { LiveDraft } from '../liveApi'
 import type { ExternalInput } from '../policyAssist'
 import type { MobileBridge, Upload, ModelStatus } from './bridge'
@@ -10,13 +10,21 @@ import type { MobileBridge, Upload, ModelStatus } from './bridge'
 // then leave room for two clients sharing the default 60/minute IP budget.
 const FIRST_POLL_MS = 10_000, POLL_INTERVAL_MS = 25_000
 type Request = <T>(name: string, body?: object) => Promise<T>
+// WebIntake.captures() only captures a source that still has text and is not
+// failed/empty/url_only. Mirror that precondition on the phone so the shell never
+// offers a start the service must reject as an input/version conflict (#249).
+const usableSource = (source: WebSource) =>
+  !!source.text?.trim() && !['failed', 'empty', 'url_only'].includes(source.status ?? 'empty')
 
 export function createMobileFlow(bridge: MobileBridge) {
   const state = reactive(freshWorkflow())
   const context = ref<Upload | null>(null), draft = ref<LiveDraft | null>(null)
   const job = ref<AnalysisJob | null>(null), report = ref<Report | null>(null), taxonomy = ref<Taxonomy | null>(null)
   const busy = ref(false), error = ref(''), notice = ref('')
-  const model = ref<ModelStatus>({ configured: false, endpoint: null }), modelResult = ref('')
+  const model = ref<ModelStatus>({ configured: false, endpoint: null }), modelResult = ref(''), resultToken = ref(0)
+  // Starting without a body is always rejected by captures(), so the shell gates
+  // the action on the same condition and explains the missing material (#249).
+  const hasPolicyText = computed(() => !!draft.value?.sources.some(usableSource))
   let generation = 0, pendingStart: { revision: number; request_id: string } | null = null
   let busyPolls = 0
   let quickPolls = 0
@@ -82,6 +90,10 @@ export function createMobileFlow(bridge: MobileBridge) {
       if (current === generation) {
         busy.value = false
         if (typeof document !== 'undefined' && document.activeElement === document.body) document.getElementById('page-title')?.focus({ preventScroll: true })
+        // stopPoll() ran when this action started, so a read or settings change
+        // must hand the still-running job back to the poll. Terminal, deleted and
+        // superseded states are rejected inside schedule() (#239).
+        schedule(current, true)
       }
     }
   }
@@ -112,6 +124,10 @@ export function createMobileFlow(bridge: MobileBridge) {
       check()
       // Native lifecycle cancellation rejects the selected result as well.
       context.value = selected; draft.value = null; job.value = null; report.value = null; pendingStart = null
+      // A model answer belongs to the material instance that was collected for.
+      // Dropping it here keeps a deleted or replaced material from refilling the
+      // shared assistant box with the previous result (#243).
+      modelResult.value = ''
       state.step = 'import'; notice.value = ''; restoring = false
       if (selected.state !== 'SERVER_CONFIRMED') throw new Error('服务器尚未确认完整上传，请刷新确认。')
       restoring = true
@@ -139,6 +155,13 @@ export function createMobileFlow(bridge: MobileBridge) {
           }
         }
       }
+      // A failed fetch that still answers 200 lands here too: the source is kept
+      // with status=failed and no text, and captures() would reject the start as a
+      // version/input conflict the user cannot fix by refreshing (#249).
+      if (!value.sources.some(usableSource)) {
+        state.step = 'import'
+        throw new Error('各份来源均未获得正文。请重试网址，或粘贴／导入政策文本。')
+      }
       for (const source of [...value.sources]) {
         if (!source.text?.trim() || source.status === 'failed' || value.candidates.some(c => c.source_id === source.id)) continue
         try { value = await request<LiveDraft>('extract', { source: source.id, revision: value.revision }); apply(value) }
@@ -160,6 +183,13 @@ export function createMobileFlow(bridge: MobileBridge) {
   async function begin() {
     const current = generation
     nativeBusyRetries = 0
+    // The step rail can reach candidates without preparing, so the start action
+    // repeats the precondition instead of letting the server reject a save that a
+    // refresh can never repair (#249). An existing job still resumes below.
+    if (draft.value && !hasPolicyText.value && !draft.value.jobs.length) {
+      error.value = '各份来源均未获得正文，无法开始分析。请返回材料页重试网址，或粘贴／导入政策文本。'
+      return
+    }
     await run(async (request, check) => {
       if (!draft.value) return
       const recover = async (latest: LiveDraft) => {
@@ -249,7 +279,47 @@ export function createMobileFlow(bridge: MobileBridge) {
     await run(async (_, check) => { const value = await (configure ? bridge.configureModel() : bridge.modelStatus()); check(); model.value = value })
   }
   async function collect(modelName: string, app: string) {
-    await run(async (_, check) => { const text = await bridge.collect(modelName, app); check(); modelResult.value = text; notice.value = '模型结果已放入回填框，请检查并确认来源类型；模型返回不等于已取得政策。' })
+    await run(async (_, check) => {
+      const text = await bridge.collect(modelName, app)
+      check()
+      modelResult.value = text
+      // The assistant box is remounted on every return to the material step. A
+      // repeated identical answer must still count as a new delivery, so the
+      // counter travels with the text instead of relying on ref inequality (#243).
+      resultToken.value += 1
+      notice.value = '模型结果已放入回填框，请检查并确认来源类型；模型返回不等于已取得政策。'
+    })
   }
-  return { state, context, draft, job, report, taxonomy, busy, error, notice, model, modelResult, settings, collect, select, refresh, importCollected, prepare, save, begin, poll, control, openReport, remove, stop }
+  // The candidate page offers one retry per source. Each click is a single native
+  // call under the normal busy/generation/epoch guards, so a late answer cannot
+  // overwrite a newer material and no model call is replayed automatically (#248).
+  async function retrySource(id: string) {
+    await run(async request => {
+      const source = draft.value?.sources.find(item => item.id === id)
+      if (!draft.value || !source) throw new Error('这份来源已不在当前材料中，请重新读取材料。')
+      if (!source.url?.trim()) throw new Error('这份来源没有可重新获取的网址，请返回材料页粘贴或导入政策文本。')
+      const value = await request<LiveDraft>('fetch', { source: id, revision: draft.value.revision })
+      apply(value)
+      const updated = value.sources.find(item => item.id === id)
+      notice.value = updated && usableSource(updated)
+        ? `${updated.title || '这份来源'}：已重新获取正文；未检查候选仍需确认，政策全文及附件未复核。`
+        : `${updated?.title || '这份来源'}：重新获取后仍未取得正文；可重试，或返回材料页手动补入。`
+    })
+  }
+  async function retryModel(id: string) {
+    await run(async request => {
+      const source = draft.value?.sources.find(item => item.id === id)
+      if (!draft.value || !source) throw new Error('这份来源已不在当前材料中，请重新读取材料。')
+      // Same precondition as WebIntake._extract: text present and the source not
+      // marked failed. A model call on a body-less source can only fail.
+      if (!source.text?.trim() || source.status === 'failed') throw new Error('这份来源尚未取得正文，无法提取候选；请先重新获取来源或手动补入正文。')
+      const value = await request<LiveDraft>('extract', { source: id, revision: draft.value.revision })
+      apply(value)
+      const failed = value.sources.find(item => item.id === id)?.model_audit?.status === 'FAILED'
+      notice.value = failed
+        ? `${source.title || '这份来源'}：候选提取仍未完成；可再次重试或手动补充，缺证据状态保留。`
+        : `${source.title || '这份来源'}：候选提取已完成；候选仍需检查，政策全文及附件未复核。`
+    })
+  }
+  return { state, context, draft, job, report, taxonomy, busy, error, notice, model, modelResult, resultToken, hasPolicyText, settings, collect, select, refresh, importCollected, prepare, save, begin, poll, control, openReport, remove, retrySource, retryModel, stop }
 }

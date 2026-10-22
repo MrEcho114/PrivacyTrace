@@ -38,7 +38,7 @@
   gap: 12px 16px;
   margin: 0 0 16px;
   padding: 16px 20px;
-  background: var(--surface);
+  background: var(--ui-surface);
 }
 .shell .report-source-field { flex: 1 1 420px; min-width: 0; }
 .shell .report-source-field label {
@@ -54,27 +54,27 @@
 /* Report identity first, then archive/job metadata as a quiet strip. */
 .shell .sample-card { margin: 16px 0; padding: 20px 24px; align-items: flex-start; }
 .shell .sample-card h2 { font-size: 1.125rem; line-height: 26px; }
-.shell .origin-timestamp { color: var(--muted); }
+.shell .origin-timestamp { color: var(--ui-muted); }
 .shell .badge-stack { gap: 4px; }
 .shell .badge {
   margin-left: 0;
   padding: 4px 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-muted);
-  color: var(--ink);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
+  color: var(--ui-fg);
   font-size: 0.75rem;
   line-height: 20px;
 }
-.shell .badge.live_generated { background: var(--mint); border-color: var(--mint); color: var(--success); }
-.shell .badge.persisted_replay { background: var(--notice); border-color: var(--border); color: var(--ink); }
+.shell .badge.live_generated { background: var(--ui-success-bg); border-color: var(--ui-success-bg); color: var(--ui-success); }
+.shell .badge.persisted_replay { background: var(--ui-warn-bg); border-color: var(--ui-border); color: var(--ui-fg); }
 .shell .report-provenance {
   margin: 12px 0;
   padding: 12px 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--ink);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface);
+  color: var(--ui-fg);
   font-size: 0.75rem;
   line-height: 1.7;
 }
@@ -84,14 +84,14 @@
 .workspace-content .shell .demo-note {
   margin: 12px 0;
   padding: 10px 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--ink);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface);
+  color: var(--ui-fg);
   font-size: 0.8125rem;
   line-height: 1.7;
 }
-.workspace-content .shell .demo-note summary { color: var(--ink); font-size: 0.8125rem; }
+.workspace-content .shell .demo-note summary { color: var(--ui-fg); font-size: 0.8125rem; }
 
 /* A successful job is metadata, not a second page section; failed and
    cancelled jobs keep the full alert surface and actions. */
@@ -119,22 +119,22 @@
 .shell .coverage-card li { font-size: 0.8125rem; }
 .shell .report-section { margin: 12px 0; padding: 18px 24px; }
 .shell .report-table th {
-  background: var(--canvas);
-  color: var(--muted);
+  background: var(--ui-canvas);
+  color: var(--ui-muted);
   font-size: 0.75rem;
   font-weight: 500;
 }
-.shell .report-table td { border-color: var(--border); }
-.shell .tag { border-radius: var(--radius); font-size: 0.75rem; line-height: 20px; }
-.shell .tag.clear { background: var(--mint); color: var(--success); }
-.shell .tag.review { background: var(--notice); color: var(--ink); }
+.shell .report-table td { border-color: var(--ui-border); }
+.shell .tag { border-radius: var(--ui-radius-control); font-size: 0.75rem; line-height: 20px; }
+.shell .tag.clear { background: var(--ui-success-bg); color: var(--ui-success); }
+.shell .tag.review { background: var(--ui-warn-bg); color: var(--ui-fg); }
 .shell input,
 .shell select,
 .shell textarea {
-  border: 1px solid var(--control);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--ink);
+  border: 1px solid var(--ui-border-control);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface);
+  color: var(--ui-fg);
 }
 
 /* Report viewer helper controls previously kept in App.vue's scoped block.
@@ -143,15 +143,15 @@
 .shell .candidate-nav { display: flex; align-items: center; gap: 12px; margin: 12px 0; font-size: 0.8125rem; }
 .shell .job-terminal-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
 .shell .job-terminal-actions button { margin-left: 0; }
-.shell .job-delete-warning { color: var(--error); margin: 8px 0 0; }
+.shell .job-delete-warning { color: var(--ui-danger-text); margin: 8px 0 0; }
 .shell .candidate-nav button { padding: 4px 10px; font-size: 12px; }
-.shell .job-error-card { background: var(--rose); border: 1px solid var(--error); border-radius: var(--radius); padding: 14px; margin-top: 12px; color: var(--error); }
-.shell .job-error-card .error-code { font-weight: bold; color: var(--error); display: inline-block; margin-bottom: 6px; font-size: 13px; }
-.shell .job-error-card .error-msg { margin: 4px 0; color: var(--error); font-size: 14px; }
+.shell .job-error-card { background: var(--ui-danger-bg); border: 1px solid var(--ui-danger-text); border-radius: var(--ui-radius-control); padding: 14px; margin-top: 12px; color: var(--ui-danger-text); }
+.shell .job-error-card .error-code { font-weight: bold; color: var(--ui-danger-text); display: inline-block; margin-bottom: 6px; font-size: 13px; }
+.shell .job-error-card .error-msg { margin: 4px 0; color: var(--ui-danger-text); font-size: 14px; }
 .shell .job-error-card .error-detail { margin-top: 6px; font-size: 12px; }
 .shell .policy-jump-btn { margin-top: 10px; padding: 6px 10px; display: inline-block; }
 .shell .origin-timestamp { font-size: 12px; margin-top: 4px; }
-.shell .ai-disclosure { margin-top: 4px; font-size: 12px; color: var(--muted); }
+.shell .ai-disclosure { margin-top: 4px; font-size: 12px; color: var(--ui-muted); }
 
 /* Desktop control sizing. Narrow screens keep the 44px touch contract and the
    stacked report-card layout owned by C. */
@@ -166,22 +166,22 @@
   .shell .state button {
     min-height: 32px;
     padding: 5px 10px;
-    border: 1px solid var(--control);
-    border-radius: var(--radius);
-    background: var(--surface);
-    color: var(--ink);
+    border: 1px solid var(--ui-border-control);
+    border-radius: var(--ui-radius-control);
+    background: var(--ui-surface);
+    color: var(--ui-fg);
     font-size: 0.75rem;
     line-height: 20px;
   }
   .shell .job-terminal-actions [data-testid="delete-confirm"] {
-    border-color: var(--error);
-    background: var(--error);
-    color: var(--surface);
+    border-color: var(--ui-danger-text);
+    background: var(--ui-danger-text);
+    color: var(--ui-surface);
   }
   .shell .primary {
     min-height: 36px;
     padding: 7px 12px;
-    border-radius: var(--radius);
+    border-radius: var(--ui-radius-control);
     border-color: var(--pt-action);
     background: var(--pt-action);
     color: var(--pt-paper);
@@ -202,20 +202,20 @@
     gap: 0;
     margin: 16px 0;
     overflow: hidden;
-    border: 1px solid var(--border);
+    border: 1px solid var(--ui-border);
     border-radius: 12px;
-    background: var(--surface);
+    background: var(--ui-surface);
   }
   .shell .metrics > div {
     align-items: baseline;
     padding: 18px 24px;
     border: 0;
-    border-right: 1px solid var(--border);
+    border-right: 1px solid var(--ui-border);
     border-radius: 0;
     background: transparent;
   }
   .shell .metrics > div:last-child { border-right: 0; }
-  .shell .metrics strong { color: var(--ink); font-size: 1.75rem; line-height: 1.2; }
+  .shell .metrics strong { color: var(--ui-fg); font-size: 1.75rem; line-height: 1.2; }
   .shell .metrics span { font-size: 0.8125rem; }
 }
 
@@ -243,10 +243,10 @@
   gap: 6px 12px;
   margin: 0 0 16px;
   padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--muted);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface);
+  color: var(--ui-muted);
   font-size: 0.75rem;
   line-height: 20px;
 }
@@ -258,7 +258,7 @@
 }
 .workspace-content .source-context-meta span + span {
   padding-left: 12px;
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--ui-border);
 }
 
 /* ------------------------------------------------------------------ *
@@ -272,7 +272,7 @@
 .workspace-content .stage-preview { justify-content: flex-start; padding: 24px 28px; }
 .workspace-content .stage-progress {
   margin: 0 0 8px;
-  color: var(--muted);
+  color: var(--ui-muted);
   font-size: 0.75rem;
   line-height: 20px;
   font-variant-numeric: tabular-nums;
@@ -286,14 +286,14 @@
   gap: 6px 12px;
   margin: 0 0 8px;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
-  color: var(--muted);
+  border-bottom: 1px solid var(--ui-border);
+  color: var(--ui-muted);
   font-size: 0.75rem;
 }
-.workspace-content .progress-summary strong { color: var(--ink); font-size: 0.8125rem; }
-.workspace-content .progress-summary .hash { color: var(--muted); }
+.workspace-content .progress-summary strong { color: var(--ui-fg); font-size: 0.8125rem; }
+.workspace-content .progress-summary .hash { color: var(--ui-muted); }
 .workspace-content .progress-actions { margin-top: 20px; }
-.workspace-content .stage-list .failed .stage-number { background: var(--rose); color: var(--error); }
+.workspace-content .stage-list .failed .stage-number { background: var(--ui-danger-bg); color: var(--ui-danger-text); }
 
 /* Live material identity is a quiet meta line under the page heading, not a
    competing toolbar above the task name. */
@@ -303,7 +303,7 @@
   align-items: center;
   gap: 4px 12px;
   margin: -12px 0 16px;
-  color: var(--muted);
+  color: var(--ui-muted);
   font-size: 0.75rem;
   line-height: 20px;
 }
@@ -337,7 +337,7 @@
 /* A disabled report action keeps the neutral disabled surface instead of the
    vivid action colour; the red is reserved for the one available primary. */
 .shell .primary:disabled {
-  border-color: var(--surface-muted);
-  background: var(--surface-muted);
-  color: var(--muted);
+  border-color: var(--ui-surface-muted);
+  background: var(--ui-surface-muted);
+  color: var(--ui-muted);
 }

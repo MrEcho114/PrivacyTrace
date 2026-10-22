@@ -56,6 +56,6 @@ Confirm the evidence remains traceable, policy sources remain separate, and stat
 
 ## 未验证项
 
-<!-- 如实记录当前未覆盖的边界；在真实成员试用前将测试结果准确标记为文档场景走查 -->
+<!-- 如实记录当前未覆盖的边界；在真实成员试用前将测试结果准确标记为文档案例检查 -->
 
 ## Notes for human

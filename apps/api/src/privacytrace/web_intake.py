@@ -42,6 +42,7 @@ from .policy_llm_extractor import (
 )
 from .resources import taxonomy
 from .web_models import (
+    WEB_SENTENCE_ID_PREFIX,
     CandidateInput,
     DraftInput,
     ExternalCollectionResult,
@@ -51,6 +52,7 @@ from .web_models import (
     StartInput,
     WebCandidate,
     WebSource,
+    normalize_condition,
 )
 
 TERMINAL = {"SUCCEEDED", "FAILED", "CANCELLED"}
@@ -1199,7 +1201,7 @@ class WebIntake:
                     start = text.index(excerpt)
                 if text[start : start + len(excerpt)] != excerpt:
                     raise ValueError("Candidate quote does not match its source")
-                sentence_id = "web-sentence-" + candidate["id"]
+                sentence_id = WEB_SENTENCE_ID_PREFIX + candidate["id"]
                 evidence.append(
                     {
                         "id": sentence_id,
@@ -1213,22 +1215,25 @@ class WebIntake:
                         "excerpt": excerpt,
                     }
                 )
+                claim_fields = {
+                    k: candidate[k]
+                    for k in (
+                        "data_type",
+                        "polarity",
+                        "subject",
+                        "action",
+                        "condition",
+                        "declared_purpose",
+                        "declared_recipient",
+                        "ambiguity_flags",
+                    )
+                }
+                # Drafts saved before the empty-condition normalization still hold "".
+                claim_fields["condition"] = normalize_condition(claim_fields["condition"])
                 claims.append(
                     PolicyClaim.model_validate(
                         {
-                            **{
-                                k: candidate[k]
-                                for k in (
-                                    "data_type",
-                                    "polarity",
-                                    "subject",
-                                    "action",
-                                    "condition",
-                                    "declared_purpose",
-                                    "declared_recipient",
-                                    "ambiguity_flags",
-                                )
-                            },
+                            **claim_fields,
                             "id": "web-claim-" + candidate["id"],
                             "document_id": document_id,
                             "evidence_ids": [sentence_id],
@@ -1669,7 +1674,9 @@ class WebIntake:
     def _event(self, draft_id, job_id, state):
         with self.data_store._transaction():
             draft = self._get(draft_id)
-            run = next(r for r in draft["jobs"] if r["job_id"] == job_id)
+            run = next((r for r in draft["jobs"] if r["job_id"] == job_id), None)
+            if run is None:
+                raise KeyError(f"job {job_id} is not part of draft {draft_id}")
             run["events"].append({"state": state, "at": now()})
             self._write_private(self.directory(draft_id) / "current.json", draft)
 

@@ -7,13 +7,16 @@ const assert = require('node:assert/strict')
 const { spawn, execFileSync } = require('node:child_process')
 const { chromium } = require('playwright')
 const { spawnOptions, stopChildren } = require('./lib/process-control.cjs')
+const { resolvePort } = require('./lib/local-ports.cjs')
 const { assertDesign } = require('./lib/frontend-guards.cjs')
 const root = path.resolve(__dirname, '..')
 const publicMode = process.argv.includes('--public')
 const apiPort = Number(process.env.PRIVACYTRACE_LIVE_API_PORT || 8134)
-const webPort = Number(process.env.PRIVACYTRACE_LIVE_WEB_PORT || 5284)
 const api = `http://127.0.0.1:${apiPort}`
-const web = `http://127.0.0.1:${webPort}`
+// Assigned in main(): the fixed 5284 default lands inside the Windows
+// Hyper-V/WinNAT reserved range, so the web port is allocated per run.
+let webPort
+let web
 const output = path.join(root, 'tmp/issue44-live-proof', publicMode ? 'public' : 'fixtures')
 const widths = [[1440, 900], [1920, 1080], [1280, 720], [768, 1024], [390, 844]]
 async function ready(url, child) {
@@ -26,6 +29,8 @@ async function ready(url, child) {
   throw new Error('Owned service startup timed out')
 }
 async function main() {
+  webPort = await resolvePort('PRIVACYTRACE_LIVE_WEB_PORT')
+  web = `http://127.0.0.1:${webPort}`
   fs.mkdirSync(output, { recursive: true })
   const store = fs.mkdtempSync(path.join(os.tmpdir(), 'privacytrace-live-'))
   const children = []; let browser

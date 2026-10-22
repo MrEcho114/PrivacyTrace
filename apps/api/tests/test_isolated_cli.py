@@ -10,6 +10,8 @@ from pathlib import Path
 import pytest
 from apk_fixture_builder import apk
 
+from privacytrace.wsl import wsl_distro
+
 ROOT = Path(__file__).resolve().parents[3]
 DOCKER_ONLY = pytest.mark.skipif(
     os.getenv("PRIVACYTRACE_DOCKER_TESTS") != "1", reason="Opt-in Docker seam"
@@ -38,7 +40,7 @@ def receipt(output):
 
 def controlled_image(dockerfile, tag):
     docker = (
-        ["wsl.exe", "-d", "Ubuntu-24.04", "--exec", "docker"] if os.name == "nt" else ["docker"]
+        ["wsl.exe", "-d", wsl_distro(), "--exec", "docker"] if os.name == "nt" else ["docker"]
     )
     inspected = subprocess.run(
         [*docker, "image", "inspect", "privacytrace-worker:s1", "--format", "{{.Id}}"],
@@ -62,7 +64,7 @@ def controlled_image(dockerfile, tag):
     context = str(ROOT)
     if os.name == "nt":
         context = subprocess.run(
-            ["wsl.exe", "-d", "Ubuntu-24.04", "--exec", "wslpath", "-u", context],
+            ["wsl.exe", "-d", wsl_distro(), "--exec", "wslpath", "-u", context],
             capture_output=True,
             text=True,
             timeout=10,

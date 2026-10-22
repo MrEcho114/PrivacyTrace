@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "vue-tsc --noEmit && vite build",
-    "android:prepare": "pwsh -NoProfile -File prepare-android.ps1",
+    "android:prepare": "node ../../../scripts/run-powershell.cjs -NoProfile -File prepare-android.ps1",
     "tauri": "tauri"
   },
   "dependencies": {

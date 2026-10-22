@@ -41,6 +41,7 @@ git diff --exit-code -- packages/contracts apps/web/src/contracts.generated.ts
 # and the Android icon overlay must be idempotent, including its failure cases.
 # Node only: no Android toolchain, no PowerShell, same result on Linux CI.
 node scripts/verify-brand-assets.cjs
+node --test scripts/run-powershell.test.cjs
 npm ci
 npm run test --workspace @privacytrace/web
 npm run build

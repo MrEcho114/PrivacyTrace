@@ -1,0 +1,30 @@
+name: Android prepare
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/android-prepare.yml"
+      - "scripts/run-powershell*.cjs"
+      - "apps/mobile/package.json"
+      - "experiments/android-package-probe/bridge-harness/package.json"
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/android-prepare.yml"
+      - "scripts/run-powershell*.cjs"
+      - "apps/mobile/package.json"
+      - "experiments/android-package-probe/bridge-harness/package.json"
+
+permissions:
+  contents: read
+
+jobs:
+  windows-powershell:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: node --test scripts/run-powershell.test.cjs

@@ -100,6 +100,25 @@ def _wait_recovered(
     return last
 
 
+def _wait_healthy_baseline(
+    topology: Topology, *, budget_s: float = 180.0, interval_s: float = 3.0
+) -> Observation:
+    """Wait for a healthy baseline before injecting the next fault.
+
+    Each injection follows the previous step's recovery poll, so readiness can
+    still be settling (observed as ready=503 with live=health=200). Failing the
+    step on that transient state reports a healthy topology as broken; wait for
+    the same triple the recovery poll waits for, then inject.
+    """
+    observation = _wait_recovered(topology, budget_s=budget_s, interval_s=interval_s)
+    if (observation.live, observation.health, observation.ready) != (200, 200, 200):
+        raise TopologyUnavailable(
+            f"baseline did not become healthy within {budget_s:.0f}s "
+            f"(live={observation.live} health={observation.health} ready={observation.ready})"
+        )
+    return observation
+
+
 @dataclass
 class FaultStep:
     """A single injection, described for the reader of the receipt."""
@@ -154,7 +173,7 @@ def _inject_step(topology: Topology, step: FaultStep) -> Check:
     if not topology.compose_files:
         return recorder.skip("PT_ACCEPTANCE_COMPOSE_FILES not set: no operator action possible")
     try:
-        before = _sample(topology, "before injection")
+        before = _wait_healthy_baseline(topology)
     except TopologyUnavailable as error:
         return recorder.skip(f"topology unreachable before injection: {error}")
     if (before.live, before.health, before.ready) != (200, 200, 200):

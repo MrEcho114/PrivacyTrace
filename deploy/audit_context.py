@@ -11,6 +11,7 @@ EXACT = {
     "apps/api/alembic.ini",
     "apps/web/package.json",
     "apps/web/index.html",
+    "apps/web/design.html",
     "apps/web/tsconfig.json",
     "apps/web/vite.config.ts",
     "rules/taxonomy.v0.3.json",

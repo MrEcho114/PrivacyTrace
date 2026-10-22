@@ -1,7 +1,11 @@
 {
   "kind": "Built Chromium / synthetic design fixtures",
-  "generatedAt": "2026-10-22T00:21:24.709Z",
+  "generatedAt": "2026-10-22T00:28:27.436Z",
   "sources": [
+    {
+      "file": ".github/workflows/browser-acceptance.yml",
+      "sha256": "ea396cc0b092793710407e1a57e1003d0d9cf2a48c4b0062e38f359830338b23"
+    },
     {
       "file": "apps/web/design.html",
       "sha256": "cf358145ea073ac2957cb49e0217c8471dd2fb3fcbbd52ca651611482cd6f536"
@@ -51,12 +55,28 @@
       "sha256": "1eff87b75791d9a553302f64738ae4acfd0aea966ae2446c61a5540ae537a2a1"
     },
     {
+      "file": "deploy/Dockerfile",
+      "sha256": "864966b74f5d25c5d72e5038b5449ca6de2caa079cf65955470976455f22cc24"
+    },
+    {
+      "file": "deploy/Dockerfile.dockerignore",
+      "sha256": "4748d6e4c99f28ee2ce31a61b44310dbb8442dd8a1bffee67607321c32036a86"
+    },
+    {
+      "file": "deploy/audit_context.py",
+      "sha256": "614608e5ede84d4b75c8f4587af0e616ad0207608c57caa5fba1fd853109824f"
+    },
+    {
+      "file": "deploy/tests/test_deployment.py",
+      "sha256": "3904802887875466bf0c9d2c1dbca23a19e3fee45d8864e239f6cd53a60f4e2c"
+    },
+    {
       "file": "package.json",
       "sha256": "4653a80b6969903482480a30593f46297c53196fb173b153b52e765f39a8fa39"
     },
     {
       "file": "scripts/verify-design-foundation.cjs",
-      "sha256": "5ee1229beb3e43a3d2195483ca62d3107a56a233da1e7ec2366203c416b714df"
+      "sha256": "76be2e6425b270b99af28e0a58c1f90cc5e775a135e2bc2d689f922d8e1949aa"
     }
   ],
   "checks": [

@@ -3,6 +3,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const crypto = require('node:crypto')
 const { spawn } = require('node:child_process')
+const { stripVTControlCharacters } = require('node:util')
 const { chromium } = require('playwright')
 const { stopChildren, spawnOptions } = require('./lib/process-control.cjs')
 
@@ -60,8 +61,8 @@ async function main() {
   const server = spawn(process.execPath, [path.join(root, 'node_modules/vite/bin/vite.js'), 'preview', '--host', '127.0.0.1', '--port', port, '--strictPort'],
     { ...spawnOptions(path.join(root, 'apps/web')), shell: false, windowsHide: true })
   let log = ''
-  server.stdout.on('data', chunk => { log += chunk })
-  server.stderr.on('data', chunk => { log += chunk })
+  server.stdout.on('data', chunk => { log += stripVTControlCharacters(String(chunk)) })
+  server.stderr.on('data', chunk => { log += stripVTControlCharacters(String(chunk)) })
   let browser
   const errors = [], apiRequests = []
   try {
@@ -167,6 +168,7 @@ async function main() {
     await page.locator('#app').waitFor()
     check('original runtime entry preserved', await page.locator('.pt-foundation').count() === 0)
     const sourcePaths = ['apps/web/design.html', 'apps/web/vite.config.ts', 'package.json', 'scripts/verify-design-foundation.cjs',
+      'deploy/Dockerfile', 'deploy/Dockerfile.dockerignore', 'deploy/audit_context.py', 'deploy/tests/test_deployment.py', '.github/workflows/browser-acceptance.yml',
       ...fs.readdirSync(path.join(root, 'apps/web/src/design')).map(name => 'apps/web/src/design/' + name)]
     const sources = sourcePaths.sort().map(file => ({ file, sha256: crypto.createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest('hex') }))
     const result = { kind: 'Built Chromium / synthetic design fixtures', generatedAt: new Date().toISOString(), sources, checks, captures, apiRequests, errors,

@@ -13,6 +13,7 @@
 | 独立标准审阅 | 完整新增组件/构建接线/验证逻辑审阅无未修阻塞；旧入口样式不依赖设计 CSS |
 | 独立视觉审阅 | 常规双端符合参考；320px/200% 数量和色板逐字换行已改为自动单列并复看；最新对照结论四色重点条复看无阻塞 |
 | 权威 `scripts/check.ps1` | 通过：API 1567 passed / 200 skipped，e2e 61 passed / 4 skipped，前端 111 passed；schema/治理/lint/构建通过。最后一处大字等宽标签换行样式修正后，重跑构建与87项专项通过；远端最终 SHA 的权威检查另由 PR CI 核对 |
+| CI 接线回归 | 首次 CI 发现容器缺少 design.html 与 Vite 彩色输出 ready 误判；已精确补齐构建输入并去除 ANSI 后匹配地址。FORCE_COLOR=1 下87项专项通过，部署单测55 passed / 28 subtests、部署 Ruff 通过；容器 web-build 与最终远端 CI 结果见 PR |
 
 [verification.json](evidence/verification.json) 包含代码输入 SHA-256、生成时间、逐项结果及 22 张截图哈希。仓库保留以下 6 张代表图，其余由专项命令生成，并由 CI 工件归档。输入哈希覆盖设计组件、样式、Vite 入口、package.json 与验证脚本，避免用自指的文档提交 SHA 伪造同版截图；最终交付 SHA 记录在 PR/Issue 中。
 

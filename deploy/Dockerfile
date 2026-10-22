@@ -39,7 +39,7 @@ WORKDIR /build
 COPY package.json package-lock.json ./
 COPY apps/web/package.json ./apps/web/package.json
 RUN npm ci --ignore-scripts --no-audit --no-fund
-COPY apps/web/index.html apps/web/tsconfig.json apps/web/vite.config.ts ./apps/web/
+COPY apps/web/index.html apps/web/design.html apps/web/tsconfig.json apps/web/vite.config.ts ./apps/web/
 COPY apps/web/src ./apps/web/src
 COPY apps/web/public ./apps/web/public
 RUN npm run build

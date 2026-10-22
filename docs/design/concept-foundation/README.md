@@ -120,6 +120,8 @@ powershell -NoProfile -File scripts/check.ps1
 
 可访问状态：`?state=empty`、`?state=unknown`、`?state=long`。生产构建同时输出 index.html 与 design.html；独立样式只由设计入口加载，原业务入口不变。设计页 noindex。
 
+容器构建同样精确包含 design.html：deploy/Dockerfile 的 COPY、Dockerfile.dockerignore 与 audit_context.py 的单文件 allowlist 同步维护。没有扩大到复制整个页面目录或私有材料。专项预览用 strictPort 并清理 Vite 终端色码后核对自身启动地址，兼容 Linux CI 彩色输出，不复用端口上的未知服务。
+
 专项脚本验证构建产物与真实 Chromium：五种视口、200% 文字、长文本/空/未知、字段错误/等待/禁用、键盘 skip/focus、移动证据定位与返回、政策展开、减少动态效果、无业务 API 请求与原业务入口隔离；注入错误面板底色/主色/身份条，证明视觉守卫会拒绝漂移。结果与截图在 `tmp/concept-foundation`；CI Browser Acceptance 同步运行并上传。
 
 [验证与截图索引](verification.md) 记录实际执行结果。浏览器模拟与设计合成材料不是 Android APK/物理真机或真实服务证据。

@@ -10,7 +10,7 @@
   ],
   "largeText": "200% root font size at 390/320",
   "checks": [
-    "owned dev server started on http://127.0.0.1:9907",
+    "owned dev server started on http://127.0.0.1:7250",
     "import: single #page-title = APK 与政策材料",
     "import: one four-step flow nav, current step 1",
     "no horizontal overflow: import@1440",
@@ -57,7 +57,6 @@
     "import-1440.png",
     "candidates-1440.png",
     "progress-1440.png",
-    "report-1440-top.png",
     "report-1440.png",
     "report-1440-top.png",
     "report-1280.png",
@@ -81,8 +80,8 @@
   ],
   "pageErrors": [],
   "browserApiRequests": [],
-  "commit": "639eee169a1c09ddbb806e9f0018c52af528ae11",
-  "dirty": false,
+  "commit": "91b4a52c0ea0dc916996cf8d535d6ecbe1461481",
+  "dirty": true,
   "recordedApiRequests": [
     "/api/v1/taxonomy",
     "/api/v1/web/settings",

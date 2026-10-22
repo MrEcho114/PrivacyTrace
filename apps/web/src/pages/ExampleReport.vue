@@ -2,7 +2,8 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import UiButton from '../components/UiButton.vue'
 import StatusTag from '../components/StatusTag.vue'
-import { copy, frontendCopy, policyStateLine } from '../copy'
+import { copy, frontendCopy, policyStateFromSource } from '../copy'
+import { reportRowNumber } from '../reportUi'
 import { exampleRows, exampleSources } from '../workflow'
 import type { Workflow } from '../workflow'
 const props = defineProps<{ state: Workflow }>()
@@ -16,12 +17,18 @@ const visibleIds = computed<Set<string>>(() => new Set(rows.value.map(item => it
 // Entry shows the first visible item until the reader picks another one.
 const activeFinding = computed<ExampleRow | undefined>(() => selected.value ?? rows.value[0])
 const activeSource = computed<ExampleSource | undefined>(() => exampleSources.find(item => item.id === activeFinding.value?.source))
-const rowNumber = (row: ExampleRow) => String(exampleRows.findIndex(item => item.id === row.id) + 1).padStart(2, '0')
+const rowNumber = (row: ExampleRow) => reportRowNumber(exampleRows.findIndex(item => item.id === row.id))
 const evidenceCount = (row: ExampleRow) => row.quote ? 2 : 1
 const sourceLabel = (id: string) => id === 'host' ? '应用官网' : 'SDK 服务'
-const sourceStateLine = (source: Workflow['sources'][number]) => policyStateLine({ review_status: 'UNREVIEWED', completeness: source.complete ? 'COMPLETE' : null, attachments_status: 'NOT_CHECKED' })
+const sourceStateLine = (source: Workflow['sources'][number]) => policyStateFromSource(source)
 const sourceSummary = computed(() => props.state.sources.map(source => ({ id: source.id, title: source.title || '未命名来源', version: source.version || '版本未知', failed: source.status === 'failed', stateLine: sourceStateLine(source) })))
-const materialState = computed(() => props.state.sources[0] ? sourceStateLine(props.state.sources[0]) : policyStateLine({ review_status: 'UNREVIEWED', attachments_status: 'NOT_CHECKED' }))
+// The header summary only claims one state when every source agrees; mixed
+// sources point at the per-source list instead of picking sources[0].
+const materialState = computed(() => {
+  const lines = new Set(props.state.sources.map(source => sourceStateLine(source)))
+  if (!lines.size) return policyStateFromSource({})
+  return lines.size === 1 ? [...lines][0] : `${props.state.sources.length} 份来源状态不一致，见下方来源列表`
+})
 const activePermission = computed(() => !!activeFinding.value && activeFinding.value.code.trimStart().startsWith('<uses-permission'))
 const fullText = ref(false)
 watch(() => props.state.filter, () => {
@@ -82,7 +89,7 @@ function returnToTrigger() {
           <p v-if="originButton" class="field-help"><button class="text-link" @click="returnToTrigger">返回刚才的操作</button></p>
         </template>
         <p v-else class="field-help">尚无条目可阅读。未知与未检查项继续保留。</p>
-        <details class="report-info"><summary>报告来源与技术信息</summary><dl><div v-for="source in sourceSummary" :key="source.id"><dt>{{ source.title }}</dt><dd>{{ source.version }} · {{ source.stateLine }}<span v-if="source.failed"> · {{ copy.sourceFailed }}</span></dd></div><div><dt>材料</dt><dd>人工构造示例</dd></div><div><dt>应用包名</dt><dd>com.paperboat.example</dd></div></dl></details>
+        <details class="report-info"><summary>报告来源与技术信息</summary><dl><div v-for="source in sourceSummary" :key="source.id"><dt>{{ source.title }}</dt><dd>{{ source.version }} · {{ source.stateLine }}<span v-if="source.failed"> · {{ copy.sourceFailed }}</span></dd></div><div><dt>应用包名</dt><dd>com.paperboat.example</dd></div></dl></details>
         </div>
       </section>
     </div>

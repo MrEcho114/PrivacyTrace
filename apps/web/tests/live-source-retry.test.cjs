@@ -49,6 +49,7 @@ for (const status of ['manual', 'ready']) {
           }
           if (name === './workflow') return { steps: ['import', 'candidates', 'progress', 'report'] }
           if (name === './copy') return copyExports
+          if (name === './reportUi') return { reportRowNumber: (index) => index < 0 ? '--' : String(index + 1).padStart(2, '0') }
           if (name === './api' || name.endsWith('.vue')) return {}
           throw new Error(`Unexpected import: ${name}`)
         },

@@ -29,7 +29,7 @@ function advance() { if (props.state.stage < demoStages.length - 1) props.state.
       </div></div>
       <div v-if="stopped" class="notice"><p role="alert">{{ displayStage }} · 输入保留</p><UiButton @click="state.outcome = 'idle'">{{ copy.retry }}</UiButton></div>
       <div v-if="state.sources.some(source => source.status === 'failed')" class="notice" role="status"><span>{{ copy.sourceFailed }}</span><p v-for="source in state.sources.filter(item => item.status === 'failed')" :key="source.id">{{ source.title || '未命名来源' }}</p></div>
-      <details class="execution-details"><summary>阶段与来源详情</summary><dl><div><dt>模型请求</dt><dd>未执行</dd></div><div><dt>Docker 扫描</dt><dd>未执行</dd></div><div><dt>材料</dt><dd>人工构造示例</dd></div></dl><UiButton v-if="state.outcome === 'idle'" @click="state.outcome = 'failed'">{{ copy.failStage }}</UiButton></details>
+      <details class="execution-details"><summary>阶段与来源详情</summary><dl><div><dt>模型请求</dt><dd>未执行</dd></div><div><dt>Docker 扫描</dt><dd>未执行</dd></div></dl><UiButton v-if="state.outcome === 'idle'" @click="state.outcome = 'failed'">{{ copy.failStage }}</UiButton></details>
     </section>
     <div class="flow-footer"><UiButton @click="$emit('back')">{{ copy.back }}</UiButton></div>
   </div>

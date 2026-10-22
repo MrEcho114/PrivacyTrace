@@ -67,6 +67,7 @@ function mount(jobs = [], fixture = null, overrides = {}) {
       if (name === './copy') return copyExports
       if (name === './workflow') return { sourceStatusLabels: typesExports.sourceStatusLabels }
       if (name === './sdkEvidence') return sdkEvidenceExports
+      if (name === './reportUi') return { reportRowNumber: (index) => index < 0 ? '--' : String(index + 1).padStart(2, '0') }
       // Component imports are used by the template/render path, not by setup();
       // the mount helper exercises setup only (issue #144 extraction).
       if (name.startsWith('./components/')) return {}
@@ -225,6 +226,7 @@ function mountEvidence(report, issue) {
   const context = { exports: {}, require: name => {
     if (name === 'vue') return vue
     if (name === '../copy') return copyExports
+    if (name === '../reportUi') return { reportRowNumber: (index) => index < 0 ? '--' : String(index + 1).padStart(2, '0') }
     throw new Error(`Unexpected import: ${name}`)
   } }
   vm.runInNewContext(evidenceScript, context, { filename: evidenceFile })

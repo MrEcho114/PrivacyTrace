@@ -6,6 +6,7 @@
 import { computed, ref, watch } from 'vue'
 import type { DemoReport, Evidence, MatchStatus, PrivacyIssue, Report, Taxonomy } from '../types'
 import { frontendCopy, policyStateLine } from '../copy'
+import { reportRowNumber } from '../reportUi'
 
 const props = withDefaults(defineProps<{
   issue: PrivacyIssue
@@ -36,7 +37,7 @@ const sentenceContext = (item: Evidence) => {
 const selectedEvidence = computed(() => props.report.evidence.filter(item => props.issue.evidence_ids.includes(item.id)))
 const issueNumber = computed(() => {
   const index = props.report.result.issues.findIndex(item => item.id === props.issue.id)
-  return index < 0 ? '--' : String(index + 1).padStart(2, '0')
+  return reportRowNumber(index)
 })
 // The unified source-state line is generated from the document's own values; a
 // fetched body never upgrades the review state and missing values stay unknown.

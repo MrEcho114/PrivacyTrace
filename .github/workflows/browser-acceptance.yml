@@ -62,12 +62,10 @@ jobs:
       - name: Run browser acceptance
         run: npm run acceptance:browser
 
+      # #167/#165 contract assertions run as the last stage of acceptance:frontend
+      # (same command, same preview lifecycle), not as a second CI entry.
       - name: Run frontend walkthrough
         run: npm run acceptance:frontend
-
-      # #165/#167/#169: copy contract, report layout geometry and brand surface.
-      - name: Verify copy contract and brand surface
-        run: npm run acceptance:copy
 
       - name: Run wide hierarchy regression
         run: npm run acceptance:hierarchy

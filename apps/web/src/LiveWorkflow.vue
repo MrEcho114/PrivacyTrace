@@ -10,7 +10,7 @@ import { cancelJob, loadJob, loadTaxonomy } from './api'
 import { createDraft, discoverSources, displaySourceUrl, extractSource, reserveExtraction, getAttemptStatus, fetchSource, importExternal, readDraft, saveCandidates, startScan, uploadApk } from './liveApi'
 import type { LiveDraft } from './liveApi'
 import type { ExternalInput } from './policyAssist'
-import { frontendCopy, policyStateLine, type JobStage } from './copy'
+import { frontendCopy, policyStateFromSource, type JobStage } from './copy'
 import { quoteExists, sourceProvenanceLabel, sourceStatusLabel, steps } from './workflow'
 import type { Workflow, Candidate } from './workflow'
 import type { AnalysisJob, WebCandidate, WebSource } from './types'
@@ -75,7 +75,7 @@ function extractionFailed(value: LiveDraft, id: string): boolean {
 const stageLabel = (state?: string) => (state ? frontendCopy.stages[state as JobStage] ?? state : frontendCopy.stages.QUEUED)
 // Draft sources have no review/attachment fields yet; the shared generator keeps
 // the wording identical to the report and mobile views.
-const liveSourceState = policyStateLine({ review_status: 'UNREVIEWED', completeness: null, attachments_status: 'NOT_CHECKED' })
+const liveSourceState = policyStateFromSource({})
 const terminal = computed(() => !!job.value && ['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(job.value.state))
 const events = computed(() => draft.value?.jobs.find(r => r.job_id === job.value?.id)?.events ?? [])
 const jobError = computed(() => { try { return JSON.parse(job.value?.error ?? '{}').code ?? '' } catch { return 'JOB_FAILED' } })

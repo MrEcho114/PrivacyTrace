@@ -70,6 +70,7 @@ test('start accepts an unchecked candidate and sends checked=false', async () =>
         return { quoteExists: () => true, sourceStatusLabel: () => '手动补入正文', steps: ['import', 'candidates', 'progress', 'report'] }
       }
       if (name === './copy') return copyExports
+      if (name === './reportUi') return { reportRowNumber: (index) => index < 0 ? '--' : String(index + 1).padStart(2, '0') }
       if (name.endsWith('.vue')) return {}
       throw new Error(`Unexpected import: ${name}`)
     },

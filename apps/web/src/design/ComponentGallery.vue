@@ -6,7 +6,7 @@ import StatusTag from '../components/StatusTag.vue'
 import InstrumentPanel from './InstrumentPanel.vue'
 import ReportMetrics from './ReportMetrics.vue'
 import StaticBoundary from './StaticBoundary.vue'
-import { frontendCopy, policyStateLine } from '../copy'
+import { frontendCopy, policyStateFromSource } from '../copy'
 const note = ref('')
 const showError = ref(false)
 const pending = ref(false)
@@ -28,7 +28,7 @@ const colors = [{ name: '工作面', value: '#FFFFFF' }, { name: '仅顶栏', va
     </InstrumentPanel>
     <InstrumentPanel title="03 / 状态与证据边界" label="StatusTag">
       <div class="pt-tags"><StatusTag>UNKNOWN / 未知</StatusTag><StatusTag tone="wait">PARTIAL / 部分覆盖</StatusTag><StatusTag>UNREVIEWED / 待复核</StatusTag><StatusTag tone="error">失败 / 可重试</StatusTag><StatusTag tone="success">已保存 / 本地示例</StatusTag></div>
-      <p class="pt-policy-state">{{ policyStateLine({ review_status: 'UNREVIEWED', completeness: null, attachments_status: 'NOT_CHECKED' }) }}</p>
+      <p class="pt-policy-state">{{ policyStateFromSource({}) }}</p>
       <StaticBoundary /><p>标签保留明确文字。来源、送达、复核、提取与覆盖分别映射，不把 REAL_SCAN 理解成实时运行。</p>
     </InstrumentPanel>
     <InstrumentPanel title="04 / 重点信息面板" label="InstrumentPanel / priority" priority>

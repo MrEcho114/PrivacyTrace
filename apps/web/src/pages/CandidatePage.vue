@@ -4,11 +4,10 @@ import UiButton from '../components/UiButton.vue'
 import UiField from '../components/UiField.vue'
 import UiIcon from '../components/UiIcon.vue'
 import StatusTag from '../components/StatusTag.vue'
-import { copy, frontendCopy, policyStateLine } from '../copy'
+import { copy, frontendCopy, policyStateFromSource } from '../copy'
 import { dataTypes, quoteExists, sourceTypes } from '../workflow'
 import type { Candidate, PolicySource, Workflow } from '../workflow'
 const props = defineProps<{ state: Workflow; busy?: boolean; error?: string; typeLabels?: Record<string, string>; failedSourceIds?: string[]; mobile?: boolean }>()
-const sourceStateLine = (source: PolicySource) => policyStateLine({ review_status: 'UNREVIEWED', completeness: source.complete ? 'COMPLETE' : null, attachments_status: 'NOT_CHECKED' })
 const emit = defineEmits<{ back: []; next: []; retrySource: [string]; retryModel: [string]; persistCandidates: [] }>()
 const editorTypes = computed(() => props.state.example ? dataTypes : props.typeLabels ?? {})
 const candidateLimit = computed(() => props.state.example ? 100 : 800)
@@ -85,7 +84,7 @@ function editQuote() { if (chosen.value) chosen.value.startOffset = undefined; e
     <p v-if="source" class="source-context" role="note" data-testid="candidate-source-context">
       <StatusTag :tone="source.status === 'failed' ? 'error' : 'neutral'">{{ sourceTypes[source.type] }}</StatusTag>
       <span>{{ source.version || '版本未知' }}</span>
-      <span class="source-context-meta"><span v-if="source.status === 'failed'">来源获取失败</span><span>{{ sourceStateLine(source) }}</span><span>{{ copy.sourceScopeUnknown }}</span></span>
+      <span class="source-context-meta"><span v-if="source.status === 'failed'">来源获取失败</span><span>{{ policyStateFromSource(source) }}</span><span>{{ copy.sourceScopeUnknown }}</span></span>
     </p>
     <p v-if="!state.example && extractionUnavailable" class="notice" role="status">当前来源的候选提取未完成，正文与已有候选仍保留。可在“政策原文”中选择“重新提取候选”，或手动添加；此状态不代表政策未声明。</p>
     <div v-if="source" class="mobile-panel-tabs" role="tablist" aria-label="检查候选视图" @keydown="onTabsKeydown">

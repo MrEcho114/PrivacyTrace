@@ -74,6 +74,7 @@ const templateContext = {
   exports: {} as { render?: (...args: unknown[]) => unknown },
   require: (name: string) => {
     if (name === 'vue') return vue
+    if (name === '../reportUi') return { reportRowNumber: (index: number) => index < 0 ? '--' : String(index + 1).padStart(2, '0') }
     throw new Error(`Unexpected import in template: ${name}`)
   },
 }
@@ -103,6 +104,7 @@ function mount(jobs: Array<{ id: string; state: string }> = [], fixture: Record<
       if (name === './copy') return copyExports
       if (name === './workflow') return { sourceStatusLabels: typesExports.sourceStatusLabels }
       if (name === './sdkEvidence') return sdkEvidenceExports
+      if (name === './reportUi') return { reportRowNumber: (index: number) => index < 0 ? '--' : String(index + 1).padStart(2, '0') }
       // Component imports are used by the template/render path, not by setup();
       // the mount helper exercises setup only (issue #144 extraction).
       // BrandMark renders in the top bar, so give it a stub instead of

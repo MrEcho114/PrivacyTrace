@@ -46,6 +46,7 @@ td { padding: 17px 10px; border-bottom: 1px solid var(--border); }
 tbody tr:last-child td { border-bottom: 0; }
 .type-cell { font-weight: 600; white-space: nowrap; }
 .tag { display: inline-block; font-size: 0.75rem; border-radius: 5px; padding: 6px 9px; white-space: nowrap; }
+.item-review { display: block; margin-top: 4px; color: var(--pt-muted); font-size: 0.75rem; line-height: 1.5; }
 .clear { background: var(--mint); color: var(--success); }
 .review { background: var(--notice); color: var(--ink); }
 .evidence-button { border: 0; font-size: 0.75rem; padding: 5px; white-space: nowrap; }
@@ -237,10 +238,7 @@ mark { background: var(--notice); color: var(--ink); }
 .workbench .page .report-identity p { overflow-wrap: anywhere; }
 .workbench .page .report-source-state { text-align: right; }
 .workbench .page .report-source-state p { margin: 0; font-size: 0.8125rem; line-height: 1.7; color: var(--pt-muted); }
-.workbench .page .report-columns { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 18px; align-items: start; }
 .workbench .page .report-columns[data-layout="stacked"] { grid-template-columns: minmax(0, 1fr); }
-/* Both report columns are peer panels: one section-title size. */
-.workbench .page .report-evidence .panel-heading h2 { font-size: var(--pt-type-panel); }
 .workbench .page .report-conclusions { background: var(--pt-paper); border: 1px solid var(--pt-structure); }
 .workbench .page .report-conclusions .panel-heading { margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--pt-structure); }
 .workbench .page .report-conclusions .comparison-table { min-width: 0; width: 100%; border-collapse: collapse; font-size: 0.875rem; }
@@ -271,7 +269,7 @@ mark { background: var(--notice); color: var(--ink); }
 }
 .workbench .page .report-evidence { margin-top: 0; background: var(--pt-paper); border: 1px solid var(--pt-structure); scroll-margin-top: 16px; }
 .workbench .page .report-evidence .panel-heading { margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--pt-rule); }
-.workbench .page .report-evidence .panel-heading h2 { font-family: var(--pt-font-display); font-size: 1.125rem; }
+.workbench .page .report-evidence .panel-heading h2 { font-family: var(--pt-font-display); font-size: var(--pt-type-panel); }
 .workbench .page .report-evidence-body { padding: 14px 16px 16px; }
 .workbench .page .selected-context { margin: 0 0 14px; padding-bottom: 12px; border-bottom: 1px solid var(--pt-rule); }
 .workbench .page .selected-context p { margin: 0 0 6px; font-size: 0.875rem; line-height: 1.7; }
@@ -329,6 +327,7 @@ mark { background: var(--notice); color: var(--ink); }
   .workbench .workspace-content { padding: 20px 16px 40px; padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); }
   .workbench .workspace-content .page-heading h1 { font-size: var(--pt-type-report-mobile); }
   .workbench .page .panel-heading h2 { font-size: var(--pt-type-panel-mobile); }
+  .workbench .page .report-evidence .panel-heading h2 { font-size: var(--pt-type-panel-mobile); }
   .workbench .page .finding-type h3 { font-size: var(--pt-type-finding-mobile); }
   .workbench .page .report-columns { grid-template-columns: minmax(0, 1fr); }
   .workbench .page .report-source-state { text-align: left; }

@@ -6,12 +6,10 @@ import StatusTag from '../components/StatusTag.vue'
 import UiIcon from '../components/UiIcon.vue'
 import PolicyAssist from '../components/PolicyAssist.vue'
 import type { ExternalInput } from '../policyAssist'
-import { copy, frontendCopy, policyStateLine } from '../copy'
+import { copy, frontendCopy, policyStateFromSource } from '../copy'
 import { emptySource, sourceProvenanceLabel, sourceStatusLabel, sourceTypes } from '../workflow'
 import type { PolicySource, Workflow } from '../workflow'
 const props = defineProps<{ state: Workflow; busy?: boolean; error?: string; uploadedName?: string }>()
-// One state line for every policy source: text present never means reviewed.
-const sourceStateLine = (source: PolicySource) => policyStateLine({ review_status: 'UNREVIEWED', completeness: source.complete ? 'COMPLETE' : null, attachments_status: 'NOT_CHECKED' })
 const emit = defineEmits<{ example: []; next: []; file: [File]; dirty: []; import: [ExternalInput] }>()
 const file = ref<File | null>(null)
 const fileError = ref('')
@@ -102,7 +100,7 @@ function onTextInput(source: PolicySource) {
             <details class="source-body"><summary>适用范围</summary><div class="field-pair"><UiField label="适用版本" :id="'version-' + source.id"><input :id="'version-' + source.id" v-model="source.version" maxlength="100" placeholder="未知" /></UiField><UiField label="适用地区" :id="'region-' + source.id"><input :id="'region-' + source.id" v-model="source.region" maxlength="100" placeholder="未知" /></UiField></div>
             <div v-if="!state.example" class="field-pair"><UiField label="适用包名" :id="'package-' + source.id"><input :id="'package-' + source.id" v-model="source.packageName" maxlength="200" placeholder="未知" /></UiField><UiField label="适用 versionCode" :id="'vcode-' + source.id"><input :id="'vcode-' + source.id" v-model.number="source.versionCode" type="number" min="0" placeholder="未知" /></UiField></div><UiField label="应用／产品范围" :id="'product-' + source.id"><input :id="'product-' + source.id" v-model="source.product" maxlength="100" placeholder="未知" /></UiField></details>
           </details>
-          <div class="source-notes"><span>{{ copy.sourceScopeUnknown }}</span><span>{{ sourceStateLine(source) }}</span></div>
+          <div class="source-notes"><span>{{ copy.sourceScopeUnknown }}</span><span>{{ policyStateFromSource(source) }}</span></div>
         </article>
         <UiButton :disabled="state.sources.length >= 8" @click="addSource">添加政策来源</UiButton>
         <PolicyAssist v-if="!state.example" :busy="busy" :source-count="state.sources.length" @import="emit('import', $event)" />

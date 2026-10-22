@@ -7,19 +7,12 @@ import { frontendCopy } from '../copy'
 defineProps<{
   name: string
   version: string
-  packageName: string
   sourceBadge: string
-  sourceDescription: string
   deliveryBadge: string
-  deliveryDescription: string
-  generatedAt?: string
-  generatedAtLabel?: string
   dataTypeCount: number
   policyCount: number
   evidenceCount: number
-  material?: { origin: string; draft: string; revision?: number }
 }>()
-defineEmits<{ changeMaterial: [] }>()
 </script>
 
 <template>

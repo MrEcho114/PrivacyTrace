@@ -5,17 +5,17 @@ import { clampSdkPage, getSdkEvidence, sdkPageCount, sdkPageSlice } from './sdkE
 import type { AnalysisJob, DemoReport, MatchStatus, PrivacyIssue, Report, ReportSource, Taxonomy, WebSource } from './types'
 import { parseSource, serializeSource, sourceProvenanceLabel, sourceStatusLabel } from './types'
 import EvidencePanel from './components/EvidencePanel.vue'
-import UiSheet from './components/UiSheet.vue'
 import UiIcon from './components/UiIcon.vue'
 import BrandMark from './components/BrandMark.vue'
 import MobileReportSummary from './components/MobileReportSummary.vue'
-import { frontendCopy, policyStateLine } from './copy'
-const props = defineProps<{ initialJobId?: string; snapshot?: { report: Report; taxonomy: Taxonomy }; mobile?: boolean; embedded?: boolean; material?: { origin: string; draft: string; revision?: number } }>()
+import { frontendCopy, policyStateFromSource, policyStateLine } from './copy'
+import { reportRowNumber } from './reportUi'
+const props = defineProps<{ initialJobId?: string; snapshot?: { report: Report; taxonomy: Taxonomy }; mobile?: boolean; embedded?: boolean }>()
 // The Tauri shell reuses this whole report body. In mobile mode the evidence
-// preview becomes a bottom sheet and the shell owns the surrounding app chrome.
+// panel renders inline below the issue list (#165: lower evidence area, no
+// sheet/drawer/second reader) and the shell owns the surrounding app chrome.
 // The workbench archive view embeds the same body; there the shell owns the one
 // #page-title and brand bar, so the embedded body must not render its own.
-const emit = defineEmits<{ evidenceOpen: []; evidenceClose: []; changeMaterial: [] }>()
 const mobile = computed(() => props.mobile === true)
 const embedded = computed(() => props.embedded === true)
 
@@ -63,16 +63,29 @@ const selected = ref<PrivacyIssue | null>(null)
 const reducedMotion = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function'
   && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 let evidenceScroll = 0
-function selectIssue(issue: PrivacyIssue, event?: Event) {
-  evidenceTrigger.value = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null
-  evidenceScroll = window.scrollY
-  selected.value = issue
-  if (mobile.value) { emit('evidenceOpen'); return }
+// Both the row and the red action land the reader on the same evidence region:
+// desktop beside the list, mobile inline below it. No sheet or second reader.
+function revealEvidence() {
   void nextTick(() => {
     const panel = document.getElementById('evidence-panel')
     panel?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' })
     panel?.focus({ preventScroll: true })
   })
+}
+// Returning restores the trigger and the exact reading position; it never
+// depends on whether the selection is kept or cleared by the caller.
+function returnToEvidenceTrigger(trigger: HTMLElement | null, top: number) {
+  void nextTick(() => {
+    const target = trigger?.isConnected ? trigger : document.getElementById('page-title')
+    target?.focus({ preventScroll: true })
+    if (trigger?.isConnected) window.scrollTo({ top, behavior: 'auto' })
+  })
+}
+function selectIssue(issue: PrivacyIssue, event?: Event) {
+  evidenceTrigger.value = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  evidenceScroll = window.scrollY
+  selected.value = issue
+  revealEvidence()
 }
 // The one red action acts on the already selected row: it opens that item's
 // policy disclosure and moves the reader to the evidence column, without a
@@ -87,43 +100,14 @@ function openSelectedEvidence(event: Event) {
     provenanceOpen.value = true
     openedPolicyId.value = policyId
   }
-  if (mobile.value) { emit('evidenceOpen'); return }
-  void nextTick(() => {
-    const panel = document.getElementById('evidence-panel')
-    panel?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' })
-    panel?.focus({ preventScroll: true })
-  })
+  revealEvidence()
 }
-// The desktop evidence column is a permanent reading area: its return control
-// only restores focus and the reading position; it never clears the selection or
-// unmounts the panel. Closing (mobile sheet) still goes through closeEvidence.
+// The evidence area is permanent in both layouts: desktop beside the table,
+// mobile inline below the list. Its return control only restores focus and the
+// reading position; it never clears the selection or unmounts the panel.
 function returnToTrigger() {
-  const trigger = evidenceTrigger.value
-  const top = evidenceScroll
-  void nextTick(() => {
-    const target = trigger?.isConnected ? trigger : document.getElementById('page-title')
-    target?.focus({ preventScroll: true })
-    if (trigger?.isConnected) window.scrollTo({ top, behavior: 'auto' })
-  })
+  returnToEvidenceTrigger(evidenceTrigger.value, evidenceScroll)
 }
-// Closing the preview returns focus to the row button that opened it and restores
-// the exact reading position instead of dropping focus on <body> at a shifted
-// scroll offset. If the row is gone, focus falls back to the page title. The
-// sheet hides without restoring when it hands off to the full policy block.
-function closeEvidence(restoreFocus = true) {
-  const trigger = evidenceTrigger.value
-  const top = evidenceScroll
-  selected.value = null
-  if (mobile.value) emit('evidenceClose')
-  if (!restoreFocus) return
-  void nextTick(() => {
-    const target = trigger?.isConnected ? trigger : document.getElementById('page-title')
-    target?.focus({ preventScroll: true })
-    if (trigger?.isConnected) window.scrollTo({ top, behavior: 'auto' })
-  })
-}
-// Hardware back in the Tauri shell closes the sheet before it changes steps.
-defineExpose({ evidenceOpen: computed(() => mobile.value && !!selected.value), closeEvidence: () => closeEvidence(true) })
 const error = ref('')
 const refreshEl = ref<HTMLButtonElement | null>(null)
 watch(error, (value, oldValue) => {
@@ -163,11 +147,18 @@ const label = (id: string) => taxonomy.value?.data_types.find(item => item.id ==
 const dataTypeCount = computed(() => new Set(report.value?.result.issues.map(i => i.data_type)).size)
 const issueNumber = (issue: PrivacyIssue) => {
   const index = report.value?.result.issues.findIndex(item => item.id === issue.id) ?? -1
-  return index < 0 ? '--' : String(index + 1).padStart(2, '0')
+  return reportRowNumber(index)
+}
+// The conclusion tag states the comparison result; whether this row still
+// needs a human look is a separate fact and stays out of the tag.
+function itemReview(issue: PrivacyIssue): string {
+  if (issue.requires_review === true) return '条目待复核'
+  if (issue.requires_review === false) return '条目无需复核'
+  return '条目复核未知'
 }
 // Archive/web policy sources carry no review or attachment state, so the shared
 // generator states the honest defaults instead of a locally invented line.
-const webSourceState = policyStateLine({ review_status: 'UNREVIEWED', completeness: null, attachments_status: 'NOT_CHECKED' })
+const webSourceState = policyStateFromSource({})
 const realReport = computed(() => report.value && !report.value.demo ? report.value : null)
 const webSources = computed(() => {
   try {
@@ -206,7 +197,6 @@ const openPolicy = (id: string) => {
   })
 }
 function jumpToPolicy(id: string) {
-  closeEvidence(false)
   openPolicy(id)
 }
 // A report / issue switch resets the provenance hand-off state.
@@ -394,7 +384,7 @@ function applyReport(next: DemoReport | Report, preserveSelection: boolean) {
   // desktop; a reader-refreshed report keeps (or keeps-cleared) the selection.
   if (preserveSelection) {
     selected.value = previousIssueId ? next.result.issues.find(item => item.id === previousIssueId) ?? null : null
-  } else if (firstReportPaint && !mobile.value) {
+  } else if (firstReportPaint) {
     selected.value = next.result.issues[0] ?? null
   } else {
     selected.value = null
@@ -717,10 +707,9 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
       </section>
       <MobileReportSummary v-if="mobile && report"
         :name="report.sample.name" :version="report.demo ? report.sample.version : (report.sample.version_name ?? ('v' + report.sample.version_code))"
-        :package-name="report.sample.package_name" :source-badge="sourceInfo?.badge ?? '来源未标注'" :source-description="sourceInfo?.desc ?? ''"
-        :delivery-badge="deliveryInfo?.badge ?? '投递方式未标注'" :delivery-description="deliveryInfo?.desc ?? ''"
-        :generated-at="report.job?.created_at" :generated-at-label="formatTimestamp(report.job.created_at)" :material="material"
-        :data-type-count="dataTypeCount" :policy-count="report.policy_documents.length" :evidence-count="report.evidence.length" @change-material="emit('changeMaterial')" />
+        :source-badge="sourceInfo?.badge ?? '来源未标注'"
+        :delivery-badge="deliveryInfo?.badge ?? '投递方式未标注'"
+        :data-type-count="dataTypeCount" :policy-count="report.policy_documents.length" :evidence-count="report.evidence.length" />
       <details v-if="!mobile" class="demo-note"><summary>分析范围与来源 · <strong>{{ sourceInfo?.label ?? (source.kind === 'demo' ? 'SYNTHETIC 示例' : '真实 APK 静态报告') }}</strong></summary>
         {{ sourceInfo?.desc ?? (source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。') }}
       </details>
@@ -772,13 +761,14 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
               <!-- Desktop keeps the comparison table. The Tauri shell renders the same
                    issues as tappable Android list rows instead of a scroll table. -->
               <div v-if="!mobile" class="table-scroll"><table class="report-table" role="table"><thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">{{ frontendCopy.table.dataType }}</th><th scope="col" role="columnheader">政策来源</th><th scope="col" role="columnheader">当前结论</th><th scope="col" role="columnheader">{{ frontendCopy.table.evidence }}</th></tr></thead><tbody role="rowgroup">
-                <tr v-for="(issue, index) in report.result.issues" :key="issue.id" role="row" :class="{ 'report-row-current': selected?.id === issue.id }"><td class="type-cell" role="cell" :data-label="frontendCopy.table.dataType"><span class="report-row-number" aria-hidden="true">{{ String(index + 1).padStart(2, '0') }}</span>{{ label(issue.data_type) }}</td><td role="cell" data-label="政策来源">{{ documentLabels(issue.policy_document_ids) }}</td><td role="cell" data-label="当前结论"><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></td><td role="cell" :data-label="frontendCopy.table.evidence"><button type="button" class="ui-button evidence-button" :aria-pressed="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue, $event)">查看 {{ issue.evidence_ids.length }} 条证据 →</button><span v-if="selected?.id === issue.id" class="report-current-label">当前证据</span></td></tr>
+                <tr v-for="(issue, index) in report.result.issues" :key="issue.id" role="row" :class="{ 'report-row-current': selected?.id === issue.id }"><td class="type-cell" role="cell" :data-label="frontendCopy.table.dataType"><span class="report-row-number" aria-hidden="true">{{ reportRowNumber(index) }}</span>{{ label(issue.data_type) }}</td><td role="cell" data-label="政策来源">{{ documentLabels(issue.policy_document_ids) }}</td><td role="cell" data-label="当前结论"><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}</span><span class="item-review">{{ itemReview(issue) }}</span></td><td role="cell" :data-label="frontendCopy.table.evidence"><button type="button" class="ui-button evidence-button" :aria-pressed="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue, $event)">查看 {{ issue.evidence_ids.length }} 条证据 →</button><span v-if="selected?.id === issue.id" class="report-current-label">当前证据</span></td></tr>
               </tbody></table></div>
               <div v-else class="m-issue-list" role="list">
                 <div v-for="(issue, index) in report.result.issues" :key="issue.id" class="m-issue-card" role="listitem">
-                  <button type="button" class="evidence-button m-issue-row" :aria-pressed="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue, $event)">
-                    <span class="m-issue-head"><span class="report-row-number" aria-hidden="true">{{ String(index + 1).padStart(2, '0') }}</span><strong>{{ label(issue.data_type) }}</strong><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}{{ issue.requires_review ? ' · 待复核' : '' }}</span></span>
+                  <button type="button" class="evidence-button m-issue-row" :class="{ 'report-row-current': selected?.id === issue.id }" :aria-pressed="selected?.id === issue.id" aria-controls="evidence-panel" @click="selectIssue(issue, $event)">
+                    <span class="m-issue-head"><span class="report-row-number" aria-hidden="true">{{ reportRowNumber(index) }}</span><strong>{{ label(issue.data_type) }}</strong><span class="tag" :class="issue.status === 'EXACT_MATCH' && !issue.requires_review ? 'clear' : 'review'">{{ statusLabels[issue.status] }}</span><span class="item-review">{{ itemReview(issue) }}</span></span>
                     <span class="m-issue-meta">{{ documentLabels(issue.policy_document_ids) }}</span>
+                    <span v-if="selected?.id === issue.id" class="report-current-label">当前条目</span>
                     <span class="m-issue-action">查看 {{ issue.evidence_ids.length }} 条证据<UiIcon name="chevron-right" class="m-chevron" /></span>
                   </button>
                 </div>
@@ -796,12 +786,12 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
             </div>
           </div>
         </section>
-        <!-- Mobile evidence preview: A's UiSheet is the bottom-sheet contract
-             (overlay, handle, 48px close, focus trap). The panel markup itself is
-             shared with the inline desktop rendering above. -->
-        <UiSheet v-if="mobile && selected && report" class="m-evidence-sheet" :title="`${label(selected.data_type)} · ${statusLabels[selected.status]}`" description="静态证据、政策原句与候选条款；关闭后回到触发该项的结论。" @close="closeEvidence()">
-          <EvidencePanel :issue="selected" :report="report" :taxonomy="taxonomy" :status-labels="statusLabels" :kind-labels="kindLabels" :source-labels="sourceLabels" :heading="false" @close="closeEvidence()" @open-policy="jumpToPolicy" />
-        </UiSheet>
+        <!-- Mobile evidence is the same panel inline below the issue list: the
+             confirmed lower-area reading, not a sheet/drawer/second reader. The
+             return control keeps the selected item and restores the trigger. -->
+        <section v-if="mobile && selected && report" class="report-evidence report-evidence-inline" aria-label="当前条目证据">
+          <EvidencePanel :issue="selected" :report="report" :taxonomy="taxonomy" :status-labels="statusLabels" :kind-labels="kindLabels" :source-labels="sourceLabels" @close="returnToTrigger()" @open-policy="jumpToPolicy" />
+        </section>
         <section v-if="realReport" class="report-provenance" aria-label="报告生成来源">
           <strong>{{ offlineReplay ? 'OFFLINE REPLAY · 离线回放' : '存档报告查看 · PERSISTED REPLAY' }}</strong>
           <p v-if="realReport.tools.analysis_generated_at">分析生成时点：{{ realReport.tools.analysis_generated_at }}。<template v-if="!embedded">{{ frontendCopy.facts.archiveNoRescan }}</template></p>

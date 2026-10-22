@@ -54,7 +54,7 @@
 | --- | --- | --- | --- |
 | `npm run test --workspace @privacytrace/web` | PASS | 132/132（126 既有 + 6 copy-contract） | 终端输出 `tests 132 / pass 132 / fail 0` |
 | `PRIVACYTRACE_FRONTEND_URL=http://127.0.0.1:5191 npm run acceptance:frontend` | PASS（exit 0） | frontend-flow：brand 103 项、reports 15 项移动断言；policy-assist：10 项真实 HTTP/UI | `tmp/issue44-ui/verification.json`、`tmp/issue72-policy-assist/verification.json` |
-| `node scripts/verify-copy-contract.cjs`（无 env，自启 dev server，干净树） | PASS | 42 checks / 24 张截图 | [copy-contract.json](../../acceptance/issue165/copy-contract.json)、[截图目录](../../acceptance/issue165/screenshots/) |
+| `node scripts/verify-copy-contract.cjs`（acceptance:frontend 的合同阶段；无 env，自启 dev server，干净树） | PASS | 42 checks / 23 张截图 | [copy-contract.json](../../acceptance/issue165/copy-contract.json)、[截图目录](../../acceptance/issue165/screenshots/) |
 | `PRIVACYTRACE_FRONTEND_URL=http://127.0.0.1:5191 node scripts/verify-issue143-hierarchy.cjs` | PASS | 11 checks | `tmp/issue143-hierarchy/verification.json` |
 | `PRIVACYTRACE_FRONTEND_URL=http://127.0.0.1:5191 node scripts/verify-issue146-motion.cjs` | PASS | 20 checks | `tmp/issue146-motion/verification.json` |
 | `PRIVACYTRACE_FRONTEND_URL=http://127.0.0.1:5191 node scripts/verify-issue145-a11y.cjs` | PASS | 14 checks | `tmp/issue145-a11y/verification.json` |
@@ -89,7 +89,7 @@
 
 ### 截图
 
-[`docs/acceptance/issue165/screenshots/`](../../acceptance/issue165/screenshots/) 目录内共 27 张：copy-contract 产出 24 张（42 checks），另有 3 张 #169 品牌截图（见 #169 节）。独立视觉审阅指出旧截图没有报告首屏与移动主操作帧，已重拍：
+[`docs/acceptance/issue165/screenshots/`](../../acceptance/issue165/screenshots/) 目录内共 26 张：copy-contract 产出 23 张（42 checks），另有 3 张 #169 品牌截图（见 #169 节）。独立视觉审阅指出旧截图没有报告首屏与移动主操作帧，已重拍：
 
 - [import-1440](../../acceptance/issue165/screenshots/import-1440.png)、[candidates-1440](../../acceptance/issue165/screenshots/candidates-1440.png)、[progress-1440](../../acceptance/issue165/screenshots/progress-1440.png)
 - 报告首屏（scrollTop=0）：[report-1440-top](../../acceptance/issue165/screenshots/report-1440-top.png)、[report-1280-top](../../acceptance/issue165/screenshots/report-1280-top.png)、[report-768-top](../../acceptance/issue165/screenshots/report-768-top.png)、[report-390-top](../../acceptance/issue165/screenshots/report-390-top.png)、[report-320-top](../../acceptance/issue165/screenshots/report-320-top.png)
@@ -113,10 +113,12 @@
 
 1. 取证方式：旧截图在“选中条目→滚动到证据区”之后拍摄，报告页没有首屏。`verify-copy-contract.cjs` 新增 `resetScroll`，五视口补拍 scrollTop=0 首屏；移动端补拍“当前对象 + 全宽 56px 主操作”帧；200% 补首屏与主操作帧。断言从 `isVisible()` 改为实际滚动可达 + 高度/宽度校验，并新增 1280×720 首条证据入口在首屏内的断言。
 2. 选中态边框缺失：`tbody td { border: 0 }` 特异性压过 `.finding-type` 的 3px 左边框。改为在 `td.finding-type` 上声明边框宽度，窄屏卡片把 3px 边移到 `tr` 上；1440/768/390 截图可见“文字 + 边框”。
-3. 200% 层级倒置：导航/侧栏动作原用 rem，放大后 26px 反超 20px 区段标题。改为 13px/12px 固定 px；h1 36px > 区段 22/20px > 导航 12px。
+3. 200% 层级倒置：导航/侧栏动作原用 rem，放大后 26px 反超 20px 区段标题。改为 `clamp(12px, .8125rem, 15px)`（窄屏 `clamp(11px, .75rem, 13px)`），200% 时导航仍低于 h1 36px 与区段 22/20px。
 4. 身份块与状态样式：`.sample-monogram` 加 `aspect-ratio: 1` 与 `flex: 0 0 auto`，长包名允许在块内换行；来源状态行移到数量之前；两栏面板标题统一 22px；存档错误态改为中性文字 + 双线边框（不再出现第二处红）；桌面主操作维持 45px（fine pointer），≤896/coarse 为 56px，与 `pioneer-design.json` 的 `actionMinHeight`/`actionMinHeightNarrow` 一致。
 
 审阅建议但未改的项：示例报告使用单行来源计数（真实报告保留三格计数）；进度页面板标题“示例材料”属于材料身份；候选页“待检查/已检查”是候选检查状态，与报告“条目复核”是不同语义；30px 品牌槽位保持不放大以不改变顶栏度量。上述差异记录在此，不作为未完成项。
+
+复核轮（code-review 双轴）已修：移动证据改为列表下方内联证据区（复用同一 `EvidencePanel`，无 sheet/overlay；首条自动选中、返回保留所选条目）；条目复核状态与结论标签分离；删除重复的“材料/人工构造示例”行；证据区标题回到 22/20px；`--pt-*` 与 design foundation 增加颜色 token 相等性单测；部署构建上下文 allowlist 纳入 `apps/web/public/brand/**`（容器内图标不再 404）；`acceptance:copy` 折叠进 `acceptance:frontend`，不再单独占 CI 入口。
 
 ### NOT_RUN
 

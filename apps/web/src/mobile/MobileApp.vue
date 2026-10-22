@@ -103,12 +103,9 @@ const scrollByStep: Partial<Record<Step, number>> = {}
 let suppressPush = false
 let ignoreNextPop = false
 let overlayEntries = 0
-let closingOverlayByBack = false
 const settingsOpen = ref(false)
 const settingsTrigger = ref<HTMLElement | null>(null)
 const stepEntering = ref(false)
-type ReportViewApi = { evidenceOpen: boolean; closeEvidence: () => void }
-const reportView = useTemplateRef<ReportViewApi>('reportView')
 // The fixed action bar grows with 200% text; publish its measured height so the
 // last content is never trapped behind it. Not a layout listener on the page.
 const actionbar = useTemplateRef<HTMLElement>('actionbar')
@@ -142,7 +139,6 @@ function navigate(target: Step) {
 }
 function goBack() {
   if (settingsOpen.value) { closeSettings(); return }
-  if (reportView.value?.evidenceOpen) { reportView.value.closeEvidence(); return }
   const target = backTarget()
   if (target) navigate(target)
 }
@@ -185,12 +181,6 @@ function popOverlay() {
 function onPopState(event: PopStateEvent) {
   if (ignoreNextPop) { ignoreNextPop = false; return }
   if (settingsOpen.value) { closeSettings(true); return }
-  if (reportView.value?.evidenceOpen) {
-    closingOverlayByBack = true
-    reportView.value.closeEvidence()
-    closingOverlayByBack = false
-    return
-  }
   const target = (event.state as { pt?: string } | null)?.pt
   if (target && (steps as readonly string[]).includes(target) && target !== state.step && stepAvailable(steps.indexOf(target as Step))) {
     suppressPush = true
@@ -215,11 +205,6 @@ function closeSettings(byBack = false) {
   settingsOpen.value = false
   if (!byBack) popOverlay()
   void nextTick(() => settingsTrigger.value?.focus({ preventScroll: true }))
-}
-function onEvidenceOpen() { pushOverlay() }
-function onEvidenceClose() {
-  if (closingOverlayByBack) return
-  popOverlay()
 }
 
 const progressPrimary = () => { if (job.value?.state === 'SUCCEEDED') void flow.openReport(); else void flow.poll() }
@@ -349,7 +334,7 @@ onBeforeUnmount(() => {
       </template>
 
       <div v-else-if="state.step === 'report' && report && taxonomy" class="m-report">
-        <ExistingReports ref="reportView" :key="report.job.id" :snapshot="{ report, taxonomy }" mobile :material="context ? { origin: context.origin, draft: context.draft, revision: draft?.revision } : undefined" @evidence-open="onEvidenceOpen" @evidence-close="onEvidenceClose" @change-material="navigate('import')" />
+        <ExistingReports :key="report.job.id" :snapshot="{ report, taxonomy }" mobile />
         <details class="m-details m-report-meta">
           <summary>报告来源与版本</summary>
           <div class="m-row-body">
@@ -393,7 +378,7 @@ onBeforeUnmount(() => {
         <h2>模型连接</h2>
         <p class="m-settings-status">{{ model.configured ? '本机已配置模型' : '尚未配置模型' }}</p>
         <p v-if="model.endpoint" class="hash">{{ model.endpoint }}</p>
-        <p class="m-help">Key 在系统窗口输入并保存在本机。仅把完整收集指令和应用线索发送给所选模型；服务是否具备联网能力，以实际结果为准。</p>
+        <p class="m-help">Key 在系统窗口输入并保存在本机。{{ frontendCopy.facts.mobileModelInput }}</p>
         <UiButton :disabled="busy" @click="flow.settings(true)">{{ model.configured ? '修改模型配置' : '设置模型配置' }}</UiButton>
       </section>
       <section class="m-settings-section">

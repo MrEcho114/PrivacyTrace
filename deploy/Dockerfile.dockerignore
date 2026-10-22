@@ -15,6 +15,7 @@
 !apps/web/public/fonts/NotoSerifSC-Variable.woff2
 !apps/web/public/fonts/licenses/NotoSansSC-OFL.txt
 !apps/web/public/fonts/licenses/NotoSerifSC-OFL.txt
+!apps/web/public/brand/**
 !package.json
 !package-lock.json
 !rules/taxonomy.v0.3.json

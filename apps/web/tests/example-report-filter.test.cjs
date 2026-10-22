@@ -41,6 +41,7 @@ function mount() {
       if (name === '../components/UiButton.vue' || name === '../components/StatusTag.vue') return { default: {} }
       if (name === '../copy') return copyExports
       if (name === '../workflow') return { exampleRows, exampleSources }
+      if (name === '../reportUi') return { reportRowNumber: (index) => index < 0 ? '--' : String(index + 1).padStart(2, '0') }
       if (name === 'vue') return { ...vue, onMounted() {}, onBeforeUnmount() {} }
       throw new Error(`Unexpected import: ${name}`)
     },

@@ -387,7 +387,8 @@ async function main() {
     }, sourceTitles)
     assert.equal(infoState.open, true, 'report: the source fact list must open on demand')
     assert.equal(infoState.sourceRows, 2, 'report: the collapsed fact list keeps one row per policy source')
-    assert.equal(infoState.materialRows, 2, 'report: material identity rows stay separate from the source rows')
+    assert.equal(infoState.materialRows, 1, 'report: only the package identity row remains; the duplicate 材料 row is gone')
+    assert.equal(await example.locator('.report-info').getByText('人工构造示例').count(), 0, 'report: the retired 人工构造示例 marker must not return')
     assert.ok(infoState.stateLines.every(line => line.includes('来源未复核')), 'report: every source row keeps the unified 来源未复核 state line')
     await example.locator('.comparison-table tbody tr').first().getByRole('button').first().click()
     await example.locator('#example-evidence-title').waitFor()
@@ -411,7 +412,9 @@ async function main() {
     assert.equal(await reports.locator('#page-title').innerText(), '本机存档报告')
     // #167/#165 embedded mode: the archive view owns the only h1 and brand bar,
     // so App.vue must not render its own .intro hero or .topbar inside it.
-    assert.equal(await reports.locator('.workspace-content .shell main > .intro').count(), 0, 'reports: the embedded viewer must not render a second hero')
+    assert.equal(await reports.locator('.workspace-content .shell .intro').count(), 0, 'reports: the embedded viewer must not render a second hero')
+    assert.equal(await reports.locator('.workspace-content .shell h1').count(), 0, 'reports: the embedded viewer must not render a second page title')
+    assert.equal(await reports.locator('.workspace-content .shell > header.topbar').count(), 0, 'reports: the embedded viewer must not render a second top bar')
     assert.equal(await reports.locator('.workspace-content .shell .topbar').count(), 0, 'reports: the embedded viewer must not render a second brand bar')
     assert.equal(await reports.locator('.workspace-content h1').count(), 1, 'reports: the workbench page title must be the only h1')
 
@@ -435,7 +438,9 @@ async function main() {
       return {
         roles: { surface: rgb(role('--surface')), mint: rgb(role('--mint')), notice: rgb(role('--notice')), canvas: rgb(role('--canvas')), control: rgb(role('--control')) },
         identityBeforeMeta: !!sample && !!provenance && !!(sample.compareDocumentPosition(provenance) & Node.DOCUMENT_POSITION_FOLLOWING),
-        introCount: document.querySelectorAll('.workspace-content .shell main > .intro').length,
+        introCount: document.querySelectorAll('.workspace-content .shell .intro').length,
+        embeddedMainCount: document.querySelectorAll('.workspace-content .shell main').length,
+        embeddedHeadingCount: document.querySelectorAll('.workspace-content .shell h1').length,
         topbarCount: document.querySelectorAll('.workspace-content .shell .topbar').length,
         h1Count: document.querySelectorAll('.workspace-content h1').length,
         sourceBar: !!select?.closest('.report-source-bar'),

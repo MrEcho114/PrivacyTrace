@@ -370,27 +370,27 @@ async function main() {
     await page.evaluate(() => { document.documentElement.style.fontSize = '' })
     await page.setViewportSize({ width: 390, height: 844 })
     checks.push('report: 200% root font keeps the mobile report inside 320px')
-    // Evidence sheet: open/close twice restores focus and the exact scroll position.
+    // Inline evidence: open twice, return to the row, exact scroll position.
     await page.evaluate(() => window.scrollTo(0, 0))
     for (let round = 1; round <= 2; round += 1) {
       const trigger = page.locator('.m-issue-list .evidence-button').first()
       await trigger.scrollIntoViewIfNeeded()
       const before = await page.evaluate(() => Math.round(scrollY))
       await trigger.click()
-      const sheet = page.locator('dialog.ui-sheet.m-evidence-sheet')
-      await sheet.waitFor({ timeout: 5000 })
-      assert.equal(await page.evaluate(() => Boolean(document.activeElement?.closest('dialog.ui-sheet.m-evidence-sheet'))), true, `round ${round}: focus must move into the evidence sheet`)
+      const panel = page.locator('.report-evidence-inline #evidence-panel')
+      await panel.waitFor({ timeout: 5000 })
+      assert.equal(await page.evaluate(() => Boolean(document.activeElement?.closest('.report-evidence-inline #evidence-panel'))), true, `round ${round}: focus must move into the inline evidence panel`)
+      assert.equal(await page.locator('dialog.ui-sheet.m-evidence-sheet').count(), 0, `round ${round}: no sheet may open over the report`)
       if (round === 1) {
         await shot(page, 'round2-report-preview-390.png')
-        checks.push(await assertTouchTargets(page, 'evidence-sheet'))
+        checks.push(await assertTouchTargets(page, 'evidence-inline'))
       }
-      await page.keyboard.press('Escape')
+      await panel.getByRole('button', { name: '返回刚才的操作', exact: true }).click()
       await page.waitForTimeout(250)
-      assert.equal(await sheet.count(), 0, `round ${round}: the evidence sheet must close`)
       assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('.m-issue-list .evidence-button')), true, `round ${round}: focus must return to the triggering row`)
-      assert.ok(Math.abs(await page.evaluate(() => Math.round(scrollY)) - before) <= 2, `round ${round}: closing must restore the exact scroll position`)
+      assert.ok(Math.abs(await page.evaluate(() => Math.round(scrollY)) - before) <= 2, `round ${round}: returning must restore the exact scroll position`)
     }
-    checks.push('evidence sheet: opening/closing twice restores focus and the exact scroll position')
+    checks.push('inline evidence: opening twice keeps the section, restores focus and the exact scroll position')
     const ledger = await page.evaluate(() => globalThis.mobileCalls)
     assert.equal(ledger.filter(call => call.method === 'workflow' && call.args.action === 'start').length, 1, 'a lost start response must not submit a second analysis')
     const save = ledger.find(call => call.method === 'workflow' && call.args.action === 'candidates')

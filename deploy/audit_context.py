@@ -48,6 +48,9 @@ def audit(root):
             and path.suffix == ".py"
             or name.startswith("apps/web/src/")
             and path.suffix in {".ts", ".vue", ".css", ".svg"}
+            # #169: the shipped mark and favicon live in the web public dir.
+            or name.startswith("apps/web/public/brand/")
+            and path.suffix in {".svg", ".png"}
         )
         if not allowed:
             raise ValueError("Unexpected file in deployment context")

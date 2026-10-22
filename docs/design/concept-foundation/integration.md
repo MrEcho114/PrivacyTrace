@@ -39,7 +39,8 @@ git 拓扑（`git log --graph --oneline`、`git show --no-patch --format='%h %p 
 | `apps/web/src/workbench.css` | 真实报告嵌入后的报告工作区：`.report-columns` 1.15fr:1fr、选中文字＋边框、证据上下文、主操作区、≤560 卡片表 |
 | `apps/web/src/hierarchy.css` | 嵌入视图的标题层级、报告来源工具条、报告元数据顺序、短屏（≤800px 高）压缩 |
 | `apps/web/src/WorkflowApp.vue` | 桌面单一四步侧栏与单品牌栏；存档视图唯一 h1 与 `archiveNoRescan`；以 `embedded` 复用报告主体 |
-| `apps/web/src/App.vue` | 报告主体：非嵌入时唯一 h1、结论/证据双栏、报告元数据在证据区之后、嵌入模式抑制自身 h1/品牌/重复边界句、渲染 `facts` |
+| `apps/web/src/App.vue` | 报告主体：非嵌入时唯一 h1、结论/证据双栏、报告元数据在证据区之后、嵌入模式抑制自身 h1/品牌/重复边界句、渲染 `facts`；移动端同一 `EvidencePanel` 内联在条目列表下方（不再用底部 sheet），首条自动选中、返回保留选中所项 |
+| `apps/web/src/mobile/MobileApp.vue` | 移动外壳只保留设置 sheet；报告证据改由内联证据区承担，返回键按步骤回退 |
 | `apps/web/src/LiveWorkflow.vue` | 真实四步：进度与报告页 h1、`frontendCopy.stages` 阶段标签、来源状态行、`archiveNoRescan` |
 | `apps/web/src/components/EvidencePanel.vue` | 证据面板：条目编号/名称/关联数/结论、`notDeclared`、`candidateUnconfirmed`、文档来源状态行 |
 | `apps/web/src/components/MobileReportSummary.vue` | 移动报告首屏：身份、来源徽标、范围、静态边界句、三格计数 |

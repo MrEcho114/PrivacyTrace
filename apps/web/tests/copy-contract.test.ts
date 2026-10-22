@@ -7,7 +7,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { copy, frontendCopy, policyStateLine } from '../src/copy.ts'
+import { copy, frontendCopy, policyStateFromSource, policyStateLine } from '../src/copy.ts'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -110,6 +110,33 @@ test('the adopted page, table and marker names stay literal', () => {
   assert.equal(frontendCopy.comparisonTitle, '数据类型与政策声明对照')
   assert.equal(frontendCopy.demoBadge, '示例体验 · 固定材料')
   assert.equal(frontendCopy.brandSubtitle, '隐私权限使用与隐私声明对照')
+})
+
+// #fff and #ffffff are the same approved colour; compare the value, not the spelling.
+const normalizeColor = (value: string) => {
+  const short = value.match(/^#([0-9a-f]{3})$/i)
+  return short ? '#' + short[1].split('').map((char) => char + char).join('') : value
+}
+
+test('product theme and design foundation keep the same approved colour tokens', () => {
+  const read = (file: string) => Object.fromEntries(
+    [...fs.readFileSync(path.join(srcDir, file), 'utf8').matchAll(/--pt-([a-z0-9-]+):\s*([^;]+);/g)]
+      .map((match) => [match[1], normalizeColor(match[2].trim().toLowerCase())]))
+  const product = read('theme.css')
+  const foundation = read('design/foundation.css')
+  const shared = ['paper', 'header', 'ink', 'structure', 'muted', 'rule', 'action', 'action-hover', 'stripe-1', 'stripe-2', 'stripe-3', 'stripe-4']
+  for (const token of shared) {
+    assert.ok(product[token], `theme.css must define --pt-${token}`)
+    assert.ok(foundation[token], `design/foundation.css must define --pt-${token}`)
+    assert.equal(product[token], foundation[token], `--pt-${token} drifted between the product theme and the design foundation`)
+  }
+})
+
+test('policyStateFromSource never promotes text availability to a reviewed source', () => {
+  assert.equal(policyStateFromSource({ complete: true }), '来源未复核 · 正文完整 · 附件未检查')
+  assert.equal(policyStateFromSource({ complete: false }), '来源未复核 · 正文完整度未知 · 附件未检查')
+  assert.equal(policyStateFromSource({}), '来源未复核 · 正文完整度未知 · 附件未检查')
+  assert.doesNotMatch(policyStateFromSource({ complete: true }), /已复核/)
 })
 
 test('policyStateLine keeps missing, unknown and partial values unknown', () => {

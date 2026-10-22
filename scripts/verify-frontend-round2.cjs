@@ -242,30 +242,30 @@ async function selectAndPrepare(page) {
   await waitTitle(page, '核对政策声明', 12000)
 }
 
-async function openEvidenceSheet(page) {
+async function openInlineEvidence(page) {
   const trigger = page.locator('.m-issue-list .evidence-button').first()
   await trigger.scrollIntoViewIfNeeded()
   const before = await page.evaluate(() => Math.round(scrollY))
   await trigger.click()
-  const dialog = page.locator('dialog.ui-sheet.m-evidence-sheet')
-  await dialog.waitFor({ timeout: 5000 })
+  const panel = page.locator('#evidence-panel')
+  await panel.waitFor({ timeout: 5000 })
   await page.waitForTimeout(150)
   const state = await page.evaluate(() => ({
-    overlay: Boolean(document.querySelector('.ui-sheet-overlay')),
-    handle: Boolean(document.querySelector('dialog.ui-sheet.m-evidence-sheet .ui-sheet-handle')),
-    focusInside: Boolean(document.activeElement?.closest('dialog.ui-sheet.m-evidence-sheet')),
-    closeLabel: document.querySelector('dialog.ui-sheet.m-evidence-sheet .ui-sheet-close')?.getAttribute('aria-label'),
-    scrim: getComputedStyle(document.querySelector('.ui-sheet-overlay')).backgroundColor,
-    backgroundHidden: document.querySelector('.mobile-workspace')?.getAttribute('aria-hidden'),
+    inline: Boolean(document.querySelector('.report-evidence-inline #evidence-panel')),
+    dialogs: document.querySelectorAll('dialog.ui-sheet').length,
+    overlays: document.querySelectorAll('.ui-sheet-overlay').length,
+    focusInside: Boolean(document.activeElement?.closest('#evidence-panel')),
+    returnLabel: [...document.querySelectorAll('#evidence-panel button')].find(button => button.textContent.trim() === '返回刚才的操作')?.textContent.trim(),
+    current: document.querySelectorAll('.m-issue-row.report-row-current').length,
   }))
-  assert.equal(state.overlay, true, 'evidence sheet: scrim overlay must render')
-  assert.equal(state.handle, true, 'evidence sheet: drag handle must render')
-  assert.equal(state.focusInside, true, 'evidence sheet: focus must move into the sheet')
-  assert.equal(state.closeLabel, '关闭', 'evidence sheet: close control must be labelled 关闭')
-  assert.equal(state.scrim, 'rgba(44, 53, 71, 0.42)', `evidence sheet: scrim must use --m-scrim (got ${state.scrim})`)
-  assert.equal(await page.evaluate(() => document.querySelector('dialog.ui-sheet.m-evidence-sheet').innerText.includes('UNKNOWN')), true, 'evidence sheet: UNKNOWN evidence wording must stay visible')
-  if (state.backgroundHidden !== null) assert.equal(state.backgroundHidden, 'true', 'evidence sheet: background must be hidden from assistive tech')
-  return { trigger, before }
+  assert.equal(state.inline, true, 'inline evidence: the panel renders below the issue list')
+  assert.equal(state.dialogs, 0, 'inline evidence: no sheet or dialog may open')
+  assert.equal(state.overlays, 0, 'inline evidence: no scrim overlay may render')
+  assert.equal(state.focusInside, true, 'inline evidence: focus must move into the panel')
+  assert.equal(state.returnLabel, '返回刚才的操作', 'inline evidence: the return control must be 返回刚才的操作')
+  assert.equal(state.current, 1, 'inline evidence: exactly one row carries the current marker')
+  assert.equal(await page.evaluate(() => document.querySelector('.report-evidence-inline').innerText.includes('UNKNOWN')), true, 'inline evidence: UNKNOWN wording must stay visible')
+  return { trigger, before, panel }
 }
 
 async function main() {
@@ -544,72 +544,39 @@ async function main() {
     assert.ok(!provenanceText.includes('来源已复核'), 'a PARTIAL extraction must never be promoted to 来源已复核')
     checks.push('report: PARTIAL coverage visible; 来源未复核/正文完整度未知/附件未检查 facts stay in the expandable provenance section')
 
-    // ---- evidence bottom sheet --------------------------------------------
-    const { trigger, before } = await openEvidenceSheet(page)
-    assert.ok(await page.evaluate(() => Boolean(document.querySelector('dialog.ui-sheet.m-evidence-sheet .evidence-panel'))), 'the sheet must contain the extracted EvidencePanel')
-    assert.equal(await page.evaluate(() => document.querySelectorAll('#evidence-panel').length), 1, 'the sheet renders exactly one evidence panel')
-    // Accessible dialog contract: modal, labelled by its title, described by text.
-    const sheetA11y = await page.evaluate(() => {
-      const dialog = document.querySelector('dialog.ui-sheet.m-evidence-sheet')
-      const labelledby = dialog.getAttribute('aria-labelledby')
-      const describedby = dialog.getAttribute('aria-describedby')
+    // ---- inline evidence below the issue list -----------------------------
+    const { trigger, before, panel } = await openInlineEvidence(page)
+    assert.equal(await page.evaluate(() => document.querySelectorAll('#evidence-panel').length), 1, 'inline evidence renders exactly one evidence panel')
+    assert.ok(await page.evaluate(() => Boolean(document.querySelector('.report-evidence-inline .evidence-panel'))), 'the inline region must contain the extracted EvidencePanel')
+    const panelA11y = await page.evaluate(() => {
+      const region = document.querySelector('.report-evidence-inline')
+      const heading = region.querySelector('.section-heading h2')
       return {
-        tag: dialog.tagName,
-        modal: dialog.getAttribute('aria-modal'),
-        title: labelledby ? document.getElementById(labelledby)?.textContent?.trim() : '',
-        description: describedby ? document.getElementById(describedby)?.textContent?.trim() : '',
-        focusables: dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])').length,
+        tag: region.tagName,
+        label: region.getAttribute('aria-label'),
+        title: heading?.textContent?.trim() ?? '',
+        focusables: region.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])').length,
       }
     })
-    assert.equal(sheetA11y.tag, 'DIALOG', 'the sheet must render a native dialog element')
-    assert.equal(sheetA11y.modal, 'true', 'the sheet must be modal for assistive technology')
-    assert.ok(sheetA11y.title?.includes('位置信息'), 'the sheet must be labelled by its issue title')
-    assert.ok(sheetA11y.description?.includes('静态证据'), 'the sheet must be described by visible scope text')
-    assert.ok(sheetA11y.focusables >= 2, 'the sheet must expose focusable close/content controls')
-    const sheetMotion = await page.evaluate(() => {
-      const dialog = document.querySelector('dialog.ui-sheet.m-evidence-sheet')
-      const style = getComputedStyle(dialog)
-      return { name: style.animationName, duration: style.animationDuration, iteration: style.animationIterationCount }
-    })
-    assert.notEqual(sheetMotion.name, 'none', 'the sheet must have an entrance transition (E #146)')
-    assert.equal(sheetMotion.duration, '0.2s', `sheet entrance must use --m-duration-enter (got ${sheetMotion.duration})`)
-    assert.equal(sheetMotion.iteration, '1', 'sheet entrance must play once, not idle-loop')
-    checks.push(await assertTouchTargets(page, 'evidence-sheet/390'))
-    await assertNoPageOverflow(page, 'evidence-sheet/390')
-    await shot(page, '390-evidence-sheet.png', { scenario: 'evidence', state: 'bottom sheet open over the report' })
-    await page.keyboard.press('Escape')
-    await page.waitForTimeout(250)
-    assert.equal(await page.locator('dialog.ui-sheet.m-evidence-sheet').count(), 0, 'Escape must close the evidence sheet')
-    assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('.m-issue-list .evidence-button')), true, 'closing the sheet must return focus to the triggering issue row')
-    assert.ok(Math.abs(await page.evaluate(() => Math.round(scrollY)) - before) <= 2, 'closing the sheet must restore the report scroll position')
-    // Scrim tap is an explicit close path on Android sheets.
-    await trigger.click()
-    await page.locator('dialog.ui-sheet.m-evidence-sheet').waitFor()
-    await page.locator('.ui-sheet-overlay').click({ position: { x: 8, y: 8 } })
-    await page.waitForTimeout(250)
-    assert.equal(await page.locator('dialog.ui-sheet.m-evidence-sheet').count(), 0, 'clicking the scrim must close the evidence sheet')
-    assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('.m-issue-list .evidence-button')), true, 'scrim close must return focus to the triggering issue row')
-    // Reduced motion removes the sheet entrance entirely, not just shortens it.
-    await page.emulateMedia({ reducedMotion: 'reduce' })
-    await trigger.click()
-    await page.locator('dialog.ui-sheet.m-evidence-sheet').waitFor()
-    const reducedSheet = await page.evaluate(() => {
-      const style = getComputedStyle(document.querySelector('dialog.ui-sheet.m-evidence-sheet'))
-      return { name: style.animationName, duration: style.animationDuration }
-    })
-    assert.equal(reducedSheet.name, 'none', `reduced motion must remove the sheet entrance (got ${reducedSheet.name})`)
-    await page.keyboard.press('Escape')
+    assert.equal(panelA11y.tag, 'SECTION', 'inline evidence must stay a section, not a dialog')
+    assert.equal(panelA11y.label, '当前条目证据', 'inline evidence must be labelled 当前条目证据')
+    assert.ok(panelA11y.title.includes('位置信息'), 'inline evidence must be titled by its issue')
+    assert.ok(panelA11y.focusables >= 2, 'inline evidence must expose focusable content controls')
+    checks.push(await assertTouchTargets(page, 'evidence-inline/390'))
+    await assertNoPageOverflow(page, 'evidence-inline/390')
+    await shot(page, '390-evidence-inline.png', { scenario: 'evidence', state: 'inline evidence below the issue list' })
+    await panel.getByRole('button', { name: '返回刚才的操作', exact: true }).click()
     await page.waitForTimeout(150)
-    await page.emulateMedia({ reducedMotion: 'no-preference' })
-    // Hardware back closes the sheet before it changes steps.
-    await trigger.click()
-    await page.locator('dialog.ui-sheet.m-evidence-sheet').waitFor()
-    await hardwareBack(page)
-    assert.equal(await page.locator('dialog.ui-sheet.m-evidence-sheet').count(), 0, 'hardware back must close the evidence sheet first')
-    await waitTitle(page, 'APP 隐私收集越权报告')
+    assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('.m-issue-list .evidence-button')), true, 'returning must restore focus to the triggering issue row')
+    assert.ok(Math.abs(await page.evaluate(() => Math.round(scrollY)) - before) <= 2, 'returning must restore the report scroll position')
+    assert.equal(await page.evaluate(() => document.querySelectorAll('.m-issue-row.report-row-current').length), 1, 'returning keeps exactly one current row')
+    // No modal exists, so Escape must not dismiss the reading region.
+    await page.keyboard.press('Escape')
+    await page.waitForTimeout(100)
+    assert.equal(await page.locator('#evidence-panel').count(), 1, 'Escape must not dismiss the inline evidence')
     await hardwareBack(page)
     await waitTitle(page, '扫描与对照进度')
-    checks.push('evidence sheet: scrim/handle/close, focus in and back to trigger, exact scroll restore, Escape + hardware back close it before stepping')
+    checks.push('inline evidence: section below the list, focus in and back to trigger, exact scroll restore, no dialog/overlay, hardware back steps')
 
     // ---- in-app back arrow: report -> progress ----------------------------
     await page.getByRole('button', { name: '查看报告', exact: true }).click()
@@ -809,7 +776,7 @@ async function main() {
 
     // ---- static platform assertions --------------------------------------
     const mobileCss = fs.readFileSync(path.join(root, 'apps/web/src/mobile/mobile.css'), 'utf8')
-    for (const fragment of ['100dvh', 'env(safe-area-inset-top', 'env(safe-area-inset-bottom', 'var(--keyboard-inset', 'overscroll-behavior', '-webkit-tap-highlight-color', 'touch-action: manipulation', '@media (hover: hover) and (pointer: fine)', 'var(--m-touch', 'var(--m-scrim', 'prefers-reduced-motion']) {
+    for (const fragment of ['100dvh', 'env(safe-area-inset-top', 'env(safe-area-inset-bottom', 'var(--keyboard-inset', 'overscroll-behavior', '-webkit-tap-highlight-color', 'touch-action: manipulation', '@media (hover: hover) and (pointer: fine)', 'var(--m-touch', 'prefers-reduced-motion']) {
       assert.ok(mobileCss.includes(fragment), `mobile.css is missing ${fragment}`)
     }
     assert.ok(!/transition\s*:\s*all/.test(mobileCss), 'mobile.css must not use transition: all')
@@ -817,7 +784,9 @@ async function main() {
     const mobileApp = fs.readFileSync(path.join(root, 'apps/web/src/mobile/MobileApp.vue'), 'utf8')
     assert.match(mobileApp, /m-busy-notice"><span role="status">/, 'busy text must sit in a text-only status span')
     assert.doesNotMatch(mobileApp, /role="status">[^<]*<UiButton/, 'a stop button must not be nested in a live region')
-    const evidencePanel = fs.readFileSync(path.join(root, 'apps/web/src/components/EvidencePanel.vue'), 'utf8')
+    const uiSheet = fs.readFileSync(path.join(root, 'apps/web/src/components/UiSheet.vue'), 'utf8')
+assert.match(uiSheet, /var\(--m-scrim\)/, 'the remaining settings sheet must keep the shared scrim token')
+const evidencePanel = fs.readFileSync(path.join(root, 'apps/web/src/components/EvidencePanel.vue'), 'utf8')
     assert.doesNotMatch(evidencePanel, /aria-live/, 'the evidence panel must not be a live region containing controls')
     checks.push('mobile.css: 100dvh, safe-area, keyboard inset, overscroll/tap/16px/hover gating, no transition:all')
 

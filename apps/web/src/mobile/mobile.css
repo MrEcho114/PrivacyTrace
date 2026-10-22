@@ -369,6 +369,13 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
 .m-issue-action { display: flex; align-items: center; gap: 4px; color: var(--pt-structure); font-size: var(--m-body); font-weight: 600; }
 .m-issue-action .ui-icon { flex: none; color: var(--pt-structure); }
 .m-issue-row:active { background: var(--m-state-press); }
+.report-evidence-inline { margin: 16px 16px 0; }
+.report-evidence-inline .evidence-panel { margin: 0; }
+.report-evidence-inline .evidence-grid { grid-template-columns: 1fr; gap: 12px; }
+.report-evidence-inline .evidence-card { padding: 12px; }
+.m-issue-row.report-row-current { box-shadow: inset 3px 0 0 var(--pt-structure); }
+.m-issue-row .report-current-label { color: var(--pt-structure); font-size: var(--m-caption); font-weight: 600; }
+
 @media (hover: hover) and (pointer: fine) {
   .m-issue-row:hover { background: var(--m-state-hover); }
 }
@@ -549,21 +556,6 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
 }
 
 /* ---------- evidence bottom sheet (portaled outside the shell) ---------- */
-body:has(.m-evidence-sheet) .ui-sheet-overlay { background: var(--m-scrim); }
-dialog.ui-sheet.m-evidence-sheet { bottom: var(--keyboard-inset, 0px); max-height: min(88dvh, 720px); background: var(--pt-paper); border-color: var(--pt-rule); }
-html.keyboard-open dialog.ui-sheet.m-evidence-sheet { max-height: calc(100dvh - var(--keyboard-inset, 0px) - 24px); }
-.m-evidence-sheet .ui-sheet-body .evidence-panel { margin: 0; padding: 0; border: 0; background: transparent; }
-.m-evidence-sheet .ui-sheet-body .explanation { margin-top: 0; }
-.m-evidence-sheet .ui-sheet-body .evidence-grid { grid-template-columns: 1fr; gap: 12px; }
-.m-evidence-sheet .ui-sheet-body .evidence-card { padding: 12px; }
-.m-evidence-sheet .ui-sheet-body .section-heading h2 { font-size: var(--pt-type-panel-mobile); }
-.m-evidence-sheet .ui-sheet-body button,
-.m-evidence-sheet .ui-sheet-body summary { min-height: var(--m-touch); touch-action: manipulation; }
-.m-evidence-sheet .ui-sheet-body pre { overscroll-behavior: contain; }
-.m-evidence-sheet .ui-sheet-body .candidate-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
-.m-evidence-sheet .ui-sheet-body .candidate-nav button { min-width: var(--m-touch); touch-action: manipulation; }
-
-/* ---------- settings: page-like full-screen sheet ---------- */
 dialog.ui-sheet.m-settings-dialog { background: var(--pt-paper); }
 .m-settings-dialog .ui-sheet-head { background: var(--pt-header); }
 .m-settings-dialog .ui-sheet-title { font-size: var(--m-font-title); color: var(--pt-ink); }

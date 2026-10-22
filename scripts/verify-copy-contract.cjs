@@ -287,11 +287,6 @@ async function main() {
     await page.locator('#example-evidence').getByRole('button', { name: '返回刚才的操作', exact: true }).click()
     assert.equal(await secondRowButton.evaluate((element) => element === document.activeElement), true, 'report: 返回刚才的操作 restores the triggering row focus')
     checks.push('report: one h1/primary/evidence region, aria-pressed+aria-controls selection, 返回刚才的操作 focus restore')
-    // Evidence screenshots must show the first screen: the app scrolls an inner
-    // container, so fullPage alone captures the scrolled viewport. Reset every
-    // scroll container before the top frame, then keep the interacted frame.
-    await resetScroll(page)
-    await capture(page, 'report-1440-top')
 
     // ---- five viewports + 200% root text -----------------------------------
     for (const [width, height] of viewports) {
@@ -399,7 +394,9 @@ async function main() {
     assert.equal(archiveNav.navs, 1, 'archive: exactly one nav.flow-nav')
     assert.equal(archiveNav.currentSteps, 0, 'archive: no workflow step is current in the archive view')
     assert.equal(await page.locator('.workspace-content .shell .topbar').count(), 0, 'archive: the embedded viewer renders no second brand bar')
-    assert.equal(await page.locator('.workspace-content .shell main > .intro').count(), 0, 'archive: the embedded viewer renders no second hero')
+    assert.equal(await page.locator('.workspace-content .shell .intro').count(), 0, 'archive: the embedded viewer renders no second hero')
+    assert.equal(await page.locator('.workspace-content .shell h1').count(), 0, 'archive: the embedded viewer renders no second page title')
+    assert.equal(await page.locator('.workspace-content .shell > header.topbar').count(), 0, 'archive: the embedded viewer renders no second top bar')
     await assertNoOverflow(page, 'archive@1440')
     await capture(page, 'archive-1440')
     await page.setViewportSize({ width: 390, height: 844 })

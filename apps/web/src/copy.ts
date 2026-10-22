@@ -105,9 +105,19 @@ export const frontendCopy = {
     noCandidates: '没有候选只说明这份来源还没整理，不代表政策没有声明。',
     archiveNoRescan: '查看本机存档不会重新扫描。',
     modelTextOnly: '模型只接收政策文本，APK 不发送给模型。',
+    mobileModelInput: '收集模型只接收完整收集指令和应用线索，APK 文件本身不发送；服务是否具备联网能力，以实际结果为准。',
     assistUnreviewed: '网页补入的来源仍是未复核。',
   },
 } as const
+
+/** A draft source has no review/attachment facts yet; keep text availability separate. */
+export function policyStateFromSource(source: { complete?: boolean }): string {
+  return policyStateLine({
+    review_status: 'UNREVIEWED',
+    completeness: source.complete ? 'COMPLETE' : null,
+    attachments_status: 'NOT_CHECKED',
+  })
+}
 
 export interface PolicyStateCopyInput {
   review_status?: 'UNREVIEWED' | 'REVIEWED' | null

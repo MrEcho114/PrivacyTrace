@@ -719,6 +719,10 @@ class ContextAndPreflightTests(unittest.TestCase):
                 "apps/web/public/fonts/NotoSerifSC-Variable.woff2",
                 "apps/web/public/fonts/licenses/NotoSansSC-OFL.txt",
                 "apps/web/public/fonts/licenses/NotoSerifSC-OFL.txt",
+                "apps/web/public/brand/favicon.svg",
+                "apps/web/public/brand/icon-192.png",
+                "apps/web/public/brand/icon-512.png",
+                "apps/web/public/brand/privacy-trace-symbol.svg",
             ):
                 p = root / path_str
                 p.parent.mkdir(parents=True, exist_ok=True)

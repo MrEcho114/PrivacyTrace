@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { cancelJob, deleteJob, isNotFoundFor, jobPath, jobReportPath, loadJob, loadJobReport, loadJobs, loadReport, loadTaxonomy, retryJob, submitReview } from './api'
 import { clampSdkPage, getSdkEvidence, sdkPageCount, sdkPageSlice } from './sdkEvidence'
@@ -812,7 +812,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
       </template>
       <footer>
         <p>PrivacyTrace · 每条结论保留证据来源，推断与声明单独记录。</p>
-        <p class="subtle ai-disclosure">报告的隐私核验结果由 Consistency Engine 输出；部分工程代码使用 AI 辅助，范围和核实状态见仓库披露记录。</p>
+        <p class="subtle ai-disclosure">报告的隐私核验结果由 Consistency Engine 输出；部分工程代码使用 AI 辅助，范围与核实状态见参赛包 07_AI工具使用补充说明/ 与仓库披露记录。</p>
       </footer>
     </main>
   </div>

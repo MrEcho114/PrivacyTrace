@@ -3,13 +3,13 @@
 - 日期：2026-10-23
 - 任务：Issue [#221](https://github.com/MrEcho114/PrivacyTrace/issues/221)（父票 #107，来源 #197）
 - 范围：报名系统「运行环境」字段定稿；包内 `04_运行或使用说明/运行与使用说明.md` 环境段与离线回放段的修订建议
-- 证据边界：本页只陈述静态材料、仓库配置与既有验收收据可支持的事实；不承诺未经实测的兼容性
+- 事实来源：包内静态材料、仓库配置、既有验收收据。定稿只写实测过的组合。
 
 ## 一、结论
 
 1. 定稿可直接粘贴，见第二节。
-2. 04 有 3 处需要修订（第三节给出可直接替换的文本）：`Ubuntu 22.04` 无任何实测证据、`Python 3.12` 与仓库约束口径不同、离线回放段的路径与描述对包内两种页面均不成立。
-3. 04 在仓库里没有 tracked 源，只存在于 `.scratch/package-final/` 的打包副本，且成品包正在被其他会话重建。本页按「补丁文本 + 依据」交付，由打包会话并入，不直接改包内文件。
+2. 04 要修三处，第三节给出可替换文本：`Ubuntu 22.04` 在全仓和验收收据里都查不到实测记录；`Python 3.12` 是构建与验收的实测版本，仓库约束写的是 `>=3.11,<3.14`；离线回放段的路径和描述与包内两种页面都不符。
+3. 04 没有 tracked 源，只活在 `.scratch/package-final/` 的打包副本里，成品包正被其他会话重建。本页交补丁文本与依据，由打包会话并入。
 
 ## 二、定稿（可直接粘贴到报名系统）
 
@@ -40,9 +40,9 @@ Python 3.12、uv 0.11.x、Node.js 24.x；
 
 ### 定稿取舍
 
-- 不写 `Ubuntu 22.04`：仓库内零命中实测记录，写进去等于为未跑过的系统背书。
-- 主次版本写进字段，精确版本留在 04 与本节依据中，避免字段被单个 patch 号绑死。
-- 区分「纯浏览器静态路径」与「交互式回放需 `viewer.py`」：两者对「无需后端」的成立条件不同。
+- `Ubuntu 22.04` 没有实测记录，字段里删掉，只写 24.04（原生或 WSL2）。
+- 字段写主次版本。Engine、Compose、uv、Node 的 patch 号留在 04 和第三节依据里，字段不被单个 patch 号绑死。
+- 两条回放路径分开写：`comparison.html` 打开即看，`index.html` 要配 `viewer.py` 才成立。两句话里「无需后端」的含义不同，混写会让评委白屏。
 
 ## 三、04 修订补丁
 
@@ -94,9 +94,9 @@ Python 3.12、uv 0.11.x、Node.js 24.x；
 
 ### 3.3 修订依据
 
-- 包内真实文件名是 `demo-web/web/comparison.html` 与 `demo-web/web/index.html`；`demo-web/comparison.html` 与 `demo-web/index.html` 都不存在。5 份打包副本中 4 份仍写错路径，只有匿名化血脉（`deccced-anon`、`deccced-anon-b4`）写对。
-- `web/comparison.html` 是自包含单页：无 `<script>`，检索 `fetch(`、`XMLHttpRequest`、`/api/`、`http://`、`https://` 均 0 命中；它不读取 `reports.json` 或 `taxonomy.json`。
-- `web/index.html` 第 9–10 行引用根绝对路径 `/assets/index-DXpy2zGV.js` 与 `/assets/index-BSn3A6pu.css`，`file://` 下资源不可解析；其前端代码调用 `/api/v1/*`，由 `demo-web/viewer.py` 在 `127.0.0.1` 上以标准库提供。
+- 包内文件名是 `demo-web/web/comparison.html` 和 `demo-web/web/index.html`；`demo-web/comparison.html`、`demo-web/index.html` 都不存在。6 份打包副本里 4 份写错，只有匿名化血脉（`deccced-anon`、`deccced-anon-b4`）写对。
+- `web/comparison.html` 是自包含单页，没有 `<script>`。检索 `fetch(`、`XMLHttpRequest`、`/api/`、`http://`、`https://`，命中 0。它也不读 `reports.json` 或 `taxonomy.json`。
+- `web/index.html` 第 9–10 行引用根绝对路径 `/assets/index-DXpy2zGV.js` 与 `/assets/index-BSn3A6pu.css`，`file://` 下解析不到。前端代码调 `/api/v1/*`，由 `demo-web/viewer.py` 在 `127.0.0.1` 上用标准库应答。
 - `demo-web/README.txt` 原文：`Requires Python 3.11+ only; no model key.` / `Run: python viewer.py --port 8765` / `Open http://127.0.0.1:8765`。
 
 ## 四、核对结果
@@ -105,27 +105,27 @@ Python 3.12、uv 0.11.x、Node.js 24.x；
 | --- | --- | --- | --- |
 | 1 | Linux（Ubuntu 22.04/24.04）或 WSL2 | 部署验收收据环境为 `Linux-6.18.33.2-microsoft-standard-WSL2`、`glibc2.39`（即 Ubuntu 24.04）；`docs/acceptance/issue132/environment-recipe.md`、`execution-20261021.md` 记录 Ubuntu 24.04.5 WSL2；CI `runs-on: ubuntu-latest`；全仓 `22.04` 零命中 | 24.04 有证据，22.04 无证据 |
 | 2 | Docker Engine + Docker Compose v2 | 部署验收收据 `docker_server` 28.0.4 / 29.7.2；`docker compose version --short` 得 2.38.2；`deploy/compose.yaml`、`compose.smoke.yaml`、`compose.tls-smoke.yaml`、`runner.compose.yaml` 均在库 | 成立 |
-| 3 | Python 3.12 | `apps/api/pyproject.toml` `requires-python = ">=3.11,<3.14"`、`target-version = "py311"`；`apps/api/uv.lock` 头部 `>=3.11, <3.14`；构建镜像 `python:3.12.13`；验收实测 Python 3.12.3 | 3.12 是实测版本而非依赖约束，需在 04 注明 |
+| 3 | Python 3.12 | `apps/api/pyproject.toml` `requires-python = ">=3.11,<3.14"`、`target-version = "py311"`；`apps/api/uv.lock` 头部 `>=3.11, <3.14`；构建镜像 `python:3.12.13`；验收实测 Python 3.12.3 | 3.12 是实测版本，仓库约束是区间，04 需注明 |
 | 4 | uv 0.11.x | `scripts/check.sh` 装 `uv==0.11.23`；`deploy/Dockerfile`、`apps/api/worker.Dockerfile` 用 `uv:0.11.23` | 成立，可精确到 0.11.23 |
-| 5 | Node 24.x | CI `node-version: "24.17.0"`；构建镜像 `node:24.17.0-bookworm-slim`；验收收据 `node v24.17.0`；但仓库内所有 `package.json` 均无 `engines` 或 `packageManager` 字段 | 版本成立，无机器可读约束 |
-| 6 | 离线回放不需要后端 | `docs/acceptance/issue136/final-package-e17d2e3/demo-receipt.json`：`file://` 打开该页、`offline: true`、`blocked_requests: []`、结果 PASS | 成立（仅对 `comparison.html`） |
-| 7 | 离线回放路径 | 见 3.3 | 4/5 副本写错 |
+| 5 | Node 24.x | CI `node-version: "24.17.0"`；构建镜像 `node:24.17.0-bookworm-slim`；验收收据 `node v24.17.0`；仓库内所有 `package.json` 都没有 `engines` 或 `packageManager` 字段 | 版本成立，缺机器可读约束 |
+| 6 | 离线回放不需要后端 | `docs/acceptance/issue136/final-package-e17d2e3/demo-receipt.json`：`file://` 打开该页、`offline: true`、`blocked_requests: []`、结果 PASS | 成立，只对 `comparison.html` |
+| 7 | 离线回放路径 | 见 3.3 | 4/6 副本写错 |
 
 ## 五、未验证项与限制
 
-- Ubuntu 22.04 原生环境未实测，本页与 04 修订均不声明其兼容性。
-- Compose 版本存在两条采集口径：`deploy/check_linux.py` 用 `docker compose version --short` 得 2.38.2，`deploy/acceptance/topology.py` 调裸 `compose` 在同一批收据里得 5.5.0。本页取前者作为 Compose v2 的依据，并记录该差异，不把两者混为一个事实。
-- 「报名字段字数上限」未经报名系统实际验证，短版按 150 字量级准备。
-- 04 修订未落进任何成品包：本页只提供补丁文本，包内文件保持原样。
+- Ubuntu 22.04 原生环境没有实测记录，定稿和 04 修订都不写它。
+- Compose 版本有两套采集口径：`deploy/check_linux.py` 调 `docker compose version --short`，得 2.38.2；`deploy/acceptance/topology.py` 调裸 `compose`，同一批收据里记 5.5.0。本页取 2.38.2 作 Compose v2 的依据，差异照记。
+- 报名系统字段的字数上限没有实测，短版按 150 字量级准备。
+- 04 的修订没有进任何成品包，包内文件保持原样。
 
 ## 六、范围外（未做）
 
-- 未新增 `package.json` 的 `engines` 字段（属代码改动，另票）。
-- 未改 `docs/adr/0003-public-api-docker-boundary.md` 的状态（需验收证据，另票）。
-- 未改包内 04 文件（避免与正在进行的重打包会话争抢写入）。
-- 未动视频、06、07，未重跑部署验收。
+- `package.json` 的 `engines` 字段：属代码改动，另票。
+- `docs/adr/0003-public-api-docker-boundary.md` 的状态：改动需要验收证据，另票。
+- 包内 04 文件：留给打包会话，避免和正在进行的重打包争抢写入。
+- 视频、06、07 与部署验收：本票不动。
 
 ## 七、交接
 
-- 分支：`codex/issue221-runtime-env`
+- 分支：`codex/issue221-runtime-env`（PR #228）
 - 剩余工作：打包会话把第三节两段并入 04；负责人把第二节长版或短版粘贴进报名系统；系统上传见子票 C–G。

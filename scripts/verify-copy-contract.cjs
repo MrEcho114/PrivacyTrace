@@ -48,6 +48,17 @@ const apiRequestLedger = []
 async function fontsReady(page) {
   await page.evaluate(() => document.fonts.ready)
 }
+// The workbench scrolls an inner container, so `window.scrollTo` alone leaves
+// the report scrolled to the evidence region. Reset every plausible scroller.
+async function resetScroll(page) {
+  await page.evaluate(() => {
+    window.scrollTo(0, 0)
+    for (const element of document.querySelectorAll('.workspace-content, .workspace-layout, .workbench, main, .shell, #app')) {
+      if (element) element.scrollTop = 0
+    }
+  })
+  await page.waitForTimeout(50)
+}
 async function capture(page, name, fullPage = false) {
   await fontsReady(page)
   const file = name + '.png'
@@ -266,6 +277,11 @@ async function main() {
     await page.locator('#example-evidence').getByRole('button', { name: '返回刚才的操作', exact: true }).click()
     assert.equal(await secondRowButton.evaluate((element) => element === document.activeElement), true, 'report: 返回刚才的操作 restores the triggering row focus')
     checks.push('report: one h1/primary/evidence region, aria-pressed+aria-controls selection, 返回刚才的操作 focus restore')
+    // Evidence screenshots must show the first screen: the app scrolls an inner
+    // container, so fullPage alone captures the scrolled viewport. Reset every
+    // scroll container before the top frame, then keep the interacted frame.
+    await resetScroll(page)
+    await capture(page, 'report-1440-top')
     await capture(page, 'report-1440', true)
 
     // ---- five viewports + 200% root text -----------------------------------
@@ -282,7 +298,24 @@ async function main() {
       const railRows = await page.evaluate(() => new Set([...document.querySelectorAll('nav.flow-nav button')].map((button) => Math.round(button.getBoundingClientRect().top))).size)
       assert.equal(railRows, width <= 896 ? 1 : 4, `report@${width}: the same flow DOM is one horizontal row below 896px and a sidebar column above it`)
       await assertFlowNav(page, 3, `report@${width}`)
+      await resetScroll(page)
+      await capture(page, `report-${width}-top`)
       await capture(page, `report-${width}`)
+      if (width === 1280) {
+        const firstEntry = page.locator('.report-conclusions tbody tr').first().getByRole('button').first()
+        const box = await firstEntry.boundingBox()
+        assert.ok(box && box.y + box.height <= 720, `report@1280x720: the first evidence entry is complete above the fold (bottom ${box && Math.round(box.y + box.height)})`)
+        checks.push('report@1280x720: first evidence entry complete above the fold')
+      }
+      if (width <= 390) {
+        const primary = page.locator('.report-action .ui-button.primary')
+        await primary.scrollIntoViewIfNeeded()
+        const box = await primary.boundingBox()
+        assert.ok(box && box.height >= 56, `report@${width}: the red primary keeps the 56px touch height (got ${box && Math.round(box.height)})`)
+        assert.ok(box && box.width <= (await page.evaluate(() => window.innerWidth)), `report@${width}: the red primary is not clipped horizontally`)
+        await capture(page, `report-${width}-action`)
+        checks.push(`report@${width}: red primary reachable, 56px tall, unclipped`)
+      }
     }
     for (const width of [390, 320]) {
       await page.setViewportSize({ width, height: 844 })
@@ -290,8 +323,14 @@ async function main() {
       try {
         await fontsReady(page)
         await assertNoOverflow(page, `report@${width} 200%`)
+        await resetScroll(page)
+        await capture(page, `report-${width}-200-top`)
         const primary = page.locator('.report-action .ui-button.primary')
-        assert.equal(await primary.isVisible(), true, `report@${width} 200%: the red primary stays visible`)
+        await primary.scrollIntoViewIfNeeded()
+        const box = await primary.boundingBox()
+        const innerWidth = await page.evaluate(() => window.innerWidth)
+        assert.ok(box && box.height >= 56, `report@${width} 200%: the red primary keeps the 56px touch height (got ${box && Math.round(box.height)})`)
+        assert.ok(box && box.width <= innerWidth, `report@${width} 200%: the red primary is not clipped horizontally`)
         await capture(page, `report-${width}-200`)
       } finally {
         await zoom.evaluate((element) => element.remove())

@@ -60,8 +60,9 @@ pre { font-family: var(--font-code); font-size: 0.75rem; white-space: pre-wrap; 
 .provenance summary { cursor: pointer; padding: 10px 0; }
 .provenance article { border-left: 2px solid var(--border); padding: 8px 18px; margin: 10px 0; }
 .hash { overflow-wrap: anywhere; font-family: var(--font-code); }
-.state { padding: 50px 20px; text-align: center; background: var(--surface); margin: 25px 0; border-radius: 10px; }
-.error { color: var(--error); }
+.state { padding: 50px 20px; text-align: center; background: var(--pt-paper); margin: 25px 0; border: 1px solid var(--pt-rule); border-radius: 0; }
+/* Failure reads through copy and an edge style, never a second vivid colour. */
+.state.error { color: var(--pt-ink); border: 3px double var(--pt-structure); }
 footer { margin-top: 35px; font-size: 0.75rem; color: var(--muted); text-align: center; }
 @media (max-width: 760px) {
   main { padding: 24px 16px; }
@@ -132,7 +133,9 @@ mark { background: var(--notice); color: var(--ink); }
   gap: 8px; width: 100%; min-height: 44px; padding: 10px 8px;
   border: 0; border-left: 3px solid transparent; border-radius: 0;
   background: transparent; color: var(--pt-muted); text-align: left;
-  font-size: 0.8125rem; line-height: 1.5;
+  /* px, not rem: the nav is chrome and must stay below the px type scale when
+     the reader raises the root font size to 200%. */
+  font-size: 13px; line-height: 1.5;
 }
 .workbench .flow-nav button[aria-current] { border-left-color: var(--pt-structure); color: var(--pt-ink); font-weight: 700; }
 /* CJK labels wrap on narrow screens; balance the lines so a lone trailing
@@ -146,6 +149,7 @@ mark { background: var(--notice); color: var(--ink); }
 }
 .workbench .flow-nav button[aria-current] .flow-step-number { background: var(--pt-structure); border-color: var(--pt-structure); color: var(--pt-paper); }
 .workbench .sidebar-actions { display: grid; gap: 4px; padding-top: 16px; border-top: 1px solid var(--pt-rule); }
+.workbench .sidebar-actions .ui-button, .workbench .nav-item { font-size: 13px; }
 .workbench .sidebar-actions .ui-button { justify-content: flex-start; padding-left: 9px; text-align: left; }
 .workbench .nav-item { border-left: 3px solid transparent; padding-left: 9px; border-radius: 0; color: var(--pt-muted); }
 .workbench .nav-item.active { background: transparent; border-left-color: var(--pt-structure); color: var(--pt-ink); font-weight: 700; }
@@ -224,11 +228,18 @@ mark { background: var(--notice); color: var(--ink); }
   background: repeating-linear-gradient(135deg, var(--pt-ink) 0 5px, var(--pt-paper) 5px 10px);
 }
 .workbench .page .report-summary { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 24px; margin: 0 0 18px; padding-bottom: 14px; border-bottom: 1px solid var(--pt-rule); }
-.workbench .page .sample-monogram { width: auto; height: auto; min-width: 48px; min-height: 48px; padding: 6px; background: var(--pt-paper); border: 1px solid var(--pt-structure); border-radius: 0; }
+.workbench .page .sample-monogram { width: auto; height: auto; min-width: 48px; min-height: 48px; padding: 6px; background: var(--pt-paper); border: 1px solid var(--pt-structure); border-radius: 0; aspect-ratio: 1; flex: 0 0 auto; }
+/* Long package names and the version line wrap inside the identity block; the
+   monogram keeps its square box instead of stretching with the text column. */
+.workbench .page .report-identity { min-width: 0; }
+.workbench .page .report-identity > div { min-width: 0; }
+.workbench .page .report-identity p { overflow-wrap: anywhere; }
 .workbench .page .report-source-state { text-align: right; }
 .workbench .page .report-source-state p { margin: 0; font-size: 0.8125rem; line-height: 1.7; color: var(--pt-muted); }
 .workbench .page .report-columns { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 18px; align-items: start; }
 .workbench .page .report-columns[data-layout="stacked"] { grid-template-columns: minmax(0, 1fr); }
+/* Both report columns are peer panels: one section-title size. */
+.workbench .page .report-evidence .panel-heading h2 { font-size: var(--pt-type-panel); }
 .workbench .page .report-conclusions { background: var(--pt-paper); border: 1px solid var(--pt-structure); }
 .workbench .page .report-conclusions .panel-heading { margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--pt-structure); }
 .workbench .page .report-conclusions .comparison-table { min-width: 0; width: 100%; border-collapse: collapse; font-size: 0.875rem; }
@@ -239,8 +250,10 @@ mark { background: var(--notice); color: var(--ink); }
 }
 .workbench .page .report-conclusions .comparison-table tbody td { padding: 14px 16px; border: 0; vertical-align: top; background: transparent; }
 .workbench .page .report-conclusions .comparison-table tbody tr + tr td { border-top: 1px solid var(--pt-rule); }
-.workbench .page .report-conclusions .finding-type { border-left: 3px solid transparent; }
-.workbench .page .report-conclusions tr.is-selected .finding-type { border-left-color: var(--pt-structure); }
+/* The selected row keeps a reserved 3px edge: the border width is set on the
+   cell itself so the generic `tbody td { border: 0 }` cannot erase it. */
+.workbench .page .report-conclusions .comparison-table tbody td.finding-type { border-left: 3px solid transparent; }
+.workbench .page .report-conclusions tr.is-selected td.finding-type { border-left-color: var(--pt-structure); }
 .workbench .page .report-conclusions .finding-evidence { width: 1%; text-align: right; white-space: nowrap; }
 .workbench .page .finding-number { display: inline-block; margin: 0 8px 4px 0; font-family: var(--pt-font-code); font-size: 0.6875rem; color: var(--pt-muted); }
 .workbench .page .finding-type h3 { display: inline; font-family: var(--pt-font-body); font-size: var(--pt-type-finding); line-height: 1.35; font-weight: 700; margin: 0; }
@@ -302,7 +315,7 @@ mark { background: var(--notice); color: var(--ink); }
   .workbench .workspace-layout { grid-template-columns: minmax(0, 1fr); }
   .workbench .workspace-sidebar { border-right: 0; border-bottom: 1px solid var(--pt-rule); padding: 8px 12px 10px; gap: 8px; }
   .workbench .flow-nav ol { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
-  .workbench .flow-nav button { grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 6px 4px; border-left: 0; border-bottom: 2px solid transparent; font-size: 0.75rem; }
+  .workbench .flow-nav button { grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 6px 4px; border-left: 0; border-bottom: 2px solid transparent; font-size: 12px; }
   .workbench .flow-nav button[aria-current] { border-left-color: transparent; border-bottom-color: var(--pt-structure); }
   .workbench .flow-step-number { width: auto; height: auto; border: 0; font-size: 0.625rem; color: var(--pt-muted); }
   .workbench .flow-nav button[aria-current] .flow-step-number { background: transparent; color: var(--pt-ink); }
@@ -334,11 +347,11 @@ mark { background: var(--notice); color: var(--ink); }
   .workbench .page .report-conclusions .comparison-table,
   .workbench .page .report-conclusions .comparison-table tbody { display: block; min-width: 0; }
   .workbench .page .report-conclusions .comparison-table thead { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
-  .workbench .page .report-conclusions .comparison-table tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px; border-bottom: 1px solid var(--pt-rule); }
+  .workbench .page .report-conclusions .comparison-table tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px; border-bottom: 1px solid var(--pt-rule); border-left: 3px solid transparent; }
   .workbench .page .report-conclusions .comparison-table tbody tr + tr td { border-top: 0; }
   .workbench .page .report-conclusions .comparison-table tbody td { display: block; padding: 0; border: 0; }
-  .workbench .page .report-conclusions .finding-type { border-left: 0; }
-  .workbench .page .report-conclusions tr.is-selected .finding-type { border-left: 0; }
+  .workbench .page .report-conclusions .comparison-table tbody td.finding-type { border-left: 0; }
+  .workbench .page .report-conclusions tr.is-selected { border-left-color: var(--pt-structure); }
   .workbench .page .report-conclusions .finding-evidence { align-self: center; }
   .workbench .page .report-evidence .evidence-card { padding: 12px; }
 }

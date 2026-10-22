@@ -64,7 +64,7 @@ function returnToTrigger() {
     <p class="report-boundary">{{ frontendCopy.facts.staticRuntime }}</p>
     <div class="report-summary">
       <div class="report-identity"><div class="sample-monogram" aria-hidden="true">纸</div><div><h2>纸舟地图</h2><p>com.paperboat.example · 示例 1.0</p></div></div>
-      <div class="report-source-state"><p class="field-help">{{ state.sources.length }} 份政策来源</p><p>{{ materialState }}</p></div>
+      <div class="report-source-state"><p>{{ materialState }}</p><p class="field-help">{{ state.sources.length }} 份政策来源</p></div>
     </div>
     <div class="report-columns" :data-layout="inlineEvidence ? 'stacked' : 'columns'">
       <section class="report-conclusions priority-panel" aria-labelledby="report-conclusions-title">

@@ -7,6 +7,7 @@ import { parseSource, serializeSource, sourceProvenanceLabel, sourceStatusLabel 
 import EvidencePanel from './components/EvidencePanel.vue'
 import UiSheet from './components/UiSheet.vue'
 import UiIcon from './components/UiIcon.vue'
+import BrandMark from './components/BrandMark.vue'
 import MobileReportSummary from './components/MobileReportSummary.vue'
 import { frontendCopy, policyStateLine } from './copy'
 const props = defineProps<{ initialJobId?: string; snapshot?: { report: Report; taxonomy: Taxonomy }; mobile?: boolean; embedded?: boolean; material?: { origin: string; draft: string; revision?: number } }>()
@@ -692,7 +693,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
 
 <template>
   <div class="shell">
-    <header v-if="!mobile && !embedded" class="topbar"><a class="brand" href="#"><span class="brand-icon">P</span>PrivacyTrace</a><span class="subtle">{{ frontendCopy.brandSubtitle }}</span></header>
+    <header v-if="!mobile && !embedded" class="topbar"><a class="brand" href="#"><span class="brand-icon"><BrandMark /></span>PrivacyTrace</a><span class="subtle">{{ frontendCopy.brandSubtitle }}</span></header>
     <main>
       <section v-if="!mobile && !embedded" class="intro">
         <div><h1 id="page-title" tabindex="-1">{{ frontendCopy.reportTitle }}</h1><p class="lead">{{ frontendCopy.reportScope }} {{ frontendCopy.facts.staticRuntime }}</p></div>
@@ -896,4 +897,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
 .policy-jump-btn { margin-top: 10px; font-size: 12px; padding: 6px 10px; display: inline-block; }
 .origin-timestamp { font-size: 12px; color: #52665a; margin-top: 4px; }
 .ai-disclosure { margin-top: 4px; font-size: 12px; color: var(--muted); }
+/* Shared Concept C mark replaces the letter tile; the 38×42 slot from style.css
+   stays, with the 30px optical graphic centred inside it. */
+.brand-icon { background: none; border-radius: 0; padding: 6px 4px; }
 </style>

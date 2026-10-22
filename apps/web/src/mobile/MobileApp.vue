@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import UiButton from '../components/UiButton.vue'
 import UiIcon from '../components/UiIcon.vue'
+import BrandMark from '../components/BrandMark.vue'
 import UiSheet from '../components/UiSheet.vue'
 import PolicyAssist from '../components/PolicyAssist.vue'
 import CandidatePage from '../pages/CandidatePage.vue'
@@ -250,7 +251,7 @@ onBeforeUnmount(() => {
       <button v-if="state.step !== 'import'" type="button" class="m-icon-button" aria-label="返回上一步" @click="goBack">
         <UiIcon name="back" />
       </button>
-      <span v-else class="m-appbar-spacer" aria-hidden="true"></span>
+      <span v-else class="m-appbar-spacer m-appbar-brand" aria-hidden="true"><BrandMark /></span>
       <div class="m-appbar-titles">
         <h1 id="page-title" tabindex="-1">{{ title }}</h1>
         <p class="m-appbar-subtitle">{{ frontendCopy.brandSubtitle }}</p>
@@ -408,3 +409,9 @@ onBeforeUnmount(() => {
     </UiSheet>
   </div>
 </template>
+
+<style scoped>
+/* Import step has no back button; the 48×48 spacer keeps the appbar grid
+   symmetric, and 9px of padding centres the 30px shared mark inside it. */
+.m-appbar-brand { display: grid; place-items: center; padding: 9px; }
+</style>

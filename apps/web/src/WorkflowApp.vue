@@ -5,6 +5,7 @@ import LiveWorkflow from './LiveWorkflow.vue'
 import UiButton from './components/UiButton.vue'
 import StatusTag from './components/StatusTag.vue'
 import UiIcon from './components/UiIcon.vue'
+import BrandMark from './components/BrandMark.vue'
 import ImportPage from './pages/ImportPage.vue'
 import CandidatePage from './pages/CandidatePage.vue'
 import ProgressPage from './pages/ProgressPage.vue'
@@ -82,7 +83,7 @@ watch(state, persist, { deep: true })
   <div class="workbench">
     <a class="skip-link" href="#workspace-content">跳到内容</a>
     <header class="workspace-bar">
-      <a href="#import" class="workspace-brand" @click.prevent="go('import')"><span aria-hidden="true" class="brand-mark">P</span>PrivacyTrace</a>
+      <a href="#import" class="workspace-brand" @click.prevent="go('import')"><span class="brand-mark"><BrandMark /></span>PrivacyTrace</a>
       <span class="workspace-purpose">{{ frontendCopy.brandSubtitle }}</span>
       <StatusTag class="shell-demo" :tone="state.example ? 'info' : 'neutral'">{{ state.example ? frontendCopy.demoBadge : '真实入口 · 本机材料' }}</StatusTag>
       <UiButton variant="quiet" @click="openSettings">项目设置</UiButton>
@@ -121,3 +122,11 @@ watch(state, persist, { deep: true })
 </template>
 
 <style src="./hierarchy.css"></style>
+<style scoped>
+/* The shared mark replaces the old letter tile: keep the 30×30 slot from
+   workbench.css, drop its dark block and typographic treatment. */
+.workspace-brand > .brand-mark {
+  background: none;
+  border-radius: 0;
+}
+</style>

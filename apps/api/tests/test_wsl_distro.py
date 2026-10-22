@@ -61,7 +61,20 @@ def test_controlled_paths_uses_the_configured_distro(monkeypatch, tmp_path):
         commands.append(command)
         return "//mnt/c/repo"
 
-    monkeypatch.setattr(module.os, "name", "nt")
+    class _FakePath:
+        """``Path`` dispatches on ``os.name``; stub it so the Windows branch runs on Linux CI."""
+
+        def __init__(self, value):
+            self.value = value
+
+        def absolute(self):
+            return self
+
+        def __str__(self):
+            return "C:/repo"
+
+    monkeypatch.setattr(module, "os", SimpleNamespace(name="nt"))
+    monkeypatch.setattr(module, "Path", _FakePath)
     monkeypatch.setattr(module.subprocess, "check_output", check_output)
     monkeypatch.setenv("PRIVACYTRACE_WSL_DISTRO", "Ubuntu-22.04")
     assert module.daemon_path(tmp_path) == "//mnt/c/repo"

@@ -185,7 +185,16 @@ function issueBridge(options) {
     ledger.push({ method, action: args.action, args })
     if (method === 'model_status') return { configured, endpoint: configured ? 'https://model.example/v1/chat/completions' : null }
     if (method === 'configure_model') { configured = true; return { configured, endpoint: 'https://model.example/v1/chat/completions' } }
-    if (method === 'upload_selected' || method === 'refresh_upload') return context
+    if (method === 'upload_selected') {
+      // #243 acceptance: a freshly chosen instance must start clean instead of
+      // inheriting the previous material's model answer.
+      if (options.newMaterial) {
+        context.draft = 'n'.repeat(32); draft.id = context.draft
+        draft.sources = []; draft.candidates = []; draft.jobs = []; draft.revision = 1
+      }
+      return context
+    }
+    if (method === 'refresh_upload') return context
     if (method === 'delete_upload') return { ...context, state: 'DELETED' }
     if (method === 'cancel') return
     if (method === 'collect_policy') return { text: queues.collect.length ? queues.collect.shift() : '' }
@@ -247,7 +256,7 @@ async function verifyIssueFixes(browser, origin) {
     },
     {
       issue: '#243', title: 'a remount and a repeated identical collect both refill the assistant box',
-      options: { sources: [{ id: 'policy', title: '有效正文来源', url: 'https://policy.example/a', text: sentence, status: 'manual' }], collect: [first, first, second] },
+      options: { sources: [{ id: 'policy', title: '有效正文来源', url: 'https://policy.example/a', text: sentence, status: 'manual' }], collect: [first, first, second], newMaterial: true },
       async run(page) {
         const openModel = async () => page.getByText('使用手机上的个人模型', { exact: true }).click()
         const openAssist = async () => page.getByText('找不到政策？使用网页辅助收集', { exact: true }).click()
@@ -277,6 +286,16 @@ async function verifyIssueFixes(browser, origin) {
         await page.getByRole('button', { name: '确认并补入材料', exact: true }).click()
         await page.waitForFunction(() => document.body.innerText.includes('来源和未检查候选已补入'), null, { timeout: 10000 })
         assert.equal(await count(page, 'import'), 1, 'the refilled box still imports through the production confirmation path')
+        // #243 acceptance 3: deleting the old material and choosing a new instance
+        // must not carry the retained answer into the new draft.
+        await page.getByRole('button', { name: '删除远端材料', exact: true }).click()
+        await page.getByRole('button', { name: '选择应用并上传', exact: true }).waitFor({ timeout: 10000 })
+        await page.getByRole('button', { name: '选择应用并上传', exact: true }).click()
+        await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 10000 })
+        await page.waitForTimeout(200)
+        assert.equal(await page.evaluate(() => document.querySelector('#collector-result')?.value ?? '<missing>'), '', 'a new material instance must start with an empty assistant box')
+        assert.equal(await count(page, 'import'), 1, 'the previous model answer must never be imported into the new material automatically')
+        assert.equal(await page.evaluate(() => document.querySelectorAll('.m-source-row').length), 0, 'the new instance starts without the previous material sources')
       },
     },
     {

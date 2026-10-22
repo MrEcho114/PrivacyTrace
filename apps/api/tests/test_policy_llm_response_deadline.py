@@ -1,11 +1,16 @@
-"""Regression tests for issue #240: the response body must obey the total time budget.
+"""Regression tests for issue #240: the whole response must obey the total time budget.
 
 ``urllib``'s timeout only caps a single blocking socket operation, so a controlled model
 that trickles small chunks just under that timeout used to keep a single ``resp.read()``
-alive past ``max_elapsed_seconds`` and still report an error-free ``SUCCESS``.
+alive past ``max_elapsed_seconds`` and still report an error-free ``SUCCESS``. The same
+holds for bytes that never reach the body loop: chunked framing (chunk extensions and
+trailers are read with ``readline``) and the response status line and headers.
 """
 
 import json
+import shutil
+import ssl
+import subprocess
 import threading
 import time
 import urllib.error
@@ -24,6 +29,8 @@ BUDGET_SECONDS = 0.1
 TRICKLE_INTERVAL = 0.025
 TRICKLE_CHUNK = 4
 POLICY_TEXT = "我们收集位置信息。"
+# HTTPS is only allowed with an API key; this placeholder never leaves the loopback test.
+LOOPBACK_TLS_KEY = "test-loopback-only"
 
 
 @pytest.fixture(autouse=True)
@@ -33,37 +40,70 @@ def _bypass_loopback_proxies(monkeypatch):
     monkeypatch.setenv("no_proxy", "127.0.0.1,localhost")
 
 
-class _TrickleRecord:
+class _WriteLog:
     """Server-side evidence about how the client treated the connection."""
 
-    def __init__(self, total_chunks: int):
+    def __init__(self, total_chunks: int = 0):
         self.total_chunks = total_chunks
         self.sent_chunks = 0
+        self.sent_bytes = 0
         self.broken = False
         self.done = threading.Event()
 
-    def send(self, handler, body: bytes, chunk: int = TRICKLE_CHUNK,
-             interval: float = TRICKLE_INTERVAL) -> None:
+    def _write(self, handler, data: bytes) -> bool:
+        try:
+            handler.wfile.write(data)
+            handler.wfile.flush()
+        except OSError:
+            # The peer closed the connection: the read was really released.
+            self.broken = True
+            return False
+        self.sent_bytes += len(data)
+        return True
+
+    def write_blocks(self, handler, body: bytes, chunk: int = TRICKLE_CHUNK,
+                     interval: float = TRICKLE_INTERVAL) -> bool:
         for index in range(0, len(body), chunk):
-            try:
-                handler.wfile.write(body[index:index + chunk])
-                handler.wfile.flush()
-            except OSError:
-                # The peer closed the connection mid-body: the read was really released.
-                self.broken = True
-                break
+            if not self._write(handler, body[index:index + chunk]):
+                return False
             self.sent_chunks += 1
             time.sleep(interval)
-        self.done.set()
+        return True
+
+    def write_bytes(self, handler, data: bytes, interval: float = TRICKLE_INTERVAL) -> bool:
+        """Send one byte at a time, each one inside the socket timeout."""
+        for byte in data:
+            if not self._write(handler, bytes([byte])):
+                return False
+            time.sleep(interval)
+        return True
 
 
 def _model_body(content: str = "[]") -> bytes:
     return json.dumps({"choices": [{"message": {"content": content}}]}).encode()
 
 
+def _chunk(data: bytes) -> bytes:
+    return f"{len(data):x}\r\n".encode() + data + b"\r\n"
+
+
 @contextmanager
 def _loopback_model(handler_class):
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler_class)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        yield server.server_port
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+@contextmanager
+def _loopback_tls_model(handler_class, certificate, key):
+    server = ThreadingHTTPServer(("127.0.0.1", 0), handler_class)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain(str(certificate), str(key))
+    server.socket = context.wrap_socket(server.socket, server_side=True)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     try:
         yield server.server_port
@@ -96,7 +136,7 @@ def _span(text: str = "Policy text.", start: int = 0) -> dict:
 def test_trickled_body_cannot_outlive_total_budget():
     """A peer sending 4 bytes every 25ms must not extend a 0.1s total budget."""
     body = _model_body()
-    record = _TrickleRecord(-(-len(body) // TRICKLE_CHUNK))
+    record = _WriteLog(-(-len(body) // TRICKLE_CHUNK))
 
     class SlowModel(BaseHTTPRequestHandler):
         def log_message(self, *args):
@@ -107,7 +147,10 @@ def test_trickled_body_cannot_outlive_total_budget():
             self.send_response(200)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
-            record.send(self, body)
+            try:
+                record.write_blocks(self, body)
+            finally:
+                record.done.set()
 
     with _loopback_model(SlowModel) as port:
         extractor = PolicyLLMExtractor(_config(
@@ -133,7 +176,7 @@ def test_trickled_body_cannot_outlive_total_budget():
 def test_total_budget_is_shared_across_spans():
     """A slow first span must consume the shared budget, not restart it per span."""
     body = _model_body()
-    record = _TrickleRecord(-(-len(body) // TRICKLE_CHUNK))
+    record = _WriteLog(-(-len(body) // TRICKLE_CHUNK))
 
     class SlowModel(BaseHTTPRequestHandler):
         def log_message(self, *args):
@@ -144,7 +187,10 @@ def test_total_budget_is_shared_across_spans():
             self.send_response(200)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
-            record.send(self, body)
+            try:
+                record.write_blocks(self, body)
+            finally:
+                record.done.set()
 
     spans = [_span(start=0), _span(start=13)]
     with _loopback_model(SlowModel) as port:
@@ -205,7 +251,7 @@ def test_oversized_body_is_still_rejected_at_the_cap():
     """The byte cap must still stop the read early and release the connection."""
     max_bytes = 4096
     oversized = b"x" * (8 * 1024 * 1024)
-    record = _TrickleRecord(-(-len(oversized) // 1024))
+    record = _WriteLog(-(-len(oversized) // 1024))
 
     class OversizedModel(BaseHTTPRequestHandler):
         def log_message(self, *args):
@@ -216,7 +262,10 @@ def test_oversized_body_is_still_rejected_at_the_cap():
             self.send_response(200)
             self.send_header("Content-Length", str(len(oversized)))
             self.end_headers()
-            record.send(self, oversized, chunk=1024, interval=0.002)
+            try:
+                record.write_blocks(self, oversized, chunk=1024, interval=0.002)
+            finally:
+                record.done.set()
 
     with _loopback_model(OversizedModel) as port:
         extractor = PolicyLLMExtractor(_config(
@@ -262,6 +311,142 @@ def test_stalled_body_still_hits_the_socket_timeout():
     assert elapsed < 1.0
 
 
+@pytest.mark.parametrize("framing", ["chunk-extension", "trailer"])
+def test_slow_chunked_framing_cannot_outlive_total_budget(framing):
+    """Chunked framing bytes are read inside one read1: they must share the deadline.
+
+    ``HTTPResponse`` consumes the chunk-size line (extensions included) and the trailer
+    with ``readline``, so trickling those bytes under the socket timeout used to stretch
+    a single outer ``read1`` well past ``max_elapsed_seconds``.
+    """
+    body = _model_body()
+    first, rest = body[:31], body[31:]
+    record = _WriteLog()
+    if framing == "chunk-extension":
+        slow = f"{len(rest):x};".encode() + b"a" * 80 + b"\r\n"
+        tail = rest + b"\r\n"
+    else:
+        slow = b"X-Trailer: " + b"b" * 50 + b"\r\n"
+        tail = b"\r\n"
+
+    class ChunkedModel(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
+        def log_message(self, *args):
+            pass
+
+        def do_POST(self):
+            _read_request(self)
+            self.send_response(200)
+            self.send_header("Transfer-Encoding", "chunked")
+            self.end_headers()
+            try:
+                self.wfile.write(_chunk(first))
+                self.wfile.flush()
+                if framing != "chunk-extension":
+                    self.wfile.write(_chunk(rest) + b"0\r\n")
+                    self.wfile.flush()
+                if record.write_bytes(self, slow):
+                    self.wfile.write(tail)
+                    self.wfile.flush()
+            except OSError:
+                record.broken = True
+            finally:
+                record.done.set()
+
+    with _loopback_model(ChunkedModel) as port:
+        extractor = PolicyLLMExtractor(_config(
+            port, timeout_seconds=BUDGET_SECONDS, max_elapsed_seconds=BUDGET_SECONDS,
+        ))
+        started = time.monotonic()
+        result = extractor.extract_from_chunk(POLICY_TEXT)
+        elapsed = time.monotonic() - started
+
+        # Before the fix: 2.16s for the extension, 1.58s and SUCCESS for the trailer.
+        assert elapsed < 0.3
+        assert result.status == "FAILED"
+        assert result.candidates == []
+        assert "LLM_TIMEOUT" in " ".join(result.telemetry.errors)
+        assert record.done.wait(2.0)
+        assert record.broken is True
+        assert record.sent_bytes < len(slow)
+
+
+def test_slow_header_trickle_cannot_outlive_total_budget():
+    """The status line and headers must share the same absolute deadline."""
+    body = _model_body()
+    slow_header = b"X-Slow: " + b"a" * 55 + b"\r\n"  # ~1.6s at 25ms per byte
+    record = _WriteLog()
+
+    class SlowHeaderModel(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
+        def log_message(self, *args):
+            pass
+
+        def do_POST(self):
+            _read_request(self)
+            try:
+                self.wfile.write(b"HTTP/1.1 200 OK\r\n")
+                self.wfile.flush()
+                if record.write_bytes(self, slow_header):
+                    self.wfile.write(
+                        b"Content-Length: " + str(len(body)).encode() + b"\r\n\r\n" + body
+                    )
+                    self.wfile.flush()
+            except OSError:
+                record.broken = True
+            finally:
+                record.done.set()
+
+    with _loopback_model(SlowHeaderModel) as port:
+        extractor = PolicyLLMExtractor(_config(
+            port, timeout_seconds=BUDGET_SECONDS, max_elapsed_seconds=BUDGET_SECONDS,
+        ))
+        started = time.monotonic()
+        result = extractor.extract_from_chunk(POLICY_TEXT)
+        elapsed = time.monotonic() - started
+
+        # Before the fix urlopen() parsed these headers without any deadline: 1.64s.
+        assert elapsed < 0.3
+        assert result.status == "FAILED"
+        assert "LLM_TIMEOUT" in " ".join(result.telemetry.errors)
+        assert record.done.wait(2.0)
+        assert record.broken is True
+        assert record.sent_bytes < len(slow_header)
+
+
+def test_injected_client_does_not_keep_a_stale_deadline():
+    """The extraction deadline is call-scoped, not permanent state on the client."""
+    body = _model_body()
+
+    class FastModel(BaseHTTPRequestHandler):
+        def log_message(self, *args):
+            pass
+
+        def do_POST(self):
+            _read_request(self)
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+    with _loopback_model(FastModel) as port:
+        client = UrllibLLMClient(
+            api_base=f"http://127.0.0.1:{port}/v1", api_key="", timeout=5.0,
+        )
+        extractor = PolicyLLMExtractor(LLMExtractorConfig(
+            enabled=True, api_base=f"http://127.0.0.1:{port}/v1", api_key="",
+            model="controlled", max_retries=1, max_requests=1,
+            max_elapsed_seconds=5.0, timeout_seconds=5.0, client=client,
+        ))
+        assert extractor.extract_from_chunk(POLICY_TEXT).status == "SUCCESS"
+        assert client.deadline is None
+        # The same instance still works for a later, unrelated call.
+        content, _ = client.call("system", "user")
+        assert content == "[]"
+
+
 def test_redirect_is_still_refused_without_following():
     class RedirectingModel(BaseHTTPRequestHandler):
         def log_message(self, *args):
@@ -304,3 +489,76 @@ def test_credential_reflection_is_still_refused():
         with pytest.raises(ValueError) as failure:
             client.call("system", "user")
         assert key not in str(failure.value)
+
+
+@pytest.fixture(scope="module")
+def loopback_tls(tmp_path_factory):
+    """Self-signed loopback server certificate, issued like test_runtime_tls.py does."""
+    binary = shutil.which("openssl")
+    if not binary:
+        pytest.skip("openssl required for the loopback TLS case")
+    root = tmp_path_factory.mktemp("llm_response_tls")
+    (root / "request.cnf").write_text("[req]\ndistinguished_name=dn\n[dn]\n", encoding="utf-8")
+    subprocess.run(
+        [binary, "req", "-config", "request.cnf", "-x509", "-newkey", "rsa:2048",
+         "-nodes", "-days", "1", "-subj", "/CN=PT240 loopback",
+         "-addext", "subjectAltName=IP:127.0.0.1",
+         "-keyout", "server.key", "-out", "server.pem"],
+        cwd=root, capture_output=True, check=True, timeout=60,
+    )
+    return root / "server.pem", root / "server.key"
+
+
+def test_https_transport_keeps_the_same_deadline(loopback_tls, monkeypatch):
+    """The production HTTPS path reuses the bounded reader and the deadline socket."""
+    certificate, key = loopback_tls
+    # The loopback certificate is self-signed; this test only exercises the TLS transport.
+    monkeypatch.setattr(ssl, "_create_default_https_context", ssl._create_unverified_context)
+    content = json.dumps([{
+        "excerpt": "位置信息", "data_type": "LOCATION", "polarity": "AFFIRMATIVE",
+    }], ensure_ascii=False)
+    body = _model_body(content)
+    record = _WriteLog(-(-len(body) // TRICKLE_CHUNK))
+
+    class TlsModel(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
+        def log_message(self, *args):
+            pass
+
+        def do_POST(self):
+            _read_request(self)
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            try:
+                record.write_blocks(self, body)
+            finally:
+                record.done.set()
+
+    api_base = None
+    with _loopback_tls_model(TlsModel, certificate, key) as port:
+        api_base = f"https://127.0.0.1:{port}/v1"
+        fast = PolicyLLMExtractor(_config(
+            port, api_base=api_base, api_key=LOOPBACK_TLS_KEY,
+            timeout_seconds=5.0, max_elapsed_seconds=5.0,
+        )).extract_from_chunk(POLICY_TEXT)
+        assert fast.status == "SUCCESS"
+        assert [candidate["excerpt"] for candidate in fast.candidates] == ["位置信息"]
+
+        record.sent_chunks = 0
+        record.broken = False
+        record.done.clear()
+        started = time.monotonic()
+        slow = PolicyLLMExtractor(_config(
+            port, api_base=api_base, api_key=LOOPBACK_TLS_KEY,
+            timeout_seconds=BUDGET_SECONDS, max_elapsed_seconds=BUDGET_SECONDS,
+        )).extract_from_chunk(POLICY_TEXT)
+        elapsed = time.monotonic() - started
+
+    assert elapsed < 0.3
+    assert slow.status == "FAILED"
+    assert "LLM_TIMEOUT" in " ".join(slow.telemetry.errors)
+    assert record.done.wait(2.0)
+    assert record.broken is True
+    assert record.sent_chunks < record.total_chunks

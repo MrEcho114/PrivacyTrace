@@ -1,0 +1,339 @@
+{
+  "kind": "Built Chromium / synthetic design fixtures",
+  "generatedAt": "2026-10-22T00:21:24.709Z",
+  "sources": [
+    {
+      "file": "apps/web/design.html",
+      "sha256": "cf358145ea073ac2957cb49e0217c8471dd2fb3fcbbd52ca651611482cd6f536"
+    },
+    {
+      "file": "apps/web/src/design/ComponentGallery.vue",
+      "sha256": "5a6cb7eb4c108e3876938de58985bd47281ca589ab6515daecf1c7726da150eb"
+    },
+    {
+      "file": "apps/web/src/design/DesignApp.vue",
+      "sha256": "ab1563b467f999b5c7198fc77909758da0b93ec4203555b4479308a17f6f786e"
+    },
+    {
+      "file": "apps/web/src/design/InstrumentPanel.vue",
+      "sha256": "99a49da323d7cc4865ac7b11637ce69bc88a17ba9b1d69601ac6c1b863018085"
+    },
+    {
+      "file": "apps/web/src/design/MissionShell.vue",
+      "sha256": "c2242394de8efc70be2db987e73d497a211b5af39263d4aeaa227ecfdea66008"
+    },
+    {
+      "file": "apps/web/src/design/ReportExample.vue",
+      "sha256": "6502f0aac6ff2380fa4f37865f3a6b851237fbc27d93879d405cd469254c68c7"
+    },
+    {
+      "file": "apps/web/src/design/ReportMetrics.vue",
+      "sha256": "37047528ecac029eb04877be9c3d28f05202856336ec4321c24e19c3b8d32203"
+    },
+    {
+      "file": "apps/web/src/design/StaticBoundary.vue",
+      "sha256": "e4243c34a573e7c938f4e0c7c8c24ed6581b6d27af6b9124d2da5cd54d07f8b3"
+    },
+    {
+      "file": "apps/web/src/design/foundation.css",
+      "sha256": "b4b15f71470f9971496f8f8512c69564fdef3a3a02d29e712921b25fe042e06d"
+    },
+    {
+      "file": "apps/web/src/design/main.ts",
+      "sha256": "81fe39872ba3fa4ddca63757170b0c159b9b84cd26d768536e7b033aafa38311"
+    },
+    {
+      "file": "apps/web/src/design/model.ts",
+      "sha256": "867e577d880e1ea9fa3439bf2127d25d6357c5951f803a0239b3df63a0d3bcbe"
+    },
+    {
+      "file": "apps/web/vite.config.ts",
+      "sha256": "1eff87b75791d9a553302f64738ae4acfd0aea966ae2446c61a5540ae537a2a1"
+    },
+    {
+      "file": "package.json",
+      "sha256": "4653a80b6969903482480a30593f46297c53196fb173b153b52e765f39a8fa39"
+    },
+    {
+      "file": "scripts/verify-design-foundation.cjs",
+      "sha256": "5ee1229beb3e43a3d2195483ca62d3107a56a233da1e7ec2366203c416b714df"
+    }
+  ],
+  "checks": [
+    "no overflow: report-1440 {\"width\":1440,\"scroll\":1440}",
+    "computed visual contract: report-1440",
+    "report-1440 selected evidence contains manifest",
+    "report-1440 excludes other finding evidence",
+    "report-1440 focus moved to evidence",
+    "report-1440 evidence scrolled into view",
+    "report-1440 return restores trigger focus",
+    "report-1440 primary opens policy",
+    "report-1440 policy retains unknown/review/attachment boundaries",
+    "no overflow: components-1440 {\"width\":1440,\"scroll\":1440}",
+    "computed visual contract: components-1440",
+    "no overflow: report-1280 {\"width\":1280,\"scroll\":1280}",
+    "computed visual contract: report-1280",
+    "1280 first full finding action in first fold",
+    "report-1280 selected evidence contains manifest",
+    "report-1280 excludes other finding evidence",
+    "report-1280 focus moved to evidence",
+    "report-1280 evidence scrolled into view",
+    "report-1280 return restores trigger focus",
+    "report-1280 primary opens policy",
+    "report-1280 policy retains unknown/review/attachment boundaries",
+    "no overflow: components-1280 {\"width\":1280,\"scroll\":1280}",
+    "computed visual contract: components-1280",
+    "no overflow: report-768 {\"width\":768,\"scroll\":768}",
+    "computed visual contract: report-768",
+    "report-768 selected evidence contains manifest",
+    "report-768 excludes other finding evidence",
+    "report-768 focus moved to evidence",
+    "report-768 evidence scrolled into view",
+    "report-768 return restores trigger focus",
+    "report-768 primary opens policy",
+    "report-768 policy retains unknown/review/attachment boundaries",
+    "no overflow: components-768 {\"width\":768,\"scroll\":768}",
+    "computed visual contract: components-768",
+    "no overflow: report-390 {\"width\":390,\"scroll\":390}",
+    "computed visual contract: report-390",
+    "390 touch target >=48",
+    "report-390 selected evidence contains manifest",
+    "report-390 excludes other finding evidence",
+    "report-390 focus moved to evidence",
+    "report-390 evidence scrolled into view",
+    "report-390 return restores trigger focus",
+    "report-390 primary opens policy",
+    "report-390 policy retains unknown/review/attachment boundaries",
+    "no overflow: components-390 {\"width\":390,\"scroll\":390}",
+    "computed visual contract: components-390",
+    "no overflow: report-320 {\"width\":320,\"scroll\":320}",
+    "computed visual contract: report-320",
+    "320 touch target >=48",
+    "report-320 selected evidence contains manifest",
+    "report-320 excludes other finding evidence",
+    "report-320 focus moved to evidence",
+    "report-320 evidence scrolled into view",
+    "report-320 return restores trigger focus",
+    "report-320 primary opens policy",
+    "report-320 policy retains unknown/review/attachment boundaries",
+    "no overflow: components-320 {\"width\":320,\"scroll\":320}",
+    "computed visual contract: components-320",
+    "no overflow: empty {\"width\":320,\"scroll\":320}",
+    "empty disables action and metrics zero",
+    "no overflow: unknown {\"width\":320,\"scroll\":320}",
+    "unknown source and delivery not promoted",
+    "unknown finding review remains unknown",
+    "no overflow: long {\"width\":320,\"scroll\":320}",
+    "no overflow: 200% 390 report {\"width\":390,\"scroll\":390}",
+    "large text readable cells 390 report",
+    "no overflow: 200% 390 gallery {\"width\":390,\"scroll\":390}",
+    "large text readable cells 390 gallery",
+    "no overflow: 200% 320 report {\"width\":320,\"scroll\":320}",
+    "large text readable cells 320 report",
+    "no overflow: 200% 320 gallery {\"width\":320,\"scroll\":320}",
+    "large text readable cells 320 gallery",
+    "field error association",
+    "field correction announced",
+    "busy state disabled and announced",
+    "waiting demo explicitly cancellable",
+    "keyboard skip link",
+    "skip link focus main",
+    "reduced motion evidence focus",
+    "negative visual drift rejected: .pt-panel { background:#ece5d6 !important }",
+    "negative visual drift rejected: .ui-button.primary { background:blue !important }",
+    "negative visual drift rejected: .pt-identity i { background:black !important }",
+    "negative visual drift rejected: .pt-priority-stripe i { background:black !important }",
+    "negative visual drift rejected: h1 { font-family:Arial !important }",
+    "independent preview makes no API calls",
+    "no browser errors",
+    "original runtime entry preserved"
+  ],
+  "captures": [
+    {
+      "file": "report-1440.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1096
+      },
+      "sha256": "cbdce185479df025c23244b27873f9a80c704bb03e5216f02caf4d2a3d59980a"
+    },
+    {
+      "file": "report-1440-viewport.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1096
+      },
+      "sha256": "5ddabe3ee7d75567ab06d3973a7fb5df779c6cf760c58aba5fdde2a87b2aa00f"
+    },
+    {
+      "file": "components-1440.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1096
+      },
+      "sha256": "a5b5c235408e5a13e1307b10be9a58c289e58d52d43378d8de957312580ff113"
+    },
+    {
+      "file": "report-1280.png",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "sha256": "e08fe03cd65d20779dfe608817fde8f05f49711d98a611e2216244cdb06e662f"
+    },
+    {
+      "file": "report-1280-viewport.png",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "sha256": "53d1ec5682a1f8945c5677e777df23278980662d01e299dc8e4dc88160e15ada"
+    },
+    {
+      "file": "components-1280.png",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "sha256": "cf1ad0acfe7bd29c809041dc9e5b3f05a9da86ff7128584d9d43ef6768084cf5"
+    },
+    {
+      "file": "report-768.png",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "sha256": "5973218144f913c3958be12d50f03c650094be16bd14c5b1b16b3b10c4d96e12"
+    },
+    {
+      "file": "report-768-viewport.png",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "sha256": "f2c0c6d8b5fc336f3bb5b8f1e6f4d9b845df463667b825bee358c98ecf6ea6e9"
+    },
+    {
+      "file": "components-768.png",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "sha256": "39619becbb9b2074ce045d38782609378c10f92b7bd2cd9238d86c753c991a8a"
+    },
+    {
+      "file": "report-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "57cf0332c301162cc9525f1ed208ac5bd2e68915c1251acc4a5b062ad14d304f"
+    },
+    {
+      "file": "report-390-viewport.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "2683cd23f052462719654346b191013bcce9562750bf3f8b3acc0c0adf7d3e7d"
+    },
+    {
+      "file": "components-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "aa1e6c8b4b42fbd948cc71e0dba0e0f1154d6432f26f6cd94c8c833c70bc3758"
+    },
+    {
+      "file": "report-320.png",
+      "viewport": {
+        "width": 320,
+        "height": 740
+      },
+      "sha256": "49b2eed9dab73924973599851757d5cefc9c9bdbfd292c9269f2eaadc58533c4"
+    },
+    {
+      "file": "report-320-viewport.png",
+      "viewport": {
+        "width": 320,
+        "height": 740
+      },
+      "sha256": "b8ebf2c7795cee90f207d92f150ca67d61c353e82e9939638f2870a70d5963f8"
+    },
+    {
+      "file": "components-320.png",
+      "viewport": {
+        "width": 320,
+        "height": 740
+      },
+      "sha256": "359cdd086fef7eea34665ccea4dd4e1f25deedbc96f252fad8003fde72454330"
+    },
+    {
+      "file": "empty-320.png",
+      "viewport": {
+        "width": 320,
+        "height": 740
+      },
+      "sha256": "f879dd116076418f6c65312a9e4a7c56e4d94101975b2af14dcd64cd88b49a96"
+    },
+    {
+      "file": "unknown-320.png",
+      "viewport": {
+        "width": 320,
+        "height": 740
+      },
+      "sha256": "26e6c401629c4ff6067647df74568c4caae8d37fa03916b860266061f06209ea"
+    },
+    {
+      "file": "long-320.png",
+      "viewport": {
+        "width": 320,
+        "height": 740
+      },
+      "sha256": "900d9196b920dd7a39ee71c8259f888f66f8058a09bb659bb9b5acf7ea78613e"
+    },
+    {
+      "file": "large-text-390-report.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "2461a2017d978d27cb563aca644ef44ea00285c22243f6ae231f22c2c2e259f0"
+    },
+    {
+      "file": "large-text-390-gallery.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "aff3286984327c96d092d652eba32ee7d08c7fbf4d9bd7ec33c13a00848cf571"
+    },
+    {
+      "file": "large-text-320-report.png",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "sha256": "3f3111b6d71ea5acc3bcfd7cdc94081a8ea7e56ebbad19dd7dcbdbcd2cf81047"
+    },
+    {
+      "file": "large-text-320-gallery.png",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "sha256": "4702efa7acc8efe8b825453373f5291c59aa19a94862a9d282ed00234bea94f9"
+    }
+  ],
+  "apiRequests": [
+    "http://127.0.0.1:5192/api/v1/taxonomy"
+  ],
+  "errors": [],
+  "notRun": [
+    "Android APK/WebView",
+    "physical device",
+    "IME/safe-area/TalkBack",
+    "real scan or model service"
+  ]
+}

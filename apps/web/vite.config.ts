@@ -8,6 +8,8 @@ const devPort = Number(process.env.PRIVACYTRACE_WEB_PORT || 5173)
 
 export default defineConfig({
   plugins: [vue()],
+  // Separate design foundation: existing runtime and offline entries keep their routing.
+  build: { rollupOptions: { input: { app: 'index.html', design: 'design.html' } } },
   server: {
     port: devPort,
     strictPort: true,

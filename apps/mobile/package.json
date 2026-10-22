@@ -2,6 +2,7 @@
   "name": "@privacytrace/mobile",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "web:build": "npm --prefix ../.. run build",
     "android:prepare": "node ../../scripts/run-powershell.cjs prepare-android.ps1 && node ../../scripts/apply-brand-android-icons.cjs",

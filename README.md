@@ -167,7 +167,15 @@ CI 通过、真实 Docker 运行、受控评测、离线验收和正式提交是
 - 受控评测：[六场景](benchmarks/controlled/README.md)、[十二场景](benchmarks/controlled-v2/README.md)。
 - 验收材料：[#128 验收规格](https://github.com/MrEcho114/PrivacyTrace/issues/128)、[客户端本机验收执行器](deploy/acceptance/mobile/README.md)。
 - 贡献、认领、依赖等待和交接：见 [CONTRIBUTING.md](CONTRIBUTING.md) 与 [协作检查清单](docs/agents/skills-workflow.md#6-工单流转阻塞依赖与交接规范)。README 不重复维护这些规则。
-- 依赖与许可：Androguard 4.1.3 使用 Apache-2.0；本项目源码许可仍待团队确定。未经授权的 APK、完整政策、反编译全文、私人日志与身份信息不进入公开交付。
+- 许可与依赖：[MIT](LICENSE)（决策见 [ADR 0006](docs/adr/0006-source-license-mit.md)）；Androguard 4.1.3 等第三方组件各自保留原许可，见 [docs/dependencies.md](docs/dependencies.md)。
+
+## 许可
+
+本项目自行创作的源码与文档按 **MIT** 授权（见 [LICENSE](LICENSE)，选择理由与范围见 [ADR 0006](docs/adr/0006-source-license-mit.md)）：可自由使用、修改、再分发，只需保留版权与许可声明，不提供任何担保。
+
+- 第三方资源保留各自许可：`apps/web/public/fonts/` 的 Noto Sans SC / Noto Serif SC 以 SIL Open Font License 1.1 提供（许可文本与字体同目录），运行期依赖见 [docs/dependencies.md](docs/dependencies.md)。
+- 随仓库归档的原始 PRD 等用户提供材料、真实样本的元数据引用与历史验收包按各自记录的授权使用，不在本许可的授权范围内。
+- 未经授权的 APK、完整政策、反编译全文、私人日志与身份信息本来就不进仓库，也不因本许可改变。
 
 ## 人工智能工具使用与开源披露声明
 

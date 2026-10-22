@@ -180,7 +180,7 @@ function bridge(options) {
     apk_sha256: 'c'.repeat(128),
     sources: [
       { id: 'policy', title: options.policyTitle, url: options.policyUrl, source_type: 'OFFICIAL_WEB_POLICY', text: options.policySentence, status: 'manual', version: 'UNKNOWN', provenance: 'EXTERNAL_CHAT_EXPORT' },
-      { id: 'long', title: '大段政策来源', url: options.policyUrl, source_type: 'OFFICIAL_WEB_POLICY', text: options.policyText, status: 'manual', version: 'UNKNOWN', provenance: 'EXTERNAL_CHAT_EXPORT' },
+      { id: 'long', title: '示例隐私政策', url: options.policyUrl, source_type: 'OFFICIAL_WEB_POLICY', text: options.policyText, status: 'manual', version: 'UNKNOWN', provenance: 'EXTERNAL_CHAT_EXPORT' },
     ],
     candidates: [],
     jobs: [],
@@ -238,7 +238,7 @@ function bridge(options) {
 async function selectAndPrepare(page) {
   await page.getByRole('button', { name: '选择应用并上传', exact: true }).click()
   await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
-  await page.getByRole('button', { name: '自动准备政策并继续', exact: true }).click()
+  await page.getByRole('button', { name: '准备政策并继续', exact: true }).click()
   await waitTitle(page, '核对政策声明', 12000)
 }
 
@@ -425,7 +425,7 @@ async function main() {
     checks.push('settings: full-screen page-like sheet, scroll body, Escape/hardware back close, focus returns to trigger')
 
     // ---- candidates --------------------------------------------------------
-    await page.getByRole('button', { name: '自动准备政策并继续', exact: true }).click()
+    await page.getByRole('button', { name: '准备政策并继续', exact: true }).click()
     await waitTitle(page, '核对政策声明', 12000)
     await assertSingleTitle(page, '核对政策声明', 'candidates')
     assert.equal(await page.evaluate(() => Boolean(document.querySelector('.m-context'))), true, 'candidates must show the compact material context row')

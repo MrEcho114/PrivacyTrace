@@ -269,22 +269,22 @@ onBeforeUnmount(() => {
       <template v-if="state.step === 'import'">
         <section v-if="!context" class="m-card m-empty-card">
           <h2>选择要对照的应用</h2>
-          <p>只上传你选择的应用及其安装包集合。分析服务保留材料，直到你主动删除。</p>
+          <p>只会上传你选择的应用和安装包。分析服务保留材料，直到你主动删除。</p>
           <div class="m-button-row">
             <UiButton variant="primary" :disabled="busy" @click="flow.select()">选择应用并上传</UiButton>
-            <UiButton :disabled="busy" @click="flow.select(true)">恢复当前实例材料</UiButton>
+            <UiButton :disabled="busy" @click="flow.select(true)">恢复当前材料</UiButton>
           </div>
         </section>
         <section v-else class="m-card">
-          <div class="m-card-head"><h2>当前分析材料</h2><UiButton variant="quiet" :disabled="busy" @click="flow.remove">删除远端材料</UiButton></div>
+          <div class="m-card-head"><h2>当前分析材料</h2><UiButton variant="quiet" :disabled="busy" @click="flow.remove">删除已上传材料</UiButton></div>
           <p class="m-material-name" :role="draft ? undefined : 'status'">{{ draft?.name || '正在读取材料…' }}</p>
           <p v-if="draft?.apk_sha256" class="hash">APK SHA-256 {{ draft.apk_sha256 }}</p>
-          <p class="m-help">材料保存在当前分析服务，直到你主动删除。更换文件请重新选择应用。</p>
+          <p class="m-help">材料保存在分析服务，直到你主动删除。更换文件请重新选择应用。</p>
           <p class="m-help">分析服务：{{ context.origin }}</p>
         </section>
-        <div v-if="busy" class="m-notice m-busy-notice"><span role="status">正在处理当前请求。</span><UiButton variant="quiet" @click="flow.stop">停止本次请求</UiButton></div>
+        <div v-if="busy" class="m-notice m-busy-notice"><span role="status">正在处理，请稍候。</span><UiButton variant="quiet" @click="flow.stop">停止本次请求</UiButton></div>
         <section v-if="context" class="m-section" aria-labelledby="m-sources-title">
-          <div class="m-section-head"><h2 id="m-sources-title">政策来源</h2><span class="m-help">{{ draft?.sources.length ?? 0 }} 份来源</span></div>
+          <div class="m-section-head"><h2 id="m-sources-title">政策来源</h2><span class="m-help">{{ draft?.sources.length ?? 0 }} 份</span></div>
           <article v-for="source in visibleSources" :key="source.id" class="m-source-row">
             <details>
               <summary class="m-row">
@@ -297,17 +297,17 @@ onBeforeUnmount(() => {
               <div class="m-row-body">
                 <p v-if="source.url" class="hash">{{ source.url }}</p>
                 <div v-if="source.text" class="policy-reading">{{ source.text }}</div>
-                <p v-else class="m-help">尚未取得正文；下一步会尝试自动查找，也可以使用下方辅助入口。</p>
+                <p v-else class="m-help">还没有正文。下一步会尝试查找，也可以从下方补充。</p>
               </div>
             </details>
           </article>
-          <p v-if="!hasSources" class="m-help">尚未补入政策。下一步会尝试自动查找；也可以使用下方辅助入口。</p>
+          <p v-if="!hasSources" class="m-help">还没有政策来源。下一步会尝试查找，也可以从下方补充。</p>
         </section>
         <PolicyAssist v-if="context" :busy="busy" :source-count="draft?.sources.length ?? 0" :initial-result="modelResult" :result-token="resultToken" @import="flow.importCollected" />
         <details v-if="context" class="m-details m-model">
           <summary>使用手机上的个人模型</summary>
-          <p class="m-help">Key 在系统窗口输入并保存在本机。</p>
-          <div class="m-button-row"><UiButton :disabled="busy" @click="flow.settings(true)">{{ model.configured ? '修改模型配置' : '设置模型配置' }}</UiButton><span class="m-help">{{ model.configured ? '本机已配置' : '尚未配置，可继续自动流程' }}</span></div>
+          <p class="m-help">密钥只在系统窗口输入，保存在本机。</p>
+          <div class="m-button-row"><UiButton :disabled="busy" @click="flow.settings(true)">{{ model.configured ? '修改模型' : '配置模型' }}</UiButton><span class="m-help">{{ model.configured ? '本机已配置' : '尚未配置，也能继续' }}</span></div>
           <p v-if="model.endpoint" class="hash">{{ model.endpoint }}</p>
           <label class="mobile-field" for="mobile-model-name">模型名称<input id="mobile-model-name" v-model="modelName" :disabled="busy" maxlength="200" /></label>
           <label class="mobile-field" for="mobile-app-hint">应用名称或包名<input id="mobile-app-hint" v-model="appHint" :disabled="busy" maxlength="200" :placeholder="draft?.name" /></label>
@@ -369,7 +369,7 @@ onBeforeUnmount(() => {
     <footer v-if="state.step !== 'report'" ref="actionbar" class="m-actionbar" role="group" aria-label="当前步骤操作">
       <template v-if="state.step === 'import'">
         <UiButton :disabled="busy || !context" @click="flow.refresh">重新读取材料</UiButton>
-        <UiButton :variant="context ? 'primary' : 'secondary'" :disabled="busy || !context" @click="flow.prepare">自动准备政策并继续</UiButton>
+        <UiButton :variant="context ? 'primary' : 'secondary'" :disabled="busy || !context" @click="flow.prepare">准备政策并继续</UiButton>
       </template>
       <template v-else-if="state.step === 'candidates'">
         <UiButton :disabled="busy" @click="navigate('import')">修改材料</UiButton>
@@ -381,22 +381,22 @@ onBeforeUnmount(() => {
       </template>
     </footer>
 
-    <UiSheet v-if="settingsOpen" class="m-settings-dialog" variant="detail" title="服务与存储设置" description="检查本机模型连接与当前分析材料的保存范围。" @close="closeSettings()">
+    <UiSheet v-if="settingsOpen" class="m-settings-dialog" variant="detail" title="服务与存储设置" description="查看模型连接，以及当前材料保存在哪里。" @close="closeSettings()">
       <section class="m-settings-section">
         <h2>模型连接</h2>
         <p class="m-settings-status">{{ model.configured ? '本机已配置模型' : '尚未配置模型' }}</p>
         <p v-if="model.endpoint" class="hash">{{ model.endpoint }}</p>
-        <p class="m-help">Key 在系统窗口输入并保存在本机。{{ frontendCopy.facts.mobileModelInput }}</p>
-        <UiButton :disabled="busy" @click="flow.settings(true)">{{ model.configured ? '修改模型配置' : '设置模型配置' }}</UiButton>
+        <p class="m-help">密钥只在系统窗口输入，保存在本机。{{ frontendCopy.facts.mobileModelInput }}</p>
+        <UiButton :disabled="busy" @click="flow.settings(true)">{{ model.configured ? '修改模型' : '配置模型' }}</UiButton>
       </section>
       <section class="m-settings-section">
         <h2>材料与存储</h2>
-        <p v-if="context">当前材料保存在以下分析服务，长期保留至主动删除。删除后原始材料与分析结果不可恢复。</p>
+        <p v-if="context">当前材料保存在下面的分析服务，直到你主动删除。删除后原始材料与分析结果不可恢复。</p>
         <p v-else>尚未选择分析材料。</p>
         <p v-if="context" class="hash">{{ context.origin }}</p>
         <div class="m-button-row">
           <UiButton :disabled="busy || !context" @click="flow.refresh">重新读取材料</UiButton>
-          <UiButton v-if="context" variant="danger" :disabled="busy" @click="flow.remove">删除远端材料</UiButton>
+          <UiButton v-if="context" variant="danger" :disabled="busy" @click="flow.remove">删除已上传材料</UiButton>
         </div>
       </section>
     </UiSheet>

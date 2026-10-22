@@ -105,7 +105,7 @@ async function main() {
     // the report summary, so assert it once there and keep the disclosure facts
     // (package, instance, timestamps) reachable from the keyboard.
     const meta = page.locator('.m-report-meta')
-    assert.match(await summary.innerText(), /对照 APK 中的权限、调用位置与政策原文/, 'the report first screen keeps the scope of the comparison')
+    assert.match(await summary.innerText(), /对照 APK 的权限、调用位置和政策原文/, 'the report first screen keeps the scope of the comparison')
     assert.match(await summary.innerText(), /静态线索不证明运行时采集/, 'the report first screen keeps the static boundary once')
     await meta.locator('summary').focus()
     await page.keyboard.press('Enter')

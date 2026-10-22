@@ -32,6 +32,10 @@ function onTabsKeydown(event: KeyboardEvent) {
 }
 const chosen = computed(() => props.state.candidates.find(item => item.id === chosenId.value))
 const source = computed(() => props.state.sources.find(item => item.id === props.state.sourceId))
+const sourceVersionLabel = computed(() => {
+  const version = source.value?.version?.trim()
+  return version && version.toUpperCase() !== 'UNKNOWN' ? version : '版本未知'
+})
 const candidates = computed(() => props.state.candidates.filter(item => item.sourceId === props.state.sourceId))
 const extractionUnavailable = computed(() => !!source.value && (props.failedSourceIds?.includes(source.value.id) || source.value.modelAudit?.status === 'FAILED'))
 const quoteValid = computed(() => !!chosen.value && quoteExists(chosen.value, props.state.sources))
@@ -83,7 +87,7 @@ function editQuote() { if (chosen.value) chosen.value.startOffset = undefined; e
     <div class="source-tabs" role="group" aria-label="政策来源"><button v-for="item in state.sources" :key="item.id" :aria-pressed="item.id === state.sourceId" :class="{ selected: item.id === state.sourceId }" @click="state.sourceId = item.id">{{ item.title || '未命名来源' }}<span v-if="item.status === 'failed'"> · 获取失败</span></button></div>
     <p v-if="source" class="source-context" role="note" data-testid="candidate-source-context">
       <StatusTag :tone="source.status === 'failed' ? 'error' : 'neutral'">{{ sourceTypes[source.type] }}</StatusTag>
-      <span>{{ source.version || '版本未知' }}</span>
+      <span>{{ sourceVersionLabel }}</span>
       <span class="source-context-meta"><span v-if="source.status === 'failed'">来源获取失败</span><span>{{ policyStateFromSource(source) }}</span><span>{{ copy.sourceScopeUnknown }}</span></span>
     </p>
     <p v-if="!state.example && extractionUnavailable" class="notice" role="status">当前来源的候选提取未完成，正文与已有候选仍保留。可在“政策原文”中选择“重新提取候选”，或手动添加；此状态不代表政策未声明。</p>
@@ -98,7 +102,7 @@ function editQuote() { if (chosen.value) chosen.value.startOffset = undefined; e
         <div class="source-notes"><span>正文节选</span></div>
       </section>
       <section id="panel-candidates" class="material-panel candidates-panel priority-panel" role="tabpanel" aria-labelledby="tab-candidates"><div class="panel-heading"><h2>候选声明 <span class="count">{{ candidates.length }}</span></h2><UiButton id="add-candidate" :disabled="source.status === 'failed' || state.candidates.length >= candidateLimit" @click="add">{{ copy.addCandidate }}</UiButton></div>
-        <p class="candidate-summary" role="status">已检查 {{ checkedCount }} / {{ candidates.length }} 条<span>选择一条查看和修改</span></p>
+        <p class="candidate-summary" role="status">已检查 {{ checkedCount }}/{{ candidates.length }} 条<span>选择一条查看或修改</span></p>
         <div class="candidate-list" role="group" aria-label="候选列表"><button v-for="candidate in candidates" :key="candidate.id" class="candidate-item" :class="{ selected: chosenId === candidate.id }" :aria-pressed="chosenId === candidate.id" @click="select(candidate)"><span class="candidate-item-heading"><strong>{{ editorTypes[candidate.dataType] || candidate.dataType }}</strong><StatusTag :tone="candidate.checked && quoteExists(candidate, state.sources) ? 'success' : 'wait'">{{ candidate.checked && quoteExists(candidate, state.sources) ? '已检查' : '待检查' }}</StatusTag></span><span class="candidate-quote-preview">{{ candidate.quote || copy.quoteMissing }}</span><UiIcon v-if="mobile" name="chevron-right" class="candidate-chevron" /></button><p v-if="!candidates.length" class="field-help">{{ frontendCopy.facts.noCandidates }}</p></div>
         <p v-if="candidates.length" class="field-help">{{ frontendCopy.facts.candidateUnconfirmed }}</p>
         <form v-if="chosen" class="candidate-editor" @submit.prevent="save">
@@ -107,7 +111,7 @@ function editQuote() { if (chosen.value) chosen.value.startOffset = undefined; e
           <div class="field-pair"><UiField label="数据类型" id="candidate-type"><select id="candidate-type" v-model="chosen.dataType" @change="edit"><option v-for="(text, id) in editorTypes" :key="id" :value="id">{{ text }}</option></select></UiField><UiField label="声明方式" id="candidate-polarity"><select id="candidate-polarity" v-model="chosen.polarity" @change="edit"><option value="AFFIRMED">肯定</option><option value="NEGATED">否定</option><option value="UNKNOWN">未知</option></select></UiField></div>
           <div class="field-pair"><UiField label="声明主体" id="candidate-subject"><select id="candidate-subject" v-model="chosen.subject" @change="edit"><option value="APP">应用自身</option><option value="THIRD_PARTY">第三方</option><option value="UNKNOWN">未知</option></select></UiField>
           <UiField label="条件" id="candidate-condition"><input id="candidate-condition" v-model="chosen.condition" maxlength="1000" placeholder="未知或不适用" @input="edit" /></UiField></div>
-          <div v-if="!state.example" class="field-pair"><UiField label="声明动作" id="candidate-action"><select id="candidate-action" v-model="chosen.action" @change="edit"><option value="UNKNOWN">未知</option><option value="ACCESS">访问</option></select></UiField><UiField label="声明目的" id="candidate-purpose"><input id="candidate-purpose" v-model="chosen.purpose" maxlength="1000" @input="edit" /></UiField><UiField label="接收方" id="candidate-recipient"><input id="candidate-recipient" v-model="chosen.recipient" maxlength="1000" @input="edit" /></UiField></div><div class="source-actions"><UiButton type="submit" :disabled="!quoteValid">{{ copy.saveCandidate }}</UiButton><UiButton variant="danger" @click="remove">{{ copy.deleteCandidate }}</UiButton></div><p v-if="notice" role="status" class="field-help">{{ notice }}</p><p v-if="!state.example" class="field-help">保存后才标为候选已检查；进入分析时保存本机快照。全文和附件仍未复核。</p>
+          <div v-if="!state.example" class="field-pair"><UiField label="声明动作" id="candidate-action"><select id="candidate-action" v-model="chosen.action" @change="edit"><option value="UNKNOWN">未知</option><option value="ACCESS">访问</option></select></UiField><UiField label="声明目的" id="candidate-purpose"><input id="candidate-purpose" v-model="chosen.purpose" maxlength="1000" @input="edit" /></UiField><UiField label="接收方" id="candidate-recipient"><input id="candidate-recipient" v-model="chosen.recipient" maxlength="1000" @input="edit" /></UiField></div><div class="source-actions"><UiButton type="submit" :disabled="!quoteValid">{{ copy.saveCandidate }}</UiButton><UiButton variant="danger" @click="remove">{{ copy.deleteCandidate }}</UiButton></div><p v-if="notice" role="status" class="field-help">{{ notice }}</p><p v-if="!state.example" class="field-help">保存后才会标为已检查；开始分析时保存本机快照。全文和附件仍未复核。</p>
         </form>
       </section>
     </div>

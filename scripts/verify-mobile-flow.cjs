@@ -109,7 +109,7 @@ function bridge(options) {
     id: context.draft, name: 'com.example.' + 'b'.repeat(160), uploaded: true, revision: 1, apk_sha256: 'c'.repeat(128),
     sources: [
       { id: 'policy', title: options.policyTitle, url: options.policyUrl, source_type: 'OFFICIAL_WEB_POLICY', text: options.policySentence, status: 'manual', version: 'UNKNOWN', provenance: 'EXTERNAL_CHAT_EXPORT' },
-      { id: 'long', title: '大段政策来源', url: options.policyUrl, source_type: 'OFFICIAL_WEB_POLICY', text: options.policyText, status: 'manual', version: 'UNKNOWN', provenance: 'EXTERNAL_CHAT_EXPORT' },
+      { id: 'long', title: '示例隐私政策', url: options.policyUrl, source_type: 'OFFICIAL_WEB_POLICY', text: options.policyText, status: 'manual', version: 'UNKNOWN', provenance: 'EXTERNAL_CHAT_EXPORT' },
     ],
     candidates: [], jobs: [],
   }
@@ -413,7 +413,7 @@ async function verifyCoarsePointer(browser, origin) {
     await page.waitForTimeout(200)
     const after = await settings.evaluate(element => getComputedStyle(element).backgroundColor)
     assert.equal(after, resting, 'touch must not leave a hover highlight behind')
-    const restore = page.getByRole('button', { name: '恢复当前实例材料', exact: true })
+    const restore = page.getByRole('button', { name: '恢复当前材料', exact: true })
     await restore.tap()
     await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
     await page.waitForTimeout(200)
@@ -507,7 +507,7 @@ async function main() {
     await page.mouse.move(0, 0)
     checks.push('pointer: fine hover feedback preserved through the (hover:hover) and (pointer:fine) gate')
     await page.getByText('使用手机上的个人模型', { exact: true }).click()
-    await page.getByRole('button', { name: '设置模型配置', exact: true }).click()
+    await page.getByRole('button', { name: '配置模型', exact: true }).click()
     await page.getByLabel('模型名称', { exact: true }).fill('compatible-chat')
     await page.getByLabel('应用名称或包名', { exact: true }).fill('com.example.mobile.ok')
     checks.push(await assertTouchTargets(page, 'import'))
@@ -521,7 +521,7 @@ async function main() {
     }
     checks.push('import: 200% root font keeps 320/390 free of page overflow with the model fields open')
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.getByRole('button', { name: '自动准备政策并继续', exact: true }).click()
+    await page.getByRole('button', { name: '准备政策并继续', exact: true }).click()
     await waitTitle(page, '核对政策声明', 12000)
     assert.equal(await page.locator('.m-appbar-brand').count(), 0, 'non-import steps replace the brand slot with the back button')
     assert.equal(await page.getByRole('button', { name: '返回上一步' }).count(), 1, 'non-import steps keep the back arrow')

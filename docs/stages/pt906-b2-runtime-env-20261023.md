@@ -8,7 +8,7 @@
 ## 一、结论
 
 1. 定稿可直接粘贴，见第二节。
-2. 04 要修三处，第三节给出可替换文本：`Ubuntu 22.04` 在全仓和验收收据里都查不到实测记录；`Python 3.12` 是构建与验收的实测版本，仓库约束写的是 `>=3.11,<3.14`；离线回放段的路径和描述与包内两种页面都不符。
+2. 04 要修两段（环境段、离线回放段），第三节给出可替换文本：`Ubuntu 22.04` 没有「在 22.04 上跑通」的实测记录（仓库里出现的 3 处 `22.04` 都是发行版名、宿主要求或配置示例，见第四节第 1 行）；`Python 3.12` 是构建与验收的实测版本，仓库约束写的是 `>=3.11,<3.14`；离线回放段的路径和描述与包内两种页面都不符。
 3. 04 没有 tracked 源，只活在 `.scratch/package-final/` 的打包副本里，成品包正被其他会话重建。本页交补丁文本与依据，由打包会话并入。
 
 ## 二、定稿（可直接粘贴到报名系统）
@@ -40,7 +40,7 @@ Python 3.12、uv 0.11.x、Node.js 24.x；
 
 ### 定稿取舍
 
-- `Ubuntu 22.04` 没有实测记录，字段里删掉，只写 24.04（原生或 WSL2）。
+- `Ubuntu 22.04` 没有「跑通」的实测记录（仓库里只有发行版名、宿主要求和配置示例，见第四节第 1 行），字段里删掉，只写 24.04（原生或 WSL2）。
 - 字段写主次版本。Engine、Compose、uv、Node 的 patch 号留在 04 和第三节依据里，字段不被单个 patch 号绑死。
 - 两条回放路径分开写：`comparison.html` 打开即看，`index.html` 要配 `viewer.py` 才成立。两句话里「无需后端」的含义不同，混写会让评委白屏。
 
@@ -103,12 +103,12 @@ Python 3.12、uv 0.11.x、Node.js 24.x；
 
 | # | 04 原声明 | 实际依据 | 判定 |
 | --- | --- | --- | --- |
-| 1 | Linux（Ubuntu 22.04/24.04）或 WSL2 | 部署验收收据环境为 `Linux-6.18.33.2-microsoft-standard-WSL2`、`glibc2.39`（即 Ubuntu 24.04）；`docs/acceptance/issue132/environment-recipe.md`、`execution-20261021.md` 记录 Ubuntu 24.04.5 WSL2；CI `runs-on: ubuntu-latest`；全仓 `22.04` 零命中 | 24.04 有证据，22.04 无证据 |
+| 1 | Linux（Ubuntu 22.04/24.04）或 WSL2 | 部署验收收据环境为 `Linux-6.18.33.2-microsoft-standard-WSL2`、`glibc2.39`（即 Ubuntu 24.04）；`docs/acceptance/issue132/environment-recipe.md`、`execution-20261021.md` 记录 Ubuntu 24.04.5 WSL2；CI `runs-on: ubuntu-latest`；全仓 `22.04` 共 3 处，均为发行版名、宿主要求或配置示例（`docs/acceptance/issue136/R02-R04-handoff.md:22`、`apps/api/tests/test_wsl_distro.py`、`docs/agents/local-environment.md`），**没有「在 22.04 上跑通」的实测记录** | 24.04 有证据，22.04 无证据 |
 | 2 | Docker Engine + Docker Compose v2 | 部署验收收据 `docker_server` 28.0.4 / 29.7.2；`docker compose version --short` 得 2.38.2；`deploy/compose.yaml`、`compose.smoke.yaml`、`compose.tls-smoke.yaml`、`runner.compose.yaml` 均在库 | 成立 |
 | 3 | Python 3.12 | `apps/api/pyproject.toml` `requires-python = ">=3.11,<3.14"`、`target-version = "py311"`；`apps/api/uv.lock` 头部 `>=3.11, <3.14`；构建镜像 `python:3.12.13`；验收实测 Python 3.12.3 | 3.12 是实测版本，仓库约束是区间，04 需注明 |
 | 4 | uv 0.11.x | `scripts/check.sh` 装 `uv==0.11.23`；`deploy/Dockerfile`、`apps/api/worker.Dockerfile` 用 `uv:0.11.23` | 成立，可精确到 0.11.23 |
 | 5 | Node 24.x | CI `node-version: "24.17.0"`；构建镜像 `node:24.17.0-bookworm-slim`；验收收据 `node v24.17.0`；仓库内所有 `package.json` 都没有 `engines` 或 `packageManager` 字段 | 版本成立，缺机器可读约束 |
-| 6 | 离线回放不需要后端 | `docs/acceptance/issue136/final-package-e17d2e3/demo-receipt.json`：`file://` 打开该页、`offline: true`、`blocked_requests: []`、结果 PASS | 成立，只对 `comparison.html` |
+| 6 | 离线回放不需要后端 | `docs/acceptance/issue136/evidence/final-package-e17d2e3/demo-receipt.json`：`file://` 打开该页、`offline: true`、`blocked_requests: []`、结果 PASS | 成立，只对 `comparison.html` |
 | 7 | 离线回放路径 | 见 3.3 | 4/6 副本写错 |
 
 ## 五、未验证项与限制

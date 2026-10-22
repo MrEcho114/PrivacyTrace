@@ -67,7 +67,7 @@
 
 1. 补 sheet 退场、行内 busy 定宽、报告封面深色章节（需组件/模板改动）。
 2. 在可用 Android 设备上跑一轮真机：系统栏、IME、返回手势、TalkBack、safe-area。
-3. `pioneer-design.json` / `verify-round2-primitives.cjs` 按 [ADR-0004](../../adr/0004-frontend-contract-retirement.md) 保留到桌面入口正式下线；下一次前端轮次复审，最早 2026-11-06，不在本轮删除。
+3. `pioneer-design.json` / `verify-round2-primitives.cjs` 按 [ADR-0005](../../adr/0005-frontend-contract-retirement.md) 保留到桌面入口正式下线；下一次前端轮次复审，最早 2026-11-06，不在本轮删除。
 
 ## 6. 第二轮（2026-10-23）：`--ui-*` 别名与契约退役决定
 
@@ -80,7 +80,7 @@
 
 ### 退役决定
 
-- 新增 [ADR-0004](../../adr/0004-frontend-contract-retirement.md)：两份桌面契约 **现在不退役**，保留到桌面 Web 入口被产品正式下线/移出受支持范围；触发条件、复审点（最早 2026-11-06）与一次性退役清单写在 ADR 里。
+- 新增 [ADR-0005](../../adr/0005-frontend-contract-retirement.md)：两份桌面契约 **现在不退役**，保留到桌面 Web 入口被产品正式下线/移出受支持范围；触发条件、复审点（最早 2026-11-06）与一次性退役清单写在 ADR 里。
 - 原因：`WorkflowApp` 仍是浏览器默认入口，桌面代码还在仓库；删掉 fixture/断言会让“视觉冻结”失去可执行证据。移动契约不依赖桌面 fixture。
 
 ### 验证

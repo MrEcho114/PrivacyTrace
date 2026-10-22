@@ -20,7 +20,7 @@
 
 ## Claude 移动视觉与 #165
 
-移动壳在 `body.is-mobile-app` 下把 #165 的 `--pt-*` 语义层映射到 Claude `--mt-*`：品牌/文案/结构保留，颜色、字号与控件档位换为 Claude。共享组件消费 `--ui-*`，移动专属样式消费 `--mt-*`；桌面无 body class 时继续使用 #165/Pioneer 值。桌面契约退役条件见 [ADR-0004](../adr/0004-frontend-contract-retirement.md)。
+移动壳在 `body.is-mobile-app` 下把 #165 的 `--pt-*` 语义层映射到 Claude `--mt-*`：品牌/文案/结构保留，颜色、字号与控件档位换为 Claude。共享组件消费 `--ui-*`，移动专属样式消费 `--mt-*`；桌面无 body class 时继续使用 #165/Pioneer 值。桌面契约退役条件见 [ADR-0005](../adr/0005-frontend-contract-retirement.md)。
 
 ## Gemini 文案与外部 skill
 

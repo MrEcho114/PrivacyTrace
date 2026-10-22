@@ -1,7 +1,7 @@
 # PrivacyTrace 移动端设计规范 · Claude 基线
 
 - 状态：v0.1 规范重置（2026-10-23）；同日完成移动端迁移落地（代码已改，记录见 [implementation-20261023.md](mobile-reset/implementation-20261023.md)）
-- 客户端范围：以 [ADR-0004](../adr/0004-frontend-contract-retirement.md) 为准；本规范只覆盖 Android/Tauri 移动 App，桌面 Web 冻结并保留历史来源。
+- 客户端范围：以 [ADR-0004（客户端 = Android App）](../adr/0004-client-is-android-app.md) 为准；本规范只覆盖 Android/Tauri 移动 App，桌面 Web 冻结并保留历史来源，退役条件见 [ADR-0005](../adr/0005-frontend-contract-retirement.md)。
 - 适用：**仅移动端 App** —— Android/Tauri 壳（`apps/mobile/`）、移动界面（`apps/web/src/mobile/`），以及移动报告复用的共享呈现（`App.vue` 的 mobile 分支、`CandidatePage.vue`、`components/`、`theme.css` 的移动根语义别名）
 - 不在范围：桌面 Web 工作台、移动 Web 的独立设计、`apps/api` 后端（由隔壁会话负责）
 - 设计基线：Claude 设计体系（EAC 库条目 `od-ds-claude`），OpenDesign 打包（v0.25.1），MIT；源文件在 EAC 设计库，不在本仓库
@@ -487,13 +487,13 @@ Pioneer 仍是历史来源，不是被推翻的错误：颜色、字号、控件
 
 现状细节与逐条证据见配套的 [现状审计](mobile-reset/current-audit.md)；下列顺序已于 2026-10-23 执行，记录、验收结果与已知偏差见 [迁移实施记录](mobile-reset/implementation-20261023.md)。
 
-1. **契约先行**：新增 `scripts/fixtures/mobile-design.json`（token、几何、状态），`assertMobileDesign` 先接上；`pioneer-design.json` 保留到桌面工作台正式退役，不提前删断言；退役触发条件与复审点见 [ADR-0004](../adr/0004-frontend-contract-retirement.md)。
+1. **契约先行**：新增 `scripts/fixtures/mobile-design.json`（token、几何、状态），`assertMobileDesign` 先接上；`pioneer-design.json` 保留到桌面工作台正式退役，不提前删断言；退役触发条件与复审点见 [ADR-0005](../adr/0005-frontend-contract-retirement.md)。
 2. **Token 层**：`theme.css` 增加 `.mobile-workspace` 的 `--mt-*` 区块与共享组件语义别名；桌面根保持 Pioneer；不新增字体文件；48/56/64 几何同步。
 3. **基础组件**：按钮 → 字段 → 状态标签 → 卡片/列表行 → 顶栏/步骤导航/操作栏 → sheet。一次只改一个组件并跑对应断言。
 4. **四个步骤 + 设置页**：导入 → 候选 → 进度 → 报告，另加顶栏打开的全屏设置；报告阅读切 `body-l` + 阅读衬线；空态/错误/加载一起改。
 5. **无障碍与动效**：焦点环、reduced-motion、200% 根字号、键盘/返回、软键盘。
 6. **验收与证据**：`acceptance:mobile` 与移动截图重拍（320/390、200%、横屏；≥600 现由 768 覆盖）；旧截图不覆盖，保留为历史证据。
-7. **清理**：只删移动迁移期别名与退役的移动 token；桌面 Pioneer token 与断点保留到产品决定退役，不顺手删（触发条件见 [ADR-0004](../adr/0004-frontend-contract-retirement.md)）。
+7. **清理**：只删移动迁移期别名与退役的移动 token；桌面 Pioneer token 与断点保留到产品决定退役，不顺手删（触发条件见 [ADR-0005](../adr/0005-frontend-contract-retirement.md)）。
 
 ## 13. 验收清单
 

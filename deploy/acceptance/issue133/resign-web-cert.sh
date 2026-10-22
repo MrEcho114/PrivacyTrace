@@ -12,7 +12,7 @@ LAB="${1:?lab state directory}"
 CA_CERT="${2:?CA certificate}"
 CA_KEY="${3:?CA private key}"
 PORT="${4:-28443}"
-COMPOSE_ROOT="${PT133E_COMPOSE_ROOT:-/mnt/d/Project/GitProject/PrivacyTrace/.scratch/issue133-final/wt}"
+COMPOSE_ROOT="${PT133E_COMPOSE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/.scratch/issue133-final/wt}"
 
 [ -d "$LAB" ] || { echo "error: lab not found: $LAB" >&2; exit 2; }
 [ -f "$CA_CERT" ] || { echo "error: CA cert not found: $CA_CERT" >&2; exit 2; }

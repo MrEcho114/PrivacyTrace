@@ -1,0 +1,66 @@
+{
+  "purpose": "为《PrivacyTrace 作品展示片（严肃展示版 90s）》采集真实产品操作素材。",
+  "recordedAt": "2026-10-23T04:00+08:00",
+  "tool": "EAC design world · record-browser（Playwright + Edge headless，逐 100 ms 截帧，按时间戳合成 30 fps MP4）",
+  "job": {
+    "projectId": "dd433382-7f8f-4e65-a47a-b8c2c9aea687",
+    "jobId": "b5751ac8-deb4-411d-8b42-f84cbd5fadf3",
+    "assetId": "3a9caf15-a54b-49ba-9ab3-41a6d312d97e",
+    "assetPath": "（EAC 输出目录；本机绝对路径不入库，文件名 browser-19cf419f-ebb3-448b-98bd-090ba665f509.mp4）",
+    "duration": 27.566667,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "bytes": 569441
+  },
+  "subject": {
+    "product": "PrivacyTrace 移动优先前端工作台（apps/web）",
+    "url": "http://127.0.0.1:6173/",
+    "server": "vite dev server（npm run dev --workspace @privacytrace/web，PRIVACYTRACE_WEB_PORT=6173）",
+    "checkout": "主线工作树（本机路径不入库）；前端产物 base commit 07b37b2cfdd10ba46434409fbdcb2040e5fdc5d7",
+    "note": "前端仍在开发；示例流程为固定演示材料（SYNTHETIC / 人工构造示例）。"
+  },
+  "actions": [
+    { "type": "wait", "ms": 1200 },
+    { "type": "click", "selector": "button:text-is(\"体验示例\")" },
+    { "type": "wait", "ms": 1800 },
+    { "type": "click", "selector": "button.ui-button.primary:text-is(\"检查候选\")" },
+    { "type": "wait", "ms": 2200 },
+    { "type": "click", "selector": "button:text-is(\"定位原句\")" },
+    { "type": "wait", "ms": 1400 },
+    { "type": "click", "selector": "button:text-is(\"进入流程演示\")" },
+    { "type": "wait", "ms": 2000 },
+    { "type": "click", "selector": "button:text-is(\"进入下一阶段\")" },
+    { "type": "wait", "ms": 1400 },
+    { "type": "click", "selector": "button:text-is(\"进入下一阶段\")" },
+    { "type": "wait", "ms": 1400 },
+    { "type": "click", "selector": "button:text-is(\"进入下一阶段\")" },
+    { "type": "wait", "ms": 1400 },
+    { "type": "click", "selector": "button:text-is(\"进入下一阶段\")" },
+    { "type": "wait", "ms": 1800 },
+    { "type": "click", "selector": "button:text-is(\"完成当前阶段\")" },
+    { "type": "wait", "ms": 2000 },
+    { "type": "click", "selector": "button:text-is(\"查看报告\")" },
+    { "type": "wait", "ms": 5000 },
+    { "type": "click", "selector": "button:has-text(\"查看线索详情\") >> nth=0" },
+    { "type": "wait", "ms": 4000 }
+  ],
+  "uiStatesCovered": [
+    "导入材料：示例 APK 名称 + 两份政策来源（纸舟地图隐私政策 149 字 / 云点统计服务说明 74 字），均标注「正文完整度未知 / 全文未复核 / 附件未检查 / 适用范围不明」",
+    "检查候选：政策原文与候选声明并排，「定位原句」在原文中高亮命中句",
+    "分析流程演示：五个手动阶段（核对输入 → 静态线索 → 政策候选 → 规则对照 → 报告），完成后出现「查看报告」",
+    "分析报告：三条状态（位置信息 = 具体类型已声明；设备标识 = 证据不足；相机 = 证据不足），每行带「查看线索详情」",
+    "线索详情抽屉：位置信息的依据（代码位置 + 政策原句）"
+  ],
+  "frameExtraction": {
+    "command": "ffmpeg -i <recording.mp4> -vf fps=10 -q:v 3 assets/rec/f_%04d.jpg",
+    "frames": 276,
+    "fps": 10,
+    "note": "录制本身是 10 fps 截帧合成，抽帧不损失画面信息；成片内以 canvas 逐帧重放并叠加连续镜头运动。"
+  },
+  "observedIssues": [
+    "录制期间控制台有 1 次 500（/api 相关，后端未启动）与 1 次 404；页面未出现错误横幅，成片未使用任何错误状态画面。",
+    "「已有报告」页依赖后端，未纳入录制。",
+    "常驻正文含示例标注（固定示例内容 / 示例体验 · 固定材料），成片保留并另加旁注。"
+  ]
+}

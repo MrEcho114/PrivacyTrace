@@ -46,6 +46,38 @@ def _diagnostic(code):
     _LOG.warning("privacytrace.worker.%s", code)
 
 
+def _finish_runtime(lease, *, intake, busy, store, stopping, thread):
+    """Record terminal telemetry, then release resources even if it fails.
+
+    ``StopIteration`` is an ``Exception`` subclass that is neither a
+    ``ValueError``, ``KeyError`` nor ``OSError``: a missing draft job row used to
+    escape this block and skip ``intake.close()``, ``busy.close()`` and
+    ``store.close()``. The nested ``try/finally`` makes the cleanup unconditional
+    for any ``terminal_event`` outcome; only the explicitly understood failures
+    are converted to a fixed diagnostic.
+    """
+    stopping.set()
+    if thread:
+        thread.join(timeout=20)
+    try:
+        if intake:
+            try:
+                intake.terminal_event(lease)
+            except PostgresOperationUnavailable:
+                _diagnostic("STORAGE_UNAVAILABLE")
+            except LeaseLost:
+                _diagnostic("LEASE_LOST")
+            except (ValueError, KeyError, OSError, StopIteration):
+                _diagnostic("TERMINAL_EVENT_UNAVAILABLE")
+    finally:
+        if intake:
+            intake.close()
+        if busy:
+            busy.close()
+        if store:
+            store.close()
+
+
 def execute(message, config):
     message = decode_message(message)
     if message["instance_id"] != config.instance_id:
@@ -128,23 +160,9 @@ def execute(message, config):
         _diagnostic("RUNTIME_INPUT_INVALID")
         return
     finally:
-        stopping.set()
-        if thread:
-            thread.join(timeout=20)
-        if intake:
-            try:
-                intake.terminal_event(lease)
-            except PostgresOperationUnavailable:
-                _diagnostic("STORAGE_UNAVAILABLE")
-            except LeaseLost:
-                _diagnostic("LEASE_LOST")
-            except (ValueError, KeyError, OSError):
-                _diagnostic("TERMINAL_EVENT_UNAVAILABLE")
-            intake.close()
-        if busy:
-            busy.close()
-        if store:
-            store.close()
+        _finish_runtime(
+            lease, intake=intake, busy=busy, store=store, stopping=stopping, thread=thread
+        )
 
 
 def create_worker_app(config):

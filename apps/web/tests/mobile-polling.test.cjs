@@ -41,22 +41,32 @@ function laboratory(random = () => 0) {
     const context = { origin: 'https://shared.example/', draft: id, state: 'SERVER_CONFIRMED' }
     const draft = { id, revision: 1, sources: [], candidates: [], jobs: existingJob ? [{ job_id: id, events: [] }] : [] }
     const actions = [], failures = new Map(), blocked = new Map()
-    let job = { id, state: 'QUEUED' }, restores = 0
+    let job = { id, state: 'QUEUED' }, restores = 0, inFlight = 0, peak = 0
     const bridge = {
       async restore() { restores++; consume(2); return context }, async cancel() {},
       async remove() { return { ...context, state: 'DELETED' } },
       async request(action) {
-        actions.push({ action, at: now })
-        if (blocked.has(action)) { const pending = blocked.get(action); blocked.delete(action); await pending }
-        if (failures.has(action)) { const code = failures.get(action); failures.delete(action); throw code }
-        // AnalysisTransport.workflow reconciles capabilities and the draft first.
-        consume(action === 'read' ? 2 : 3)
-        if (action === 'cancel-job') job = { ...job, state: 'CANCELLED' }
-        const data = action === 'read' ? draft : action === 'taxonomy' ? { data_types: [] } : job
-        return { origin: context.origin, draft: context.draft, data }
+        inFlight += 1
+        peak = Math.max(peak, inFlight)
+        try {
+          actions.push({ action, at: now })
+          if (blocked.has(action)) { const pending = blocked.get(action); blocked.delete(action); await pending }
+          // Yield once so a second concurrent native call would be observed here;
+          // the native gate admits exactly one workflow operation at a time.
+          await Promise.resolve()
+          if (failures.has(action)) { const code = failures.get(action); failures.delete(action); throw code }
+          // AnalysisTransport.workflow reconciles capabilities and the draft first.
+          consume(action === 'read' ? 2 : 3)
+          if (action === 'cancel-job') job = { ...job, state: 'CANCELLED' }
+          const data = action === 'read' ? draft : action === 'taxonomy' ? { data_types: [] } : job
+          return { origin: context.origin, draft: context.draft, data }
+        } finally {
+          inFlight -= 1
+        }
       },
     }
     return { flow: createMobileFlow(bridge), actions, id, restores: () => restores,
+      peak: () => peak,
       failNext: (action, code) => failures.set(action, code),
       blockNext(action) {
         let release
@@ -211,4 +221,40 @@ test('busy recovery for saved materials without a job never starts an analysis',
   assert.equal(flow.job.value, null)
   assert.equal(lab.scheduled.size, 0)
   assert.equal(actions.filter(item => ['job', 'start', 'retry-job'].includes(item.action)).length, 0)
+})
+
+test('automatic polling issues one native workflow call at a time', async () => {
+  const lab = laboratory(), { flow, peak } = lab.client()
+  await flow.select(true)
+  await lab.advance(lab.next())
+  assert.equal(flow.error.value, '')
+  assert.equal(peak(), 1, 'the native gate admits a single workflow operation')
+  await lab.advance(lab.next())
+  assert.equal(peak(), 1, 'every automatic read stays sequential')
+})
+
+test('a transient native busy retries quickly instead of stopping the progress loop', async () => {
+  const lab = laboratory(), { flow, failNext, id } = lab.client()
+  await flow.select(true)
+  failNext('job', 'BUSY_OR_INACTIVE')
+  await lab.advance(lab.next())
+  assert.equal(flow.error.value, '', 'a transient native busy is not surfaced')
+  const retryAt = lab.next()
+  assert.ok(Number.isFinite(retryAt), 'a retry timer must exist')
+  assert.ok(retryAt - lab.now() <= 2000, 'retry quickly rather than waiting for a user refresh')
+  await lab.advance(retryAt)
+  assert.equal(flow.error.value, '')
+  assert.equal(flow.job.value.id, id)
+  assert.ok(lab.scheduled.size > 0, 'polling continues after the transient busy')
+})
+
+test('persistent native busy stays bounded, visible and does not loop forever', async () => {
+  const lab = laboratory(), { flow, failNext } = lab.client()
+  await flow.select(true)
+  for (let attempt = 0; attempt < 4; attempt++) {
+    failNext('job', 'BUSY_OR_INACTIVE')
+    await lab.advance(lab.next())
+  }
+  assert.equal(flow.error.value, 'BUSY_OR_INACTIVE')
+  assert.equal(lab.scheduled.size, 0, 'no unbounded retry loop once the bounded retries are spent')
 })

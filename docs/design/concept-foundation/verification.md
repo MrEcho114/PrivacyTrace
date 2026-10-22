@@ -48,13 +48,13 @@
 
 ### 命令与结果
 
-记录来源：`docs/acceptance/issue165/20261022.md` 与 `docs/acceptance/issue165/copy-contract.json`（随守卫同步提交在 `d486d88`）。验收对象为产品代码 `cbf056a` + 守卫同步 `d486d88`；`d486d88` 与后续 `5781ffc`（补品牌截图、微调一个测试）都不含 `apps/web/src` 变更，产品代码与验收时一致。运行时守卫/测试/文档改动尚未提交，`copy-contract.json` 因此记录 `dirty=true`。
+记录来源：`docs/acceptance/issue165/20261022.md` 与 `docs/acceptance/issue165/copy-contract.json`。验收对象为产品代码 `cdbb2d5`（含 merge `origin/main` `e17d2e3` 后的移动轮询与视觉/标准审阅修复）；此后只提交验收记录与截图，不再改 `apps/web/src`。`copy-contract.json` 在干净工作树运行，记录 `dirty=false`。
 
 | 命令 | 结果 | 关键计数 | 证据 |
 | --- | --- | --- | --- |
 | `npm run test --workspace @privacytrace/web` | PASS | 132/132（126 既有 + 6 copy-contract） | 终端输出 `tests 132 / pass 132 / fail 0` |
 | `PRIVACYTRACE_FRONTEND_URL=http://127.0.0.1:5191 npm run acceptance:frontend` | PASS（exit 0） | frontend-flow：brand 103 项、reports 15 项移动断言；policy-assist：10 项真实 HTTP/UI | `tmp/issue44-ui/verification.json`、`tmp/issue72-policy-assist/verification.json` |
-| `node scripts/verify-copy-contract.cjs`（无 env，自启 dev server） | PASS | 42 checks / 25 张截图 | [copy-contract.json](../../acceptance/issue165/copy-contract.json)、[截图目录](../../acceptance/issue165/screenshots/) |
+| `node scripts/verify-copy-contract.cjs`（无 env，自启 dev server，干净树） | PASS | 42 checks / 24 张截图 | [copy-contract.json](../../acceptance/issue165/copy-contract.json)、[截图目录](../../acceptance/issue165/screenshots/) |
 | `PRIVACYTRACE_FRONTEND_URL=http://127.0.0.1:5191 node scripts/verify-issue143-hierarchy.cjs` | PASS | 11 checks | `tmp/issue143-hierarchy/verification.json` |
 | `PRIVACYTRACE_FRONTEND_URL=http://127.0.0.1:5191 node scripts/verify-issue146-motion.cjs` | PASS | 20 checks | `tmp/issue146-motion/verification.json` |
 | `PRIVACYTRACE_FRONTEND_URL=http://127.0.0.1:5191 node scripts/verify-issue145-a11y.cjs` | PASS | 14 checks | `tmp/issue145-a11y/verification.json` |
@@ -66,9 +66,9 @@
 | `node scripts/verify-browser-acceptance.cjs` | PASS（exit 0，TC-01～TC-05 全跑） | 见运行日志 | `tmp/browser-acceptance.log`；`evidence/` 历史 receipt 未被覆盖 |
 | `node scripts/verify-frontend-preview.cjs` | PASS | preview 生命周期/所有权/失败恢复 | `tmp/frontend-preview/verification.json` |
 | `node scripts/verify-live-flow.cjs` | NOT_RUN | 本机无 Docker（`docker` 命令不存在） | 见下方 NOT_RUN |
-| `bash scripts/check.sh`（Git for Windows Bash，在 `5781ffc` 工作区） | PASS（exit 0，末行 `PrivacyTrace checks passed.`） | 含 API pytest、tests/e2e、ruff、schema 导出、品牌资产校验、前端 132/132 单测与构建 | Lead 执行的权威检查输出 |
+| `bash scripts/check.sh`（Git for Windows Bash，在 `cdbb2d5` 工作区） | PASS（exit 0，末行 `PrivacyTrace checks passed.`） | 含 API pytest、tests/e2e、ruff、schema 导出、品牌资产校验、前端 132/132 单测与构建 | Lead 执行的权威检查输出 |
 
-本节按已提交的验收记录填写，未把 NOT_RUN 写成通过；`acceptance:frontend` 因本机 5184 被其他 worktree 占用，显式复用 5191 受管预览。权威 `bash scripts/check.sh` 由 Lead 在 `5781ffc` 工作区执行并通过，见上表。
+本节按已提交的验收记录填写，未把 NOT_RUN 写成通过；`acceptance:frontend` 因本机 5184 被其他 worktree 占用，显式复用 5191 受管预览。权威 `bash scripts/check.sh` 由 Lead 在 `cdbb2d5` 工作区执行并通过，见上表；此后仅文档与截图提交。
 
 ### 检查项
 
@@ -89,7 +89,7 @@
 
 ### 截图
 
-[`docs/acceptance/issue165/screenshots/`](../../acceptance/issue165/screenshots/) 目录内共 28 张：copy-contract 产出 25 张（42 checks），另有 3 张 #169 品牌截图（见 #169 节）。独立视觉审阅指出旧截图没有报告首屏与移动主操作帧，已重拍：
+[`docs/acceptance/issue165/screenshots/`](../../acceptance/issue165/screenshots/) 目录内共 27 张：copy-contract 产出 24 张（42 checks），另有 3 张 #169 品牌截图（见 #169 节）。独立视觉审阅指出旧截图没有报告首屏与移动主操作帧，已重拍：
 
 - [import-1440](../../acceptance/issue165/screenshots/import-1440.png)、[candidates-1440](../../acceptance/issue165/screenshots/candidates-1440.png)、[progress-1440](../../acceptance/issue165/screenshots/progress-1440.png)
 - 报告首屏（scrollTop=0）：[report-1440-top](../../acceptance/issue165/screenshots/report-1440-top.png)、[report-1280-top](../../acceptance/issue165/screenshots/report-1280-top.png)、[report-768-top](../../acceptance/issue165/screenshots/report-768-top.png)、[report-390-top](../../acceptance/issue165/screenshots/report-390-top.png)、[report-320-top](../../acceptance/issue165/screenshots/report-320-top.png)
@@ -132,7 +132,7 @@
 
 ### 资产与接入事实
 
-- `brand/` 源资产 29 个文件（除 `brand/README.md` 与 `brand/SHA256SUMS` 外），随图标包原字节入库；`brand/SHA256SUMS` 是逐文件清单，`cd brand && sha256sum -c SHA256SUMS` 可复核（本轮未另行执行该命令，见下）。
+- `brand/` 源资产 29 个文件（除 `brand/README.md` 与 `brand/SHA256SUMS` 外），随图标包原字节入库；`brand/SHA256SUMS` 是逐文件清单，`verify-brand-assets.cjs` 已在权威检查中逐条比对并检测未列入清单的资产。
 - `apps/web/public/brand/` 的 4 个分发副本由 `verify-brand-assets.cjs` 逐字节比对源文件（symbol SVG、favicon SVG、icon-192、icon-512）。
 - `brand/android/res/` 20 个 launcher 资源：2 个 adaptive XML、3 个 drawable 矢量、5 个密度各 3 张位图；`scripts/apply-brand-android-icons.cjs` 负责覆盖，`scripts/verify-brand-assets.cjs` 已由 `scripts/check.sh` 第 43 行接线。
 - 三处顶栏品牌位：工作台 `.workspace-brand .brand-mark`（`WorkflowApp.vue`）、离线报告 `.topbar .brand-icon`（`App.vue`）、移动 `.m-appbar-brand`（`MobileApp.vue`，仅导入步渲染）；图标 link 在 `apps/web/index.html`（favicon SVG、512 PNG、apple-touch-icon 192）。
@@ -169,5 +169,5 @@
 - Tauri `android init` 重初始化流程的端到端验收；本轮只验证资源映射与覆盖脚本在模拟 res 树上的行为。
 - Tauri 平台图标重新生成（`tauri icon`）；本轮只替换源 `apps/mobile/src-tauri/icons/icon.png`。
 - 真实浏览器标签页、Safari apple-touch-icon、PWA 主屏图标的渲染截图；本轮只验证 link 路径与文件一致性。
-- `brand/SHA256SUMS` 的全量复核命令本轮未单独执行；资产一致性以 `verify-brand-assets.cjs` 的哈希比对为准。
+- `brand/SHA256SUMS` 全量比对已纳入 `scripts/check.sh`（`verify-brand-assets.cjs`，29/29 通过）；Gradle/实机项仍为 NOT_RUN。
 - 部署与商店资源提交。

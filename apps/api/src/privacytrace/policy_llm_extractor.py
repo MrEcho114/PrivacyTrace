@@ -105,6 +105,28 @@ class LLMClientProtocol(Protocol):
         ...
 
 
+# Chunk size for bounded response-body reads; small enough to re-check the deadline often.
+_RESPONSE_CHUNK_BYTES = 65536
+
+
+def _arm_read_timeout(response: Any, remaining: float) -> None:
+    """Re-arm the socket wait for one read against the remaining total budget.
+
+    urllib's timeout only caps a single blocking socket operation, so a peer that keeps
+    trickling bytes just under that timeout would otherwise extend a response forever.
+    """
+    stream = getattr(response, "fp", None)
+    raw = getattr(stream, "raw", None)
+    sock = getattr(raw, "_sock", None)
+    setter = getattr(sock, "settimeout", None)
+    if not callable(setter):
+        return
+    try:
+        setter(remaining)
+    except (OSError, ValueError):
+        pass
+
+
 class LLMResponseTooLarge(ValueError):
     """Untrusted model response exceeds the byte limit."""
 
@@ -155,6 +177,7 @@ class UrllibLLMClient:
         max_output_tokens: int = 2048,
         max_response_bytes: int = 2 * 1024 * 1024,
         thinking_mode: bool | None = None,
+        deadline: float | None = None,
     ):
         self.max_output_tokens = max_output_tokens
         self.max_response_bytes = max_response_bytes
@@ -164,8 +187,33 @@ class UrllibLLMClient:
         self.api_base = resolve_api_base(api_base)
         self.model = model
         self.timeout = timeout
+        # Absolute monotonic instant for the whole call, including the response body.
+        # None means "this client's timeout is also its total budget".
+        self.deadline = deadline
         self.temperature = temperature
         self.thinking_mode = thinking_mode
+
+    def _read_response_body(self, resp: Any, deadline: float) -> bytes:
+        """Read the body in chunks, stopping at the whole-call deadline.
+
+        ``timeout`` is a per-socket wait, so a peer that trickles small chunks can keep a
+        single ``resp.read()`` alive past the total budget; each chunk therefore re-checks
+        the deadline and re-arms the socket wait against what is left of it.
+        """
+        limit = self.max_response_bytes + 1
+        chunks: list[bytes] = []
+        received = 0
+        while received < limit:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError("LLM response body exceeded the total time budget")
+            _arm_read_timeout(resp, min(self.timeout, remaining))
+            chunk = resp.read1(min(_RESPONSE_CHUNK_BYTES, limit - received))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            received += len(chunk)
+        return b"".join(chunks)
 
     def call(self, system_prompt: str, user_prompt: str) -> tuple[str, dict[str, int]]:
         if not self.api_key and not self.api_base.startswith("http://"):
@@ -202,8 +250,13 @@ class UrllibLLMClient:
                     request.full_url, code, "LLM endpoint redirects are forbidden", headers, fp
                 )
 
-        with urllib.request.build_opener(NoRedirect()).open(req, timeout=self.timeout) as resp:
-            raw = resp.read(self.max_response_bytes + 1)
+        deadline = self.deadline
+        if deadline is None:
+            deadline = time.monotonic() + self.timeout
+        connect_timeout = max(0.001, min(self.timeout, deadline - time.monotonic()))
+        with urllib.request.build_opener(NoRedirect()).open(req, timeout=connect_timeout) as resp:
+            # Leaving the block on any failure closes the response and its connection.
+            raw = self._read_response_body(resp, deadline)
             if len(raw) > self.max_response_bytes:
                 raise LLMResponseTooLarge("RESPONSE_TOO_LARGE")
             data = json.loads(raw.decode("utf-8"))
@@ -391,6 +444,10 @@ class _CallBudget:
     def remaining_seconds(self) -> float:
         return max(0.001, self.max_elapsed_seconds - (time.monotonic() - self.started))
 
+    def deadline(self) -> float:
+        """Absolute monotonic instant when the whole extraction budget expires."""
+        return self.started + self.max_elapsed_seconds
+
 
 class PolicyLLMExtractor:
     """Extracts candidate policy claims using an LLM with strict validation."""
@@ -486,6 +543,9 @@ class PolicyLLMExtractor:
             telemetry.attempts = attempt
             if isinstance(client, UrllibLLMClient):
                 client.timeout = min(self.config.timeout_seconds, budget.remaining_seconds())
+                # The socket timeout only caps one wait; the absolute deadline caps the
+                # whole call, including a response body that keeps trickling bytes.
+                client.deadline = budget.deadline()
             try:
                 raw_text, call_tokens = client.call(SYSTEM_PROMPT, user_prompt)
                 if not isinstance(raw_text, str) or (

@@ -11,5 +11,6 @@
   "mobileHeading": { "fontSize": "24px", "lineHeight": "34px" },
   "button": { "fontFamily": "Noto Sans SC", "fontSize": "14px", "borderRadius": "8px", "minHeight": "36px" },
   "mobileButton": { "maxWidth": 560, "minHeight": 44 },
+  "mobile": { "touchTarget": 48, "appBarHeight": 56, "actionBarMinHeight": 64, "inputFontSize": 16, "sheetRadius": 20 },
   "field": { "fontFamily": "Noto Sans SC", "fontSize": "14px", "borderRadius": "8px", "minHeight": "40px" }
 }

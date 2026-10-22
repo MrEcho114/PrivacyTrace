@@ -15,8 +15,11 @@
     "fixtures:acceptance": "uv run --project apps/api python scripts/build_acceptance_fixtures.py",
     "acceptance:browser": "node scripts/verify-browser-acceptance.cjs",
     "acceptance:frontend": "node scripts/verify-frontend-flow.cjs && node scripts/verify-policy-assist.cjs",
+    "acceptance:hierarchy": "node scripts/verify-issue143-hierarchy.cjs",
     "acceptance:live": "node scripts/verify-live-flow.cjs",
     "acceptance:mobile": "node scripts/verify-mobile-flow.cjs",
+    "acceptance:reading": "node scripts/verify-mobile-reading.cjs",
+    "acceptance:motion": "node scripts/verify-issue146-motion.cjs",
     "acceptance:preview": "node scripts/verify-frontend-preview.cjs"
   },
   "devDependencies": {

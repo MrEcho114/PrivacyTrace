@@ -11,6 +11,40 @@
   --radius: 8px; --radius-panel: 12px;
   --space-4: 4px; --space-8: 8px; --space-12: 12px;
   --space-16: 16px; --space-24: 24px; --space-32: 32px;
+  /* Android portrait shell — contract: frontend-round2-android-pioneer.md §3 (round 2, 2026-10-21; source
+     of record `.scratch/round2/lead/docs/design/`). Role and colour sources: Pioneer Figma 824:1382 (colour
+     roles) and 824:1422 (typography, https://www.figma.com/design/EQis9ep9ZQsEenrUVXwlFU/Pioneer); touch
+     target 48dp, top app bar 56dp and edge-to-edge insets from Android/Material 3 platform guidance
+     (https://developer.android.com/develop/ui/compose/system/material-insets). Consumed by #144–#146. */
+  --m-touch: 48px;
+  --m-appbar-height: 56px;
+  --m-actionbar-min-height: 64px;
+  --m-gutter: 16px;
+  --m-card-radius: 12px;
+  --m-sheet-radius: 20px;
+  --m-font-title: 1.25rem;    /* 20px */
+  --m-font-section: 1rem;     /* 16px */
+  --m-body: 0.875rem;         /* 14px，阅读区可用 15px */
+  --m-caption: 0.75rem;       /* 12px */
+  --m-line-body: 1.65;
+  --m-state-hover: rgba(44, 53, 71, .06);
+  --m-state-press: rgba(44, 53, 71, .12);
+  --m-state-selected: rgba(51, 60, 80, .08);
+  --m-scrim: rgba(44, 53, 71, .42);
+  --m-shadow-bar: 0 1px 2px rgba(44, 53, 71, .08);
+  --m-shadow-sheet: 0 -8px 32px rgba(44, 53, 71, .18);
+  /* Motion: docs/design/issue146-motion.md. Colour feedback is the only animated
+     property; every UI transition stays <= 300ms and becomes instant under
+     prefers-reduced-motion. Press transforms change immediately, never eased. */
+  --motion-color: 150ms; --ease-color: ease;
+  /* Round-2 shell motion (docs/design/frontend-round2-android-pioneer.md §6):
+     press feedback, sheet enter/exit and the step cross-fade share one duration
+     and easing family. Only transform/opacity/background-color may animate. */
+  --m-duration-press: 120ms;
+  --m-duration-enter: 200ms;
+  --m-duration-exit: 150ms;
+  --m-ease-standard: cubic-bezier(.2, 0, 0, 1);
+  --m-ease-decelerate: cubic-bezier(0, 0, 0, 1);
   --font-body: 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
   --font-display: 'Noto Serif SC', SimSun, serif;
   --font-code: Consolas, 'Courier New', monospace;

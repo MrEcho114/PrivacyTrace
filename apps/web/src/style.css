@@ -4,11 +4,15 @@ body { margin: 0; }
 button, a, summary { -webkit-tap-highlight-color: transparent; }
 button { font: inherit; cursor: pointer; border: 1px solid var(--control); background: var(--surface); color: var(--ink); border-radius: var(--radius); padding: 9px 14px; }
 button:disabled { opacity: .6; cursor: wait; }
-button:hover { background: var(--surface-muted); }
+/* Pointer-only hover: touch taps would otherwise keep a false hover state (#144). */
+@media (hover: hover) and (pointer: fine) {
+  button:hover { background: var(--surface-muted); }
+  .primary:hover { background: var(--navy-hover); }
+}
 :focus-visible { outline: 3px solid var(--navy); outline-offset: 4px; }
 .topbar { height: 82px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding: 0 max(6vw, 24px); background: var(--surface); }
 .brand { color: var(--ink); text-decoration: none; font-size: 1.4375rem; font-weight: 750; display: flex; align-items: center; gap: 12px; }
-.brand-icon { display: grid; place-items: center; width: 38px; height: 42px; background: var(--navy); color: var(--surface); border-radius: 12px 12px 20px 20px; font-size: 1.5rem; }
+.brand-icon { display: grid; place-items: center; width: 38px; height: 42px; background: var(--navy); color: var(--surface); border-radius: 12px 12px 20px 20px; font-size: min(1.5rem, 26px); }
 main { max-width: 1160px; margin: 0 auto; padding: 40px 24px; }
 .intro { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin: 10px 0 30px; }
 .eyebrow { font-size: 0.75rem; letter-spacing: 2px; font-weight: 700; color: var(--muted); }
@@ -18,7 +22,7 @@ p { line-height: 1.7; }
 .lead, .subtle { color: var(--muted); }
 .subtle { font-size: 0.8125rem; }
 .primary { background: var(--navy); color: var(--on-action); border-color: var(--navy); padding: 13px 18px; white-space: nowrap; }
-.primary:hover { background: var(--navy-hover); }
+@media (hover: hover) and (pointer: fine) { .primary:hover { background: var(--navy-hover); } }
 .demo-note, .report-provenance { background: var(--notice); border: 1px solid var(--border); padding: 15px 19px; font-size: 0.8125rem; line-height: 1.8; border-radius: 10px; color: var(--ink); }
 .demo-note strong, .report-provenance strong { display: inline-block; margin-right: 10px; }
 .sample-card { margin-top: 28px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-panel); padding: 22px; display: flex; align-items: center; gap: 18px; }
@@ -51,7 +55,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .evidence-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 17px; min-width: 0; }
 .evidence-card strong { font-size: 0.875rem; }
 .locator { font-size: 0.75rem; color: var(--muted); overflow-wrap: anywhere; }
-pre { font-family: var(--font-code); font-size: 0.75rem; white-space: pre-wrap; overflow-wrap: anywhere; padding: 14px; line-height: 1.8; background: var(--canvas); border-radius: 6px; max-height: 280px; overflow-y: auto; }
+pre { font-family: var(--font-code); font-size: 0.75rem; white-space: pre-wrap; overflow-wrap: anywhere; padding: 14px; line-height: 1.8; background: var(--canvas); border-radius: 6px; max-height: 280px; overflow-y: auto; overscroll-behavior: contain; }
 .provenance { margin: 28px 0; font-size: 0.75rem; color: var(--muted); overflow-wrap: anywhere; }
 .provenance summary { cursor: pointer; padding: 10px 0; }
 .provenance article { border-left: 2px solid var(--border); padding: 8px 18px; margin: 10px 0; }
@@ -81,8 +85,12 @@ footer { margin-top: 35px; font-size: 0.75rem; color: var(--muted); text-align: 
 .source-picker label { font-weight: 600; display: block; margin-bottom: 10px; }
 select, input, textarea { font: inherit; color: inherit; border: 1px solid var(--control); border-radius: 6px; padding: 10px; background: var(--surface); max-width: 100%; }
 select { width: 100%; }
-.review-panel form { display: grid; gap: 14px; }
-.review-panel label { display: grid; gap: 6px; font-size: 0.875rem; }
+.review-panel form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.review-panel label { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; font-size: 0.875rem; }
+.review-panel input, .review-panel textarea { width: 100%; min-width: 0; }
+/* The review submit keeps its text on one line only while it fits: at 200% zoom
+   the label must wrap instead of widening the page at 320px. */
+.review-panel button.primary { max-width: 100%; white-space: normal; }
 .review-panel button { justify-self: start; }
 .audit-event { border-top: 1px solid var(--border); margin-top: 18px; padding-top: 15px; font-size: 0.8125rem; }
 summary { cursor: pointer; }

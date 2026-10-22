@@ -55,6 +55,9 @@ function mount(jobs = [], fixture = null, overrides = {}) {
       if (name === './types') return typesExports
       if (name === './workflow') return { sourceStatusLabels: typesExports.sourceStatusLabels }
       if (name === './sdkEvidence') return sdkEvidenceExports
+      // Component imports are used by the template/render path, not by setup();
+      // the mount helper exercises setup only (issue #144 extraction).
+      if (name.startsWith('./components/')) return {}
       if (name === 'vue') return { ...vue, onMounted() {}, onBeforeUnmount(fn) { unmount = fn } }
       throw new Error(`Unexpected import: ${name}`)
     },
@@ -186,6 +189,50 @@ async function html(state) {
   }))
 }
 
+// #144 extracted the evidence preview into components/EvidencePanel.vue. Its
+// candidate pagination and evidence rendering are mounted separately from the
+// App.vue host, which now renders the component (and the provenance artifacts).
+const evidenceFile = path.join(__dirname, '../src/components/EvidencePanel.vue')
+const { descriptor: evidenceDescriptor } = parse(fs.readFileSync(evidenceFile, 'utf8'), { filename: evidenceFile })
+const evidenceCompiled = compileScript(evidenceDescriptor, { id: 'report-source-evidence' })
+const evidenceScript = ts.transpileModule(evidenceCompiled.content, {
+  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+}).outputText
+const evidenceTemplateCode = compileTemplate({
+  source: evidenceDescriptor.template.content, filename: evidenceFile, id: 'report-source-evidence',
+  compilerOptions: { bindingMetadata: evidenceCompiled.bindings },
+}).code
+const evidenceTemplateContext = { exports: {}, require: name => {
+  if (name === 'vue') return vue
+  throw new Error(name)
+} }
+vm.runInNewContext(ts.transpileModule(evidenceTemplateCode, {
+  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+}).outputText, evidenceTemplateContext)
+function mountEvidence(report, issue) {
+  const context = { exports: {}, require: name => {
+    if (name === 'vue') return vue
+    throw new Error(`Unexpected import: ${name}`)
+  } }
+  vm.runInNewContext(evidenceScript, context, { filename: evidenceFile })
+  const props = {
+    issue,
+    report,
+    taxonomy: { version: 'evidence-test', data_types: [{ id: 'CAMERA', label: '相机', parent: null }] },
+    statusLabels: { INSUFFICIENT_EVIDENCE: '证据不足' },
+    kindLabels: {},
+    sourceLabels: {},
+    heading: true,
+  }
+  return { props, state: context.exports.default.setup(props, { expose() {} }) }
+}
+async function evidenceHtml(state, props) {
+  const setup = vue.proxyRefs(state)
+  return renderToString(vue.createSSRApp({
+    render() { return evidenceTemplateContext.exports.render(setup, [], props, setup, {}, {}) },
+  }))
+}
+
 test('candidate navigation is paginated and full artifacts are rendered once on demand', async () => {
   const doc = { id: 'policy-1', title: 'Fixture policy', version: '1', captured_at: '2026',
     source_type: 'APP_POLICY', artifact: { text: 'FULL_ARTIFACT_SENTINEL' + 'x'.repeat(199978), sha256: 'a'.repeat(64) },
@@ -205,8 +252,9 @@ test('candidate navigation is paginated and full artifacts are rendered once on 
   const { state } = mount([{ id: 'large', state: 'SUCCEEDED' }], fixture)
   await state.reload(true)
   state.selected.value = issue
+  // App.vue keeps the provenance section: the huge artifact is only inserted on
+  // demand and toggling closed removes it again.
   let output = await html(state)
-  assert.equal((output.match(/class="evidence-card"/g) ?? []).length, 20)
   assert.equal((output.match(/FULL_ARTIFACT_SENTINEL/g) ?? []).length, 0)
   state.openPolicy('policy-1')
   output = await html(state)
@@ -219,10 +267,14 @@ test('candidate navigation is paginated and full artifacts are rendered once on 
   state.policyToggle({ target: { open: false } }, 'policy-1')
   assert.equal(state.provenanceOpen.value, true)
   assert.equal((await html(state)).includes('FULL_ARTIFACT_SENTINEL'), false)
-  state.candidatePage.value = 1
-  output = await html(state)
-  assert.match(output, /claim-20/)
-  assert.doesNotMatch(output, /claim-0 ·/)
+  // Candidate navigation + evidence cards are rendered by EvidencePanel.
+  const evidence = mountEvidence(fixture, issue)
+  let evidenceOutput = await evidenceHtml(evidence.state, evidence.props)
+  assert.equal((evidenceOutput.match(/class="evidence-card"/g) ?? []).length, 20)
+  evidence.state.candidatePage.value = 1
+  evidenceOutput = await evidenceHtml(evidence.state, evidence.props)
+  assert.match(evidenceOutput, /claim-20/)
+  assert.doesNotMatch(evidenceOutput, /claim-0 ·/)
 })
 
 function sdkFixture(evidence, limitations = []) {

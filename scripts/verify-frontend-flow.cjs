@@ -13,7 +13,7 @@ const output = path.resolve('tmp/issue44-ui')
 const screenshots = path.join(output, 'screenshots')
 fs.mkdirSync(screenshots, { recursive: true })
 async function captureWidths(page, name) {
-  for (const [width, height] of [[1440, 900], [1920, 1080], [1280, 720], [768, 1024], [390, 844]]) {
+  for (const [width, height] of [[1440, 900], [1920, 1080], [1280, 720], [768, 1024], [390, 844], [320, 640]]) {
     await page.setViewportSize({ width, height }); await page.evaluate(() => document.fonts.ready)
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, `${name} overflow at ${width}`)
     await assertDesign(page)
@@ -160,7 +160,7 @@ const demoReportFixture = {
   delivery_mode: 'LIVE_GENERATED',
 }
 const fixtureRoutes = ['**/api/v1/taxonomy', '**/api/v1/demo/report', '**/api/v1/jobs', '**/api/v1/jobs/*']
-const touchSelectors = ['.ui-button', '[role="tab"]', '.evidence-button', '.candidate-item', '.policy-jump-btn', '.candidate-nav button', '.source-body summary', '.job-state button', '[data-testid="retry-job"]', '[data-testid="delete-job"]', '[data-testid="delete-confirm"]']
+const touchSelectors = [...new Set(['.ui-button', '[role="tab"]', '.evidence-button', '.candidate-item', '.policy-jump-btn', '.candidate-nav button', '.source-body summary', 'summary', '.step-nav button', '.source-tabs button', '.mobile-panel-tabs button', '.text-upload', '.evidence-panel .section-heading button', '.state button', '.job-state button', '.report-filter select', '[data-testid="retry-job"]', '[data-testid="delete-job"]', '[data-testid="delete-confirm"]'])]
 
 async function waitFor(check, message, timeout = 5000) {
   const deadline = Date.now() + timeout
@@ -261,12 +261,18 @@ async function assertTouchTargets(page, label) {
   const measured = await page.evaluate(({ selectors, minHeight }) => {
     const short = []
     let total = 0
+    const seen = new Set()
     for (const selector of selectors) {
       for (const element of document.querySelectorAll(selector)) {
-        if (!element.getClientRects().length) continue
+        if (seen.has(element) || !element.getClientRects().length) continue
+        seen.add(element)
+        const style = getComputedStyle(element)
+        if (style.display === 'inline') continue
         total += 1
-        const height = Math.round(element.getBoundingClientRect().height * 10) / 10
-        if (height < minHeight) short.push(selector + ' => ' + height + 'px')
+        const rect = element.getBoundingClientRect()
+        const height = Math.round(rect.height * 10) / 10
+        const width = Math.round(rect.width * 10) / 10
+        if (height < minHeight || width < minHeight) short.push(selector + ' => ' + width + 'x' + height + 'px')
       }
     }
     return { short, total }
@@ -428,8 +434,56 @@ async function verifyMobileReport(page, requests) {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'reports overflow at 390 with a 150% root font size')
     } finally { await zoom.evaluate(element => element.remove()) }
     checks.push('reports: a 150% root font size does not overflow 390px')
+    // #144: system font size / browser 200% zoom is the acceptance upper bound.
+    for (const [width, size] of [[390, '32px'], [320, '32px']]) {
+      await page.setViewportSize({ width, height: 844 })
+      const doubled = await page.addStyleTag({ content: `html{font-size:${size}}` })
+      try {
+        await page.evaluate(() => document.fonts.ready)
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, `reports overflow at ${width} with a 200% root font size`)
+        const card = await page.evaluate(() => {
+          const box = document.querySelector('.table-scroll')
+          return box ? { present: true, overflow: box.scrollWidth - box.clientWidth } : { present: false, overflow: 0 }
+        })
+        assert.equal(card.present, true, `reports: the report table scroll wrapper must exist at ${width}px`)
+        assert.ok(card.overflow <= 1, `reports: the card layout must not scroll sideways at ${width}px with a 200% root font size (overflow ${card.overflow}px)`)
+        const cells = await page.evaluate(() => {
+          const rows = Array.from(document.querySelectorAll('.report-table tbody tr'))
+          return {
+            rows: rows.length,
+            offenders: rows.flatMap(row => {
+              const rowRect = row.getBoundingClientRect()
+              return Array.from(row.children).filter(cell => cell.getBoundingClientRect().right > rowRect.right + 1).map(cell => cell.getAttribute('data-label') || cell.tagName)
+            }),
+          }
+        })
+        assert.ok(cells.rows > 0, `reports: expected report cards at ${width}px with a 200% root font size`)
+        assert.deepEqual(cells.offenders, [], `reports: card cells must stay inside their row at ${width}px with a 200% root font size`)
+        await page.screenshot({ path: path.join(screenshots, `reports-${width}-200.png`), fullPage: true })
+      } finally { await doubled.evaluate(element => element.remove()) }
+    }
+    checks.push('reports: a 200% root font size keeps 390px and 320px cards inside the viewport')
+    await page.setViewportSize({ width: 390, height: 844 })
+    // #144: closing the evidence preview returns focus to the row that opened it
+    // and restores the exact scroll position the reader left.
+    const previewTrigger = page.locator('.report-table tbody tr').first().locator('.evidence-button')
+    await previewTrigger.scrollIntoViewIfNeeded()
+    const previewScroll = await page.evaluate(() => Math.round(scrollY))
+    await previewTrigger.click()
+    await waitFor(async () => page.evaluate(() => document.activeElement?.id === 'evidence-panel'), 'reports: the preview must take focus when it opens')
+    await page.getByRole('button', { name: '收起', exact: true }).click()
+    await waitFor(async () => page.evaluate(() => document.activeElement === document.querySelector('.report-table tbody tr .evidence-button')), 'reports: closing the preview must return focus to the triggering row')
+    await waitFor(async () => Math.abs(await page.evaluate(() => Math.round(scrollY)) - previewScroll) <= 2, 'reports: closing the preview must restore the exact scroll position')
+    checks.push('reports: closing the evidence preview returns focus and the exact scroll position at 390px')
     checks.push(...await assertTouchTargets(page, 'reports'))
+    // #144: switching the report source clears the preview programmatically; the
+    // panel must close without leaving focus on a removed button.
+    await previewTrigger.click()
+    await waitFor(async () => page.evaluate(() => document.activeElement?.id === 'evidence-panel'), 'reports: the preview must take focus before the source switch')
     await page.locator('#report-source').selectOption('job:' + failedJob.id)
+    await waitFor(async () => (await page.locator('#evidence-panel').count()) === 0, 'reports: switching the report source must close the preview')
+    assert.equal(await page.evaluate(() => Boolean(document.activeElement?.closest('#evidence-panel'))), false, 'reports: focus must not stay inside the closed preview after a programmatic reset')
+    checks.push('reports: a report-source switch closes the preview without trapping focus in it')
     const jobState = page.locator('.job-state')
     await jobState.locator('[data-testid="retry-job"]').waitFor({ timeout: 5000 })
     assert.equal((await jobState.locator('[data-testid="retry-job"]').innerText()).includes('重试为新的分析'), true, 'reports: the retry control must read 重试为新的分析')

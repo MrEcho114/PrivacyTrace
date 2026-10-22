@@ -1,4 +1,0 @@
-# Preserve the exact bytes of the delivered media and its provenance.
-*.mp4 binary
-*.m4a binary
-*.png binary

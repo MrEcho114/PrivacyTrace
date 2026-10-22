@@ -289,6 +289,9 @@ mark { background: var(--notice); color: var(--ink); }
   /* #165 raises the round-2 44px touch floor to 48px for every actionable
      control, including the label-as-button upload and the report filter. */
   .workbench label.text-upload, .workbench .report-filter select, .workbench .candidate-item { min-height: var(--pt-touch); }
+  /* Reka teleports the settings dialog to <body>, so it needs its own 48px
+     floor instead of inheriting the .workbench group above. */
+  .ui-dialog.settings-dialog button, .ui-dialog.settings-dialog .ui-button, .ui-dialog.settings-dialog summary { min-height: var(--pt-touch); }
   .workbench .ui-button.primary { min-height: var(--pt-action-height); }
   .workbench .flow-nav button { min-height: var(--pt-touch); }
   .workbench .page .text-link, .workbench .page .report-info > summary { min-height: var(--pt-touch); }

@@ -112,7 +112,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "default": null
         },
         "observed_at": {
           "anyOf": [
@@ -129,8 +130,7 @@
         }
       },
       "required": [
-        "state",
-        "source"
+        "state"
       ],
       "title": "ExternalCollectionResult",
       "type": "object"

@@ -102,7 +102,7 @@ export type ExternalClaimInput = {
 
 export type ExternalCollectionResult = {
   "state": "RETRIEVED" | "PROVIDED" | "URL_ONLY" | "OFFLINE" | "NOT_FOUND" | "UNAVAILABLE";
-  "source": CollectedSourceInput | null;
+  "source"?: CollectedSourceInput | null;
   "observed_at"?: string | null;
 };
 

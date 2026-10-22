@@ -4,7 +4,7 @@
       "additionalProperties": false,
       "properties": {
         "id": {
-          "maxLength": 100,
+          "maxLength": 87,
           "minLength": 1,
           "title": "Id",
           "type": "string"

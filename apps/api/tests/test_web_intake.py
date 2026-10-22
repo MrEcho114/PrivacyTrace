@@ -42,12 +42,12 @@ def new_draft(client):
     return response.json()
 
 
-def candidates(draft, checked=True, excerpt="我们不会读取联系人。"):
+def candidates(draft, checked=True, excerpt="我们不会读取联系人。", candidate_id="quote1"):
     return {
         "revision": draft["revision"],
         "candidates": [
             {
-                "id": "quote1",
+                "id": candidate_id,
                 "source_id": "a",
                 "excerpt": excerpt,
                 "data_type": "CONTACTS",
@@ -148,6 +148,55 @@ def test_quote_scope_and_revision_are_validated_before_scanning(tmp_path):
         ).status_code
         == 409
     )
+
+
+def test_candidate_id_bound_matches_the_internal_evidence_limit(tmp_path):
+    """#246: the public bound must be what the prefixed evidence id can actually hold."""
+    app = create_app(tmp_path)
+    client = TestClient(app)
+    draft = new_draft(client)
+    endpoint = f"/api/v1/web/drafts/{draft['id']}"
+    saved = client.post(
+        endpoint + "/candidates", headers=HEADERS, json=candidates(draft, candidate_id="c" * 87)
+    )
+    assert saved.status_code == 200, saved.text
+    updated = saved.json()
+    assert updated["candidates"][0]["id"] == "c" * 87
+    evidence = app.state.web_intake.captures(updated, require_checked=False)[0]["evidence"]
+    sentence = next(item for item in evidence if item.kind == "POLICY_SENTENCE")
+    assert sentence.id == "web-sentence-" + "c" * 87 and len(sentence.id) == 100
+    claim = app.state.web_intake.captures(updated, require_checked=False)[0]["claims"][0]
+    assert claim.evidence_ids == [sentence.id]
+    for length in (88, 100, 101):
+        before = client.get(endpoint).json()
+        response = client.post(
+            endpoint + "/candidates", headers=HEADERS,
+            json=candidates(before, candidate_id="c" * length),
+        )
+        assert response.status_code == 422, response.text
+        assert client.get(endpoint).json() == before
+    duplicate = client.get(endpoint).json()
+    payload = candidates(duplicate)
+    payload["candidates"].append({**payload["candidates"][0]})
+    response = client.post(endpoint + "/candidates", headers=HEADERS, json=payload)
+    assert response.status_code == 409, response.text
+    assert client.get(endpoint).json() == duplicate
+
+
+def test_candidate_empty_condition_is_stored_as_absent(tmp_path):
+    """#247: the save route accepts the same absent condition as the legacy import."""
+    app = create_app(tmp_path)
+    client = TestClient(app)
+    draft = new_draft(client)
+    endpoint = f"/api/v1/web/drafts/{draft['id']}"
+    payload = candidates(draft)
+    payload["candidates"][0]["condition"] = ""
+    response = client.post(endpoint + "/candidates", headers=HEADERS, json=payload)
+    assert response.status_code == 200, response.text
+    updated = response.json()
+    assert updated["candidates"][0]["condition"] is None
+    capture = app.state.web_intake.captures(updated, require_checked=False)[0]
+    assert capture["claims"][0].condition is None
 
 
 def test_failed_source_retained_and_manual_fallback(tmp_path):

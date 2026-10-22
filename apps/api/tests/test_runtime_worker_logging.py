@@ -10,6 +10,7 @@ binding of those strings to ``app.conf`` stays covered in
 import logging
 
 import pytest
+
 from privacytrace.runtime_worker import (
     _DIAGNOSTIC_CODES,
     WORKER_LOG_FORMAT,

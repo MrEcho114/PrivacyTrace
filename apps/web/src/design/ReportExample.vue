@@ -59,7 +59,7 @@ function returnToFinding() {
           <template v-if="selected"><div class="pt-selected-context"><p class="pt-code">对应条目 {{ selectedNumber }} · {{ selectedEvidence.length }} 条关联证据</p><h3 id="selected-evidence-heading" class="pt-evidence-title">{{ selected.title }}的对应证据</h3><p>对照结论：{{ selected.conclusion }} · {{ selected.review }}</p></div>
             <ul class="pt-evidence-list"><li v-for="evidence in selectedEvidence" :key="evidence.id"><strong>{{ evidence.kind }}</strong><p class="pt-locator">{{ evidence.locator }}</p><p>{{ evidence.excerpt }}</p></li></ul>
             <p v-if="!selectedEvidence.length">本项尚无可定位证据，需补充材料。</p>
-          </template><p v-else class="pt-empty">尚无证据。未知与未检查项继续保留。</p>
+          </template><p v-else class="pt-empty">选择任一条目查看对应证据；未知与未检查项仍保留。</p>
           <details ref="policyDetails" class="pt-policy-details"><summary>政策原文与适用边界</summary>
             <p v-for="policy in report.policySources" :key="policy.id">{{ policy.text }}</p><p v-if="!report.policySources.length">尚无政策原文。</p>
             <dl class="pt-technical"><div><dt>提取</dt><dd>{{ report.extraction }}</dd></div></dl>

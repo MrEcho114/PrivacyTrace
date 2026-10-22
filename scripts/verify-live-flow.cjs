@@ -124,12 +124,12 @@ async function main() {
     await page.screenshot({ path: path.join(output, 'progress-1440.png'), fullPage: true })
     if (!publicMode) {
       await page.getByRole('button', { name: '取消分析', exact: true }).click()
-      await page.getByRole('button', { name: '重新创建分析', exact: true }).waitFor()
+      await page.getByRole('button', { name: '重新分析', exact: true }).waitFor()
       const cancelledDraft = await read()
       const cancelledJob = await fetch(api + '/api/v1/jobs/' + cancelledDraft.jobs[0].job_id).then(r => r.json())
       assert.equal(cancelledJob.state, 'CANCELLED')
       assert.equal(cancelledDraft.jobs.length, 1)
-      await page.getByRole('button', { name: '重新创建分析', exact: true }).click()
+      await page.getByRole('button', { name: '重新分析', exact: true }).click()
     }
     await page.getByRole('button', { name: '查看报告', exact: true }).waitFor({ timeout: 180000 })
     draft = await read(); const run = draft.jobs.at(-1); const job = await fetch(api + '/api/v1/jobs/' + run.job_id).then(r => r.json())

@@ -12,7 +12,7 @@ export function displaySourceUrl(value: string | null | undefined): string {
     url.searchParams.forEach((_, key) => keys.push(key))
     for (const key of keys) url.searchParams.set(key, 'REDACTED')
     return url.toString()
-  } catch { return '网址格式无效' }
+  } catch { return '网址需以 http:// 或 https:// 开头。' }
 }
 export type LiveDraft = {
   id: string; revision: number; name: string; uploaded: boolean; apk_sha256: string | null

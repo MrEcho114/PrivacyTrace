@@ -1,0 +1,502 @@
+{
+  "checks": [
+    {
+      "command": "GET /_health/live, /_health/ready, /api/v1/health",
+      "detail": {
+        "at": "2026-10-22T00:46:41Z",
+        "health": 200,
+        "live": 200,
+        "note": "baseline",
+        "ready": 200,
+        "ready_body": null
+      },
+      "duration_s": 0.993,
+      "name": "r4.baseline_health",
+      "notes": "live=200 ready=200",
+      "result_digest": "sha256:142d8ab286b79f79",
+      "started_at": "2026-10-22T00:46:40Z",
+      "status": "PASS",
+      "ticket": "R4"
+    },
+    {
+      "command": "compose restart api + readiness sampling",
+      "detail": {
+        "after": {
+          "at": "2026-10-22T00:46:50Z",
+          "health": 200,
+          "live": 200,
+          "note": "recovery poll",
+          "ready": 200,
+          "ready_body": null
+        },
+        "before": {
+          "at": "2026-10-22T00:46:42Z",
+          "health": 200,
+          "live": 200,
+          "note": "before injection",
+          "ready": 200,
+          "ready_body": null
+        },
+        "during": {
+          "at": "",
+          "health": 0,
+          "live": 0,
+          "note": "connection refused during injection",
+          "ready": 0,
+          "ready_body": null
+        },
+        "means": "docker compose restart api"
+      },
+      "duration_s": 9.205,
+      "name": "r4.restart.api",
+      "notes": "recovered: live=200 ready=200",
+      "result_digest": "sha256:99fe57dc99a27afc",
+      "started_at": "2026-10-22T00:46:41Z",
+      "status": "PASS",
+      "ticket": "R4"
+    },
+    {
+      "command": "compose restart redis + readiness sampling",
+      "detail": {
+        "after": {
+          "at": "2026-10-22T00:47:14Z",
+          "health": 200,
+          "live": 200,
+          "note": "recovery poll",
+          "ready": 200,
+          "ready_body": null
+        },
+        "before": {
+          "at": "2026-10-22T00:46:51Z",
+          "health": 200,
+          "live": 200,
+          "note": "before injection",
+          "ready": 200,
+          "ready_body": null
+        },
+        "during": {
+          "at": "2026-10-22T00:46:53Z",
+          "health": 200,
+          "live": 200,
+          "note": "after injection",
+          "ready": 503,
+          "ready_body": null
+        },
+        "means": "docker compose restart redis; readiness must recover"
+      },
+      "duration_s": 23.742,
+      "name": "r4.restart.redis",
+      "notes": "recovered: live=200 ready=200",
+      "result_digest": "sha256:97eace978fb043ec",
+      "started_at": "2026-10-22T00:46:50Z",
+      "status": "PASS",
+      "ticket": "R4"
+    },
+    {
+      "command": "compose restart worker + readiness sampling",
+      "detail": {
+        "after": {
+          "at": "2026-10-22T00:47:18Z",
+          "health": 200,
+          "live": 200,
+          "note": "recovery poll",
+          "ready": 200,
+          "ready_body": null
+        },
+        "before": {
+          "at": "2026-10-22T00:47:14Z",
+          "health": 200,
+          "live": 200,
+          "note": "before injection",
+          "ready": 200,
+          "ready_body": null
+        },
+        "during": {
+          "at": "2026-10-22T00:47:17Z",
+          "health": 200,
+          "live": 200,
+          "note": "after injection",
+          "ready": 200,
+          "ready_body": null
+        },
+        "means": "docker compose restart worker; readiness must recover"
+      },
+      "duration_s": 4.544,
+      "name": "r4.restart.worker",
+      "notes": "recovered: live=200 ready=200",
+      "result_digest": "sha256:986e6a5ae8a5efc7",
+      "started_at": "2026-10-22T00:47:14Z",
+      "status": "PASS",
+      "ticket": "R4"
+    },
+    {
+      "command": "compose restart runner + readiness sampling",
+      "detail": {
+        "after": {
+          "at": "2026-10-22T00:47:23Z",
+          "health": 200,
+          "live": 200,
+          "note": "recovery poll",
+          "ready": 200,
+          "ready_body": null
+        },
+        "before": {
+          "at": "2026-10-22T00:47:19Z",
+          "health": 200,
+          "live": 200,
+          "note": "before injection",
+          "ready": 200,
+          "ready_body": null
+        },
+        "during": {
+          "at": "2026-10-22T00:47:22Z",
+          "health": 200,
+          "live": 200,
+          "note": "after injection",
+          "ready": 503,
+          "ready_body": null
+        },
+        "means": "restart the laboratory Runner; re-check authenticated readiness"
+      },
+      "duration_s": 4.955,
+      "name": "r4.restart.runner",
+      "notes": "recovered: live=200 ready=200",
+      "result_digest": "sha256:b405c1b7ccb3c130",
+      "started_at": "2026-10-22T00:47:18Z",
+      "status": "PASS",
+      "ticket": "R4"
+    },
+    {
+      "command": "compose stop redis -> readiness must degrade while live stays 200 -> compose start redis",
+      "detail": {
+        "after": {
+          "at": "2026-10-22T00:47:46Z",
+          "health": 200,
+          "live": 200,
+          "note": "recovery poll",
+          "ready": 200,
+          "ready_body": null
+        },
+        "before": {
+          "at": "2026-10-22T00:47:24Z",
+          "health": 200,
+          "live": 200,
+          "note": "before outage",
+          "ready": 200,
+          "ready_body": null
+        },
+        "during": {
+          "at": "2026-10-22T00:47:29Z",
+          "health": 200,
+          "live": 200,
+          "note": "broker stopped",
+          "ready": 503,
+          "ready_body": null
+        }
+      },
+      "duration_s": 23.24,
+      "name": "r4.broker_outage_and_recovery",
+      "notes": "live stayed 200, ready degraded to 503, recovered to 200",
+      "result_digest": "sha256:bd4b250b7f9c8650",
+      "started_at": "2026-10-22T00:47:23Z",
+      "status": "PASS",
+      "ticket": "R4"
+    },
+    {
+      "command": "stop laboratory runner -> readiness 503 -> restart -> readiness 200",
+      "detail": {
+        "after": {
+          "at": "2026-10-22T00:47:55Z",
+          "health": 200,
+          "live": 200,
+          "note": "recovery poll",
+          "ready": 200,
+          "ready_body": null
+        },
+        "during": {
+          "at": "2026-10-22T00:47:49Z",
+          "health": 200,
+          "live": 200,
+          "note": "",
+          "ready": 503,
+          "ready_body": null
+        }
+      },
+      "duration_s": 9.129,
+      "name": "r4.runner_heartbeat_loss",
+      "notes": "authenticated Runner readiness degraded and recovered",
+      "result_digest": "sha256:f877c365af3e9296",
+      "started_at": "2026-10-22T00:47:46Z",
+      "status": "PASS",
+      "ticket": "R4"
+    },
+    {
+      "command": "submit job -> POST /jobs/{id}/cancel -> GET job must reach CANCELLED",
+      "detail": {
+        "cancel_status": 200,
+        "final_state": "CANCELLED",
+        "job_id": "2560ddd7f1d74064a1817476d408ef74",
+        "trail": [
+          {
+            "at": 62160.034,
+            "state": "CANCELLED"
+          }
+        ]
+      },
+      "duration_s": 0.493,
+      "name": "r4.cancel_submitted_job",
+      "notes": "cancel accepted, job reached CANCELLED",
+      "result_digest": "sha256:6ddfe4ccd7108917",
+      "started_at": "2026-10-22T00:47:55Z",
+      "status": "PASS",
+      "ticket": "R4"
+    },
+    {
+      "command": "submit -> DELETE draft -> job must not publish a report",
+      "detail": {
+        "delete_status": 200,
+        "report_after_delete": 404
+      },
+      "duration_s": 0.489,
+      "name": "r4.delete_submitted_scope",
+      "notes": "draft deleted; report now HTTP 404",
+      "result_digest": "sha256:6a2b7e5609709134",
+      "started_at": "2026-10-22T00:47:56Z",
+      "status": "PASS",
+      "ticket": "R4"
+    },
+    {
+      "command": "old attempt / revoked lease result must be fenced out",
+      "detail": {
+        "completed_output_sha256": "da42708472108cd33073ebeede035584a8a0195feea2c54b0e5ed81c7e0eb699",
+        "final_state": "CANCELLED",
+        "input_sha256": "7abc27d59a498184cb0b1e1530df73357d2c3cc4af69bbb299aa37ada0574801",
+        "old_fence": 1,
+        "report_status": 409,
+        "revoked_fence": 2,
+        "runner_isolation": {
+          "cleanup_verified": true,
+          "container": "privacytrace-5bf491a21bb24cdaa39d260148083fa4",
+          "container_created": true,
+          "exit_state": {
+            "ExitCode": 0,
+            "OOMKilled": false,
+            "Running": false
+          },
+          "image_id": "sha256:8f37fe18e853fd05f84d563cce6c2c254e0215a8808ddd2c280fb56eb95f7f4f",
+          "input_removed": true,
+          "isolation": {
+            "CapAdd": null,
+            "CapDrop": [
+              "ALL"
+            ],
+            "Memory": 1073741824,
+            "MemorySwap": 1073741824,
+            "NanoCpus": 1000000000,
+            "NetworkMode": "none",
+            "PidsLimit": 32,
+            "Privileged": false,
+            "ReadonlyRootfs": true,
+            "SecurityOpt": [
+              "no-new-privileges:true"
+            ]
+          },
+          "mounts": [
+            {
+              "destination": "/input/sample.apk",
+              "read_only": true
+            }
+          ],
+          "request_id": "81660722-e80d-52ec-ba1c-ab234244a0b1",
+          "user": "65534:65534",
+          "version": 1
+        }
+      },
+      "duration_s": 41.613,
+      "name": "r4.late_result_rejected",
+      "notes": "real completed Runner output fenced after cancellation",
+      "result_digest": "sha256:e24d55e200d70dda",
+      "started_at": "2026-10-22T00:47:56Z",
+      "status": "PASS",
+      "ticket": "R4"
+    },
+    {
+      "command": "compose --profile reclamation run --rm reclaim (one-shot, object counts)",
+      "detail": {
+        "collector_output_lines": 1,
+        "object_counts": {
+          "directories": 0,
+          "objects": 0,
+          "pending": 0,
+          "temporary": 0
+        }
+      },
+      "duration_s": 3.276,
+      "name": "r4.orphan_reclamation",
+      "notes": "reclaim objects=0 temporary=0",
+      "result_digest": "sha256:3d0838e1dbe1301c",
+      "started_at": "2026-10-22T00:48:38Z",
+      "status": "PASS",
+      "ticket": "R4"
+    },
+    {
+      "command": "run the controlled OOM/timeout worker images against the runner",
+      "detail": {
+        "oom": {
+          "actual_isolation": {
+            "cleanup_verified": true,
+            "container": "privacytrace-111018daeab141be99d3f0779c88793b",
+            "container_created": true,
+            "exit_state": {
+              "ExitCode": 137,
+              "OOMKilled": true,
+              "Running": false
+            },
+            "image_id": "sha256:4e8a8010c6fde3d1bf774a8cc03e2e428a7a09152a95de5937b33261b31ba3cf",
+            "input_removed": true,
+            "isolation": {
+              "CapAdd": null,
+              "CapDrop": [
+                "ALL"
+              ],
+              "Memory": 1073741824,
+              "MemorySwap": 1073741824,
+              "NanoCpus": 1000000000,
+              "NetworkMode": "none",
+              "PidsLimit": 32,
+              "Privileged": false,
+              "ReadonlyRootfs": true,
+              "SecurityOpt": [
+                "no-new-privileges:true"
+              ]
+            },
+            "mounts": [
+              {
+                "destination": "/input/sample.apk",
+                "read_only": true
+              }
+            ],
+            "request_id": "18b70711-80c1-558b-a0be-5b44a3a2eaa7",
+            "user": "65534:65534",
+            "version": 1
+          },
+          "error": "OOM",
+          "image_id": "sha256:4e8a8010c6fde3d1bf774a8cc03e2e428a7a09152a95de5937b33261b31ba3cf"
+        },
+        "orphan": {
+          "final_state": "SUCCEEDED",
+          "new_fence": 3,
+          "old_fence": 1,
+          "orphan_observed": true,
+          "orphan_removed_on_restart": true,
+          "same_job_recovered": true
+        },
+        "timeout": {
+          "actual_isolation": {
+            "cleanup_verified": true,
+            "container": "privacytrace-64b696e9766742049af619575a3f3308",
+            "container_created": true,
+            "exit_state": null,
+            "image_id": "sha256:83c339c7861bdd5b2b00495f1eaf29ed2a96d2b0cd0a3a35a78779a2096c0f62",
+            "input_removed": true,
+            "isolation": {
+              "CapAdd": null,
+              "CapDrop": [
+                "ALL"
+              ],
+              "Memory": 1073741824,
+              "MemorySwap": 1073741824,
+              "NanoCpus": 1000000000,
+              "NetworkMode": "none",
+              "PidsLimit": 32,
+              "Privileged": false,
+              "ReadonlyRootfs": true,
+              "SecurityOpt": [
+                "no-new-privileges:true"
+              ]
+            },
+            "mounts": [
+              {
+                "destination": "/input/sample.apk",
+                "read_only": true
+              }
+            ],
+            "request_id": "df6fccad-e35b-5a1b-93aa-430d354f185b",
+            "user": "65534:65534",
+            "version": 1
+          },
+          "error": "TIMEOUT",
+          "image_id": "sha256:83c339c7861bdd5b2b00495f1eaf29ed2a96d2b0cd0a3a35a78779a2096c0f62"
+        }
+      },
+      "duration_s": 136.848,
+      "name": "r4.oom_and_timeout_budget",
+      "notes": "controlled Docker faults and owned-orphan recovery verified",
+      "result_digest": "sha256:fdc4fbaef8c3af2d",
+      "started_at": "2026-10-22T00:48:41Z",
+      "status": "PASS",
+      "ticket": "R4"
+    }
+  ],
+  "environment": {
+    "allow_destructive": true,
+    "allow_writes": true,
+    "compose_files": [
+      "<private-home>/pkg-coldstart2/PrivacyTrace_322234/01_\u4f5c\u54c1\u53ca\u6210\u679c\u6587\u4ef6/source/deploy/compose.yaml",
+      "/var/tmp/pt81-af53da6cdfeb/ports.yaml",
+      "/var/tmp/pt81-af53da6cdfeb/laboratory.json"
+    ],
+    "cpu_count": 8,
+    "cpu_model": "13th Gen Intel(R) Core(TM) i9-13900H",
+    "cwd": "<private-home>/pkg-coldstart2/PrivacyTrace_322234/01_\u4f5c\u54c1\u53ca\u6210\u679c\u6587\u4ef6/source",
+    "disk": {
+      "filesystem": "ext2/ext3",
+      "free_bytes": 920723570688,
+      "path": "<private-home>/pkg-coldstart2/PrivacyTrace_322234/01_\u4f5c\u54c1\u53ca\u6210\u679c\u6587\u4ef6/source",
+      "total_bytes": 1081101176832
+    },
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "machine": "x86_64",
+    "memory_bytes": 16770527232,
+    "os": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "release": "6.18.33.2-microsoft-standard-WSL2",
+    "system": "Linux",
+    "tools": {
+      "compose": "5.5.0",
+      "docker_client": "29.7.2",
+      "docker_server": "29.7.2",
+      "git": "git version 2.43.0",
+      "python": "Python 3.12.3",
+      "topology_base_url": "https://privacytrace.test:58332"
+    },
+    "topology_configured": true,
+    "wsl": true
+  },
+  "finished_at": "2026-10-22T00:50:58Z",
+  "notes": "Only documented operator actions are used (compose restart/stop/start, reclamation profile). No volume, database or host path is touched.",
+  "receipt_version": 1,
+  "scope": "r4-fault-injection-recovery",
+  "source_sha": "6c04b331cb215ef0f2c7aaccef39b47292d7b468",
+  "started_at": "2026-10-22T00:46:40Z",
+  "summary": {
+    "by_ticket": {
+      "R4": {
+        "fail": 0,
+        "not_tested": 0,
+        "pass": 12,
+        "skip": 0
+      }
+    },
+    "conclusion": "ALL_PASS",
+    "evidence_free": false,
+    "fail": 0,
+    "not_tested": 0,
+    "pass": 12,
+    "pass_rate_of_verified": 1.0,
+    "skip": 0,
+    "total": 12,
+    "untested_scopes": 0,
+    "verified": 12
+  },
+  "untested": []
+}

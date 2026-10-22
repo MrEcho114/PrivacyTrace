@@ -13,7 +13,11 @@ pytest.importorskip("celery", reason="Install runtime extra for Celery protocol 
 from privacytrace.postgres_execution import LeaseLost  # noqa: E402
 from privacytrace.postgres_store import PostgresOperationUnavailable  # noqa: E402
 from privacytrace.queue_runtime import PROBE_TASK_NAME, TASK_NAME, BrokerConfig  # noqa: E402
-from privacytrace.runtime_worker import create_worker_app  # noqa: E402
+from privacytrace.runtime_worker import (  # noqa: E402
+    WORKER_LOG_FORMAT,
+    WORKER_TASK_LOG_FORMAT,
+    create_worker_app,
+)
 
 
 def test_worker_registry_contains_only_fixed_json_task_and_rejects_embedded_canvas(monkeypatch):
@@ -117,40 +121,18 @@ print('CONSTRUCTED')
     assert child.stdout.strip() == "CONSTRUCTED"
 
 
-@pytest.mark.parametrize("code", ["LEASE_LOST", "EXECUTION_NOT_ACQUIRED"])
-def test_worker_log_formats_keep_fixed_diagnostic_code_visible(code):
-    """A format without %(message)s renders the bracket prefix only (#179).
+def test_worker_app_binds_the_message_preserving_log_formats():
+    """The formats handed to Celery must be the ones that keep %(message)s (#179).
 
-    The container log is the sole carrier of the fixed diagnostic codes, so both
-    Celery formats must preserve the record body while still adding no fields
-    beyond level and message.
+    The rendering contract lives in test_runtime_worker_logging.py, which needs no
+    celery; this case only pins the binding to app.conf.
     """
 
     instance = str(uuid4())
     app = create_worker_app(BrokerConfig("redis://u:p@127.0.0.1:1/15", instance))
-    record = logging.LogRecord(
-        "privacytrace.runtime_worker",
-        logging.WARNING,
-        __file__,
-        1,
-        "privacytrace.worker.%s",
-        (code,),
-        None,
-    )
-    formats = {
-        "worker_task_log_format": (
-            app.conf.worker_task_log_format,
-            f"[privacytrace runtime task WARNING] privacytrace.worker.{code}",
-        ),
-        "worker_log_format": (
-            app.conf.worker_log_format,
-            f"[privacytrace runtime WARNING] privacytrace.worker.{code}",
-        ),
-    }
     try:
-        for name, (template, expected) in formats.items():
-            assert "%(message)s" in template, f"{name} discards the diagnostic body"
-            assert logging.Formatter(template).format(record) == expected
+        assert app.conf.worker_task_log_format == WORKER_TASK_LOG_FORMAT
+        assert app.conf.worker_log_format == WORKER_LOG_FORMAT
     finally:
         app.close()
 

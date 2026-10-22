@@ -85,6 +85,35 @@ def test_canonical_all_states_preserve_sources_and_external_audit(intake):
     assert all(c["document"].attachments_status == "NOT_CHECKED" for c in captures)
 
 
+def test_source_less_not_found_and_offline_may_omit_source_entirely(intake):
+    """#241: the documented NOT_FOUND/OFFLINE shape omits `source`, not nulls it."""
+    client, route, _ = intake
+    response = client.post(route + "/import-external", headers=HEADERS, json=collection(
+        {"state": "NOT_FOUND"},
+        {"state": "OFFLINE", "observed_at": "2026-10-16T03:00:00+08:00"},
+    ))
+    assert response.status_code == 200, response.text
+    draft = client.get(route).json()
+    assert [s["id"] for s in draft["sources"]] == ["placeholder"]
+    assert not draft["candidates"]
+    audit = draft["external_imports"][0]
+    assert [r["state"] for r in audit["results"]] == ["NOT_FOUND", "OFFLINE"]
+    assert [r["source_id"] for r in audit["results"]] == [None, None]
+    assert audit["results"][1]["observed_at"] == "2026-10-16T03:00:00+08:00"
+
+
+@pytest.mark.parametrize("state", ["RETRIEVED", "PROVIDED", "URL_ONLY", "UNAVAILABLE"])
+def test_states_that_need_a_source_still_reject_an_omitted_one(intake, state):
+    """#241 keeps the other states strict: a missing source is not a discovery result."""
+    client, route, _ = intake
+    before = client.get(route).json()
+    response = client.post(route + "/import-external", headers=HEADERS, json=collection(
+        {"state": state},
+    ))
+    assert response.status_code == 422, response.text
+    assert client.get(route).json() == before
+
+
 @pytest.mark.parametrize("source_type", [
     "SDK_POLICY", "OFFICIAL_WEB_POLICY", "STORE_POLICY", "IN_APP_POLICY",
 ])

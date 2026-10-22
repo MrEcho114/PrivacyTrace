@@ -39,6 +39,15 @@ test('offline absence stays absent and unknown versions and malformed shapes are
   assert.equal(previewExternal(JSON.stringify(payload(null))).sources.length, 0)
   for (const raw of ['[]', 'null', '{}', '{', JSON.stringify({ ...payload(), version: 'future/2' }), JSON.stringify({ ...payload(), results: [] })]) assert.throws(() => previewExternal(raw))
 })
+test('source-less NOT_FOUND and OFFLINE results preview without inventing a source', () => {
+  // #241: the collected shape omits `source` for NOT_FOUND/OFFLINE.
+  const raw = JSON.stringify({ version: 'privacytrace-policy-collector/1', results: [{ state: 'NOT_FOUND' }, { state: 'OFFLINE' }] })
+  const preview = previewExternal(raw)
+  assert.equal(preview.sources.length, 0)
+  assert.equal(preview.payload.results.length, 2)
+  // A non-object source is still malformed rather than merely absent.
+  assert.throws(() => previewExternal(JSON.stringify({ version: 'privacytrace-policy-collector/1', results: [{ state: 'PROVIDED', source: '正文' }] })), /来源格式不完整/)
+})
 test('legacy summaries and invalid extra fields are preserved for server validation', () => {
   const input = { source: { id: 'ext', title: '原文', text: '原句\r\n😀', source_type: 'IN_APP_POLICY' }, claims: [], summary: '摘要不能成为正文', forbidden: true }
   assert.deepEqual(JSON.parse(JSON.stringify(confirmExternal(previewExternal(JSON.stringify(input))))), input)

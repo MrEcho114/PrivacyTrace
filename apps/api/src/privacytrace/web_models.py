@@ -98,7 +98,7 @@ class ExternalPolicyExportInput(Model):
 
 class ExternalCollectionResult(Model):
     state: Literal["RETRIEVED", "PROVIDED", "URL_ONLY", "OFFLINE", "NOT_FOUND", "UNAVAILABLE"]
-    source: CollectedSourceInput | None
+    source: CollectedSourceInput | None = None
     observed_at: AwareDatetime | None = None
 
     @field_validator("observed_at", mode="before")

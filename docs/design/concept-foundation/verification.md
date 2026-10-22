@@ -54,7 +54,7 @@
 | --- | --- | --- | --- |
 | `npm run test --workspace @privacytrace/web` | PASS | 132/132（126 既有 + 6 copy-contract） | 终端输出 `tests 132 / pass 132 / fail 0` |
 | `PRIVACYTRACE_FRONTEND_URL=http://127.0.0.1:5191 npm run acceptance:frontend` | PASS（exit 0） | frontend-flow：brand 103 项、reports 15 项移动断言；policy-assist：10 项真实 HTTP/UI | `tmp/issue44-ui/verification.json`、`tmp/issue72-policy-assist/verification.json` |
-| `node scripts/verify-copy-contract.cjs`（无 env，自启 dev server） | PASS | 42 checks / 25 张截图 | [copy-contract.json](acceptance/issue165/copy-contract.json)、[截图目录](acceptance/issue165/screenshots/) |
+| `node scripts/verify-copy-contract.cjs`（无 env，自启 dev server） | PASS | 42 checks / 25 张截图 | [copy-contract.json](../../acceptance/issue165/copy-contract.json)、[截图目录](../../acceptance/issue165/screenshots/) |
 | `PRIVACYTRACE_FRONTEND_URL=http://127.0.0.1:5191 node scripts/verify-issue143-hierarchy.cjs` | PASS | 11 checks | `tmp/issue143-hierarchy/verification.json` |
 | `PRIVACYTRACE_FRONTEND_URL=http://127.0.0.1:5191 node scripts/verify-issue146-motion.cjs` | PASS | 20 checks | `tmp/issue146-motion/verification.json` |
 | `PRIVACYTRACE_FRONTEND_URL=http://127.0.0.1:5191 node scripts/verify-issue145-a11y.cjs` | PASS | 14 checks | `tmp/issue145-a11y/verification.json` |
@@ -89,15 +89,15 @@
 
 ### 截图
 
-[`docs/acceptance/issue165/screenshots/`](acceptance/issue165/screenshots/) 目录内共 28 张：copy-contract 产出 25 张（42 checks），另有 3 张 #169 品牌截图（见 #169 节）。独立视觉审阅指出旧截图没有报告首屏与移动主操作帧，已重拍：
+[`docs/acceptance/issue165/screenshots/`](../../acceptance/issue165/screenshots/) 目录内共 28 张：copy-contract 产出 25 张（42 checks），另有 3 张 #169 品牌截图（见 #169 节）。独立视觉审阅指出旧截图没有报告首屏与移动主操作帧，已重拍：
 
-- [import-1440](acceptance/issue165/screenshots/import-1440.png)、[candidates-1440](acceptance/issue165/screenshots/candidates-1440.png)、[progress-1440](acceptance/issue165/screenshots/progress-1440.png)
-- 报告首屏（scrollTop=0）：[report-1440-top](acceptance/issue165/screenshots/report-1440-top.png)、[report-1280-top](acceptance/issue165/screenshots/report-1280-top.png)、[report-768-top](acceptance/issue165/screenshots/report-768-top.png)、[report-390-top](acceptance/issue165/screenshots/report-390-top.png)、[report-320-top](acceptance/issue165/screenshots/report-320-top.png)
-- 报告交互帧（选中第二行 + 证据区）：[report-1440](acceptance/issue165/screenshots/report-1440.png)、[report-1280](acceptance/issue165/screenshots/report-1280.png)、[report-768](acceptance/issue165/screenshots/report-768.png)、[report-390](acceptance/issue165/screenshots/report-390.png)、[report-320](acceptance/issue165/screenshots/report-320.png)
-- 移动主操作帧：[report-390-action](acceptance/issue165/screenshots/report-390-action.png)、[report-320-action](acceptance/issue165/screenshots/report-320-action.png)
-- 200% 根文字首屏：[report-390-200-top](acceptance/issue165/screenshots/report-390-200-top.png)、[report-320-200-top](acceptance/issue165/screenshots/report-320-200-top.png)；200% 主操作帧：[report-390-200](acceptance/issue165/screenshots/report-390-200.png)、[report-320-200](acceptance/issue165/screenshots/report-320-200.png)
-- [settings-1440](acceptance/issue165/screenshots/settings-1440.png)、[settings-390](acceptance/issue165/screenshots/settings-390.png)
-- [archive-1440](acceptance/issue165/screenshots/archive-1440.png)、[archive-390](acceptance/issue165/screenshots/archive-390.png)
+- [import-1440](../../acceptance/issue165/screenshots/import-1440.png)、[candidates-1440](../../acceptance/issue165/screenshots/candidates-1440.png)、[progress-1440](../../acceptance/issue165/screenshots/progress-1440.png)
+- 报告首屏（scrollTop=0）：[report-1440-top](../../acceptance/issue165/screenshots/report-1440-top.png)、[report-1280-top](../../acceptance/issue165/screenshots/report-1280-top.png)、[report-768-top](../../acceptance/issue165/screenshots/report-768-top.png)、[report-390-top](../../acceptance/issue165/screenshots/report-390-top.png)、[report-320-top](../../acceptance/issue165/screenshots/report-320-top.png)
+- 报告交互帧（选中第二行 + 证据区）：[report-1440](../../acceptance/issue165/screenshots/report-1440.png)、[report-1280](../../acceptance/issue165/screenshots/report-1280.png)、[report-768](../../acceptance/issue165/screenshots/report-768.png)、[report-390](../../acceptance/issue165/screenshots/report-390.png)、[report-320](../../acceptance/issue165/screenshots/report-320.png)
+- 移动主操作帧：[report-390-action](../../acceptance/issue165/screenshots/report-390-action.png)、[report-320-action](../../acceptance/issue165/screenshots/report-320-action.png)
+- 200% 根文字首屏：[report-390-200-top](../../acceptance/issue165/screenshots/report-390-200-top.png)、[report-320-200-top](../../acceptance/issue165/screenshots/report-320-200-top.png)；200% 主操作帧：[report-390-200](../../acceptance/issue165/screenshots/report-390-200.png)、[report-320-200](../../acceptance/issue165/screenshots/report-320-200.png)
+- [settings-1440](../../acceptance/issue165/screenshots/settings-1440.png)、[settings-390](../../acceptance/issue165/screenshots/settings-390.png)
+- [archive-1440](../../acceptance/issue165/screenshots/archive-1440.png)、[archive-390](../../acceptance/issue165/screenshots/archive-390.png)
 
 其他脚本截图位置：`tmp/issue44-ui/screenshots/`、`tmp/concept-foundation/`、`tmp/issue144-round2/evidence/`、`tmp/mobile-reading/`、`tmp/issue72-native/`、`tmp/issue143-hierarchy/`、`tmp/issue145-a11y/`、`tmp/issue146-motion/`、`tmp/issue72-policy-assist/`。`docs/acceptance/issue144/round2/` 为历史证据，本轮未替换。所有截图都是 Chromium 合成示例，不是真机或真实扫描证据。
 
@@ -156,9 +156,9 @@
 ### 截图与证据
 
 - 品牌专属截图（由 brand-topbar 的真实 Chromium 断言运行产出，`5781ffc` 入库）：
-  - [brand-topbar-1440.png](acceptance/issue165/screenshots/brand-topbar-1440.png)：工作台顶栏品牌位
-  - [brand-mobile-390.png](acceptance/issue165/screenshots/brand-mobile-390.png)：移动 appbar 品牌位
-  - [brand-offline-1440.png](acceptance/issue165/screenshots/brand-offline-1440.png)：离线报告顶栏品牌位
+  - [brand-topbar-1440.png](../../acceptance/issue165/screenshots/brand-topbar-1440.png)：工作台顶栏品牌位
+  - [brand-mobile-390.png](../../acceptance/issue165/screenshots/brand-mobile-390.png)：移动 appbar 品牌位
+  - [brand-offline-1440.png](../../acceptance/issue165/screenshots/brand-offline-1440.png)：离线报告顶栏品牌位
 - 其余品牌断言随 `verify-frontend-flow`、`verify-mobile-flow`、`verify-issue143-hierarchy` 运行，截图在各脚本的 `captureWidths` 输出目录（如 `tmp/issue44-ui/screenshots/`）。
 - `tmp/brand-assets/verification.json`：17 项检查、46 个文件哈希、2 个失败用例、`idempotent: true`、`errors: []`。
 

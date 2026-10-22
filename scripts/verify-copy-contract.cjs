@@ -32,6 +32,12 @@ const root = path.resolve(__dirname, '..')
 const output = path.join(root, 'docs/acceptance/issue165')
 const screenshots = path.join(output, 'screenshots')
 fs.mkdirSync(screenshots, { recursive: true })
+// Snapshot the tree before this script writes its own evidence: otherwise the
+// `dirty` field would always be true once the screenshots land.
+const initialDirty = execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8', cwd: root })
+  .split(/\r?\n/)
+  .filter((line) => line.trim() && !line.includes('docs/acceptance/issue165'))
+  .length > 0
 
 const steps = ['APK 与政策材料', '核对政策声明', '扫描与对照进度', '对照报告']
 const reportTitle = 'APP 隐私收集越权报告'
@@ -406,7 +412,7 @@ async function main() {
     assert.deepEqual(errors, [], 'browser page errors: ' + JSON.stringify(errors))
     proof.result = 'PASS'
     proof.commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8', cwd: root }).trim()
-    proof.dirty = Boolean(execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8', cwd: root }).trim())
+    proof.dirty = initialDirty
     proof.recordedApiRequests = requests
     proof.archiveApiRequests = archiveApi
     console.log(`Copy contract passed: ${checks.length} checks, ${captures.length} screenshots -> docs/acceptance/issue165/`)

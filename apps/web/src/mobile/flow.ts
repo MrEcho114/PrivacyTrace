@@ -290,5 +290,36 @@ export function createMobileFlow(bridge: MobileBridge) {
       notice.value = '模型结果已放入回填框，请检查并确认来源类型；模型返回不等于已取得政策。'
     })
   }
-  return { state, context, draft, job, report, taxonomy, busy, error, notice, model, modelResult, resultToken, hasPolicyText, settings, collect, select, refresh, importCollected, prepare, save, begin, poll, control, openReport, remove, stop }
+  // The candidate page offers one retry per source. Each click is a single native
+  // call under the normal busy/generation/epoch guards, so a late answer cannot
+  // overwrite a newer material and no model call is replayed automatically (#248).
+  async function retrySource(id: string) {
+    await run(async request => {
+      const source = draft.value?.sources.find(item => item.id === id)
+      if (!draft.value || !source) throw new Error('这份来源已不在当前材料中，请重新读取材料。')
+      if (!source.url?.trim()) throw new Error('这份来源没有可重新获取的网址，请返回材料页粘贴或导入政策文本。')
+      const value = await request<LiveDraft>('fetch', { source: id, revision: draft.value.revision })
+      apply(value)
+      const updated = value.sources.find(item => item.id === id)
+      notice.value = updated && usableSource(updated)
+        ? `${updated.title || '这份来源'}：已重新获取正文；未检查候选仍需确认，政策全文及附件未复核。`
+        : `${updated?.title || '这份来源'}：重新获取后仍未取得正文；可重试，或返回材料页手动补入。`
+    })
+  }
+  async function retryModel(id: string) {
+    await run(async request => {
+      const source = draft.value?.sources.find(item => item.id === id)
+      if (!draft.value || !source) throw new Error('这份来源已不在当前材料中，请重新读取材料。')
+      // Same precondition as WebIntake._extract: text present and the source not
+      // marked failed. A model call on a body-less source can only fail.
+      if (!source.text?.trim() || source.status === 'failed') throw new Error('这份来源尚未取得正文，无法提取候选；请先重新获取来源或手动补入正文。')
+      const value = await request<LiveDraft>('extract', { source: id, revision: draft.value.revision })
+      apply(value)
+      const failed = value.sources.find(item => item.id === id)?.model_audit?.status === 'FAILED'
+      notice.value = failed
+        ? `${source.title || '这份来源'}：候选提取仍未完成；可再次重试或手动补充，缺证据状态保留。`
+        : `${source.title || '这份来源'}：候选提取已完成；候选仍需检查，政策全文及附件未复核。`
+    })
+  }
+  return { state, context, draft, job, report, taxonomy, busy, error, notice, model, modelResult, resultToken, hasPolicyText, settings, collect, select, refresh, importCollected, prepare, save, begin, poll, control, openReport, remove, retrySource, retryModel, stop }
 }

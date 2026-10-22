@@ -82,4 +82,16 @@ async function resolvePort(variable, preferred) {
   return freePort()
 }
 
-module.exports = { assertPortBindable, bindError, freePort, resolvePort }
+// Resolves a loopback origin for a harness lane: the lane variable wins over the
+// repository-wide alias, an explicit value must be a TCP port, and the historical
+// default is kept when neither is set (the serving script must match this).
+function loopbackOrigin(laneVariable, portVariable, defaultPort) {
+  const raw = process.env[laneVariable] || process.env[portVariable]
+  if (raw === undefined || raw === '') return `http://127.0.0.1:${defaultPort}`
+  if (!/^\d+$/.test(raw) || Number(raw) < 1 || Number(raw) > 65535) {
+    throw new Error(`${laneVariable}/${portVariable} must be a TCP port, received '${raw}'`)
+  }
+  return `http://127.0.0.1:${Number(raw)}`
+}
+
+module.exports = { assertPortBindable, bindError, freePort, loopbackOrigin, resolvePort }

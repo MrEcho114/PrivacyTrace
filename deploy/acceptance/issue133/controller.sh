@@ -10,14 +10,14 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 NAME="${PT133E_CONTROLLER:-pt133e-controller}"
-REPO_ROOT="${PT133E_REPO_ROOT:-/mnt/d/Project/GitProject/PrivacyTrace}"
+REPO_ROOT="${PT133E_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)}"
 WORKTREE="${PT133E_WORKTREE:-$REPO_ROOT/.scratch/issue133-final/wt}"
 WORKTREE_CONTAINER="/repo-root/${WORKTREE#"$REPO_ROOT"/}"
 STATE="${PT133E_STATE:-/var/tmp/pt133e}"
 IMAGE="${PT133E_CONTROLLER_IMAGE:-}"
 SOURCE_SHA="${PT133E_SOURCE_SHA:-42088231db0817e385b64f7a0809e31010b3e81e}"
 CA_FILE="${PT133E_WEB_CA:-$REPO_ROOT/tmp/issue73-local-env/tls/ca.crt}"
-LAB_STATE="${PT133E_LAB_STATE:-/var/tmp/pt81-0c0f8a8a048d}"
+LAB_STATE="${PT133E_LAB_STATE:?set PT133E_LAB_STATE to the laboratory state directory}"
 
 usage() {
   echo "usage: $0 ensure|remove|status" >&2

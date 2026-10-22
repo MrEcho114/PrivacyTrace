@@ -48,6 +48,28 @@
   --font-body: 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
   --font-display: 'Noto Serif SC', SimSun, serif;
   --font-code: Consolas, 'Courier New', monospace;
+  /* Adopted GPT concept (#165, docs/design/concept-foundation/README.md §3).
+     Semantic roles for the integrated product entry: white work surface, one
+     tinted header, one vivid action colour, four identity stripes. The
+     independent foundation entry keeps its own variables in design/foundation.css;
+     these are the product-side roles, added without re-pointing the legacy
+     Pioneer palette that #160's existing components still consume. */
+  --pt-paper: #ffffff;
+  --pt-header: #ece5d6;
+  --pt-ink: #252a2e;
+  --pt-structure: #4c5a68;
+  --pt-muted: #4c5a68;
+  --pt-rule: #bfc7cf;
+  --pt-action: #d63a2c;
+  --pt-action-hover: #b92e22;
+  --pt-stripe-1: #4c5a68; --pt-stripe-2: #7a7f4e; --pt-stripe-3: #d2a85e; --pt-stripe-4: #a8432f;
+  --pt-font-body: var(--font-body);
+  --pt-font-display: var(--font-display);
+  --pt-font-code: var(--font-code);
+  --pt-control: 36px; --pt-touch: 48px; --pt-action-height: 56px;
+  --pt-type-report: 48px; --pt-type-finding: 28px; --pt-type-panel: 22px;
+  --pt-type-status: 18px; --pt-type-reading: 16px; --pt-type-action: 17px;
+  --pt-type-report-mobile: 36px; --pt-type-finding-mobile: 24px; --pt-type-panel-mobile: 20px;
   font-family: var(--font-body);
   color: var(--ink); background: var(--canvas); line-height: 1.6;
 }

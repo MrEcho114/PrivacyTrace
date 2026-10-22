@@ -11,6 +11,7 @@ EXACT = {
     "apps/api/alembic.ini",
     "apps/web/package.json",
     "apps/web/index.html",
+    "apps/web/design.html",
     "apps/web/tsconfig.json",
     "apps/web/vite.config.ts",
     "rules/taxonomy.v0.3.json",
@@ -47,6 +48,9 @@ def audit(root):
             and path.suffix == ".py"
             or name.startswith("apps/web/src/")
             and path.suffix in {".ts", ".vue", ".css", ".svg"}
+            # #169: the shipped mark and favicon live in the web public dir.
+            or name.startswith("apps/web/public/brand/")
+            and path.suffix in {".svg", ".png"}
         )
         if not allowed:
             raise ValueError("Unexpected file in deployment context")

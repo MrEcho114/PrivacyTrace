@@ -6,10 +6,14 @@
          shrink the layout viewport so focused controls and the buttons below them stay
          reachable. `interactive-widget` is ignored by browsers that do not support it. -->
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
-    <!-- #144: the Android app bar uses --surface (#fdfcfa); the system bar follows it. -->
-    <meta name="theme-color" content="#fdfcfa" />
+    <!-- #165/#144: the Android app bar uses --pt-header (#ece5d6); the system bar follows it. -->
+    <meta name="theme-color" content="#ece5d6" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
     <title>PrivacyTrace · 证据对照工作台</title>
+    <!-- Brand icons: sources and hashes in brand/README.md; public copies must stay byte-identical. -->
+    <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg" />
+    <link rel="icon" sizes="512x512" href="/brand/icon-512.png" />
+    <link rel="apple-touch-icon" href="/brand/icon-192.png" />
   </head>
   <body>
     <div id="app"></div>

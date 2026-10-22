@@ -116,7 +116,7 @@ async function runWorkflowExample(page) {
   for (let index = 0; index < 4; index++) await page.getByRole('button', { name: '进入下一阶段' }).click()
   await page.getByRole('button', { name: '完成当前阶段' }).click()
   await page.getByRole('button', { name: '查看报告', exact: true }).click()
-  await page.getByRole('heading', { name: '分析报告', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'APP 隐私收集越权报告', exact: true }).waitFor()
 }
 
 async function verifyPointerFeedback(browser) {
@@ -125,7 +125,7 @@ async function verifyPointerFeedback(browser) {
   const page = await context.newPage()
   await mockReports(page, ledger)
   await page.goto(origin)
-  await page.getByRole('heading', { name: '导入分析材料', exact: true }).waitFor({ timeout: 15000 })
+  await page.getByRole('heading', { name: 'APK 与政策材料', exact: true }).waitFor({ timeout: 15000 })
   await page.evaluate(() => document.fonts.ready)
 
   const gate = await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches)
@@ -165,7 +165,7 @@ async function verifyPointerFeedback(browser) {
   assert.equal(/transform/.test(pressed.transition), false, 'the press offset must not be eased')
   // Releasing on the trigger opened the settings dialog; close it before the next probe.
   if (await page.getByRole('dialog').count()) await page.keyboard.press('Escape')
-  await page.getByRole('heading', { name: '导入分析材料', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'APK 与政策材料', exact: true }).waitFor()
   checks.push('feedback: press offset is immediate and never transitions')
 
   // Drag highlight must not reflow the drop zone it highlights.
@@ -219,10 +219,10 @@ async function verifyPressedOverridesHover(browser) {
   const page = await context.newPage()
   await mockReports(page, [])
   await page.goto(origin)
-  await page.getByRole('heading', { name: '导入分析材料', exact: true }).waitFor({ timeout: 15000 })
+  await page.getByRole('heading', { name: 'APK 与政策材料', exact: true }).waitFor({ timeout: 15000 })
   await page.getByRole('button', { name: '体验示例', exact: true }).first().click()
   await page.getByRole('button', { name: '检查候选', exact: true }).click()
-  await page.getByRole('heading', { name: '检查政策候选' }).waitFor()
+  await page.getByRole('heading', { name: '核对政策声明' }).waitFor()
   await page.locator('.candidate-item').first().click()
   const danger = page.getByRole('button', { name: '删除候选', exact: true })
   const candidates = await page.locator('.candidate-item').count()
@@ -258,7 +258,7 @@ async function verifyTouchPointer(browser) {
   const page = await context.newPage()
   await mockReports(page, [])
   await page.goto(origin)
-  await page.getByRole('heading', { name: '导入分析材料', exact: true }).waitFor({ timeout: 15000 })
+  await page.getByRole('heading', { name: 'APK 与政策材料', exact: true }).waitFor({ timeout: 15000 })
   const gate = await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches)
   assert.equal(gate, false, 'a touch pointer must not match the hover gate')
   const button = page.getByRole('button', { name: '项目设置', exact: true })
@@ -325,20 +325,23 @@ async function verifyReducedMotion(browser, reduce) {
     ? 'reduced motion: evidence scroll is instant (behavior=auto), transitions off, panel readable'
     : 'normal motion: evidence scroll animates (behavior=smooth), panel readable immediately')
 
-  // Continuous toggling: rapid open/close must settle in the real state, leave no
-  // duplicate panel and issue no duplicate report request.
+  // Continuous toggling: rapid selection changes must settle in the real state,
+  // leave exactly one evidence area and issue no duplicate report request. #165
+  // makes the desktop evidence column permanent: "返回刚才的操作" restores focus
+  // and reading position but does not unmount the selected evidence.
   const requestsBefore = ledger.length
   const issueRows = page.locator('.report-table tbody tr')
   for (let cycle = 0; cycle < 3; cycle++) {
     await issueRows.nth(0).locator('.evidence-button').click()
     await issueRows.nth(1).locator('.evidence-button').click()
-    await page.getByRole('button', { name: '收起', exact: true }).click()
-    assert.equal(await page.locator('#evidence-panel').count(), 0, 'closing must remove the panel instead of fading it out')
-    assert.equal(await issueRows.nth(1).locator('.evidence-button').getAttribute('aria-expanded'), 'false', 'closed rows must report collapsed state')
+    await page.getByRole('button', { name: '返回刚才的操作', exact: true }).click()
+    assert.equal(await page.locator('#evidence-panel').count(), 1, 'returning must keep exactly one evidence area instead of duplicating or unmounting it')
+    assert.equal(await issueRows.nth(1).locator('.evidence-button').getAttribute('aria-pressed'), 'true', 'the last selected row must stay current')
+    assert.equal(await issueRows.nth(0).locator('.evidence-button').getAttribute('aria-pressed'), 'false', 'the previous row must clear its current state')
   }
-  assert.equal(await page.locator('#evidence-panel').count(), 0)
-  assert.equal(ledger.length, requestsBefore, 'opening and closing evidence must not re-trigger report requests')
-  checks.push('continuity: 3 rounds of open-row/open-other-row/close (9 clicks, 3 closes) settle closed with no duplicate request')
+  assert.equal(await page.locator('#evidence-panel').count(), 1)
+  assert.equal(ledger.length, requestsBefore, 'selecting and returning must not re-trigger report requests')
+  checks.push('continuity: 3 rounds of select-row/select-other-row/return (9 actions) settle on one evidence area with no duplicate request')
 
   // Low-performance simulation: the panel still appears readable, not half-faded.
   const cdp = await context.newCDPSession(page)
@@ -410,43 +413,51 @@ async function verifyNarrowEvidence(browser) {
   const page = await context.newPage()
   await mockReports(page, [])
   await page.goto(origin)
-  await page.getByRole('heading', { name: '导入分析材料', exact: true }).waitFor({ timeout: 15000 })
+  await page.getByRole('heading', { name: 'APK 与政策材料', exact: true }).waitFor({ timeout: 15000 })
   await page.evaluate(() => document.fonts.ready)
   await runWorkflowExample(page)
+  // #165: the example report keeps one permanent evidence region; at 390px it
+  // stacks under the conclusions. Opening a row must show readable evidence on
+  // the first frame without an entry animation or sideways scrolling.
   const rowButton = page.locator('.comparison-table tbody tr').first().getByRole('button').first()
   await rowButton.click()
+  assert.equal(await page.locator('#example-evidence').count(), 1, 'the narrow report must render exactly one evidence region')
+  assert.equal(await page.locator('.report-columns').getAttribute('data-layout'), 'stacked', 'the narrow report must stack conclusions and evidence')
   const inline = await page.evaluate(() => {
-    const cell = document.querySelector('.comparison-table td.row-evidence')
-    if (!cell) return { present: false }
-    const style = getComputedStyle(cell)
-    return { present: true, animation: style.animationName, opacity: style.opacity, transform: style.transform, text: cell.innerText.length }
+    const region = document.querySelector('#example-evidence')
+    if (!region) return { present: false }
+    const style = getComputedStyle(region)
+    return { present: true, animation: style.animationName, opacity: style.opacity, transform: style.transform, text: region.innerText.length }
   })
-  assert.equal(inline.present, true, 'the narrow layout must expand the row in place')
-  assert.equal(inline.animation, 'none', 'the expanded row must not fade in from invisible')
-  assert.equal(inline.opacity, '1', 'the expanded row is readable on the first frame')
-  assert.equal(inline.text > 0, true, 'the expanded row must render its evidence immediately')
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'the narrow evidence row must not overflow the page')
-  // The page-level check cannot see content clipped by the table's own scroll box,
-  // so measure the expanded cell itself.
+  assert.equal(inline.present, true, 'the narrow layout must show the permanent evidence region')
+  assert.equal(inline.animation, 'none', 'the evidence region must not fade in from invisible')
+  assert.equal(inline.opacity, '1', 'the evidence region is readable on the first frame')
+  assert.equal(inline.text > 0, true, 'the evidence region must render its content immediately')
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'the narrow evidence region must not overflow the page')
+  // Measure the evidence region and its code blocks for internal sideways scroll.
   const clipping = await page.evaluate(() => {
-    const cell = document.querySelector('.comparison-table td.row-evidence')
-    const pre = cell ? cell.querySelector('pre') : null
+    const region = document.querySelector('#example-evidence')
+    const pre = region ? region.querySelector('pre') : null
     return {
-      cellScroll: cell ? cell.scrollWidth : 0,
-      cellClient: cell ? cell.clientWidth : 0,
+      regionScroll: region ? region.scrollWidth : 0,
+      regionClient: region ? region.clientWidth : 0,
       preScroll: pre ? pre.scrollWidth : 0,
       preClient: pre ? pre.clientWidth : 0,
     }
   })
-  assert.ok(clipping.cellScroll <= clipping.cellClient + 1, 'the expanded row must not scroll sideways (cell ' + clipping.cellScroll + ' > ' + clipping.cellClient + ')')
-  assert.ok(clipping.preScroll <= clipping.preClient + 1, 'evidence code blocks must wrap inside the expanded row (pre ' + clipping.preScroll + ' > ' + clipping.preClient + ')')
+  assert.ok(clipping.regionScroll <= clipping.regionClient + 1, 'the evidence region must not scroll sideways (region ' + clipping.regionScroll + ' > ' + clipping.regionClient + ')')
+  assert.ok(clipping.preScroll <= clipping.preClient + 1, 'evidence code blocks must wrap inside the region (pre ' + clipping.preScroll + ' > ' + clipping.preClient + ')')
   await page.screenshot({ path: path.join(screenshots, 'inline-evidence-390.png') })
-  checks.push('narrow evidence: expands in place with no entry animation and readable on the first frame')
+  checks.push('narrow evidence: permanent region stacked, no entry animation, readable on the first frame and no sideways scroll')
 
-  // Long text must not change the answer: the row is present, unclipped and readable.
-  await rowButton.click()
-  assert.equal(await page.locator('.comparison-table td.row-evidence').count(), 0, 'collapsing must remove the expanded row')
-  checks.push('narrow evidence: collapse is immediate and leaves no empty cell')
+  // Switching the finding must update the same single region instead of adding
+  // a second copy or leaving the old evidence behind.
+  const secondRowButton = page.locator('.comparison-table tbody tr').nth(1).getByRole('button').first()
+  await secondRowButton.click()
+  assert.equal(await page.locator('#example-evidence').count(), 1, 'switching findings must not duplicate the evidence region')
+  assert.equal(await page.locator('#example-evidence').getByRole('heading', { name: /设备标识/ }).isVisible(), true, 'switching findings must update the evidence heading')
+  assert.equal(await page.locator('.comparison-table td.row-evidence').count(), 0, 'the deleted inline evidence cell must not come back')
+  checks.push('narrow evidence: one region updates with the selected finding and the deleted inline cell stays absent')
   await context.close()
 }
 

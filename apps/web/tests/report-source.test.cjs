@@ -22,6 +22,17 @@ const typesExports = {}
 vm.runInNewContext(typesCode, { exports: typesExports })
 assert.ok(typesExports.sourceStatusLabels, 'typesExports must export sourceStatusLabels')
 
+// #167: App.vue and EvidencePanel read frontendCopy/policyStateLine from the
+// copy module. Compile the real module so the mounted components see the same
+// visible names and status line the browser renders.
+const copyCode = ts.transpileModule(fs.readFileSync(path.join(__dirname, '../src/copy.ts'), 'utf8'), {
+  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+}).outputText
+const copyExports = {}
+vm.runInNewContext(copyCode, { exports: copyExports })
+assert.ok(copyExports.frontendCopy, 'copyExports must export frontendCopy')
+assert.equal(typeof copyExports.policyStateLine, 'function', 'copyExports must export policyStateLine')
+
 // Compile the real selector module rather than stubbing it, so the mounted
 // component is exercised against the same paging logic the browser runs.
 const sdkEvidenceCode = ts.transpileModule(
@@ -53,8 +64,10 @@ function mount(jobs = [], fixture = null, overrides = {}) {
     require: name => {
       if (name === './api') return api
       if (name === './types') return typesExports
+      if (name === './copy') return copyExports
       if (name === './workflow') return { sourceStatusLabels: typesExports.sourceStatusLabels }
       if (name === './sdkEvidence') return sdkEvidenceExports
+      if (name === './reportUi') return { reportRowNumber: (index) => index < 0 ? '--' : String(index + 1).padStart(2, '0') }
       // Component imports are used by the template/render path, not by setup();
       // the mount helper exercises setup only (issue #144 extraction).
       if (name.startsWith('./components/')) return {}
@@ -212,6 +225,8 @@ vm.runInNewContext(ts.transpileModule(evidenceTemplateCode, {
 function mountEvidence(report, issue) {
   const context = { exports: {}, require: name => {
     if (name === 'vue') return vue
+    if (name === '../copy') return copyExports
+    if (name === '../reportUi') return { reportRowNumber: (index) => index < 0 ? '--' : String(index + 1).padStart(2, '0') }
     throw new Error(`Unexpected import: ${name}`)
   } }
   vm.runInNewContext(evidenceScript, context, { filename: evidenceFile })

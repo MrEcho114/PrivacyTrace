@@ -609,8 +609,12 @@ async function main() {
     await selectSource(page, 'demo:synthetic');
     recordStep('TC-04', 'select_demo', 'Selected demo:synthetic');
     await page.locator('.sample-card').waitFor();
+    // #167 kept the material identity badge verbatim; the global example marker
+    // (示例体验 · 固定材料) belongs to the example workflow, and this archive view is
+    // the non-example entry, so assert the identity text exactly instead of
+    // loosening it to "contains 示例".
     const demoBadge = await page.locator('.badge-stack .badge').first().innerText();
-    assert(demoBadge.includes('人工示例') && demoBadge.includes('SYNTHETIC'), `Badge should show 人工示例 · SYNTHETIC, got: ${demoBadge}`);
+    assert.equal(demoBadge.trim(), '人工示例 · SYNTHETIC', `Badge should be exactly 人工示例 · SYNTHETIC, got: ${demoBadge}`);
     // The demo envelope is assembled per response, so it is a live generation.
     const demoDeliveryBadge = await page.locator('.badge-stack .badge').last().innerText();
     assert(demoDeliveryBadge.includes('本次生成') && demoDeliveryBadge.includes('LIVE'), `Demo delivery badge should show 本次生成 · LIVE, got: ${demoDeliveryBadge}`);
@@ -705,8 +709,10 @@ async function main() {
     await page.locator('.review-panel input').nth(1).fill('验证备注完全可选特性');
     await page.locator('.review-panel textarea').fill('');
 
-    // Ensure submit button is enabled when note is empty
-    const submitBtn = page.locator('.review-panel button.primary');
+    // #165 keeps one red primary per page (the report action); the review panel
+    // submit is a normal form action, so select it structurally and keep the
+    // disabled/enabled behaviour assertions unchanged.
+    const submitBtn = page.locator('.review-panel form button');
     const isDisabled = await submitBtn.isDisabled();
     assert.equal(isDisabled, false, 'Submit button must be ENABLED when note is empty');
     recordStep('TC-05', 'verify_optional_button', 'Confirmed submit button enabled with empty note');

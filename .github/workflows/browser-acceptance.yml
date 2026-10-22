@@ -62,6 +62,8 @@ jobs:
       - name: Run browser acceptance
         run: npm run acceptance:browser
 
+      # #167/#165 contract assertions run as the last stage of acceptance:frontend
+      # (same command, same preview lifecycle), not as a second CI entry.
       - name: Run frontend walkthrough
         run: npm run acceptance:frontend
 
@@ -74,6 +76,9 @@ jobs:
       # #146: colour feedback, hover gating, reduced motion and evidence expansion.
       - name: Verify motion and reduced-motion behaviour
         run: npm run acceptance:motion
+
+      - name: Verify independent design foundation
+        run: npm run acceptance:design
 
       - name: Verify preview lifecycle
         run: npm run acceptance:preview
@@ -96,10 +101,14 @@ jobs:
             evidence/screenshots/
             tmp/issue44-ui/verification.json
             tmp/issue44-ui/screenshots/
+            tmp/concept-foundation/
             tmp/issue143-hierarchy/verification.json
             tmp/issue143-hierarchy/screenshots/
             tmp/issue146-motion/verification.json
             tmp/issue146-motion/screenshots/
+            docs/acceptance/issue165/
+            tmp/issue144-round2/
+            tmp/brand-assets/
             tmp/frontend-preview/verification.json
             tmp/frontend-preview/preview.log
             tmp/issue44-live-proof/fixtures/verification.json

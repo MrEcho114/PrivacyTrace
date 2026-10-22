@@ -119,7 +119,7 @@ check('pioneer-design.json mobile mirrors §3', () => {
   deepEqual(design.mobile, {
     touchTarget: 48, appBarHeight: 56, actionBarMinHeight: 64, inputFontSize: 16, sheetRadius: 20,
   }, 'mobile')
-  deepEqual(Object.keys(design).sort(), ['body', 'button', 'field', 'heading', 'mobile', 'mobileButton', 'mobileHeading', 'roles', 'source'])
+  deepEqual(Object.keys(design).sort(), ['body', 'button', 'field', 'heading', 'mobile', 'mobileButton', 'mobileHeading', 'product', 'roles', 'source'])
 })
 
 // ------------------------------------------------------------------ UiIcon

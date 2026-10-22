@@ -260,10 +260,10 @@ async function captureWidths(page, name, options = {}) {
 
 async function openExample(page, origin) {
   await page.goto(origin)
-  await page.getByRole('heading', { name: '导入分析材料', exact: true }).waitFor({ timeout: 15000 })
+  await page.getByRole('heading', { name: 'APK 与政策材料', exact: true }).waitFor({ timeout: 15000 })
   await fontsReady(page)
   await page.getByRole('button', { name: '体验示例', exact: true }).click()
-  await page.getByRole('heading', { name: '导入分析材料', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'APK 与政策材料', exact: true }).waitFor()
 }
 
 async function main() {
@@ -318,7 +318,7 @@ async function main() {
     assert.equal(importState.actionVisible, true, 'import: the select-APK action must stay visible under a long file name')
     assert.ok(importState.notes.length >= 1, 'import: every source needs a visible completeness/review note')
     for (const note of importState.notes) {
-      for (const text of ['正文完整度未知', '全文未复核', '附件未检查', '适用范围不明']) {
+      for (const text of ['正文完整度未知', '来源未复核', '附件未检查', '适用范围不明']) {
         assert.ok(note.includes(text), `import: source notes missing ${text}`)
       }
     }
@@ -328,9 +328,9 @@ async function main() {
 
     // Candidates: one persistent source context strip above both panels.
     await example.getByRole('button', { name: '检查候选', exact: true }).click()
-    await example.getByRole('heading', { name: '检查政策候选', exact: true }).waitFor()
+    await example.getByRole('heading', { name: '核对政策声明', exact: true }).waitFor()
     const contextText = await example.locator('[data-testid="candidate-source-context"]').innerText()
-    for (const text of ['官网政策', '示例 1.0', '正文完整度未知', '全文未复核', '附件未检查', '适用范围不明']) {
+    for (const text of ['官网政策', '示例 1.0', '正文完整度未知', '来源未复核', '附件未检查', '适用范围不明']) {
       assert.ok(contextText.includes(text), `candidates: source context missing ${text}`)
     }
     assert.equal(contextText.includes('纸舟地图隐私政策'), false, 'candidates: the source title stays in the tab row, not repeated in the context strip')
@@ -343,7 +343,7 @@ async function main() {
     // Progress: the current-stage card aligns to the top of the rail and keeps
     // a discrete stage count instead of a percentage or ETA.
     await example.getByRole('button', { name: '进入流程演示', exact: true }).click()
-    await example.getByRole('heading', { name: '分析流程演示', exact: true }).waitFor()
+    await example.getByRole('heading', { name: '扫描与对照进度', exact: true }).waitFor()
     const progressState = await example.evaluate(() => {
       const panel = document.querySelector('.progress-panel')
       const preview = document.querySelector('.stage-preview')
@@ -365,23 +365,37 @@ async function main() {
     }
     await example.getByRole('button', { name: '完成当前阶段', exact: true }).click()
     await example.getByRole('button', { name: '查看报告', exact: true }).click()
-    await example.getByRole('heading', { name: '分析报告', exact: true }).waitFor()
-    const summaryState = await example.evaluate(() => {
-      const grid = document.querySelector('.report-source-summary')
-      const cells = grid ? Array.from(grid.children) : []
+    await example.getByRole('heading', { name: 'APP 隐私收集越权报告', exact: true }).waitFor()
+    // #165: the per-source summary grid was replaced by one collapsed fact list
+    // inside the evidence region. Open it and assert one row per source, each
+    // carrying the unified #167 source-state line, while material identity rows
+    // stay separate facts. The evidence region itself is permanent and unique.
+    await example.locator('.report-info > summary').click()
+    const sourceTitles = ['纸舟地图隐私政策', '云点统计服务说明']
+    const infoState = await example.evaluate(titles => {
+      const details = document.querySelector('.report-info')
+      const rows = details ? Array.from(details.querySelectorAll('dl > div')) : []
+      const titleOf = row => row.querySelector('dt')?.textContent?.trim() ?? ''
+      const sourceRows = rows.filter(row => titles.includes(titleOf(row)))
       return {
-        count: cells.length,
-        tops: [...new Set(cells.map(cell => Math.round(cell.getBoundingClientRect().top)))],
-        border: cells.length ? getComputedStyle(cells[0]).borderLeftWidth : '',
+        open: Boolean(details?.open),
+        rows: rows.length,
+        sourceRows: sourceRows.length,
+        stateLines: sourceRows.map(row => row.querySelector('dd')?.textContent?.trim() ?? ''),
+        materialRows: rows.filter(row => ['材料', '应用包名'].includes(titleOf(row))).length,
       }
-    })
-    assert.ok(summaryState.count >= 2, 'report: every source keeps its own summary cell')
-    assert.equal(summaryState.tops.length, 1, 'report: source summary cells share one row at 1440px')
-    assert.equal(summaryState.border, '2px', 'report: source summary keeps the reading-side rule')
-    await example.getByRole('button', { name: /查看线索详情/ }).first().click()
+    }, sourceTitles)
+    assert.equal(infoState.open, true, 'report: the source fact list must open on demand')
+    assert.equal(infoState.sourceRows, 2, 'report: the collapsed fact list keeps one row per policy source')
+    assert.equal(infoState.materialRows, 1, 'report: only the package identity row remains; the duplicate 材料 row is gone')
+    assert.equal(await example.locator('.report-info').getByText('人工构造示例').count(), 0, 'report: the retired 人工构造示例 marker must not return')
+    assert.ok(infoState.stateLines.every(line => line.includes('来源未复核')), 'report: every source row keeps the unified 来源未复核 state line')
+    await example.locator('.comparison-table tbody tr').first().getByRole('button').first().click()
     await example.locator('#example-evidence-title').waitFor()
     assert.equal(await example.locator('#example-evidence').isVisible(), true, 'report: evidence drill-down stays explicit')
-    checks.push('report: source summary shares a row and the evidence drill-down remains explicit')
+    assert.equal(await example.locator('#example-evidence').count(), 1, 'report: exactly one permanent evidence region')
+    assert.equal(await example.locator('.report-columns').getAttribute('data-layout'), 'columns', 'report: 1440px keeps the columns layout')
+    checks.push('report: one collapsed source fact list, unified state per source and the explicit evidence region')
     evidence.screenshots.push(...await captureWidths(example, 'example-report'))
 
     // 2. Real/persisted report viewer with long package name, URL and hash.
@@ -395,8 +409,14 @@ async function main() {
     await reports.goto(origin + '/#reports')
     await reports.locator('.report-table tbody tr').first().waitFor({ timeout: 15000 })
     await fontsReady(reports)
-    assert.equal(await reports.locator('#page-title').innerText(), '已有报告')
-    assert.equal(await reports.locator('.workspace-content .shell main > .intro').evaluate(element => getComputedStyle(element).display), 'none', 'reports: the embedded viewer must not render a second hero')
+    assert.equal(await reports.locator('#page-title').innerText(), '本机存档报告')
+    // #167/#165 embedded mode: the archive view owns the only h1 and brand bar,
+    // so App.vue must not render its own .intro hero or .topbar inside it.
+    assert.equal(await reports.locator('.workspace-content .shell .intro').count(), 0, 'reports: the embedded viewer must not render a second hero')
+    assert.equal(await reports.locator('.workspace-content .shell h1').count(), 0, 'reports: the embedded viewer must not render a second page title')
+    assert.equal(await reports.locator('.workspace-content .shell > header.topbar').count(), 0, 'reports: the embedded viewer must not render a second top bar')
+    assert.equal(await reports.locator('.workspace-content .shell .topbar').count(), 0, 'reports: the embedded viewer must not render a second brand bar')
+    assert.equal(await reports.locator('.workspace-content h1').count(), 1, 'reports: the workbench page title must be the only h1')
 
     const styleState = await reports.evaluate(() => {
       const root = getComputedStyle(document.documentElement)
@@ -418,7 +438,11 @@ async function main() {
       return {
         roles: { surface: rgb(role('--surface')), mint: rgb(role('--mint')), notice: rgb(role('--notice')), canvas: rgb(role('--canvas')), control: rgb(role('--control')) },
         identityBeforeMeta: !!sample && !!provenance && !!(sample.compareDocumentPosition(provenance) & Node.DOCUMENT_POSITION_FOLLOWING),
-        introHidden: document.querySelector('.workspace-content .shell main > .intro') && getComputedStyle(document.querySelector('.workspace-content .shell main > .intro')).display === 'none',
+        introCount: document.querySelectorAll('.workspace-content .shell .intro').length,
+        embeddedMainCount: document.querySelectorAll('.workspace-content .shell main').length,
+        embeddedHeadingCount: document.querySelectorAll('.workspace-content .shell h1').length,
+        topbarCount: document.querySelectorAll('.workspace-content .shell .topbar').length,
+        h1Count: document.querySelectorAll('.workspace-content h1').length,
         sourceBar: !!select?.closest('.report-source-bar'),
         refreshHeight: refresh ? Math.round(refresh.getBoundingClientRect().height) : 0,
         sectionBackground: style('.report-section')?.backgroundColor || '',
@@ -433,7 +457,9 @@ async function main() {
       }
     })
     assert.equal(styleState.identityBeforeMeta, true, 'reports: report identity must precede archive/job metadata')
-    assert.equal(styleState.introHidden, true, 'reports: the viewer hero is hidden inside the workbench')
+    assert.equal(styleState.introCount, 0, 'reports: embedded mode must not render the viewer hero at all')
+    assert.equal(styleState.topbarCount, 0, 'reports: embedded mode must not render a second brand bar')
+    assert.equal(styleState.h1Count, 1, 'reports: embedded mode keeps exactly one h1')
     assert.equal(styleState.sourceBar, true, 'reports: source selection and refresh share one toolbar')
     assert.equal(styleState.refreshHeight >= 34 && styleState.refreshHeight <= 40, true, `reports: refresh must use the 36px action contract (got ${styleState.refreshHeight}px)`)
     assert.equal(styleState.sectionBackground, styleState.roles.surface, 'reports: report panels must consume the Pioneer surface role')
@@ -467,7 +493,7 @@ async function main() {
     await live.route('**/api/v1/web/drafts/*', route => route.fulfill({ json: liveDraft }))
     await live.route('**/api/v1/jobs/*', route => route.fulfill({ json: liveJob }))
     await live.goto(origin)
-    await live.getByRole('heading', { name: '分析进度', exact: true }).waitFor({ timeout: 15000 })
+    await live.getByRole('heading', { name: '扫描与对照进度', exact: true }).waitFor({ timeout: 15000 })
     await fontsReady(live)
     assert.equal(await live.locator('.material-panel .page-heading').count(), 0, 'live progress: the page heading must sit outside the material panel')
     assert.equal(await live.locator('.progress-summary').filter({ hasText: '隔离扫描' }).count(), 1, 'live progress: the real discrete state must stay visible')
@@ -496,9 +522,9 @@ async function main() {
     await liveReport.route('**/api/v1/jobs', route => route.fulfill({ json: { jobs: [{ ...liveJob, state: 'SUCCEEDED' }] } }))
     await liveReport.route('**/api/v1/jobs/*', route => route.fulfill({ json: { ...liveJob, state: 'SUCCEEDED' } }))
     await liveReport.goto(origin)
-    await liveReport.getByRole('heading', { name: '分析进度', exact: true }).waitFor({ timeout: 15000 })
+    await liveReport.getByRole('heading', { name: '扫描与对照进度', exact: true }).waitFor({ timeout: 15000 })
     await liveReport.getByRole('button', { name: '查看报告', exact: true }).click()
-    await liveReport.getByRole('heading', { name: '对照报告', exact: true }).waitFor()
+    await liveReport.getByRole('heading', { name: 'APP 隐私收集越权报告', exact: true }).waitFor()
     await liveReport.locator('.report-table tbody tr').first().waitFor({ timeout: 15000 })
     assert.equal(await liveReport.locator('.report-table tbody tr').first().isVisible(), true, 'live report: the saved report table stays visible')
     assert.equal(await liveReport.getByRole('button', { name: '新建材料版本', exact: true }).isVisible(), true, 'live report: the material-version action stays reachable after a finished job')
@@ -528,6 +554,35 @@ async function main() {
     assert.equal(await offline.locator('.workbench').count(), 0, 'offline: the read-only package must not mount the workbench shell')
     assert.equal(await offline.locator('#report-source').isVisible(), true, 'offline: saved-report selection stays reachable')
     assert.equal(await offline.locator('.sample-card .badge.persisted_replay').isVisible(), true, 'offline: the persisted-replay delivery badge stays visible')
+    // #169 offline top bar: same-origin brand symbol in .topbar .brand-icon, no
+    // letter placeholder. The symbol request must return real SVG markup.
+    const offlineBrand = await offline.evaluate(async () => {
+      const slot = document.querySelector('.topbar .brand-icon')
+      const image = slot?.querySelector('img.brand-mark-image')
+      if (!image) return null
+      let decoded = false
+      try { await image.decode(); decoded = true } catch {}
+      const rect = image.getBoundingClientRect()
+      const slotRect = slot.getBoundingClientRect()
+      return {
+        complete: image.complete, currentSrc: image.currentSrc,
+        naturalWidth: image.naturalWidth, naturalHeight: image.naturalHeight,
+        width: Math.round(rect.width), height: Math.round(rect.height),
+        slotWidth: Math.round(slotRect.width), slotHeight: Math.round(slotRect.height),
+        slotText: (slot.textContent || '').trim(), decoded,
+      }
+    })
+    assert.ok(offlineBrand, 'offline: the top bar must render the brand icon slot')
+    assert.equal(offlineBrand.complete, true, 'offline: the brand image must finish loading')
+    assert.ok(offlineBrand.currentSrc.endsWith('/brand/privacy-trace-symbol.svg'), `offline: the brand image resolves the same-origin symbol (got ${offlineBrand.currentSrc})`)
+    assert.ok(offlineBrand.naturalWidth > 0 && offlineBrand.naturalHeight > 0, 'offline: the brand image must decode to real pixels')
+    assert.ok(offlineBrand.width > 0 && offlineBrand.height > 0, 'offline: the brand icon renders a positive box')
+    assert.equal(offlineBrand.slotText, '', 'offline: the brand slot must not keep a letter placeholder')
+    assert.equal(offlineBrand.decoded, true, 'offline: brand img.decode() must resolve')
+    const offlineSymbol = await offline.request.get(origin + '/brand/privacy-trace-symbol.svg')
+    assert.equal(offlineSymbol.status(), 200, 'offline: the same-origin brand symbol must return 200')
+    assert.ok((await offlineSymbol.body()).toString('utf8').includes('<svg'), 'offline: the brand symbol must be SVG markup')
+    checks.push('offline: single top bar with the same-origin brand symbol and no letter placeholder')
     checks.push('offline: the injected read-only package mounts the existing report viewer without the workbench shell')
     evidence.screenshots.push(...await captureWidths(offline, 'offline-reports'))
 

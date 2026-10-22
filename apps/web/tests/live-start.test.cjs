@@ -15,6 +15,14 @@ const javascript = ts.transpileModule(compiled.content, {
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
 }).outputText
 
+// #167: go() indexes the shared workflow step keys, and the component renders
+// frontendCopy/policyStateLine from the real copy module.
+const copyCode = ts.transpileModule(fs.readFileSync(path.join(__dirname, '../src/copy.ts'), 'utf8'), {
+  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+}).outputText
+const copyExports = {}
+vm.runInNewContext(copyCode, { exports: copyExports })
+
 test('start accepts an unchecked candidate and sends checked=false', async () => {
   const draft = {
     id: 'fixture', revision: 2, jobs: [], uploaded: true,
@@ -59,8 +67,10 @@ test('start accepts an unchecked candidate and sends checked=false', async () =>
         async cancelJob() { return {} },
       }
       if (name === './workflow') {
-        return { quoteExists: () => true, sourceStatusLabel: () => '手动补入正文' }
+        return { quoteExists: () => true, sourceStatusLabel: () => '手动补入正文', steps: ['import', 'candidates', 'progress', 'report'] }
       }
+      if (name === './copy') return copyExports
+      if (name === './reportUi') return { reportRowNumber: (index) => index < 0 ? '--' : String(index + 1).padStart(2, '0') }
       if (name.endsWith('.vue')) return {}
       throw new Error(`Unexpected import: ${name}`)
     },

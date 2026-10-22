@@ -12,5 +12,21 @@
   "button": { "fontFamily": "Noto Sans SC", "fontSize": "14px", "borderRadius": "8px", "minHeight": "36px" },
   "mobileButton": { "maxWidth": 560, "minHeight": 44 },
   "mobile": { "touchTarget": 48, "appBarHeight": 56, "actionBarMinHeight": 64, "inputFontSize": 16, "sheetRadius": 20 },
-  "field": { "fontFamily": "Noto Sans SC", "fontSize": "14px", "borderRadius": "8px", "minHeight": "40px" }
+  "field": { "fontFamily": "Noto Sans SC", "fontSize": "14px", "borderRadius": "8px", "minHeight": "40px" },
+  "product": {
+    "source": "docs/design/concept-foundation/README.md §3 (adopted 2026-10-22 visual contract)",
+    "action": "#d63a2c",
+    "structure": "#4c5a68",
+    "ink": "#252a2e",
+    "paper": "#ffffff",
+    "typeAction": "17px",
+    "actionMinHeight": "40px",
+    "actionMinHeightNarrow": "56px",
+    "headingDesktop": "48px",
+    "headingLineDesktop": "60px",
+    "headingMobile": "36px",
+    "headingLineMobile": "45px",
+    "breakpoint": 896,
+    "touchTarget": 48
+  }
 }

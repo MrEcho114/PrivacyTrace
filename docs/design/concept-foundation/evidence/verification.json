@@ -1,0 +1,482 @@
+{
+  "kind": "Built Chromium / synthetic design fixtures",
+  "generatedAt": "2026-10-22T01:31:59.260Z",
+  "sources": [
+    {
+      "file": ".github/workflows/browser-acceptance.yml",
+      "sha256": "ea396cc0b092793710407e1a57e1003d0d9cf2a48c4b0062e38f359830338b23"
+    },
+    {
+      "file": "apps/web/design.html",
+      "sha256": "cf358145ea073ac2957cb49e0217c8471dd2fb3fcbbd52ca651611482cd6f536"
+    },
+    {
+      "file": "apps/web/src/copy.ts",
+      "sha256": "f1ff0227c776761d61c30aafc8d9ca83f5cafa4107680110f341de3cb2a2e703"
+    },
+    {
+      "file": "apps/web/src/design/ComponentGallery.vue",
+      "sha256": "9090d2ee8ca962a95b3c2072c77562b3be6d6419fef4d04565ec427f972870fc"
+    },
+    {
+      "file": "apps/web/src/design/DesignApp.vue",
+      "sha256": "ab1563b467f999b5c7198fc77909758da0b93ec4203555b4479308a17f6f786e"
+    },
+    {
+      "file": "apps/web/src/design/InstrumentPanel.vue",
+      "sha256": "99a49da323d7cc4865ac7b11637ce69bc88a17ba9b1d69601ac6c1b863018085"
+    },
+    {
+      "file": "apps/web/src/design/MissionShell.vue",
+      "sha256": "527c34522eb39725e1b606df0de1245fb57afd6bf98e2fe79c9e1baccff19cb1"
+    },
+    {
+      "file": "apps/web/src/design/ReportExample.vue",
+      "sha256": "8e860f930b8a3f9f016056b76e9a6884a1b9470896da0cf15d72fb438e06035f"
+    },
+    {
+      "file": "apps/web/src/design/ReportMetrics.vue",
+      "sha256": "37047528ecac029eb04877be9c3d28f05202856336ec4321c24e19c3b8d32203"
+    },
+    {
+      "file": "apps/web/src/design/StaticBoundary.vue",
+      "sha256": "e4243c34a573e7c938f4e0c7c8c24ed6581b6d27af6b9124d2da5cd54d07f8b3"
+    },
+    {
+      "file": "apps/web/src/design/foundation.css",
+      "sha256": "90cdca2ec6f56c95bc26db3291e4d21c25451227f86dc3758a59b68707235ec1"
+    },
+    {
+      "file": "apps/web/src/design/main.ts",
+      "sha256": "81fe39872ba3fa4ddca63757170b0c159b9b84cd26d768536e7b033aafa38311"
+    },
+    {
+      "file": "apps/web/src/design/model.ts",
+      "sha256": "3abaafad6380ca678f9074fc96cf46d0213e6b5e933d04eb8c130861258cfbcc"
+    },
+    {
+      "file": "apps/web/vite.config.ts",
+      "sha256": "1eff87b75791d9a553302f64738ae4acfd0aea966ae2446c61a5540ae537a2a1"
+    },
+    {
+      "file": "deploy/Dockerfile",
+      "sha256": "864966b74f5d25c5d72e5038b5449ca6de2caa079cf65955470976455f22cc24"
+    },
+    {
+      "file": "deploy/Dockerfile.dockerignore",
+      "sha256": "4748d6e4c99f28ee2ce31a61b44310dbb8442dd8a1bffee67607321c32036a86"
+    },
+    {
+      "file": "deploy/audit_context.py",
+      "sha256": "614608e5ede84d4b75c8f4587af0e616ad0207608c57caa5fba1fd853109824f"
+    },
+    {
+      "file": "deploy/tests/test_deployment.py",
+      "sha256": "3904802887875466bf0c9d2c1dbca23a19e3fee45d8864e239f6cd53a60f4e2c"
+    },
+    {
+      "file": "package.json",
+      "sha256": "4653a80b6969903482480a30593f46297c53196fb173b153b52e765f39a8fa39"
+    },
+    {
+      "file": "scripts/verify-design-foundation.cjs",
+      "sha256": "541309ee93137ac2ba0c498553a02c20c3bb2f288c3f9e01c1152414ac7865ea"
+    }
+  ],
+  "checks": [
+    "no overflow: report-1440 {\"width\":1440,\"scroll\":1440}",
+    "computed visual contract: report-1440",
+    "report-1440 shared source-state wording",
+    "report-1440 single workflow and current step",
+    "report-1440 one report primary action",
+    "report-1440 adopted report heading and only one h1",
+    "report-1440 single global example marker",
+    "report-1440 comparison names the two materials",
+    "report-1440 selected evidence contains manifest",
+    "report-1440 excludes other finding evidence",
+    "report-1440 focus moved to evidence",
+    "report-1440 evidence scrolled into view",
+    "report-1440 selected finding controls matching evidence",
+    "report-1440 return restores trigger focus",
+    "report-1440 primary names selected object",
+    "report-1440 metadata starts collapsed",
+    "report-1440 disclosed report facts preserved",
+    "report-1440 primary opens policy",
+    "report-1440 one visible shared policy state line",
+    "report-1440 policy retains extraction state",
+    "no overflow: components-1440 {\"width\":1440,\"scroll\":1440}",
+    "computed visual contract: components-1440",
+    "components-1440 shared source-state wording",
+    "components-1440 single workflow and current step",
+    "no overflow: report-1280 {\"width\":1280,\"scroll\":1280}",
+    "computed visual contract: report-1280",
+    "report-1280 shared source-state wording",
+    "report-1280 single workflow and current step",
+    "report-1280 one report primary action",
+    "report-1280 adopted report heading and only one h1",
+    "report-1280 single global example marker",
+    "report-1280 comparison names the two materials",
+    "1280 first full finding action in first fold {\"x\":268,\"y\":615.796875,\"width\":115.640625,\"height\":40}",
+    "report-1280 selected evidence contains manifest",
+    "report-1280 excludes other finding evidence",
+    "report-1280 focus moved to evidence",
+    "report-1280 evidence scrolled into view",
+    "report-1280 selected finding controls matching evidence",
+    "report-1280 return restores trigger focus",
+    "report-1280 primary names selected object",
+    "report-1280 metadata starts collapsed",
+    "report-1280 disclosed report facts preserved",
+    "report-1280 primary opens policy",
+    "report-1280 one visible shared policy state line",
+    "report-1280 policy retains extraction state",
+    "no overflow: components-1280 {\"width\":1280,\"scroll\":1280}",
+    "computed visual contract: components-1280",
+    "components-1280 shared source-state wording",
+    "components-1280 single workflow and current step",
+    "no overflow: report-768 {\"width\":768,\"scroll\":768}",
+    "computed visual contract: report-768",
+    "report-768 shared source-state wording",
+    "report-768 single workflow and current step",
+    "report-768 one report primary action",
+    "report-768 adopted report heading and only one h1",
+    "report-768 single global example marker",
+    "report-768 comparison names the two materials",
+    "report-768 selected evidence contains manifest",
+    "report-768 excludes other finding evidence",
+    "report-768 focus moved to evidence",
+    "report-768 evidence scrolled into view",
+    "report-768 selected finding controls matching evidence",
+    "report-768 return restores trigger focus",
+    "report-768 primary names selected object",
+    "report-768 metadata starts collapsed",
+    "report-768 disclosed report facts preserved",
+    "report-768 primary opens policy",
+    "report-768 one visible shared policy state line",
+    "report-768 policy retains extraction state",
+    "no overflow: components-768 {\"width\":768,\"scroll\":768}",
+    "computed visual contract: components-768",
+    "components-768 shared source-state wording",
+    "components-768 single workflow and current step",
+    "no overflow: report-390 {\"width\":390,\"scroll\":390}",
+    "computed visual contract: report-390",
+    "report-390 shared source-state wording",
+    "report-390 single workflow and current step",
+    "report-390 one report primary action",
+    "report-390 adopted report heading and only one h1",
+    "report-390 single global example marker",
+    "report-390 comparison names the two materials",
+    "390 touch target >=48",
+    "report-390 selected evidence contains manifest",
+    "report-390 excludes other finding evidence",
+    "report-390 focus moved to evidence",
+    "report-390 evidence scrolled into view",
+    "report-390 selected finding controls matching evidence",
+    "report-390 return restores trigger focus",
+    "report-390 primary names selected object",
+    "report-390 metadata starts collapsed",
+    "report-390 disclosed report facts preserved",
+    "report-390 primary opens policy",
+    "report-390 one visible shared policy state line",
+    "report-390 policy retains extraction state",
+    "no overflow: components-390 {\"width\":390,\"scroll\":390}",
+    "computed visual contract: components-390",
+    "components-390 shared source-state wording",
+    "components-390 single workflow and current step",
+    "no overflow: report-320 {\"width\":320,\"scroll\":320}",
+    "computed visual contract: report-320",
+    "report-320 shared source-state wording",
+    "report-320 single workflow and current step",
+    "report-320 one report primary action",
+    "report-320 adopted report heading and only one h1",
+    "report-320 single global example marker",
+    "report-320 comparison names the two materials",
+    "320 touch target >=48",
+    "report-320 selected evidence contains manifest",
+    "report-320 excludes other finding evidence",
+    "report-320 focus moved to evidence",
+    "report-320 evidence scrolled into view",
+    "report-320 selected finding controls matching evidence",
+    "report-320 return restores trigger focus",
+    "report-320 primary names selected object",
+    "report-320 metadata starts collapsed",
+    "report-320 disclosed report facts preserved",
+    "report-320 primary opens policy",
+    "report-320 one visible shared policy state line",
+    "report-320 policy retains extraction state",
+    "no overflow: components-320 {\"width\":320,\"scroll\":320}",
+    "computed visual contract: components-320",
+    "components-320 shared source-state wording",
+    "components-320 single workflow and current step",
+    "no overflow: empty {\"width\":320,\"scroll\":320}",
+    "empty disables action and metrics zero",
+    "no overflow: unknown {\"width\":320,\"scroll\":320}",
+    "unknown source and delivery not promoted",
+    "unknown finding review remains unknown",
+    "unknown source-state facts remain visible",
+    "no overflow: long {\"width\":320,\"scroll\":320}",
+    "no overflow: 200% 390 report {\"width\":390,\"scroll\":390}",
+    "large text readable cells 390 report",
+    "large text action readable and unobscured 390 查看对应证据 →\n：位置信息",
+    "large text action readable and unobscured 390 查看「位置信息」证据与政策原文 →",
+    "no overflow: 200% 390 gallery {\"width\":390,\"scroll\":390}",
+    "large text readable cells 390 gallery",
+    "no overflow: 200% 320 report {\"width\":320,\"scroll\":320}",
+    "large text readable cells 320 report",
+    "large text action readable and unobscured 320 查看对应证据 →\n：位置信息",
+    "large text action readable and unobscured 320 查看「位置信息」证据与政策原文 →",
+    "no overflow: 200% 320 gallery {\"width\":320,\"scroll\":320}",
+    "large text readable cells 320 gallery",
+    "field error association",
+    "field correction announced",
+    "busy state disabled and announced",
+    "waiting demo explicitly cancellable",
+    "keyboard skip link",
+    "skip link focus main",
+    "reduced motion evidence focus",
+    "negative visual drift rejected: .pt-panel { background:#ece5d6 !important }",
+    "negative visual drift rejected: .ui-button.primary { background:blue !important }",
+    "negative visual drift rejected: .pt-identity i { background:black !important }",
+    "negative visual drift rejected: .pt-priority-stripe i { background:black !important }",
+    "negative visual drift rejected: h1 { font-family:Arial !important }",
+    "negative visual drift rejected: h1 { font-size:1rem !important }",
+    "independent preview makes no API calls",
+    "no browser errors",
+    "original runtime entry preserved"
+  ],
+  "captures": [
+    {
+      "file": "report-1440.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1096
+      },
+      "sha256": "fa7a4482fce1fe630e3b5c05bd1923ce69d2c2688a6d743695299c869d7897f6"
+    },
+    {
+      "file": "report-1440-viewport.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1096
+      },
+      "sha256": "b4955a4c209ecc16d53c7e7766dfe8c9776a31ee4d47838e19747c7612d35311"
+    },
+    {
+      "file": "components-1440.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1096
+      },
+      "sha256": "c4982bafc5452e913152011f9c07698f5c61d4927a48fd15bbba2c1cc12dab38"
+    },
+    {
+      "file": "report-1280.png",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "sha256": "c19fa3f7b6829fc179d918e625bb350ed49357cd3e6444b039b6ba786a59c413"
+    },
+    {
+      "file": "report-1280-viewport.png",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "sha256": "8e1bd72d2dcfebae216f47da8337873008705e630f4933e13a5f724fbd4bd967"
+    },
+    {
+      "file": "components-1280.png",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "sha256": "bf2f2427865c97f3437a44f0cc098a1f154627b488705b08376f489dee8f8c02"
+    },
+    {
+      "file": "report-768.png",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "sha256": "d55f55212972229a03609d84b2dcbe1d370a277181743e9cf26326fc528b371d"
+    },
+    {
+      "file": "report-768-viewport.png",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "sha256": "9533e4555fa5fd82b5dd3a4d3c3950b46ba4af98f3f977c8fed454a594bb4c57"
+    },
+    {
+      "file": "components-768.png",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "sha256": "0b4c303f49a91afba78ff00f0ab990d5b3d4afa9f5693b11337e028f4ed7b00a"
+    },
+    {
+      "file": "report-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "abd08459fbf8f2abcc216aa41806010b84adecd7188bb980f028fd0eeae54cf4"
+    },
+    {
+      "file": "report-390-viewport.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "63334a4f28945ee65fdd72019d896a0b6636840a36eab6fc1c9cf2a3ed4b5aac"
+    },
+    {
+      "file": "components-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "9e90ed371e043e28c6f821d15fcf72c5c810c017b2172dc432b7dd3ba8840909"
+    },
+    {
+      "file": "report-320.png",
+      "viewport": {
+        "width": 320,
+        "height": 740
+      },
+      "sha256": "c5e3762c3ce3039db17d3c580768dcd662e530f7b32690f95075a14abc40640b"
+    },
+    {
+      "file": "report-320-viewport.png",
+      "viewport": {
+        "width": 320,
+        "height": 740
+      },
+      "sha256": "82e2c653042858ead1fb2c341b18553d0c890e3ee831e0ef8c1b80d786cdc5b0"
+    },
+    {
+      "file": "components-320.png",
+      "viewport": {
+        "width": 320,
+        "height": 740
+      },
+      "sha256": "cd60e330e552fb0214cb75d7a448c81086975bfaff66e3a49384d6cecaaa78fc"
+    },
+    {
+      "file": "empty-320.png",
+      "viewport": {
+        "width": 320,
+        "height": 740
+      },
+      "sha256": "19ddb83827dc43a3b59be60ef0cc4bfef7faf445e83a9ca77ba37e0730a48f89"
+    },
+    {
+      "file": "unknown-320.png",
+      "viewport": {
+        "width": 320,
+        "height": 740
+      },
+      "sha256": "9ac1844587bc28e2535f890e00b9de5cb17718d4039fca6f34dd3913fc9c522d"
+    },
+    {
+      "file": "long-320.png",
+      "viewport": {
+        "width": 320,
+        "height": 740
+      },
+      "sha256": "c1dd8c25e8ef5bc2d8e3030e08105b6ad3958568744493524cc1ff64cb9c3bd0"
+    },
+    {
+      "file": "large-text-390-report.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "a375e32cccb4cffc59711e117086d9e8455e3702bf20ea5a4fe4cd00292d6a78"
+    },
+    {
+      "file": "large-text-390-report-viewport.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "4bc0da21c85c232f76462bed697140c9edb056e68972d6dbd6ed8646bbf1ab15"
+    },
+    {
+      "file": "large-text-390-finding-viewport.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "88d5be6bc65361e5f8035ac1d81b6002bb1eef37ec1fbee695e6820c7e40abe4"
+    },
+    {
+      "file": "large-text-390-action-viewport.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "800278b247994959c770ed8f87009fb9893612c7f7717b25e94d1943f5a64ac0"
+    },
+    {
+      "file": "large-text-390-gallery.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "816a1d3cbeb414cec7aca379b371d426d5b80216d329104533d12454da4f04ef"
+    },
+    {
+      "file": "large-text-320-report.png",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "sha256": "b0b3a6415370333aeff6297a7eaee94761ee22ee1d994339dbbb36f52a6101fc"
+    },
+    {
+      "file": "large-text-320-report-viewport.png",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "sha256": "d6f08bb1fe343a7ff8c9a698ec35efcd8af2e636a63279bd86ad54fc0eec4aeb"
+    },
+    {
+      "file": "large-text-320-finding-viewport.png",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "sha256": "3ad4e1ec64c022b3807ff5dfbfe94d8414361f6fc2872b096ee89eab24bef2b8"
+    },
+    {
+      "file": "large-text-320-action-viewport.png",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "sha256": "38126f7d07edca7f12c1489ac8b9f850783f507fcc120b60a122323252695209"
+    },
+    {
+      "file": "large-text-320-gallery.png",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "sha256": "a5ed0a043ee5756a03a31e1ff2bf1310e5671654612fabb2cc3fb967d344ebbf"
+    }
+  ],
+  "apiRequests": [
+    "http://127.0.0.1:5192/api/v1/taxonomy"
+  ],
+  "errors": [],
+  "notRun": [
+    "Android APK/WebView",
+    "physical device",
+    "IME/safe-area/TalkBack",
+    "real scan or model service"
+  ]
+}

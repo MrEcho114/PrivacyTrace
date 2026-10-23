@@ -4,8 +4,8 @@
   "capturedAt": "2026-10-23",
   "film": {
     "path": "delivery/PrivacyTrace-作品展示-90s.mp4",
-    "bytes": 18056528,
-    "sha256": "93265cb354ba469530983775f6c3fa68c535a7c89a81516e470774095da370d0",
+    "bytes": 13418327,
+    "sha256": "7de0686c08650ec68f6a31c23733a1a5bb2e011bf5e850b22719a5caa409c03e",
     "durationSeconds": 90,
     "fps": 30,
     "width": 1920,
@@ -17,34 +17,42 @@
   },
   "assets": [
     {
-      "path": "assets/stills/ui-import.png",
+      "path": "assets/stills/android-import.png",
       "kind": "screenshot",
-      "bytes": 144515,
-      "sha256": "7611e257f703c2143472a578526bf5d1e806d3d1803321d6db349c49cda4022a",
+      "bytes": 176400,
+      "sha256": "425917e87f695112c7affc0137fef9e1e9a41a16d21b8b50e4e6fef457981db9",
       "captureCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
       "capturedAt": "2026-10-23"
     },
     {
-      "path": "assets/stills/report-desktop.png",
+      "path": "assets/stills/android-candidates.png",
       "kind": "screenshot",
-      "bytes": 408030,
-      "sha256": "1fd521fbe65c8dac151bcd473991b05a558ae7d860bbd34587dbaab7643311bc",
+      "bytes": 167984,
+      "sha256": "0a7f65e3c050993d325e967038a5466873eebb4c75f80c30b1359d07e6e79313",
       "captureCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
       "capturedAt": "2026-10-23"
     },
     {
-      "path": "assets/stills/report-mobile.png",
+      "path": "assets/stills/android-report-full.png",
       "kind": "screenshot",
-      "bytes": 666117,
-      "sha256": "e70f06ed751cc2a4166164e3e45adb716f9b88182616ed7600574f4c3268f966",
+      "bytes": 494696,
+      "sha256": "f7e89f0b542dc1e2fc4f78588b7318a6c478539a030454df1e1ac42673104139",
       "captureCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
       "capturedAt": "2026-10-23"
     },
     {
-      "path": "assets/recording-browser.mp4",
+      "path": "assets/stills/android-evidence-full.png",
+      "kind": "screenshot",
+      "bytes": 656036,
+      "sha256": "d00bcf50b2a2b4e7da29ddccb45f01f0c142b41146b41c67f637d65637c293b3",
+      "captureCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+      "capturedAt": "2026-10-23"
+    },
+    {
+      "path": "assets/recording-android.mp4",
       "kind": "recording",
-      "bytes": 725875,
-      "sha256": "1101cbc764e76736b53e12f67fa4af633356e87e4e21a82318fb8231d80102fa",
+      "bytes": 609436,
+      "sha256": "8dab57bb3d3078157178f7083bb0ee9f54df551be9dad7a97eaa8852c72f49ae",
       "captureCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
       "capturedAt": "2026-10-23"
     }
@@ -54,13 +62,14 @@
       "path": "film-showcase.html",
       "required": [
         "2026-10-23 @ f81ca20",
-        "PLATE 02",
-        "持久化回放",
-        "视口模拟"
+        "Android App",
+        "持久化回放"
       ],
       "forbidden": [
         "07b37b2",
-        "2026-10-22"
+        "2026-10-22",
+        "工作台",
+        "桌面工作台"
       ]
     }
   ]

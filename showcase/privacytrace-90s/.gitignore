@@ -1,4 +1,4 @@
-# Derived from the committed recording / delivery film; rebuild with frames.sh,
-# qa.py and contact-sheet.py. Never commit them.
-assets/rec/
+# Derived from the committed Android recording / delivery film; rebuild with
+# frames.sh, qa.py and contact-sheet.py. Never commit them.
+assets/android-rec/
 qa/

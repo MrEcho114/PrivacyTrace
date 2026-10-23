@@ -9,7 +9,7 @@ Issue #264 的一次性采集批次：两支片子（90 s 展示片、120 s 评�
 | 采集日期 | 2026-10-23（Asia/Shanghai） |
 | 工作树 | `.agents/worktrees/video-v02` |
 | 界面服务 | `npm run dev:start`，`PRIVACYTRACE_WEB_PORT=6173`，代理到 API `127.0.0.1:8123` |
-| 录屏 | EAC `record-browser` job `6321fa62-3863-48dd-b684-63313dac31cb`（28.0 s / 1920×1080 / 30 fps） |
+| 录屏 | Playwright recordVideo job `6321fa62-3863-48dd-b684-63313dac31cb`（16.83 s / 1920×1080 / 30 fps） |
 
 ## 复跑步骤
 
@@ -34,8 +34,8 @@ Issue #264 的一次性采集批次：两支片子（90 s 展示片、120 s 评�
 3. 采集三张界面图：
 
    ```powershell
-   node showcase/materials-20261023-v02/capture-stills.cjs
-   node showcase/materials-20261023-v02/capture-mobile-report.cjs
+   node showcase/materials-20261023-v02/capture-android-flow.cjs
+   node showcase/materials-20261023-v02/capture-android-flow.cjs
    ```
 
    输出默认写到 `tmp/materials-v02/capture/out/`，可用 `MATERIALS_OUT` 覆盖。
@@ -50,7 +50,7 @@ Issue #264 的一次性采集批次：两支片子（90 s 展示片、120 s 评�
 5. 抽帧与重渲：
 
    ```powershell
-   Copy-Item <record-browser 输出 mp4> showcase/privacytrace-90s/assets/recording-browser.mp4
+   Copy-Item <record-browser 输出 mp4> showcase/privacytrace-90s/assets/recording-android.mp4
    bash showcase/privacytrace-90s/frames.sh
    ```
 
@@ -66,14 +66,14 @@ Issue #264 的一次性采集批次：两支片子（90 s 展示片、120 s 评�
 
 | 文件 | 尺寸 | 来源 |
 | --- | --- | --- |
-| `ui-import.png` | 1920×1080 | 工作台加载固定演示材料后整屏截图 |
-| `report-desktop.png` | 1440×2978 | 「已有报告」加载 `job:gkd-s1-first` 持久化回放，1440 宽全页截图 |
-| `report-mobile.png` | 780×6258（390 CSS px） | 生产 `MobileApp.vue` + 假原生桥，390 宽移动视口、展开第一条证据后全页截图 |
-| `recording-browser.mp4` | 1920×1080 / 28.0 s | 工作台固定演示流程实录（五段窗口见 `film-showcase.html` 的 `WINDOWS`） |
+| `android-import.png` | 1920×1080 | Android App加载固定演示材料后整屏截图 |
+| `android-report-full.png` | 1440×2978 | 「已有报告」加载 `job:gkd-s1-first` 持久化回放，1440 宽全页截图 |
+| `android-evidence-full.png` | 780×6258（390 CSS px） | 生产 `MobileApp.vue` + 假原生桥，390 宽移动视口、展开第一条证据后全页截图 |
+| `recording-android.mp4` | 1920×1080 / 16.83 s | Android App固定演示流程实录（五段窗口见 `film-showcase.html` 的 `WINDOWS`） |
 
 ## 边界
 
-- 桌面工作台是工程验收介质与离线回放载体，不是客户端（ADR-0004）。
-- Android 前端截图是生产 MobileApp.vue 的 Chromium 移动视口模拟，不是 Android 真机；片内图注写明「Android 前端 · 视口模拟（非真机）」。
+- Android App是工程验收介质与离线回放载体，不是客户端（ADR-0004）。
+- Android App 截图是生产 MobileApp.vue 的 Chromium 移动视口模拟，不是 Android 真机；片内图注写明「Android App · 视口模拟（非真机）」。
 - 报告长图来自 `fixtures/acceptance-jobs/gkd-s1-first.json` 的持久化回放（原生成 2026-10-03），不是 2026-10-23 新扫描；截图日期是 2026-10-23。
 - 示例流程为固定演示材料（SYNTHETIC），不证明实际采集。

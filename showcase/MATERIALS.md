@@ -47,7 +47,7 @@ Schema：
   },
   "assets": [
     {
-      "path": "assets/stills/ui-import.png",
+      "path": "assets/stills/android-import.png",
       "bytes": 131463,
       "sha256": "<64 位小写 hex>",
       "captureCommit": "<40 位小写 hex>",
@@ -92,7 +92,7 @@ Schema：
 
 ```text
 $ python showcase/validate_materials.py --root tmp/materials-validator-test/cases/mutated-hash
-[90s] showcase/privacytrace-90s/materials.json: assets[0].sha256: sha256 mismatch: JSON 1f5f99…, file ff5f99… (showcase/privacytrace-90s/assets/stills/ui-import.png)
+[90s] showcase/privacytrace-90s/materials.json: assets[0].sha256: sha256 mismatch: JSON 1f5f99…, file ff5f99… (showcase/privacytrace-90s/assets/stills/android-import.png)
 FAILED: 1 failure(s)
 $ echo $?
 1

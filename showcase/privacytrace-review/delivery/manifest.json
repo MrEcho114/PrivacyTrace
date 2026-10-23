@@ -5,7 +5,7 @@
   "baselineCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
   "capturedAt": "2026-10-23",
   "projectId": "f52e5212-9281-462c-a296-50d92fbf3fe3",
-  "renderJobId": "b655722d-96ad-4899-9f00-ab90a4119591",
+  "renderJobId": "39a131a3-b43d-4b00-85f6-eb26699ff2cb",
   "templateId": "motion-promo-film-v2",
   "render": {
     "htmlPath": "film-review.html",
@@ -19,12 +19,12 @@
   },
   "file": {
     "name": "PrivacyTrace-Review-1080p.mp4",
-    "bytes": 19410564,
-    "sha256": "3e04a69ed25564d81e5066053693326a745f43855f357293334e24f49be2b6db",
+    "bytes": 17800303,
+    "sha256": "0c6af4c784a43b0acec0cf89aed3e5d24ac2cf43929f58803d56d231ce0a98eb",
     "ffprobe": {
       "duration": "120.000000",
-      "size": "19410564",
-      "bit_rate": "1294037",
+      "size": "17800303",
+      "bit_rate": "1186686",
       "video": {
         "index": 0,
         "codec_name": "h264",
@@ -57,7 +57,7 @@
         "start_time": "0.000000",
         "duration_ts": 1843200,
         "duration": "120.000000",
-        "bit_rate": "1084318",
+        "bit_rate": "977002",
         "bits_per_raw_sample": "8",
         "nb_frames": "3600",
         "extradata_size": 51,
@@ -158,18 +158,18 @@
   "sources": [
     {
       "path": "film-review.html",
-      "bytes": 49869,
-      "sha256": "f9bfdb730a4fa29e439a3d58d5654602c153da3851d237ef8644a4cfba4fe701"
+      "bytes": 49816,
+      "sha256": "31b887efadbb4b2502a3141fa6a69baaca3f125489c3181bb07c03975c93e530"
     },
     {
       "path": "BEATS.md",
-      "bytes": 7904,
-      "sha256": "4d02eb38cf90d7057656b5e87e8d73bf0c98198872fe4985c7986c7cf444261e"
+      "bytes": 7928,
+      "sha256": "3743767570791e1b5946bcb939c8f6625f01227befdd11ba3b1fecbd44ccdc57"
     },
     {
       "path": "README.md",
-      "bytes": 9463,
-      "sha256": "b3d442452d1f9ed7da8c81d29758b110ed483c3a6e9e972b8bc4dc9ddc896ead"
+      "bytes": 9430,
+      "sha256": "7f8c4d16a61cd02c022d2649ae4942d8a4d9521f58938568711771419ca4df9e"
     },
     {
       "path": "poster.png",
@@ -183,28 +183,28 @@
     },
     {
       "path": "capture-provenance.json",
-      "bytes": 2620,
-      "sha256": "f86a9137b45953c6f9b8a167d0a990d4ae9afaf1a338c3488e55e0373d12b825"
+      "bytes": 2606,
+      "sha256": "046f542b6f7e727bd4baf8aa1953a4490677d3b0f675a6ddd213c7df403a965f"
     },
     {
       "path": "materials.json",
-      "bytes": 1727,
-      "sha256": "4da8d629fd41f36dfe4f933b0838b95ed736451fcfee51007736aa28ca05fed8"
+      "bytes": 1744,
+      "sha256": "d96fa01ee45b0d1b035c53c56abf1922f99ad3f776d89f22d128ec1859d1d437"
     },
     {
-      "path": "assets/ui-import.png",
-      "bytes": 144515,
-      "sha256": "7611e257f703c2143472a578526bf5d1e806d3d1803321d6db349c49cda4022a"
+      "path": "assets/android-import.png",
+      "bytes": 176400,
+      "sha256": "425917e87f695112c7affc0137fef9e1e9a41a16d21b8b50e4e6fef457981db9"
     },
     {
-      "path": "assets/report-desktop.png",
-      "bytes": 408030,
-      "sha256": "1fd521fbe65c8dac151bcd473991b05a558ae7d860bbd34587dbaab7643311bc"
+      "path": "assets/android-report-full.png",
+      "bytes": 494696,
+      "sha256": "f7e89f0b542dc1e2fc4f78588b7318a6c478539a030454df1e1ac42673104139"
     },
     {
-      "path": "assets/report-mobile.png",
-      "bytes": 666117,
-      "sha256": "e70f06ed751cc2a4166164e3e45adb716f9b88182616ed7600574f4c3268f966"
+      "path": "assets/android-evidence-full.png",
+      "bytes": 656036,
+      "sha256": "d00bcf50b2a2b4e7da29ddccb45f01f0c142b41146b41c67f637d65637c293b3"
     },
     {
       "path": "assets/soundtrack.m4a",

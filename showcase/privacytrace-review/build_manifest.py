@@ -18,7 +18,7 @@ DECK = DELIVERY / "PrivacyTrace-Review.pptx"
 BATCH = "20261023-v02"
 BASELINE = "f81ca201b932a11e24a9f7175a9583150d44e9ed"
 CAPTURED_AT = "2026-10-23"
-RENDER_JOB = "b655722d-96ad-4899-9f00-ab90a4119591"
+RENDER_JOB = "39a131a3-b43d-4b00-85f6-eb26699ff2cb"
 
 
 def sha256(path: Path) -> str:
@@ -79,7 +79,7 @@ def main():
     sources = [
         "film-review.html", "BEATS.md", "README.md", "poster.png", "PrivacyTrace-Review.pptx",
         "capture-provenance.json", "materials.json",
-        "assets/ui-import.png", "assets/report-desktop.png", "assets/report-mobile.png", "assets/soundtrack.m4a",
+        "assets/android-import.png", "assets/android-report-full.png", "assets/android-evidence-full.png", "assets/soundtrack.m4a",
     ]
     black = black_segments()
     manifest = {

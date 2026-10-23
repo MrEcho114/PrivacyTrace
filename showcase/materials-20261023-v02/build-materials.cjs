@@ -50,16 +50,17 @@ const showcase = {
   },
   qa: { path: 'delivery/qa.json', source: 'showcase-qa' },
   assets: [
-    asset(showcaseRoot, 'assets/stills/ui-import.png', 'screenshot'),
-    asset(showcaseRoot, 'assets/stills/report-desktop.png', 'screenshot'),
-    asset(showcaseRoot, 'assets/stills/report-mobile.png', 'screenshot'),
-    asset(showcaseRoot, 'assets/recording-browser.mp4', 'recording'),
+    asset(showcaseRoot, 'assets/stills/android-import.png', 'screenshot'),
+    asset(showcaseRoot, 'assets/stills/android-candidates.png', 'screenshot'),
+    asset(showcaseRoot, 'assets/stills/android-report-full.png', 'screenshot'),
+    asset(showcaseRoot, 'assets/stills/android-evidence-full.png', 'screenshot'),
+    asset(showcaseRoot, 'assets/recording-android.mp4', 'recording'),
   ],
   captions: [
     {
       path: 'film-showcase.html',
-      required: ['2026-10-23 @ f81ca20', 'PLATE 02', '持久化回放', '视口模拟'],
-      forbidden: ['07b37b2', '2026-10-22'],
+      required: ['2026-10-23 @ f81ca20', 'Android App', '持久化回放'],
+      forbidden: ['07b37b2', '2026-10-22', '工作台', '桌面工作台'],
     },
   ],
 };
@@ -73,15 +74,15 @@ const review = {
   },
   qa: { path: 'delivery/manifest.json', source: 'review-manifest' },
   assets: [
-    asset(reviewRoot, 'delivery/assets/ui-import.png', 'screenshot'),
-    asset(reviewRoot, 'delivery/assets/report-desktop.png', 'screenshot'),
-    asset(reviewRoot, 'delivery/assets/report-mobile.png', 'screenshot'),
+    asset(reviewRoot, 'delivery/assets/android-import.png', 'screenshot'),
+    asset(reviewRoot, 'delivery/assets/android-report-full.png', 'screenshot'),
+    asset(reviewRoot, 'delivery/assets/android-evidence-full.png', 'screenshot'),
   ],
   captions: [
     {
       path: 'delivery/film-review.html',
-      required: ['2026-10-23 @ f81ca20', '视口模拟', '持久化回放'],
-      forbidden: ['07b37b2', '2026-10-22 交付候选', '构造材料 / 持久化回放', '截图采集于 2026-10-22'],
+      required: ['2026-10-23 @ f81ca20', 'Android App', '持久化回放'],
+      forbidden: ['07b37b2', '2026-10-22 交付候选', '工作台', 'WORKBENCH', '截图采集于 2026-10-22'],
     },
   ],
 };

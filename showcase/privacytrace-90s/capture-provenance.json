@@ -1,169 +1,76 @@
 {
-  "purpose": "为《PrivacyTrace 作品展示片（严肃展示版 90s）》v0.2 采集真实产品操作素材：同一冻结提交 f81ca20、同一天、同一批次。",
+  "purpose": "为《PrivacyTrace 作品展示片（严肃展示版 90s）》v0.2 采集 Android App 前端素材：同一冻结提交、同一天、同一批次。",
   "batch": "20261023-v02",
   "baselineCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
   "capturedAt": "2026-10-23",
   "timezone": "Asia/Shanghai",
-  "tool": "EAC design world · record-browser（Playwright + Edge headless，逐 100 ms 截帧，按时间戳合成 30 fps MP4）",
+  "tool": "Playwright 1.64（Edge headless）· 生产 MobileApp.vue + 假原生桥（isTauri / __TAURI_INTERNALS__），390×844 移动视口；recordVideo 录制后转 30 fps MP4，逐 10 fps 抽帧",
   "subject": {
-    "product": "PrivacyTrace 工作台（apps/web，桌面验收介质）",
+    "product": "PrivacyTrace Android App 前端（apps/web/src/mobile/MobileApp.vue；由 Android/Tauri 壳加载的同一套界面）",
     "url": "http://127.0.0.1:6173/",
     "server": "npm run dev:start（vite dev server，PRIVACYTRACE_WEB_PORT=6173；PRIVACYTRACE_API_ORIGIN=http://127.0.0.1:8123）",
     "checkout": ".agents/worktrees/video-v02",
     "api": "uv run --project apps/api uvicorn privacytrace.main:app --port 8123；PRIVACYTRACE_STORE_ROOT 指向 fixtures/acceptance-jobs/ 的临时副本",
-    "note": "前端仍在开发；操作段为固定演示材料（SYNTHETIC / 人工构造示例）。报告截图单独来自持久化回放（见 reportStills）。"
+    "note": "Android App 只有一个前端；浏览器只承担移动视口的渲染与录制，不是另一个前端。"
   },
-  "job": {
-    "projectId": "dd433382-7f8f-4e65-a47a-b8c2c9aea687",
-    "jobId": "6321fa62-3863-48dd-b684-63313dac31cb",
-    "assetPath": "EAC outputs/dd433382-7f8f-4e65-a47a-b8c2c9aea687/6321fa62-3863-48dd-b684-63313dac31cb/capture/browser-f48da1b3-dc1d-4a66-b1ad-e3665ee064b3.mp4",
-    "duration": 28.066667,
-    "width": 1920,
-    "height": 1080,
+  "record": {
+    "script": "showcase/materials-20261023-v02/capture-android-flow.cjs",
+    "method": "Playwright recordVideo（390×844）→ ffmpeg 转 30 fps MP4 → ffmpeg fps=10 抽帧",
+    "path": "showcase/privacytrace-90s/assets/recording-android.mp4",
+    "duration": 16.833008,
+    "width": 390,
+    "height": 844,
     "fps": 30,
-    "bytes": 725875,
-    "sha256": "1101cbc764e76736b53e12f67fa4af633356e87e4e21a82318fb8231d80102fa",
-    "sceneCuts": [
-      2.2,
-      4.166667,
-      8.2,
-      19.333333,
-      24.366667
-    ]
+    "bytes": 609436,
+    "sha256": "8dab57bb3d3078157178f7083bb0ee9f54df551be9dad7a97eaa8852c72f49ae",
+    "frames10fps": 168
   },
   "actions": [
-    {
-      "type": "wait",
-      "ms": 1500
-    },
-    {
-      "type": "click",
-      "selector": "button:text-is(\"体验示例\")"
-    },
-    {
-      "type": "wait",
-      "ms": 2000
-    },
-    {
-      "type": "click",
-      "selector": "button:text-is(\"检查候选\")"
-    },
-    {
-      "type": "wait",
-      "ms": 2400
-    },
-    {
-      "type": "click",
-      "selector": "button:text-is(\"定位原句\")"
-    },
-    {
-      "type": "wait",
-      "ms": 1600
-    },
-    {
-      "type": "click",
-      "selector": "button:text-is(\"进入流程演示\")"
-    },
-    {
-      "type": "wait",
-      "ms": 2200
-    },
-    {
-      "type": "click",
-      "selector": "button:text-is(\"进入下一阶段\")"
-    },
-    {
-      "type": "wait",
-      "ms": 1500
-    },
-    {
-      "type": "click",
-      "selector": "button:text-is(\"进入下一阶段\")"
-    },
-    {
-      "type": "wait",
-      "ms": 1500
-    },
-    {
-      "type": "click",
-      "selector": "button:text-is(\"进入下一阶段\")"
-    },
-    {
-      "type": "wait",
-      "ms": 1500
-    },
-    {
-      "type": "click",
-      "selector": "button:text-is(\"进入下一阶段\")"
-    },
-    {
-      "type": "wait",
-      "ms": 2000
-    },
-    {
-      "type": "click",
-      "selector": "button:text-is(\"完成当前阶段\")"
-    },
-    {
-      "type": "wait",
-      "ms": 2200
-    },
-    {
-      "type": "click",
-      "selector": "button:text-is(\"查看报告\")"
-    },
-    {
-      "type": "wait",
-      "ms": 5000
-    },
-    {
-      "type": "click",
-      "selector": "button:has-text(\"查看证据\") >> nth=0"
-    },
-    {
-      "type": "wait",
-      "ms": 3500
-    }
+    "载入 Android App：APK 与政策材料",
+    "恢复当前材料（假原生桥返回持久化回放样本）",
+    "准备政策 → 核对政策声明（来源 1 / 来源 2 切换，候选声明 1 条）",
+    "保存并分析 → 扫描与对照进度（五阶段）",
+    "查看报告 → APP 隐私收集越权报告（精确位置 / 通讯录 / 屏幕截图）",
+    "打开第一条证据 → 精确位置 · 证据不足（权限配置 / API 字节码 / 政策原句）"
   ],
   "uiStatesCovered": [
-    "APK 与政策材料：示例 APK `paperboat-example.apk` + 两份政策来源（纸舟地图隐私政策 149 字 / 云点统计服务说明 74 字），均标注「来源未复核 · 正文完整度未知 · 附件未检查」",
-    "核对政策声明：政策原文在左，候选声明在右；「定位原句」回到原文并高亮命中句",
-    "扫描与对照进度：五个手动阶段（核对材料 → 隔离扫描 APK → 装载政策原文 → 规则对照 → 生成报告），完成后出现「查看报告」",
-    "APP 隐私收集越权报告：精确位置 / 通讯录 / 屏幕截图三条结果，均为「证据不足 · 条目待复核」；右侧证据面板给出代码位置与政策原句",
-    "证据切换：点击「查看证据」把右侧面板从精确位置切到设备标识，显示该条目的代码位置、规则与政策原句"
+    "APK 与政策材料：Android App 顶栏 + 四步轨（APK / 核对 / 扫描 / 报告）、当前分析材料、两份政策来源",
+    "核对政策声明：来源切换、政策原文 / 候选声明、定位原句",
+    "扫描与对照进度：核对材料 → 隔离扫描 → 装载政策原文 → 规则对照 → 生成报告",
+    "APP 隐私收集越权报告：三条结果均为「证据不足 · 条目待复核」，可展开证据",
+    "证据详情：代码位置与政策原句同屏"
   ],
-  "frameExtraction": {
-    "command": "ffmpeg -i assets/recording-browser.mp4 -vf fps=10 -q:v 3 assets/rec/f_%04d.jpg",
-    "frames": 281,
-    "fps": 10,
-    "note": "录制本身是 10 fps 截帧合成；成片用 canvas 逐帧重放并叠加连续镜头运动，窗口映射写在 film-showcase.html 的 WINDOWS 表。"
-  },
-  "reportStills": {
-    "ui-import.png": {
-      "method": "Playwright（Edge headless）1920×1080；工作台加载固定演示材料后整屏截图",
-      "bytes": 144515,
-      "sha256": "7611e257f703c2143472a578526bf5d1e806d3d1803321d6db349c49cda4022a"
+  "stills": {
+    "android-import.png": {
+      "bytes": 176400,
+      "sha256": "425917e87f695112c7affc0137fef9e1e9a41a16d21b8b50e4e6fef457981db9",
+      "pixelSize": "780×1688（390 CSS px）"
     },
-    "report-desktop.png": {
-      "method": "Playwright 1440×900 全页截图；工作台「已有报告」加载持久化回放 `job:gkd-s1-first`（fixtures/acceptance-jobs/gkd-s1-first.json，REAL_SCAN · PERSISTED_REPLAY）",
-      "bytes": 408030,
-      "sha256": "1fd521fbe65c8dac151bcd473991b05a558ae7d860bbd34587dbaab7643311bc",
-      "pixelSize": "1440×2978",
-      "reportCreatedAt": "2026-10-03T12:48:35.211974Z",
-      "reportSource": "gkd-s1-first 持久化回放（原生成于 2026-10-03；截图 2026-10-23 @ f81ca20）"
+    "android-candidates.png": {
+      "bytes": 167984,
+      "sha256": "0a7f65e3c050993d325e967038a5466873eebb4c75f80c30b1359d07e6e79313",
+      "pixelSize": "780×1688（390 CSS px）"
     },
-    "report-mobile.png": {
-      "method": "Playwright 390×844 移动视口、deviceScaleFactor=2；生产 MobileApp.vue + 假原生桥（Chromium 视口模拟，非真机）；报告页展开第一条证据后整页截图",
-      "bytes": 666117,
-      "sha256": "e70f06ed751cc2a4166164e3e45adb716f9b88182616ed7600574f4c3268f966",
-      "pixelSize": "780×6258（390 CSS px）",
-      "reportSource": "同一 gkd-s1-first 持久化回放数据，经移动壳渲染",
-      "boundary": "Android 前端（生产 MobileApp.vue + 假原生桥）的 Chromium 移动视口模拟；ADR-0004 中真客户端为 Android App，片内图注写明「Android 前端 · 视口模拟（非真机）」"
+    "android-report-full.png": {
+      "bytes": 494696,
+      "sha256": "f7e89f0b542dc1e2fc4f78588b7318a6c478539a030454df1e1ac42673104139",
+      "pixelSize": "780×4438（390 CSS px）"
+    },
+    "android-evidence-full.png": {
+      "bytes": 656036,
+      "sha256": "d00bcf50b2a2b4e7da29ddccb45f01f0c142b41146b41c67f637d65637c293b3",
+      "pixelSize": "780×6258（390 CSS px）"
     }
   },
-  "observedIssues": [
-    "录制期间未采集控制台日志；同批次探针在 API 未启动时出现过 1 次 500，成片未使用任何错误状态画面。",
-    "「已有报告」页依赖 API 的 fixture store；本批次用 `fixtures/acceptance-jobs/` 的临时副本启动，不读取本机真实数据。",
-    "移动端为 Chromium 视口模拟，不是 Android 真机截图；这一点在片内图注与 README 中同时标注。"
+  "reportSource": {
+    "fixture": "fixtures/acceptance-jobs/gkd-s1-first.json",
+    "mode": "REAL_SCAN · PERSISTED_REPLAY",
+    "createdAt": "2026-10-03T12:48:35.211974Z",
+    "boundary": "历史回放样本；本批次未重新扫描 APK"
+  },
+  "boundaries": [
+    "Android App 画面是 Chromium 390×844 移动视口模拟（生产移动壳 + 假原生桥），不是 Android 真机；片内图注写明「视口模拟（非真机）」",
+    "项目只有一个前端：Android App；不再展示已冻结的桌面工作台界面",
+    "示例流程为持久化回放样本（真实 APK 静态报告，原生成 2026-10-03），不证明实际采集"
   ]
 }

@@ -83,18 +83,19 @@
   .step .t{font-family:var(--serif);font-size:28px;font-weight:600;letter-spacing:.02em;color:rgba(23,24,27,.46)}
   .step .s{margin-left:auto;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:rgba(23,24,27,.32)}
   #w-note{position:absolute;left:98px;top:768px;width:450px;font-size:12px;line-height:1.75;color:rgba(23,24,27,.46);font-weight:300}
-  #w-plate{position:absolute;left:600px;top:168px;width:1224px;height:688px;overflow:hidden;border:1px solid rgba(23,24,27,.14);
-    background:#fbfaf6;box-shadow:0 26px 60px rgba(80,66,44,.16)}
-  #w-plate img{position:absolute;left:0;top:0;width:1224px;transform-origin:0 0}
+  #w-plate{position:absolute;left:600px;top:168px;width:1224px;height:688px;display:flex;align-items:center;justify-content:center;gap:54px}
+  .device{position:relative;width:280px;height:606px;border:7px solid #26231f;border-radius:30px;overflow:hidden;background:#fbfaf6;box-shadow:0 26px 60px rgba(70,56,36,.22);transform-origin:50% 60%}
+  .device img{display:block;width:100%}
   #w-tag{position:absolute;left:600px;top:140px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:rgba(23,24,27,.50)}
   #w-count{position:absolute;right:96px;top:140px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:rgba(23,24,27,.38)}
   #w-cap{position:absolute;left:600px;top:872px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:rgba(23,24,27,.56)}
   #w-cap b{color:rgba(23,24,27,.82);font-weight:400}
 
   /* ---------- 02 running ---------- */
-  #run-plate{position:absolute;left:160px;top:84px;width:1600px;height:900px;overflow:hidden;border:1px solid rgba(23,24,27,.18);
-    background:#fbfaf6;box-shadow:0 30px 70px rgba(78,64,42,.18)}
-  #shot{position:absolute;left:0;top:0;width:1600px;height:900px;transform-origin:0 0}
+  #run-plate{position:absolute;left:160px;top:84px;width:1600px;height:900px;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(880px 760px at 50% 50%,rgba(255,255,255,.58),rgba(255,255,255,0) 72%)}
+  .device.large{width:390px;height:844px;border-radius:34px}
+  #shot{display:block;width:390px;height:844px;transform-origin:50% 50%}
   #run-plate .sheen{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 60px rgba(60,48,30,.10)}
   #run-tag{position:absolute;left:160px;top:56px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:rgba(23,24,27,.52)}
   #run-tag2{position:absolute;right:160px;top:56px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:rgba(23,24,27,.42)}
@@ -131,10 +132,10 @@
 
   /* ---------- 04 report ---------- */
   #r-h{white-space:nowrap;font-size:58px}
-  #rep-plate{position:absolute;left:96px;top:300px;width:680px;height:620px;overflow:hidden;border:1px solid rgba(23,24,27,.14);
-    background:#fbfaf6;box-shadow:0 24px 56px rgba(80,66,44,.14)}
-  #rep-plate img{position:absolute;left:0;top:0;width:680px;transform-origin:0 0}
-  #rep-cap{position:absolute;left:96px;top:936px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:rgba(23,24,27,.56)}
+  #rep-plate{position:absolute;left:120px;top:270px;width:330px;height:700px;overflow:hidden;border:7px solid #26231f;border-radius:32px;
+    background:#fbfaf6;box-shadow:0 24px 56px rgba(80,66,44,.22)}
+  #rep-plate img{position:absolute;left:0;top:0;width:330px;transform-origin:0 0}
+  #rep-cap{position:absolute;left:120px;top:990px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:rgba(23,24,27,.56)}
   #rep-cap b{color:rgba(23,24,27,.82);font-weight:400}
   #rep-notes{position:absolute;left:816px;top:300px;width:560px}
   #rep-notes .row{display:flex;align-items:baseline;gap:14px;padding:15px 0;border-top:1px solid rgba(23,24,27,.12);font-size:15px;color:rgba(23,24,27,.66);font-weight:300}
@@ -149,7 +150,7 @@
     overflow:hidden;background:#fbfaf6;box-shadow:0 26px 60px rgba(70,56,36,.24)}
   #phone .inner{position:absolute;inset:0;overflow:hidden}
   #phone img{position:absolute;left:0;top:0;width:300px;transform-origin:0 0}
-  #phone-cap{position:absolute;right:56px;top:908px;width:380px;text-align:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:rgba(23,24,27,.52)}
+  #phone-cap{position:absolute;right:24px;top:908px;width:440px;text-align:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:rgba(23,24,27,.52)}
   #rep-foot{position:absolute;left:98px;top:986px;font-size:11.5px;color:rgba(23,24,27,.42);font-weight:300;letter-spacing:.02em}
 
   /* ---------- 05 record ---------- */
@@ -233,18 +234,18 @@
       <div class="step" id="st3"><span class="n">03</span><span class="t">分析进度</span><span class="s">五阶段 · 可切换</span></div>
       <div class="step" id="st4"><span class="n">04</span><span class="t">对照报告</span><span class="s">线索 · 声明 · 依据</span></div>
     </div>
-    <div id="w-note">界面仍在开发；示例材料为固定演示数据，不是真实 App 的检测结果。</div>
-    <div id="w-tag">图 01 — 工作台 · 导入材料</div>
+    <div id="w-note">界面仍在开发；材料为持久化回放样本（真实 APK 静态报告），本轮未重扫。Android App 在移动视口模拟，非真机。</div>
+    <div id="w-tag">图 01 — Android App · 导入与候选</div>
     <div id="w-count">开发版 · 2026-10-23 @ f81ca20</div>
-    <div id="w-plate"><img id="w-img" src="assets/stills/ui-import.png" alt="PrivacyTrace 工作台导入材料页"></div>
-    <div id="w-cap"><b>PLATE 01</b> — 导入材料：APK 与政策来源 · 固定演示数据</div>
+    <div id="w-plate"><div class="device"><img id="w-img" src="assets/stills/android-import.png" alt="PrivacyTrace Android App 导入材料"></div><div class="device"><img src="assets/stills/android-candidates.png" alt="PrivacyTrace Android App 核对候选"></div></div>
+    <div id="w-cap"><b>PLATE 01</b> — Android App · 导入材料 / 核对候选 · 持久化回放</div>
   </section>
 
   <!-- 02 running -->
   <section class="scene" id="s2">
-    <div id="run-tag">界面实录 · 浏览器录制 · 2026-10-23 @ f81ca20 · 剪辑节奏，非实时速度</div>
-    <div id="run-tag2">开发版 · 固定演示数据</div>
-    <div id="run-plate"><canvas id="shot" width="1920" height="1080"></canvas><div class="sheen"></div></div>
+    <div id="run-tag">Android App 实录 · 移动视口录制 · 2026-10-23 @ f81ca20 · 剪辑节奏，非实时速度</div>
+    <div id="run-tag2">开发版 · 持久化回放样本</div>
+    <div id="run-plate"><div class="device large"><canvas id="shot" width="390" height="844"></canvas><div class="sheen"></div></div></div>
     <div id="run-cap"><span id="run-num">①</span> <span id="run-text">导入：一个示例 APK 名称，两份政策来源。</span></div>
     <div id="run-idx">02 / RUNNING</div>
   </section>
@@ -288,18 +289,18 @@
   <section class="scene" id="s4">
     <div class="eyebrow">Ⅳ · 报告</div>
     <div class="eyebrow-en" id="r-en">THE REPORT</div>
-    <div class="h" id="r-h">报告在浏览器里，<em>也在手机上。</em></div>
-    <div id="rep-plate"><img id="rep-img" src="assets/stills/report-desktop.png" alt="PrivacyTrace 对照报告长图"><div class="mask"></div><div class="mask b"></div></div>
-    <div id="rep-cap"><b>PLATE 02</b> — 分析报告 · 桌面工作台 · 持久化回放 · 2026-10-23 @ f81ca20</div>
+    <div class="h" id="r-h">报告，<em>就在 Android App 里。</em></div>
+    <div id="rep-plate"><img id="rep-img" src="assets/stills/android-report-full.png" alt="PrivacyTrace Android App 对照报告长图"><div class="mask"></div><div class="mask b"></div></div>
+    <div id="rep-cap"><b>PLATE 02</b> — Android App · 分析报告 · 持久化回放 · 2026-10-23 @ f81ca20</div>
     <div id="rep-notes">
       <div class="row gap"><b>精确位置</b>位置权限与潜在调用<em>证据不足</em></div>
       <div class="row gap"><b>通讯录</b>通讯录权限与潜在调用<em>证据不足</em></div>
       <div class="row gap"><b>屏幕截图</b>截图权限与潜在调用<em>证据不足</em></div>
       <div class="row"><b>对照结果</b>只看数据类型与原文条件<em>不推断采集</em></div>
     </div>
-    <div id="phone"><div class="inner"><img id="ph-img" src="assets/stills/report-mobile.png" alt="PrivacyTrace 移动端报告长图"></div></div>
-    <div id="phone-cap">PLATE 03 — Android 前端 · 2026-10-23 @ f81ca20</div>
-    <div id="rep-foot">截图采集于 2026-10-23 · 提交 f81ca20；Android 前端为移动视口模拟（非真机）；界面仍在开发，最终视觉可能变化。</div>
+    <div id="phone"><div class="inner"><img id="ph-img" src="assets/stills/android-evidence-full.png" alt="PrivacyTrace Android App 证据详情长图"></div></div>
+    <div id="phone-cap">PLATE 03 — Android App · 证据详情 · 2026-10-23 @ f81ca20</div>
+    <div id="rep-foot">截图采集于 2026-10-23 · 提交 f81ca20；Android App 为移动视口模拟（非真机）；界面仍在开发，最终视觉可能变化。</div>
   </section>
 
   <!-- 05 record -->
@@ -384,7 +385,7 @@
     { t:9,    no:'Ⅰ — THE WORK',  nm:'作品 / 四步' },
     { t:21,   no:'Ⅱ — RUNNING',   nm:'操作 / 界面实录' },
     { t:45,   no:'Ⅲ — EVIDENCE',  nm:'证据 / 两个终点' },
-    { t:60,   no:'Ⅳ — REPORT',    nm:'报告 / 桌面与移动' },
+    { t:60,   no:'Ⅳ — REPORT',    nm:'报告 / Android App' },
     { t:72,   no:'Ⅴ — RECORD',    nm:'结果 / 分开摆' },
     { t:84,   no:'Ⅵ — CLOSE',     nm:'结语 / 只对照' }
   ];
@@ -402,17 +403,17 @@
   const rulerFill = ruler.querySelector('.fill');
 
   /* ------------------------------------------------------------ still assets */
-  const stills = ['assets/stills/ui-import.png','assets/stills/report-desktop.png','assets/stills/report-mobile.png']
+  const stills = ['assets/stills/android-import.png','assets/stills/android-candidates.png','assets/stills/android-report-full.png','assets/stills/android-evidence-full.png']
     .map(src => { const img = new Image(); img.src = src; return img; });
 
   /* --------------------------------------------------- recording frame bank */
-  const REC = { dir:'assets/rec', total:281, fps:10 };
+  const REC = { dir:'assets/android-rec', total:168, fps:10 };
   const WINDOWS = [
-    { a:21.90, b:23.40, s0:2.25, s1:4.10 },
-    { a:23.40, b:26.90, s0:4.35, s1:8.15 },
-    { a:26.90, b:36.30, s0:8.45, s1:19.25 },
-    { a:36.30, b:41.10, s0:19.45, s1:24.25 },
-    { a:41.10, b:44.70, s0:24.45, s1:27.95 }
+    { a:21.90, b:23.40, s0:1.60, s1:3.60 },
+    { a:23.40, b:26.90, s0:4.10, s1:6.70 },
+    { a:26.90, b:36.30, s0:7.10, s1:10.20 },
+    { a:36.30, b:41.10, s0:10.50, s1:13.60 },
+    { a:41.10, b:44.70, s0:14.00, s1:16.40 }
   ];
   const CAMS = [ // [filmTime, cx, cy, zoom]
     [21.00, 960, 540, 1.00],
@@ -477,16 +478,12 @@
     const k = sourceIndex(t);
     if(k !== drawnIndex){
       const img = await frameImage(k);
-      ctx.drawImage(img, 0, 0, 1920, 1080);
+      ctx.drawImage(img, 0, 0, 390, 844);
       drawnIndex = k;
     }
-    const cam = camAt(t);
-    const s = cam.z, kx = 1600/1920, ky = 900/1080;
-    let tx = 800 - s*kx*cam.cx;
-    let ty = 450 - s*ky*cam.cy;
-    tx = clamp(tx, 1600 - 1600*s, 0);
-    ty = clamp(ty, 900 - 900*s, 0);
-    canvas.style.transform = 'translate3d(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px,0) scale(' + s.toFixed(4) + ')';
+    const runIn = clamp((t - 21.0)/1.4, 0, 1);
+    const s = 1 + 0.025 * smooth(runIn);
+    canvas.style.transform = 'scale(' + s.toFixed(4) + ')';
   }
 
   /* ----------------------------------------------------------------- scenes */
@@ -528,8 +525,8 @@
     const plate = $('#w-plate');
     plate.style.opacity = smooth((t - 12.1)/.7).toFixed(3);
     plate.style.transform = 'translate3d(' + ((1-pp)*44).toFixed(2) + 'px,' + ((1-pp)*18).toFixed(2) + 'px,0)';
-    const wz = 1 + 0.03 * clamp((t - 12.4)/7.8, 0, 1);
-    $('#w-img').style.transform = 'scale(' + wz.toFixed(4) + ')';
+    const wz = 1 + 0.025 * clamp((t - 12.4)/7.8, 0, 1);
+    document.querySelectorAll('#w-plate .device').forEach(el => { el.style.transform = 'scale(' + wz.toFixed(4) + ')'; });
     rise($('#w-tag'), t, 11.9, .55, 8);
     rise($('#w-count'), t, 12.1, .55, 8);
     rise($('#w-cap'), t, 12.5, .55, 8);
@@ -537,11 +534,11 @@
   }
 
   const CAPTIONS = [
-    { t:21.90, num:'①', text:'导入：一个示例 APK 名称，两份政策来源。' },
-    { t:23.40, num:'②', text:'候选：政策原文在左，候选声明在右；「定位原句」回到原文。' },
-    { t:26.90, num:'③', text:'分析：输入 → 静态线索 → 政策候选 → 规则对照 → 报告。' },
-    { t:36.30, num:'④', text:'报告：三条结果，每条都能打开「线索详情」。' },
-    { t:41.10, num:'⑤', text:'详情：代码位置与政策原句，出现在同一屏。' }
+    { t:21.90, num:'①', text:'导入：材料名称与两份政策来源。' },
+    { t:23.40, num:'②', text:'候选：政策原文与候选声明；「定位原句」回到原文。' },
+    { t:26.90, num:'③', text:'分析：核对 → 扫描 → 装载政策 → 规则对照 → 报告。' },
+    { t:36.30, num:'④', text:'报告：三条结果，每条都能打开证据。' },
+    { t:41.10, num:'⑤', text:'证据：代码位置与政策原句，出现在同一屏。' }
   ];
   const capNum = $('#run-num'), capText = $('#run-text');
   let capIndex = -1;
@@ -600,7 +597,7 @@
     plate.style.opacity = smooth((t - 60.9)/.55).toFixed(3);
     plate.style.transform = 'translate3d(' + ((1-pp)*-30).toFixed(2) + 'px,' + ((1-pp)*14).toFixed(2) + 'px,0)';
     const pan = clamp((t - 61.3)/8.0, 0, 1);
-    $('#rep-img').style.transform = 'translate3d(0,' + (-pan*620).toFixed(2) + 'px,0)';
+    $('#rep-img').style.transform = 'translate3d(0,' + (-pan*1050).toFixed(2) + 'px,0)';
     rise($('#rep-cap'), t, 61.4, .5, 8);
     document.querySelectorAll('#rep-notes .row').forEach((row,i) => {
       const t0 = 61.8 + i*.5;
@@ -612,7 +609,7 @@
     $('#phone').style.opacity = smooth((t - 65.5)/.6).toFixed(3);
     $('#phone').style.transform = 'translate3d(0,' + ((1-ph)*40).toFixed(2) + 'px,0)';
     const phPan = clamp((t - 67.0)/4.2, 0, 1);
-    $('#ph-img').style.transform = 'translate3d(0,' + (-phPan*900).toFixed(2) + 'px,0)';
+    $('#ph-img').style.transform = 'translate3d(0,' + (-phPan*1200).toFixed(2) + 'px,0)';
     rise($('#phone-cap'), t, 66.0, .5, 8);
     rise($('#rep-foot'), t, 68.9, .5, 8);
   }

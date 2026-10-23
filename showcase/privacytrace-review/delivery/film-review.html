@@ -119,8 +119,9 @@
   .win-shot{position:relative;overflow:hidden;background:#f3efe4}
   .win-shot img{display:block;width:100%}
   .win-tag{position:absolute;left:14px;bottom:14px;font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:#2b3038;background:rgba(244,240,228,.92);border:1px solid rgba(23,27,34,.18);padding:6px 9px}
-  #pwin{left:1010px;top:232px;width:820px;height:490px}
-  #pwin .win-shot{height:460px}
+  #p-wl{left:1240px;top:120px;width:320px;white-space:nowrap}
+  #pwin{left:1240px;top:178px;width:320px;height:694px;border:8px solid #26231f;border-radius:34px;background:#fbfaf6;box-shadow:0 30px 70px rgba(0,0,0,.45)}
+  #pwin img{display:block;width:100%}
 
   /* innovation */
   .ev-card{left:140px;top:392px;width:1640px;height:416px;padding:0}
@@ -163,11 +164,11 @@
   .d-row span{color:rgba(244,240,228,.42);letter-spacing:.06em}
   .d-row b{color:rgba(244,240,228,.9);font-weight:400;text-align:right}
   .d-note{margin-top:14px;font-size:13px;line-height:1.7;color:rgba(244,240,228,.5);font-weight:300}
-  .report-win{left:1040px;top:164px;width:740px;height:820px}
-  .report-win .win-shot{height:790px}
+  .report-win{left:1060px;top:164px;width:360px;height:780px;border:8px solid #26231f;border-radius:36px;background:#fbfaf6;box-shadow:0 30px 70px rgba(0,0,0,.45)}
+  .report-win img{display:block;width:100%}
   .rwin-label{position:absolute;left:1040px;top:128px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:rgba(244,240,228,.45)}
-  .phone-wrap{left:1400px;top:150px;width:300px;height:760px}
-  .phone-label{position:absolute;left:1400px;top:112px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:rgba(244,240,228,.45)}
+  .phone-wrap{left:1500px;top:150px;width:300px;height:760px}
+  .phone-label{position:absolute;left:1500px;top:112px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:rgba(244,240,228,.45)}
   .phone{border:9px solid #1b2028;border-radius:34px;overflow:hidden;background:#f6f2e8;box-shadow:0 40px 100px rgba(0,0,0,.6)}
   .phone .ph-shot{height:100%;overflow:hidden;position:relative}
   .phone img{display:block;width:100%}
@@ -291,10 +292,9 @@
       <div class="not-foot">线索 ≠ 行为。结论留给证据与人工复核。</div>
     </div>
     <p class="claim" id="p-claim">只对照，不判定。</p>
-    <div class="win-label" id="p-wl"><b>工作台 · 开发版</b><span>2026-10-23 截屏 @ f81ca20 · 固定演示数据</span></div>
+    <div class="win-label" id="p-wl"><b>Android App · 开发版</b><span>2026-10-23 @ f81ca20</span></div>
     <div class="window" id="pwin">
-      <div class="win-bar"><i></i><i></i><i></i><span>PRIVACYTRACE / WORKBENCH / NEW COMPARISON</span></div>
-      <div class="win-shot"><img src="assets/ui-import.png" alt="PrivacyTrace 工作台导入材料页"><span class="win-tag">本机材料 · 受限 Docker 解析</span></div>
+      <img src="assets/android-import.png" alt="PrivacyTrace Android App 导入材料页">
     </div>
   </section>
 
@@ -379,19 +379,18 @@
         <div class="d-row"><span>STATE</span><b>PostgreSQL outbox</b></div>
         <div class="d-row"><span>JOBS</span><b>Redis · Celery</b></div>
         <div class="d-row"><span>RUNNER</span><b>mTLS · 不持 Docker socket</b></div>
-        <div class="d-note">Vue 工作台 · Tauri Android · 离线报告包：同一份证据，三种入口。</div>
+        <div class="d-note">Android App · 离线报告包：同一份证据，多个入口。</div>
       </div>
     </div>
-    <div class="rwin-label" id="rwl">报告 · 持久化回放 · 真实 APK（S1 夹具）· 2026-10-23 @ f81ca20</div>
+    <div class="rwin-label" id="rwl">Android App 报告 · 持久化回放 · 真实 APK（S1 夹具）· 2026-10-23 @ f81ca20</div>
     <div class="window report-win" id="rwin">
-      <div class="win-bar"><i></i><i></i><i></i><span>report / PERSISTED REPLAY / S1 FIXTURE</span></div>
-      <div class="win-shot"><img id="rimg" src="assets/report-desktop.png" alt="PrivacyTrace 对照报告页面"></div>
+      <img id="rimg" src="assets/android-report-full.png" alt="PrivacyTrace Android App 对照报告页面">
     </div>
-    <div class="phone-label" id="phl">Android 前端 · 开发版 · 视口模拟 · 2026-10-23 @ f81ca20</div>
+    <div class="phone-label" id="phl">Android App · 开发版 · 视口模拟 · 2026-10-23 @ f81ca20</div>
     <div class="window phone-wrap phone" id="phone">
-      <div class="ph-shot"><img id="pimg" src="assets/report-mobile.png" alt="PrivacyTrace 移动端报告页面"></div>
+      <div class="ph-shot"><img id="pimg" src="assets/android-evidence-full.png" alt="PrivacyTrace Android App 证据详情页面"></div>
     </div>
-    <p class="impl-foot" id="im-foot">界面仍在开发，最终视觉可能变化；截图采集于 2026-10-23 · 提交 f81ca20；Android 前端为移动视口模拟（非真机）。</p>
+    <p class="impl-foot" id="im-foot">界面仍在开发，最终视觉可能变化；截图采集于 2026-10-23 · 提交 f81ca20；Android App 为移动视口模拟（非真机）。</p>
   </section>
 
   <!-- 04 results -->
@@ -643,7 +642,7 @@
     rwin.style.opacity = smooth((t-44.25)/.5).toFixed(3);
     rwin.style.transform = 'translate3d(' + ((1-rp)*40).toFixed(2) + 'px,' + ((1-rp)*24).toFixed(2) + 'px,0)';
     const pan = clamp((t-44.6)/16.2,0,1);
-    $('#rimg').style.transform = 'translate3d(0,' + (-pan*700).toFixed(1) + 'px,0)';
+    $('#rimg').style.transform = 'translate3d(0,' + (-pan*1250).toFixed(1) + 'px,0)';
     const phoneOn = t >= 59.35;
     if(phoneOn){
       const pp = outQuint(clamp((t-59.35)/.65,0,1));
@@ -651,7 +650,7 @@
       ph.style.opacity = smooth((t-59.35)/.45).toFixed(3);
       ph.style.transform = 'translate3d(0,' + ((1-pp)*28).toFixed(2) + 'px,0) scale(' + (0.97+0.03*pp).toFixed(4) + ')';
       const scroll = clamp((t-61.0)/3.8,0,1);
-      $('#pimg').style.transform = 'translate3d(0,' + (-scroll*760).toFixed(1) + 'px,0)';
+      $('#pimg').style.transform = 'translate3d(0,' + (-scroll*1450).toFixed(1) + 'px,0)';
     } else {
       $('#phone').style.opacity = '0';
     }

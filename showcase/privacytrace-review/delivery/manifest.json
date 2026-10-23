@@ -1,0 +1,339 @@
+{
+  "title": "PrivacyTrace 作品评审片（专家版）",
+  "version": "review-20261023",
+  "projectId": "f52e5212-9281-462c-a296-50d92fbf3fe3",
+  "renderJobId": "6772d646-6518-4a31-afd1-797cb2ff09e0",
+  "templateId": "motion-promo-film-v2",
+  "render": {
+    "htmlPath": "film-review.html",
+    "audioPath": "assets/soundtrack.m4a",
+    "durationSeconds": 120,
+    "fps": 30,
+    "scale": 1,
+    "deterministic": true,
+    "exactPixels": true,
+    "missingAssets": []
+  },
+  "file": {
+    "name": "PrivacyTrace-Review-1080p.mp4",
+    "bytes": 16559914,
+    "sha256": "51d512afb8aface80cb9b2050bd06402611520c449995e605f1b6b0cee602cc5",
+    "ffprobe": {
+      "duration": "120.000000",
+      "size": "16559914",
+      "bit_rate": "1103994",
+      "video": {
+        "index": 0,
+        "codec_name": "h264",
+        "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+        "profile": "High",
+        "codec_type": "video",
+        "codec_tag_string": "avc1",
+        "codec_tag": "0x31637661",
+        "mime_codec_string": "avc1.640028",
+        "width": 1920,
+        "height": 1080,
+        "coded_width": 1920,
+        "coded_height": 1080,
+        "has_b_frames": 2,
+        "sample_aspect_ratio": "1:1",
+        "display_aspect_ratio": "16:9",
+        "pix_fmt": "yuvj420p",
+        "level": 40,
+        "color_range": "pc",
+        "color_space": "bt470bg",
+        "chroma_location": "left",
+        "field_order": "progressive",
+        "is_avc": "true",
+        "nal_length_size": "4",
+        "id": "0x1",
+        "r_frame_rate": "30/1",
+        "avg_frame_rate": "30/1",
+        "time_base": "1/15360",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 1843200,
+        "duration": "120.000000",
+        "bit_rate": "894389",
+        "bits_per_raw_sample": "8",
+        "nb_frames": "3600",
+        "extradata_size": 51,
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0,
+          "multilayer": 0
+        },
+        "tags": {
+          "language": "und",
+          "handler_name": "VideoHandler",
+          "encoder": "Lavc62.28.102 libx264"
+        },
+        "side_data_list": [
+          {
+            "side_data_type": "ICC Profile"
+          }
+        ]
+      },
+      "audio": {
+        "index": 1,
+        "codec_name": "aac",
+        "codec_long_name": "AAC (Advanced Audio Coding)",
+        "profile": "LC",
+        "codec_type": "audio",
+        "codec_tag_string": "mp4a",
+        "codec_tag": "0x6134706d",
+        "mime_codec_string": "mp4a.40.2",
+        "sample_fmt": "fltp",
+        "sample_rate": "96000",
+        "channels": 2,
+        "channel_layout": "stereo",
+        "bits_per_sample": 0,
+        "initial_padding": 0,
+        "id": "0x2",
+        "r_frame_rate": "0/0",
+        "avg_frame_rate": "0/0",
+        "time_base": "1/96000",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 11520000,
+        "duration": "120.000000",
+        "bit_rate": "201145",
+        "nb_frames": "11251",
+        "extradata_size": 5,
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0,
+          "multilayer": 0
+        },
+        "tags": {
+          "language": "und",
+          "handler_name": "SoundHandler"
+        }
+      }
+    }
+  },
+  "deck": {
+    "name": "PrivacyTrace-Review.pptx",
+    "version": "0.3",
+    "kind": "academic-paper",
+    "template": {
+      "id": "od-hps-academic-paper",
+      "license": "MIT",
+      "attribution": "lewislulu/html-ppt-skill · theme academic-paper"
+    },
+    "bytes": 1114540,
+    "sha256": "c57840cb80dfe8036ab2c8a3751bcf2236471d6814b5d91ee94fc56195860069",
+    "slides": 10,
+    "notes": 10,
+    "source": {
+      "html": "../deck/academic.html",
+      "sha256": "ca52c5742e2b6f4877f29f366835fa2a86c57484c875141bed0ea0ed5e4ab695"
+    },
+    "render": {
+      "width": 1920,
+      "height": 1080,
+      "slides": [
+        {
+          "file": "slide-01.png",
+          "bytes": 102275,
+          "sha256": "e3fc9471be62126267ab07a49a6b8c8397b4eefdffb30f3f4513ff9e9a9f1ff6"
+        },
+        {
+          "file": "slide-02.png",
+          "bytes": 85616,
+          "sha256": "61a61a69d2e394fcab0979d2495821e48dba540787c274263acd3cb0a72c9fea"
+        },
+        {
+          "file": "slide-03.png",
+          "bytes": 134146,
+          "sha256": "433d5196724e0ccb2b3ca1fd438545b1e40eabab1da2bf065404761935c2bfbc"
+        },
+        {
+          "file": "slide-04.png",
+          "bytes": 99086,
+          "sha256": "d0288a6e74cb7e82f72b2a59395d4dbd60012bd6616e8896da2527eb277d6a92"
+        },
+        {
+          "file": "slide-05.png",
+          "bytes": 115398,
+          "sha256": "d46343237c75473d16feb0402eca93f597a0ff0368cad73bb60bb348ad22c244"
+        },
+        {
+          "file": "slide-06.png",
+          "bytes": 194288,
+          "sha256": "bc5b4c6000face4733fef27b69c6476dea5964133302c7888febdfc7f34689bd"
+        },
+        {
+          "file": "slide-07.png",
+          "bytes": 80268,
+          "sha256": "5490afaf251d332e6d8f43ba56b85feb328d75f6b0ac45b909a44732f83b2a26"
+        },
+        {
+          "file": "slide-08.png",
+          "bytes": 140233,
+          "sha256": "9184b718af4906cb8ee7bdbd05c79dfc68cfc2b8728c582ca7ebb9afee6e24ca"
+        },
+        {
+          "file": "slide-09.png",
+          "bytes": 98788,
+          "sha256": "fe37ed26f7b99f5553cded4ba4dc9fb4bcc1d260a3d0d6b59773b222d3e0ba32"
+        },
+        {
+          "file": "slide-10.png",
+          "bytes": 105965,
+          "sha256": "4ac6533701dd891c7b7c9ad26f5534897bbd0f8c57219756ae1b49da6adc82b6"
+        }
+      ]
+    },
+    "captures": {
+      "manifest": "../capture/manifest.json",
+      "manifest_sha256": "686cc69b1e65d372de4b1613a6d0c8148e06b64c2633b17f77808407ae185930",
+      "source_commit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+      "source_commit_short": "f81ca20",
+      "capture_date": "2026-10-23",
+      "platform": "Chromium headless viewport simulation; not Android WebView and not a device run",
+      "fixture": "production Vue mobile shell + mocked Tauri native bridge + deterministic synthetic fixture; no APK, model, Docker or backend",
+      "screens": [
+        {
+          "role": "import",
+          "file": "../capture/mobile-import-390x844-dpr3.png",
+          "bytes": 243366,
+          "sha256": "c6afe7c502eea513c266cfd739daf22ccb0d2cd714d98ecf0f15386fc62ec6bf",
+          "viewport": "390x844",
+          "device_scale_factor": 3,
+          "captured_at": "2026-10-23T08:57:41.417Z"
+        },
+        {
+          "role": "report",
+          "file": "../capture/mobile-report-390x844-dpr3.png",
+          "bytes": 279893,
+          "sha256": "eb4fd28eb460abf11e879a4b19972197819b95ec44d78555af6d384750fc3836",
+          "viewport": "390x844",
+          "device_scale_factor": 3,
+          "captured_at": "2026-10-23T08:57:41.417Z"
+        }
+      ]
+    }
+  },
+  "sources": [
+    {
+      "path": "film-review.html",
+      "bytes": 49759,
+      "sha256": "726f6e7a569f2f6ec3972d1d9ebdd58a52bfe6d2e3465258189f2ca8a775a7f8"
+    },
+    {
+      "path": "BEATS.md",
+      "bytes": 8317,
+      "sha256": "be8021d059e4697db272d6a06e6ee8f521fc264bc43270b585525ec06765a792"
+    },
+    {
+      "path": "README.md",
+      "bytes": 9414,
+      "sha256": "cc1f0a510b8ea00a12fff56c74c22bba3bcf1c99d497462cf1ba538e7214105c"
+    },
+    {
+      "path": "poster.png",
+      "bytes": 1548003,
+      "sha256": "a01ddc1b1d6280a2470ff6e454e91261f95722a01f1fca7f810a041507fd9769"
+    },
+    {
+      "path": "PrivacyTrace-Review.pptx",
+      "bytes": 1114540,
+      "sha256": "c57840cb80dfe8036ab2c8a3751bcf2236471d6814b5d91ee94fc56195860069"
+    },
+    {
+      "path": "assets/ui-import.png",
+      "bytes": 131463,
+      "sha256": "20f5645377a040dabae9e1889a518eed4341b7f0d3e68cc53bcf710273d5524d"
+    },
+    {
+      "path": "assets/report-desktop.png",
+      "bytes": 621665,
+      "sha256": "d7a948e92cd713a53290ad04f0dc94b5e6a387433b173acb5014e09413468394"
+    },
+    {
+      "path": "assets/report-mobile.png",
+      "bytes": 375054,
+      "sha256": "1c945a3f8c841fc3a8d9d5f353b8134accf24e966c52e1ae3658274b9221203d"
+    },
+    {
+      "path": "assets/soundtrack.m4a",
+      "bytes": 2994842,
+      "sha256": "fb7e005f78aa530d0f2d072e7ddf1b5c88315a69a36413e67d7f2039ad54a30c"
+    }
+  ],
+  "qa": {
+    "ok": true,
+    "warnings": [
+      "Black video detected",
+      "Static/frozen video detected"
+    ],
+    "note": "黑场/静止判定基于平均亮度与画面差分：冷开场、阅读停留与静态构图可能触发；逐帧抽检未见丢失帧或非预期冻结。",
+    "blackSegments": [
+      {
+        "start": 0,
+        "end": 1.633333
+      },
+      {
+        "start": 1.933333,
+        "end": 2.2
+      }
+    ],
+    "frozenSegments": "EAC 报告多段静止（阅读停留 / 静态构图），非冻结故障",
+    "audio": {
+      "meanDb": -17.5,
+      "peakDb": -1.5,
+      "channels": 2,
+      "sampleRate": 96000,
+      "codec": "aac"
+    }
+  },
+  "coverage": {
+    "定位": "01 / 9.375–21.875 s",
+    "创新": "02 / 21.875–40.625 s",
+    "关键实现": "03 / 40.625–65.0 s",
+    "真实成果": "04 / 65.0–90.0 s",
+    "学生原创贡献": "05 / 90.0–108.75 s",
+    "边界与缺口": "04 结果段 + 05 提交绑定段 + 06 结语"
+  },
+  "boundaries": [
+    "H12（J × splits × 手机模型）失败，复现 2 次；片内保留 11 通过 / 1 未通过。",
+    "受控场景为名义状态对照，不是真实 App 检测准确率；P/R/F1 = N/A。",
+    "真实 App 仅 1 个历史样本（GKD v1.12.1），三条结果均为 INSUFFICIENT_EVIDENCE。",
+    "前端仍在开发；PPT 第 6 页为 2026-10-23 移动 App 采集（提交 f81ca20，固定合成材料），影片素材仍为 v0.1；最终视觉可能变化。",
+    "不宣称 100% 独立、不给 AI 代码比例、不说完全无 AI 参与；不宣称开源。",
+    "尚未上传；Issue #200 的上传与系统反馈仍待人工执行。"
+  ]
+}

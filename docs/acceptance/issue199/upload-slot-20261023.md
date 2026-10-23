@@ -72,7 +72,7 @@
 
 ## 6. 本轮核验（可复算）
 
-- 核对脚本：`docs/acceptance/issue199/verify-upload-slot.py`（只读；默认指向本机 v5 包与套件路径）。
+- 核对脚本：`docs/acceptance/issue199/verify-upload-slot.py`（只读；不内置本机路径，需显式传 `--package` 与 `--kit`）。
 - 输出：`.scratch/issue199/verify-report.json`，全部断言通过（`ok=true`，无 issue）。
 - 断言：包内 14 张 / `截图说明.md` 14 行 / 套件 10 张 / ZIP 内 14 条目 / 10 张合计 5,677,918 B / ZIP `559f14f1…c59e5` / 未选 4 张在包内且不在套件。
 - 目检：抽 6 张（#1、#3、#4、#6、#9、#10）顶部 1,500 px，未见浏览器地址栏、任务栏、状态栏、终端、用户名、本机路径、姓名、邮箱；画面文字的逐张结论引用 #197 Check 4（14/14 PASS）。

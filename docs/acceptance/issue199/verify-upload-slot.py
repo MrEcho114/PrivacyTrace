@@ -5,7 +5,7 @@
 用法（Windows Git Bash / PowerShell 均可）：
     python verify-upload-slot.py --package <v5 解压根> --kit <上传套件根> [--out <报告路径>]
 
-默认路径指向本机 #202 套件工作区，其它环境必须显式传参，脚本不会猜。
+包与套件路径由调用方给出，脚本不内置本机路径、不猜位置。
 """
 
 from __future__ import annotations
@@ -20,14 +20,7 @@ from pathlib import Path
 
 from PIL import Image
 
-DEFAULT_PACKAGE = Path(
-    r"D:\Project\GitProject\PrivacyTrace\.agents\worktrees\pt-906-upload-kit\.scratch\package-v5"
-)
-DEFAULT_KIT = Path(
-    r"D:\Project\GitProject\PrivacyTrace\.agents\worktrees"
-    r"\pt-906-upload-kit\.scratch\upload-kit"
-)
-DEFAULT_OUT = Path(__file__).resolve().parents[3] / ".scratch" / "issue199" / "verify-report.json"
+DEFAULT_OUT = Path.cwd() / ".scratch" / "issue199" / "verify-report.json"
 
 EXPECTED_ZIP_SHA = "559f14f147449aa6eb0293f5489bede1fd0e98d634fc4b3e3fb530c6b45c59e5"
 EXPECTED_ZIP_BYTES = 41_917_846
@@ -118,8 +111,8 @@ def parse_screenshot_doc(path: Path) -> dict[str, dict[str, object]]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--package", type=Path, default=DEFAULT_PACKAGE)
-    ap.add_argument("--kit", type=Path, default=DEFAULT_KIT)
+    ap.add_argument("--package", type=Path, required=True, help="v5 解压根（含 PrivacyTrace_322234.zip）")
+    ap.add_argument("--kit", type=Path, required=True, help="上传套件根（含 02_作品截图/）")
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
     args = ap.parse_args()
 

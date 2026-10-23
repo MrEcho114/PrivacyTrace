@@ -206,7 +206,7 @@ Astra 交接的对比证据（`design-takeover/`，来自其本机未推送提�
 - 整合未推送提交：`git cherry-pick -x 5fff115` → `57a8ae9`；`git patch-id` 前后均为 `0901811848439e597f0370e5efa9af2e813060c1`，确认补丁一致。
 - 带回证据：`design-takeover/`（7 张 PNG + `reading.json` + `refinements.json`）已从 Astra 本机工作树未跟踪目录复制进本目录并随本节提交。
 - 在新 HEAD（`57a8ae9`）重跑验收：9 条命令全部退出码 0 —— `typecheck`、`build`、web 单测 152、`acceptance:mobile` 22 组、`acceptance:reading` 8 项（`dirty=false`）、`acceptance:motion` 20 项、`acceptance:frontend`（Brand 103 / Reports 15 / Policy assist 10 / Copy contract 42）、`acceptance:hierarchy` 11 项、`acceptance:browser`（PORT=8199，TC-03/04/05）。
-- 重拍主证据：§4 的 14 张已按新 HEAD 重新生成；随后在干净工作树复跑，重生成文件与提交逐字节一致（最终交付 SHA：`{{FINAL_SHA}}`）。
+- 重拍主证据：§4 的 14 张已按新 HEAD 重新生成；随后在干净工作树复跑，重生成文件与提交逐字节一致。最终交付 SHA 取 PR #302 的 head（本文件随该 head 提交，避免在文件内自引用一个尚未存在的哈希）。
 - 证据对齐：`design-takeover/` 两份 JSON 的 `source_sha` 保留 `5fff115`——那是 Astra 生成它们时的真实提交，且与本分支 `57a8ae9` patch-id 相同；不把证据里的历史 SHA 改写成新哈希。§4 的主证据绑定最终交付 SHA。
 
 ### 9.4 仍未完成

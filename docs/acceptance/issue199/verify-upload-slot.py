@@ -67,6 +67,7 @@ def sha256(path: Path) -> str:
 
 def dimensions(path: Path) -> tuple[int, int]:
     with Image.open(path) as im:
+        im.load()  # full decode, catches truncated/corrupt PNGs
         return im.size
 
 
@@ -222,7 +223,7 @@ def main() -> int:
     if len(report["unselected"]) != 4:
         issues.append(f"未选截图数量 {len(report['unselected'])} != 4")  # type: ignore[arg-type]
 
-    # 4. v5 ZIP 与包内截图条目
+    # 4. v5 ZIP 与包内截图条目（直接对 ZIP 内字节复算，不信任解压目录）
     import zipfile
 
     zip_row = {
@@ -235,10 +236,23 @@ def main() -> int:
     if not (zip_row["bytes_match"] and zip_row["sha256_match"]):
         issues.append("v5 ZIP 哈希或字节数不符")
     with zipfile.ZipFile(zip_path) as zf:
-        entries = [n for n in zf.namelist() if "05_补充成果材料/截图/" in n and n.lower().endswith(".png")]
+        entries = [
+            n
+            for n in zf.namelist()
+            if "05_补充成果材料/截图/" in n and n.lower().endswith(".png")
+        ]
+        zip_hashes = {}
+        for name in entries:
+            zip_hashes[Path(name).name] = hashlib.sha256(zf.read(name)).hexdigest()
     zip_row["screenshot_entries"] = len(entries)
     if len(entries) != 14:
         issues.append(f"ZIP 内截图条目 {len(entries)} != 14")
+    for row in report["selected"]:  # type: ignore[union-attr]
+        entry_hash = zip_hashes.get(row["source"])
+        row["zip_sha256"] = entry_hash
+        row["zip_entry_match"] = entry_hash == row["sha256"]
+        if not row["zip_entry_match"]:
+            issues.append(f"{row['file']} 与 ZIP 内条目不一致")
     report["checks"]["zip"] = zip_row
 
     # 5. 元数据身份扫描（只扫 PNG 文本块，画面文字由 #197 Check 4 逐张目检）

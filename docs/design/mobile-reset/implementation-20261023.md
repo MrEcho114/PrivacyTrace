@@ -1,6 +1,6 @@
 # 移动端迁移实施记录（2026-10-23）
 
-- 目标：把 [移动端 Claude 规范](frontend-design-spec-mobile.md) 从规范层落到 `apps/web` 移动入口，桌面工作台保持冻结。
+- 目标：把 [移动端 Claude 规范](../frontend-design-spec-mobile.md) 从规范层落到 `apps/web` 移动入口，桌面工作台保持冻结。
 - 结果：移动界面已切到 Claude 视觉基线；桌面无 `body.is-mobile-app` 时仍使用 Pioneer 旧值，桌面验收通过。
 - 本轮没有 git add/commit/push。
 

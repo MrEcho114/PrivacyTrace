@@ -242,7 +242,7 @@ async function verifyIssueFixes(browser, origin) {
       issue: '#239', title: 'a successful reload on the progress step resumes the poll',
       options: { sources: [{ id: 'policy', title: '有效正文来源', url: 'https://policy.example/a', text: sentence, status: 'manual' }], progress: true, advanceAfter: 1 },
       async run(page) {
-        await page.getByRole('button', { name: '恢复当前实例材料', exact: true }).click()
+        await page.getByRole('button', { name: '恢复当前材料', exact: true }).click()
         await waitTitle(page, '扫描与对照进度', 12000)
         assert.equal((await page.locator('.m-eyebrow').innerText()).trim(), '等待处理', 'restore reads the queued job once')
         const reads = await count(page, 'job')
@@ -260,16 +260,16 @@ async function verifyIssueFixes(browser, origin) {
       async run(page) {
         const openModel = async () => page.getByText('使用手机上的个人模型', { exact: true }).click()
         const openAssist = async () => page.getByText('找不到政策？使用网页辅助收集', { exact: true }).click()
-        await page.getByRole('button', { name: '恢复当前实例材料', exact: true }).click()
+        await page.getByRole('button', { name: '恢复当前材料', exact: true }).click()
         await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
         await openModel()
-        await page.getByRole('button', { name: '设置模型配置', exact: true }).click()
+        await page.getByRole('button', { name: '配置模型', exact: true }).click()
         await page.getByLabel('模型名称', { exact: true }).fill('compatible-chat')
         await page.getByLabel('应用名称或包名', { exact: true }).fill('com.example.mobile.ok')
         await page.getByRole('button', { name: '使用个人模型收集一次', exact: true }).click()
         await openAssist()
         await settleCollect(page, first)
-        await page.getByRole('button', { name: '自动准备政策并继续', exact: true }).click()
+        await page.getByRole('button', { name: '准备政策并继续', exact: true }).click()
         await waitTitle(page, '核对政策声明', 12000)
         await page.getByRole('button', { name: '返回上一步' }).click()
         await waitTitle(page, 'APK 与政策材料', 12000)
@@ -288,7 +288,7 @@ async function verifyIssueFixes(browser, origin) {
         assert.equal(await count(page, 'import'), 1, 'the refilled box still imports through the production confirmation path')
         // #243 acceptance 3: deleting the old material and choosing a new instance
         // must not carry the retained answer into the new draft.
-        await page.getByRole('button', { name: '删除远端材料', exact: true }).click()
+        await page.getByRole('button', { name: '删除已上传材料', exact: true }).click()
         await page.getByRole('button', { name: '选择应用并上传', exact: true }).waitFor({ timeout: 10000 })
         await page.getByRole('button', { name: '选择应用并上传', exact: true }).click()
         await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 10000 })
@@ -310,9 +310,9 @@ async function verifyIssueFixes(browser, origin) {
         extract: { a: [{ audit: { status: 'SUCCESS' } }] },
       },
       async run(page) {
-        await page.getByRole('button', { name: '恢复当前实例材料', exact: true }).click()
+        await page.getByRole('button', { name: '恢复当前材料', exact: true }).click()
         await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
-        await page.getByRole('button', { name: '自动准备政策并继续', exact: true }).click()
+        await page.getByRole('button', { name: '准备政策并继续', exact: true }).click()
         await waitTitle(page, '核对政策声明', 12000)
         await page.getByRole('tab', { name: '政策原文', exact: true }).click()
         const extract = page.getByRole('button', { name: '重新提取候选', exact: true })
@@ -342,9 +342,9 @@ async function verifyIssueFixes(browser, origin) {
         extract: { empty: [{ audit: { status: 'SUCCESS' } }] },
       },
       async run(page) {
-        await page.getByRole('button', { name: '恢复当前实例材料', exact: true }).click()
+        await page.getByRole('button', { name: '恢复当前材料', exact: true }).click()
         await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
-        await page.getByRole('button', { name: '自动准备政策并继续', exact: true }).click()
+        await page.getByRole('button', { name: '准备政策并继续', exact: true }).click()
         const alert = page.getByRole('alert')
         await alert.waitFor({ timeout: 10000 })
         assert.ok((await alert.innerText()).includes('正文'), 'the blocked start states that a policy body is required')
@@ -358,7 +358,7 @@ async function verifyIssueFixes(browser, origin) {
         assert.ok((await page.locator('main').innerText()).includes('可对照的政策正文'), 'the candidate step explains the missing prerequisite')
         await page.getByRole('button', { name: '修改材料', exact: true }).click()
         await waitTitle(page, 'APK 与政策材料', 8000)
-        await page.getByRole('button', { name: '自动准备政策并继续', exact: true }).click()
+        await page.getByRole('button', { name: '准备政策并继续', exact: true }).click()
         await waitTitle(page, '核对政策声明', 12000)
         assert.equal(await start.isDisabled(), false, 'a fetched body restores the existing start action')
         await start.click()

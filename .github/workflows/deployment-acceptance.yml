@@ -3,6 +3,17 @@ name: Deployment Acceptance
 on:
   pull_request:
     branches: [main]
+    # 这里跑真实栈的 R1–R6（部署、业务闭环、隔离、故障恢复、备份恢复、容量
+    # 审计），是 PR 反馈时间的长板。前端产物能否构建与起服务由 Deployment
+    # Baseline 覆盖，所以只在部署层与 API 运行时变化时跑。
+    # main 的 push 不过滤，合入后仍然产出全量证据；需要临时全跑用
+    # workflow_dispatch。
+    paths:
+      - ".github/workflows/deployment-acceptance.yml"
+      - "deploy/**"
+      - "apps/api/**"
+      - "package.json"
+      - "package-lock.json"
   push:
     branches: [main]
   workflow_dispatch:
@@ -15,6 +26,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # 六轮 collector 串行跑完要 9m37s，是 PR 反馈时间的长板。R1–R4 与 R5–R6
+  # 之间没有数据依赖（R3 读的是 R2 自己的 ledger，两轮都在同一个 job 里），
+  # 所以拆成两个并行 job：墙钟约 5m42s，代价是总分钟数约 +11%。
+  #
+  # 拆轮不改变任何一条检查：deploy/check_acceptance.sh 的默认阶段仍是 `all`
+  # （六轮一轮跑完，行为与拆分前逐字等价），本地与手动复现照旧。代价是证据
+  # 从一个 receipt 变成两个（issue81-r1-r4 / issue81-r5-r6），两份 artifact
+  # 必须同时存在才算这一 SHA 的部署证据完整。
   actual-linux-deployment:
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -24,12 +43,33 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Real deployment and recovery acceptance
-        run: sudo bash deploy/check_acceptance.sh
+      - name: Real deployment and recovery acceptance (R1-R4)
+        run: sudo bash deploy/check_acceptance.sh r1-r4
       - name: Archive sanitized deployment evidence for this source SHA
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: deployment-acceptance-${{ github.event.pull_request.head.sha || github.sha }}
+          path: tmp/deployment-acceptance/*.json
+          if-no-files-found: error
+
+  # R5 需要上一提交的 api 镜像做回滚演练，R6 是容量与凭据审计；两者只需一个
+  # owned 实例，所以这一 job 少供给一份实验室（约省 24s）。
+  actual-linux-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Real rollback and capacity acceptance (R5-R6)
+        run: sudo bash deploy/check_acceptance.sh r5-r6
+      - name: Archive sanitized recovery evidence for this source SHA
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: deployment-acceptance-recovery-${{ github.event.pull_request.head.sha || github.sha }}
           path: tmp/deployment-acceptance/*.json
           if-no-files-found: error

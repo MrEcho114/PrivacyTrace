@@ -29,7 +29,7 @@ nsenter --net=/proc/<api-pid>/ns/net ip route replace 1.0.0.1/32 via <lab-gatewa
 负向用例：直接回环/私网/元数据；重定向到回环/私网/元数据；自循环重定向；
 `/huge`（3 MiB）；`/slow`（30 s）；`/wrong-type`；`/fail`。正向基线：
 `/policy.html`。逐变体实际结果见
-[`docs/acceptance/issue130/execution-20261021.md`](../../../../../docs/acceptance/issue130/execution-20261021.md)。
+[`docs/acceptance/issue130/execution-20261021.md`](../../../../docs/acceptance/issue130/execution-20261021.md)。
 
 注意：`/slow` 的产品抓取预算为 15 s；本记录实测 15.081 s 返回 `FETCH_TIMEOUT`，
 没有无限等待。重定向链允许初始请求加 3 次跟随，第 4 个 Location 触发

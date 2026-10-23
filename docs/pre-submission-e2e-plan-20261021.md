@@ -6,7 +6,7 @@
 
 当前分工：[#129 自动政策与包输入](https://github.com/MrEcho114/PrivacyTrace/issues/129)、[#130 网页辅助与政策引用](https://github.com/MrEcho114/PrivacyTrace/issues/130)、[#131 手机模型与 Key](https://github.com/MrEcho114/PrivacyTrace/issues/131)、[#132 访问隔离与 TLS](https://github.com/MrEcho114/PrivacyTrace/issues/132)、[#133 客户端恢复/取消/删除](https://github.com/MrEcho114/PrivacyTrace/issues/133)、[#134 运行时故障恢复](https://github.com/MrEcho114/PrivacyTrace/issues/134)、[#135 容量/备份/运维](https://github.com/MrEcho114/PrivacyTrace/issues/135)、[#136 回归与交付包](https://github.com/MrEcho114/PrivacyTrace/issues/136)。38 个原场景 ID 保持唯一主责；子票互无整票阻塞，仅父票最终聚合依赖八个子票。各票独立认领、环境、设备及证据，公共配方不设全员启动门槛。以下原矩阵与技术通过标准不降低；旧日期事实保留为规划时快照，最新执行以移交记录及新父票为准。
 
-修复流程补充（2026-10-21）：统一执行[线上修复与PR关联规范](https://github.com/MrEcho114/PrivacyTrace/issues/128#defect-repair-workflow)，本地副本见[修复流程](acceptance-repair-workflow-20261021.md)。#127对应#129/#136，#137是#129/#130/#136的执行器支持产物；各修复PR以Refs双向关联，合并后由案例owner复测，不能自动关闭验收票。原始收据、用例分母及冻结时间保持。
+修复流程补充（2026-10-21）：统一执行[线上修复与PR关联规范](https://github.com/MrEcho114/PrivacyTrace/issues/128#defect-repair-workflow)，本地副本 `docs/acceptance-repair-workflow-20261021.md` 未随仓库发布，以该线上记录为准。#127对应#129/#136，#137是#129/#130/#136的执行器支持产物；各修复PR以Refs双向关联，合并后由案例owner复测，不能自动关闭验收票。原始收据、用例分母及冻结时间保持。
 
 ## 1. 已确认的目标与职责
 

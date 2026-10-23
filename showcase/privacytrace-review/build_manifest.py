@@ -18,7 +18,7 @@ DECK = DELIVERY / "PrivacyTrace-Review.pptx"
 BATCH = "20261023-v02"
 BASELINE = "f81ca201b932a11e24a9f7175a9583150d44e9ed"
 CAPTURED_AT = "2026-10-23"
-RENDER_JOB = "39a131a3-b43d-4b00-85f6-eb26699ff2cb"
+RENDER_JOB = "25271ade-9f16-4832-8817-f28298c9f2f4"
 
 
 def sha256(path: Path) -> str:
@@ -151,7 +151,7 @@ def main():
             "真实 App 仅 1 个历史样本（GKD v1.12.1），三条结果均为 INSUFFICIENT_EVIDENCE。",
             "前端仍在开发；界面素材统一采集于 2026-10-23 @ f81ca20；移动端为移动视口模拟（非真机），最终视觉可能变化。",
             "报告长图来自 fixtures/acceptance-jobs/gkd-s1-first.json 的持久化回放（原生成 2026-10-03），不是本批次新扫描。",
-            "不宣称 100% 独立、不给 AI 代码比例、不说完全无 AI 参与；不宣称开源。",
+            "AI 用途与受影响文件记录在仓库；项目未宣称开源。",
             "尚未上传；Issue #200 的上传与系统反馈仍待人工执行。",
         ],
     }

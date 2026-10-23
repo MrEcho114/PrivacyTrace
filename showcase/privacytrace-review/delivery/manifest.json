@@ -5,7 +5,7 @@
   "baselineCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
   "capturedAt": "2026-10-23",
   "projectId": "f52e5212-9281-462c-a296-50d92fbf3fe3",
-  "renderJobId": "39a131a3-b43d-4b00-85f6-eb26699ff2cb",
+  "renderJobId": "25271ade-9f16-4832-8817-f28298c9f2f4",
   "templateId": "motion-promo-film-v2",
   "render": {
     "htmlPath": "film-review.html",
@@ -19,12 +19,12 @@
   },
   "file": {
     "name": "PrivacyTrace-Review-1080p.mp4",
-    "bytes": 17800303,
-    "sha256": "0c6af4c784a43b0acec0cf89aed3e5d24ac2cf43929f58803d56d231ce0a98eb",
+    "bytes": 17677972,
+    "sha256": "98b8d60c365b5cb047d0553b88efae8aa6a9fb3e11ee5541fa43b5dc818e3679",
     "ffprobe": {
       "duration": "120.000000",
-      "size": "17800303",
-      "bit_rate": "1186686",
+      "size": "17677972",
+      "bit_rate": "1178531",
       "video": {
         "index": 0,
         "codec_name": "h264",
@@ -57,7 +57,7 @@
         "start_time": "0.000000",
         "duration_ts": 1843200,
         "duration": "120.000000",
-        "bit_rate": "977002",
+        "bit_rate": "968846",
         "bits_per_raw_sample": "8",
         "nb_frames": "3600",
         "extradata_size": 51,
@@ -158,18 +158,18 @@
   "sources": [
     {
       "path": "film-review.html",
-      "bytes": 49816,
-      "sha256": "31b887efadbb4b2502a3141fa6a69baaca3f125489c3181bb07c03975c93e530"
+      "bytes": 49270,
+      "sha256": "eb74d1d1dfa26193092830f194c99850b698387d11a3536d3b5f902fe9585eb9"
     },
     {
       "path": "BEATS.md",
-      "bytes": 7928,
-      "sha256": "3743767570791e1b5946bcb939c8f6625f01227befdd11ba3b1fecbd44ccdc57"
+      "bytes": 7588,
+      "sha256": "583222bf7d4f7a30b7ca60d38673aaee22e63f8442bd55690d2ea427c5dfd57d"
     },
     {
       "path": "README.md",
-      "bytes": 9430,
-      "sha256": "7f8c4d16a61cd02c022d2649ae4942d8a4d9521f58938568711771419ca4df9e"
+      "bytes": 9324,
+      "sha256": "5b2e62d7f468a5b2e5e936da0b9edad4c7b76e41da31aa561f217cb0434f8cd8"
     },
     {
       "path": "poster.png",
@@ -189,7 +189,7 @@
     {
       "path": "materials.json",
       "bytes": 1744,
-      "sha256": "d96fa01ee45b0d1b035c53c56abf1922f99ad3f776d89f22d128ec1859d1d437"
+      "sha256": "6e69248bb7559db8ab272e7a8d6eebce46a1fb9c235b550b75d4b2ce7d8d2b9d"
     },
     {
       "path": "assets/android-import.png",
@@ -221,9 +221,9 @@
     "note": "黑场/静止判定基于平均亮度与画面差分：冷开场、阅读停留与静态构图可能触发；逐帧抽检未见丢失帧或非预期冻结。",
     "blackSegments": [
       {
-        "start": 119.8,
+        "start": 119.433333,
         "end": 119.966667,
-        "duration": 0.167
+        "duration": 0.533
       }
     ],
     "blackNote": "本机 ffmpeg blackdetect（pix_th=0.06）只判出收尾 1 段；EAC 渲染自检另报冷开场 2 段接近黑场（0–1.633 s、1.933–2.200 s），两套阈值不同，逐帧复核为有意暗场。",
@@ -250,7 +250,7 @@
     "真实 App 仅 1 个历史样本（GKD v1.12.1），三条结果均为 INSUFFICIENT_EVIDENCE。",
     "前端仍在开发；界面素材统一采集于 2026-10-23 @ f81ca20；移动端为移动视口模拟（非真机），最终视觉可能变化。",
     "报告长图来自 fixtures/acceptance-jobs/gkd-s1-first.json 的持久化回放（原生成 2026-10-03），不是本批次新扫描。",
-    "不宣称 100% 独立、不给 AI 代码比例、不说完全无 AI 参与；不宣称开源。",
+    "AI 用途与受影响文件记录在仓库；项目未宣称开源。",
     "尚未上传；Issue #200 的上传与系统反馈仍待人工执行。"
   ]
 }

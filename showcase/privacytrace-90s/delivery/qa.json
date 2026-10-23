@@ -2,8 +2,8 @@
   "film": "delivery\\PrivacyTrace-作品展示-90s.mp4",
   "probe": {
     "duration": 90.0,
-    "sizeBytes": 13418327,
-    "bitRate": 1192740,
+    "sizeBytes": 13446698,
+    "bitRate": 1195262,
     "video": {
       "codec": "h264",
       "profile": "High",
@@ -28,23 +28,13 @@
       "duration": 1.233
     },
     {
-      "start": 2.566667,
-      "end": 3.766667,
-      "duration": 1.2
+      "start": 3.933333,
+      "end": 8.333333,
+      "duration": 4.4
     },
     {
-      "start": 3.766667,
-      "end": 5.4,
-      "duration": 1.633
-    },
-    {
-      "start": 5.4,
-      "end": 8.766667,
-      "duration": 3.367
-    },
-    {
-      "start": 10.833333,
-      "end": 12.066667,
+      "start": 10.8,
+      "end": 12.033333,
       "duration": 1.233
     },
     {
@@ -99,18 +89,23 @@
     },
     {
       "start": 75.0,
-      "end": 80.366667,
-      "duration": 5.367
+      "end": 80.4,
+      "duration": 5.4
     },
     {
-      "start": 80.666667,
-      "end": 83.9,
-      "duration": 3.233
+      "start": 80.6,
+      "end": 83.333333,
+      "duration": 2.733
     },
     {
-      "start": 86.633333,
-      "end": 89.1,
-      "duration": 2.467
+      "start": 84.933333,
+      "end": 86.133333,
+      "duration": 1.2
+    },
+    {
+      "start": 86.133333,
+      "end": 89.066667,
+      "duration": 2.933
     }
   ],
   "frozenNote": "长镜头本片刻意保留静态停留（展厅式读页），机器冻结检测会把静止画面判为 frozen；逐帧复核确认停留段内有文字上浮/图版推进，不是编码卡帧。",

@@ -11,6 +11,23 @@ from .config import ServerConfig
 from .storage_seam import JobStorageProtocol
 
 TOKEN_REGEX = re.compile(r"^pt_cap_[A-Za-z0-9_-]{20,}$")
+BEARER_SCHEME = "bearer"
+
+
+def _bearer_credentials(auth_header: str | None) -> str | None:
+    """Return the credentials of a Bearer Authorization header, if any.
+
+    RFC 9110 §11.1 makes the authentication scheme token case-insensitive, so
+    ``bearer``/``BEARER`` must identify the same scheme as ``Bearer``. The
+    credentials themselves are returned verbatim: capability tokens are
+    case-sensitive secrets (only surrounding whitespace is trimmed).
+    """
+    if not auth_header:
+        return None
+    scheme, separator, credentials = auth_header.strip().partition(" ")
+    if not separator or scheme.casefold() != BEARER_SCHEME:
+        return None
+    return credentials.strip()
 
 
 def generate_capability_token() -> tuple[str, str]:
@@ -44,8 +61,11 @@ def extract_token_from_request(request: Request) -> str | None:
             )
 
     auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header.startswith("Bearer "):
-        return auth_header[len("Bearer ") :].strip()
+    credentials = _bearer_credentials(auth_header)
+    if credentials is not None:
+        # Preserve the previous contract: a Bearer header with empty credentials
+        # reports "no usable token" instead of falling through to the custom header.
+        return credentials
 
     custom_header = request.headers.get("X-PrivacyTrace-Token")
     if custom_header:

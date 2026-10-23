@@ -11,6 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from privacytrace.main import create_app
+from privacytrace.middleware import _valid_host_port
 
 
 def get_test_app(tmp_path, mode="local", monkeypatch=None, allowed_hosts=None):
@@ -157,6 +158,116 @@ def test_remote_host_case_insensitivity(tmp_path, monkeypatch):
     client = TestClient(app, base_url="http://TESTSERVER")
     resp = client.get("/api/v1/health")
     assert resp.status_code == 200
+
+
+# ==============================================================================
+# Feature 2b: Host port bounds and conversion safety (#280)
+# ==============================================================================
+
+OVERLONG_PORT = "9" * 5000
+
+
+@pytest.mark.parametrize(
+    "host",
+    ["testserver:" + OVERLONG_PORT, "[::1]:" + OVERLONG_PORT],
+    ids=["domain-long-port", "bracketed-ipv6-long-port"],
+)
+def test_remote_host_rejects_overlong_numeric_port(tmp_path, monkeypatch, host):
+    """Tier 1: a 5000-digit ASCII port is rejected with 400 instead of crashing (#280).
+
+    Python 3.12+ refuses int() on very long digit strings, so ``isdigit()`` alone
+    cannot guard the conversion. Both the domain-style and the bracketed IPv6
+    branch must answer with a controlled 400 and keep serving later requests.
+    """
+    app = get_test_app(tmp_path, mode="remote", monkeypatch=monkeypatch)
+    with TestClient(app, base_url="http://testserver", raise_server_exceptions=False) as client:
+        resp = client.get("/api/v1/health", headers={"Host": host})
+        assert resp.status_code == 400
+
+        # The middleware must stay usable after the rejected request.
+        assert client.get("/api/v1/health").status_code == 200
+
+
+@pytest.mark.parametrize(
+    "host",
+    ["testserver:80", "testserver:65535", "[::1]:80", "[::1]:65535"],
+    ids=["domain-80", "domain-65535", "ipv6-80", "ipv6-65535"],
+)
+def test_remote_host_accepts_legal_ports(tmp_path, monkeypatch, host):
+    """Tier 1: legal ports on allowed hosts keep working after the #280 fix."""
+    app = get_test_app(tmp_path, mode="remote", monkeypatch=monkeypatch)
+    client = TestClient(app, base_url="http://testserver")
+    assert client.get("/api/v1/health", headers={"Host": host}).status_code == 200
+
+
+@pytest.mark.parametrize(
+    "host",
+    [
+        "testserver:0",
+        "testserver:65536",
+        "testserver:99999",
+        "testserver:",
+        "testserver:12a",
+        "[::1]:0",
+        "[::1]:65536",
+        "[::1]:99999",
+        "[::1]:",
+        "[::1]:12a",
+    ],
+    ids=[
+        "domain-zero",
+        "domain-65536",
+        "domain-99999",
+        "domain-empty",
+        "domain-alpha",
+        "ipv6-zero",
+        "ipv6-65536",
+        "ipv6-99999",
+        "ipv6-empty",
+        "ipv6-alpha",
+    ],
+)
+def test_remote_host_rejects_illegal_ports(tmp_path, monkeypatch, host):
+    """Tier 2: out-of-range and malformed ports are rejected with 400."""
+    app = get_test_app(tmp_path, mode="remote", monkeypatch=monkeypatch)
+    client = TestClient(app, base_url="http://testserver")
+    assert client.get("/api/v1/health", headers={"Host": host}).status_code == 400
+
+
+@pytest.mark.parametrize(
+    "port_str",
+    ["9" * 5000, "9" * 4301, "\u00b2", "\u0662\u0662", "", "80a", " 80", "80 ", "0", "65536"],
+    ids=[
+        "5000-digits",
+        "4301-digits",
+        "superscript-two",
+        "arabic-indic-digits",
+        "empty",
+        "trailing-alpha",
+        "leading-space",
+        "trailing-space",
+        "zero",
+        "65536",
+    ],
+)
+def test_valid_host_port_rejects_unconvertible_or_out_of_range_values(port_str):
+    """Tier 2: the port helper never hands an out-of-range or unparsable value to int().
+
+    ``str.isdigit()`` accepts non-ASCII digits that ``int()`` cannot always parse
+    and Python 3.12 limits digit-string conversion, so both must be rejected by
+    the helper before conversion (#280).
+    """
+    assert _valid_host_port(port_str) is False
+
+
+@pytest.mark.parametrize(
+    "port_str",
+    ["80", "443", "65535", "1", "080"],
+    ids=["80", "443", "65535", "1", "leading-zero"],
+)
+def test_valid_host_port_accepts_legal_values(port_str):
+    """Tier 2: legal decimal ports are accepted by the helper (#280)."""
+    assert _valid_host_port(port_str) is True
 
 
 # ==============================================================================

@@ -3,8 +3,9 @@ const fs = require('node:fs')
 const path = require('node:path')
 const http = require('node:http')
 const { start, stop, status, withPreviewPaused } = require('./frontend-preview.cjs')
-const { resolvePort } = require('./lib/local-ports.cjs')
-const { execFileSync } = require('node:child_process')
+const { resolvePort, freePort } = require('./lib/local-ports.cjs')
+const { isProcessAlive } = require('./lib/process-control.cjs')
+const { execFileSync, spawn } = require('node:child_process')
 
 const root = path.resolve(__dirname, '..')
 const stateFile = path.join(root, 'tmp/frontend-preview/state.json')
@@ -60,7 +61,44 @@ async function main() {
     await assert.rejects(() => stop(), /Cannot confirm owned preview/)
     assert.equal((await fetch(`http://127.0.0.1:${port}`)).ok, true, 'The unrelated server remains alive')
     fs.unlinkSync(stateFile)
-    fs.writeFileSync(path.join(root, 'tmp/frontend-preview/verification.json'), JSON.stringify({ result: 'PASS', commit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(), dirty: !!execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' }).trim(), scenarios: ['idempotent start', 'stop releases port', 'success restores preview', 'failure restores preview', 'startup timeout cleanup', 'port race rejects foreign 200', 'occupied port preserved', 'unverified PID preserved'] }, null, 2))
+    // #285: a record whose control endpoint is already gone while its process
+    // still exists belongs to a preview that is retiring, not to an owned
+    // preview that cannot be confirmed. It must not abort the lifecycle.
+    const retiring = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 400)'])
+    const retiringControl = await freePort()
+    const retiringPreview = await freePort()
+    fs.writeFileSync(stateFile, JSON.stringify({ root, pid: retiring.pid, controlPort: retiringControl, token: 'retiring-preview', port: retiringPreview }))
+    assert.equal((await status()).running, false, 'A retiring preview is not a fatal ownership error')
+    assert.equal(fs.existsSync(stateFile), false, 'A retiring record is removed once its process is gone')
+    await new Promise(resolve => retiring.exitCode !== null ? resolve() : retiring.once('exit', resolve))
+    // The bounded retry must also recover a control endpoint that only starts
+    // accepting connections a moment later, instead of declaring it missing.
+    const recoveringToken = 'recovering-preview'
+    const recoveringControl = await freePort()
+    const recovering = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'application/json')
+      res.setHeader('Connection', 'close')
+      res.end(JSON.stringify({ pid: process.pid, root, port: 1, apiOrigin: 'http://127.0.0.1:8000', instance: recoveringToken, running: true, ready: false }))
+    })
+    fs.writeFileSync(stateFile, JSON.stringify({ root, pid: process.pid, controlPort: recoveringControl, token: recoveringToken, port: 1 }))
+    const recoveringStatus = status()
+    await new Promise(resolve => setTimeout(resolve, 150))
+    await new Promise((resolve, reject) => { recovering.once('error', reject); recovering.listen(recoveringControl, '127.0.0.1', resolve) })
+    assert.equal((await recoveringStatus).running, true, 'A transiently unreachable control endpoint is retried')
+    recovering.closeAllConnections?.()
+    await new Promise(resolve => recovering.close(resolve))
+    fs.unlinkSync(stateFile)
+    // A record whose control endpoint and preview port are both gone is stale
+    // even while the recorded PID is alive; clearing it must not kill that PID.
+    const stale = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 5000)'])
+    const deadPort = await freePort()
+    fs.writeFileSync(stateFile, JSON.stringify({ root, pid: stale.pid, controlPort: deadPort, token: 'stale-preview', port: deadPort }))
+    assert.equal((await status()).running, false, 'A stale record with a dead preview port is not an owned preview')
+    assert.equal(fs.existsSync(stateFile), false, 'A stale record is removed')
+    assert.equal(isProcessAlive(stale.pid), true, 'Cleaning a stale record never kills the recorded process')
+    stale.kill()
+    await new Promise(resolve => stale.exitCode !== null ? resolve() : stale.once('exit', resolve))
+    fs.writeFileSync(path.join(root, 'tmp/frontend-preview/verification.json'), JSON.stringify({ result: 'PASS', commit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(), dirty: !!execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' }).trim(), scenarios: ['idempotent start', 'stop releases port', 'success restores preview', 'failure restores preview', 'startup timeout cleanup', 'port race rejects foreign 200', 'occupied port preserved', 'unverified PID preserved', 'retiring record is not fatal', 'transiently unreachable endpoint is retried', 'stale record with dead preview port is cleaned without killing'] }, null, 2))
     console.log('Preview lifecycle: start/stop, check restoration and unrelated-process protection passed.')
   } finally {
     if (foreign) {

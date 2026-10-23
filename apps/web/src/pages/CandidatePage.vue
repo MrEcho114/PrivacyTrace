@@ -7,8 +7,8 @@ import StatusTag from '../components/StatusTag.vue'
 import { copy, frontendCopy, policyStateFromSource } from '../copy'
 import { dataTypes, quoteExists, sourceTypes } from '../workflow'
 import type { Candidate, PolicySource, Workflow } from '../workflow'
-const props = defineProps<{ state: Workflow; busy?: boolean; error?: string; typeLabels?: Record<string, string>; failedSourceIds?: string[]; mobile?: boolean }>()
-const emit = defineEmits<{ back: []; next: []; retrySource: [string]; retryModel: [string]; persistCandidates: [] }>()
+const props = defineProps<{ state: Workflow; busy?: boolean; error?: string; typeLabels?: Record<string, string>; failedSourceIds?: string[]; mobile?: boolean; persist?: () => Promise<boolean> }>()
+const emit = defineEmits<{ back: []; next: []; retrySource: [string]; retryModel: [string] }>()
 const editorTypes = computed(() => props.state.example ? dataTypes : props.typeLabels ?? {})
 const candidateLimit = computed(() => props.state.example ? 100 : 800)
 const chosenId = ref('')
@@ -60,6 +60,7 @@ const parts = computed(() => {
   return offset < 0 ? { before: text, quote: '', after: '' } : { before: text.slice(0, offset), quote, after: text.slice(offset + quote.length) }
 })
 const notice = ref('')
+const saving = ref(false)
 watch(() => props.state.sourceId, () => { chosenId.value = candidates.value[0]?.id ?? ''; notice.value = '' }, { immediate: true })
 watch(() => props.state.candidates.length, () => { if (!chosen.value) chosenId.value = candidates.value[0]?.id ?? '' })
 function select(candidate: Candidate) {
@@ -72,15 +73,35 @@ function add() {
   props.state.candidates.push(candidate); chosenId.value = candidate.id
   void nextTick(() => document.getElementById('candidate-quote')?.focus())
 }
-function save() {
-  if (!chosen.value) return
+// "已检查" is part of the saved payload, but the success wording is not: the
+// service may refuse this write (busy, stale revision, native bridge). Set the
+// flag before persisting so an accepted snapshot carries it, then put the
+// previous value back when the write did not happen. Restoring the old value
+// matters for an already-checked candidate: #273 merges a changed `checked`
+// back as a local edit, so a hard-coded false would turn a refused save into a
+// sticky "待检查" that only a full re-read repairs. The edits stay in `state`
+// either way, so the retry starts from what the reader typed.
+async function save() {
+  if (!chosen.value || saving.value) return
   if (!quoteValid.value) { notice.value = quoteError.value; return }
-  chosen.value.checked = true; notice.value = copy.saved
-  if (!props.state.example) emit('persistCandidates')
+  if (props.state.example) { chosen.value.checked = true; notice.value = copy.saved; return }
+  // Only the example may report success without persisting. A real flow that
+  // forgets to wire `persist` must stay silent instead of claiming a save.
+  if (!props.persist) return
+  const target = chosen.value
+  const wasChecked = target.checked
+  target.checked = true
+  notice.value = ''
+  saving.value = true
+  let persisted = false
+  try { persisted = await props.persist() } catch { persisted = false } finally { saving.value = false }
+  if (persisted) { notice.value = copy.saved; return }
+  target.checked = wasChecked
+  notice.value = copy.saveNotPersisted
 }
 function remove() {
   props.state.candidates = props.state.candidates.filter(item => item.id !== chosenId.value)
-  if (!props.state.example) emit('persistCandidates')
+  if (!props.state.example && props.persist) void props.persist()
   chosenId.value = candidates.value[0]?.id ?? ''; notice.value = ''
   void nextTick(() => document.getElementById('add-candidate')?.focus())
 }
@@ -119,7 +140,7 @@ function editQuote() { if (chosen.value) chosen.value.startOffset = undefined; e
           <div class="field-pair"><UiField label="数据类型" id="candidate-type"><select id="candidate-type" v-model="chosen.dataType" @change="edit"><option v-for="(text, id) in editorTypes" :key="id" :value="id">{{ text }}</option></select></UiField><UiField label="声明方式" id="candidate-polarity"><select id="candidate-polarity" v-model="chosen.polarity" @change="edit"><option value="AFFIRMED">肯定</option><option value="NEGATED">否定</option><option value="UNKNOWN">未知</option></select></UiField></div>
           <div class="field-pair"><UiField label="声明主体" id="candidate-subject"><select id="candidate-subject" v-model="chosen.subject" @change="edit"><option value="APP">应用自身</option><option value="THIRD_PARTY">第三方</option><option value="UNKNOWN">未知</option></select></UiField>
           <UiField label="条件" id="candidate-condition"><input id="candidate-condition" v-model="chosen.condition" maxlength="1000" placeholder="未知或不适用" @input="edit" /></UiField></div>
-          <div v-if="!state.example" class="field-pair"><UiField label="声明动作" id="candidate-action"><select id="candidate-action" v-model="chosen.action" @change="edit"><option value="UNKNOWN">未知</option><option value="ACCESS">访问</option></select></UiField><UiField label="声明目的" id="candidate-purpose"><input id="candidate-purpose" v-model="chosen.purpose" maxlength="1000" @input="edit" /></UiField><UiField label="接收方" id="candidate-recipient"><input id="candidate-recipient" v-model="chosen.recipient" maxlength="1000" @input="edit" /></UiField></div><div class="source-actions"><UiButton type="submit" :disabled="!quoteValid">{{ copy.saveCandidate }}</UiButton><UiButton variant="danger" @click="remove">{{ copy.deleteCandidate }}</UiButton></div><p v-if="notice" role="status" class="field-help">{{ notice }}</p><p v-if="!state.example" class="field-help">保存后才会标为已检查；开始分析时保存本机快照。全文和附件仍未复核。</p>
+          <div v-if="!state.example" class="field-pair"><UiField label="声明动作" id="candidate-action"><select id="candidate-action" v-model="chosen.action" @change="edit"><option value="UNKNOWN">未知</option><option value="ACCESS">访问</option></select></UiField><UiField label="声明目的" id="candidate-purpose"><input id="candidate-purpose" v-model="chosen.purpose" maxlength="1000" @input="edit" /></UiField><UiField label="接收方" id="candidate-recipient"><input id="candidate-recipient" v-model="chosen.recipient" maxlength="1000" @input="edit" /></UiField></div><div class="source-actions"><UiButton type="submit" :disabled="!quoteValid" :busy="saving">{{ copy.saveCandidate }}</UiButton><UiButton variant="danger" @click="remove">{{ copy.deleteCandidate }}</UiButton></div><p v-if="notice" :role="notice === copy.saveNotPersisted ? 'alert' : 'status'" class="field-help">{{ notice }}</p><p v-if="!state.example" class="field-help">保存后才会标为已检查；开始分析时保存本机快照。全文和附件仍未复核。</p>
         </form>
       </section>
     </div>

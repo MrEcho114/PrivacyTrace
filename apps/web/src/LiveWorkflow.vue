@@ -93,13 +93,15 @@ function apply(value: LiveDraft) {
   if (!props.state.sources.some(s => s.id === props.state.sourceId)) props.state.sourceId = props.state.sources[0]?.id ?? ''
 }
 function go(step: Workflow['step']) { props.state.step = step; props.state.maxStep = Math.max(props.state.maxStep, steps.indexOf(step)); void nextTick(() => document.getElementById('page-title')?.focus()) }
-async function perform(action: (requestSignal: AbortSignal) => Promise<void>) {
-  if (busy.value) return
+async function perform(action: (requestSignal: AbortSignal) => Promise<void>): Promise<boolean> {
+  if (busy.value) return false
   const request = new AbortController()
   activeRequest = request
   busy.value = true; error.value = ''
-  try { await action(request.signal) } catch (cause) { if (!signal.aborted && !request.signal.aborted) error.value = cause instanceof Error ? cause.message : '操作未完成，请重试。' }
+  let completed = false
+  try { await action(request.signal); completed = true } catch (cause) { if (!signal.aborted && !request.signal.aborted) error.value = cause instanceof Error ? cause.message : '操作未完成，请重试。' }
   finally { if (activeRequest === request) { activeRequest = null; busy.value = false } restoreLostFocus() }
+  return completed
 }
 function assertActive(requestSignal: AbortSignal) {
   if (signal.aborted || requestSignal.aborted) throw new Error('请求已取消。')
@@ -315,8 +317,11 @@ async function poll(requestSignal?: AbortSignal) {
     }
   }
 }
-async function persistCandidates() {
-  await perform(async requestSignal => {
+// The candidate page only prints "已保存" for a write the service accepted, so
+// this reports completion instead of swallowing the failure into `error`.
+async function persistCandidates(): Promise<boolean> {
+  if (!draft.value) return false
+  return await perform(async requestSignal => {
     if (!draft.value) return
     const invalid = props.state.candidates.filter(c => !quoteExists(c, props.state.sources))
     const valid = props.state.candidates.filter(c => quoteExists(c, props.state.sources))
@@ -415,7 +420,7 @@ onBeforeUnmount(() => { generation++; controller.abort(); activeRequest?.abort()
     <ImportPage v-if="state.step === 'import'" :state="state" :busy="busy" :error="error" :uploaded-name="draft?.uploaded ? draft.name : undefined" @file="file = $event" @dirty="state.maxStep = 0" @example="emit('example')" @next="prepare" @import="importCollected">
       <template #context><MaterialContext v-if="draft" :revision="draft.revision" :draft-id="draft.id" :busy="busy" show-refresh @new="newInput" @refresh="refreshMaterials" /></template>
     </ImportPage>
-    <CandidatePage v-else-if="state.step === 'candidates'" :state="state" :busy="busy || !!draft?.jobs.length" :error="error" :type-labels="labels" :failed-source-ids="failedSourceIds" @back="go('import')" @next="begin" @retry-source="retrySource" @retry-model="retryModel" @persist-candidates="persistCandidates">
+    <CandidatePage v-else-if="state.step === 'candidates'" :state="state" :busy="busy || !!draft?.jobs.length" :error="error" :type-labels="labels" :failed-source-ids="failedSourceIds" :persist="persistCandidates" @back="go('import')" @next="begin" @retry-source="retrySource" @retry-model="retryModel">
       <template #context><MaterialContext v-if="draft" :revision="draft.revision" :draft-id="draft.id" :busy="busy" @new="newInput" /></template>
     </CandidatePage>
     <template v-else-if="state.step === 'progress'">

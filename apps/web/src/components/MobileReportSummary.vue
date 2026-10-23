@@ -17,10 +17,9 @@ const props = defineProps<{
   dataTypeCount: number
   policyCount: number
   evidenceCount: number
+  policyStates: string[]
 }>()
 const human = (badge: string) => badge.split(' · ')[0]?.trim() || badge
-const codeOf = (badge: string) => badge.split(' · ')[1]?.trim() || ''
-const hasCode = computed(() => Boolean(codeOf(props.sourceBadge) || codeOf(props.deliveryBadge)))
 const coverageLine = computed(() => props.coverageStatus === 'PARTIAL'
   ? '扫描范围不完整 · PARTIAL：部分 DEX 未完成'
   : props.coverageStatus === 'COMPLETE' ? '扫描范围完整：已扫描所支持的 DEX' : '')
@@ -41,10 +40,7 @@ const coverageLine = computed(() => props.coverageStatus === 'PARTIAL'
       <li v-if="coverageLine" :class="coverageStatus === 'PARTIAL' ? 'warn' : 'ok'">{{ coverageLine }}</li>
       <li v-if="reviewCount" class="warn">待复核条目 {{ reviewCount }} 条；复核状态未改变</li>
     </ul>
-    <details v-if="hasCode" class="reading-source-code">
-      <summary>来源标识</summary>
-      <p>来源 {{ codeOf(sourceBadge) || '未标注' }} · 投递 {{ codeOf(deliveryBadge) || '未标注' }}</p>
-    </details>
+    <p v-for="state in policyStates" :key="state" class="reading-policy-state">{{ state }}</p>
     <dl class="reading-counts">
       <div><dt>{{ frontendCopy.table.dataType }}</dt><dd>{{ dataTypeCount }}</dd></div>
       <div><dt>政策来源</dt><dd>{{ policyCount }}</dd></div>
@@ -68,9 +64,7 @@ const coverageLine = computed(() => props.coverageStatus === 'PARTIAL'
 .reading-status li { color: var(--mt-warn, #8a5a00); font-size: var(--m-caption); line-height: 1.5; }
 .reading-status li.ok { color: var(--mt-success, #0f7a3c); }
 .reading-status li.warn { color: var(--mt-warn, #8a5a00); }
-.reading-source-code { margin: 0 0 12px; color: var(--pt-muted); font-size: var(--m-caption); }
-.reading-source-code > summary { display: flex; align-items: center; min-height: 48px; color: var(--pt-muted); font-size: var(--m-caption); cursor: pointer; }
-.reading-source-code p { margin: 0 0 8px; color: var(--pt-muted); font-family: var(--pt-font-code); font-size: var(--m-caption); line-height: 1.5; overflow-wrap: anywhere; }
+.reading-policy-state { margin: 0 0 12px; color: var(--mt-muted); font-size: var(--mt-text-caption); line-height: 1.5; }
 .reading-counts { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--pt-rule); }
 .reading-counts > div { display: flex; align-items: baseline; gap: 6px; }
 .reading-counts dt { font-size: var(--m-caption); color: var(--pt-muted); }

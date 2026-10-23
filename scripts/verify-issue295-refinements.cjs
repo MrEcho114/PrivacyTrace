@@ -23,6 +23,7 @@ async function capture(page, name) {
     await Promise.all(document.getAnimations().filter(animation => animation.effect?.getTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => {})))
   })
   await page.screenshot({ path: path.join(output, name + '.png') })
+  await page.screenshot({ path: path.join(output, name + '-full.png'), fullPage: true })
   captures.push({ file: name + '.png', viewport: page.viewportSize(), root_font: await page.evaluate(() => getComputedStyle(document.documentElement).fontSize) })
 }
 async function assertDeleteControlsReachable(page) {
@@ -107,7 +108,7 @@ async function main() {
     await capture(page, 'candidates-390')
     const firstCandidate = await page.locator('.candidate-item').first().boundingBox()
     const actionbar = await page.locator('.m-actionbar').boundingBox()
-    assert.ok(firstCandidate && actionbar && firstCandidate.y + firstCandidate.height <= actionbar.y, 'first candidate summary must fit above the primary action at 390px')
+    assert.ok(firstCandidate && actionbar && firstCandidate.y + firstCandidate.height + 48 <= actionbar.y, 'first candidate summary must leave one touch row of reading space above the primary action at 390px')
     // Switching sources must reset expansion and keep identical source types distinct.
     await name.getByRole('button', { name: '展开完整名称' }).click()
     await page.locator('.source-tabs button').nth(1).click()
@@ -168,6 +169,20 @@ async function main() {
     await hash.locator('summary').click()
     await page.evaluate(() => window.scrollTo(0, 0))
     await capture(page, 'import-390')
+    const writesBeforeRemoval = await page.evaluate(() => globalThis.mobileCalls.length)
+    await page.getByRole('button', { name: '删除已上传材料', exact: true }).click()
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'm-confirm-remove')
+    await capture(page, 'material-delete-confirm-390')
+    await page.getByRole('button', { name: '取消', exact: true }).click()
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'm-remove')
+    assert.equal(await page.evaluate(() => globalThis.mobileCalls.length), writesBeforeRemoval, 'cancelling deletion must not call the bridge')
+    await page.getByRole('button', { name: '服务与存储设置', exact: true }).click()
+    const settings = page.getByRole('dialog')
+    await settings.getByRole('button', { name: '删除已上传材料', exact: true }).click()
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'm-settings-confirm-remove')
+    await settings.getByRole('button', { name: '取消', exact: true }).click()
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'm-settings-remove')
+    checks.push('material deletion in import and settings focuses confirmation; cancelling restores trigger without deleting')
     assert.deepEqual(errors, [])
   } finally {
     fs.writeFileSync(path.join(output, 'verification.json'), JSON.stringify({ source_sha: sha, dirty, captured_at: new Date().toISOString(), platform: 'Chromium + mocked native bridge; Android/IME/TalkBack NOT_RUN', checks, captures, errors }, null, 2) + '\n')

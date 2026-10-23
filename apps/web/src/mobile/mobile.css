@@ -466,7 +466,16 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
 .mobile-workspace .candidate-quote-preview { color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); line-height: 1.45; }
 .mobile-workspace .candidate-summary { color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); line-height: 1.45; }
 .mobile-workspace .candidate-summary span { display: inline; }
-.mobile-workspace .candidate-editor { border-top: 0; margin-top: var(--mt-space-12, 12px); padding-top: 0; }
+.mobile-workspace .candidates-panel { padding: 0; border: 0; background: transparent; box-shadow: none; }
+.mobile-workspace .candidates-panel > .panel-heading { margin-bottom: 8px; }
+.mobile-workspace .candidates-panel > .panel-heading .candidate-summary { margin: 0; }
+.mobile-workspace .candidates-panel #add-candidate { color: var(--mt-fg-2); }
+.mobile-workspace .candidate-editor { margin-top: var(--mt-space-12, 12px); padding-top: 16px; border-top: 1px solid var(--mt-border-soft); }
+.mobile-workspace .m-material-actions .ui-button.quiet { color: var(--mt-fg-2); }
+.mobile-workspace .m-material-actions .ui-button.m-destructive-action,
+.m-settings-dialog .ui-button.m-destructive-action { color: var(--mt-danger); }
+.mobile-workspace .m-report-meta dd > .hash { display: block; }
+.mobile-workspace .sdk-method > summary { display: flex; align-items: center; min-height: var(--mt-touch); color: var(--mt-fg-2); cursor: pointer; }
 .mobile-workspace .candidate-editor .ui-button { min-height: var(--mt-touch, var(--m-touch)); }
 .mobile-workspace .panel-heading h2,
 .mobile-workspace .candidate-editor-heading h3 {

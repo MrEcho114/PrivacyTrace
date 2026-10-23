@@ -717,6 +717,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         :delivery-badge="deliveryInfo?.badge ?? '投递方式未标注'"
         :coverage-status="report.demo ? null : (realReport?.coverage.status ?? null)"
         :review-count="report.result.issues.filter(issue => issue.requires_review).length"
+        :policy-states="[...new Set(report.policy_documents.map(doc => policyStateLine(doc)))]"
         :data-type-count="dataTypeCount" :policy-count="report.policy_documents.length" :evidence-count="report.evidence.length" />
       <details v-if="!mobile" class="demo-note"><summary>分析范围与来源 · <strong>{{ sourceInfo?.label ?? (source.kind === 'demo' ? 'SYNTHETIC 示例' : '真实 APK 静态报告') }}</strong></summary>
         {{ sourceInfo?.desc ?? (source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。') }}
@@ -801,19 +802,26 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         <section v-if="mobile && selected && report" class="report-evidence report-evidence-inline" aria-label="当前条目证据">
           <EvidencePanel compact :issue="selected" :report="report" :taxonomy="taxonomy" :status-labels="statusLabels" :kind-labels="kindLabels" :source-labels="sourceLabels" @close="returnToTrigger()" @open-policy="jumpToPolicy" />
         </section>
-        <section v-if="realReport" class="report-provenance" aria-label="报告生成来源">
+        <section v-if="realReport && !mobile" class="report-provenance" aria-label="报告生成来源">
           <strong>{{ provenanceLabel }}</strong>
           <p v-if="realReport.tools.analysis_generated_at">分析生成时点：<time :datetime="realReport.tools.analysis_generated_at" :title="realReport.tools.analysis_generated_at">{{ provenanceTime(realReport.tools.analysis_generated_at) }}</time>。<template v-if="!embedded">{{ frontendCopy.facts.archiveNoRescan }}</template></p>
           <p v-else>记录创建时点：<time :datetime="realReport.job.created_at" :title="realReport.job.created_at">{{ provenanceTime(realReport.job.created_at) }}</time>。未留存分析生成时点；来源以报告来源标识为准。<template v-if="!embedded">{{ frontendCopy.facts.archiveNoRescan }}</template></p>
           <p v-if="offlineReplay">回放包生成时点：<time :datetime="realReport.tools.offline_package_built_at" :title="realReport.tools.offline_package_built_at">{{ provenanceTime(realReport.tools.offline_package_built_at) }}</time>。回放只读，不执行 APK 分析。</p>
           <p v-if="offlineReplay"><a href="/comparison.html" target="_blank" rel="noopener">查看六场景三方案比较与失败记录</a></p>
-          <!-- 内部投递代码不进主阅读流：移动端放进“来源标识”，桌面保持原样（冻结）。 -->
-          <details v-if="mobile" class="provenance-code">
-            <summary>来源标识</summary>
-            <p class="hash">{{ offlineReplay ? 'OFFLINE_REPLAY' : (report.delivery_mode ?? 'PERSISTED_REPLAY') }}</p>
-          </details>
         </section>
-        <details class="provenance" :open="provenanceOpen" @toggle="provenanceToggle($event)"><summary>报告版本、权限与全部政策快照</summary>
+        <details class="provenance" :class="{ 'm-report-meta': mobile }" :open="provenanceOpen" @toggle="provenanceToggle($event)"><summary>{{ mobile ? '报告来源与技术详情' : '报告版本、权限与全部政策快照' }}</summary>
+          <template v-if="mobile">
+            <dl class="m-meta-list">
+              <div><dt>来源标识</dt><dd>{{ sourceInfo?.badge ?? '来源未标注' }}</dd></div>
+              <div><dt>查看方式</dt><dd>{{ deliveryInfo?.badge ?? '投递方式未标注' }}</dd></div>
+              <div v-if="realReport?.tools.analysis_generated_at"><dt>分析生成时间</dt><dd><time :datetime="realReport.tools.analysis_generated_at">{{ provenanceTime(realReport.tools.analysis_generated_at) }}</time><span class="hash">{{ realReport.tools.analysis_generated_at }}</span></dd></div>
+              <div v-if="offlineReplay && realReport?.tools.offline_package_built_at"><dt>回放包生成时间</dt><dd>{{ provenanceTime(realReport.tools.offline_package_built_at) }}</dd></div>
+            </dl>
+            <p v-if="realReport && !realReport.tools.analysis_generated_at">未留存分析生成时点；原生成时间对应记录创建时间。</p>
+            <p>{{ frontendCopy.facts.archiveNoRescan }}</p>
+            <p v-if="offlineReplay"><a href="/comparison.html" target="_blank" rel="noopener">查看六场景三方案比较与失败记录</a></p>
+            <slot name="report-context" />
+          </template>
           <p>任务 {{ report.job.id }} · 输入 {{ report.job.input_mode }} · 规则版本 {{ report.job.ruleset_version }} · 原生成时间：{{ formatTimestamp(report.job.created_at) || report.job.created_at }}</p>
           <template v-if="realReport">
             <p v-for="(version, tool) in Object.fromEntries(Object.entries(realReport.tools).filter(([key]) => key !== 'web_policy_sources'))" :key="tool">{{ tool }}：{{ version }}</p>
@@ -834,8 +842,10 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           </article>
         </details>
         <section v-if="realReport" id="sdk-panel" class="report-section">
-          <div class="section-heading"><h2>第三方 SDK 归属</h2><span class="subtle">{{ frontendCopy.facts.sdkAttribution }}</span></div>
-          <p class="subtle">归属命中只表示类路径落在某个已公开的 SDK 包范围内；SDK 的静态存在也不能替代宿主 App 自身的声明，归属结论不参与政策一致性判定。</p>
+          <div class="section-heading"><h2>第三方 SDK 归属</h2><span v-if="!mobile" class="subtle">{{ frontendCopy.facts.sdkAttribution }}</span></div>
+          <p v-if="mobile" class="subtle">{{ sdkEvidence.length ? `本次命中 ${sdkEvidence.length} 条 SDK 特征；仅表示静态存在，不证明实际运行或采集。` : '本次未命中当前签名规则；未命中不代表没有第三方 SDK。' }}</p>
+          <details v-if="mobile" class="sdk-method"><summary>如何理解 SDK 归属</summary><p>{{ frontendCopy.facts.sdkAttribution }}</p><p>归属命中只表示类路径落在某个已公开的 SDK 包范围内；SDK 的静态存在也不能替代宿主 App 自身的声明，归属结论不参与政策一致性判定。</p></details>
+          <p v-else class="subtle">归属命中只表示类路径落在某个已公开的 SDK 包范围内；SDK 的静态存在也不能替代宿主 App 自身的声明，归属结论不参与政策一致性判定。</p>
           <template v-if="sdkEvidence.length">
             <nav v-if="sdkPageTotal > 1" aria-label="SDK 归属分页">
               <span>共 {{ sdkEvidence.length }} 条 · 第 {{ sdkPage + 1 }} / {{ sdkPageTotal }} 页</span>
@@ -848,7 +858,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
               <pre v-if="item.excerpt">{{ item.excerpt }}</pre>
             </article></div>
           </template>
-          <p v-else class="subtle">本次未命中当前有限的签名规则集。没有命中不代表 APK 不含第三方 SDK。</p>
+          <p v-else-if="!mobile" class="subtle">本次未命中当前有限的签名规则集。没有命中不代表 APK 不含第三方 SDK。</p>
           <ul v-if="realReport.coverage.sdk_attribution_limitations?.length"><li v-for="limitation in realReport.coverage.sdk_attribution_limitations" :key="limitation">{{ limitation }}</li></ul>
         </section>
         <section v-if="realReport" class="coverage-card">

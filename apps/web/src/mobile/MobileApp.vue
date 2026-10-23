@@ -127,11 +127,18 @@ const showActionBar = computed(() => state.step !== 'report' && !(state.step ===
 const pendingRemove = ref(false)
 const pendingSettingsRemove = ref(false)
 watch(context, () => { pendingRemove.value = false; pendingSettingsRemove.value = false })
-function askRemove() { pendingRemove.value = true }
-function cancelRemove() { pendingRemove.value = false }
+function focusRemoval(id: string) {
+  void nextTick(() => {
+    const control = document.getElementById(id)
+    control?.scrollIntoView({ block: 'center', behavior: 'instant' })
+    control?.focus({ preventScroll: true })
+  })
+}
+function askRemove() { pendingRemove.value = true; focusRemoval('m-confirm-remove') }
+function cancelRemove() { pendingRemove.value = false; focusRemoval('m-remove') }
 function confirmRemove() { pendingRemove.value = false; void flow.remove() }
-function askSettingsRemove() { pendingSettingsRemove.value = true }
-function cancelSettingsRemove() { pendingSettingsRemove.value = false }
+function askSettingsRemove() { pendingSettingsRemove.value = true; focusRemoval('m-settings-confirm-remove') }
+function cancelSettingsRemove() { pendingSettingsRemove.value = false; focusRemoval('m-settings-remove') }
 function confirmSettingsRemove() { pendingSettingsRemove.value = false; void flow.remove() }
 function refreshJob() { void flow.poll() }
 
@@ -335,12 +342,12 @@ onBeforeUnmount(() => {
           <div class="m-material-actions">
             <template v-if="pendingRemove">
               <p class="m-material-warning" role="alert">将从分析服务删除「{{ draft?.name || '当前材料' }}」及其分析结果，无法恢复。</p>
-              <UiButton variant="danger" :disabled="busy" @click="confirmRemove">确认删除</UiButton>
+              <UiButton id="m-confirm-remove" variant="danger" :disabled="busy" @click="confirmRemove">确认删除</UiButton>
               <UiButton variant="quiet" :disabled="busy" @click="cancelRemove">取消</UiButton>
             </template>
             <template v-else>
-              <UiButton :disabled="busy" @click="flow.refresh">重新读取材料</UiButton>
-              <UiButton variant="danger" :disabled="busy" @click="askRemove">删除已上传材料</UiButton>
+              <UiButton variant="quiet" :disabled="busy" @click="flow.refresh">重新读取材料</UiButton>
+              <UiButton id="m-remove" variant="quiet" class="m-destructive-action" :disabled="busy" @click="askRemove">删除已上传材料</UiButton>
             </template>
           </div>
         </section>
@@ -416,9 +423,8 @@ onBeforeUnmount(() => {
       </template>
 
       <div v-else-if="state.step === 'report' && report && taxonomy" class="m-report">
-        <ExistingReports :key="report.job.id" :snapshot="{ report, taxonomy }" mobile />
-        <details class="m-details m-report-meta">
-          <summary>报告来源与版本</summary>
+        <ExistingReports :key="report.job.id" :snapshot="{ report, taxonomy }" mobile>
+          <template #report-context>
           <div class="m-row-body">
             <dl class="m-meta-list">
               <div><dt>包名</dt><dd class="hash">{{ report.sample.package_name }}</dd></div>
@@ -430,7 +436,8 @@ onBeforeUnmount(() => {
             </dl>
             <UiButton v-if="context" variant="quiet" @click="navigate('import')">更换材料</UiButton>
           </div>
-        </details>
+          </template>
+        </ExistingReports>
       </div>
       <p v-else-if="state.step === 'report'" class="m-notice" role="status">报告还没载入。回到进度页刷新状态。</p>
 
@@ -478,11 +485,11 @@ onBeforeUnmount(() => {
         <p v-if="context" class="hash">{{ context.origin }}</p>
         <div class="m-button-row">
           <UiButton :disabled="busy || !context" @click="flow.refresh">重新读取材料</UiButton>
-          <UiButton v-if="context && !pendingSettingsRemove" variant="danger" :disabled="busy" @click="askSettingsRemove">删除已上传材料</UiButton>
+          <UiButton v-if="context && !pendingSettingsRemove" id="m-settings-remove" variant="quiet" class="m-destructive-action" :disabled="busy" @click="askSettingsRemove">删除已上传材料</UiButton>
         </div>
         <div v-if="context && pendingSettingsRemove" class="m-button-row">
           <p class="m-material-warning" role="alert">将从分析服务删除当前材料及其分析结果，无法恢复。</p>
-          <UiButton variant="danger" :disabled="busy" @click="confirmSettingsRemove">确认删除</UiButton>
+          <UiButton id="m-settings-confirm-remove" variant="danger" :disabled="busy" @click="confirmSettingsRemove">确认删除</UiButton>
           <UiButton variant="quiet" :disabled="busy" @click="cancelSettingsRemove">取消</UiButton>
         </div>
       </section>

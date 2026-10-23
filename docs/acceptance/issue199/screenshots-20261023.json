@@ -1,0 +1,176 @@
+{
+  "task": "PT-906-D",
+  "issue": "https://github.com/MrEcho114/PrivacyTrace/issues/199",
+  "generated_at": "2026-10-23T17:04:54+08:00",
+  "limit": 10,
+  "basis": {
+    "file": "PrivacyTrace_322234.zip",
+    "bytes": 41917846,
+    "sha256": "559f14f147449aa6eb0293f5489bede1fd0e98d634fc4b3e3fb530c6b45c59e5",
+    "bytes_match": true,
+    "sha256_match": true,
+    "screenshot_entries": 14
+  },
+  "selected_total_bytes": 5677918,
+  "selected": [
+    {
+      "order": 1,
+      "file": "01_live-report-1440.png",
+      "source": "live-report-1440.png",
+      "bytes": 621665,
+      "width": 1440,
+      "height": 4926,
+      "sha256": "d7a948e92cd713a53290ad04f0dc94b5e6a387433b173acb5014e09413468394",
+      "anonymization": "PASS",
+      "note": ""
+    },
+    {
+      "order": 2,
+      "file": "02_live-report-390.png",
+      "source": "live-report-390.png",
+      "bytes": 586591,
+      "width": 390,
+      "height": 6876,
+      "sha256": "f47b9725d3f3f51cf29018f8dc136969f4dcb01c3fabae33932aa1f53564156e",
+      "anonymization": "PASS",
+      "note": ""
+    },
+    {
+      "order": 3,
+      "file": "03_mobile-import-390.png",
+      "source": "mobile-import-390.png",
+      "bytes": 195357,
+      "width": 390,
+      "height": 2343,
+      "sha256": "792de5f1e2b2f00c3370d1fcce8df8cce7efd86c16b576fea147839d47fcc5f0",
+      "anonymization": "PASS",
+      "note": ""
+    },
+    {
+      "order": 4,
+      "file": "04_mobile-report-390.png",
+      "source": "mobile-report-390.png",
+      "bytes": 375054,
+      "width": 390,
+      "height": 4403,
+      "sha256": "1c945a3f8c841fc3a8d9d5f353b8134accf24e966c52e1ae3658274b9221203d",
+      "anonymization": "PASS",
+      "note": ""
+    },
+    {
+      "order": 5,
+      "file": "05_tc01-long-text-pagination.png",
+      "source": "tc01-long-text-pagination.png",
+      "bytes": 1866878,
+      "width": 1280,
+      "height": 9455,
+      "sha256": "9efccb34ced93957ed8ef248114416026cb6e7654730ff59005a9a00f94ae901",
+      "anonymization": "PASS",
+      "note": "含被测真实应用标识 `gkd-s1-first` 与输入 APK SHA-256 `edcc03be…466a6`；属被测对象指纹，不识别参赛者，#197 判 PASS（可选收紧项，不整改）"
+    },
+    {
+      "order": 6,
+      "file": "06_tc02-xss-defense.png",
+      "source": "tc02-xss-defense.png",
+      "bytes": 493380,
+      "width": 1280,
+      "height": 4084,
+      "sha256": "3293d47e46e713429a8cd1684bce8fd06b6649ed26f89924891e229fedbc5d50",
+      "anonymization": "PASS",
+      "note": "含被测真实应用标识 `gkd-s1-first` 与输入 APK SHA-256 `edcc03be…466a6`；属被测对象指纹，不识别参赛者，#197 判 PASS（可选收紧项，不整改）"
+    },
+    {
+      "order": 7,
+      "file": "07_tc03-partial-bytecode-fallback.png",
+      "source": "tc03-partial-bytecode-fallback.png",
+      "bytes": 407053,
+      "width": 1280,
+      "height": 3458,
+      "sha256": "428954d7c431ad5460b319e5cd48c6c2e2b53fa9153a7efe8bb266039be035bb",
+      "anonymization": "PASS",
+      "note": ""
+    },
+    {
+      "order": 8,
+      "file": "08_tc04-source-controlled.png",
+      "source": "tc04-source-controlled.png",
+      "bytes": 349643,
+      "width": 1280,
+      "height": 2872,
+      "sha256": "e2f8067850d77a9aed85371d0ef743049b30c927a255d19a7dbafeaf26f97a78",
+      "anonymization": "PASS",
+      "note": ""
+    },
+    {
+      "order": 9,
+      "file": "09_tc04-source-real-scan-s1.png",
+      "source": "tc04-source-real-scan-s1.png",
+      "bytes": 423880,
+      "width": 1280,
+      "height": 3458,
+      "sha256": "34caecc8667847cca2e0dab862f0e98d962eb4ca589f8bc7d5e51592bb7b32fa",
+      "anonymization": "PASS",
+      "note": "含被测真实应用标识 `gkd-s1-first` 与输入 APK SHA-256 `edcc03be…466a6`；属被测对象指纹，不识别参赛者，#197 判 PASS（可选收紧项，不整改）"
+    },
+    {
+      "order": 10,
+      "file": "10_tc05-optional-notes-review.png",
+      "source": "tc05-optional-notes-review.png",
+      "bytes": 358417,
+      "width": 1280,
+      "height": 2965,
+      "sha256": "62f520c7bc10e5a43469b1ee233bf792fbb342daddaf09696955baca35d2d320",
+      "anonymization": "PASS",
+      "note": "含被测真实应用标识 `gkd-s1-first` 与输入 APK SHA-256 `edcc03be…466a6`；属被测对象指纹，不识别参赛者，#197 判 PASS（可选收紧项，不整改）"
+    }
+  ],
+  "unselected": [
+    {
+      "file": "tc03-job-cancelled.png",
+      "bytes": 97779,
+      "width": 1280,
+      "height": 900,
+      "sha256": "1266cf195644781dd5e4a283fa3eaec5b0b12506a69a73f7dd318972c4e36520",
+      "reason": "单页「已取消」状态页，信息量最低；降级路径已由选片 #7 部分字节码回退代表。"
+    },
+    {
+      "file": "tc03-structured-error-failed.png",
+      "bytes": 106392,
+      "width": 1280,
+      "height": 968,
+      "sha256": "a640f2b2abf33426951da09c0239729086824a05c4804fdc7f1ba63ee808bece",
+      "reason": "失败态（错误码 ZIP_INVALID）；异常展示与超时同类，只留代表性一张。"
+    },
+    {
+      "file": "tc03-timeout-failed.png",
+      "bytes": 108841,
+      "width": 1280,
+      "height": 968,
+      "sha256": "1d03522d42412b4aa20c4bcf8fffde7179c4af6ffdee79ab5c4699e9e0a2849f",
+      "reason": "失败态（错误码 SCAN_TIMEOUT）；同上，避免失败态占比过高。"
+    },
+    {
+      "file": "tc04-source-synthetic.png",
+      "bytes": 194337,
+      "width": 1280,
+      "height": 1672,
+      "sha256": "8bf5c93498339f4fe957775cfa014f9df15e19fd9337c84b237457fb701a887a",
+      "reason": "纯人工构造示例；来源维度已由受控源（#8）与真实扫描（#9）覆盖。"
+    }
+  ],
+  "verification": {
+    "script": "docs/acceptance/issue199/verify-upload-slot.py",
+    "report": ".scratch/issue199/verify-report.json",
+    "ok": true,
+    "issues": []
+  },
+  "anonymization_evidence": [
+    ".scratch/issue197/check4-a.md",
+    ".scratch/issue197/check4-b.md",
+    ".scratch/issue197/check4-c.md"
+  ],
+  "status": {
+    "uploaded": false,
+    "submitted": false
+  }
+}

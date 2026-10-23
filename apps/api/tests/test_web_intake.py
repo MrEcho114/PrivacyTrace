@@ -1,5 +1,6 @@
 """HTTP intake invariants; model/scanner doubles are reported separately from live proof."""
 
+import errno
 import json
 import threading
 import zipfile
@@ -199,6 +200,78 @@ def test_candidate_empty_condition_is_stored_as_absent(tmp_path):
     assert updated["candidates"][0]["condition"] is None
     capture = app.state.web_intake.captures(updated, require_checked=False)[0]
     assert capture["claims"][0].condition is None
+
+
+def fail_current_write(service, monkeypatch, *, armed):
+    """Inject ENOSPC only for current.json; the immutable snapshot keeps landing."""
+    real = service._write_private
+
+    def write(path, value):
+        if armed["on"] and path.name == "current.json":
+            raise OSError(errno.ENOSPC, "No space left on device")
+        return real(path, value)
+
+    monkeypatch.setattr(service, "_write_private", write)
+    return armed
+
+
+def test_failed_current_write_leaves_the_draft_retryable(tmp_path, monkeypatch):
+    app = create_app(tmp_path)
+    client = TestClient(app)
+    draft = new_draft(client)
+    endpoint = f"/api/v1/web/drafts/{draft['id']}"
+    directory = tmp_path / "web" / draft["id"]
+    armed = fail_current_write(app.state.web_intake, monkeypatch, armed={"on": True})
+    failed = client.post(endpoint + "/candidates", headers=HEADERS, json=candidates(draft))
+    assert failed.status_code == 507, failed.text
+    armed["on"] = False
+    # The committed revision stays readable; the unwritable one is not history yet.
+    assert client.get(endpoint, headers=HEADERS).json()["revision"] == 1
+    assert (directory / "revision-2.json").exists()
+    retry = client.post(endpoint + "/candidates", headers=HEADERS, json=candidates(draft))
+    assert retry.status_code == 200, retry.text
+    assert retry.json()["revision"] == 2
+    assert json.loads((directory / "revision-2.json").read_bytes())["revision"] == 2
+    assert json.loads((directory / "current.json").read_bytes())["revision"] == 2
+    reread = client.get(endpoint, headers=HEADERS).json()
+    assert [c["id"] for c in reread["candidates"]] == ["quote1"]
+
+
+def test_restart_after_a_failed_current_write_can_still_update(tmp_path, monkeypatch):
+    app = create_app(tmp_path)
+    client = TestClient(app)
+    draft = new_draft(client)
+    endpoint = f"/api/v1/web/drafts/{draft['id']}"
+    armed = fail_current_write(app.state.web_intake, monkeypatch, armed={"on": True})
+    assert (
+        client.post(endpoint + "/candidates", headers=HEADERS, json=candidates(draft)).status_code
+        == 507
+    )
+    armed["on"] = False
+    monkeypatch.undo()
+    with TestClient(create_app(tmp_path)) as restarted:
+        assert restarted.get(endpoint, headers=HEADERS).json()["revision"] == 1
+        retry = restarted.post(endpoint + "/candidates", headers=HEADERS, json=candidates(draft))
+        assert retry.status_code == 200, retry.text
+        assert retry.json()["revision"] == 2
+
+
+def test_published_revision_is_not_rewritten_with_different_content(tmp_path):
+    app = create_app(tmp_path)
+    client = TestClient(app)
+    draft = new_draft(client)
+    directory = tmp_path / "web" / draft["id"]
+    committed = client.post(
+        f"/api/v1/web/drafts/{draft['id']}/candidates", headers=HEADERS, json=candidates(draft)
+    )
+    assert committed.status_code == 200, committed.text
+    service = app.state.web_intake
+    conflicting = service._get(draft["id"])
+    conflicting["candidates"][0]["excerpt"] = "另一句证据"
+    with pytest.raises(ValueError, match="Input revision already exists"):
+        service._save(conflicting)
+    stored = json.loads((directory / "revision-2.json").read_bytes())
+    assert stored["candidates"][0]["excerpt"] == "我们不会读取联系人。"
 
 
 def test_failed_source_retained_and_manual_fallback(tmp_path):

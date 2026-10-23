@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>PrivacyTrace — 作品展示（严肃展示版 90s）</title>
+<style>
+  :root{
+    --paper:#f2ede0;
+    --ink:#17181b;
+    --ink2:#3a3a38;
+    --muted:#6f6b60;
+    --clay:#a2532f;
+    --green:#3f6b52;
+    --serif:"Noto Serif SC","Source Han Serif SC","Songti SC",serif;
+    --sans:"Noto Sans SC","Microsoft YaHei UI",sans-serif;
+    --mono:"Cascadia Mono","Consolas",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1920px;height:1080px;overflow:hidden;background:#000}
+  body{font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  #stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--paper)}
+
+  .paper{position:absolute;inset:0;background:
+    radial-gradient(1200px 800px at 72% 6%, rgba(255,255,255,.62), rgba(255,255,255,0) 62%),
+    radial-gradient(900px 700px at 6% 98%, rgba(196,170,128,.16), rgba(196,170,128,0) 58%),
+    linear-gradient(168deg,#f4efe3 0%,#f2ede0 52%,#ece5d5 100%)}
+  .grain{position:absolute;inset:-40px;opacity:.05;pointer-events:none;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.86' numOctaves='3'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E")}
+  .vign{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 220px 40px rgba(122,104,74,.10)}
+
+  /* ---------- persistent chrome ---------- */
+  #head{position:absolute;left:96px;top:44px;display:flex;align-items:center;gap:13px;z-index:30}
+  #head .mark{width:26px;height:26px;border:1px solid rgba(23,24,27,.42);display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--ink)}
+  #head .nm{font-size:15px;font-weight:500;letter-spacing:.02em}
+  #head .sep{width:1px;height:14px;background:rgba(23,24,27,.22)}
+  #head .kicker{font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--muted)}
+  #chap{position:absolute;right:96px;top:46px;text-align:right;z-index:30}
+  #chap .no{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--clay)}
+  #chap .nm{display:block;margin-top:4px;font-size:13px;letter-spacing:.12em;color:var(--ink2)}
+  #ruler{position:absolute;left:96px;right:96px;bottom:20px;height:14px;z-index:30}
+  #ruler .base{position:absolute;left:0;right:0;top:0;height:1px;background:rgba(23,24,27,.16)}
+  #ruler .fill{position:absolute;left:0;top:0;height:1px;width:0;background:var(--clay);opacity:.62}
+  #ruler .tick{position:absolute;top:0;width:1px;background:rgba(23,24,27,.10)}
+  #ruler .tick.major{background:rgba(23,24,27,.30);height:8px}
+  #foot{position:absolute;left:96px;right:96px;bottom:4px;display:flex;justify-content:space-between;
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:rgba(23,24,27,.40);z-index:30}
+
+  /* ---------- shared type ---------- */
+  .scene{position:absolute;inset:0;opacity:0}
+  .eyebrow{position:absolute;left:96px;top:140px;font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--clay)}
+  .eyebrow-en{position:absolute;left:96px;top:163px;font-family:var(--mono);font-size:10px;letter-spacing:.34em;color:rgba(23,24,27,.32)}
+  .h{position:absolute;left:96px;top:196px;font-family:var(--serif);font-weight:600;font-size:64px;line-height:1.22;letter-spacing:.005em;color:var(--ink)}
+  .h em{font-style:normal;color:var(--clay)}
+  .lead{position:absolute;left:98px;font-size:22px;line-height:1.82;color:rgba(23,24,27,.72);font-weight:300;letter-spacing:.01em}
+
+  /* ---------- hero ---------- */
+  #hero-title{position:absolute;left:92px;top:286px;font-family:var(--serif);font-weight:600;font-size:148px;line-height:1;letter-spacing:-.015em;color:var(--ink)}
+  #hero-sub{position:absolute;left:98px;top:462px;font-size:27px;font-weight:300;letter-spacing:.02em;color:rgba(23,24,27,.78)}
+  #hero-rule{position:absolute;left:98px;top:528px;width:560px;height:1px;background:linear-gradient(90deg,var(--clay),rgba(162,83,47,0));transform-origin:left}
+  #hero-claim{position:absolute;left:96px;top:564px;font-family:var(--serif);font-weight:600;font-size:56px;letter-spacing:.02em;color:var(--clay)}
+  #hero-tags{position:absolute;left:98px;top:686px;display:flex;gap:15px}
+  #hero-tags span{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;color:rgba(23,24,27,.62);
+    border:1px solid rgba(23,24,27,.18);padding:8px 14px;background:rgba(255,255,255,.28)}
+  #hero-meta{position:absolute;left:98px;top:800px;font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;color:rgba(23,24,27,.42)}
+  #hero-plate{position:absolute;right:96px;top:150px;width:616px;height:616px;border:1px solid rgba(23,24,27,.14);
+    background:linear-gradient(200deg,rgba(255,255,255,.5),rgba(233,224,205,.42));overflow:hidden}
+  #hero-plate .big{position:absolute;left:32px;top:24px;font-family:var(--serif);font-size:200px;line-height:1;color:rgba(23,24,27,.10);font-weight:600}
+  #hero-plate .note{position:absolute;left:34px;top:330px;font-family:var(--serif);font-size:17px;font-weight:600;color:rgba(23,24,27,.46);letter-spacing:.01em}
+  #hero-plate .lines{position:absolute;left:34px;right:34px;bottom:32px;display:flex;flex-direction:column;gap:9px}
+  #hero-plate .lines i{display:block;height:5px;background:rgba(23,24,27,.14)}
+  #hero-plate .lbl{position:absolute;left:34px;top:242px;font-family:var(--mono);font-size:10px;letter-spacing:.24em;color:rgba(23,24,27,.46)}
+  #hero-plate .arrow{position:absolute;left:34px;top:290px;width:164px;height:1px;background:rgba(162,83,47,.65);transform-origin:left}
+  #hero-plate .node{position:absolute;right:34px;top:274px;border:1px solid rgba(162,83,47,.6);padding:7px 10px;
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;color:var(--clay)}
+
+  /* ---------- 01 the work ---------- */
+  #w-h{width:470px}
+  #w-lead{top:378px;width:462px;font-size:20px;line-height:1.8}
+  .steps{position:absolute;left:96px;top:496px;width:462px;display:flex;flex-direction:column}
+  .step{display:flex;align-items:baseline;gap:16px;padding:13px 0;border-top:1px solid rgba(23,24,27,.13)}
+  .step:last-child{border-bottom:1px solid rgba(23,24,27,.13)}
+  .step .n{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:rgba(23,24,27,.36);width:24px}
+  .step .t{font-family:var(--serif);font-size:28px;font-weight:600;letter-spacing:.02em;color:rgba(23,24,27,.46)}
+  .step .s{margin-left:auto;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:rgba(23,24,27,.32)}
+  #w-note{position:absolute;left:98px;top:768px;width:450px;font-size:12px;line-height:1.75;color:rgba(23,24,27,.46);font-weight:300}
+  #w-plate{position:absolute;left:600px;top:168px;width:1224px;height:688px;overflow:hidden;border:1px solid rgba(23,24,27,.14);
+    background:#fbfaf6;box-shadow:0 26px 60px rgba(80,66,44,.16)}
+  #w-plate img{position:absolute;left:0;top:0;width:1224px;transform-origin:0 0}
+  #w-tag{position:absolute;left:600px;top:140px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:rgba(23,24,27,.50)}
+  #w-count{position:absolute;right:96px;top:140px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:rgba(23,24,27,.38)}
+  #w-cap{position:absolute;left:600px;top:872px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:rgba(23,24,27,.56)}
+  #w-cap b{color:rgba(23,24,27,.82);font-weight:400}
+
+  /* ---------- 02 running ---------- */
+  #run-plate{position:absolute;left:160px;top:84px;width:1600px;height:900px;overflow:hidden;border:1px solid rgba(23,24,27,.18);
+    background:#fbfaf6;box-shadow:0 30px 70px rgba(78,64,42,.18)}
+  #shot{position:absolute;left:0;top:0;width:1600px;height:900px;transform-origin:0 0}
+  #run-plate .sheen{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 60px rgba(60,48,30,.10)}
+  #run-tag{position:absolute;left:160px;top:56px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:rgba(23,24,27,.52)}
+  #run-tag2{position:absolute;right:160px;top:56px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:rgba(23,24,27,.42)}
+  #run-cap{position:absolute;left:160px;top:996px;font-family:var(--serif);font-size:25px;font-weight:600;letter-spacing:.015em;color:var(--ink)}
+  #run-cap span{color:var(--clay)}
+  #run-idx{position:absolute;right:160px;top:1008px;font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:rgba(23,24,27,.38)}
+
+  /* ---------- 03 evidence ---------- */
+  #e-h{white-space:nowrap}
+  #e-lead{top:298px;width:1250px}
+  #ev-card{position:absolute;left:96px;top:372px;width:1728px;height:360px;background:rgba(255,255,255,.44);
+    border:1px solid rgba(23,24,27,.14);box-shadow:0 24px 52px rgba(80,66,44,.10)}
+  .ev-col{position:absolute;top:0;width:760px;height:100%}
+  .ev-col.l{left:0}
+  .ev-col.r{right:0}
+  .ev-k{position:absolute;top:24px;left:30px;font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;color:var(--clay)}
+  .ev-path{position:absolute;top:58px;left:30px;right:30px;font-family:var(--serif);font-size:21px;font-weight:600;color:var(--ink);letter-spacing:.01em}
+  .ev-meta{position:absolute;top:92px;left:30px;right:30px;font-family:var(--mono);font-size:11px;color:rgba(23,24,27,.52);letter-spacing:.04em}
+  .ev-code{position:absolute;top:124px;left:30px;right:30px;background:#1b1c1d;color:#e7e0cf;padding:16px 18px;
+    font-family:var(--mono);font-size:13px;line-height:1.66;white-space:pre-wrap;word-break:break-all;min-height:84px}
+  .ev-quote{position:absolute;top:124px;left:30px;right:30px;border-left:2px solid var(--clay);padding:4px 0 4px 18px;
+    font-family:var(--serif);font-size:24px;line-height:1.66;color:var(--ink);min-height:84px}
+  .ev-rule{position:absolute;top:246px;left:30px;right:30px;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:rgba(23,24,27,.46)}
+  .ev-span{position:absolute;top:274px;left:30px;right:30px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:rgba(23,24,27,.36)}
+  #ev-link{position:absolute;left:760px;top:180px;width:208px;height:1px;background:rgba(23,24,27,.26);transform-origin:left}
+  #ev-link i{position:absolute;left:50%;top:-3.5px;width:8px;height:8px;background:var(--clay);transform:rotate(45deg);margin-left:-4px}
+  #ev-link span{position:absolute;left:50%;top:-26px;transform:translateX(-50%);font-family:var(--mono);font-size:9.5px;letter-spacing:.24em;color:var(--clay)}
+  #ev-foot{position:absolute;left:96px;top:768px;font-family:var(--serif);font-size:26px;font-weight:600;color:var(--ink);letter-spacing:.01em}
+  #ev-foot::before{content:"";display:inline-block;width:34px;height:1px;background:var(--clay);vertical-align:middle;margin-right:16px}
+  .principles{position:absolute;left:96px;top:846px;width:1728px;display:flex;border-top:1px solid rgba(23,24,27,.14);padding-top:14px}
+  .principles div{width:576px;padding-right:44px;font-size:12.5px;line-height:1.65;color:rgba(23,24,27,.54);font-weight:300}
+  .principles b{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;color:rgba(23,24,27,.38);font-weight:400;margin-bottom:6px}
+  #ev-caveat{position:absolute;left:98px;top:958px;font-size:11.5px;color:rgba(23,24,27,.40);font-weight:300;letter-spacing:.02em}
+
+  /* ---------- 04 report ---------- */
+  #r-h{white-space:nowrap;font-size:58px}
+  #rep-plate{position:absolute;left:96px;top:300px;width:680px;height:620px;overflow:hidden;border:1px solid rgba(23,24,27,.14);
+    background:#fbfaf6;box-shadow:0 24px 56px rgba(80,66,44,.14)}
+  #rep-plate img{position:absolute;left:0;top:0;width:680px;transform-origin:0 0}
+  #rep-cap{position:absolute;left:96px;top:936px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:rgba(23,24,27,.56)}
+  #rep-cap b{color:rgba(23,24,27,.82);font-weight:400}
+  #rep-notes{position:absolute;left:816px;top:300px;width:560px}
+  #rep-notes .row{display:flex;align-items:baseline;gap:14px;padding:15px 0;border-top:1px solid rgba(23,24,27,.12);font-size:15px;color:rgba(23,24,27,.66);font-weight:300}
+  #rep-notes .row:last-child{border-bottom:1px solid rgba(23,24,27,.12)}
+  #rep-notes .row b{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:rgba(23,24,27,.40);font-weight:400;width:66px}
+  #rep-notes .row em{font-style:normal;margin-left:auto;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;white-space:nowrap}
+  #rep-notes .ok em{color:var(--green)}
+  #rep-notes .gap em{color:var(--clay)}
+  #rep-plate .mask{position:absolute;left:0;right:0;top:0;height:24px;pointer-events:none;background:linear-gradient(180deg,rgba(251,250,246,.95),rgba(251,250,246,0))}
+  #rep-plate .mask.b{top:auto;bottom:0;background:linear-gradient(0deg,rgba(251,250,246,.95),rgba(251,250,246,0))}
+  #phone{position:absolute;right:96px;top:296px;width:300px;height:600px;border:7px solid #26231f;border-radius:30px;
+    overflow:hidden;background:#fbfaf6;box-shadow:0 26px 60px rgba(70,56,36,.24)}
+  #phone .inner{position:absolute;inset:0;overflow:hidden}
+  #phone img{position:absolute;left:0;top:0;width:300px;transform-origin:0 0}
+  #phone-cap{position:absolute;right:56px;top:908px;width:380px;text-align:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:rgba(23,24,27,.52)}
+  #rep-foot{position:absolute;left:98px;top:986px;font-size:11.5px;color:rgba(23,24,27,.42);font-weight:300;letter-spacing:.02em}
+
+  /* ---------- 05 record ---------- */
+  #d-h{white-space:nowrap}
+  .cols{position:absolute;left:96px;top:364px;width:1728px;display:flex}
+  .col{width:432px;border-top:1px solid rgba(23,24,27,.22);border-bottom:1px solid rgba(23,24,27,.14);padding:18px 0 40px;position:relative}
+  .col + .col{border-left:1px solid rgba(23,24,27,.10);padding-left:26px}
+  .col:first-child{padding-left:0;border-left:0}
+  .col .ck{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:rgba(23,24,27,.42)}
+  .col .cv{margin-top:14px;font-family:var(--mono);font-size:33px;line-height:1.32;color:var(--ink);letter-spacing:-.01em}
+  .col .cv small{font-size:12px;color:rgba(23,24,27,.44);letter-spacing:.02em}
+  .col .cd{margin-top:14px;font-size:13.5px;line-height:1.72;color:rgba(23,24,27,.60);font-weight:300;min-height:84px;padding-right:20px}
+  .col .cs{position:absolute;bottom:14px;left:0;right:20px;font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;color:rgba(23,24,27,.38)}
+  .col + .col .cs{left:26px}
+  #rec-bound{position:absolute;left:96px;top:726px;width:1728px;padding-top:16px;border-top:1px solid rgba(23,24,27,.14);
+    font-size:12.5px;line-height:1.7;color:rgba(23,24,27,.48);font-weight:300}
+  #rec-bound b{font-weight:400;color:rgba(23,24,27,.72)}
+  #rec-big{position:absolute;left:96px;top:806px;font-family:var(--serif);font-size:80px;font-weight:600;letter-spacing:.015em;color:var(--clay)}
+
+  /* ---------- 06 close ---------- */
+  #cl-eyebrow{left:0;width:1920px;text-align:center;top:206px}
+  #cl-main{position:absolute;left:0;top:318px;width:1920px;text-align:center;font-family:var(--serif);font-size:130px;font-weight:600;letter-spacing:.03em;color:var(--ink)}
+  #cl-main em{font-style:normal;color:var(--clay)}
+  #cl-sub{position:absolute;left:0;top:504px;width:1920px;text-align:center;font-family:var(--serif);font-size:31px;font-weight:600;letter-spacing:.02em;color:rgba(23,24,27,.66)}
+  #cl-rule{position:absolute;left:860px;top:574px;width:200px;height:1px;background:rgba(23,24,27,.24);transform-origin:center}
+  #cl-brand{position:absolute;left:0;top:634px;width:1920px;display:flex;align-items:center;justify-content:center;gap:15px}
+  #cl-brand .mk{width:34px;height:34px;border:1px solid rgba(23,24,27,.42);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px}
+  #cl-brand .nm{font-family:var(--serif);font-size:32px;font-weight:600;letter-spacing:.02em}
+  #cl-meta{position:absolute;left:0;top:700px;width:1920px;text-align:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;color:rgba(23,24,27,.46)}
+  #cl-disc{position:absolute;left:0;top:734px;width:1920px;text-align:center;font-size:11.5px;color:rgba(23,24,27,.36);font-weight:300;letter-spacing:.02em}
+  #wipe{position:absolute;inset:0;background:var(--paper);opacity:0;z-index:40;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="paper"></div>
+  <div class="grain"></div>
+  <div class="vign"></div>
+
+  <header id="head">
+    <div class="mark">PT</div>
+    <div class="nm">PrivacyTrace</div>
+    <div class="sep"></div>
+    <div class="kicker">作品展示 / WORK SHOWCASE 2026</div>
+  </header>
+  <div id="chap"><span class="no">00 — OPENING</span><span class="nm">片头</span></div>
+  <div id="ruler"><div class="base"></div><div class="fill"></div></div>
+  <div id="foot"><span>PRIVACYTRACE / SHOWCASE CUT / 90S</span><span>1920 × 1080 · 30 FPS · 原创配乐 · 无旁白</span></div>
+
+  <!-- 00 hero -->
+  <section class="scene" id="s0">
+    <div class="eyebrow" id="h0-eyebrow">2026 · 作品展示</div>
+    <div class="eyebrow-en" id="h0-eyebrow-en">WORK SHOWCASE</div>
+    <div id="hero-title">PrivacyTrace</div>
+    <div id="hero-sub">Android APK 静态隐私线索 × 政策原文 · 逐条对照</div>
+    <div id="hero-rule"></div>
+    <div id="hero-claim">只对照，不判定。</div>
+    <div id="hero-tags">
+      <span id="tg1">静态证据</span><span id="tg2">政策原文</span><span id="tg3">可复核位置</span>
+    </div>
+    <div id="hero-meta">90 S · 1920 × 1080 · 30 FPS · 无旁白</div>
+    <div id="hero-plate">
+      <div class="big">PT</div>
+      <div class="lbl">CODE · STATIC EVIDENCE</div>
+      <div class="arrow" id="hp-arrow"></div>
+      <div class="node" id="hp-node">POLICY · TEXT</div>
+      <div class="note" id="hp-note">一条证据 = 代码位置 + 政策原句</div>
+      <div class="lines"><i style="width:92%"></i><i style="width:64%"></i><i style="width:80%"></i><i style="width:46%"></i><i style="width:74%"></i><i style="width:58%"></i></div>
+    </div>
+  </section>
+
+  <!-- 01 the work -->
+  <section class="scene" id="s1">
+    <div class="eyebrow">Ⅰ · 作品</div>
+    <div class="eyebrow-en" id="w-en">THE WORK</div>
+    <div class="h" id="w-h">一次对照，<br><em>四步走完。</em></div>
+    <div class="lead" id="w-lead">读的是安装包里的静态线索，不是运行时的数据流；政策一侧只用原文。</div>
+    <div class="steps">
+      <div class="step" id="st1"><span class="n">01</span><span class="t">导入材料</span><span class="s">APK · 政策来源</span></div>
+      <div class="step" id="st2"><span class="n">02</span><span class="t">检查候选</span><span class="s">原文 · 候选声明</span></div>
+      <div class="step" id="st3"><span class="n">03</span><span class="t">分析进度</span><span class="s">五阶段 · 可切换</span></div>
+      <div class="step" id="st4"><span class="n">04</span><span class="t">对照报告</span><span class="s">线索 · 声明 · 依据</span></div>
+    </div>
+    <div id="w-note">界面仍在开发；示例材料为固定演示数据，不是真实 App 的检测结果。</div>
+    <div id="w-tag">图 01 — 工作台 · 导入材料</div>
+    <div id="w-count">开发版 · 2026-10-23 @ f81ca20</div>
+    <div id="w-plate"><img id="w-img" src="assets/stills/ui-import.png" alt="PrivacyTrace 工作台导入材料页"></div>
+    <div id="w-cap"><b>PLATE 01</b> — 导入材料：APK 与政策来源 · 固定演示数据</div>
+  </section>
+
+  <!-- 02 running -->
+  <section class="scene" id="s2">
+    <div id="run-tag">界面实录 · 浏览器录制 · 2026-10-23 @ f81ca20 · 剪辑节奏，非实时速度</div>
+    <div id="run-tag2">开发版 · 固定演示数据</div>
+    <div id="run-plate"><canvas id="shot" width="1920" height="1080"></canvas><div class="sheen"></div></div>
+    <div id="run-cap"><span id="run-num">①</span> <span id="run-text">导入：一个示例 APK 名称，两份政策来源。</span></div>
+    <div id="run-idx">02 / RUNNING</div>
+  </section>
+
+  <!-- 03 evidence -->
+  <section class="scene" id="s3">
+    <div class="eyebrow">Ⅲ · 证据</div>
+    <div class="eyebrow-en" id="e-en">THE EVIDENCE</div>
+    <div class="h" id="e-h">一条结论，<em>两个终点。</em></div>
+    <div class="lead" id="e-lead">每条结论都落到两处：左边是代码位置，右边是政策原句，两边都能自己走一遍。</div>
+    <div id="ev-card">
+      <div class="ev-col l">
+        <div class="ev-k">① 代码位置 / STATIC LOCATION</div>
+        <div class="ev-path">synthetic/LocationFeature.java</div>
+        <div class="ev-meta">LocationFeature#readGpsLocation:12 · ruleset 0.3.0</div>
+        <div class="ev-code">locationManager.getLastKnownLocation(
+    LocationManager.GPS_PROVIDER);</div>
+        <div class="ev-rule">rule · android.location.last-known.gps</div>
+        <div class="ev-span">人工构造的静态片段 · 非真实 App</div>
+      </div>
+      <div id="ev-link"><span>对照</span><i></i></div>
+      <div class="ev-col r">
+        <div class="ev-k">② 政策原句 / POLICY SENTENCE</div>
+        <div class="ev-path">示例 App 内隐私政策 · 示例 0.1</div>
+        <div class="ev-meta">sentence[1] · 全文快照 · COMPLETE</div>
+        <div class="ev-quote">我们访问位置信息，用于提供地图功能。</div>
+        <div class="ev-rule">原文位置 [0, 18) · UTF-8 码点 · 半开区间</div>
+        <div class="ev-span">切片必须严格等于 excerpt；旧快照不覆盖</div>
+      </div>
+    </div>
+    <div id="ev-foot">一条证据，两个可走通的终点：代码位置与政策原句。</div>
+    <div class="principles">
+      <div id="pr1"><b>01 / 三层分离</b>事实、声明、推断分开记录；权限是能力，invoke 是静态线索。</div>
+      <div id="pr2"><b>02 / 保留未知</b>材料不足就写 INSUFFICIENT_EVIDENCE，不补零、不升级。</div>
+      <div id="pr3"><b>03 / 先冻真值</b>12 个受控场景、36 行三方案，真值在首次运行前冻结。</div>
+    </div>
+    <div id="ev-caveat">示例为人工构造材料；一致性分析并非本项目首创，着力点是把证据做成可理解、可复核的形状。</div>
+  </section>
+
+  <!-- 04 report -->
+  <section class="scene" id="s4">
+    <div class="eyebrow">Ⅳ · 报告</div>
+    <div class="eyebrow-en" id="r-en">THE REPORT</div>
+    <div class="h" id="r-h">报告在浏览器里，<em>也在手机上。</em></div>
+    <div id="rep-plate"><img id="rep-img" src="assets/stills/report-desktop.png" alt="PrivacyTrace 对照报告长图"><div class="mask"></div><div class="mask b"></div></div>
+    <div id="rep-cap"><b>PLATE 02</b> — 分析报告 · 桌面工作台 · 持久化回放 · 2026-10-23 @ f81ca20</div>
+    <div id="rep-notes">
+      <div class="row gap"><b>精确位置</b>位置权限与潜在调用<em>证据不足</em></div>
+      <div class="row gap"><b>通讯录</b>通讯录权限与潜在调用<em>证据不足</em></div>
+      <div class="row gap"><b>屏幕截图</b>截图权限与潜在调用<em>证据不足</em></div>
+      <div class="row"><b>对照结果</b>只看数据类型与原文条件<em>不推断采集</em></div>
+    </div>
+    <div id="phone"><div class="inner"><img id="ph-img" src="assets/stills/report-mobile.png" alt="PrivacyTrace 移动端报告长图"></div></div>
+    <div id="phone-cap">PLATE 03 — Android 前端 · 2026-10-23 @ f81ca20</div>
+    <div id="rep-foot">截图采集于 2026-10-23 · 提交 f81ca20；Android 前端为移动视口模拟（非真机）；界面仍在开发，最终视觉可能变化。</div>
+  </section>
+
+  <!-- 05 record -->
+  <section class="scene" id="s5">
+    <div class="eyebrow">Ⅴ · 结果</div>
+    <div class="eyebrow-en" id="d-en">THE RECORD</div>
+    <div class="h" id="d-h">把数字<em>分开摆。</em></div>
+    <div class="cols">
+      <div class="col" id="c1">
+        <div class="ck">工程门禁 / ENGINEERING</div>
+        <div class="cv">1578 <small>passed</small><br>179 <small>skipped</small></div>
+        <div class="cd">pytest（API），另有 e2e 65、Web 单测 111、生产构建通过。</div>
+        <div class="cs">65b49f7 · 2026-10-21 · CI=true check.sh</div>
+      </div>
+      <div class="col" id="c2">
+        <div class="ck">部署验收 / DEPLOYMENT</div>
+        <div class="cv">40 <small>pass</small><br>0 <small>fail · 0 skip</small></div>
+        <div class="cd">R1–R6 四入口 4/4：browser、frontend、live（真实 Docker）、mobile。</div>
+        <div class="cs">65b49f7 · 唯一既有豁免由用户授权</div>
+      </div>
+      <div class="col" id="c3">
+        <div class="ck">受控评测 / CONTROLLED</div>
+        <div class="cv">12 / 12<br><small>基线 4/12 · 2/12</small></div>
+        <div class="cd">36 行三方案、真值冻结；是名义状态一致数，不是准确率。</div>
+        <div class="cs">b0b3c74 · 2026-10-12 · P/R/F1 = N/A</div>
+      </div>
+      <div class="col" id="c4">
+        <div class="ck">真实样本 / REAL SAMPLE</div>
+        <div class="cv">1 <small>个样本</small><br>3 <small>条 · 均证据不足</small></div>
+        <div class="cd">GKD v1.12.1，只扫描 classes.dex；两次隔离运行语义一致。</div>
+        <div class="cs">2026-10-09 · 本轮未重扫</div>
+      </div>
+    </div>
+    <div id="rec-bound"><b>受控场景 ≠ 真实 App 准确率。</b>自建源码场景的名义状态对照，不推广为检测准确率；未命中规则 ≠ 没有隐私行为。</div>
+    <div id="rec-big">证据不足，也是结果。</div>
+  </section>
+
+  <!-- 06 close -->
+  <section class="scene" id="s6">
+    <div class="eyebrow" id="cl-eyebrow">Ⅵ · 结语</div>
+    <div id="cl-main">只对照，<em>不判定。</em></div>
+    <div id="cl-sub">把代码位置和政策原句，摆在同一行。</div>
+    <div id="cl-rule"></div>
+    <div id="cl-brand"><div class="mk">PT</div><div class="nm">PrivacyTrace</div></div>
+    <div id="cl-meta">2026 作品展示片 · 90 S · 1920×1080 · 30 FPS · 原创配乐 · 无旁白</div>
+    <div id="cl-disc">分镜与排版由 AI 辅助；产品画面为真实界面录制，未生成。</div>
+  </section>
+
+  <div id="wipe"></div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  const $ = s => document.querySelector(s);
+  const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+  const smooth = x => { x = clamp(x,0,1); return x*x*(3-2*x); };
+  const outQuint = x => 1 - Math.pow(1-clamp(x,0,1),5);
+  const inOut = x => { x = clamp(x,0,1); return x<.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2; };
+  const lerp = (a,b,p) => a + (b-a)*p;
+  const DUR = 90;
+
+  /* ---------------------------------------------------------------- helpers */
+  function rise(el, t, t0, dur, dy){
+    if(!el) return;
+    dur = dur || .55; dy = dy == null ? 16 : dy;
+    const p = outQuint((t - t0)/dur);
+    el.style.opacity = smooth((t - t0)/(dur*.82)).toFixed(3);
+    el.style.transform = 'translate3d(0,' + ((1-p)*dy).toFixed(2) + 'px,0)';
+  }
+  function growX(el, t, t0, dur){
+    if(!el) return;
+    const p = outQuint((t - t0)/(dur||.9));
+    el.style.transform = 'scaleX(' + p.toFixed(4) + ')';
+    el.style.opacity = (p*.9).toFixed(3);
+  }
+
+  /* --------------------------------------------------------------- chapters */
+  const chapterEl = $('#chap');
+  const chapters = [
+    { t:0,    no:'00 — OPENING',   nm:'片头' },
+    { t:9,    no:'Ⅰ — THE WORK',  nm:'作品 / 四步' },
+    { t:21,   no:'Ⅱ — RUNNING',   nm:'操作 / 界面实录' },
+    { t:45,   no:'Ⅲ — EVIDENCE',  nm:'证据 / 两个终点' },
+    { t:60,   no:'Ⅳ — REPORT',    nm:'报告 / 桌面与移动' },
+    { t:72,   no:'Ⅴ — RECORD',    nm:'结果 / 分开摆' },
+    { t:84,   no:'Ⅵ — CLOSE',     nm:'结语 / 只对照' }
+  ];
+  let chapterIndex = -1;
+
+  /* ------------------------------------------------------------ ruler ticks */
+  const ruler = $('#ruler');
+  for(let i=0;i<=90;i++){
+    const tick = document.createElement('div');
+    tick.className = 'tick' + (i%3===0 ? ' major' : '');
+    tick.style.left = (i/90*100).toFixed(4) + '%';
+    tick.style.height = (i%3===0 ? 8 : 3) + 'px';
+    ruler.appendChild(tick);
+  }
+  const rulerFill = ruler.querySelector('.fill');
+
+  /* ------------------------------------------------------------ still assets */
+  const stills = ['assets/stills/ui-import.png','assets/stills/report-desktop.png','assets/stills/report-mobile.png']
+    .map(src => { const img = new Image(); img.src = src; return img; });
+
+  /* --------------------------------------------------- recording frame bank */
+  const REC = { dir:'assets/rec', total:281, fps:10 };
+  const WINDOWS = [
+    { a:21.90, b:23.40, s0:2.25, s1:4.10 },
+    { a:23.40, b:26.90, s0:4.35, s1:8.15 },
+    { a:26.90, b:36.30, s0:8.45, s1:19.25 },
+    { a:36.30, b:41.10, s0:19.45, s1:24.25 },
+    { a:41.10, b:44.70, s0:24.45, s1:27.95 }
+  ];
+  const CAMS = [ // [filmTime, cx, cy, zoom]
+    [21.00, 960, 540, 1.00],
+    [22.40, 960, 540, 1.00],
+    [23.40, 960, 540, 1.00],
+    [26.90, 960, 540, 1.00],
+    [28.20, 960, 540, 1.00],
+    [30.50, 1000, 506, 1.20],
+    [36.30, 1000, 506, 1.20],
+    [37.40, 960, 540, 1.00],
+    [41.10, 960, 540, 1.00],
+    [42.60, 1000, 640, 1.16],
+    [44.70, 1000, 660, 1.20]
+  ];
+  const camAt = (t) => {
+    if(t <= CAMS[0][0]) return { cx:CAMS[0][1], cy:CAMS[0][2], z:CAMS[0][3] };
+    for(let i=0;i<CAMS.length-1;i++){
+      const [t0,cx0,cy0,z0] = CAMS[i], [t1,cx1,cy1,z1] = CAMS[i+1];
+      if(t >= t0 && t <= t1){
+        const p = inOut((t - t0)/(t1 - t0));
+        return { cx:lerp(cx0,cx1,p), cy:lerp(cy0,cy1,p), z:lerp(z0,z1,p) };
+      }
+    }
+    const last = CAMS[CAMS.length-1];
+    return { cx:last[1], cy:last[2], z:last[3] };
+  };
+
+  const canvas = $('#shot');
+  const ctx = canvas.getContext('2d');
+  const frameCache = new Map();
+  let drawnIndex = -1;
+
+  async function frameImage(k){
+    if(frameCache.has(k)){
+      const img = frameCache.get(k);
+      frameCache.delete(k); frameCache.set(k, img);
+      return img;
+    }
+    const img = new Image();
+    img.decoding = 'sync';
+    img.src = REC.dir + '/f_' + String(k).padStart(4,'0') + '.jpg';
+    await img.decode();
+    frameCache.set(k, img);
+    while(frameCache.size > 26){
+      const oldest = frameCache.keys().next().value;
+      const dead = frameCache.get(oldest);
+      frameCache.delete(oldest);
+      if(dead) dead.src = 'data:,';
+    }
+    return img;
+  }
+
+  function sourceIndex(t){
+    let win = WINDOWS[0];
+    for(const w of WINDOWS){ if(t >= w.a) win = w; }
+    const p = clamp((t - win.a)/(win.b - win.a), 0, 1);
+    const src = lerp(win.s0, win.s1, p);
+    return clamp(1, REC.total, Math.round(src * REC.fps) + 1);
+  }
+
+  async function drawFootage(t){
+    const k = sourceIndex(t);
+    if(k !== drawnIndex){
+      const img = await frameImage(k);
+      ctx.drawImage(img, 0, 0, 1920, 1080);
+      drawnIndex = k;
+    }
+    const cam = camAt(t);
+    const s = cam.z, kx = 1600/1920, ky = 900/1080;
+    let tx = 800 - s*kx*cam.cx;
+    let ty = 450 - s*ky*cam.cy;
+    tx = clamp(tx, 1600 - 1600*s, 0);
+    ty = clamp(ty, 900 - 900*s, 0);
+    canvas.style.transform = 'translate3d(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px,0) scale(' + s.toFixed(4) + ')';
+  }
+
+  /* ----------------------------------------------------------------- scenes */
+  const scenes = { s0:$('#s0'), s1:$('#s1'), s2:$('#s2'), s3:$('#s3'), s4:$('#s4'), s5:$('#s5'), s6:$('#s6') };
+  const headEl = $('#head'), chapEl = $('#chap');
+
+  function renderHero(t){
+    rise($('#h0-eyebrow'), t, .5, .6, 10);
+    rise($('#h0-eyebrow-en'), t, .7, .6, 10);
+    rise($('#hero-title'), t, 1.1, .9, 30);
+    rise($('#hero-sub'), t, 2.1, .7, 18);
+    growX($('#hero-rule'), t, 2.55, .9);
+    rise($('#hero-claim'), t, 3.4, .7, 22);
+    rise($('#tg1'), t, 4.5, .5, 12);
+    rise($('#tg2'), t, 4.8, .5, 12);
+    rise($('#tg3'), t, 5.1, .5, 12);
+    rise($('#hero-meta'), t, 5.5, .55, 10);
+    const pp = outQuint((t - 1.5)/1.1);
+    const plate = $('#hero-plate');
+    plate.style.opacity = smooth((t - 1.5)/.8).toFixed(3);
+    plate.style.transform = 'translate3d(0,' + ((1-pp)*26).toFixed(2) + 'px,0)';
+    growX($('#hp-arrow'), t, 2.9, 1.0);
+    rise($('#hp-note'), t, 3.6, .55, 8);
+    rise($('#hp-node'), t, 3.8, .55, 8);
+  }
+
+  function renderWork(t){
+    rise($('#w-en'), t, 9.15, .55, 8);
+    rise($('#w-h'), t, 9.3, .75, 24);
+    rise($('#w-lead'), t, 10.4, .65, 16);
+    ['st1','st2','st3','st4'].forEach((id,i) => {
+      const el = $('#'+id);
+      rise(el, t, 10.8 + i*.4, .55, 12);
+      const on = smooth((t - (11.15 + i*.4))/.45);
+      el.querySelector('.t').style.color = 'rgba(23,24,27,' + (0.46 + 0.54*on).toFixed(3) + ')';
+      el.querySelector('.n').style.color = on > .5 ? 'var(--clay)' : 'rgba(23,24,27,.36)';
+    });
+    const pp = outQuint((t - 12.1)/.95);
+    const plate = $('#w-plate');
+    plate.style.opacity = smooth((t - 12.1)/.7).toFixed(3);
+    plate.style.transform = 'translate3d(' + ((1-pp)*44).toFixed(2) + 'px,' + ((1-pp)*18).toFixed(2) + 'px,0)';
+    const wz = 1 + 0.03 * clamp((t - 12.4)/7.8, 0, 1);
+    $('#w-img').style.transform = 'scale(' + wz.toFixed(4) + ')';
+    rise($('#w-tag'), t, 11.9, .55, 8);
+    rise($('#w-count'), t, 12.1, .55, 8);
+    rise($('#w-cap'), t, 12.5, .55, 8);
+    rise($('#w-note'), t, 19.0, .55, 10);
+  }
+
+  const CAPTIONS = [
+    { t:21.90, num:'①', text:'导入：一个示例 APK 名称，两份政策来源。' },
+    { t:23.40, num:'②', text:'候选：政策原文在左，候选声明在右；「定位原句」回到原文。' },
+    { t:26.90, num:'③', text:'分析：输入 → 静态线索 → 政策候选 → 规则对照 → 报告。' },
+    { t:36.30, num:'④', text:'报告：三条结果，每条都能打开「线索详情」。' },
+    { t:41.10, num:'⑤', text:'详情：代码位置与政策原句，出现在同一屏。' }
+  ];
+  const capNum = $('#run-num'), capText = $('#run-text');
+  let capIndex = -1;
+
+  function renderRunning(t){
+    const inPlate = outQuint((t - 20.98)/.85);
+    const plate = $('#run-plate');
+    plate.style.opacity = smooth((t - 20.98)/.5).toFixed(3);
+    plate.style.transform = 'translate3d(0,' + ((1-inPlate)*22).toFixed(2) + 'px,0)';
+    rise($('#run-tag'), t, 21.1, .55, 8);
+    rise($('#run-tag2'), t, 21.25, .55, 8);
+    rise($('#run-idx'), t, 21.2, .55, 8);
+
+    let idx = 0;
+    for(let i=0;i<CAPTIONS.length;i++){ if(t >= CAPTIONS[i].t) idx = i; }
+    if(idx !== capIndex){
+      capIndex = idx;
+      capNum.textContent = CAPTIONS[idx].num;
+      capText.textContent = CAPTIONS[idx].text;
+    }
+    const c = CAPTIONS[idx], next = CAPTIONS[idx+1];
+    const p = outQuint((t - c.t)/.5);
+    const out = next ? smooth((t - next.t)/.26) : 0;
+    $('#run-cap').style.opacity = (smooth((t-c.t)/.32) * (1-out)).toFixed(3);
+    $('#run-cap').style.transform = 'translate3d(0,' + ((1-p)*9).toFixed(2) + 'px,0)';
+    drawFootage(t);
+  }
+
+  function renderEvidence(t){
+    rise($('#e-en'), t, 45.1, .55, 8);
+    rise($('#e-h'), t, 45.3, .75, 24);
+    rise($('#e-lead'), t, 46.3, .65, 16);
+    const card = $('#ev-card');
+    const w = clamp((t - 47.1)/.85, 0, 1);
+    card.style.clipPath = 'inset(0 ' + ((1-outQuint(w))*100).toFixed(2) + '% 0 0)';
+    card.style.opacity = w > .002 ? '1' : '0';
+    const ez = 1 + 0.006 * clamp((t - 47.2)/12.6, 0, 1);
+    card.style.transform = 'scale(' + ez.toFixed(4) + ')';
+    const lc = document.querySelector('.ev-col.l'), rc = document.querySelector('.ev-col.r');
+    const lp = outQuint((t - 47.7)/.55), rp2 = outQuint((t - 48.4)/.55);
+    lc.style.opacity = smooth((t-47.7)/.5).toFixed(3);
+    lc.style.transform = 'translate3d(0,' + ((1-lp)*12).toFixed(2) + 'px,0)';
+    rc.style.opacity = smooth((t-48.4)/.5).toFixed(3);
+    rc.style.transform = 'translate3d(0,' + ((1-rp2)*12).toFixed(2) + 'px,0)';
+    growX($('#ev-link'), t, 49.4, .8);
+    rise($('#ev-foot'), t, 50.4, .55, 10);
+    ['pr1','pr2','pr3'].forEach((id,i) => rise($('#'+id), t, 53.6 + i*.34, .5, 10));
+    rise($('#ev-caveat'), t, 55.7, .5, 8);
+  }
+
+  function renderReport(t){
+    rise($('#r-en'), t, 60.1, .55, 8);
+    rise($('#r-h'), t, 60.3, .75, 24);
+    const pp = outQuint((t - 60.9)/.85);
+    const plate = $('#rep-plate');
+    plate.style.opacity = smooth((t - 60.9)/.55).toFixed(3);
+    plate.style.transform = 'translate3d(' + ((1-pp)*-30).toFixed(2) + 'px,' + ((1-pp)*14).toFixed(2) + 'px,0)';
+    const pan = clamp((t - 61.3)/8.0, 0, 1);
+    $('#rep-img').style.transform = 'translate3d(0,' + (-pan*620).toFixed(2) + 'px,0)';
+    rise($('#rep-cap'), t, 61.4, .5, 8);
+    document.querySelectorAll('#rep-notes .row').forEach((row,i) => {
+      const t0 = 61.8 + i*.5;
+      const p = outQuint((t - t0)/.55);
+      row.style.opacity = smooth((t - t0)/.5).toFixed(3);
+      row.style.transform = 'translate3d(' + ((1-p)*14).toFixed(2) + 'px,0)';
+    });
+    const ph = outQuint((t - 65.5)/.8);
+    $('#phone').style.opacity = smooth((t - 65.5)/.6).toFixed(3);
+    $('#phone').style.transform = 'translate3d(0,' + ((1-ph)*40).toFixed(2) + 'px,0)';
+    const phPan = clamp((t - 67.0)/4.2, 0, 1);
+    $('#ph-img').style.transform = 'translate3d(0,' + (-phPan*900).toFixed(2) + 'px,0)';
+    rise($('#phone-cap'), t, 66.0, .5, 8);
+    rise($('#rep-foot'), t, 68.9, .5, 8);
+  }
+
+  function renderRecord(t){
+    rise($('#d-en'), t, 72.1, .55, 8);
+    rise($('#d-h'), t, 72.3, .75, 24);
+    ['c1','c2','c3','c4'].forEach((id,i) => rise($('#'+id), t, 73.1 + i*.45, .6, 18));
+    rise($('#rec-bound'), t, 77.7, .55, 10);
+    rise($('#rec-big'), t, 80.2, .75, 18);
+  }
+
+  function renderClose(t){
+    rise($('#cl-eyebrow'), t, 84.1, .55, 8);
+    rise($('#cl-main'), t, 84.3, .85, 26);
+    rise($('#cl-sub'), t, 85.7, .7, 14);
+    const rp = outQuint((t - 86.1)/.8);
+    $('#cl-rule').style.transform = 'scaleX(' + rp.toFixed(3) + ')';
+    $('#cl-rule').style.opacity = (rp*.9).toFixed(3);
+    rise($('#cl-brand'), t, 86.4, .6, 12);
+    rise($('#cl-meta'), t, 86.9, .55, 8);
+    rise($('#cl-disc'), t, 87.5, .55, 8);
+    $('#wipe').style.opacity = smooth((t - 89.0)/1.0).toFixed(3);
+  }
+
+  function sceneFade(t, tIn, tOut){
+    return (smooth((t - tIn)/.42) * (1 - smooth((t - tOut)/.42))).toFixed(3);
+  }
+
+  function render(t){
+    const time = clamp(t, 0, DUR);
+
+    scenes.s0.style.opacity = sceneFade(time, 0, 8.72);
+    scenes.s1.style.opacity = sceneFade(time, 8.86, 20.72);
+    scenes.s2.style.opacity = sceneFade(time, 20.86, 44.72);
+    scenes.s3.style.opacity = sceneFade(time, 44.86, 59.84);
+    scenes.s4.style.opacity = sceneFade(time, 59.86, 71.84);
+    scenes.s5.style.opacity = sceneFade(time, 71.86, 83.84);
+    scenes.s6.style.opacity = sceneFade(time, 83.86, DUR + 1);
+
+    if(time < 9) renderHero(time);
+    else if(time < 21) renderWork(time);
+    else if(time < 45) renderRunning(time);
+    else if(time < 60) renderEvidence(time);
+    else if(time < 72) renderReport(time);
+    else if(time < 84) renderRecord(time);
+    else renderClose(time);
+
+    // hide running chrome over full-screen footage
+    const chrome = clamp((1 - smooth((time - 20.8)/.38)) + smooth((time - 44.6)/.38), 0, 1);
+    headEl.style.opacity = chrome.toFixed(3);
+    chapEl.style.opacity = (chrome*.92).toFixed(3);
+
+    let ci = 0;
+    for(let i=0;i<chapters.length;i++){ if(time >= chapters[i].t) ci = i; }
+    if(ci !== chapterIndex){
+      chapterIndex = ci;
+      chapterEl.querySelector('.no').textContent = chapters[ci].no;
+      chapterEl.querySelector('.nm').textContent = chapters[ci].nm;
+    }
+    rulerFill.style.width = (time/DUR*100).toFixed(3) + '%';
+  }
+
+  window.__seek = async function(t){
+    render(Number(t) || 0);
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  };
+  window.__meta = { fps:30, dur:DUR, width:1920, height:1080 };
+
+  function boot(){
+    const ready = Promise.all(stills.map(img => img.decode().catch(() => {})));
+    Promise.all([document.fonts.ready, ready, frameImage(28)]).then(async () => {
+      await drawFootage(21.5);
+      render(0);
+      window.__ready = true;
+    });
+  }
+  render(0);
+  if(document.readyState === 'complete') boot();
+  else window.addEventListener('load', boot);
+})();
+</script>
+</body>
+</html>

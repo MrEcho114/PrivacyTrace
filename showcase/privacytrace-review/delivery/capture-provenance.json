@@ -1,0 +1,46 @@
+{
+  "purpose": "为《PrivacyTrace 作品评审片（专家版 120s）》v0.2 采集界面素材：与 90 秒展示片同一批次、同一冻结提交。",
+  "batch": "20261023-v02",
+  "baselineCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+  "capturedAt": "2026-10-23",
+  "timezone": "Asia/Shanghai",
+  "subject": {
+    "workbench": "PrivacyTrace 工作台（apps/web 桌面验收介质）",
+    "url": "http://127.0.0.1:6173/",
+    "api": "uv run --project apps/api uvicorn privacytrace.main:app --port 8123；fixtures/acceptance-jobs/ 的临时 store",
+    "checkout": ".agents/worktrees/video-v02",
+    "note": "前端仍在开发；工作台图为固定演示数据，报告图为持久化回放。"
+  },
+  "stills": {
+    "assets/ui-import.png": {
+      "method": "Playwright（Edge headless）1920×1080；工作台加载固定演示材料后整屏截图",
+      "bytes": 144515,
+      "sha256": "7611e257f703c2143472a578526bf5d1e806d3d1803321d6db349c49cda4022a",
+      "boundary": "开发版；固定演示数据"
+    },
+    "assets/report-desktop.png": {
+      "method": "Playwright 1440×900 全页截图；「已有报告」加载 `job:gkd-s1-first` 持久化回放（fixtures/acceptance-jobs/gkd-s1-first.json，REAL_SCAN · PERSISTED_REPLAY）",
+      "bytes": 408030,
+      "sha256": "1fd521fbe65c8dac151bcd473991b05a558ae7d860bbd34587dbaab7643311bc",
+      "pixelSize": "1440×2978",
+      "reportCreatedAt": "2026-10-03T12:48:35.211974Z",
+      "boundary": "真实 APK 静态报告的历史回放，原生成于 2026-10-03；截图 2026-10-23 @ f81ca20；不当作 2026-10-23 新扫描"
+    },
+    "assets/report-mobile.png": {
+      "method": "Playwright 390×844 移动视口、deviceScaleFactor=2；生产 MobileApp.vue + 假原生桥（Chromium 视口模拟，非真机）；展开第一条证据后整页截图",
+      "bytes": 666117,
+      "sha256": "e70f06ed751cc2a4166164e3e45adb716f9b88182616ed7600574f4c3268f966",
+      "pixelSize": "780×6258（390 CSS px）",
+      "boundary": "Android 前端（生产 MobileApp.vue + 假原生桥）· 开发版 · 视口模拟（非真机）；ADR-0004 的真客户端是 Android App"
+    }
+  },
+  "tools": [
+    "showcase/materials-20261023-v02/capture-stills.cjs",
+    "showcase/materials-20261023-v02/capture-mobile-report.cjs"
+  ],
+  "observedIssues": [
+    "移动端为 Chromium 视口模拟，不是 Android 真机截图；片内图注与 README 同时标注。",
+    "报告长图来自持久化回放 fixture，不是新扫描；本批次不重新扫描 APK。",
+    "PPT 不随本批次更新；唯一汇报 PPT 由 #265 负责。"
+  ]
+}

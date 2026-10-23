@@ -1,0 +1,60 @@
+{
+  "batch": "20261023-v02",
+  "baselineCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+  "capturedAt": "2026-10-23",
+  "film": {
+    "path": "delivery/PrivacyTrace-Review-1080p.mp4",
+    "bytes": 19410564,
+    "sha256": "3e04a69ed25564d81e5066053693326a745f43855f357293334e24f49be2b6db",
+    "durationSeconds": 120,
+    "fps": 30,
+    "width": 1920,
+    "height": 1080
+  },
+  "qa": {
+    "path": "delivery/manifest.json",
+    "source": "review-manifest"
+  },
+  "assets": [
+    {
+      "path": "delivery/assets/ui-import.png",
+      "kind": "screenshot",
+      "bytes": 144515,
+      "sha256": "7611e257f703c2143472a578526bf5d1e806d3d1803321d6db349c49cda4022a",
+      "captureCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+      "capturedAt": "2026-10-23"
+    },
+    {
+      "path": "delivery/assets/report-desktop.png",
+      "kind": "screenshot",
+      "bytes": 408030,
+      "sha256": "1fd521fbe65c8dac151bcd473991b05a558ae7d860bbd34587dbaab7643311bc",
+      "captureCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+      "capturedAt": "2026-10-23"
+    },
+    {
+      "path": "delivery/assets/report-mobile.png",
+      "kind": "screenshot",
+      "bytes": 666117,
+      "sha256": "e70f06ed751cc2a4166164e3e45adb716f9b88182616ed7600574f4c3268f966",
+      "captureCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+      "capturedAt": "2026-10-23"
+    }
+  ],
+  "captions": [
+    {
+      "path": "delivery/film-review.html",
+      "required": [
+        "2026-10-23 @ f81ca20",
+        "视口模拟",
+        "持久化回放"
+      ],
+      "forbidden": [
+        "07b37b2",
+        "2026-10-22 交付候选",
+        "构造材料 / 持久化回放",
+        "截图采集于 2026-10-22"
+      ]
+    }
+  ]
+}

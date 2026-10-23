@@ -223,6 +223,8 @@ html.mobile-shell body { margin: 0; background: var(--mt-bg, var(--canvas)); ove
    材料名不再被挤成一列字。 */
 .mobile-workspace .m-context .material-disclosure { flex: 1 1 12em; min-width: 0; }
 .mobile-workspace .m-context .material-change { flex: 0 0 auto; }
+/* 材料条上的“更换材料”是次操作：用中性文字，不与主操作/选中态抢强调色。 */
+.mobile-workspace .m-context .ui-button.material-change { color: var(--mt-fg-2, var(--ink)); }
 .mobile-workspace .material-context .material-identity strong {
   font-size: var(--mt-text-body, var(--m-body));
   font-weight: 500;
@@ -431,7 +433,7 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
   margin: 0;
   border: 1px solid var(--mt-border-soft, var(--border));
   border-radius: var(--mt-radius-card, var(--m-card-radius));
-  background: var(--mt-surface, var(--surface));
+  background: transparent;
 }
 .mobile-workspace .candidate-item {
   position: relative;
@@ -476,6 +478,7 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
    选中项用陶土文字 + 2px 下划线，不再用整块浅底 + 投影。 */
 .mobile-workspace .mobile-panel-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--mt-space-4, 4px);
   margin: var(--mt-space-12, 12px) 0;
   padding: var(--mt-space-4, 4px);
@@ -485,15 +488,17 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
 }
 .mobile-workspace .mobile-panel-tabs button {
   position: relative;
-  flex: 1;
+  /* 8em 起算：200% 根字号下每个标签自己占一行，不再把“政策原文”拆成 3+1 行。 */
+  flex: 1 1 8em;
   min-height: var(--mt-touch, var(--m-touch));
   padding: var(--mt-space-4, 4px) var(--mt-space-8, 8px);
   border: 0;
   border-radius: var(--mt-radius-control, var(--radius));
   background: transparent;
-  color: var(--mt-muted, var(--muted));
+  color: var(--mt-muted, var(--m-muted));
   font-size: var(--mt-text-control, var(--m-body));
   font-weight: 400;
+  white-space: nowrap;
 }
 .mobile-workspace .mobile-panel-tabs button:active { background: var(--mt-state-press, var(--m-state-press)); }
 .mobile-workspace .mobile-panel-tabs button.selected {
@@ -566,11 +571,12 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
   text-align: left;
   white-space: normal;
 }
-.m-issue-head { display: flex; align-items: center; justify-content: space-between; gap: var(--mt-space-8, 8px); flex-wrap: wrap; min-width: 0; }
+.m-issue-head { display: flex; align-items: center; justify-content: flex-start; gap: var(--mt-space-8, 8px); flex-wrap: wrap; min-width: 0; }
+.m-issue-head .tag { margin-left: auto; }
 .m-issue-head strong { font-size: var(--mt-text-body, var(--m-body)); font-weight: 500; }
 .mobile-workspace .tag { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 .m-issue-meta { min-width: 0; color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); line-height: 1.45; overflow-wrap: anywhere; }
-.m-issue-action { display: flex; align-items: center; gap: var(--mt-space-4, 4px); color: var(--mt-accent-text, var(--navy)); font-size: var(--mt-text-body, var(--m-body)); font-weight: 500; }
+.m-issue-action { display: flex; align-items: center; gap: var(--mt-space-4, 4px); color: var(--mt-accent-text, var(--navy)); font-size: var(--mt-text-body, var(--m-body)); font-weight: 500; white-space: nowrap; }
 .m-issue-action .m-chevron { flex: none; color: var(--mt-accent-text, var(--navy)); }
 .m-issue-row:active { background: var(--mt-state-press, var(--m-state-press)); }
 @media (hover: hover) and (pointer: fine) {
@@ -1224,6 +1230,27 @@ html.mobile-shell dialog.ui-sheet .status-tag.info { background: var(--mt-info-b
 html.mobile-shell dialog.ui-sheet .status-tag.wait { background: var(--mt-warn-bg, var(--notice)); color: var(--mt-warn, var(--ink)); }
 html.mobile-shell dialog.ui-sheet .status-tag.success { background: var(--mt-success-bg, var(--mint)); color: var(--mt-success, var(--success)); }
 html.mobile-shell dialog.ui-sheet .status-tag.error { background: var(--mt-danger-bg, var(--rose)); color: var(--mt-danger, var(--error)); }
+
+/* ---------- 折叠入口的可发现性（#295 审阅） ---------- */
+/* 移动壳里的折叠块统一补一个 ▾；材料条自己的“详情 >”不重复加。 */
+.mobile-workspace details > summary::after {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  opacity: .65;
+}
+.mobile-workspace details[open] > summary::after { transform: rotate(-135deg); }
+.mobile-workspace .material-disclosure > summary::after { display: none; }
+/* 取消分析是中断性操作：与“刷新状态”同权会让危险入口看不出来。 */
+.mobile-workspace .m-actionbar .ui-button.m-cancel-action { color: var(--mt-danger, var(--error)); }
+.mobile-workspace .m-report .provenance-code { margin-top: var(--mt-space-8, 8px); border-top: 1px solid var(--mt-border, var(--border)); }
+.mobile-workspace .m-report .provenance-code > summary { display: flex; align-items: center; gap: var(--mt-space-8, 8px); min-height: var(--mt-touch, var(--m-touch)); color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); }
+.mobile-workspace .m-report .provenance-code p { margin: 0 0 var(--mt-space-8, 8px); }
 
 /* ---------- motion preference ---------- */
 @media (prefers-reduced-motion: reduce) {

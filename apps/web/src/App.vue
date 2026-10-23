@@ -236,6 +236,11 @@ const formatTimestamp = (ts?: string) => {
     return ts
   }
 }
+// 移动端：来源/投递的内部代码与原始 ISO 时间不占主阅读流；桌面保持冻结的原文案。
+const provenanceLabel = computed(() => (offlineReplay.value
+  ? (mobile.value ? '离线回放' : 'OFFLINE REPLAY · 离线回放')
+  : (mobile.value ? '存档报告查看' : '存档报告查看 · PERSISTED REPLAY')))
+const provenanceTime = (ts?: string) => (ts && mobile.value ? formatTimestamp(ts) : (ts ?? ''))
 
 // Source classification reads the explicit backend `source_origin` field.
 // Naming conventions (sample_id prefixes) never decide provenance.
@@ -797,11 +802,16 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           <EvidencePanel compact :issue="selected" :report="report" :taxonomy="taxonomy" :status-labels="statusLabels" :kind-labels="kindLabels" :source-labels="sourceLabels" @close="returnToTrigger()" @open-policy="jumpToPolicy" />
         </section>
         <section v-if="realReport" class="report-provenance" aria-label="报告生成来源">
-          <strong>{{ offlineReplay ? 'OFFLINE REPLAY · 离线回放' : '存档报告查看 · PERSISTED REPLAY' }}</strong>
-          <p v-if="realReport.tools.analysis_generated_at">分析生成时点：{{ realReport.tools.analysis_generated_at }}。<template v-if="!embedded">{{ frontendCopy.facts.archiveNoRescan }}</template></p>
-          <p v-else>记录创建时点：{{ realReport.job.created_at }}。未留存分析生成时点；来源以报告来源标识为准。<template v-if="!embedded">{{ frontendCopy.facts.archiveNoRescan }}</template></p>
-          <p v-if="offlineReplay">回放包生成时点：{{ realReport.tools.offline_package_built_at }}。回放只读，不执行 APK 分析。</p>
+          <strong>{{ provenanceLabel }}</strong>
+          <p v-if="realReport.tools.analysis_generated_at">分析生成时点：<time :datetime="realReport.tools.analysis_generated_at" :title="realReport.tools.analysis_generated_at">{{ provenanceTime(realReport.tools.analysis_generated_at) }}</time>。<template v-if="!embedded">{{ frontendCopy.facts.archiveNoRescan }}</template></p>
+          <p v-else>记录创建时点：<time :datetime="realReport.job.created_at" :title="realReport.job.created_at">{{ provenanceTime(realReport.job.created_at) }}</time>。未留存分析生成时点；来源以报告来源标识为准。<template v-if="!embedded">{{ frontendCopy.facts.archiveNoRescan }}</template></p>
+          <p v-if="offlineReplay">回放包生成时点：<time :datetime="realReport.tools.offline_package_built_at" :title="realReport.tools.offline_package_built_at">{{ provenanceTime(realReport.tools.offline_package_built_at) }}</time>。回放只读，不执行 APK 分析。</p>
           <p v-if="offlineReplay"><a href="/comparison.html" target="_blank" rel="noopener">查看六场景三方案比较与失败记录</a></p>
+          <!-- 内部投递代码不进主阅读流：移动端放进“来源标识”，桌面保持原样（冻结）。 -->
+          <details v-if="mobile" class="provenance-code">
+            <summary>来源标识</summary>
+            <p class="hash">{{ offlineReplay ? 'OFFLINE_REPLAY' : (report.delivery_mode ?? 'PERSISTED_REPLAY') }}</p>
+          </details>
         </section>
         <details class="provenance" :open="provenanceOpen" @toggle="provenanceToggle($event)"><summary>报告版本、权限与全部政策快照</summary>
           <p>任务 {{ report.job.id }} · 输入 {{ report.job.input_mode }} · 规则版本 {{ report.job.ruleset_version }} · 原生成时间：{{ formatTimestamp(report.job.created_at) || report.job.created_at }}</p>

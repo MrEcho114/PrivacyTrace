@@ -30,6 +30,7 @@ async function copy() {
     <summary>
       <span v-if="label" class="m-hash-label">{{ label }}</span>
       <span class="m-hash-text">{{ expanded ? '完整值' : shortened }}</span>
+      <span class="m-hash-hint">{{ expanded ? '收起' : '展开与复制' }}</span>
     </summary>
     <p class="m-hash-full">{{ value }}</p>
     <button type="button" class="m-hash-copy" @click="copy">{{ copied ? '已复制' : '复制完整值' }}</button>
@@ -42,6 +43,7 @@ async function copy() {
 .m-hash > summary::-webkit-details-marker { display: none; }
 .m-hash-label { color: var(--mt-muted, #5e5d59); font-size: 0.875rem; }
 .m-hash-text { font-family: var(--mt-font-mono, ui-monospace); font-size: 0.875rem; color: var(--mt-fg-2, #3d3d3a); overflow-wrap: anywhere; }
+.m-hash-hint { margin-left: auto; color: var(--mt-muted, #5e5d59); font-size: 0.75rem; }
 .m-hash-full { margin: 0 0 8px; font-family: var(--mt-font-mono, ui-monospace); font-size: 0.875rem; line-height: 1.5; color: var(--mt-fg, #141413); overflow-wrap: anywhere; }
 .m-hash-copy { min-height: 48px; padding: 0 12px; border: 0; border-radius: 12px; background: transparent; color: var(--mt-accent-text, #a8431f); font-size: 1rem; font-weight: 500; }
 </style>

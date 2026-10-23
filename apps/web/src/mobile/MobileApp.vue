@@ -375,7 +375,7 @@ onBeforeUnmount(() => {
           <h2>{{ statusHeading }}</h2>
           <p v-if="failed" class="m-error" role="alert">{{ failureReason }}</p>
           <p v-else-if="job?.state === 'SUCCEEDED'" class="m-help">阶段已完成。报告里有证据位置与政策原句。</p>
-          <p v-else class="m-help">阶段会自动更新，不需要反复点刷新。</p>
+          <p v-else class="m-help">阶段会自动更新，不需要反复点刷新。取消只停止本次分析，材料会保留。</p>
           <p v-if="lastUpdatedLabel" class="m-help">{{ lastUpdatedLabel }}</p>
           <details v-if="job" class="m-details m-job-meta">
             <summary>任务详情</summary>
@@ -441,8 +441,8 @@ onBeforeUnmount(() => {
           <UiButton variant="primary" :disabled="busy" @click="flow.control('retry-job')">重新分析</UiButton>
         </template>
         <template v-else>
-          <UiButton v-if="job" :disabled="busy" @click="flow.control('cancel-job')">取消分析</UiButton>
           <UiButton :disabled="busy" :busy="busy" @click="refreshJob">刷新状态</UiButton>
+          <UiButton v-if="job" variant="quiet" class="m-cancel-action" :disabled="busy" @click="flow.control('cancel-job')">取消分析</UiButton>
         </template>
       </template>
     </footer>

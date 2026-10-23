@@ -7,15 +7,15 @@
   :root{
     --ink:#07090c;
     --ink2:#0d1219;
-    --paper:#f4f0e4;
-    --paper2:#e6dfcf;
+    --paper:#edf5fc;
+    --paper2:#c0cfdd;
     --muted:#98a2b3;
     --line:rgba(244,240,228,.16);
-    --amber:#e9b872;
-    --blue:#8ea3ff;
+    --amber:#7cc8ff;
+    --blue:#9aa9ff;
     --green:#84c9a6;
     --red:#e58978;
-    --serif:"Noto Serif SC", serif;
+    --serif:"Noto Sans SC", "Microsoft YaHei UI", sans-serif;
     --sans:"Noto Sans SC", "Microsoft YaHei UI", sans-serif;
     --mono:"Cascadia Mono", "Consolas", monospace;
   }
@@ -119,8 +119,9 @@
   .win-shot{position:relative;overflow:hidden;background:#f3efe4}
   .win-shot img{display:block;width:100%}
   .win-tag{position:absolute;left:14px;bottom:14px;font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:#2b3038;background:rgba(244,240,228,.92);border:1px solid rgba(23,27,34,.18);padding:6px 9px}
-  #pwin{left:1010px;top:232px;width:820px;height:490px}
-  #pwin .win-shot{height:460px}
+  #p-wl{left:1240px;top:120px;width:320px;white-space:nowrap}
+  #pwin{left:1240px;top:178px;width:320px;height:694px;border:8px solid #26231f;border-radius:34px;background:#fbfaf6;box-shadow:0 30px 70px rgba(0,0,0,.45)}
+  #pwin img{display:block;width:100%}
 
   /* innovation */
   .ev-card{left:140px;top:392px;width:1640px;height:416px;padding:0}
@@ -163,11 +164,11 @@
   .d-row span{color:rgba(244,240,228,.42);letter-spacing:.06em}
   .d-row b{color:rgba(244,240,228,.9);font-weight:400;text-align:right}
   .d-note{margin-top:14px;font-size:13px;line-height:1.7;color:rgba(244,240,228,.5);font-weight:300}
-  .report-win{left:1040px;top:164px;width:740px;height:820px}
-  .report-win .win-shot{height:790px}
+  .report-win{left:1060px;top:164px;width:360px;height:780px;border:8px solid #26231f;border-radius:36px;background:#fbfaf6;box-shadow:0 30px 70px rgba(0,0,0,.45)}
+  .report-win img{display:block;width:100%}
   .rwin-label{position:absolute;left:1040px;top:128px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:rgba(244,240,228,.45)}
-  .phone-wrap{left:1400px;top:150px;width:300px;height:760px}
-  .phone-label{position:absolute;left:1400px;top:112px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:rgba(244,240,228,.45)}
+  .phone-wrap{left:1500px;top:150px;width:300px;height:760px}
+  .phone-label{position:absolute;left:1500px;top:112px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:rgba(244,240,228,.45)}
   .phone{border:9px solid #1b2028;border-radius:34px;overflow:hidden;background:#f6f2e8;box-shadow:0 40px 100px rgba(0,0,0,.6)}
   .phone .ph-shot{height:100%;overflow:hidden;position:relative}
   .phone img{display:block;width:100%}
@@ -235,6 +236,135 @@
   .close-meta{position:absolute;left:0;top:770px;width:1920px;text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:rgba(233,184,114,.9)}
   .close-foot{position:absolute;left:0;top:850px;width:1920px;text-align:center;font-size:12px;letter-spacing:.03em;color:rgba(244,240,228,.36)}
   .fade-to-black{position:absolute;inset:0;background:#000;opacity:0;z-index:30;pointer-events:none}
+
+  /* Keep report and evidence on the same device plane; stop to read each crop. */
+  #pwin{left:1230px;top:180px;width:350px;height:754px}
+  #p-wl{left:1230px;top:128px;width:500px}
+  #rwin,#phone{left:1230px;top:210px;width:410px;height:740px}
+  #rwl,#phl{left:1230px;top:142px;width:510px;font-size:13px;line-height:1.65;letter-spacing:.02em}
+  .d-k{font-size:15px}
+  .d-row{font-size:16px;padding:13px 0}
+  .d-note{font-size:17px}
+  .d-page{background:#10141c}
+  #pipe{width:1000px}
+  #pipe-line{width:1000px}
+  #pipe .pipe-node{width:190px}
+  #pn1{left:80px!important} #pn2{left:285px!important} #pn3{left:490px!important}
+  #pn4{left:695px!important} #pn5{left:900px!important}
+  .pipe-node .pt-name{font-size:16px}
+  .pipe-node .pt-sub{font-size:11px}
+  .res-card .rsub{font-size:16px}
+  .res-card .rfoot{font-size:12px;letter-spacing:0}
+  .chip{font-size:16px}
+  #sc-res .h1{top:190px;font-size:54px;line-height:1.15}
+
+  #detail-tabs{position:absolute;left:140px;top:478px;width:800px;display:flex;gap:0;border-bottom:1px solid var(--line)}
+  #detail-tabs span{width:25%;font-size:16px;color:#8f99a8;padding:10px 0;border-bottom:2px solid transparent}
+  #detail-tabs span.active{color:var(--amber);border-color:var(--amber)}
+  .compare-rows{position:absolute;left:24px;right:24px;top:49px}
+  .compare-row{display:flex;align-items:center;height:39px;gap:14px}
+  .compare-label{width:158px;font-size:15px;color:var(--paper2)}
+  .compare-track{display:grid;grid-template-columns:repeat(12,24px);gap:5px}
+  .compare-track i{display:block;height:16px;background:rgba(244,240,228,.07);border:1px solid rgba(244,240,228,.16)}
+  .compare-track i.on{background:var(--amber);border-color:var(--amber)}
+  .compare-row:first-child .compare-label{color:var(--amber)}
+  .compare-value{font-family:var(--mono);font-size:22px;color:var(--paper);width:100px;text-align:right}
+  .compare-note{position:absolute;left:24px;top:180px;font-size:14px;color:var(--muted)}
+  .h-summary{position:absolute;left:24px;top:44px;font-size:21px;color:var(--paper)}
+  .hgrid{position:absolute;left:24px;top:76px;grid-template-columns:repeat(6,44px);gap:6px;margin:0}
+  .hgrid i{height:28px;font-size:11px;color:#9bb6a8;border-color:#506c5f}
+  .hgrid i.fail{background:rgba(229,137,120,.18);color:var(--red);border-color:var(--red)}
+  .h-failure{position:absolute;left:24px;top:151px;font-size:17px;line-height:1.6;color:var(--red)}
+  .h-failure small{font-size:13px;color:var(--muted)}
+  .gkd{top:46px;right:24px;width:350px;font-size:15px;line-height:1.6}
+  .gkd small{font-family:var(--mono);font-size:12px}
+  .ct-head{font-size:14px}
+  .ct-row{font-size:19px;padding:10px 0}
+  .ct-row b{font-size:12px;padding-top:5px}
+  .ct-big{font-size:32px;line-height:1.45}
+  .ct-small{font-size:14px;line-height:1.6}
+  .ct-flow,.ct-foot{font-size:12px;letter-spacing:0}
+  .ledger div{font-size:12px;line-height:1.6}
+  .ledger b{font-size:15px}
+  .caveat{font-size:13px}
+  .res-card .rk{font-size:13px;letter-spacing:.08em}
+
+  /* Third cut: each proof occupies a full field, then makes room for the next. */
+  .bg{background:#0b1520}.grain,.vig,.grid{display:none}.ghost{display:none}
+  #brand .name{font-size:21px} #brand .sub{font-size:12px;letter-spacing:.12em}
+  .h1{font-size:62px;letter-spacing:-.035em;line-height:1.27;font-weight:650}
+  .sec-no{font-size:15px;letter-spacing:.1em}.sec-en{font-size:11px}
+  .hook-line{font-size:64px;font-weight:500;letter-spacing:-.02em}
+  #h1{top:245px}#h2{top:365px}#h3{top:485px}
+  .hook-q{font-size:80px;top:275px}
+  .hook-title{font-size:142px;font-weight:650;letter-spacing:-.055em}
+  .hook-code,.hook-policy,.hook-tag,.hook-link,.hook-node{display:none}
+  .hook-sub{font-size:30px}.hook-meta{font-size:14px}
+  #p-b{font-size:26px;width:900px;top:420px;line-height:1.7}
+  .chips{top:605px;gap:18px}.chip{font-size:23px}.chip b{min-width:100px}
+  #p-not{background:transparent;box-shadow:none;border:0;border-top:1px solid #537187;top:788px;width:900px;height:160px;padding:24px 0}
+  #p-not::after{display:none}.not-head{color:#7cc8ff;font-size:14px}.not-items{color:#edf5fc;font-size:34px}.not-foot{color:#96a9b9;font-size:17px}
+  #p-claim{display:none}
+  #pwin{left:1280px;top:205px;width:330px;height:715px;border-color:#304254;box-shadow:0 30px 70px #0004}
+  #p-wl{left:1280px;top:140px;font-size:14px;line-height:1.6}
+  #i-h{width:1700px} #evcard{left:140px;top:365px;width:1640px;height:460px;background:#f2f6fa;box-shadow:none}
+  .ev-head{font-size:15px}.ev-col{top:95px;width:660px}.ev-k{font-size:17px;color:#176cba}
+  .ev-path{font-size:20px}.ev-loc{font-size:16px}.ev-col pre{font-size:21px;line-height:1.7;padding:20px;min-height:132px}
+  .ev-col blockquote{font-size:33px;line-height:1.7;min-height:132px;border-color:#176cba}
+  .ev-rule{font-size:15px}.ev-foot{font-size:23px}.ev-link{left:730px;top:265px;width:180px;background:#176cba}
+  .ev-link span{font-size:14px;color:#176cba}
+  .principles{left:140px;top:450px;width:1640px;height:300px}
+  .pr{position:absolute;left:0;top:0;width:1640px;height:300px;border:0;border-top:1px solid #537187;background:transparent;padding:32px 0}
+  .pr b{font-size:18px}.pr .pt{font-size:68px;margin-top:32px;letter-spacing:-.03em}
+  .pr span{font-size:28px;line-height:1.7;max-width:1450px;color:#c0cfdd}
+  .inno-quote{top:312px;font-size:55px}.ifoot{font-size:18px;top:920px}
+  #pipe{left:140px;top:382px;width:1640px} #pipe-line{width:1640px}
+  #pn1{left:100px!important}#pn2{left:460px!important}#pn3{left:820px!important}#pn4{left:1180px!important}#pn5{left:1540px!important}
+  #pipe .pipe-node{width:270px}.pipe-node .pt-name{font-size:24px}.pipe-node .pt-sub{font-size:15px;line-height:1.7}
+  #detail-tabs{left:140px;top:385px;width:1000px}#detail-tabs span{font-size:20px;padding:18px 0}
+  #detail{left:140px;top:470px;width:1000px;height:450px;border:0;background:transparent;box-shadow:none;padding:0}
+  .d-page{inset:0;background:#0b1520}.d-k{font-size:21px;letter-spacing:.1em;margin-bottom:18px}
+  .d-row{font-size:23px;padding:16px 0}.d-note{font-size:22px;line-height:1.7;margin-top:20px}
+  #rwin,#phone{left:1300px;top:226px;width:382px;height:720px;border-color:#304254;box-shadow:0 25px 60px #0004}
+  #rwl,#phl{left:1250px;top:146px;width:530px;font-size:14px;line-height:1.65}
+  #im-foot{font-size:14px;top:1007px}
+  #r-h{font-size:58px!important;top:205px!important;line-height:1.2!important;width:1600px}
+  #r-h br{display:none}
+  .res-card{left:140px!important;top:365px!important;width:1640px;height:500px;padding:32px 0;border:0;border-top:1px solid #537187;background:transparent;box-shadow:none}
+  .res-card .rk{font-size:21px;letter-spacing:.08em}
+  .res-card .rbig{margin-top:48px;font-size:104px;letter-spacing:-.04em}.res-card .rbig small{font-size:28px}
+  .res-card .rsub{font-size:27px;margin-top:32px;line-height:1.7}
+  .res-card .rfoot{left:0;bottom:12px;font-size:17px;color:#8da3b5}
+  .compare-rows{left:0;right:0;top:95px}.compare-row{height:92px;gap:36px}
+  .compare-label{width:300px;font-size:28px}.compare-track{grid-template-columns:repeat(12,52px);gap:9px}.compare-track i{height:34px}
+  .compare-value{font-size:48px;width:200px}.compare-note{left:0;top:392px;font-size:22px}
+  .h-summary{left:0;top:92px;font-size:38px}.hgrid{left:0;top:166px;grid-template-columns:repeat(6,94px);gap:12px}
+  .hgrid i{height:56px;font-size:22px}.h-failure{left:0;top:327px;font-size:27px}.h-failure small{font-size:21px}
+  .gkd{left:860px;right:auto;top:91px;width:760px;font-size:26px;line-height:1.6}.gkd small{font-size:20px}
+  .ladder{top:440px}.ladder .step{width:450px;padding-top:25px}.ladder .step b{font-size:36px}.ladder .step span{font-size:21px;margin-top:20px;line-height:1.6}
+  .ladder .neq{font-size:38px}.stamp{left:0;top:176px;font-size:19px}
+  #r-end{top:765px;font-size:52px;letter-spacing:-.02em} #r-foot{top:904px;font-size:20px}
+  #o-h{font-size:58px;top:210px;width:1700px}#o-h br{display:none}
+  #oc1,#oc2{left:140px;top:365px;width:1640px;height:560px;padding:28px 0;border:0;border-top:1px solid #537187;box-shadow:none;background:transparent;color:#edf5fc}
+  #oc1::after{display:none}.ct-head{font-size:20px;color:#7cc8ff}.ct-row{font-size:29px;color:#edf5fc;padding:15px 0;border-color:#263d50}
+  .ct-row b{font-size:17px;color:#7cc8ff;min-width:60px;padding-top:8px}
+  .ct-big{font-size:42px;margin-top:26px;line-height:1.45}
+  .ct-small{font-size:19px;color:#9db0c0;margin-top:20px}.ct-foot{left:0;bottom:12px;font-size:16px;color:#8da3b5}
+  .ct-flow{left:0;bottom:56px;font-size:18px;color:#7cc8ff}.corner{display:none}
+  #oc2 .ct-big{position:absolute;left:0;top:80px;width:760px;font-size:46px}
+  #oc2 .ct-row{position:relative;left:860px;width:780px;top:62px;font-size:25px;padding:24px 0}
+  #oc2 .ct-small{position:absolute;left:860px;top:270px;width:780px;font-size:19px}
+  .ledger{left:140px;top:390px;width:1640px;display:grid;grid-template-columns:repeat(3,1fr);gap:40px 30px;padding-top:32px}
+  .ledger div{font-size:23px;line-height:1.8;width:auto}.ledger b{font-size:37px;color:#7cc8ff;margin-bottom:8px}
+  .caveat{top:872px;font-size:21px;letter-spacing:0}
+  .close-main{font-size:110px!important;letter-spacing:-.04em}.close-sub{font-size:30px;font-weight:400}
+  .close-meta{font-size:14px}.close-foot{font-size:15px}
+
+
+  .d-row span,.d-note{color:#94aabd}
+  #oc2 .ct-small,#oc2 .ct-foot{color:#9db0c0}#oc2 .ct-flow{color:#7cc8ff}
+  .ledger div,.caveat{color:#a3b6c5}
+  .not-head,.ev-head,.ev-head span:last-child{color:#176cba}
 </style>
 </head>
 <body>
@@ -265,9 +395,9 @@
     <p class="hook-line" id="h1">权限说它能<em>做什么</em>。</p>
     <p class="hook-line" id="h2">代码说它<em>可能</em>怎么做。</p>
     <p class="hook-line" id="h3">政策说它<em>承诺</em>了什么。</p>
-    <p class="hook-q" id="hq">把两边摆到一起，<br>才有对照。</p>
+    <p class="hook-q" id="hq">把代码线索和政策原文<br>放在一起核对。</p>
     <h1 class="hook-title" id="ht">PrivacyTrace</h1>
-    <p class="hook-sub" id="hs">Android APK 静态隐私线索 × 政策原文</p>
+    <p class="hook-sub" id="hs">对照 Android APK 静态线索与政策原文</p>
     <p class="hook-meta" id="hm">作品评审 · 专家版 · 120 秒</p>
     <div class="hook-rule" id="hr"></div>
   </section>
@@ -277,7 +407,7 @@
     <div class="ghost">01</div>
     <p class="sec-no">01 / 定位</p>
     <p class="sec-en">POSITIONING</p>
-    <h2 class="h1" id="p-h">读取静态线索，<br><em>对齐政策原文。</em></h2>
+    <h2 class="h1" id="p-h">从 APK 提取线索，<br><em>逐条对照政策原文。</em></h2>
     <p class="body" id="p-b">上传 APK 或 base + splits，解析 manifest 与全部 <code>classesN.dex</code>。再放入政策正文：可定位的线索落到代码位置与政策原句，材料不足保留 UNKNOWN。</p>
     <div class="chips">
       <div class="chip" id="p-c1"><span class="dot"></span><b>权限</b> = 能力声明</div>
@@ -286,15 +416,14 @@
     </div>
     <div class="paper not-card" id="p-not">
       <span class="corner tl"></span><span class="corner br"></span>
-      <div class="not-head">它不判断</div>
-      <div class="not-items"><span>合规性</span><i>/</i><span>安全性</span><i>/</i><span>实际采集</span></div>
-      <div class="not-foot">线索 ≠ 行为。结论留给证据与人工复核。</div>
+      <div class="not-head">它说越权</div>
+      <div class="not-items"><span>权限声明</span><i>/</i><span>代码线索</span><i>/</i><span>政策原句</span></div>
+      <div class="not-foot">逐条查看代码位置和政策原文。</div>
     </div>
-    <p class="claim" id="p-claim">只对照，不判定。</p>
-    <div class="win-label" id="p-wl"><b>工作台 · 开发版</b><span>2026-10-23 截屏 · 固定演示数据</span></div>
+    <p class="claim" id="p-claim">隐私分析，有据可查。</p>
+    <div class="win-label" id="p-wl"><b>Android App · 开发版</b><span>2026-10-23 @ f81ca20</span></div>
     <div class="window" id="pwin">
-      <div class="win-bar"><i></i><i></i><i></i><span>PRIVACYTRACE / WORKBENCH / NEW COMPARISON</span></div>
-      <div class="win-shot"><img src="assets/ui-import.png" alt="PrivacyTrace 工作台导入材料页"><span class="win-tag">本机材料 · 受限 Docker 解析</span></div>
+      <img src="assets/android-import.png" alt="PrivacyTrace Android App 导入材料页">
     </div>
   </section>
 
@@ -303,7 +432,7 @@
     <div class="ghost">02</div>
     <p class="sec-no">02 / 创新</p>
     <p class="sec-en">INNOVATION</p>
-    <h2 class="h1" id="i-h">结论要能回到<br><em>代码与原文。</em></h2>
+    <h2 class="h1" id="i-h">结论附上<br><em>可回查的代码与原文。</em></h2>
     <div class="paper ev-card" id="evcard">
       <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
       <div class="ev-head"><span>EVIDENCE / evidence-location-api</span><span>人工构造示例 · 可复算</span></div>
@@ -323,15 +452,15 @@
         <blockquote>我们访问位置信息，用于提供地图功能。</blockquote>
         <div class="ev-rule">按 Unicode 码点计数 · 半开区间</div>
       </div>
-      <div class="ev-foot" id="ev-foot">一条证据，两个终点；两边都能自己走一遍。</div>
+      <div class="ev-foot" id="ev-foot">从代码位置和原文区间，分别回查这条证据。</div>
     </div>
     <p class="inno-quote" id="iquote">代码位置、原文区间、材料来源，<br>都留在同一份报告里。</p>
     <div class="principles">
-      <div class="pr" id="pr1"><b>01 / 两个终点</b><span class="pt">一条证据，两个终点。</span><span>代码位置与政策原句，都能自己走一遍。</span></div>
+      <div class="pr" id="pr1"><b>01 / 两个终点</b><span class="pt">一条证据，两个终点。</span><span>分别回查代码位置和政策原句。</span></div>
       <div class="pr" id="pr2"><b>02 / 三层分离</b><span class="pt">事实、声明、推断，分开记录。</span><span>UNKNOWN 保留为结果，不补零。</span></div>
-      <div class="pr" id="pr3"><b>03 / 真值先冻结</b><span class="pt">12 个场景，三方案同材料。</span><span>先冻结真值，再让算法跑。</span></div>
+      <div class="pr" id="pr3"><b>03 / 真值先冻结</b><span class="pt">12 个场景，三方案同材料。</span><span>先冻结预期状态，再运行三种方案。</span></div>
     </div>
-    <p class="ifoot" id="ifoot">一致性分析并非本项目首创；我们把证据链做成可理解、可复核。</p>
+    <p class="ifoot" id="ifoot">保留代码位置和政策原文的对应关系。</p>
   </section>
 
   <!-- 03 implementation -->
@@ -339,15 +468,16 @@
     <div class="ghost">03</div>
     <p class="sec-no">03 / 关键实现</p>
     <p class="sec-en">IMPLEMENTATION</p>
-    <h2 class="h1" id="im-h">一条流水线，<br><em>同一条证据链。</em></h2>
+    <h2 class="h1" id="im-h">从 APK 到报告，<br><em>沿用同一条证据链。</em></h2>
     <div class="pipe" id="pipe">
       <div class="pipe-line" id="pipe-line"></div>
       <div class="pipe-node" id="pn1" style="left:120px"><div class="pt-dot"></div><div class="pt-name">APK + 政策材料</div><div class="pt-sub">单包 / base + splits</div></div>
       <div class="pipe-node" id="pn2" style="left:530px"><div class="pt-dot"></div><div class="pt-name">隔离扫描</div><div class="pt-sub">Docker · network none</div></div>
       <div class="pipe-node" id="pn3" style="left:940px"><div class="pt-dot"></div><div class="pt-name">证据 + 候选</div><div class="pt-sub">代码位置 · 原句区间</div></div>
       <div class="pipe-node" id="pn4" style="left:1350px"><div class="pt-dot"></div><div class="pt-name">一致性对照</div><div class="pt-sub">多状态 · 缺证据不升级</div></div>
-      <div class="pipe-node" id="pn5" style="left:1760px"><div class="pt-dot"></div><div class="pt-name">报告 / 回放</div><div class="pt-sub">Web · Android · 离线</div></div>
+      <div class="pipe-node" id="pn5" style="left:1760px"><div class="pt-dot"></div><div class="pt-name">报告 / 回放</div><div class="pt-sub">Android App · 离线回放</div></div>
     </div>
+    <div id="detail-tabs"><span>隔离扫描</span><span>静态分析</span><span>政策快照</span><span>任务运行</span></div>
     <div class="panel impl-detail" id="detail">
       <div class="d-page" id="d1">
         <div class="d-k">隔离扫描 / CONTAINER</div>
@@ -363,11 +493,11 @@
         <div class="d-row"><span>INPUTS</span><b>AXML · 全部 classesN.dex</b></div>
         <div class="d-row"><span>FALLBACK</span><b>UNAVAILABLE_BYTECODE_FALLBACK</b></div>
         <div class="d-row"><span>SCOPE</span><b>方法内无分支局部常量</b></div>
-        <div class="d-note">覆盖有限规则；反射、动态加载、Native 不保证覆盖。</div>
+        <div class="d-note">静态分析只检查规则集覆盖的权限与调用。</div>
       </div>
       <div class="d-page" id="d3">
         <div class="d-k">政策快照 / POLICY</div>
-        <div class="d-row"><span>OFFSET</span><b>[start, end) · UTF-8 码点</b></div>
+        <div class="d-row"><span>OFFSET</span><b>[start, end) · Unicode 码点</b></div>
         <div class="d-row"><span>CHECK</span><b>切片 == excerpt</b></div>
         <div class="d-row"><span>IMMUTABLE</span><b>旧快照不覆盖</b></div>
         <div class="d-row"><span>META</span><b>来源 · 版本 · 采集时点</b></div>
@@ -379,19 +509,18 @@
         <div class="d-row"><span>STATE</span><b>PostgreSQL outbox</b></div>
         <div class="d-row"><span>JOBS</span><b>Redis · Celery</b></div>
         <div class="d-row"><span>RUNNER</span><b>mTLS · 不持 Docker socket</b></div>
-        <div class="d-note">Vue 工作台 · Tauri Android · 离线报告包：同一份证据，三种入口。</div>
+        <div class="d-note">同一份证据可从 Android App 或离线报告包查看。</div>
       </div>
     </div>
-    <div class="rwin-label" id="rwl">报告 · 2026-10-22 交付候选 · 构造材料 / 持久化回放</div>
+    <div class="rwin-label" id="rwl">Android App 报告 · 持久化回放 · 真实 APK（S1 夹具）· 2026-10-23 @ f81ca20</div>
     <div class="window report-win" id="rwin">
-      <div class="win-bar"><i></i><i></i><i></i><span>report / CONSTRUCTED INPUT / persisted replay</span></div>
-      <div class="win-shot"><img id="rimg" src="assets/report-desktop.png" alt="PrivacyTrace 对照报告页面"></div>
+      <img id="rimg" src="assets/android-report-full.png" alt="PrivacyTrace Android App 对照报告页面">
     </div>
-    <div class="phone-label" id="phl">Android 客户端 · 移动报告（开发版）</div>
+    <div class="phone-label" id="phl">Android App · 开发版 · 视口模拟 · 2026-10-23 @ f81ca20</div>
     <div class="window phone-wrap phone" id="phone">
-      <div class="ph-shot"><img id="pimg" src="assets/report-mobile.png" alt="PrivacyTrace 移动端报告页面"></div>
+      <div class="ph-shot"><img id="pimg" src="assets/android-evidence-full.png" alt="PrivacyTrace Android App 证据详情页面"></div>
     </div>
-    <p class="impl-foot" id="im-foot">界面仍在开发，最终视觉可能变化；截图采集于 2026-10-22 / 23。</p>
+    <p class="impl-foot" id="im-foot">截图采集于 2026-10-23 · 提交 f81ca20；Android App 为移动视口模拟（非真机）。</p>
   </section>
 
   <!-- 04 results -->
@@ -399,7 +528,7 @@
     <div class="ghost">04</div>
     <p class="sec-no">04 / 真实成果</p>
     <p class="sec-en">RESULTS / BOUNDED</p>
-    <h2 class="h1" id="r-h">把四类数字，<br><em>分开报。</em></h2>
+    <h2 class="h1" id="r-h">四类结果，<br><em>分别列出。</em></h2>
     <div class="res-card" id="rc1" style="left:140px;top:342px">
       <div class="rk">工程门禁 / ENGINEERING GATE</div>
       <div class="rbig">1578 <small>passed</small> · 179 <small>skipped</small></div>
@@ -414,32 +543,30 @@
     </div>
     <div class="res-card" id="rc3" style="left:140px;top:612px">
       <div class="rk">受控评测 / CONTROLLED · 状态一致</div>
-      <div class="mini">
-        <div><b class="green">12 / 12</b><span>PRIVACYTRACE</span></div>
-        <div><b>4 / 12</b><span>API 基线</span></div>
-        <div><b>2 / 12</b><span>权限 + 关键词</span></div>
-      </div>
-      <div class="rsub">36 行三方案 · 执行失败 <b>0</b> · P / R / F1 = <b>N/A</b>（协议无二元真值）</div>
-      <div class="rfoot">b0b3c74 · 名义状态对照 · 不推广为真实 App 准确率</div>
+      <div class="compare-rows" id="compare-rows"></div>
+      <div class="compare-note">36 行三方案 · 执行失败 0 · 同一批材料</div>
+      <div class="rfoot">b0b3c74 · 名义状态对照</div>
     </div>
     <div class="res-card" id="rc4" style="left:980px;top:612px">
-      <div class="rk">真实 App 案例 + H 矩阵 / REAL-WORLD BOUNDARY</div>
+      <div class="rk">真实 App 案例 + H 矩阵 / REAL-WORLD CASE</div>
+      <div class="h-summary">11 通过 / 1 未通过</div>
       <div class="hgrid">
         <i>H01</i><i>H02</i><i>H03</i><i>H04</i><i>H05</i><i>H06</i>
         <i>H07</i><i>H08</i><i>H09</i><i>H10</i><i>H11</i><i class="fail">H12</i>
       </div>
-      <div class="gkd"><b>11 通过 / 1 未通过</b><br>H12 · J × splits × 手机模型<br>失败已复现 2 次，保留。<br><br><b>GKD v1.12.1（仅 1 个历史样本）</b><br>6 证据 / 3 行为 / 2 声明 / 3 问题<br>3 条结论均 <b>INSUFFICIENT_EVIDENCE</b></div>
+      <div class="h-failure">H12 · J × splits × 手机模型<br><small>失败已复现 2 次，保留。</small></div>
+      <div class="gkd"><b>GKD v1.12.1</b><br>仅 1 个历史样本<br>6 证据 / 3 行为 / 2 声明 / 3 问题<br><br>3 条结论均为证据不足<br><small>INSUFFICIENT_EVIDENCE</small></div>
       <div class="rfoot">2626152 · 2026-10-22 · H 矩阵交付头；GKD 记录 2026-10-09</div>
     </div>
     <div class="ladder" id="ladder">
       <div class="step"><b>工程测试</b><span>代码按预期运行</span></div>
-      <div class="neq">≠</div>
+      <div class="neq">→</div>
       <div class="step"><b>受控评测</b><span>自建场景 · 名义状态对照</span></div>
-      <div class="neq">≠</div>
-      <div class="step off"><b>真实 App 准确率</b><span>未做 · 不宣称</span><div class="stamp" id="stamp">NOT CLAIMED</div></div>
+      <div class="neq">→</div>
+      <div class="step"><b>真实 App</b><span>GKD · 3 条结论</span><div class="stamp" id="stamp">GKD</div></div>
     </div>
-    <p class="res-foot" id="r-foot">受控结果不推广为真实 App 的检测准确率；未命中规则 ≠ 没有隐私行为。</p>
-    <p class="res-end" id="r-end">证据不足，也要写进报告。</p>
+    <p class="res-foot" id="r-foot">受控结果来自自建源码场景。</p>
+    <p class="res-end" id="r-end">证据不足，就如实标在报告里。</p>
   </section>
 
   <!-- 05 contribution -->
@@ -447,11 +574,11 @@
     <div class="ghost">05</div>
     <p class="sec-no">05 / 学生原创贡献</p>
     <p class="sec-en">ORIGINAL CONTRIBUTION</p>
-    <h2 class="h1" id="o-h">团队提出什么，<br><em>AI 辅助什么。</em></h2>
+    <h2 class="h1" id="o-h">团队负责哪些工作，<br><em>AI 用于哪些环节。</em></h2>
     <div class="paper ct-card l" id="oc1">
       <span class="corner tl"></span><span class="corner br"></span>
       <div class="ct-head">团队提出并执行</div>
-      <div class="ct-row" id="or1"><b>01</b><span>项目定位与「只对照，不判定」边界</span></div>
+      <div class="ct-row" id="or1"><b>01</b><span>项目定位与判断边界</span></div>
       <div class="ct-row" id="or2"><b>02</b><span>证据模型与一致性状态机</span></div>
       <div class="ct-row" id="or3"><b>03</b><span>确定性规则与字节码归因</span></div>
       <div class="ct-row" id="or4"><b>04</b><span>受控场景 · 冻结真值 · 三方案对照</span></div>
@@ -462,8 +589,8 @@
     </div>
     <div class="panel ct-card r" id="oc2">
       <div class="ct-head">AI 辅助 · 披露在案</div>
-      <div class="ct-big">脚手架与接口胶水。<br>测试与验收脚本。<br>文档与文案草稿。</div>
-      <div class="ct-row" id="air1"><b>边界</b><span>不宣称 100% 独立，也不给出比例。</span></div>
+      <div class="ct-big">脚手架与接口代码<br>测试与验收脚本<br>文档、文案草稿</div>
+      <div class="ct-row" id="air1"><b>用途</b><span>辅助起草，由团队筛选、修改。</span></div>
       <div class="ct-row" id="air2"><b>披露</b><span>工具、用途与人工筛选记录保留在仓库。</span></div>
       <div class="ct-small">第三方：Androguard 4.1.3（Apache-2.0）· FastAPI · Vue 3 · PostgreSQL · Tauri 2。</div>
       <div class="ct-flow">工具 → 用途 → 受影响文件 → 人工修改 → 复核</div>
@@ -476,16 +603,16 @@
       <div id="lg4"><b>9e56771</b>离线回放 · 24 成员</div>
       <div id="lg5"><b>2626152</b>H 矩阵 · 2026-10-22</div>
     </div>
-    <p class="caveat" id="caveat">每个数字绑定各自的提交与日期，不写成「当前版本」。H12 失败保留在片内；界面仍在开发，提交头以维护者冻结为准。</p>
+    <p class="caveat" id="caveat">各项数字注明对应提交和日期；H12 失败如实保留。</p>
   </section>
 
   <!-- 06 close -->
   <section class="scene" id="sc-close">
-    <p class="close-main" id="cm">先把证据摆出来，再谈结论。</p>
-    <div class="close-sub" id="cs"><span>线索不等于行为。</span><i>/</i><span>受控结果不是真实 App 的准确率。</span><i>/</i><span>未知就写未知。</span></div>
+    <p class="close-main" id="cm">隐私分析，有据可查。</p>
+    <div class="close-sub" id="cs">从代码位置到政策原句，保留可复核的依据。</div>
     <div class="close-brand" id="cb"><div class="mark">PT</div><div class="nm">PrivacyTrace</div></div>
     <p class="close-meta" id="cmt">2026 作品评审片 · 120s / 1920×1080 / 30fps</p>
-    <p class="close-foot" id="cf">界面仍在开发；截图采集于 2026-10-22 / 23；数字绑定各自提交与日期。本片由 AI 辅助分镜与排版，未生成产品画面。</p>
+    <p class="close-foot" id="cf">截图采集于 2026-10-23 · 提交 f81ca20；数字绑定各自提交与日期。</p>
   </section>
 
   <div class="fade-to-black" id="fade"></div>
@@ -540,12 +667,12 @@
   const chapterEl = $('#chapter');
   const chapters = [
     { t:0,   idx:'00 — COLD OPEN',    name:'开场 / 120 秒' },
-    { t:T.pos,  idx:'01 — POSITIONING',   name:'定位 / 它是什么，不是什么' },
+    { t:T.pos,  idx:'01 — POSITIONING',   name:'定位 / 材料与结果' },
     { t:T.inno, idx:'02 — INNOVATION',    name:'创新 / 证据链的形状' },
     { t:T.impl, idx:'03 — IMPLEMENTATION',name:'关键实现 / 一条流水线' },
     { t:T.res,  idx:'04 — RESULTS',       name:'真实成果 / 四类数字' },
-    { t:T.orig, idx:'05 — CONTRIBUTION',  name:'原创贡献 / 边界与披露' },
-    { t:T.close,idx:'06 — CLOSE',         name:'结语 / 先摆证据，再谈结论' }
+    { t:T.orig, idx:'05 — CONTRIBUTION',  name:'原创贡献 / 分工与披露' },
+    { t:T.close,idx:'06 — CLOSE',         name:'结语 / 依据' }
   ];
   let currentChapter = -1;
 
@@ -553,6 +680,9 @@
     const m = Math.floor(s/60), ss = Math.floor(s%60);
     return String(m).padStart(2,'0') + ':' + String(ss).padStart(2,'0');
   }
+
+  const comparisons=[['PrivacyTrace',12],['API 基线',4],['权限 + 关键词',2]];
+  $('#compare-rows').innerHTML=comparisons.map(([label,n])=>'<div class="compare-row"><span class="compare-label">'+label+'</span><span class="compare-track">'+Array.from({length:12},(_,i)=>'<i class="'+(i<n?'on':'')+'"></i>').join('')+'</span><span class="compare-value">'+n+' / 12</span></div>').join('');
 
   // ------------------------------------------------------------------ hook
   function renderHook(t){
@@ -591,34 +721,31 @@
     const win = $('#pwin');
     win.style.opacity = smooth((t-11.55)/.55).toFixed(3);
     win.style.transform = 'translate3d(' + ((1-p)*54).toFixed(2) + 'px,' + ((1-p)*30).toFixed(2) + 'px,0) scale(' + (0.965+0.035*p).toFixed(4) + ')';
-    const img = win.querySelector('img');
-    img.style.transform = 'translate3d(0,' + (-(t-11.55)*1.2).toFixed(1) + 'px,0) scale(1.015)';
+    // Keep the import screen still while its labels are read.
+    win.querySelector('img').style.transform = 'none';
   }
 
   // ------------------------------------------------------------- innovation
   function renderInno(t){
-    fade($('#i-h'), t, 21.95, 33.55, .7, 26);
-    const w = clamp((t-23.35)/.8,0,1);
-    const card = $('#evcard');
-    card.style.clipPath = 'inset(0 ' + ((1-outQuint(w))*100).toFixed(2) + '% 0 0)';
-    card.style.opacity = w > .001 ? '1' : '0';
-    fade($('#ev-l'), t, 23.9, 33.6, .55, 14);
-    fade($('#ev-r'), t, 24.6, 33.6, .55, 14);
-    const lp = outQuint(clamp((t-25.6)/.75,0,1));
-    $('#ev-line').style.transform = 'scaleX(' + lp.toFixed(4) + ')';
-    $('#ev-line').style.opacity = (.9*lp).toFixed(3);
-    fade($('#ev-foot'), t, 26.6, 33.6, .5, 10);
-    const shrink = inOut(clamp((t-29.0)/1.1,0,1));
-    card.style.transform = 'translate3d(' + (-30*shrink).toFixed(2) + 'px,' + (-54*shrink).toFixed(2) + 'px,0) scale(' + (1-0.10*shrink).toFixed(4) + ')';
-    card.style.opacity = ((w > .001 ? 1 : 0) * (1 - smooth((t-33.65)/.6))).toFixed(3);
-    fade($('#pr1'), t, 29.5, 38.5, .55, 22);
-    fade($('#pr2'), t, 30.15, 38.5, .55, 22);
-    fade($('#pr3'), t, 30.8, 38.5, .55, 22);
-    fade($('#iquote'), t, 33.95, 40.05, .65, 22);
-    fade($('#ifoot'), t, 34.4, 40.35, .55, 12);
+    fade($('#i-h'),t,21.95,32.1,.55,0);
+    const card=$('#evcard');
+    card.style.opacity=(smooth((t-23.15)/.5)*(1-smooth((t-32.1)/.35))).toFixed(3);
+    card.style.clipPath='none';card.style.transform='none';
+    fade($('#ev-l'),t,23.4,null,.45,0);fade($('#ev-r'),t,25.1,null,.45,0);
+    $('#ev-line').style.transform='scaleX('+outQuint((t-26.5)/.75).toFixed(4)+')';
+    $('#ev-line').style.opacity=smooth((t-26.5)/.5).toFixed(3);
+    fade($('#ev-foot'),t,27.4,null,.4,0);
+    const principles=[['pr1',32.45,35.0],['pr2',35.0,37.55],['pr3',37.55,40.3]];
+    principles.forEach(([id,a,b])=>fade($('#'+id),t,a,b-.15,.25,0));
+    $('#iquote').style.opacity='0';
+    fade($('#ifoot'),t,32.5,40.1,.4,0);
   }
 
   // ---------------------------------------------------------- implementation
+  function panImage(img, progress, limit){
+    const travel = Math.min(limit, Math.max(0, img.offsetHeight-img.parentElement.clientHeight));
+    img.style.transform = 'translate3d(0,' + (-progress*travel).toFixed(2) + 'px,0)';
+  }
   function renderImpl(t){
     fade($('#im-h'), t, 40.65, null, .7, 26);
     const lp = outQuint(clamp((t-41.5)/1.6,0,1));
@@ -626,14 +753,16 @@
     for(let i=1;i<=5;i++){
       fade($('#pn'+i), t, 41.85 + (i-1)*.42, null, .5, 16);
     }
-    const dim = smooth((t-44.2)/1.0);
-    $('#pipe').style.opacity = (1 - .78*dim).toFixed(3);
-    cardIn($('#detail'), t, 44.3, .6, .98);
+    const dim = smooth((t-44.2)/.45);
+    $('#pipe').style.opacity = (1 - dim).toFixed(3);
+    fade($('#detail'),t,44.5,null,.35,0);
     const pages = [['d1',44.4,48.15],['d2',48.15,51.95],['d3',51.95,55.75],['d4',55.75,64.3]];
+    const activePage=Math.max(0,pages.findLastIndex(p=>t>=p[1]));
+    fade($('#detail-tabs'),t,44.4,64.3,.3,0);
+    document.querySelectorAll('#detail-tabs span').forEach((el,i)=>el.classList.toggle('active',i===activePage));
     pages.forEach(([id,a,b])=>{
       const el = $('#'+id);
-      const on = t >= a && t < b;
-      const p = on ? smooth((t-a)/.35) : 0;
+      const p = smooth((t-a)/.25) * (1-smooth((t-b)/.25));
       el.style.opacity = p.toFixed(3);
       el.style.transform = 'translate3d(0,' + ((1-p)*10).toFixed(2) + 'px,0)';
     });
@@ -642,56 +771,46 @@
     const rwin = $('#rwin');
     rwin.style.opacity = smooth((t-44.25)/.5).toFixed(3);
     rwin.style.transform = 'translate3d(' + ((1-rp)*40).toFixed(2) + 'px,' + ((1-rp)*24).toFixed(2) + 'px,0)';
-    const pan = clamp((t-44.6)/16.2,0,1);
-    $('#rimg').style.transform = 'translate3d(0,' + (-pan*1900).toFixed(1) + 'px,0)';
+    panImage($('#rimg'), smooth((t-48.8)/5.4), 520);
     const phoneOn = t >= 59.35;
     if(phoneOn){
       const pp = outQuint(clamp((t-59.35)/.65,0,1));
       const ph = $('#phone');
       ph.style.opacity = smooth((t-59.35)/.45).toFixed(3);
       ph.style.transform = 'translate3d(0,' + ((1-pp)*28).toFixed(2) + 'px,0) scale(' + (0.97+0.03*pp).toFixed(4) + ')';
-      const scroll = clamp((t-59.6)/5.4,0,1);
-      $('#pimg').style.transform = 'translate3d(0,' + (-scroll*900).toFixed(1) + 'px,0)';
+      panImage($('#pimg'), .55 + .12*smooth((t-61.0)/1.8), 2000);
     } else {
       $('#phone').style.opacity = '0';
     }
     fade($('#phl'), t, 59.35, null, .5, 8);
     fade($('#im-foot'), t, 62.6, null, .5, 8);
-    rwin.style.opacity = (smooth((t-44.25)/.5) * (1-smooth((t-59.4)/.55))).toFixed(3);
+    rwin.style.opacity = (smooth((t-44.25)/.5) * (1-smooth((t-59.35)/.45))).toFixed(3);
   }
 
   // ---------------------------------------------------------------- results
   function renderRes(t){
-    fade($('#r-h'), t, 65.05, null, .7, 26);
-    cardIn($('#rc1'), t, 65.90, .6, .97);
-    cardIn($('#rc2'), t, 68.90, .6, .97);
-    cardIn($('#rc3'), t, 71.90, .6, .97);
-    cardIn($('#rc4'), t, 74.90, .6, .97);
-    const dim = smooth((t-79.8)/1.2);
-    const dimF = 1 - .45*dim;
-    ['rc1','rc2','rc3','rc4'].forEach(id => { const el = $('#'+id); const base = parseFloat(el.style.opacity) || 0; el.style.opacity = (base*dimF).toFixed(3); });
-    fade($('#ladder'), t, 80.0, null, .65, 18);
-    const stamp = $('#stamp');
-    const sp = smooth((t-82.2)/.5);
-    stamp.style.opacity = (sp*.95).toFixed(3);
-    stamp.style.transform = 'rotate(-4deg) scale(' + (1.25 - .25*sp).toFixed(3) + ')';
-    fade($('#r-foot'), t, 83.2, null, .5, 10);
-    fade($('#r-end'), t, 85.8, null, .65, 16);
-    const glow = clamp((t-85.8)/.6,0,1);
-    $('#r-end').style.color = glow > .5 ? 'var(--amber)' : 'var(--paper)';
+    fade($('#r-h'),t,65.05,null,.55,0);
+    const items=[['rc1',65.65,69.65],['rc2',69.65,73.6],['rc3',73.6,79],['rc4',79,85.2]];
+    items.forEach(([id,a,b])=>fade($('#'+id),t,a,b-.16,.27,0));
+    document.querySelectorAll('.compare-row').forEach((el,i)=>fade(el,t,74.0+i*.65,null,.4,0));
+    fade($('#ladder'),t,85.3,null,.4,0);
+    $('#stamp').style.opacity=smooth((t-86.0)/.3).toFixed(3);
+    $('#stamp').style.transform='none';
+    fade($('#r-end'),t,86.0,null,.45,0);
+    $('#r-end').style.color='var(--amber)';
+    fade($('#r-foot'),t,86.5,null,.4,0);
   }
 
   // ----------------------------------------------------------- contribution
   function renderOrig(t){
-    fade($('#o-h'), t, 90.02, null, .7, 26);
-    cardIn($('#oc1'), t, 90.95, .7, .975);
-    cardIn($('#oc2'), t, 91.3, .7, .975);
-    ['or1','or2','or3','or4','or5'].forEach((id,i)=>fade($('#'+id), t, 91.7+i*.55, null, .45, 8));
-    fade($('#air1'), t, 92.4, null, .5, 8);
-    fade($('#air2'), t, 93.4, null, .5, 8);
-    fade($('#ledger'), t, 99.3, null, .6, 14);
-    ['lg1','lg2','lg3','lg4','lg5'].forEach((id,i)=>fade($('#'+id), t, 99.7+i*.55, null, .45, 8));
-    fade($('#caveat'), t, 104.4, null, .55, 10);
+    fade($('#o-h'),t,90.02,null,.55,0);
+    fade($('#oc1'),t,90.75,96.35,.35,0);
+    ['or1','or2','or3','or4','or5'].forEach((id,i)=>fade($('#'+id),t,91.1+i*.22,null,.25,0));
+    fade($('#oc2'),t,96.6,102.15,.35,0);
+    fade($('#air1'),t,97.1,null,.3,0);fade($('#air2'),t,97.6,null,.3,0);
+    fade($('#ledger'),t,102.4,null,.35,0);
+    ['lg1','lg2','lg3','lg4','lg5'].forEach((id,i)=>fade($('#'+id),t,102.7+i*.2,null,.25,0));
+    fade($('#caveat'),t,104.35,null,.4,0);
   }
 
   // ------------------------------------------------------------------ close
@@ -720,13 +839,8 @@
     scenes.orig.style.opacity = time >= T.orig && time < T.close ? '1' : '0';
     scenes.close.style.opacity= time >= T.close ? '1' : '0';
 
-    if(time < T.pos) renderHook(time);
-    if(time >= T.pos && time < T.inno) renderPos(time);
-    if(time >= T.inno && time < T.impl) renderInno(time);
-    if(time >= T.impl && time < T.res) renderImpl(time);
-    if(time >= T.res && time < T.orig) renderRes(time);
-    if(time >= T.orig && time < T.close) renderOrig(time);
-    if(time >= T.close) renderClose(time);
+    renderHook(time); renderPos(time); renderInno(time); renderImpl(time);
+    renderRes(time); renderOrig(time); renderClose(time);
 
     const ci = chapterIndex(time);
     if(ci !== currentChapter){
@@ -745,7 +859,7 @@
 
   function boot(){
     const imgs = Array.from(document.images);
-    const ready = imgs.length ? Promise.all(imgs.map(img => img.decode().catch(()=>{}))) : Promise.resolve();
+    const ready = imgs.length ? Promise.all(imgs.map(img => img.decode())) : Promise.resolve();
     Promise.all([document.fonts.ready, ready]).then(() => {
       render(0);
       window.__ready = true;

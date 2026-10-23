@@ -1,0 +1,76 @@
+{
+  "batch": "20261023-v02",
+  "baselineCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+  "capturedAt": "2026-10-23",
+  "film": {
+    "path": "delivery/PrivacyTrace-作品展示-90s.mp4",
+    "bytes": 9513808,
+    "sha256": "c06238761b57450c14b76349231ebde262d679eb38a217a5f86d261eb860d8fd",
+    "durationSeconds": 90,
+    "fps": 30,
+    "width": 1920,
+    "height": 1080
+  },
+  "qa": {
+    "path": "delivery/qa.json",
+    "source": "showcase-qa"
+  },
+  "assets": [
+    {
+      "path": "assets/stills/android-import.png",
+      "kind": "screenshot",
+      "bytes": 176400,
+      "sha256": "425917e87f695112c7affc0137fef9e1e9a41a16d21b8b50e4e6fef457981db9",
+      "captureCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+      "capturedAt": "2026-10-23"
+    },
+    {
+      "path": "assets/stills/android-candidates.png",
+      "kind": "screenshot",
+      "bytes": 167984,
+      "sha256": "0a7f65e3c050993d325e967038a5466873eebb4c75f80c30b1359d07e6e79313",
+      "captureCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+      "capturedAt": "2026-10-23"
+    },
+    {
+      "path": "assets/stills/android-report-full.png",
+      "kind": "screenshot",
+      "bytes": 494696,
+      "sha256": "f7e89f0b542dc1e2fc4f78588b7318a6c478539a030454df1e1ac42673104139",
+      "captureCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+      "capturedAt": "2026-10-23"
+    },
+    {
+      "path": "assets/stills/android-evidence-full.png",
+      "kind": "screenshot",
+      "bytes": 656036,
+      "sha256": "d00bcf50b2a2b4e7da29ddccb45f01f0c142b41146b41c67f637d65637c293b3",
+      "captureCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+      "capturedAt": "2026-10-23"
+    },
+    {
+      "path": "assets/recording-android.mp4",
+      "kind": "recording",
+      "bytes": 609436,
+      "sha256": "8dab57bb3d3078157178f7083bb0ee9f54df551be9dad7a97eaa8852c72f49ae",
+      "captureCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+      "capturedAt": "2026-10-23"
+    }
+  ],
+  "captions": [
+    {
+      "path": "film-showcase.html",
+      "required": [
+        "2026-10-23 @ f81ca20",
+        "Android App",
+        "持久化回放"
+      ],
+      "forbidden": [
+        "07b37b2",
+        "2026-10-22",
+        "工作台",
+        "桌面工作台"
+      ]
+    }
+  ]
+}

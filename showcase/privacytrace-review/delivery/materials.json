@@ -1,0 +1,61 @@
+{
+  "batch": "20261023-v02",
+  "baselineCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+  "capturedAt": "2026-10-23",
+  "film": {
+    "path": "delivery/PrivacyTrace-Review-1080p.mp4",
+    "bytes": 7618976,
+    "sha256": "551440c33e4649994912335500000ab20e37942e7e2c7364bb4e5ec731a45c77",
+    "durationSeconds": 120,
+    "fps": 30,
+    "width": 1920,
+    "height": 1080
+  },
+  "qa": {
+    "path": "delivery/manifest.json",
+    "source": "review-manifest"
+  },
+  "assets": [
+    {
+      "path": "delivery/assets/android-import.png",
+      "kind": "screenshot",
+      "bytes": 176400,
+      "sha256": "425917e87f695112c7affc0137fef9e1e9a41a16d21b8b50e4e6fef457981db9",
+      "captureCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+      "capturedAt": "2026-10-23"
+    },
+    {
+      "path": "delivery/assets/android-report-full.png",
+      "kind": "screenshot",
+      "bytes": 494696,
+      "sha256": "f7e89f0b542dc1e2fc4f78588b7318a6c478539a030454df1e1ac42673104139",
+      "captureCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+      "capturedAt": "2026-10-23"
+    },
+    {
+      "path": "delivery/assets/android-evidence-full.png",
+      "kind": "screenshot",
+      "bytes": 656036,
+      "sha256": "d00bcf50b2a2b4e7da29ddccb45f01f0c142b41146b41c67f637d65637c293b3",
+      "captureCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+      "capturedAt": "2026-10-23"
+    }
+  ],
+  "captions": [
+    {
+      "path": "delivery/film-review.html",
+      "required": [
+        "2026-10-23 @ f81ca20",
+        "Android App",
+        "持久化回放"
+      ],
+      "forbidden": [
+        "07b37b2",
+        "2026-10-22 交付候选",
+        "工作台",
+        "WORKBENCH",
+        "截图采集于 2026-10-22"
+      ]
+    }
+  ]
+}

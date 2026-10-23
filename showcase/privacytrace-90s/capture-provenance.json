@@ -1,0 +1,82 @@
+{
+  "purpose": "为《PrivacyTrace 作品展示片（严肃展示版 90s）》v0.2 采集 Android App 前端素材：同一冻结提交、同一天、同一批次。",
+  "batch": "20261023-v02",
+  "baselineCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+  "capturedAt": "2026-10-23",
+  "timezone": "Asia/Shanghai",
+  "tool": "Playwright 1.64（Edge headless）· 生产 MobileApp.vue + 假原生桥（isTauri / __TAURI_INTERNALS__），390×844 移动视口；recordVideo 录制后转 30 fps MP4，逐 10 fps 抽帧",
+  "subject": {
+    "product": "PrivacyTrace Android App 前端（apps/web/src/mobile/MobileApp.vue；由 Android/Tauri 壳加载的同一套界面）",
+    "url": "http://127.0.0.1:6173/",
+    "server": "npm run dev:start（vite dev server，PRIVACYTRACE_WEB_PORT=6173；PRIVACYTRACE_API_ORIGIN=http://127.0.0.1:8123）",
+    "checkout": ".agents/worktrees/video-v02",
+    "api": "uv run --project apps/api uvicorn privacytrace.main:app --port 8123；PRIVACYTRACE_STORE_ROOT 指向 fixtures/acceptance-jobs/ 的临时副本",
+    "note": "Android App 只有一个前端；浏览器只承担移动视口的渲染与录制，不是另一个前端。"
+  },
+  "record": {
+    "script": "showcase/materials-20261023-v02/capture-android-flow.cjs",
+    "method": "Playwright recordVideo（390×844）→ ffmpeg 转 30 fps MP4 → ffmpeg fps=10 抽帧",
+    "path": "showcase/privacytrace-90s/assets/recording-android.mp4",
+    "duration": 16.833008,
+    "width": 390,
+    "height": 844,
+    "fps": 30,
+    "bytes": 609436,
+    "sha256": "8dab57bb3d3078157178f7083bb0ee9f54df551be9dad7a97eaa8852c72f49ae",
+    "frames10fps": 168
+  },
+  "actions": [
+    "载入 Android App：APK 与政策材料",
+    "恢复当前材料（假原生桥返回持久化回放样本）",
+    "准备政策 → 核对政策声明（来源 1 / 来源 2 切换，候选声明 1 条）",
+    "保存并分析 → 扫描与对照进度（五阶段）",
+    "查看报告 → APP 隐私收集越权报告（精确位置 / 通讯录 / 屏幕截图）",
+    "打开第一条证据 → 精确位置 · 证据不足（权限配置 / API 字节码 / 政策原句）"
+  ],
+  "uiStatesCovered": [
+    "APK 与政策材料：Android App 顶栏 + 四步轨（APK / 核对 / 扫描 / 报告）、当前分析材料、两份政策来源",
+    "核对政策声明：来源切换、政策原文 / 候选声明、定位原句",
+    "扫描与对照进度：核对材料 → 隔离扫描 → 装载政策原文 → 规则对照 → 生成报告",
+    "APP 隐私收集越权报告：三条结果均为「证据不足 · 条目待复核」，可展开证据",
+    "证据详情：代码位置与政策原句同屏"
+  ],
+  "stills": {
+    "android-import.png": {
+      "bytes": 176400,
+      "sha256": "425917e87f695112c7affc0137fef9e1e9a41a16d21b8b50e4e6fef457981db9",
+      "pixelSize": "780×1688（390 CSS px）"
+    },
+    "android-candidates.png": {
+      "bytes": 167984,
+      "sha256": "0a7f65e3c050993d325e967038a5466873eebb4c75f80c30b1359d07e6e79313",
+      "pixelSize": "780×1688（390 CSS px）"
+    },
+    "android-report-full.png": {
+      "bytes": 494696,
+      "sha256": "f7e89f0b542dc1e2fc4f78588b7318a6c478539a030454df1e1ac42673104139",
+      "pixelSize": "780×4438（390 CSS px）"
+    },
+    "android-evidence-full.png": {
+      "bytes": 656036,
+      "sha256": "d00bcf50b2a2b4e7da29ddccb45f01f0c142b41146b41c67f637d65637c293b3",
+      "pixelSize": "780×6258（390 CSS px）"
+    }
+  },
+  "reportSource": {
+    "fixture": "fixtures/acceptance-jobs/gkd-s1-first.json",
+    "mode": "REAL_SCAN · PERSISTED_REPLAY",
+    "createdAt": "2026-10-03T12:48:35.211974Z",
+    "boundary": "历史回放样本；本批次未重新扫描 APK"
+  },
+  "boundaries": [
+    "Android App 画面是 Chromium 390×844 移动视口模拟（生产移动壳 + 假原生桥），不是 Android 真机；片内图注写明「视口模拟（非真机）」",
+    "项目只有一个前端：Android App；不再展示已冻结的桌面工作台界面",
+    "示例流程为持久化回放样本（真实 APK 静态报告，原生成 2026-10-03），用于界面演示"
+  ],
+  "renderFrameBank": {
+    "fps": 30,
+    "frames": 505,
+    "script": "showcase/privacytrace-90s/frames.sh",
+    "note": "第二轮从原始30 fps录制重新派生；采集批次、日期与前端提交未改变。旧record.frames10fps保留原采集记录。"
+  }
+}

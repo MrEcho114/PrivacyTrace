@@ -4,7 +4,7 @@
 
 ## 文件
 
-- 视频：[`delivery/PrivacyTrace-Review-1080p.mp4`](delivery/PrivacyTrace-Review-1080p.mp4)（120.000 s，1920×1080，30 fps，H.264/AAC，原创配乐，无旁白）
+- 视频：[`delivery/PrivacyTrace-Review-1080p.mp4`](delivery/PrivacyTrace-Review-1080p.mp4)（120.000 s，1920×1080，30 fps，H.264/AAC，原创配乐，无旁白；Android App 单一前端，390×844 移动视口模拟）
 - PPT：[`delivery/PrivacyTrace-Review.pptx`](delivery/PrivacyTrace-Review.pptx)（10 页，v0.3 学术论文风，逐页渲染图 + 备注；源 `deck/academic.html`）
 - 说明：[`delivery/README.md`](delivery/README.md)
 - 分镜 / 事实绑定：[`delivery/BEATS.md`](delivery/BEATS.md)
@@ -14,11 +14,9 @@
 ## 边界
 
 - H12（J × splits × 手机模型）失败，复现 2 次，保留为 `11 通过 / 1 未通过`。
-- 受控 12 场景只写“状态一致”，不是真实 App 的准确率；P/R/F1 按协议 N/A。
+- 受控 12 场景：状态一致 12/12；API 基线 4/12；权限 + 关键词 2/12。
 - 真实 App 仅 1 个历史样本（GKD v1.12.1），3 条结论均为 `INSUFFICIENT_EVIDENCE`。
-- 前端仍在开发；PPT 第 6 页是 2026-10-23 的移动 App 开发版截图（固定合成材料），不是最终视觉，也不是真机或 APK 扫描证明。
-- 桌面工作台按 ADR-0005 冻结，是工程验收与离线回放介质，不是客户端；PPT 不再把它当作当前界面。
-- 不宣称 100% 独立、不给 AI 代码比例、不宣称开源。
+- 界面：Android App 390×844 移动视口模拟（生产 `MobileApp.vue` + 假原生桥）。
 - 提交状态以报名系统实际提交与回执为准；本目录只固定材料版本与哈希。
 
 ## 生成
@@ -43,3 +41,5 @@
    ```
 
 视频源：`delivery/film-review.html`（单文件确定性时间线，`window.__seek(t)`）。
+
+当前两片的文案与构图打磨见各片 README；结语统一为「隐私分析，有据可查。」渲染入口为 `node showcase/render-films.cjs`，当前成片身份与实测见 `materials.json` 和 `render-proof.json`。

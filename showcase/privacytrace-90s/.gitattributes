@@ -1,0 +1,6 @@
+# Preserve the exact bytes of the delivered media and its provenance.
+*.mp4 binary
+*.m4a binary
+*.png binary
+# The render proof binds the exact composition bytes across Windows/Linux.
+film-showcase.html -text diff whitespace=cr-at-eol

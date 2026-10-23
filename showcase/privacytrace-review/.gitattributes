@@ -1,0 +1,9 @@
+# Preserve the exact bytes of the delivered media and its provenance.
+*.mp4 binary
+*.m4a binary
+*.pptx binary
+*.png binary
+# These text sources are hashed in manifest.json; retain identical checkout bytes.
+delivery/*.html -text diff whitespace=cr-at-eol
+delivery/*.md -text diff whitespace=cr-at-eol
+delivery/*.json -text diff whitespace=cr-at-eol

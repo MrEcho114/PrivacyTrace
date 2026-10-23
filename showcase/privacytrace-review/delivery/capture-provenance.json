@@ -1,0 +1,52 @@
+{
+  "purpose": "为《PrivacyTrace 作品评审片（专家版 120s）》v0.2 采集 Android App 前端素材：与 90 秒展示片同一批次、同一冻结提交。",
+  "batch": "20261023-v02",
+  "baselineCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+  "capturedAt": "2026-10-23",
+  "timezone": "Asia/Shanghai",
+  "subject": {
+    "product": "PrivacyTrace Android App 前端（apps/web/src/mobile/MobileApp.vue；由 Android/Tauri 壳加载的同一套界面）",
+    "url": "http://127.0.0.1:6173/",
+    "api": "uv run --project apps/api uvicorn privacytrace.main:app --port 8123；fixtures/acceptance-jobs/ 的临时 store",
+    "checkout": ".agents/worktrees/video-v02",
+    "note": "Android App 是唯一前端；桌面工作台不作为前端展示。"
+  },
+  "method": "Playwright 1.64（Edge headless）· 生产 MobileApp.vue + 假原生桥，390×844 移动视口；stills 以 deviceScaleFactor=2 截屏",
+  "stills": {
+    "assets/android-import.png": {
+      "method": "Android App 导入材料页（390×844 视口）",
+      "bytes": 176400,
+      "sha256": "425917e87f695112c7affc0137fef9e1e9a41a16d21b8b50e4e6fef457981db9",
+      "pixelSize": "780×1688（390 CSS px）",
+      "boundary": "开发版；持久化回放样本"
+    },
+    "assets/android-report-full.png": {
+      "method": "Android App 对照报告全页（展开第一条证据前的完整报告）",
+      "bytes": 494696,
+      "sha256": "f7e89f0b542dc1e2fc4f78588b7318a6c478539a030454df1e1ac42673104139",
+      "pixelSize": "780×4438（390 CSS px）",
+      "boundary": "开发版；持久化回放样本"
+    },
+    "assets/android-evidence-full.png": {
+      "method": "Android App 证据详情全页（展开第一条证据后）",
+      "bytes": 656036,
+      "sha256": "d00bcf50b2a2b4e7da29ddccb45f01f0c142b41146b41c67f637d65637c293b3",
+      "pixelSize": "780×6258（390 CSS px）",
+      "boundary": "开发版；视口模拟（非真机）"
+    }
+  },
+  "tools": [
+    "showcase/materials-20261023-v02/capture-android-flow.cjs"
+  ],
+  "reportSource": {
+    "fixture": "fixtures/acceptance-jobs/gkd-s1-first.json",
+    "mode": "REAL_SCAN · PERSISTED_REPLAY",
+    "createdAt": "2026-10-03T12:48:35.211974Z",
+    "boundary": "历史回放样本；本批次未重新扫描 APK"
+  },
+  "observedIssues": [
+    "Android App 画面是 Chromium 390×844 移动视口模拟（生产移动壳 + 假原生桥），不是 Android 真机。",
+    "项目只有一个前端：Android App；桌面工作台界面不再出现在片内。",
+    "PPT 不随本批次更新；唯一汇报 PPT 由 #265 负责。"
+  ]
+}

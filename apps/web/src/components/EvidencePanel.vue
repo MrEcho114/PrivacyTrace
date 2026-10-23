@@ -17,10 +17,17 @@ const props = withDefaults(defineProps<{
   sourceLabels: Record<string, string>
   /** Desktop keeps the panel heading; the sheet host owns the visible title. */
   heading?: boolean
-}>(), { heading: true })
+  /** 移动阅读态：先给结论、原句和未知项，方法签名/规则版本/原始字段进“技术详情”。 */
+  compact?: boolean
+}>(), { heading: true, compact: false })
 const emit = defineEmits<{ close: []; openPolicy: [string] }>()
 const claimValue: Record<string, string> = { AFFIRMED: '肯定', NEGATED: '否定', APP: '应用自身', THIRD_PARTY: '第三方', ACCESS: '访问', UNKNOWN: '未知' }
 function claimLabel(value: string | null | undefined) { return claimValue[value ?? 'UNKNOWN'] ?? '未知' }
+// 静态上下文的键要读得懂，但值保持原样：UNKNOWN 是事实，不能被翻译成“已确认”。
+const contextLabels: Record<string, string> = { receiver: '接收方', purpose: '目的', temporal_scope: '时间范围', method: '方法', call_site: '调用点' }
+const contextLine = (call: Evidence['api_call']) => Object.entries(call?.context ?? {})
+  .map(([key, value]) => `${contextLabels[key] ?? key} ${value ?? '未提供'}`)
+  .join(' · ')
 
 const label = (id: string) => props.taxonomy?.data_types.find(item => item.id === id)?.label ?? id
 const documentFor = (item: Evidence) => props.report.policy_documents.find(doc => doc.id === item.document_id)
@@ -80,14 +87,36 @@ watch(() => [props.issue, props.report], () => { candidatePage.value = 0 })
     <p class="explanation">{{ issue.explanation }}</p>
     <p v-if="issue.status === 'NOT_DECLARED'" class="demo-note">{{ frontendCopy.facts.notDeclared }} 下面保留完整政策及这些状态。</p>
     <div class="evidence-grid"><article v-for="item in selectedEvidence" :key="item.id" class="evidence-card">
-      <div class="section-heading"><strong>{{ kindLabels[item.kind] }}</strong><span class="subtle">{{ item.id }}</span></div>
-      <p class="locator">{{ item.source }} · {{ item.locator }}</p>
-      <template v-if="item.api_call"><p class="hash">目标：{{ item.api_call.target_descriptor }}</p><p class="subtle">规则 {{ item.api_call.rule_id }} · {{ item.api_call.ruleset_version }}；静态上下文 {{ JSON.stringify(item.api_call.context) }}</p><p class="subtle">字节码定位保留调用方法、DEX 与指令偏移；未提供 JADX Java 源码时以字节码作为依据。</p></template>
-      <p v-if="item.kind === 'POLICY_SENTENCE'" class="subtle">原文位置：[{{ item.start_offset }}, {{ item.end_offset }})，按 Unicode 码点计数。</p>
-      <pre v-if="sentenceContext(item)">{{ sentenceContext(item)?.before }}<mark>{{ sentenceContext(item)?.sentence }}</mark>{{ sentenceContext(item)?.after }}</pre>
-      <pre v-else-if="item.excerpt">{{ item.excerpt }}</pre>
-      <p v-else class="subtle">本条引用政策快照，全文见下方。</p>
-      <button v-if="item.document_id && documentFor(item)" class="policy-jump-btn" @click="emit('openPolicy', item.document_id!)">完整政策与适用边界</button>
+      <div class="section-heading"><strong>{{ kindLabels[item.kind] }}</strong><span v-if="!compact" class="subtle">{{ item.id }}</span></div>
+      <template v-if="compact">
+        <p class="locator">{{ item.source }}</p>
+        <pre v-if="sentenceContext(item)">{{ sentenceContext(item)?.before }}<mark>{{ sentenceContext(item)?.sentence }}</mark>{{ sentenceContext(item)?.after }}</pre>
+        <pre v-else-if="item.excerpt">{{ item.excerpt }}</pre>
+        <p v-else class="subtle">本条引用政策快照，全文见下方。</p>
+        <p v-if="item.api_call" class="subtle">这条只是静态调用线索：是否实际发生、是否真的读取数据仍未知，未经过运行时验证。</p>
+        <p v-if="item.api_call && contextLine(item.api_call)" class="subtle">静态上下文：{{ contextLine(item.api_call) }}</p>
+        <details class="evidence-details">
+          <summary>技术详情</summary>
+          <p class="locator">{{ item.locator }}</p>
+          <template v-if="item.api_call">
+            <p class="subtle">规则 {{ item.api_call.rule_id }} · {{ item.api_call.ruleset_version }}</p>
+            <p class="hash">原始字段 {{ JSON.stringify(item.api_call.context) }}</p>
+            <p class="subtle">字节码定位保留调用方法、DEX 与指令偏移；未提供 JADX Java 源码时以字节码作为依据。</p>
+          </template>
+          <p v-if="item.kind === 'POLICY_SENTENCE'" class="subtle">原文位置：[{{ item.start_offset }}, {{ item.end_offset }})，按 Unicode 码点计数。</p>
+          <p class="hash">{{ item.id }}</p>
+        </details>
+        <button v-if="item.document_id && documentFor(item)" class="policy-jump-btn" @click="emit('openPolicy', item.document_id!)">完整政策与适用边界</button>
+      </template>
+      <template v-else>
+        <p class="locator">{{ item.source }} · {{ item.locator }}</p>
+        <template v-if="item.api_call"><p class="hash">目标：{{ item.api_call.target_descriptor }}</p><p class="subtle">规则 {{ item.api_call.rule_id }} · {{ item.api_call.ruleset_version }}；静态上下文 {{ JSON.stringify(item.api_call.context) }}</p><p class="subtle">字节码定位保留调用方法、DEX 与指令偏移；未提供 JADX Java 源码时以字节码作为依据。</p></template>
+        <p v-if="item.kind === 'POLICY_SENTENCE'" class="subtle">原文位置：[{{ item.start_offset }}, {{ item.end_offset }})，按 Unicode 码点计数。</p>
+        <pre v-if="sentenceContext(item)">{{ sentenceContext(item)?.before }}<mark>{{ sentenceContext(item)?.sentence }}</mark>{{ sentenceContext(item)?.after }}</pre>
+        <pre v-else-if="item.excerpt">{{ item.excerpt }}</pre>
+        <p v-else class="subtle">本条引用政策快照，全文见下方。</p>
+        <button v-if="item.document_id && documentFor(item)" class="policy-jump-btn" @click="emit('openPolicy', item.document_id!)">完整政策与适用边界</button>
+      </template>
     </article></div>
     <section v-if="relatedCandidates.length" class="candidate-clauses">
       <h3>相关候选条款（未确认匹配）</h3>

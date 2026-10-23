@@ -1,0 +1,89 @@
+{
+  "source_sha": "5fff115323abef5028f47e6cfd74e0994f13bdd5",
+  "dirty": false,
+  "captured_at": "2026-10-23T06:22:53.026Z",
+  "platform": "Chromium + mocked native bridge; Android/IME/TalkBack NOT_RUN",
+  "checks": [
+    "320/200% long source title: two-line preview, full expansion, collapse; oversized header scrolls away",
+    "390px candidate summary above the fold; source changes retain identity and reset disclosure",
+    "delete confirmation names its scope; cancelling retains edits, sends no write and restores focus",
+    "native save rejected then retried: edits retained, no false success, one flow error; only 保存并分析 creates a job",
+    "clipboard denial is visible and retry copies the entire hash",
+    "material deletion in import and settings focuses confirmation; cancelling restores trigger without deleting"
+  ],
+  "captures": [
+    {
+      "file": "import-320-200.png",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "root_font": "32px"
+    },
+    {
+      "file": "candidates-320-200.png",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "root_font": "32px"
+    },
+    {
+      "file": "candidates-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "root_font": "16px"
+    },
+    {
+      "file": "save-rejected-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "root_font": "16px"
+    },
+    {
+      "file": "candidate-delete-confirm-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "root_font": "16px"
+    },
+    {
+      "file": "candidate-delete-confirm-320-200.png",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "root_font": "32px"
+    },
+    {
+      "file": "hash-copy-failed-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "root_font": "16px"
+    },
+    {
+      "file": "import-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "root_font": "16px"
+    },
+    {
+      "file": "material-delete-confirm-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "root_font": "16px"
+    }
+  ],
+  "errors": []
+}

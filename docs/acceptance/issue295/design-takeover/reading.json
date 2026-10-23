@@ -1,0 +1,99 @@
+{
+  "source_sha": "5fff115323abef5028f47e6cfd74e0994f13bdd5",
+  "dirty": false,
+  "captured_at": "2026-10-23T06:23:05.687Z",
+  "checks": [
+    "one compact material row; full identity and actual instance remain reachable",
+    "settings distinguish remote material storage from device-local model credentials",
+    "report shows one identity, independent origin/delivery labels, and a complete evidence action above the fold",
+    "keyboard disclosure reveals full package, instance, timestamps and the original scope disclaimer",
+    "320/768/200% text and reduced motion preserve content and disclosure access",
+    "report details retain the change-material action and preserve the current material",
+    "policy reading: body-l 17/1.75 on the reading serif, not the 16px sans UI",
+    "desktop entry stays on its original layout"
+  ],
+  "captures": [
+    {
+      "file": "candidates-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "source_sha": "5fff115323abef5028f47e6cfd74e0994f13bdd5",
+      "dirty": false,
+      "platform": "Chromium + mocked native bridge + fixed report"
+    },
+    {
+      "file": "settings-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "source_sha": "5fff115323abef5028f47e6cfd74e0994f13bdd5",
+      "dirty": false,
+      "platform": "Chromium + mocked native bridge + fixed report"
+    },
+    {
+      "file": "report-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "source_sha": "5fff115323abef5028f47e6cfd74e0994f13bdd5",
+      "dirty": false,
+      "platform": "Chromium + mocked native bridge + fixed report"
+    },
+    {
+      "file": "report-details-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "source_sha": "5fff115323abef5028f47e6cfd74e0994f13bdd5",
+      "dirty": false,
+      "platform": "Chromium + mocked native bridge + fixed report"
+    },
+    {
+      "file": "report-320.png",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "source_sha": "5fff115323abef5028f47e6cfd74e0994f13bdd5",
+      "dirty": false,
+      "platform": "Chromium + mocked native bridge + fixed report"
+    },
+    {
+      "file": "report-768.png",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "source_sha": "5fff115323abef5028f47e6cfd74e0994f13bdd5",
+      "dirty": false,
+      "platform": "Chromium + mocked native bridge + fixed report"
+    },
+    {
+      "file": "report-390-large-text.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "source_sha": "5fff115323abef5028f47e6cfd74e0994f13bdd5",
+      "dirty": false,
+      "platform": "Chromium + mocked native bridge + fixed report"
+    },
+    {
+      "file": "desktop-import-1440.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "source_sha": "5fff115323abef5028f47e6cfd74e0994f13bdd5",
+      "dirty": false,
+      "platform": "Chromium + mocked native bridge + fixed report"
+    }
+  ],
+  "errors": [],
+  "platform": "Chromium with deterministic fixtures and mocked native bridge; Android/real IME/TalkBack NOT_RUN"
+}

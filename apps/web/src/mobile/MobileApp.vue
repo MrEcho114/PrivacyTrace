@@ -4,6 +4,8 @@ import UiButton from '../components/UiButton.vue'
 import UiIcon from '../components/UiIcon.vue'
 import BrandMark from '../components/BrandMark.vue'
 import UiSheet from '../components/UiSheet.vue'
+import HashValue from '../components/HashValue.vue'
+import MobileReadableName from '../components/MobileReadableName.vue'
 import PolicyAssist from '../components/PolicyAssist.vue'
 import CandidatePage from '../pages/CandidatePage.vue'
 import ExistingReports from '../App.vue'
@@ -19,13 +21,13 @@ import { createMobileFlow } from './flow'
 import './mobile.css'
 
 const flow = createMobileFlow(mobileBridge)
-const { state, context, draft, job, report, taxonomy, busy, error, notice, model, modelResult, resultToken, hasPolicyText } = flow
+const { state, context, draft, job, report, taxonomy, busy, error, notice, lastUpdated, model, modelResult, resultToken, hasPolicyText } = flow
 const modelName = ref(''), appHint = ref('')
 const modelPrompt = computed(() => appHint.value.trim() ? collectionInstructions(appHint.value) : '')
 const labels = computed(() => Object.fromEntries(taxonomy.value?.data_types.map(t => [t.id, t.label]) ?? []))
-const terminal = computed(() => !!job.value && ['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(job.value.state))
-const stepLabels = frontendCopy.steps
+
 // Claude 的 4×48 步骤轨放不下 #167 的长文案；可见标签用短名，完整名称保留在 aria-label。
+const stepLabels = frontendCopy.steps
 const shortStepLabels = ['APK', '核对', '扫描', '报告']
 const pageTitles: Record<Step, string> = {
   import: frontendCopy.pageTitles.import,
@@ -93,6 +95,53 @@ const reportVersion = computed(() => {
   return sample.version_name ?? ('v' + sample.version_code)
 })
 
+// 时间戳统一转成本地可读格式；原始值仍留在 datetime 属性 / 说明里，供核对时区。
+// 解析失败时不编造时间，原样显示服务返回的字符串。
+function formatLocal(value?: string | null): string {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString('zh-CN', { hour12: false, dateStyle: 'medium', timeStyle: 'medium' })
+}
+// 失败原因只展示服务真的返回过的内容；没有就明说尚未取得，不补百分比、ETA 或猜测。
+const failureReason = computed(() => {
+  if (!failed.value) return ''
+  const raw = job.value?.error?.trim()
+  if (!raw) return '服务尚未返回失败原因。'
+  try {
+    const parsed = JSON.parse(raw) as { message?: string; detail?: string }
+    const message = String(parsed?.message ?? parsed?.detail ?? '').trim()
+    if (message) return message
+  } catch { /* 不是 JSON 就按原样展示 */ }
+  return raw
+})
+const statusHeading = computed(() => {
+  if (job.value?.state === 'SUCCEEDED') return frontendCopy.stages.SUCCEEDED
+  return failed.value ? '本次分析未完成' : '正在分析当前材料'
+})
+const lastUpdatedLabel = computed(() => lastUpdated.value ? `最近更新 ${formatLocal(lastUpdated.value)}` : '')
+// 移动壳只保留一个主操作：报告是阅读态、空材料态由空状态卡片自己提供 CTA，
+// 这两种情况不再挂一条挤占视口的固定底栏。
+const showActionBar = computed(() => state.step !== 'report' && !(state.step === 'import' && !context.value))
+// 删除材料是破坏性操作：先在同一位置确认作用对象，再调用真实删除。
+const pendingRemove = ref(false)
+const pendingSettingsRemove = ref(false)
+watch(context, () => { pendingRemove.value = false; pendingSettingsRemove.value = false })
+function focusRemoval(id: string) {
+  void nextTick(() => {
+    const control = document.getElementById(id)
+    control?.scrollIntoView({ block: 'center', behavior: 'instant' })
+    control?.focus({ preventScroll: true })
+  })
+}
+function askRemove() { pendingRemove.value = true; focusRemoval('m-confirm-remove') }
+function cancelRemove() { pendingRemove.value = false; focusRemoval('m-remove') }
+function confirmRemove() { pendingRemove.value = false; void flow.remove() }
+function askSettingsRemove() { pendingSettingsRemove.value = true; focusRemoval('m-settings-confirm-remove') }
+function cancelSettingsRemove() { pendingSettingsRemove.value = false; focusRemoval('m-settings-remove') }
+function confirmSettingsRemove() { pendingSettingsRemove.value = false; void flow.remove() }
+function refreshJob() { void flow.poll() }
+
 // --- Android back + per-step scroll restoration -----------------------------
 // Body scroll is intentional: the Tauri WebView keeps native scroll restoration
 // and the report's evidence focus behaviour, while the app bar sticks and the
@@ -111,6 +160,17 @@ const stepEntering = ref(false)
 // The fixed action bar grows with 200% text; publish its measured height so the
 // last content is never trapped behind it. Not a layout listener on the page.
 const actionbar = useTemplateRef<HTMLElement>('actionbar')
+const appbar = useTemplateRef<HTMLElement>('appbar')
+const flowingAppbar = ref(false)
+let appbarObserver: ResizeObserver | undefined
+// Keep the user's enlarged text. Once the title exceeds two touch rows, let
+// the header leave the viewport with the page instead of covering the reader.
+watch(appbar, element => {
+  appbarObserver?.disconnect()
+  if (!element) return
+  appbarObserver = new ResizeObserver(() => { flowingAppbar.value = element.getBoundingClientRect().height > 96 })
+  appbarObserver.observe(element)
+}, { flush: 'post' })
 let actionbarObserver: ResizeObserver | undefined
 watch(actionbar, element => {
   actionbarObserver?.disconnect()
@@ -199,21 +259,16 @@ function onPopState(event: PopStateEvent) {
 }
 function openSettings(event?: Event) {
   settingsTrigger.value = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  pendingSettingsRemove.value = false
   settingsOpen.value = true
   pushOverlay()
 }
 function closeSettings(byBack = false) {
   if (!settingsOpen.value) return
+  pendingSettingsRemove.value = false
   settingsOpen.value = false
   if (!byBack) popOverlay()
   void nextTick(() => settingsTrigger.value?.focus({ preventScroll: true }))
-}
-
-const progressPrimary = () => { if (job.value?.state === 'SUCCEEDED') void flow.openReport(); else void flow.poll() }
-const progressSecondary = () => {
-  if (!job.value) return
-  if (!terminal.value) void flow.control('cancel-job')
-  else if (job.value.state !== 'SUCCEEDED') void flow.control('retry-job')
 }
 
 onMounted(() => {
@@ -227,6 +282,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('popstate', onPopState)
   actionbarObserver?.disconnect()
+  appbarObserver?.disconnect()
   document.documentElement.style.removeProperty('--m-actionbar-actual')
   document.documentElement.classList.remove('mobile-shell')
   document.body.classList.remove('is-mobile-app')
@@ -235,9 +291,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="mobile-workspace" :class="{ 'm-report-step': state.step === 'report' }">
+  <div class="mobile-workspace" :class="{ 'm-report-step': state.step === 'report', 'm-no-actionbar': !showActionBar }">
     <a class="skip-link" href="#workspace-content">跳到内容</a>
-    <header class="m-appbar">
+    <header ref="appbar" class="m-appbar" :class="{ 'm-appbar-flow': flowingAppbar }">
       <button v-if="state.step !== 'import'" type="button" class="m-icon-button" aria-label="返回上一步" @click="goBack">
         <UiIcon name="back" />
       </button>
@@ -269,18 +325,31 @@ onBeforeUnmount(() => {
       <template v-if="state.step === 'import'">
         <section v-if="!context" class="m-card m-empty-card">
           <h2>选择要对照的应用</h2>
-          <p>只会上传你选择的应用和安装包。分析服务保留材料，直到你主动删除。</p>
+          <p>只会上传你选择的应用和安装包。选择后由分析服务解析，材料保留到你主动删除。</p>
           <div class="m-button-row">
-            <UiButton variant="primary" :disabled="busy" @click="flow.select()">选择应用并上传</UiButton>
+            <UiButton variant="primary" :disabled="busy" @click="flow.select()">选择应用</UiButton>
             <UiButton :disabled="busy" @click="flow.select(true)">恢复当前材料</UiButton>
           </div>
+          <p class="m-help">上传的是安装包本身；这里不会读取手机上的其他文件。</p>
         </section>
         <section v-else class="m-card">
-          <div class="m-card-head"><h2>当前分析材料</h2><UiButton variant="quiet" :disabled="busy" @click="flow.remove">删除已上传材料</UiButton></div>
-          <p class="m-material-name" :role="draft ? undefined : 'status'">{{ draft?.name || '正在读取材料…' }}</p>
-          <p v-if="draft?.apk_sha256" class="hash">APK SHA-256 {{ draft.apk_sha256 }}</p>
+          <div class="m-card-head"><h2>当前分析材料</h2></div>
+          <MobileReadableName v-if="draft" class="m-material-name" :value="draft.name" />
+          <p v-else role="status">正在读取材料…</p>
+          <HashValue v-if="draft?.apk_sha256" label="APK SHA-256" :value="draft.apk_sha256" />
           <p class="m-help">材料保存在分析服务，直到你主动删除。更换文件请重新选择应用。</p>
           <p class="m-help">分析服务：{{ context.origin }}</p>
+          <div class="m-material-actions">
+            <template v-if="pendingRemove">
+              <p class="m-material-warning" role="alert">将从分析服务删除「{{ draft?.name || '当前材料' }}」及其分析结果，无法恢复。</p>
+              <UiButton id="m-confirm-remove" variant="danger" :disabled="busy" @click="confirmRemove">确认删除</UiButton>
+              <UiButton variant="quiet" :disabled="busy" @click="cancelRemove">取消</UiButton>
+            </template>
+            <template v-else>
+              <UiButton variant="quiet" :disabled="busy" @click="flow.refresh">重新读取材料</UiButton>
+              <UiButton id="m-remove" variant="quiet" class="m-destructive-action" :disabled="busy" @click="askRemove">删除已上传材料</UiButton>
+            </template>
+          </div>
         </section>
         <div v-if="busy" class="m-notice m-busy-notice"><span role="status">正在处理，请稍候。</span><UiButton variant="quiet" @click="flow.stop">停止本次请求</UiButton></div>
         <section v-if="context" class="m-section" aria-labelledby="m-sources-title">
@@ -289,7 +358,7 @@ onBeforeUnmount(() => {
             <details>
               <summary class="m-row">
                 <span class="m-row-main">
-                  <strong>{{ source.title || '未命名来源' }}</strong>
+                  <strong class="m-source-title">{{ source.title || '未命名来源' }}</strong>
                   <span class="m-row-sub">{{ sourceStatusLabel(source.status) }} · {{ sourceStateLine(source) }}</span>
                 </span>
                 <UiIcon name="chevron-right" class="m-chevron" />
@@ -325,17 +394,28 @@ onBeforeUnmount(() => {
       <template v-else-if="state.step === 'progress'">
         <section class="m-card m-status-card" :class="{ failed }">
           <p class="m-eyebrow" role="status">{{ stageLabel }}</p>
-          <h2>{{ job?.state === 'SUCCEEDED' ? frontendCopy.stages.SUCCEEDED : failed ? '本次分析未完成' : '正在分析当前材料' }}</h2>
-          <p v-if="job?.id" class="hash">{{ job.id }}</p>
-          <p v-if="failed" class="m-error" role="alert">本次分析未完成，可刷新状态或重新分析。</p>
-          <p v-if="job?.state === 'SUCCEEDED'" class="m-help">阶段已完成。报告里有证据位置与政策原句。</p>
+          <h2>{{ statusHeading }}</h2>
+          <p v-if="failed" class="m-error" role="alert">{{ failureReason }}</p>
+          <p v-else-if="job?.state === 'SUCCEEDED'" class="m-help">阶段已完成。报告里有证据位置与政策原句。</p>
+          <p v-else class="m-help">阶段会自动更新，不需要反复点刷新。取消只停止本次分析，材料会保留。</p>
+          <p v-if="lastUpdatedLabel" class="m-help">{{ lastUpdatedLabel }}</p>
+          <details v-if="job" class="m-details m-job-meta">
+            <summary>任务详情</summary>
+            <div class="m-row-body">
+              <dl class="m-meta-list">
+                <div><dt>任务 ID</dt><dd class="hash">{{ job.id }}</dd></div>
+                <div v-if="job.created_at"><dt>创建时间</dt><dd><time :datetime="job.created_at" :title="job.created_at">{{ formatLocal(job.created_at) }}</time></dd></div>
+                <div v-if="lastUpdated"><dt>最近读取</dt><dd><time :datetime="lastUpdated" :title="lastUpdated">{{ formatLocal(lastUpdated) }}</time></dd></div>
+              </dl>
+            </div>
+          </details>
         </section>
         <section class="m-section" aria-labelledby="m-timeline-title">
           <div class="m-section-head"><h2 id="m-timeline-title">分析阶段</h2><span class="m-help">{{ job ? stageName(job.state) : '未开始' }}</span></div>
           <ol v-if="jobEvents.length" class="m-timeline">
             <li v-for="(event, index) in jobEvents" :key="event.at + event.state" :class="{ current: index === jobEvents.length - 1 }">
               <span class="m-timeline-dot" aria-hidden="true"></span>
-              <span class="m-timeline-body"><strong>{{ stageName(event.state) }}</strong><span>{{ event.at }}</span></span>
+              <span class="m-timeline-body"><strong>{{ stageName(event.state) }}</strong><time :datetime="event.at" :title="event.at">{{ formatLocal(event.at) }}</time></span>
             </li>
           </ol>
           <p v-else class="m-help">任务创建后会在这里按时间顺序显示阶段记录。</p>
@@ -343,21 +423,21 @@ onBeforeUnmount(() => {
       </template>
 
       <div v-else-if="state.step === 'report' && report && taxonomy" class="m-report">
-        <ExistingReports :key="report.job.id" :snapshot="{ report, taxonomy }" mobile />
-        <details class="m-details m-report-meta">
-          <summary>报告来源与版本</summary>
+        <ExistingReports :key="report.job.id" :snapshot="{ report, taxonomy }" mobile>
+          <template #report-context>
           <div class="m-row-body">
             <dl class="m-meta-list">
               <div><dt>包名</dt><dd class="hash">{{ report.sample.package_name }}</dd></div>
               <div><dt>版本</dt><dd>{{ reportVersion }}</dd></div>
-              <div v-if="report.job.created_at"><dt>原生成时间</dt><dd><time :datetime="report.job.created_at">{{ report.job.created_at }}</time></dd></div>
+              <div v-if="report.job.created_at"><dt>原生成时间</dt><dd><time :datetime="report.job.created_at" :title="report.job.created_at">{{ formatLocal(report.job.created_at) }}</time></dd></div>
               <div v-if="context"><dt>分析服务</dt><dd class="hash">{{ context.origin }}</dd></div>
               <div v-if="context"><dt>材料标识</dt><dd class="hash">{{ context.draft }}</dd></div>
               <div v-if="context && draft?.revision != null"><dt>材料版本</dt><dd>{{ draft.revision }}</dd></div>
             </dl>
             <UiButton v-if="context" variant="quiet" @click="navigate('import')">更换材料</UiButton>
           </div>
-        </details>
+          </template>
+        </ExistingReports>
       </div>
       <p v-else-if="state.step === 'report'" class="m-notice" role="status">报告还没载入。回到进度页刷新状态。</p>
 
@@ -367,18 +447,26 @@ onBeforeUnmount(() => {
       </template>
     </main>
 
-    <footer v-if="state.step !== 'report'" ref="actionbar" class="m-actionbar" role="group" aria-label="当前步骤操作">
+    <footer v-if="showActionBar" ref="actionbar" class="m-actionbar" role="group" aria-label="当前步骤操作">
       <template v-if="state.step === 'import'">
-        <UiButton :disabled="busy || !context" @click="flow.refresh">重新读取材料</UiButton>
-        <UiButton :variant="context ? 'primary' : 'secondary'" :disabled="busy || !context" @click="flow.prepare">准备政策并继续</UiButton>
+        <UiButton variant="primary" :disabled="busy || !context" :busy="busy" @click="flow.prepare">准备政策</UiButton>
       </template>
       <template v-else-if="state.step === 'candidates'">
-        <UiButton :disabled="busy" @click="navigate('import')">修改材料</UiButton>
-        <UiButton variant="primary" :disabled="busy || !hasPolicyText" :busy="busy" @click="flow.begin">保存候选并开始分析</UiButton>
+        <p id="candidate-start-help" class="m-action-help">保存全部候选，创建新分析</p>
+        <UiButton variant="primary" aria-describedby="candidate-start-help" :disabled="busy || !hasPolicyText" :busy="busy" @click="flow.begin">保存并分析</UiButton>
       </template>
       <template v-else-if="state.step === 'progress'">
-        <UiButton v-if="(job && !terminal) || failed" :disabled="busy" @click="progressSecondary">{{ job && !terminal ? '取消分析' : '重新分析' }}</UiButton>
-        <UiButton variant="primary" :disabled="busy" :busy="busy" @click="progressPrimary">{{ job?.state === 'SUCCEEDED' ? '查看报告' : '刷新进度' }}</UiButton>
+        <template v-if="job && job.state === 'SUCCEEDED'">
+          <UiButton variant="primary" :disabled="busy" :busy="busy" @click="flow.openReport">查看报告</UiButton>
+        </template>
+        <template v-else-if="failed">
+          <UiButton :disabled="busy" :busy="busy" @click="refreshJob">刷新状态</UiButton>
+          <UiButton variant="primary" :disabled="busy" @click="flow.control('retry-job')">重新分析</UiButton>
+        </template>
+        <template v-else>
+          <UiButton :disabled="busy" :busy="busy" @click="refreshJob">刷新状态</UiButton>
+          <UiButton v-if="job" variant="quiet" class="m-cancel-action" :disabled="busy" @click="flow.control('cancel-job')">取消分析</UiButton>
+        </template>
       </template>
     </footer>
 
@@ -397,7 +485,12 @@ onBeforeUnmount(() => {
         <p v-if="context" class="hash">{{ context.origin }}</p>
         <div class="m-button-row">
           <UiButton :disabled="busy || !context" @click="flow.refresh">重新读取材料</UiButton>
-          <UiButton v-if="context" variant="danger" :disabled="busy" @click="flow.remove">删除已上传材料</UiButton>
+          <UiButton v-if="context && !pendingSettingsRemove" id="m-settings-remove" variant="quiet" class="m-destructive-action" :disabled="busy" @click="askSettingsRemove">删除已上传材料</UiButton>
+        </div>
+        <div v-if="context && pendingSettingsRemove" class="m-button-row">
+          <p class="m-material-warning" role="alert">将从分析服务删除当前材料及其分析结果，无法恢复。</p>
+          <UiButton id="m-settings-confirm-remove" variant="danger" :disabled="busy" @click="confirmSettingsRemove">确认删除</UiButton>
+          <UiButton variant="quiet" :disabled="busy" @click="cancelSettingsRemove">取消</UiButton>
         </div>
       </section>
     </UiSheet>

@@ -16,6 +16,7 @@
 
 /* ---------- platform layer (only while the Tauri shell is mounted) ---------- */
 html.mobile-shell { background: var(--mt-bg, var(--canvas)); overscroll-behavior: none; }
+html.mobile-shell:root { scroll-padding-bottom: calc(var(--m-actionbar-actual, 0px) + var(--keyboard-inset, 0px) + 16px); }
 html.mobile-shell body { margin: 0; background: var(--mt-bg, var(--canvas)); overscroll-behavior-y: none; }
 .mobile-workspace {
   min-height: 100dvh;
@@ -91,6 +92,10 @@ html.mobile-shell body { margin: 0; background: var(--mt-bg, var(--canvas)); ove
   letter-spacing: 0;
   color: var(--mt-fg, var(--ink));
 }
+.m-appbar.m-appbar-flow { position: static; }
+.mobile-workspace .m-action-help { flex: 1 1 100%; margin: 0; color: var(--mt-muted); font-size: var(--mt-text-caption); line-height: 1.45; }
+.mobile-workspace .source-actions .m-delete-candidate { color: var(--mt-danger); }
+.m-candidate-delete-confirm { color: var(--mt-danger); font-size: var(--mt-text-caption); line-height: 1.5; }
 .m-icon-button {
   display: grid;
   place-items: center;
@@ -126,11 +131,13 @@ html.mobile-shell body { margin: 0; background: var(--mt-bg, var(--canvas)); ove
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  flex-wrap: wrap;
+  gap: 2px 4px;
   width: 100%;
   min-height: var(--mt-stepnav, 48px);
-  height: var(--mt-stepnav, 48px);
-  padding: 0 2px;
+  /* 200% 根字号下按内容增高，不裁字、不逐字竖排；48 仍是最小值（§10）。 */
+  height: auto;
+  padding: 6px 2px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -138,22 +145,26 @@ html.mobile-shell body { margin: 0; background: var(--mt-bg, var(--canvas)); ove
   font-family: var(--mt-font-sans, var(--font-body));
   font-size: var(--mt-text-control, var(--m-body));
   font-weight: 400;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
+  line-height: 1.25;
+  /* 大字号时允许完整文字换行，不截成单字；当前步骤仍完整可辨。 */
+  white-space: normal;
+  overflow: visible;
 }
 .m-step-number {
   display: grid;
   place-items: center;
   flex: none;
-  width: 20px;
-  height: 20px;
+  /* 圆圈和数字都跟着字号走：0.75em 的字号放进 1.75em 的圆圈，200% 下不溢出。 */
+  width: 1.75em;
+  height: 1.75em;
+  min-width: 1.75em;
   border: 1px solid var(--mt-border-control, var(--control));
   border-radius: var(--mt-radius-circle, 50%);
-  font-size: 0.625rem;
+  font-size: 0.75em;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
 }
-.m-step-label { min-width: 0; font-size: 0.75rem; overflow: visible; text-overflow: clip; }
+.m-step-label { min-width: 0; font-size: 0.75em; line-height: 1.35; overflow: visible; text-overflow: clip; }
 /* 当前: 陶土文字 + 2px 下划线（形状冗余，不只靠颜色）；完成: ✓ + muted；
    不可达: meta + 禁用。整条轨道不用藏青整块底。 */
 .m-step[aria-current="step"] { color: var(--mt-accent-text, var(--navy)); font-weight: 500; }
@@ -192,6 +203,8 @@ html.mobile-shell body { margin: 0; background: var(--mt-bg, var(--canvas)); ove
 }
 /* 报告是阅读态：没有固定操作栏，底部只留安全区。 */
 .m-report-step .m-main { padding-bottom: calc(var(--mt-space-24, 24px) + var(--mt-safe-bottom, env(safe-area-inset-bottom, 0px))); }
+/* 没有固定底栏的步骤（空材料态由空状态卡片自己给主 CTA）同样只留安全区。 */
+.m-no-actionbar .m-main { padding-bottom: calc(var(--mt-space-24, 24px) + var(--mt-safe-bottom, env(safe-area-inset-bottom, 0px))); }
 /* 步骤切换：一次 200ms 的透明度 + 4px 微升，首帧即可读，不做高度动画。 */
 @keyframes m-step-enter {
   from { opacity: .55; transform: translateY(4px); }
@@ -201,8 +214,8 @@ html.mobile-shell body { margin: 0; background: var(--mt-bg, var(--canvas)); ove
 
 /* ---------- compact material context (one line + expandable identity) ---------- */
 .mobile-workspace .m-context.material-context {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 2px var(--mt-space-8, var(--space-8));
   margin: 0 0 var(--mt-space-16, 16px);
@@ -211,6 +224,12 @@ html.mobile-shell body { margin: 0; background: var(--mt-bg, var(--canvas)); ove
   border: 1px solid var(--mt-border-soft, var(--border));
   border-radius: var(--mt-radius-card, var(--m-card-radius));
 }
+/* 材料摘要按 12em 起算：200% 根字号下摘要自己占满一行，“更换材料”退到下一行，
+   材料名不再被挤成一列字。 */
+.mobile-workspace .m-context .material-disclosure { flex: 1 1 12em; min-width: 0; }
+.mobile-workspace .m-context .material-change { flex: 0 0 auto; }
+/* 材料条上的“更换材料”是次操作：用中性文字，不与主操作/选中态抢强调色。 */
+.mobile-workspace .m-context .ui-button.material-change { color: var(--mt-fg-2, var(--ink)); }
 .mobile-workspace .material-context .material-identity strong {
   font-size: var(--mt-text-body, var(--m-body));
   font-weight: 500;
@@ -283,6 +302,26 @@ html.mobile-shell body { margin: 0; background: var(--mt-bg, var(--canvas)); ove
 .m-card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--mt-space-8, 8px); flex-wrap: wrap; }
 .m-card-head h2 { margin: 0; }
 .m-card-head .ui-button { margin-left: auto; }
+/* 材料管理动作放回材料卡：主操作不再被“重新读取材料”长期挤压。 */
+.m-material-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mt-space-8, 8px);
+  margin-top: var(--mt-space-12, 12px);
+  padding-top: var(--mt-space-12, 12px);
+  border-top: 1px solid var(--mt-border, var(--border));
+}
+.m-material-warning {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--mt-danger, var(--error));
+  font-size: var(--mt-text-caption, var(--m-caption));
+  line-height: 1.45;
+}
+/* 卡片里的操作按钮不参与同排挤压：放不下就整颗换行，不把中文压成两行。 */
+.mobile-workspace .m-button-row > .ui-button,
+.mobile-workspace .m-material-actions > .ui-button { flex: 0 0 auto; max-width: 100%; }
 .m-empty-card .m-button-row { margin-top: var(--mt-space-16, 16px); }
 /* 空态：衬线 title-l 24 + body 16 + 一个主操作（§8.7）。 */
 .m-empty-card h2 {
@@ -295,6 +334,7 @@ html.mobile-shell body { margin: 0; background: var(--mt-bg, var(--canvas)); ove
   font-family: var(--mt-font-mono, var(--font-code));
   font-size: var(--mt-text-mono, var(--m-caption)) !important;
 }
+.m-source-row details:not([open]) .m-source-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 /* `.m-card p` 的 (0,1,1) 会压过裸类名，辅助文案统一带上作用域前缀。 */
 .mobile-workspace .m-help {
   margin: 6px 0;
@@ -379,21 +419,42 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
 .mobile-workspace .policy-assist > summary { min-height: 56px; padding: var(--mt-space-12, 12px) var(--mt-space-16, 16px); }
 .mobile-workspace .policy-assist > p,
 .mobile-workspace .policy-assist > fieldset { margin-left: var(--mt-space-16, 16px); margin-right: var(--mt-space-16, 16px); }
+/* 辅助收集的空输入框不再固定 96px 高：空时只占一行，输入后按内容长高。 */
+.mobile-workspace .policy-assist textarea {
+  min-height: 3.5rem;
+  max-height: 14rem;
+  field-sizing: content;
+}
 
 /* Candidate / report lists are full-row tap targets with a chevron. */
-.mobile-workspace .candidate-list { display: flex; flex-direction: column; gap: var(--mt-space-8, 8px); max-height: none; overflow: visible; padding: 0; margin: 0; }
+/* 候选是一张列表：行与行用 1px 分隔线，选中用浅状态层 + 2px 下划线；
+   不再给每行套一层带描边的卡片（少一层嵌套，候选内容更早出现）。 */
+.mobile-workspace .candidate-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: none;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--mt-border-soft, var(--border));
+  border-radius: var(--mt-radius-card, var(--m-card-radius));
+  background: transparent;
+}
 .mobile-workspace .candidate-item {
   position: relative;
   grid-template-columns: minmax(0, 1fr);
   min-height: 56px;
-  padding: var(--mt-space-12, 12px) calc(var(--mt-chevron, 20px) + var(--mt-space-24, 24px)) var(--mt-space-12, 12px) var(--mt-space-16, 16px);
-  border: 1px solid var(--mt-border-soft, var(--border));
-  border-radius: var(--mt-radius-card, var(--m-card-radius));
-  background: var(--mt-surface, var(--surface));
+  padding: var(--mt-space-12, 12px) calc(var(--mt-chevron, 20px) + var(--mt-space-16, 16px)) var(--mt-space-12, 12px) var(--mt-space-16, 16px);
+  border: 0;
+  border-bottom: 1px solid var(--mt-border, var(--border));
+  border-radius: 0;
+  background: transparent;
 }
+.mobile-workspace .candidate-list .candidate-item:last-child { border-bottom: 0; }
 /* 选中：陶土文字 + 2px 下划线 + 轻状态层，不用藏青整块底（§8.5 形状冗余）。 */
 .mobile-workspace .candidate-item.selected {
-  border-color: var(--mt-accent-text, var(--navy));
+  border-bottom-color: var(--mt-border, var(--border));
   background: var(--mt-state-selected, var(--m-state-selected));
   box-shadow: inset 0 -2px 0 var(--mt-accent-text, var(--navy));
 }
@@ -403,9 +464,18 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
 .mobile-workspace .candidate-item-heading { flex-direction: row; align-items: center; flex-wrap: wrap; }
 .mobile-workspace .candidate-item-heading strong { font-size: var(--mt-text-body, var(--m-body)); font-weight: 500; }
 .mobile-workspace .candidate-quote-preview { color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); line-height: 1.45; }
-.mobile-workspace .candidate-summary { flex-direction: column; gap: 2px; color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); }
-.mobile-workspace .candidate-summary span { display: block; }
-.mobile-workspace .candidate-editor { border-top: 0; margin-top: var(--mt-space-12, 12px); padding-top: 0; }
+.mobile-workspace .candidate-summary { color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); line-height: 1.45; }
+.mobile-workspace .candidate-summary span { display: inline; }
+.mobile-workspace .candidates-panel { padding: 0; border: 0; background: transparent; box-shadow: none; }
+.mobile-workspace .candidates-panel > .panel-heading { margin-bottom: 8px; }
+.mobile-workspace .candidates-panel > .panel-heading .candidate-summary { margin: 0; }
+.mobile-workspace .candidates-panel #add-candidate { color: var(--mt-fg-2); }
+.mobile-workspace .candidate-editor { margin-top: var(--mt-space-12, 12px); padding-top: 16px; border-top: 1px solid var(--mt-border-soft); }
+.mobile-workspace .m-material-actions .ui-button.quiet { color: var(--mt-fg-2); }
+.mobile-workspace .m-material-actions .ui-button.m-destructive-action,
+.m-settings-dialog .ui-button.m-destructive-action { color: var(--mt-danger); }
+.mobile-workspace .m-report-meta dd > .hash { display: block; }
+.mobile-workspace .sdk-method > summary { display: flex; align-items: center; min-height: var(--mt-touch); color: var(--mt-fg-2); cursor: pointer; }
 .mobile-workspace .candidate-editor .ui-button { min-height: var(--mt-touch, var(--m-touch)); }
 .mobile-workspace .panel-heading h2,
 .mobile-workspace .candidate-editor-heading h3 {
@@ -423,6 +493,7 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
    选中项用陶土文字 + 2px 下划线，不再用整块浅底 + 投影。 */
 .mobile-workspace .mobile-panel-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--mt-space-4, 4px);
   margin: var(--mt-space-12, 12px) 0;
   padding: var(--mt-space-4, 4px);
@@ -432,15 +503,17 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
 }
 .mobile-workspace .mobile-panel-tabs button {
   position: relative;
-  flex: 1;
+  /* 8em 起算：200% 根字号下每个标签自己占一行，不再把“政策原文”拆成 3+1 行。 */
+  flex: 1 1 8em;
   min-height: var(--mt-touch, var(--m-touch));
   padding: var(--mt-space-4, 4px) var(--mt-space-8, 8px);
   border: 0;
   border-radius: var(--mt-radius-control, var(--radius));
   background: transparent;
-  color: var(--mt-muted, var(--muted));
+  color: var(--mt-muted, var(--m-muted));
   font-size: var(--mt-text-control, var(--m-body));
   font-weight: 400;
+  white-space: nowrap;
 }
 .mobile-workspace .mobile-panel-tabs button:active { background: var(--mt-state-press, var(--m-state-press)); }
 .mobile-workspace .mobile-panel-tabs button.selected {
@@ -465,28 +538,31 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-.mobile-workspace .source-tabs { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: var(--mt-space-4, 4px); scrollbar-width: thin; }
+.mobile-workspace .source-tabs { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; padding: 0; gap: var(--mt-space-4, 4px); border-bottom: 1px solid var(--mt-border-soft, var(--border)); }
+/* 来源切换是标签栏：紧凑、可横滚，选中用细下划线，不再是一排带描边的厚按钮。 */
 .mobile-workspace .source-tabs button {
-  flex: 1 0 40%;
+  flex: 0 0 auto;
   min-width: 0;
   min-height: var(--mt-touch, var(--m-touch));
-  border: 1px solid var(--mt-border-soft, var(--border));
-  border-radius: var(--mt-radius-control, var(--radius));
+  padding: 0 var(--mt-space-12, 12px);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
   background: transparent;
-  color: var(--mt-fg-2, var(--ink));
+  color: var(--mt-muted, var(--muted));
   font-size: var(--mt-text-control, var(--m-body));
-  font-weight: 400;
+  font-weight: 500;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
 }
 .mobile-workspace .source-tabs button:active { background: var(--mt-state-press, var(--m-state-press)); }
 .mobile-workspace .source-tabs button.selected {
-  border-color: var(--mt-border-control, var(--control));
-  background: var(--mt-surface, var(--surface));
+  border-bottom-color: currentColor;
+  background: transparent;
   color: var(--mt-accent-text, var(--navy));
   font-weight: 500;
-  box-shadow: inset 0 -2px 0 currentColor;
+  box-shadow: none;
 }
 
 /* Report issue rows: the whole Android row opens the evidence sheet. */
@@ -510,11 +586,12 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
   text-align: left;
   white-space: normal;
 }
-.m-issue-head { display: flex; align-items: center; justify-content: space-between; gap: var(--mt-space-8, 8px); flex-wrap: wrap; min-width: 0; }
+.m-issue-head { display: flex; align-items: center; justify-content: flex-start; gap: var(--mt-space-8, 8px); flex-wrap: wrap; min-width: 0; }
+.m-issue-head .tag { margin-left: auto; }
 .m-issue-head strong { font-size: var(--mt-text-body, var(--m-body)); font-weight: 500; }
 .mobile-workspace .tag { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 .m-issue-meta { min-width: 0; color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); line-height: 1.45; overflow-wrap: anywhere; }
-.m-issue-action { display: flex; align-items: center; gap: var(--mt-space-4, 4px); color: var(--mt-accent-text, var(--navy)); font-size: var(--mt-text-body, var(--m-body)); font-weight: 500; }
+.m-issue-action { display: flex; align-items: center; gap: var(--mt-space-4, 4px); color: var(--mt-accent-text, var(--navy)); font-size: var(--mt-text-body, var(--m-body)); font-weight: 500; white-space: nowrap; }
 .m-issue-action .m-chevron { flex: none; color: var(--mt-accent-text, var(--navy)); }
 .m-issue-row:active { background: var(--mt-state-press, var(--m-state-press)); }
 @media (hover: hover) and (pointer: fine) {
@@ -560,6 +637,8 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
   gap: var(--mt-space-4, 4px) var(--mt-space-8, 8px);
   color: var(--mt-muted, var(--muted));
 }
+/* 来源标签只给短名；当前来源的完整标题必须仍然可见。 */
+.mobile-workspace .source-context-title { flex: 1 1 100%; min-width: 0; color: var(--mt-fg, var(--ink)); font-size: var(--mt-text-body, var(--m-body)); font-weight: 500; overflow-wrap: anywhere; }
 .m-notice .ui-button { margin-left: var(--mt-space-8, 8px); }
 .mobile-workspace .m-error { color: var(--mt-danger, var(--error)); font-size: var(--mt-text-body, var(--m-body)); line-height: 1.6; }
 /* 独立错误块：语义底 + 文本档 + 12 内边距，role=alert 由模板给出。 */
@@ -582,6 +661,12 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
   line-height: 1.45;
 }
 .m-status-card h2 { margin-bottom: 6px; }
+/* 任务 ID、精确时间这类技术信息收进进度卡里的详情，不再和状态标题抢位置。 */
+.m-status-card .m-job-meta { margin: var(--mt-space-12, 12px) 0 0; }
+.m-meta-list { display: grid; gap: var(--mt-space-8, 8px); margin: 0; }
+.m-meta-list > div { display: grid; gap: 2px; }
+.m-meta-list dt { color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); line-height: 1.45; }
+.m-meta-list dd { margin: 0; color: var(--mt-fg-2, var(--ink)); font-size: var(--mt-text-body, var(--m-body)); overflow-wrap: anywhere; }
 
 /* ---------- progress timeline ---------- */
 .m-timeline { list-style: none; margin: 0; padding: 0 var(--mt-space-16, 16px); background: var(--mt-surface, var(--surface)); border: 1px solid var(--mt-border-soft, var(--border)); border-radius: var(--mt-radius-card, var(--m-card-radius)); }
@@ -594,7 +679,7 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
 .m-timeline li.current .m-timeline-dot { border-color: var(--mt-accent, var(--navy)); background: var(--mt-accent, var(--navy)); box-shadow: 0 0 0 4px var(--mt-state-selected, var(--m-state-selected)); }
 .m-timeline-body { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
 .m-timeline-body strong { font-size: var(--mt-text-body, var(--m-body)); font-weight: 500; }
-.m-timeline-body span { color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.m-timeline-body :is(span, time) { color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .m-timeline li.current .m-timeline-body strong { color: var(--mt-fg, var(--ink)); }
 
 /* ---------- report inside the shell (App.vue mobile body) ---------- */
@@ -688,6 +773,11 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
 .mobile-workspace .m-report .review-panel button.primary { width: 100%; }
 .mobile-workspace .m-report footer { margin: var(--mt-space-16, 16px) 0 var(--mt-space-8, 8px); text-align: left; font-size: var(--mt-text-caption, var(--m-caption)); color: var(--mt-muted, var(--muted)); }
 .mobile-workspace .m-report footer p { margin: 4px 0; }
+/* 共享层级用了固定 px 行高（hierarchy.css 的 24/22/20px）。移动报告在 200% 根字号下
+   这些行高会小于字号、叠行；移动作用域统一换成相对行高，桌面保持原值（#295 §1）。 */
+.mobile-workspace .m-report .shell :is(h1, h2, h3) { line-height: 1.35; }
+.mobile-workspace .m-report .shell .subtle,
+.mobile-workspace .m-report .shell .section-heading .subtle { line-height: 1.5; }
 
 /* 报告摘要（MobileReportSummary）自带的移动样式仍吃旧变量；这里把颜色/字号/几何
    归到 --mt-*，不改它的结构与类名。 */
@@ -767,7 +857,8 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
   left: 0;
   z-index: 40;
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: stretch;
   gap: var(--mt-space-8, 8px);
   min-height: calc(var(--mt-actionbar, var(--m-actionbar-min-height)) + var(--mt-safe-bottom, env(safe-area-inset-bottom, 0px)));
   padding: var(--mt-space-8, 8px) max(var(--mt-gutter, var(--m-gutter)), var(--mt-safe-right, env(safe-area-inset-right, 0px)), calc((100% - var(--mt-content-max, 560px)) / 2)) calc(var(--mt-space-8, 8px) + var(--mt-safe-bottom, env(safe-area-inset-bottom, 0px))) max(var(--mt-gutter, var(--m-gutter)), var(--mt-safe-left, env(safe-area-inset-left, 0px)), calc((100% - var(--mt-content-max, 560px)) / 2));
@@ -777,15 +868,25 @@ details[open] > summary .m-chevron { transform: rotate(90deg); }
   box-sizing: border-box;
 }
 /* 一屏一个主操作：主按钮占满剩余宽度，次操作是文字按钮（§8.1/§8.5）。
-   选择器带上 .secondary，压过下面的通用次按钮规则（portal 外无影响）。 */
-.m-actionbar .ui-button { min-height: var(--mt-touch, var(--m-touch)); min-width: 0; }
-.m-actionbar .ui-button.primary { flex: 1 1 auto; }
+   选择器带上 .secondary，压过下面的通用次按钮规则（portal 外无影响）。
+   窄屏或 200% 根字号时，主操作的下限宽度超过同排可用空间，自己换到一整行，
+   不再把「准备政策」压成逐字竖排。 */
+.m-actionbar .ui-button {
+  min-height: var(--mt-touch, var(--m-touch));
+  min-width: 0;
+  white-space: nowrap;
+}
+.m-actionbar .ui-button.primary {
+  flex: 1 1 auto;
+  min-width: min(100%, 11em);
+}
 .mobile-workspace .m-actionbar .ui-button.secondary {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
   padding-inline: var(--mt-space-12, 12px);
   border-color: transparent;
   background: transparent;
-  color: var(--mt-accent-text, var(--navy));
+  color: var(--mt-fg-2, var(--ink));
+  font-weight: 500;
 }
 .mobile-workspace .m-actionbar .ui-button.secondary:active:not(:disabled) { background: var(--mt-state-press, var(--m-state-press)); }
 .mobile-workspace .m-actionbar .ui-button.secondary:disabled { background: transparent; border-color: transparent; color: var(--mt-meta, var(--muted)); }
@@ -1041,6 +1142,21 @@ html.keyboard-open dialog.ui-sheet.m-evidence-sheet { max-height: calc(100dvh - 
 .m-evidence-sheet .ui-sheet-body .candidate-nav { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mt-space-8, 8px); margin: var(--mt-space-12, 12px) 0; }
 .m-evidence-sheet .ui-sheet-body .candidate-nav button { min-width: var(--mt-touch, var(--m-touch)); touch-action: manipulation; }
 .m-evidence-sheet .ui-sheet-body .locator { color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); overflow-wrap: anywhere; }
+/* 移动证据卡：方法签名、规则版本、原始字段收进“技术详情”，先给原句与未知项。 */
+.mobile-workspace .m-report .evidence-details,
+.m-evidence-sheet .ui-sheet-body .evidence-details { margin: var(--mt-space-8, 8px) 0; }
+.mobile-workspace .m-report .evidence-details > summary,
+.m-evidence-sheet .ui-sheet-body .evidence-details > summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--mt-touch, var(--m-touch));
+  color: var(--mt-muted, var(--muted));
+  font-size: var(--mt-text-caption, var(--m-caption));
+  font-weight: 500;
+  cursor: pointer;
+}
+.mobile-workspace .m-report .evidence-details[open] > summary,
+.m-evidence-sheet .ui-sheet-body .evidence-details[open] > summary { margin-bottom: var(--mt-space-4, 4px); }
 
 /* ---------- settings: page-like full-screen sheet (§8.6) ---------- */
 dialog.ui-sheet.m-settings-dialog { background: var(--mt-surface, var(--surface)); }
@@ -1129,6 +1245,27 @@ html.mobile-shell dialog.ui-sheet .status-tag.info { background: var(--mt-info-b
 html.mobile-shell dialog.ui-sheet .status-tag.wait { background: var(--mt-warn-bg, var(--notice)); color: var(--mt-warn, var(--ink)); }
 html.mobile-shell dialog.ui-sheet .status-tag.success { background: var(--mt-success-bg, var(--mint)); color: var(--mt-success, var(--success)); }
 html.mobile-shell dialog.ui-sheet .status-tag.error { background: var(--mt-danger-bg, var(--rose)); color: var(--mt-danger, var(--error)); }
+
+/* ---------- 折叠入口的可发现性（#295 审阅） ---------- */
+/* 移动壳里的折叠块统一补一个 ▾；材料条自己的“详情 >”不重复加。 */
+.mobile-workspace details > summary::after {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  opacity: .65;
+}
+.mobile-workspace details[open] > summary::after { transform: rotate(-135deg); }
+.mobile-workspace .material-disclosure > summary::after { display: none; }
+/* 取消分析是中断性操作：与“刷新状态”同权会让危险入口看不出来。 */
+.mobile-workspace .m-actionbar .ui-button.m-cancel-action { color: var(--mt-danger, var(--error)); }
+.mobile-workspace .m-report .provenance-code { margin-top: var(--mt-space-8, 8px); border-top: 1px solid var(--mt-border, var(--border)); }
+.mobile-workspace .m-report .provenance-code > summary { display: flex; align-items: center; gap: var(--mt-space-8, 8px); min-height: var(--mt-touch, var(--m-touch)); color: var(--mt-muted, var(--muted)); font-size: var(--mt-text-caption, var(--m-caption)); }
+.mobile-workspace .m-report .provenance-code p { margin: 0 0 var(--mt-space-8, 8px); }
 
 /* ---------- motion preference ---------- */
 @media (prefers-reduced-motion: reduce) {

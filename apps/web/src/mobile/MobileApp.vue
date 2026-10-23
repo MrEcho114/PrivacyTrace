@@ -5,6 +5,7 @@ import UiIcon from '../components/UiIcon.vue'
 import BrandMark from '../components/BrandMark.vue'
 import UiSheet from '../components/UiSheet.vue'
 import HashValue from '../components/HashValue.vue'
+import MobileReadableName from '../components/MobileReadableName.vue'
 import PolicyAssist from '../components/PolicyAssist.vue'
 import CandidatePage from '../pages/CandidatePage.vue'
 import ExistingReports from '../App.vue'
@@ -152,6 +153,17 @@ const stepEntering = ref(false)
 // The fixed action bar grows with 200% text; publish its measured height so the
 // last content is never trapped behind it. Not a layout listener on the page.
 const actionbar = useTemplateRef<HTMLElement>('actionbar')
+const appbar = useTemplateRef<HTMLElement>('appbar')
+const flowingAppbar = ref(false)
+let appbarObserver: ResizeObserver | undefined
+// Keep the user's enlarged text. Once the title exceeds two touch rows, let
+// the header leave the viewport with the page instead of covering the reader.
+watch(appbar, element => {
+  appbarObserver?.disconnect()
+  if (!element) return
+  appbarObserver = new ResizeObserver(() => { flowingAppbar.value = element.getBoundingClientRect().height > 96 })
+  appbarObserver.observe(element)
+}, { flush: 'post' })
 let actionbarObserver: ResizeObserver | undefined
 watch(actionbar, element => {
   actionbarObserver?.disconnect()
@@ -263,6 +275,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('popstate', onPopState)
   actionbarObserver?.disconnect()
+  appbarObserver?.disconnect()
   document.documentElement.style.removeProperty('--m-actionbar-actual')
   document.documentElement.classList.remove('mobile-shell')
   document.body.classList.remove('is-mobile-app')
@@ -273,7 +286,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="mobile-workspace" :class="{ 'm-report-step': state.step === 'report', 'm-no-actionbar': !showActionBar }">
     <a class="skip-link" href="#workspace-content">跳到内容</a>
-    <header class="m-appbar">
+    <header ref="appbar" class="m-appbar" :class="{ 'm-appbar-flow': flowingAppbar }">
       <button v-if="state.step !== 'import'" type="button" class="m-icon-button" aria-label="返回上一步" @click="goBack">
         <UiIcon name="back" />
       </button>
@@ -314,7 +327,8 @@ onBeforeUnmount(() => {
         </section>
         <section v-else class="m-card">
           <div class="m-card-head"><h2>当前分析材料</h2></div>
-          <p class="m-material-name" :role="draft ? undefined : 'status'">{{ draft?.name || '正在读取材料…' }}</p>
+          <MobileReadableName v-if="draft" class="m-material-name" :value="draft.name" />
+          <p v-else role="status">正在读取材料…</p>
           <HashValue v-if="draft?.apk_sha256" label="APK SHA-256" :value="draft.apk_sha256" />
           <p class="m-help">材料保存在分析服务，直到你主动删除。更换文件请重新选择应用。</p>
           <p class="m-help">分析服务：{{ context.origin }}</p>
@@ -337,7 +351,7 @@ onBeforeUnmount(() => {
             <details>
               <summary class="m-row">
                 <span class="m-row-main">
-                  <strong>{{ source.title || '未命名来源' }}</strong>
+                  <strong class="m-source-title">{{ source.title || '未命名来源' }}</strong>
                   <span class="m-row-sub">{{ sourceStatusLabel(source.status) }} · {{ sourceStateLine(source) }}</span>
                 </span>
                 <UiIcon name="chevron-right" class="m-chevron" />
@@ -431,7 +445,8 @@ onBeforeUnmount(() => {
         <UiButton variant="primary" :disabled="busy || !context" :busy="busy" @click="flow.prepare">准备政策</UiButton>
       </template>
       <template v-else-if="state.step === 'candidates'">
-        <UiButton variant="primary" :disabled="busy || !hasPolicyText" :busy="busy" @click="flow.begin">保存并分析</UiButton>
+        <p id="candidate-start-help" class="m-action-help">保存全部候选，创建新分析</p>
+        <UiButton variant="primary" aria-describedby="candidate-start-help" :disabled="busy || !hasPolicyText" :busy="busy" @click="flow.begin">保存并分析</UiButton>
       </template>
       <template v-else-if="state.step === 'progress'">
         <template v-if="job && job.state === 'SUCCEEDED'">

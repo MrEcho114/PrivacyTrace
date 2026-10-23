@@ -16,6 +16,7 @@
 
 /* ---------- platform layer (only while the Tauri shell is mounted) ---------- */
 html.mobile-shell { background: var(--mt-bg, var(--canvas)); overscroll-behavior: none; }
+html.mobile-shell:root { scroll-padding-bottom: calc(var(--m-actionbar-actual, 0px) + var(--keyboard-inset, 0px) + 16px); }
 html.mobile-shell body { margin: 0; background: var(--mt-bg, var(--canvas)); overscroll-behavior-y: none; }
 .mobile-workspace {
   min-height: 100dvh;
@@ -91,6 +92,10 @@ html.mobile-shell body { margin: 0; background: var(--mt-bg, var(--canvas)); ove
   letter-spacing: 0;
   color: var(--mt-fg, var(--ink));
 }
+.m-appbar.m-appbar-flow { position: static; }
+.mobile-workspace .m-action-help { flex: 1 1 100%; margin: 0; color: var(--mt-muted); font-size: var(--mt-text-caption); line-height: 1.45; }
+.mobile-workspace .source-actions .m-delete-candidate { color: var(--mt-danger); }
+.m-candidate-delete-confirm { color: var(--mt-danger); font-size: var(--mt-text-caption); line-height: 1.5; }
 .m-icon-button {
   display: grid;
   place-items: center;
@@ -329,6 +334,7 @@ html.mobile-shell body { margin: 0; background: var(--mt-bg, var(--canvas)); ove
   font-family: var(--mt-font-mono, var(--font-code));
   font-size: var(--mt-text-mono, var(--m-caption)) !important;
 }
+.m-source-row details:not([open]) .m-source-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 /* `.m-card p` 的 (0,1,1) 会压过裸类名，辅助文案统一带上作用域前缀。 */
 .mobile-workspace .m-help {
   margin: 6px 0;

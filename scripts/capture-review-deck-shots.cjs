@@ -20,7 +20,7 @@ const fs = require('node:fs')
 const net = require('node:net')
 const path = require('node:path')
 const vm = require('node:vm')
-const { execFileSync, spawn } = require('node:child_process')
+const { execFileSync, spawn, spawnSync } = require('node:child_process')
 const { chromium } = require('playwright')
 const { spawnOptions, stopChildren } = require('./lib/process-control.cjs')
 
@@ -47,8 +47,17 @@ function localDate(date) {
 // The capture must describe the UI that is actually in the tree. Refuse to run
 // over uncommitted frontend edits, so a dirty worktree cannot silently produce
 // screenshots that no commit owns.
-const sourceCommit = git('rev-parse', 'HEAD')
-const sourceCommitShort = git('rev-parse', '--short=7', 'HEAD')
+//
+// The recorded source commit is origin/main, not the branch head: the deck is
+// judged against the baseline it will merge into, and the branch may carry
+// material-only commits above it. The UI trees must be identical, otherwise the
+// screenshot would describe a different interface than the recorded commit.
+const headCommit = git('rev-parse', 'HEAD')
+const originMain = spawnSync('git', ['rev-parse', '--verify', '--quiet', 'origin/main'], { cwd: root, encoding: 'utf8' })
+const sourceCommit = originMain.status === 0 ? originMain.stdout.trim() : headCommit
+const sourceCommitShort = sourceCommit.slice(0, 7)
+const uiDrift = spawnSync('git', ['diff', '--quiet', sourceCommit, headCommit, '--', ...UI_SCOPE], { cwd: root })
+assert.equal(uiDrift.status, 0, `refusing to capture: ${UI_SCOPE.join(', ')} differ between ${sourceCommit.slice(0, 7)} and HEAD (${headCommit.slice(0, 7)})`)
 const dirtyUi = git('status', '--porcelain', '--', ...UI_SCOPE)
 assert.equal(dirtyUi, '', `refusing to capture over uncommitted UI changes (${UI_SCOPE.join(', ')}):\n${dirtyUi}`)
 const capturedAt = new Date()
@@ -203,10 +212,10 @@ async function runDesktopWidth(browser, origin) {
   page.on('pageerror', error => errors.push(error.message))
   await page.addInitScript(bridge, bridgeFixture)
   await page.goto(origin)
-  await page.getByRole('button', { name: '选择应用并上传', exact: true }).waitFor({ timeout: 10000 })
+  await page.getByRole('button', { name: '选择应用', exact: true }).waitFor({ timeout: 10000 })
 
   // Slide 2 — mobile import step with a selected, synthetic material.
-  await page.getByRole('button', { name: '选择应用并上传', exact: true }).click()
+  await page.getByRole('button', { name: '选择应用', exact: true }).click()
   await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
   await waitTitle(page, 'APK 与政策材料')
   await page.evaluate(() => window.scrollTo(0, 0))
@@ -217,21 +226,21 @@ async function runDesktopWidth(browser, origin) {
   screens[screens.length - 1].asserted_text = ['APK 与政策材料', '当前分析材料', '政策来源', packageName]
 
   // Slide 4 — mobile report reached through candidates → progress → report.
-  await page.getByRole('button', { name: '准备政策并继续', exact: true }).click()
+  await page.getByRole('button', { name: '准备政策', exact: true }).click()
   await waitTitle(page, '核对政策声明')
-  await page.getByRole('button', { name: '保存候选并开始分析', exact: true }).click()
+  await page.getByRole('button', { name: '保存并分析', exact: true }).click()
   await waitTitle(page, '扫描与对照进度')
   await page.getByRole('button', { name: '查看报告', exact: true }).waitFor({ timeout: 15000 })
   await page.getByRole('button', { name: '查看报告', exact: true }).click()
   await waitTitle(page, 'APP 隐私收集越权报告')
   await page.evaluate(() => window.scrollTo(0, 0))
   const reportText = await page.evaluate(() => document.querySelector('.mobile-workspace')?.innerText || '')
-  assert.match(reportText, /人工示例 · SYNTHETIC/, 'report screenshot must be labelled SYNTHETIC, never REAL_SCAN')
-  assert.match(reportText, /持久化回放 · REPLAY/, 'report screenshot must be labelled as a persisted replay')
+  assert.match(reportText, /人工示例/, 'report screenshot must be labelled SYNTHETIC, never REAL_SCAN')
+  assert.match(reportText, /持久化回放/, 'report screenshot must be labelled as a persisted replay')
   assert.doesNotMatch(reportText, /REAL_SCAN/, 'report screenshot must not claim a real APK scan')
   assert.equal(errors.length, 0, `page errors during capture: ${errors.join('; ')}`)
   await shot(page, 'mobile-report-390x844-dpr3.png', { scenario: 'report', state: 'synthetic sample, persisted replay, two issues' })
-  screens[screens.length - 1].asserted_text = ['APP 隐私收集越权报告', sampleName, '人工示例 · SYNTHETIC', '持久化回放 · REPLAY']
+  screens[screens.length - 1].asserted_text = ['APP 隐私收集越权报告', sampleName, '人工示例', '持久化回放']
   await context.close()
 }
 
@@ -242,8 +251,8 @@ async function runNarrow(browser, origin) {
   page.on('pageerror', error => errors.push(error.message))
   await page.addInitScript(bridge, bridgeFixture)
   await page.goto(origin)
-  await page.getByRole('button', { name: '选择应用并上传', exact: true }).waitFor({ timeout: 10000 })
-  await page.getByRole('button', { name: '选择应用并上传', exact: true }).click()
+  await page.getByRole('button', { name: '选择应用', exact: true }).waitFor({ timeout: 10000 })
+  await page.getByRole('button', { name: '选择应用', exact: true }).click()
   await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
   await waitTitle(page, 'APK 与政策材料')
   await page.evaluate(() => window.scrollTo(0, 0))
@@ -251,9 +260,9 @@ async function runNarrow(browser, origin) {
   assert.ok(overflow.scrollWidth <= overflow.innerWidth, `320px import step must not scroll horizontally (${overflow.scrollWidth} > ${overflow.innerWidth})`)
   await shot(page, 'mobile-import-320x568-dpr2.png', { scenario: 'import', state: 'narrow-screen cross-check with selected material' })
 
-  await page.getByRole('button', { name: '准备政策并继续', exact: true }).click()
+  await page.getByRole('button', { name: '准备政策', exact: true }).click()
   await waitTitle(page, '核对政策声明')
-  await page.getByRole('button', { name: '保存候选并开始分析', exact: true }).click()
+  await page.getByRole('button', { name: '保存并分析', exact: true }).click()
   await waitTitle(page, '扫描与对照进度')
   await page.getByRole('button', { name: '查看报告', exact: true }).waitFor({ timeout: 15000 })
   await page.getByRole('button', { name: '查看报告', exact: true }).click()
@@ -296,7 +305,7 @@ async function main() {
       source_commit: sourceCommit,
       source_commit_short: sourceCommitShort,
       source_ui_scope: UI_SCOPE,
-      source_note: 'Source commit is the frozen main baseline at capture time; apps/web and apps/mobile were unmodified in the worktree.',
+      source_note: 'Source commit is origin/main at capture time; git diff verifies apps/web, apps/mobile and scripts/fixtures are identical to the branch head, so the screenshots describe that baseline.',
       platform: 'Chromium headless viewport simulation; not Android WebView and not a device run',
       fixture: 'production Vue mobile shell + mocked Tauri native bridge + deterministic synthetic fixture; no APK, model, Docker or backend',
       device_items: 'NOT_RUN',

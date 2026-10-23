@@ -147,15 +147,15 @@
   "deck": {
     "name": "PrivacyTrace-Review.pptx",
     "version": "0.2",
-    "bytes": 632407,
-    "sha256": "dce159f12996e2a00d92ba1b44a97304e3789b1ed13c2ed61478cbe042b61595",
+    "bytes": 651643,
+    "sha256": "e7a7669bc2e8ec89b1152bb2773126b6bc1e8fc43488c05fb9363ac0f3c07273",
     "slides": 10,
     "notes": 10,
     "captures": {
       "manifest": "../capture/manifest.json",
-      "manifest_sha256": "8e1adf5100916244ed1db34e0d2737e721ebf888e493fdd5c154e5ad5a72be68",
-      "source_commit": "dc2eee0464b78b027c42437d6159b99b9d7c0c2a",
-      "source_commit_short": "dc2eee0",
+      "manifest_sha256": "e715310a2934f5b0b79fc0103ee05c4fe6e5d91a9575c31fe263bf578d10cd1e",
+      "source_commit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+      "source_commit_short": "f81ca20",
       "capture_date": "2026-10-23",
       "platform": "Chromium headless viewport simulation; not Android WebView and not a device run",
       "fixture": "production Vue mobile shell + mocked Tauri native bridge + deterministic synthetic fixture; no APK, model, Docker or backend",
@@ -163,20 +163,20 @@
         {
           "role": "import",
           "file": "../capture/mobile-import-390x844-dpr3.png",
-          "bytes": 248593,
-          "sha256": "dfc8880b64a9745fac4c2a0a8fbd031906bbaafdb1743026eb10e20f37627047",
+          "bytes": 243366,
+          "sha256": "c6afe7c502eea513c266cfd739daf22ccb0d2cd714d98ecf0f15386fc62ec6bf",
           "viewport": "390x844",
           "device_scale_factor": 3,
-          "captured_at": "2026-10-23T01:18:32.625Z"
+          "captured_at": "2026-10-23T08:57:41.417Z"
         },
         {
           "role": "report",
           "file": "../capture/mobile-report-390x844-dpr3.png",
-          "bytes": 263966,
-          "sha256": "d248c07df91fb759771357056066a9db76c360bea850065874e13c234955b64d",
+          "bytes": 279893,
+          "sha256": "eb4fd28eb460abf11e879a4b19972197819b95ec44d78555af6d384750fc3836",
           "viewport": "390x844",
           "device_scale_factor": 3,
-          "captured_at": "2026-10-23T01:18:32.625Z"
+          "captured_at": "2026-10-23T08:57:41.417Z"
         }
       ]
     }
@@ -190,12 +190,12 @@
     {
       "path": "BEATS.md",
       "bytes": 8129,
-      "sha256": "dd74194b89c75a6ddbf90aea2a1f5653c506e65aada0093275b86b118ad4747d"
+      "sha256": "914c6a8e47313d2196799a027b9c5ced25a3af86dc9bc3edd919d0c4fda98a6c"
     },
     {
       "path": "README.md",
-      "bytes": 9032,
-      "sha256": "b1940ba311ce01c1b05469c35bdaf620d3e8535e8c1f9793779d1a77544e3198"
+      "bytes": 9033,
+      "sha256": "2b91e546714752f5fdd317f414c2cb809bccb02c6656224ef7d95cacbf946e2d"
     },
     {
       "path": "poster.png",
@@ -204,8 +204,8 @@
     },
     {
       "path": "PrivacyTrace-Review.pptx",
-      "bytes": 632407,
-      "sha256": "dce159f12996e2a00d92ba1b44a97304e3789b1ed13c2ed61478cbe042b61595"
+      "bytes": 651643,
+      "sha256": "e7a7669bc2e8ec89b1152bb2773126b6bc1e8fc43488c05fb9363ac0f3c07273"
     },
     {
       "path": "assets/ui-import.png",
@@ -266,7 +266,7 @@
     "H12（J × splits × 手机模型）失败，复现 2 次；片内保留 11 通过 / 1 未通过。",
     "受控场景为名义状态对照，不是真实 App 检测准确率；P/R/F1 = N/A。",
     "真实 App 仅 1 个历史样本（GKD v1.12.1），三条结果均为 INSUFFICIENT_EVIDENCE。",
-    "前端仍在开发；PPT 第 2 / 4 页为 2026-10-23 移动 App 采集（提交 dc2eee0，固定合成材料），影片素材仍为 v0.1；最终视觉可能变化。",
+    "前端仍在开发；PPT 第 2 / 4 页为 2026-10-23 移动 App 采集（提交 f81ca20，固定合成材料），影片素材仍为 v0.1；最终视觉可能变化。",
     "不宣称 100% 独立、不给 AI 代码比例、不说完全无 AI 参与；不宣称开源。",
     "尚未上传；Issue #200 的上传与系统反馈仍待人工执行。"
   ]

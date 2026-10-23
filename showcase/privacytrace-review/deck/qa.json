@@ -2,46 +2,46 @@
   "deck": {
     "file": "PrivacyTrace-Review.pptx",
     "version": "0.2",
-    "bytes": 632407,
-    "sha256": "dce159f12996e2a00d92ba1b44a97304e3789b1ed13c2ed61478cbe042b61595",
+    "bytes": 651643,
+    "sha256": "e7a7669bc2e8ec89b1152bb2773126b6bc1e8fc43488c05fb9363ac0f3c07273",
     "slides": 10,
     "notes": 10
   },
   "capture": {
     "manifest": "../capture/manifest.json",
-    "manifest_sha256": "8e1adf5100916244ed1db34e0d2737e721ebf888e493fdd5c154e5ad5a72be68",
-    "source_commit": "dc2eee0464b78b027c42437d6159b99b9d7c0c2a",
-    "source_commit_short": "dc2eee0",
+    "manifest_sha256": "e715310a2934f5b0b79fc0103ee05c4fe6e5d91a9575c31fe263bf578d10cd1e",
+    "source_commit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+    "source_commit_short": "f81ca20",
     "capture_date": "2026-10-23",
     "screens": [
       {
         "role": "import",
         "file": "../capture/mobile-import-390x844-dpr3.png",
-        "sha256": "dfc8880b64a9745fac4c2a0a8fbd031906bbaafdb1743026eb10e20f37627047",
+        "sha256": "c6afe7c502eea513c266cfd739daf22ccb0d2cd714d98ecf0f15386fc62ec6bf",
         "viewport": "390x844",
         "device_scale_factor": 3,
-        "source_commit": "dc2eee0464b78b027c42437d6159b99b9d7c0c2a",
-        "captured_at": "2026-10-23T01:18:32.625Z",
+        "source_commit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+        "captured_at": "2026-10-23T08:57:41.417Z",
         "framed_file": ".build/mobile-import-390x844-dpr3-framed.png",
-        "framed_sha256": "7a5ad18cbab3f1e444e3b3810a8a1d075962efd12b7f0d8721d0afa8edcd7e92"
+        "framed_sha256": "fe6d1872b5c294ac479ba24359622a19eb30ec02520022a16c5f0c4246bb94e9"
       },
       {
         "role": "report",
         "file": "../capture/mobile-report-390x844-dpr3.png",
-        "sha256": "d248c07df91fb759771357056066a9db76c360bea850065874e13c234955b64d",
+        "sha256": "eb4fd28eb460abf11e879a4b19972197819b95ec44d78555af6d384750fc3836",
         "viewport": "390x844",
         "device_scale_factor": 3,
-        "source_commit": "dc2eee0464b78b027c42437d6159b99b9d7c0c2a",
-        "captured_at": "2026-10-23T01:18:32.625Z",
+        "source_commit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+        "captured_at": "2026-10-23T08:57:41.417Z",
         "framed_file": ".build/mobile-report-390x844-dpr3-framed.png",
-        "framed_sha256": "9c0050ac3a85678490a46a49b60700f530b18b539c6e8d3edf021016b0db1894"
+        "framed_sha256": "a3bd9a70d4abfb5c22244fd85e85f017c9f93486314ea1ea20cac615f56d63c8"
       }
     ]
   },
   "captions": {
-    "slide2": "移动 App · 开发版 / 2026-10-23 采集 @ dc2eee0",
-    "slide4": "移动报告 · 开发版 / 2026-10-23 采集 @ dc2eee0 / 构造材料 / 持久化回放",
-    "slide10": "界面采集 · 移动 App · 2026-10-23 · 390×844 DPR 3 @ dc2eee0"
+    "slide2": "移动 App · 开发版 / 2026-10-23 采集 @ f81ca20",
+    "slide4": "移动报告 · 开发版 / 2026-10-23 采集 @ f81ca20 / 构造材料 / 持久化回放",
+    "slide10": "界面采集 · 移动 App · 2026-10-23 · 390×844 DPR 3 @ f81ca20"
   },
   "banned_strings": [
     "Issue #",
@@ -63,5 +63,5 @@
     "slide10_ui_capture": true,
     "no_banned_strings": true
   },
-  "built_at": "2026-10-23T01:58:21.438562+00:00"
+  "built_at": "2026-10-23T08:58:52.498970+00:00"
 }

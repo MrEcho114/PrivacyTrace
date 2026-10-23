@@ -2,7 +2,7 @@
 
 - 日期：2026-10-23
 - 基线：`9fcfcd7d00af4c6ce8bd06b773aa0ac4b11150ec`（origin/main，含 #292/#293）。实施期间 origin/main 前进到 `5900470`（#294 APK casefold，与前端无关）；本分支未包含该提交。
-- 分支：`codex/pt-mob-202-uiux`；实现提交 `54764d674ef8fc4f21663e17433503602caf3ef5`；工作树 `.agents/worktrees/pt-mob-202-uiux`。
+- 分支：`codex/pt-mob-202-uiux`；实现提交 `54764d674ef8fc4f21663e17433503602caf3ef5`，随后一个小修 `4ae4668`（进度页无 job 时不渲染“取消分析”、关闭设置时清空删除确认）；工作树 `.agents/worktrees/pt-mob-202-uiux`。
 - 依据：Issue #295 正文 + 2026-10-23 用户转述的 GPT6 ASTRA 两轮审阅意见（排版/可读性、按钮体系与操作层级）。
 - 阻塞说明：票面 **Blocked by #274**（PR #289 仍 OPEN）。本次按用户直接指令先实施，未改写 #274 负责的保存确认接缝；合并前需按协作清单回读 #289 产物与最终 main。
 

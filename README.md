@@ -15,13 +15,13 @@ PrivacyTrace 拿 Android 安装包和它的隐私政策原文做对照。它从 
 
 | 导入 | 候选 |
 | :---: | :---: |
-| <img src="showcase/privacytrace/assets/stills/import.png" width="420" alt="导入页：选择 APK 或 base 加 splits"><br>选文件只准备输入，点「获取政策并检查候选」才会上传 | <img src="showcase/privacytrace/assets/stills/candidates.png" width="420" alt="候选页：政策候选网址"><br>确认政策候选后才进入分析 |
+| <img src="showcase/privacytrace/assets/stills/app-import.png" width="300" alt="移动端导入页：已选材料与政策来源"><br>选应用并确认上传后，材料留在分析服务上 | <img src="showcase/privacytrace/assets/stills/app-candidates.png" width="300" alt="移动端候选页：来源标签与候选声明"><br>确认候选后点「保存并分析」才启动扫描 |
 
-| 报告 | 证据下钻 |
+| 报告 | 证据 |
 | :---: | :---: |
-| <img src="showcase/privacytrace/assets/stills/report.png" width="420" alt="报告页：按来源对照"><br>按来源对照，结论指得到代码位置 | <img src="showcase/privacytrace/assets/stills/evidence.png" width="420" alt="证据页：代码位置与政策原句"><br>线索定位到文件与方法，并对照政策原句 |
+| <img src="showcase/privacytrace/assets/stills/app-report.png" width="300" alt="移动端报告页：扫描范围、待复核条目与数据类型对照"><br>扫描范围、待复核条目和数据类型对照在一屏内 | <img src="showcase/privacytrace/assets/stills/app-evidence.png" width="300" alt="移动端证据页：静态线索、代码位置与政策原句"><br>静态线索、代码位置和政策原句摆在一起 |
 
-这四张图是 Chromium 在 main 分支上实际截的，材料是构造的 APK 和一段人工短政策，原始 PNG 没有涂改，不代表一次真实 App 扫描。每张图的捕获时间、视口和哈希记在 [素材与制作来源](showcase/privacytrace/ASSETS.md)。想连着看流程，有 120 秒[演示视频](showcase/privacytrace/delivery/PrivacyTrace-1080p.mp4)。
+这四张是 Android App 的移动界面，390×844 视口、2 倍像素，由生产 Vue 界面加载受控原生桥替身在 Chromium 里截取。材料是 `com.example.reader` 和两段示例政策，不是一次真实 APK 扫描；原始 PNG 没有涂改，捕获方法、代码基线和哈希记在 [素材与制作来源](showcase/privacytrace/ASSETS.md)。想连着看流程，有 120 秒[演示视频](showcase/privacytrace/delivery/PrivacyTrace-1080p.mp4)。
 
 ## 本地启动
 

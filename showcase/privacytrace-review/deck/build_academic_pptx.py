@@ -6,7 +6,7 @@ Pipeline (run from the repository root):
     python showcase/privacytrace-review/deck/build_academic_pptx.py
 
 The PPTX keeps one 1920x1080 rendered slide per page plus the speaker notes from
-the HTML source. ``delivery/academic/manifest.json`` records the source HTML,
+the HTML source. ``deck/qa.json`` records the source HTML,
 every render hash, the deck hash/bytes and the capture batch, so
 ``scripts/verify-academic-deck.cjs`` can re-read the PPTX pictures and prove they
 are the renders the manifest names.
@@ -28,9 +28,9 @@ DECK = Path(__file__).resolve().parent
 MATERIAL = DECK.parent
 SOURCE = DECK / "academic.html"
 RENDER = DECK / "render"
-OUT_DIR = MATERIAL / "delivery" / "academic"
-OUT = OUT_DIR / "PrivacyTrace-Review-Academic.pptx"
-MANIFEST = OUT_DIR / "manifest.json"
+OUT_DIR = MATERIAL / "delivery"
+OUT = OUT_DIR / "PrivacyTrace-Review.pptx"
+MANIFEST = DECK / "qa.json"
 CAPTURE_MANIFEST = MATERIAL / "capture" / "manifest.json"
 
 REQUIRED_REFS = (
@@ -115,7 +115,7 @@ def main() -> int:
             continue
         screens.append({
             "role": "import" if "import" in screen["file"] else "report",
-            "file": f"../../capture/{screen['file']}",
+            "file": f"capture/{screen['file']}",
             "bytes": screen["bytes"],
             "sha256": screen["sha256"],
             "viewport": screen["viewport"],
@@ -126,7 +126,7 @@ def main() -> int:
     manifest = {
         "schema": "privacytrace/academic-deck@1",
         "title": "PrivacyTrace · 作品评审材料（学术论文风）",
-        "version": "0.1",
+        "version": "0.3",
         "kind": "academic-paper",
         "template": {
             "id": "od-hps-academic-paper",
@@ -134,7 +134,7 @@ def main() -> int:
             "attribution": "lewislulu/html-ppt-skill · theme academic-paper",
         },
         "source": {
-            "html": "../../deck/academic.html",
+            "html": "deck/academic.html",
             "html_sha256": sha256(SOURCE),
             "slides": 10,
             "notes": 10,
@@ -155,7 +155,7 @@ def main() -> int:
             "notes": len(notes),
         },
         "capture": {
-            "manifest": "../../capture/manifest.json",
+            "manifest": "capture/manifest.json",
             "manifest_sha256": sha256(CAPTURE_MANIFEST),
             "source_commit": capture["source_commit"],
             "source_commit_short": capture["source_commit_short"],

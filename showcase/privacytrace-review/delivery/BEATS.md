@@ -54,16 +54,16 @@
 | `assets/report-mobile.png` | 同上 `mobile-report-390.png` | 2026-10-22 | 移动开发版；截图早于 2026-10-23 移动基线切换 |
 | `assets/soundtrack.m4a` | `showcase/privacytrace/assets/soundtrack.m4a` | 原项目原创配乐 | 96 BPM；无采样、无人声；许可见原项目 |
 
-## PPT 素材批次（v0.2）
+## PPT 素材批次（v0.3 · 学术论文风）
 
-10 页评审 PPT 的第 2 / 4 页不再复用本片 v0.1 的截图，改用同一冻结基线（提交 `f81ca20`）的移动 App 采集。本片自身的界面素材未改，仍是 v0.1；#264 重采集两支片子后与本表一起更新。
+10 页评审 PPT 采用 `od-hps-academic-paper` 视觉（纸白 / 全衬线 / 编号图注）；第 6 页「新版 Android App」使用同一冻结基线（提交 `f81ca20`）的移动 App 采集，不再复用本片 v0.1 的截图。本片自身的界面素材未改，仍是 v0.1；#264 重采集两支片子后与本表一起更新。
 
 | PPT 页 | 文件 | 采集 / 绑定 | 边界 |
 | --- | --- | --- | --- |
-| 第 2 页 定位 | `../capture/mobile-import-390x844-dpr3.png` | 2026-10-23 · 390×844 DPR 3 · `f81ca20` | 生产 Vue + 受控 native bridge；固定合成材料；非真机、非 APK 扫描 |
-| 第 4 页 关键实现 | `../capture/mobile-report-390x844-dpr3.png` | 同上 | 构造材料 / 持久化回放；两条结论均待复核 |
+| 第 6 页 客户端（图 3） | `../capture/mobile-import-390x844-dpr3.png` | 2026-10-23 · 390×844 DPR 3 · `f81ca20` | 生产 Vue + 受控 native bridge；固定合成材料；非真机、非 APK 扫描 |
+| 第 6 页 客户端（图 4） | `../capture/mobile-report-390x844-dpr3.png` | 同上 | 构造材料 / 持久化回放；两条结论均待复核 |
 
-清单：`../capture/manifest.json`（提交、日期、视口、DPR、fixture、SHA-256）。PPT 生成脚本读取该清单，不再从桌面报告裁图。
+清单：`../capture/manifest.json`（提交、日期、视口、DPR、fixture、SHA-256）。源 `deck/academic.html` 相对引用这两张图，`deck/build_academic_pptx.py` 装配并写入 `deck/qa.json`。
 
 ## 已知限制（必须随片保留）
 

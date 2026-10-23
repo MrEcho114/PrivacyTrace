@@ -1,19 +1,21 @@
 #!/usr/bin/env node
 /**
- * Material-level check for the academic-paper alt deck (Issue #265 follow-up).
+ * Material-level check for the academic-paper review deck (Issue #265).
  *
- * Asserts only external, observable artifacts:
- *  - `delivery/academic/manifest.json` names the source HTML, every rendered
- *    slide hash, the deck hash/bytes and the capture batch;
+ * This is the only deck in `delivery/`, so the check treats it as the canonical
+ * artifact and asserts only external, observable things:
+ *  - `deck/qa.json` names the source HTML, every rendered slide hash, the deck
+ *    hash/bytes and the capture batch;
  *  - the HTML source has ten slides, ten speaker-note blocks, the capture
  *    screenshots referenced by relative path, the date/short-SHA captions, and
  *    none of the stale/internal strings;
  *  - the PPTX reads as ten slides with ten non-empty notes, one picture each,
- *    and every picture's bytes equal the render the manifest names;
+ *    and every picture's bytes equal the render the qa names;
  *  - the deck metadata is anonymized and 16:9;
  *  - the capture commit exists, is an ancestor of HEAD, and the frontend files
  *    are unchanged between that commit and `origin/main` (staleness guard);
- *  - `delivery/README.md` prints the academic deck's hash and bytes.
+ *  - `delivery/manifest.json` and `delivery/README.md` print the same deck
+ *    identity as the file on disk.
  *
  * Run from the repository root: `node scripts/verify-academic-deck.cjs`
  */
@@ -26,11 +28,11 @@ const { spawnSync } = require('node:child_process')
 
 const root = path.resolve(__dirname, '..')
 const material = path.join(root, 'showcase/privacytrace-review')
-const academicDir = path.join(material, 'delivery/academic')
-const manifestPath = path.join(academicDir, 'manifest.json')
-const deckPath = path.join(academicDir, 'PrivacyTrace-Review-Academic.pptx')
+const qaPath = path.join(material, 'deck/qa.json')
+const deckPath = path.join(material, 'delivery/PrivacyTrace-Review.pptx')
 const sourcePath = path.join(material, 'deck/academic.html')
 const captureManifestPath = path.join(material, 'capture/manifest.json')
+const deliveryManifestPath = path.join(material, 'delivery/manifest.json')
 const deliveryReadme = path.join(material, 'delivery/README.md')
 
 const UI_SCOPE = ['apps/web', 'apps/mobile', 'scripts/fixtures']
@@ -86,47 +88,49 @@ function xmlText(xml) {
 }
 
 // ------------------------------------------------------------------ artifacts
-check('academic manifest exists', () => assert.ok(fs.existsSync(manifestPath), `missing ${manifestPath}`))
-check('academic deck exists', () => assert.ok(fs.existsSync(deckPath), `missing ${deckPath}`))
-check('academic source exists', () => assert.ok(fs.existsSync(sourcePath), `missing ${sourcePath}`))
+check('deck qa exists', () => assert.ok(fs.existsSync(qaPath), `missing ${qaPath}: run deck/build_academic_pptx.py`))
+check('deck exists', () => assert.ok(fs.existsSync(deckPath), `missing ${deckPath}: run deck/build_academic_pptx.py`))
+check('deck source exists', () => assert.ok(fs.existsSync(sourcePath), `missing ${sourcePath}`))
 
-const manifest = readJson(manifestPath)
+const qa = readJson(qaPath)
 const capture = readJson(captureManifestPath)
+const delivery = readJson(deliveryManifestPath)
 const readme = fs.readFileSync(deliveryReadme, 'utf8')
 
-check('academic manifest schema', () => {
-  assert.equal(manifest.schema, 'privacytrace/academic-deck@1')
-  assert.equal(manifest.kind, 'academic-paper')
-  assert.equal(manifest.template.id, 'od-hps-academic-paper')
-  assert.equal(manifest.template.license, 'MIT')
-  assert.equal(manifest.banned_hits.length, 0)
+check('deck qa schema', () => {
+  assert.equal(qa.schema, 'privacytrace/academic-deck@1')
+  assert.equal(qa.kind, 'academic-paper')
+  assert.equal(qa.template.id, 'od-hps-academic-paper')
+  assert.equal(qa.template.license, 'MIT')
+  assert.equal(qa.banned_hits.length, 0)
 })
-check('academic source hash matches the manifest', () => assert.equal(sha256(sourcePath), manifest.source.html_sha256))
-check('academic source has ten slides and ten notes', () => {
+check('deck source hash matches the qa', () => assert.equal(sha256(sourcePath), qa.source.html_sha256))
+check('deck source has ten slides and ten notes', () => {
   const html = fs.readFileSync(sourcePath, 'utf8')
   assert.equal((html.match(/class="slide"/g) || []).length, 10)
   assert.equal((html.match(/class="notes"/g) || []).length, 10)
-  for (const phrase of ['2026-10-23', 'f81ca20', '图 3', '图 4', '人工示例', '持久化回放']) {
+  for (const phrase of ['2026-10-23', 'f81ca20', '图 3', '图 4', '人工示例', '持久化回放', 'verify-academic-deck.cjs']) {
     assert.ok(html.includes(phrase), `source is missing ${JSON.stringify(phrase)}`)
   }
   const hits = BANNED.filter(phrase => html.includes(phrase))
   assert.deepEqual(hits, [], `banned strings in source: ${hits.join(', ')}`)
 })
-check('academic source references the capture screenshots', () => {
+check('deck source references the capture screenshots', () => {
   const html = fs.readFileSync(sourcePath, 'utf8')
   for (const name of Object.values(REQUIRED_SCREENS)) {
     assert.ok(html.includes(`../capture/${name}`), `source does not reference ${name}`)
   }
 })
-check('academic deck bytes and hash match the manifest', () => {
-  assert.equal(fs.statSync(deckPath).size, manifest.deck.bytes)
-  assert.equal(sha256(deckPath), manifest.deck.sha256)
-  assert.equal(manifest.deck.slides, 10)
-  assert.equal(manifest.deck.notes, 10)
+check('deck bytes and hash match the qa', () => {
+  assert.equal(fs.statSync(deckPath).size, qa.deck.bytes)
+  assert.equal(sha256(deckPath), qa.deck.sha256)
+  assert.equal(qa.deck.file, 'PrivacyTrace-Review.pptx')
+  assert.equal(qa.deck.slides, 10)
+  assert.equal(qa.deck.notes, 10)
 })
-check('academic render manifest names ten slides', () => {
-  assert.equal(manifest.render.slides.length, 10)
-  for (const entry of manifest.render.slides) assert.match(entry.sha256, /^[0-9a-f]{64}$/)
+check('deck render manifest names ten slides', () => {
+  assert.equal(qa.render.slides.length, 10)
+  for (const entry of qa.render.slides) assert.match(entry.sha256, /^[0-9a-f]{64}$/)
 })
 
 // ------------------------------------------------------------------ capture
@@ -142,17 +146,18 @@ for (const [role, name] of Object.entries(REQUIRED_SCREENS)) {
     const file = path.join(material, 'capture', name)
     assert.equal(fs.statSync(file).size, screen.bytes)
     assert.equal(sha256(file), screen.sha256)
-    const entry = manifest.capture.screens.find(item => item.role === role)
-    assert.ok(entry, `academic manifest has no ${role} capture`)
+    const entry = qa.capture.screens.find(item => item.role === role)
+    assert.ok(entry, `deck qa has no ${role} capture`)
+    assert.equal(entry.file, `capture/${name}`)
     assert.equal(entry.sha256, screen.sha256)
     assert.equal(entry.viewport, '390x844')
     assert.equal(entry.device_scale_factor, 3)
   })
 }
-check('academic manifest capture batch matches', () => {
-  assert.equal(manifest.capture.source_commit, capture.source_commit)
-  assert.equal(manifest.capture.capture_date, capture.capture_date)
-  assert.equal(manifest.capture.manifest_sha256, sha256(captureManifestPath))
+check('deck qa capture batch matches', () => {
+  assert.equal(qa.capture.source_commit, capture.source_commit)
+  assert.equal(qa.capture.capture_date, capture.capture_date)
+  assert.equal(qa.capture.manifest_sha256, sha256(captureManifestPath))
 })
 check('working tree has no uncommitted UI edits', () => {
   const status = git(['status', '--porcelain', '--', ...UI_SCOPE])
@@ -191,7 +196,7 @@ check('every slide carries exactly one rendered picture', () => {
     const media = archive.get(target)
     assert.ok(media, `slide ${index} media ${target} is missing`)
     const hash = crypto.createHash('sha256').update(media).digest('hex')
-    assert.equal(hash, manifest.render.slides[index - 1].sha256, `slide ${index} picture does not match the render manifest`)
+    assert.equal(hash, qa.render.slides[index - 1].sha256, `slide ${index} picture does not match the render qa`)
   }
 })
 check('package metadata is anonymized and 16:9', () => {
@@ -204,10 +209,17 @@ check('package metadata is anonymized and 16:9', () => {
   assert.match(core, /<cp:lastModifiedBy>PrivacyTrace<\/cp:lastModifiedBy>/)
   assert.doesNotMatch(core, /Steve Canny|2013-01-27|generated using python-pptx/)
 })
-check('delivery README prints the academic deck hash and bytes', () => {
-  assert.ok(readme.includes(manifest.deck.sha256), 'README.md must print the academic deck SHA-256')
-  assert.ok(readme.includes(manifest.deck.bytes.toLocaleString('en-US')), 'README.md must print the academic deck bytes')
-  assert.ok(readme.includes('academic/PrivacyTrace-Review-Academic.pptx'), 'README.md must name the academic deck path')
+check('delivery manifest prints the same deck identity', () => {
+  assert.equal(delivery.deck.name, 'PrivacyTrace-Review.pptx')
+  assert.equal(delivery.deck.bytes, qa.deck.bytes)
+  assert.equal(delivery.deck.sha256, qa.deck.sha256)
+  assert.equal(delivery.deck.slides, 10)
+  assert.equal(delivery.deck.notes, 10)
+})
+check('delivery README prints the deck hash, bytes and path', () => {
+  assert.ok(readme.includes(qa.deck.sha256), 'README.md must print the deck SHA-256')
+  assert.ok(readme.includes(qa.deck.bytes.toLocaleString('en-US')), 'README.md must print the deck bytes')
+  assert.ok(readme.includes('PrivacyTrace-Review.pptx'), 'README.md must name the deck path')
 })
 
 // ------------------------------------------------------------------ report
@@ -217,6 +229,6 @@ if (failures.length > 0) {
   process.exitCode = 1
 } else {
   console.log(`academic deck material check PASSED (${passed.length} checks)`)
-  console.log(`deck ${manifest.deck.sha256} ${manifest.deck.bytes} B; capture ${capture.source_commit.slice(0, 7)} @ ${capture.capture_date}`)
+  console.log(`deck ${qa.deck.sha256} ${qa.deck.bytes} B; capture ${capture.source_commit.slice(0, 7)} @ ${capture.capture_date}`)
   for (const name of passed) console.log(`- ${name}`)
 }

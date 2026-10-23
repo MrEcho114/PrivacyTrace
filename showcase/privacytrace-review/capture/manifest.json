@@ -2,7 +2,7 @@
   "schema": "privacytrace/review-deck-shots@1",
   "issue": 265,
   "repository": "MrEcho114/PrivacyTrace",
-  "purpose": "UI screens consumed by showcase/privacytrace-review/deck/build_deck.py for the 10-page review deck (v0.2)",
+  "purpose": "UI screens consumed by showcase/privacytrace-review/deck/academic.html for the 10-page review deck (v0.3, academic-paper)",
   "generated_by": "scripts/capture-review-deck-shots.cjs",
   "generated_at": "2026-10-23T08:57:41.417Z",
   "capture_date": "2026-10-23",

@@ -4,12 +4,12 @@
  *
  * The production Vue entry (`apps/web/src/mobile/MobileApp.vue`) runs against a
  * mocked, deterministic native bridge; no Android device, APK, model, Docker or
- * backend request is involved. Two 390x844 / DPR 3 frames feed slide 2 (mobile
- * import) and slide 4 (mobile report); 320x568 / DPR 2 frames are the narrow
- * screen cross-check. Every frame is written with its own provenance block
- * (source commit, capture date, viewport, DPR, fixture, SHA-256) into
- * `showcase/privacytrace-review/capture/manifest.json`, which
- * `deck/build_deck.py` consumes instead of hand-named PNGs.
+ * backend request is involved. Two 390x844 / DPR 3 frames feed the deck's
+ * Android App page (mobile import and mobile report); 320x568 / DPR 2 frames
+ * are the narrow screen cross-check. Every frame is written with its own
+ * provenance block (source commit, capture date, viewport, DPR, fixture,
+ * SHA-256) into `showcase/privacytrace-review/capture/manifest.json`, which
+ * `deck/academic.html` references instead of hand-named PNGs.
  *
  * Run from the repository root: `node scripts/capture-review-deck-shots.cjs`
  * Output: showcase/privacytrace-review/capture/
@@ -298,7 +298,7 @@ async function main() {
       schema: 'privacytrace/review-deck-shots@1',
       issue: ISSUE,
       repository: REPO,
-      purpose: 'UI screens consumed by showcase/privacytrace-review/deck/build_deck.py for the 10-page review deck (v0.2)',
+      purpose: 'UI screens consumed by showcase/privacytrace-review/deck/academic.html for the 10-page review deck (v0.3, academic-paper)',
       generated_by: 'scripts/capture-review-deck-shots.cjs',
       generated_at: capturedAtIso,
       capture_date: captureDate,

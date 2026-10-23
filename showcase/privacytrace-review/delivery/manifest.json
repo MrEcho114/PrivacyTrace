@@ -146,14 +146,80 @@
   },
   "deck": {
     "name": "PrivacyTrace-Review.pptx",
-    "version": "0.2",
-    "bytes": 651643,
-    "sha256": "e7a7669bc2e8ec89b1152bb2773126b6bc1e8fc43488c05fb9363ac0f3c07273",
+    "version": "0.3",
+    "kind": "academic-paper",
+    "template": {
+      "id": "od-hps-academic-paper",
+      "license": "MIT",
+      "attribution": "lewislulu/html-ppt-skill · theme academic-paper"
+    },
+    "bytes": 1114540,
+    "sha256": "c57840cb80dfe8036ab2c8a3751bcf2236471d6814b5d91ee94fc56195860069",
     "slides": 10,
     "notes": 10,
+    "source": {
+      "html": "../deck/academic.html",
+      "sha256": "ca52c5742e2b6f4877f29f366835fa2a86c57484c875141bed0ea0ed5e4ab695"
+    },
+    "render": {
+      "width": 1920,
+      "height": 1080,
+      "slides": [
+        {
+          "file": "slide-01.png",
+          "bytes": 102275,
+          "sha256": "e3fc9471be62126267ab07a49a6b8c8397b4eefdffb30f3f4513ff9e9a9f1ff6"
+        },
+        {
+          "file": "slide-02.png",
+          "bytes": 85616,
+          "sha256": "61a61a69d2e394fcab0979d2495821e48dba540787c274263acd3cb0a72c9fea"
+        },
+        {
+          "file": "slide-03.png",
+          "bytes": 134146,
+          "sha256": "433d5196724e0ccb2b3ca1fd438545b1e40eabab1da2bf065404761935c2bfbc"
+        },
+        {
+          "file": "slide-04.png",
+          "bytes": 99086,
+          "sha256": "d0288a6e74cb7e82f72b2a59395d4dbd60012bd6616e8896da2527eb277d6a92"
+        },
+        {
+          "file": "slide-05.png",
+          "bytes": 115398,
+          "sha256": "d46343237c75473d16feb0402eca93f597a0ff0368cad73bb60bb348ad22c244"
+        },
+        {
+          "file": "slide-06.png",
+          "bytes": 194288,
+          "sha256": "bc5b4c6000face4733fef27b69c6476dea5964133302c7888febdfc7f34689bd"
+        },
+        {
+          "file": "slide-07.png",
+          "bytes": 80268,
+          "sha256": "5490afaf251d332e6d8f43ba56b85feb328d75f6b0ac45b909a44732f83b2a26"
+        },
+        {
+          "file": "slide-08.png",
+          "bytes": 140233,
+          "sha256": "9184b718af4906cb8ee7bdbd05c79dfc68cfc2b8728c582ca7ebb9afee6e24ca"
+        },
+        {
+          "file": "slide-09.png",
+          "bytes": 98788,
+          "sha256": "fe37ed26f7b99f5553cded4ba4dc9fb4bcc1d260a3d0d6b59773b222d3e0ba32"
+        },
+        {
+          "file": "slide-10.png",
+          "bytes": 105965,
+          "sha256": "4ac6533701dd891c7b7c9ad26f5534897bbd0f8c57219756ae1b49da6adc82b6"
+        }
+      ]
+    },
     "captures": {
       "manifest": "../capture/manifest.json",
-      "manifest_sha256": "e715310a2934f5b0b79fc0103ee05c4fe6e5d91a9575c31fe263bf578d10cd1e",
+      "manifest_sha256": "686cc69b1e65d372de4b1613a6d0c8148e06b64c2633b17f77808407ae185930",
       "source_commit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
       "source_commit_short": "f81ca20",
       "capture_date": "2026-10-23",
@@ -189,13 +255,13 @@
     },
     {
       "path": "BEATS.md",
-      "bytes": 8129,
-      "sha256": "914c6a8e47313d2196799a027b9c5ced25a3af86dc9bc3edd919d0c4fda98a6c"
+      "bytes": 8317,
+      "sha256": "be8021d059e4697db272d6a06e6ee8f521fc264bc43270b585525ec06765a792"
     },
     {
       "path": "README.md",
-      "bytes": 9974,
-      "sha256": "8861eac47fed875f7155a7fd296ee3a13e90b31b4d8c1019f2c09684902abacf"
+      "bytes": 9414,
+      "sha256": "cc1f0a510b8ea00a12fff56c74c22bba3bcf1c99d497462cf1ba538e7214105c"
     },
     {
       "path": "poster.png",
@@ -204,8 +270,8 @@
     },
     {
       "path": "PrivacyTrace-Review.pptx",
-      "bytes": 651643,
-      "sha256": "e7a7669bc2e8ec89b1152bb2773126b6bc1e8fc43488c05fb9363ac0f3c07273"
+      "bytes": 1114540,
+      "sha256": "c57840cb80dfe8036ab2c8a3751bcf2236471d6814b5d91ee94fc56195860069"
     },
     {
       "path": "assets/ui-import.png",
@@ -226,16 +292,6 @@
       "path": "assets/soundtrack.m4a",
       "bytes": 2994842,
       "sha256": "fb7e005f78aa530d0f2d072e7ddf1b5c88315a69a36413e67d7f2039ad54a30c"
-    },
-    {
-      "path": "academic/PrivacyTrace-Review-Academic.pptx",
-      "bytes": 1113599,
-      "sha256": "0257965ea56e589dbff20ff87e998899b070314635a413c031964481f7f39cc3"
-    },
-    {
-      "path": "academic/manifest.json",
-      "bytes": 3512,
-      "sha256": "a485067e905251673eaa71e6ae30d64d8b21df7e326091046ebfff79083e51b5"
     }
   ],
   "qa": {
@@ -276,28 +332,8 @@
     "H12（J × splits × 手机模型）失败，复现 2 次；片内保留 11 通过 / 1 未通过。",
     "受控场景为名义状态对照，不是真实 App 检测准确率；P/R/F1 = N/A。",
     "真实 App 仅 1 个历史样本（GKD v1.12.1），三条结果均为 INSUFFICIENT_EVIDENCE。",
-    "前端仍在开发；PPT 第 2 / 4 页为 2026-10-23 移动 App 采集（提交 f81ca20，固定合成材料），影片素材仍为 v0.1；最终视觉可能变化。",
+    "前端仍在开发；PPT 第 6 页为 2026-10-23 移动 App 采集（提交 f81ca20，固定合成材料），影片素材仍为 v0.1；最终视觉可能变化。",
     "不宣称 100% 独立、不给 AI 代码比例、不说完全无 AI 参与；不宣称开源。",
     "尚未上传；Issue #200 的上传与系统反馈仍待人工执行。"
-  ],
-  "academicDeck": {
-    "name": "academic/PrivacyTrace-Review-Academic.pptx",
-    "version": "0.1",
-    "kind": "academic-paper",
-    "template": {
-      "id": "od-hps-academic-paper",
-      "license": "MIT",
-      "attribution": "lewislulu/html-ppt-skill · theme academic-paper"
-    },
-    "bytes": 1113599,
-    "sha256": "0257965ea56e589dbff20ff87e998899b070314635a413c031964481f7f39cc3",
-    "slides": 10,
-    "notes": 10,
-    "manifest": "academic/manifest.json",
-    "manifest_sha256": "a485067e905251673eaa71e6ae30d64d8b21df7e326091046ebfff79083e51b5",
-    "source_html": "../deck/academic.html",
-    "source_sha256": "45226ca13d3bb742ffc36c76cc73579d69a6625f280ac88bb3284f279037a8f6",
-    "capture_date": "2026-10-23",
-    "source_commit": "f81ca201b932a11e24a9f7175a9583150d44e9ed"
-  }
+  ]
 }

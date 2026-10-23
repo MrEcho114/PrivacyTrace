@@ -55,7 +55,29 @@ if prefix[0].lower().endswith("wsl.exe"):
 subprocess.run(prefix + ["build", "--file", root + "/apps/api/worker.Dockerfile", "--tag", "privacytrace-worker:s1", root], check=True)
 PY
 fi
-uv run --project apps/api --locked "${api_uv_extras[@]}" pytest apps/api/tests -q -p no:cacheprovider
+# apps/api/tests is the single longest step (~3m19s of the 4m43s Check job).
+# Measured on this tree: 89% of that time is test bodies, not fixtures (setup
+# 9%, teardown 2%), and it is spread across ~1900 tests whose cost is
+# process-level work -- CLI subprocesses, in-process HTTP matrices, real
+# sockets and lock timeouts. There is no hotspot to micro-optimise, so the only
+# evidence-neutral win is running independent tests in parallel workers; no
+# test is skipped or relaxed by this.
+# pytest-xdist is supplied through uv's ephemeral overlay (`--with`) rather
+# than the dev dependency group, because adding it to apps/api/pyproject.toml
+# without regenerating apps/api/uv.lock makes `uv sync --locked` refuse to run.
+# `--dist loadfile` keeps each module's tests on one worker so module-level
+# state and per-file ordering stay deterministic.
+# Escape hatches: PRIVACYTRACE_PYTEST_WORKERS=0 runs serially, any other value
+# is passed to `-n` (e.g. a fixed 4 on a small runner).
+pytest_workers=${PRIVACYTRACE_PYTEST_WORKERS:-auto}
+pytest_uv_parallel=()
+pytest_parallel=()
+if [[ "$pytest_workers" != "0" ]]; then
+  pytest_uv_parallel=(--with pytest-xdist==3.8.0)
+  pytest_parallel=(-n "$pytest_workers" --dist loadfile)
+fi
+uv run --project apps/api --locked "${api_uv_extras[@]}" "${pytest_uv_parallel[@]}" \
+  pytest apps/api/tests -q -p no:cacheprovider "${pytest_parallel[@]}"
 uv run --project apps/api --locked "${api_uv_extras[@]}" pytest tests/e2e -q -p no:cacheprovider
 uv run --project apps/api --locked "${api_uv_extras[@]}" ruff check apps/api/src apps/api/tests scripts/export-schema.py scripts/verify_workflow.py scripts/build-dataset.py scripts/metrics-user-study.py scripts/validate-trace.py scripts/verify-run-ledger.py scripts/generate-synthetic-pt907.py scripts/verify-user-study-pack.py scripts/controlled/location_reference.py scripts/verify-controlled-locations.py
 # deploy/ and tests/e2e/ have no pyproject.toml above them, so name the repo

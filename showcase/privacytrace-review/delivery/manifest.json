@@ -149,8 +149,8 @@
   },
   "deck": {
     "name": "PrivacyTrace-Review.pptx",
-    "bytes": 297717,
-    "sha256": "c73e24e70acf3cb4e82eb50036292443c172aa3d27ee51d9522c872c607bb717",
+    "bytes": 1114540,
+    "sha256": "c57840cb80dfe8036ab2c8a3751bcf2236471d6814b5d91ee94fc56195860069",
     "slides": 10,
     "notes": 10,
     "note": "PPT 不在本批次范围内；唯一汇报 PPT 由 #265 负责。"
@@ -163,13 +163,13 @@
     },
     {
       "path": "BEATS.md",
-      "bytes": 7588,
-      "sha256": "583222bf7d4f7a30b7ca60d38673aaee22e63f8442bd55690d2ea427c5dfd57d"
+      "bytes": 7776,
+      "sha256": "8793a6994d4985b9e0c0e255d2bef7f8265467032b9f8e3dd872308628aefd17"
     },
     {
       "path": "README.md",
-      "bytes": 9324,
-      "sha256": "5b2e62d7f468a5b2e5e936da0b9edad4c7b76e41da31aa561f217cb0434f8cd8"
+      "bytes": 8811,
+      "sha256": "4d26b0a6526b336519ef210c7e0cfd709dd26a17d6c468e2adc9bdd299d0965a"
     },
     {
       "path": "poster.png",
@@ -178,8 +178,8 @@
     },
     {
       "path": "PrivacyTrace-Review.pptx",
-      "bytes": 297717,
-      "sha256": "c73e24e70acf3cb4e82eb50036292443c172aa3d27ee51d9522c872c607bb717"
+      "bytes": 1114540,
+      "sha256": "c57840cb80dfe8036ab2c8a3751bcf2236471d6814b5d91ee94fc56195860069"
     },
     {
       "path": "capture-provenance.json",

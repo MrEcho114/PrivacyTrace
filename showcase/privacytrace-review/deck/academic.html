@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="academic-paper">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PrivacyTrace · 作品评审材料（学术论文风）</title>
+<style>
+/* hps-academic-paper :: webfonts (Google Fonts @import only — no other external deps) */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+</style>
+<style>
+/* ============================================================
+   TOKEN SHEET — academic-paper, LOCKED.
+   Ported from lewislulu/html-ppt-skill assets/themes/academic-paper.css
+   on top of the upstream assets/base.css variable contract.
+   All three font slots are serif: Latin Modern Roman (local LaTeX
+   font when installed) → Playfair Display → Noto Serif SC → Georgia.
+   ============================================================ */
+:root{
+  --bg:#fdfcf8; --bg-soft:#f7f5ed; --surface:#ffffff; --surface-2:#f5f3ea;
+  --border:rgba(20,20,20,.14); --border-strong:rgba(20,20,20,.35);
+  --text-1:#0a0a0a; --text-2:#333333; --text-3:#707070;
+  --accent:#1a3a7a; --accent-2:#0a0a0a; --accent-3:#8a1a1a;
+  --good:#1a5a2a; --warn:#8a6a1a; --bad:#8a1a1a;
+  --grad:linear-gradient(135deg,#1a3a7a,#0a0a0a);
+  --grad-soft:linear-gradient(135deg,#e8edf8,#f5f3ea);
+  --radius:0px; --radius-sm:0px; --radius-lg:0px;
+  --shadow:none;
+  --shadow-lg:0 1px 2px rgba(0,0,0,.1);
+  --font-sans:'Latin Modern Roman','Playfair Display','Noto Serif SC',Georgia,serif;
+  --font-serif:'Latin Modern Roman','Playfair Display','Noto Serif SC',Georgia,serif;
+  --font-mono:'JetBrains Mono',SFMono-Regular,Menlo,monospace;
+  --font-display:'Latin Modern Roman','Playfair Display','Noto Serif SC',Georgia,serif;
+  --letter-tight:-.01em; --letter-normal:0;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+</style>
+<style>
+/* ============================================================
+   BASE + SLIDE SYSTEM — horizontal scroll-snap deck.
+   One <section class="slide"> = exactly one viewport screen.
+   Designed at 16:9 (1280×720 baseline), fluid to the viewport.
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%}
+body{background:var(--bg);color:var(--text-1);font-family:var(--font-serif);
+  font-weight:400;line-height:1.6;letter-spacing:var(--letter-normal);
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow:hidden}
+img,svg,video{max-width:100%;display:block}
+code,kbd,pre,samp{font-family:var(--font-mono)}
+a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+
+.deck{display:flex;width:100vw;height:100vh;overflow-x:auto;overflow-y:hidden;
+  scroll-snap-type:x mandatory;scrollbar-width:none;-ms-overflow-style:none}
+.deck::-webkit-scrollbar{display:none}
+.slide{position:relative;flex:0 0 100vw;height:100vh;scroll-snap-align:start;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:72px 96px;overflow:hidden}
+
+/* ============ TYPOGRAPHY ============ */
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);margin:0}
+.kicker{font-size:clamp(14px,1.4vw,17px);font-weight:400;font-style:italic;color:var(--accent);
+  letter-spacing:0;text-transform:none;margin:0 0 12px}
+.h1{font-family:var(--font-display);font-size:clamp(40px,5vw,64px);line-height:1.12;font-weight:700;letter-spacing:var(--letter-tight);margin:0 0 18px;color:var(--text-1)}
+.h2{font-family:var(--font-display);font-size:clamp(30px,3.8vw,48px);line-height:1.15;font-weight:700;letter-spacing:var(--letter-tight);margin:0 0 14px;color:var(--text-1)}
+.h3{font-size:clamp(21px,2.4vw,30px);line-height:1.25;font-weight:700;margin:0 0 10px}
+.h4{font-size:clamp(16px,1.7vw,21px);line-height:1.35;font-weight:700;margin:0 0 8px}
+.lede{font-size:clamp(16px,1.7vw,21px);line-height:1.6;color:var(--text-2);font-weight:400;max-width:64ch;margin:0}
+.dim{color:var(--text-2)}
+.dim2{color:var(--text-3)}
+.mono{font-family:var(--font-mono)}
+.serif{font-family:var(--font-serif)}
+
+/* ============ LAYOUT PRIMITIVES ============ */
+.row{display:flex;gap:24px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.grid{display:grid;gap:24px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.center{display:flex;align-items:center;justify-content:center;text-align:center}
+.mt-s{margin-top:8px}.mt-m{margin-top:18px}.mt-l{margin-top:32px}
+
+/* ============ CARDS / PILLS (paper skin: hairline border, zero radius, no shadow) ============ */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:26px 28px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card-soft{background:var(--surface-2)}
+.card-accent{border-top:2px solid var(--text-1)}
+.pill{display:inline-block;padding:4px 14px;border-radius:0;font-size:13px;font-weight:400;font-style:italic;
+  background:transparent;color:var(--text-2);border:1px solid var(--border-strong)}
+.pill-accent{color:var(--accent);border-color:var(--accent)}
+.divider-accent{height:2px;width:100%;background:var(--text-1)}
+
+/* ============ ACADEMIC DEVICES (theme signature) ============ */
+/* Double rule — the LaTeX titlepage device: heavy line over hairline. */
+.rule{height:1px;background:var(--border-strong);border:0;margin:0}
+.rule-double{height:0;border:0;border-top:2px solid var(--text-1);position:relative;margin:0}
+.rule-double::after{content:"";position:absolute;left:0;right:0;top:3px;border-top:1px solid var(--text-1)}
+/* Abstract block — italic body, vertical hairlines like a quoted environment. */
+.abstract{font-style:italic;color:var(--text-2);font-size:clamp(15px,1.55vw,19px);line-height:1.7;
+  padding:18px 28px;border-top:1px solid var(--border-strong);border-bottom:1px solid var(--border-strong)}
+.abstract b{font-style:normal;font-weight:700;color:var(--text-1)}
+/* Citation anchor — link-blue, underlined, [n] in mono. */
+.cite{font-family:var(--font-mono);font-size:.78em;color:var(--accent);text-decoration:underline;text-underline-offset:3px;font-style:normal}
+/* Figure environment with numbered caption. */
+.figure{border:1px solid var(--border);background:var(--surface);padding:26px 28px}
+.figcaption{font-size:clamp(13px,1.3vw,15px);color:var(--text-2);margin-top:14px;font-style:italic}
+.figcaption b{font-style:normal;font-weight:700;color:var(--text-1)}
+/* Booktabs table — heavy top/bottom rules, hairline midrule, no vertical rules. */
+.booktabs{border-collapse:collapse;width:100%;font-size:clamp(14px,1.45vw,18px)}
+.booktabs th,.booktabs td{padding:10px 16px;text-align:left;border:0}
+.booktabs td.num,.booktabs th.num{text-align:right;font-variant-numeric:tabular-nums}
+.booktabs thead th{border-top:2px solid var(--text-1);border-bottom:1px solid var(--text-1);font-weight:700}
+.booktabs tbody tr:last-child td{border-bottom:2px solid var(--text-1)}
+.booktabs .best{font-weight:700;color:var(--accent)}
+/* Footnote — hairline rule over small print. */
+.footnote{font-size:13px;color:var(--text-3);border-top:1px solid var(--border-strong);padding-top:10px;max-width:48ch}
+/* References list — hanging [n] labels. */
+.references{list-style:none;margin:0;padding:0;font-size:clamp(14px,1.45vw,17px);color:var(--text-2)}
+.references li{padding:7px 0 7px 52px;position:relative;line-height:1.55}
+.references li>.cite{position:absolute;left:0;top:9px;text-decoration:none}
+.references i{color:var(--text-1)}
+
+/* ============ DECK CHROME ============ */
+.deck-header{position:fixed;top:24px;left:48px;right:48px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);font-style:italic;z-index:10;pointer-events:none}
+.deck-footer{position:fixed;bottom:24px;left:48px;right:48px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);z-index:10;pointer-events:none}
+.theme-chip{font-family:var(--font-mono);font-size:11px;font-style:normal;letter-spacing:.04em}
+.progress-bar{position:fixed;left:0;right:0;bottom:0;height:2px;z-index:20;pointer-events:none}
+.progress-bar>span{display:block;height:100%;width:0;background:var(--accent);transition:width .3s var(--ease)}
+
+/* ============ SLIDE-LOCAL COMPONENTS ============ */
+.section-num{position:absolute;right:72px;bottom:40px;font-size:clamp(120px,17vw,220px);font-weight:700;line-height:.9;
+  color:var(--surface-2);letter-spacing:-.02em;z-index:0;pointer-events:none;font-family:var(--font-display)}
+.slide>*{position:relative;z-index:1}
+.kpi .num{font-size:clamp(34px,4vw,52px);font-weight:700;letter-spacing:var(--letter-tight);line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi .lbl{font-size:14px;color:var(--text-3);margin-top:6px}
+.stat-big{font-size:clamp(100px,14vw,190px);font-weight:700;line-height:1;letter-spacing:-.02em;margin:0;font-variant-numeric:tabular-nums}
+.bar-chart{display:flex;align-items:flex-end;gap:26px;height:240px;margin-top:46px;max-width:780px;
+  border-bottom:2px solid var(--text-1);padding:0 12px}
+.bar-chart .bar{flex:1;background:var(--accent);border-radius:0;position:relative;min-height:14px}
+.bar-chart .bar.muted{background:var(--surface-2);border:1px solid var(--border-strong)}
+.bar-chart .bar span{position:absolute;bottom:-32px;left:0;right:0;text-align:center;font-size:13px;font-style:italic;color:var(--text-3)}
+.bar-chart .bar em{position:absolute;top:-30px;left:0;right:0;text-align:center;font-size:14px;font-weight:700;font-style:normal;color:var(--text-1);font-variant-numeric:tabular-nums}
+.toc-list{list-style:none;margin:0;padding:0;counter-reset:toc;max-width:760px}
+.toc-list li{counter-increment:toc;display:flex;align-items:baseline;gap:18px;padding:16px 4px;
+  border-bottom:1px solid var(--border);font-size:clamp(18px,2vw,25px)}
+.toc-list li::before{content:counter(toc) ".";font-weight:700;color:var(--accent);min-width:34px;font-variant-numeric:tabular-nums}
+.toc-list li .dim2{margin-left:auto;font-size:.7em;font-style:italic}
+.quote{font-family:var(--font-serif);font-size:clamp(28px,3.4vw,44px);line-height:1.4;font-weight:400;font-style:italic;max-width:26ch;margin:0}
+.check{list-style:none;padding:0;margin:0;font-size:clamp(15px,1.5vw,19px)}
+.check li{padding:9px 0 9px 32px;position:relative;color:var(--text-2)}
+.check li::before{content:"";position:absolute;left:2px;top:13px;width:14px;height:14px;
+  border:1.5px solid var(--text-1);background:transparent}
+.check li::after{content:"";position:absolute;left:6px;top:16px;width:8px;height:4px;
+  border-left:1.5px solid var(--accent);border-bottom:1.5px solid var(--accent);transform:rotate(-45deg)}
+
+/* ============ SPEAKER NOTES (hidden from audience) ============ */
+.notes{display:none!important}
+
+/* ============ ANIMATIONS (restrained entry effects) ============ */
+@keyframes kf-rise{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.anim-rise-in{animation:kf-rise .8s var(--ease) both}
+.anim-fade-up{animation:kf-fade-up .6s var(--ease) both}
+.anim-stagger-list>*{opacity:0;animation:kf-rise .6s var(--ease) both}
+.anim-stagger-list>*:nth-child(1){animation-delay:.05s}
+.anim-stagger-list>*:nth-child(2){animation-delay:.15s}
+.anim-stagger-list>*:nth-child(3){animation-delay:.25s}
+.anim-stagger-list>*:nth-child(4){animation-delay:.35s}
+.anim-stagger-list>*:nth-child(n+5){animation-delay:.45s}
+@media (prefers-reduced-motion: reduce){
+  .anim-rise-in,.anim-fade-up,.anim-stagger-list>*{animation:none;opacity:1;transform:none}
+  .progress-bar>span{transition:none}
+}
+
+/* ============ PRINT ============ */
+@media print{
+  body{overflow:visible}
+  .deck{display:block;width:auto;height:auto;overflow:visible}
+  .slide{width:100vw;height:100vh;page-break-after:always}
+  .deck-header,.deck-footer,.progress-bar{display:none!important}
+}
+</style>
+<style id="od-no-pager">.deck-controls,#counter,.deck-counter{display:none!important}</style>
+</head>
+<body>
+
+<div class="deck-header"><span>PrivacyTrace · 作品评审材料 · 学术论文风</span><span class="theme-chip" id="theme-chip">academic-paper</span></div>
+
+<div class="deck" id="deck">
+
+  <!-- 1 · cover -->
+  <section class="slide" data-title="Title">
+    <p class="kicker">作品评审 · 专家版 / Expert review · 2026</p>
+    <div class="rule-double" style="max-width:880px"></div>
+    <h1 class="h1 anim-rise-in" style="margin-top:26px;max-width:23ch">PrivacyTrace：把 APK 的静态线索与政策原文逐条对上</h1>
+    <p class="lede" style="margin-bottom:24px">Android 客户端 × 静态证据 × 政策声明。只对照，不判定合规、安全或实际采集。</p>
+    <hr class="rule" style="max-width:880px">
+    <p class="dim2 mt-m" style="font-style:italic">10 页评审 PPT · 学术论文风重排版 · 采集基线 f81ca20 · 2026 年 10 月 23 日</p>
+    <div class="notes">开场：这是一份专家评审材料。它读 APK 的静态线索，和政策原文逐条对照；只对照，不判定合规、安全或实际采集。全片与 PPT 使用同一组事实与边界。</div>
+  </section>
+
+  <!-- 2 · outline -->
+  <section class="slide" data-title="Outline">
+    <p class="kicker">目录 / Outline</p>
+    <h2 class="h2">这份材料回答五个问题</h2>
+    <ol class="toc-list mt-m anim-stagger-list">
+      <li>定位：它读什么，明确不判断什么 <span class="dim2">01</span></li>
+      <li>创新：一条证据的两个终点 <span class="dim2">02</span></li>
+      <li>关键实现：一条流水线与隔离边界 <span class="dim2">03</span></li>
+      <li>客户端与成果：新版 Android App 与四类数字 <span class="dim2">04</span></li>
+      <li>边界、原创贡献与复核 <span class="dim2">05</span></li>
+    </ol>
+    <div class="notes">目录：定位、创新、关键实现、客户端与成果、边界与贡献。五个问题对应评审要素，最后落到可复核的材料。</div>
+  </section>
+
+  <!-- 3 · positioning: abstract + contributions -->
+  <section class="slide" data-title="Positioning">
+    <p class="kicker">§1 · 定位 / Positioning</p>
+    <h2 class="h2">读取静态线索，对齐政策原文</h2>
+    <div class="grid g2 mt-l" style="align-items:start">
+      <div class="abstract anim-fade-up">
+        <b>摘要。</b> 上传 APK 或 base + splits，解析 manifest 与全部 classesN.dex；再放入政策正文。可定位的线索落到代码位置与政策原句，材料不足保留 UNKNOWN。权限是能力声明，invoke 是静态线索，两者都不等于实际采集。<span class="cite">[1]</span>
+      </div>
+      <ul class="check anim-fade-up mt-s">
+        <li>只对照，不判定合规性、安全性或实际采集</li>
+        <li>权限 = 能力声明；invoke = 静态线索；两者都不等于行为</li>
+        <li>未知保留 UNKNOWN；结论留给证据与人工复核</li>
+        <li>移动 App 是客户端；桌面工作台是验收与回放介质<span class="cite">[2]</span></li>
+      </ul>
+    </div>
+    <p class="footnote mt-l">定位不是结论，而是边界：本材料证明“线索能被定位、能被复核”，不证明“应用实际采集了什么”。</p>
+    <div class="notes">定位：读取安装包里的静态线索，和政策原文逐条对照。权限是能力，invoke 是线索，两者都不等于实际采集。移动 App 是客户端；桌面工作台按 ADR-0005 冻结，是验收与离线回放介质。</div>
+  </section>
+
+  <!-- 4 · innovation: two endpoints -->
+  <section class="slide" data-title="Innovation">
+    <p class="kicker">§2 · 创新 / Innovation</p>
+    <h2 class="h2">一条证据，两个终点</h2>
+    <div class="grid g2 mt-m" style="align-items:stretch">
+      <div class="figure" style="padding:20px 22px">
+        <p class="eyebrow" style="margin-bottom:10px">① 代码位置</p>
+        <pre class="mono" style="margin:0;font-size:13px;line-height:1.55;white-space:pre-wrap">synthetic/LocationFeature.java
+LocationFeature#readGpsLocation:12
+
+locationManager.getLastKnownLocation(
+    LocationManager.GPS_PROVIDER);
+
+rule · android.location.last-known.gps</pre>
+      </div>
+      <div class="figure" style="padding:20px 22px">
+        <p class="eyebrow" style="margin-bottom:10px">② 政策原句</p>
+        <p class="quote" style="font-size:24px;margin:8px 0 14px">我们访问位置信息，用于提供地图功能。</p>
+        <p class="mono dim2" style="font-size:12px;margin:0">原文位置 [0, 18) · 按 Unicode 码点计数 · 半开区间</p>
+      </div>
+    </div>
+    <p class="figcaption"><b>图 1：</b>同一份证据同时挂代码位置与政策原句；两边都能自己走一遍，切片与 excerpt 可复算。</p>
+    <div class="grid g3 mt-m">
+      <div class="card card-accent" style="padding:16px 18px"><h4 class="h4">两个终点</h4><p class="dim" style="margin:0;font-size:14px">代码位置与政策原句，都能自己走一遍。</p></div>
+      <div class="card card-accent" style="padding:16px 18px"><h4 class="h4">三层分离</h4><p class="dim" style="margin:0;font-size:14px">事实、声明、推断分开记录；UNKNOWN 保留。</p></div>
+      <div class="card card-accent" style="padding:16px 18px"><h4 class="h4">真值先冻结</h4><p class="dim" style="margin:0;font-size:14px">12 个场景、三方案同材料；先冻真值再跑算法。</p></div>
+    </div>
+    <div class="notes">创新点不在静态分析本身，而在证据链的形状：一条证据同时挂代码位置和政策原句，两个端点都能复核。一致性与静态分析都不是本项目首创；我们把它做成可理解、可复核的证据链。</div>
+  </section>
+
+  <!-- 5 · implementation: pipeline -->
+  <section class="slide" data-title="Implementation">
+    <p class="kicker">§3 · 关键实现 / Implementation</p>
+    <h2 class="h2">一条流水线，同一条证据链</h2>
+    <div class="figure mt-m" style="padding:20px 24px">
+      <svg viewBox="0 0 900 140" role="img" aria-label="PrivacyTrace pipeline" style="width:100%;height:auto">
+        <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0a0a0a"/></marker></defs>
+        <g font-family="Georgia,serif" font-size="14" fill="#0a0a0a">
+          <rect x="8" y="42" width="152" height="56" fill="#ffffff" stroke="#0a0a0a" stroke-width="1.5"/>
+          <text x="84" y="66" text-anchor="middle">APK + 政策材料</text><text x="84" y="85" text-anchor="middle" font-size="12" fill="#333333">单包 / base + splits</text>
+          <rect x="196" y="42" width="140" height="56" fill="#ffffff" stroke="#0a0a0a" stroke-width="1.5"/>
+          <text x="266" y="66" text-anchor="middle">隔离扫描</text><text x="266" y="85" text-anchor="middle" font-size="12" fill="#333333">Docker · network none</text>
+          <rect x="372" y="42" width="140" height="56" fill="#ffffff" stroke="#0a0a0a" stroke-width="1.5"/>
+          <text x="442" y="66" text-anchor="middle">证据 + 候选</text><text x="442" y="85" text-anchor="middle" font-size="12" fill="#333333">代码位置 · 原句区间</text>
+          <rect x="548" y="42" width="140" height="56" fill="#ffffff" stroke="#0a0a0a" stroke-width="1.5"/>
+          <text x="618" y="66" text-anchor="middle">一致性对照</text><text x="618" y="85" text-anchor="middle" font-size="12" fill="#333333">多状态 · 缺证据不升级</text>
+          <rect x="724" y="42" width="168" height="56" fill="#e8edf8" stroke="#1a3a7a" stroke-width="1.5"/>
+          <text x="808" y="66" text-anchor="middle" fill="#1a3a7a">报告 / 回放</text><text x="808" y="85" text-anchor="middle" font-size="12" fill="#1a3a7a">Web · Android · 离线</text>
+          <line x1="160" y1="70" x2="192" y2="70" stroke="#0a0a0a" stroke-width="1.5" marker-end="url(#arr)"/>
+          <line x1="336" y1="70" x2="368" y2="70" stroke="#0a0a0a" stroke-width="1.5" marker-end="url(#arr)"/>
+          <line x1="512" y1="70" x2="544" y2="70" stroke="#0a0a0a" stroke-width="1.5" marker-end="url(#arr)"/>
+          <line x1="688" y1="70" x2="720" y2="70" stroke="#0a0a0a" stroke-width="1.5" marker-end="url(#arr)"/>
+        </g>
+      </svg>
+      <p class="figcaption"><b>图 2：</b>材料进来，隔离容器里解析，生成证据与候选，一致性引擎对照，最后出报告与回放；未知 APK 只在隔离容器里解析，扫描结束删除副本。</p>
+    </div>
+    <div class="grid g4 mt-m">
+      <div class="card" style="padding:14px 16px"><p class="eyebrow" style="margin:0 0 6px">隔离 / CONTAINER</p><p class="dim" style="margin:0;font-size:13px;line-height:1.6">非 root 65534:65534<br>network none · 只读根<br>cap-drop ALL · PID 32</p></div>
+      <div class="card" style="padding:14px 16px"><p class="eyebrow" style="margin:0 0 6px">静态 / STATIC</p><p class="dim" style="margin:0;font-size:13px;line-height:1.6">Androguard 4.1.3<br>AXML + 全部 classesN.dex<br>缺 JADX → 字节码兜底</p></div>
+      <div class="card" style="padding:14px 16px"><p class="eyebrow" style="margin:0 0 6px">政策 / POLICY</p><p class="dim" style="margin:0;font-size:13px;line-height:1.6">码点半开区间 [start,end)<br>切片 == excerpt<br>旧快照不覆盖</p></div>
+      <div class="card" style="padding:14px 16px"><p class="eyebrow" style="margin:0 0 6px">引擎 / ENGINE</p><p class="dim" style="margin:0;font-size:13px;line-height:1.6">FastAPI · Pydantic<br>PostgreSQL outbox<br>mTLS Runner · 不持 socket</p></div>
+    </div>
+    <div class="notes">实现是一条流水线：材料进来，隔离容器里解析，生成证据和候选，一致性引擎对照，最后出报告和回放。下面四块是可核的约束和组件；未知 APK 只在隔离容器里解析，扫描结束删除副本。</div>
+  </section>
+
+  <!-- 6 · mobile client: new Android screens -->
+  <section class="slide" style="padding:40px 96px" data-title="Mobile client">
+    <p class="kicker">§3 · 客户端 / Android App</p>
+    <h2 class="h2" style="margin-bottom:8px">新版 Android App</h2>
+    <div class="row" style="gap:40px;align-items:flex-start;margin-top:4px">
+      <figure class="figure" style="flex:0 0 auto;padding:14px 14px 8px;text-align:center;margin:0">
+        <img src="../capture/mobile-import-390x844-dpr3.png" alt="移动 App 导入页" style="width:clamp(180px,12vw,238px);display:block;margin:0 auto" />
+        <figcaption class="figcaption" style="margin-top:8px;max-width:250px"><b>图 3：</b>导入材料：选择应用、材料与政策来源。</figcaption>
+      </figure>
+      <figure class="figure" style="flex:0 0 auto;padding:14px 14px 8px;text-align:center;margin:0">
+        <img src="../capture/mobile-report-390x844-dpr3.png" alt="移动 App 报告页" style="width:clamp(180px,12vw,238px);display:block;margin:0 auto" />
+        <figcaption class="figcaption" style="margin-top:8px;max-width:250px"><b>图 4：</b>报告页：来源、覆盖、计数与对照结论。</figcaption>
+      </figure>
+      <div style="max-width:300px;padding-top:6px;margin-left:auto">
+        <h3 class="h3" style="font-size:26px">评委能对上的入口</h3>
+        <ul class="check" style="font-size:15px">
+          <li>导入：选择应用 → 准备政策</li>
+          <li>报告：人工示例 / 持久化回放，不写成真实扫描</li>
+          <li>扫描范围不完整 · PARTIAL 与待复核条目就在结果旁</li>
+        </ul>
+        <p class="footnote" style="max-width:none;margin-top:18px">开发版；2026-10-23 采集于基线 <span class="mono">f81ca20</span>，390×844 DPR 3，固定合成材料。Chromium + 受控 native bridge，不是真机，也不是 APK 扫描结论。</p>
+      </div>
+    </div>
+    <div class="notes">客户端页：左边是导入，右边是报告。评委能按“选择应用”“准备政策”找到入口；报告清楚写着人工示例、持久化回放、扫描范围不完整与待复核条目。截图采集于最新基线 f81ca20，固定合成材料，非真机。</div>
+  </section>
+
+  <!-- 7 · results: headline stat -->
+  <section class="slide center" data-title="Results">
+    <p class="kicker">§4 · 真实成果 / Results</p>
+    <p class="stat-big anim-rise-in" style="color:var(--accent);font-size:150px">1578</p>
+    <p class="lede mt-m" style="max-width:46ch">工程门禁通过数；同一轮还有 179 skipped、e2e 65、Web 单测 111，生产构建通过。</p>
+    <div class="row mt-l" style="gap:72px;justify-content:center">
+      <div class="kpi"><p class="num" style="margin:0">40 / 0 / 0</p><p class="lbl">部署验收 pass / fail / skip</p></div>
+      <div class="kpi"><p class="num" style="margin:0">12 / 12</p><p class="lbl">受控场景状态一致</p></div>
+      <div class="kpi"><p class="num" style="margin:0">11 / 12</p><p class="lbl">H 矩阵通过（H12 失败保留）</p></div>
+    </div>
+    <p class="footnote mt-l" style="text-align:left;max-width:64ch">† 工程门禁与部署验收绑定 65b49f7（2026-10-21）；受控评测绑定 b0b3c74；H 矩阵绑定 2626152。四类数字分开报，不合成一个“准确率”。</p>
+    <div class="notes">结果先看工程门禁：1578 passed、179 skipped，e2e 65，Web 111，生产构建通过；部署 40 pass / 0 fail / 0 skip；受控 12/12 状态一致；H 矩阵 11/12，H12 失败保留。三类数字不能混着说。</div>
+  </section>
+
+  <!-- 8 · results table -->
+  <section class="slide" data-title="Bounded results">
+    <p class="kicker">§4 · 结果与边界 / Bounded results</p>
+    <h2 class="h2">四类数字分开报，缺口同页保留</h2>
+    <table class="booktabs mt-m">
+      <thead><tr><th>类别</th><th>结果</th><th>绑定 / 边界</th></tr></thead>
+      <tbody>
+        <tr><td>工程门禁</td><td>1578 passed / 179 skipped；e2e 65；Web 111</td><td class="dim2">65b49f7 · 2026-10-21</td></tr>
+        <tr><td>部署验收</td><td>40 pass / 0 fail / 0 skip；四入口 4/4</td><td class="dim2">65b49f7；唯一既有豁免 dedicated-scan-host-verification</td></tr>
+        <tr><td>受控评测</td><td>12/12 状态一致；API 4/12；权限+关键词 2/12；36 行</td><td class="dim2">b0b3c74；名义状态对照；P/R/F1 = N/A</td></tr>
+        <tr><td>H 矩阵</td><td>11 通过 / 1 未通过；H12 失败复现 2 次</td><td class="dim2">2626152；J × splits × 手机模型</td></tr>
+        <tr><td>真实 App</td><td>GKD v1.12.1（1 样本）：6 证据 / 3 行为 / 2 声明 / 3 问题</td><td class="dim2">2026-10-09；3 条结论均 INSUFFICIENT_EVIDENCE，本轮未重扫</td></tr>
+      </tbody>
+    </table>
+    <p class="figcaption"><b>表 1：</b>五类结果与各自绑定；受控场景是自建源码场景的名义状态对照，不推广为真实 App 的检测准确率。</p>
+    <p class="footnote mt-m" style="max-width:none">未命中规则 ≠ 没有隐私行为；证据不足，也要写进报告。离线包 24 成员 / 18 行对照绑定 9e56771；六场景绑定 323780c9。</p>
+    <div class="notes">表格把五类结果和绑定放一起：工程、部署、受控、H 矩阵、真实 App。受控场景不是真实准确率，H12 失败保留，GKD 只有一条历史样本且三条结论都是证据不足。</div>
+  </section>
+
+  <!-- 9 · contribution + boundaries -->
+  <section class="slide" data-title="Contribution">
+    <p class="kicker">§5 · 原创贡献 / Contribution</p>
+    <h2 class="h2">团队提出什么，AI 辅助什么，边界在哪</h2>
+    <div class="grid g2 mt-l">
+      <div class="card card-accent">
+        <h4 class="h4">团队提出并执行</h4>
+        <ul class="check" style="font-size:15px">
+          <li>项目定位与“只对照，不判定”边界</li>
+          <li>证据模型与一致性状态机</li>
+          <li>确定性规则与字节码归因</li>
+          <li>受控场景 · 冻结真值 · 三方案对照</li>
+          <li>验收治理：Issue / PR / check.sh 门禁</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4 class="h4">AI 辅助 · 披露在案</h4>
+        <ul class="check" style="font-size:15px">
+          <li>脚手架与接口胶水；测试与验收脚本；文档与文案草稿</li>
+          <li>不宣称 100% 独立，也不给出比例；不宣称开源</li>
+          <li>第三方：Androguard 4.1.3（Apache-2.0）· FastAPI · Vue 3 · PostgreSQL</li>
+        </ul>
+      </div>
+    </div>
+    <p class="footnote mt-l">边界与缺口同页保留：H12 失败、前端开发版、真实 App 全局准确率未做；不把线索当行为，不把受控当真实。</p>
+    <div class="notes">贡献分两层：团队提出并执行定位、证据模型、规则、受控基准和验收治理；AI 集中在脚手架、测试、文档和文案。不给代码比例，也不宣称 100% 独立。边界与缺口和结果放在一起。</div>
+  </section>
+
+  <!-- 10 · close + references -->
+  <section class="slide" data-title="References">
+    <p class="kicker">结语 · 材料与复核 / Close</p>
+    <p class="quote anim-fade-up" style="max-width:30ch">先把证据摆出来，<br>再谈结论。</p>
+    <p class="eyebrow mt-m">— PrivacyTrace 评审材料 · 2026-10-23</p>
+    <ol class="references mt-m" style="max-width:980px">
+      <li><span class="cite">[1]</span> <i>评审 PPT</i>：本文件 · 10 页 · 学术论文风重排版；事实、数字与边界同已对齐版。</li>
+      <li><span class="cite">[2]</span> <i>120 秒评审片</i>：PrivacyTrace-Review-1080p.mp4 · 120.000 s / 1920×1080 / 30 fps · SHA-256 <span class="mono">51d512af…602cc5</span>。</li>
+      <li><span class="cite">[3]</span> <i>界面采集</i>：2026-10-23 · 390×844 DPR 3 · 基线 <span class="mono">f81ca20</span> · <span class="mono">capture/manifest.json</span>。</li>
+      <li><span class="cite">[4]</span> <i>复核</i>：<span class="mono">node scripts/verify-academic-deck.cjs</span> · <span class="mono">bash scripts/check.sh</span> · <span class="mono">delivery/manifest.json</span>。</li>
+    </ol>
+    <hr class="rule mt-m" style="max-width:980px">
+    <p class="dim2 mt-m" style="font-style:italic">线索不等于行为。受控结果不是真实 App 的准确率。未知就写未知。</p>
+    <div class="notes">结语只有一句：先把证据摆出来，再谈结论。后面是材料与复核入口；线索不等于行为，受控结果不是真实准确率，未知就写未知。</div>
+  </section>
+
+</div>
+
+<div class="deck-footer"><span>hps-academic-paper · MIT · based on lewislulu/html-ppt-skill</span><span id="counter">1 / 10</span></div>
+<div class="progress-bar"><span id="bar"></span></div>
+
+<script>
+(function () {
+  var deck = document.getElementById('deck');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var counter = document.getElementById('counter');
+  var bar = document.getElementById('bar');
+  var active = 0;
+  var lastKeyEvent = null;
+
+  function clamp(i) { return Math.max(0, Math.min(slides.length - 1, i)); }
+
+  function paint(i) {
+    counter.textContent = (i + 1) + ' / ' + slides.length;
+    bar.style.width = (((i + 1) / slides.length) * 100) + '%';
+  }
+
+  // Hash routing: #/N (1-based). replaceState keeps back-button clean and
+  // never throws inside a srcdoc iframe thanks to the try/catch.
+  function setHash(i) {
+    try { history.replaceState(null, '', '#/' + (i + 1)); } catch (_) { /* sandboxed */ }
+  }
+  function fromHash() {
+    var m = (location.hash || '').match(/^#\/(\d+)/);
+    return m ? clamp(parseInt(m[1], 10) - 1) : 0;
+  }
+
+  function go(i, instant) {
+    active = clamp(i);
+    deck.scrollTo({ left: active * deck.clientWidth, behavior: instant ? 'auto' : 'smooth' });
+    paint(active);
+    setHash(active);
+  }
+
+  function syncFromScroll() {
+    var i = Math.round(deck.scrollLeft / deck.clientWidth);
+    if (i !== active && i >= 0 && i < slides.length) { active = i; paint(i); setHash(i); }
+  }
+
+  function onKey(e) {
+    if (e === lastKeyEvent) return; // dedupe: same Event passes both listeners
+    lastKeyEvent = e;
+    var t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); go(active + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(active - 1); }
+    else if (e.key === 'Home') { e.preventDefault(); go(0); }
+    else if (e.key === 'End') { e.preventDefault(); go(slides.length - 1); }
+  }
+
+  // Listen on both window and document in capture phase so keys work no
+  // matter which element holds focus inside a host iframe.
+  window.addEventListener('keydown', onKey, true);
+  document.addEventListener('keydown', onKey, true);
+  deck.addEventListener('scroll', function () { window.requestAnimationFrame(syncFromScroll); }, { passive: true });
+  window.addEventListener('hashchange', function () { go(fromHash()); });
+  window.addEventListener('resize', function () { go(active, true); });
+
+  // Auto-focus so arrow keys work without a click.
+  document.body.setAttribute('tabindex', '-1');
+  document.body.style.outline = 'none';
+  function focusDeck() {
+    try { window.focus(); document.body.focus({ preventScroll: true }); } catch (_) { /* sandboxed */ }
+  }
+  document.addEventListener('mousedown', focusDeck);
+  window.addEventListener('load', focusDeck);
+
+  go(fromHash(), true);
+  paint(active);
+  focusDeck();
+})();
+</script>
+
+</body>
+</html>

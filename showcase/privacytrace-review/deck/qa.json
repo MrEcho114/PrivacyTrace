@@ -1,0 +1,112 @@
+{
+  "schema": "privacytrace/academic-deck@1",
+  "title": "PrivacyTrace · 作品评审材料（学术论文风）",
+  "version": "0.3",
+  "kind": "academic-paper",
+  "template": {
+    "id": "od-hps-academic-paper",
+    "license": "MIT",
+    "attribution": "lewislulu/html-ppt-skill · theme academic-paper"
+  },
+  "source": {
+    "html": "deck/academic.html",
+    "html_sha256": "ca52c5742e2b6f4877f29f366835fa2a86c57484c875141bed0ea0ed5e4ab695",
+    "slides": 10,
+    "notes": 10
+  },
+  "render": {
+    "width": 1920,
+    "height": 1080,
+    "slides": [
+      {
+        "file": "slide-01.png",
+        "bytes": 102275,
+        "sha256": "e3fc9471be62126267ab07a49a6b8c8397b4eefdffb30f3f4513ff9e9a9f1ff6"
+      },
+      {
+        "file": "slide-02.png",
+        "bytes": 85616,
+        "sha256": "61a61a69d2e394fcab0979d2495821e48dba540787c274263acd3cb0a72c9fea"
+      },
+      {
+        "file": "slide-03.png",
+        "bytes": 134146,
+        "sha256": "433d5196724e0ccb2b3ca1fd438545b1e40eabab1da2bf065404761935c2bfbc"
+      },
+      {
+        "file": "slide-04.png",
+        "bytes": 99086,
+        "sha256": "d0288a6e74cb7e82f72b2a59395d4dbd60012bd6616e8896da2527eb277d6a92"
+      },
+      {
+        "file": "slide-05.png",
+        "bytes": 115398,
+        "sha256": "d46343237c75473d16feb0402eca93f597a0ff0368cad73bb60bb348ad22c244"
+      },
+      {
+        "file": "slide-06.png",
+        "bytes": 194288,
+        "sha256": "bc5b4c6000face4733fef27b69c6476dea5964133302c7888febdfc7f34689bd"
+      },
+      {
+        "file": "slide-07.png",
+        "bytes": 80268,
+        "sha256": "5490afaf251d332e6d8f43ba56b85feb328d75f6b0ac45b909a44732f83b2a26"
+      },
+      {
+        "file": "slide-08.png",
+        "bytes": 140233,
+        "sha256": "9184b718af4906cb8ee7bdbd05c79dfc68cfc2b8728c582ca7ebb9afee6e24ca"
+      },
+      {
+        "file": "slide-09.png",
+        "bytes": 98788,
+        "sha256": "fe37ed26f7b99f5553cded4ba4dc9fb4bcc1d260a3d0d6b59773b222d3e0ba32"
+      },
+      {
+        "file": "slide-10.png",
+        "bytes": 105965,
+        "sha256": "4ac6533701dd891c7b7c9ad26f5534897bbd0f8c57219756ae1b49da6adc82b6"
+      }
+    ]
+  },
+  "deck": {
+    "file": "PrivacyTrace-Review.pptx",
+    "bytes": 1114540,
+    "sha256": "c57840cb80dfe8036ab2c8a3751bcf2236471d6814b5d91ee94fc56195860069",
+    "slides": 10,
+    "notes": 10
+  },
+  "capture": {
+    "manifest": "capture/manifest.json",
+    "manifest_sha256": "686cc69b1e65d372de4b1613a6d0c8148e06b64c2633b17f77808407ae185930",
+    "source_commit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
+    "source_commit_short": "f81ca20",
+    "capture_date": "2026-10-23",
+    "screens": [
+      {
+        "role": "import",
+        "file": "capture/mobile-import-390x844-dpr3.png",
+        "bytes": 243366,
+        "sha256": "c6afe7c502eea513c266cfd739daf22ccb0d2cd714d98ecf0f15386fc62ec6bf",
+        "viewport": "390x844",
+        "device_scale_factor": 3,
+        "captured_at": "2026-10-23T08:57:41.417Z"
+      },
+      {
+        "role": "report",
+        "file": "capture/mobile-report-390x844-dpr3.png",
+        "bytes": 279893,
+        "sha256": "eb4fd28eb460abf11e879a4b19972197819b95ec44d78555af6d384750fc3836",
+        "viewport": "390x844",
+        "device_scale_factor": 3,
+        "captured_at": "2026-10-23T08:57:41.417Z"
+      }
+    ]
+  },
+  "captions": {
+    "client": "图 3 / 图 4：新版 Android App 导入与报告",
+    "capture": "2026-10-23 · 390×844 DPR 3 · f81ca20"
+  },
+  "banned_hits": []
+}

@@ -221,15 +221,16 @@ td,th{border:1px solid #999;padding:.5rem}table{border-collapse:collapse}</style
         "PrivacyTrace authored controlled replay. Requires Python 3.11+ only; no model key.\n"
         "Run: python viewer.py --port 8765\nOpen http://127.0.0.1:8765\n"
         "Six source-built scenarios. No APK, private policy, local review or credentials.\n"
-        "Internal verification package only. Project source license is not yet decided.\n"
+        "Competition entry package (2026); for expert review and local reproduction.\n"
         "Viewer verifies exact package file set and SHA256 before serving.\n",
         encoding="utf-8",
     )
     (args.output / "DISTRIBUTION.txt").write_text(
-        "INTERNAL VERIFICATION ONLY. Project source license is pending team decision.\n"
-        "This task grants no public release or competition-submission authorization.\n"
-        "Only agent-authored controlled policies are included. No real APK/policy is distributed.\n"
-        "The bundle uses Vue runtime and Vite preload helper; their license texts follow.\n",
+        "PrivacyTrace competition entry - controlled offline replay demo.\n"
+        "Submitted with the 2026 14th National College Digital Media Technology Works and Creativity\n"
+        "Competition entry package, for expert review and local reproduction.\n"
+        "Only agent-authored controlled policies are included. No real APK, private policy, or personal data is distributed.\n"
+        "The bundle uses Vue runtime and Vite preload helper; their license texts follow (Vue-LICENSE, Vite-LICENSE).\n",
         encoding="utf-8",
     )
     for name, path in [

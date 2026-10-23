@@ -14,3 +14,14 @@
 素材哈希与电影源码指纹分别记录。最终 MP4、源码 ZIP 与验证附件哈希在 `delivery/manifest.json` 中绑定，不把某一张截图或旧 CI 当作新影片验收。
 
 整个源包按明确名单生成：电影源码、本地素材、字体和许可、来源记录及验证附件。私有 APK、job store、凭证、真实政策全文、原始模型响应、依赖、帧缓存和本机日志均不进入包。
+
+## README 界面预览（2026-10-23）
+
+- 代码基线：`main` @ `f81ca20`（截取用的 worktree 只有 `README.md` 变更），`apps/web` 生产构建。
+- 方法：`vite build` + `vite preview`；Playwright Chromium 无头，390×844 视口、`deviceScaleFactor: 2`、`isMobile`、`hasTouch`；流程由 `scripts/verify-mobile-flow.cjs` 的受控原生桥替身驱动，数据取自 `scripts/verify-frontend-flow.cjs` 的 fixtures，本地把包名改为 `com.example.reader`、APK SHA 改为示例值、报告来源标为 `SYNTHETIC`。
+- 文件与 SHA256（均为 780×1688）：
+  - `assets/stills/app-import.png` `494416672bfae6a5c94d97b17e404a8a124e706145f695261b4c344803e48bf7`
+  - `assets/stills/app-candidates.png` `feb8d0233d9bfe482b08d2b5d82a8775a2dfe515a4e01db14181d7cfa7b4ff69`
+  - `assets/stills/app-report.png` `467bad202b4e44d2516a5c1b1b1fb21235f29de8898acb7850fd8afc11133d12`
+  - `assets/stills/app-evidence.png` `f3cca1a957e190dad874a0245783bffe419874a2fcc706a09fe0b6df0dd171dc`
+- 边界：受控桥替身加示例材料，不是真机、真实 APK 或模型运行，也不作为验收结论。

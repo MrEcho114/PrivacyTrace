@@ -30,6 +30,7 @@ from .models import AnalysisJob, EvaluationInput, PolicyClaim, PolicyDocument
 from .package_set import (
     PackageFile,
     PackageSetIntegrityError,
+    file_name_key,
     validate_package_set,
 )
 from .policy_fetch import FetchError, display_url, fetch_policy
@@ -520,11 +521,12 @@ class WebIntake:
 
                 if name.lower().endswith(".apk") and not name.endswith("/"):
                     file_basename = PurePosixPath(name).name
-                    if file_basename in seen_apk_names:
+                    key = file_name_key(file_basename)
+                    if key in seen_apk_names:
                         raise PackageSetIntegrityError(
                             "CORRUPTED_FILE", "Archive contains duplicate APK file names"
                         )
-                    seen_apk_names.add(file_basename)
+                    seen_apk_names.add(key)
                     apk_entries.append(entry)
 
             if not apk_entries:

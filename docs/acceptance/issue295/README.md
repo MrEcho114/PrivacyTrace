@@ -122,3 +122,27 @@ ASTRA 的两轮截图位于本机忽略目录 `tmp/frontend-visual-acceptance-20
 
 审阅未能评估、现已补图的界面：导入空态、删除材料确认、设置页、行内证据（见 §4 截图表）。
 
+## 8. 交接（2026-10-23，转 @OasisViridis 接手）
+
+交接点：`codex/pt-mob-202-uiux` 的细化提交 `29ea350`，本记录随后以单独的交接提交追加（只改本文件）。PR #302 仍为 draft，`mergeable_state=clean`。
+
+**已完成**
+
+- #295 / PT-MOB-202 实现：大字号几何、底栏主操作收敛、候选与报告信息减负、证据排序、哈希可展开复制；本轮补充材料名/来源名两行预览与原位展开、超大字号顶栏随正文滚动、移动候选删除原位二次确认、哈希复制失败可见可重试（规范 §16.1）。
+- 远端 CI 在 `29ea350` 全绿：Check、Browser Acceptance、Deployment Baseline、Deployment Acceptance、Spec30 Integration。
+- 本机复验：`npm run typecheck`、`npm run build`、`npm run test --workspace @privacytrace/web`（152 passed）、`node scripts/verify-issue295-refinements.cjs`（5 项通过、8 张截图、`dirty=false`）。
+- 前置 #274 / #289 已于 2026-10-23 合入 main（`8c7a844`），本分支已带回，票面阻塞可据此复核。
+
+**交给接手会话的剩余项**
+
+1. 真机验收（本票唯一硬缺口）：Android WebView 软键盘实际高度、safe-area、系统字号（font scale）、TalkBack 朗读顺序；模拟器与 844×390 横屏仍未跑。
+2. 证据重拍：`docs/acceptance/issue295/` 的 14 张截图未随 §16.1 细化重拍；本轮 8 张细化截图只写在本机忽略目录 `tmp/issue295-refinements`，需要按 §4 的做法在干净工作树重跑并逐字节复跑。
+3. `scripts/verify-frontend-round2.cjs` 末段“行内证据返回后恢复滚动位置”仍不通过（before 580 / after 0），原因未定，未作为通过项。
+4. `scripts/check.sh` 在本机有 8 项 apps/api `ISOLATED_INSPECTION_UNAVAILABLE` 失败；干净 `origin/main` 上同样失败（隔离扫描不可用），远端 CI 已绿，接手时以 CI 为准。
+5. 人类决定：是否解除 draft、是否合并；用户审美认可不由机器代替。
+
+**接手约定**
+
+- 按 `AGENTS.md` 与 `docs/agents/skills-workflow.md` §6 先回读 Issue #295 当前执行记录，确认唯一执行会话后再开工；本文件只是交接材料，不构成新的授权。
+- 合并、发布、部署不在本交接授权内。
+

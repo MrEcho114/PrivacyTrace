@@ -15,7 +15,7 @@ PrivacyTrace 拿 Android 安装包和它的隐私政策原文做对照。它从 
 
 | 导入 | 候选 |
 | :---: | :---: |
-| <img src="showcase/privacytrace/assets/stills/import.png" width="420" alt="导入页：选择 APK 或 base 加 splits"><br>选文件只准备输入，点继续才上传 | <img src="showcase/privacytrace/assets/stills/candidates.png" width="420" alt="候选页：政策候选网址"><br>确认政策候选后才进入分析 |
+| <img src="showcase/privacytrace/assets/stills/import.png" width="420" alt="导入页：选择 APK 或 base 加 splits"><br>选文件只准备输入，点「获取政策并检查候选」才会上传 | <img src="showcase/privacytrace/assets/stills/candidates.png" width="420" alt="候选页：政策候选网址"><br>确认政策候选后才进入分析 |
 
 | 报告 | 证据下钻 |
 | :---: | :---: |
@@ -43,13 +43,13 @@ npm run dev
 
 打开 http://127.0.0.1:5173。API 没起来时只有「体验示例」可用：固定材料，四步走完导入、候选、进度、报告，看得到代码线索、政策原句和证据定位。它是工程演示夹具，界面上的名字还是「体验示例」，不表示正在分析你刚选的那个 APK。API 起来之后，上传 APK、抓取政策正文、保存候选、启动扫描才解锁。
 
-选文件只是准备输入，点「继续」才上传；候选确认并开始分析，扫描才启动。政策完整度、正文取得情况和附件检查状态一直显示在界面上。模型凭证只存在后端，模型抽取默认关着。
+选文件只是准备输入，点「获取政策并检查候选」才会上传；到候选页点「保存候选并开始分析」，扫描才启动。政策完整度、正文取得情况和附件检查状态一直显示在界面上。模型凭证只存在后端，模型抽取默认关着。
 
 扫真实 APK 要先建 Worker 镜像，见[隔离扫描](#隔离扫描)。
 
 ## Android 客户端
 
-第一次接触产品走这条路。流程是：选已安装应用、确认包集合、上传、准备政策（自动、辅助或自备模型）、确认候选、启动分析、看进度和报告、删掉远端材料。
+第一次接触产品走这条路。流程是：选已安装应用、确认包集合、上传、准备政策（自动、辅助或自备模型）、确认候选、保存并分析、看进度和报告、删掉远端材料。
 
 源码在 [`apps/mobile`](apps/mobile)，Tauri 2 壳加载同一套移动界面，读应用列表和上传由原生 Kotlin 模块负责。构建前先在仓库根目录执行 `npm ci && npm run build`，再进客户端目录：
 
@@ -186,7 +186,7 @@ CI 通过、真实 Docker 运行、受控评测、离线验收、正式提交，
 | [服务端部署](https://github.com/MrEcho114/PrivacyTrace/issues/81) | 基线已合入 | R1–R6 验收脚本在 main 的 CI 跑通；独立扫描主机和跨机防火墙按授权记为豁免，不算通过；生产门禁关着 |
 | [S3 竞赛交付](https://github.com/MrEcho114/PrivacyTrace/issues/5) | 内部交付完成 | 离线包和材料已归档；正式提交和回执见 [#107](https://github.com/MrEcho114/PrivacyTrace/issues/107) |
 | 理解测试 | 已完成（探索性） | 6 人测试的公开摘要见 [PT-907 理解测试](docs/stages/pt907-user-study-20261019.md)；[#65](https://github.com/MrEcho114/PrivacyTrace/issues/65) 于 2026-10-21 关闭 |
-| 前端打磨 | 已完成 | [#141](https://github.com/MrEcho114/PrivacyTrace/issues/141)–[#146](https://github.com/MrEcho114/PrivacyTrace/issues/146) 的 Pioneer 视觉和交互打磨，六个工单在 2026-10-22 关闭 |
+| 前端打磨 | 已完成 | [#141](https://github.com/MrEcho114/PrivacyTrace/issues/141)–[#146](https://github.com/MrEcho114/PrivacyTrace/issues/146) 的 Pioneer 视觉与交互打磨在 2026-10-22 关闭；移动端 UI/UX 修订 [#295](https://github.com/MrEcho114/PrivacyTrace/issues/295) 经 [PR #302](https://github.com/MrEcho114/PrivacyTrace/pull/302) 于 2026-10-23 合入 |
 
 收口不等于通过。2026-10-22 的最终验收按「计划执行完了、结论是未全部通过、缺口已记录」关闭，项目接受现状，不补跑、不开新票。关闭不改变记录里的失败项和未跑项。
 

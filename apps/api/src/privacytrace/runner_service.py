@@ -120,6 +120,28 @@ class Runner:
                 (int(time.time()),),
             )
 
+    def _abort_initialization(self, request_id, operation, created):
+        # A transient failure while creating the operation tree must not leave a
+        # charged RUNNING row: it is retired as interrupted and expired, exactly
+        # as recovery treats an interrupted operation, so the next prune
+        # reclaims it. Unproven cleanup keeps Runner faulted (fail closed).
+        try:
+            with self._database() as conn:
+                conn.execute(
+                    "UPDATE operations SET state='ABORTED',result=NULL,expires=? "
+                    "WHERE id=? AND state='RUNNING'",
+                    (int(time.time()) - 1, request_id),
+                )
+        except (sqlite3.Error, OSError):
+            self.faulted = True
+        for path, made in ((operation / "inputs", created[1]), (operation, created[0])):
+            if not made:
+                continue
+            try:
+                shutil.rmtree(path)
+            except OSError:
+                self.faulted = True
+
     def _recover(self):
         # This root is exclusively locked. Only UUID operations present in its
         # own ledger, with exact workspace label/image/mount proof, may be reaped.
@@ -276,9 +298,16 @@ class Runner:
             )
         operation = self.operations / request_id
         safe_path(operation)
-        operation.mkdir(mode=0o700)
         inputs = operation / "inputs"
-        inputs.mkdir(mode=0o700)
+        created = [False, False]
+        try:
+            operation.mkdir(mode=0o700)
+            created[0] = True
+            inputs.mkdir(mode=0o700)
+            created[1] = True
+        except OSError:
+            self._abort_initialization(request_id, operation, created)
+            raise
         try:
             transfer_deadline = time.monotonic() + MAX_TRANSFER_SECONDS
             for item in value["files"]:

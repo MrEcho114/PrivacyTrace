@@ -240,11 +240,13 @@ function onPopState(event: PopStateEvent) {
 }
 function openSettings(event?: Event) {
   settingsTrigger.value = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  pendingSettingsRemove.value = false
   settingsOpen.value = true
   pushOverlay()
 }
 function closeSettings(byBack = false) {
   if (!settingsOpen.value) return
+  pendingSettingsRemove.value = false
   settingsOpen.value = false
   if (!byBack) popOverlay()
   void nextTick(() => settingsTrigger.value?.focus({ preventScroll: true }))
@@ -439,7 +441,7 @@ onBeforeUnmount(() => {
           <UiButton variant="primary" :disabled="busy" @click="flow.control('retry-job')">重新分析</UiButton>
         </template>
         <template v-else>
-          <UiButton :disabled="busy" @click="flow.control('cancel-job')">取消分析</UiButton>
+          <UiButton v-if="job" :disabled="busy" @click="flow.control('cancel-job')">取消分析</UiButton>
           <UiButton :disabled="busy" :busy="busy" @click="refreshJob">刷新状态</UiButton>
         </template>
       </template>

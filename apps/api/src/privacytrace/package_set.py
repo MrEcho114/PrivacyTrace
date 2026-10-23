@@ -41,6 +41,19 @@ def directory_digest(directory):
     return hashlib.sha256(json.dumps(entries, ensure_ascii=True).encode()).hexdigest()
 
 
+def file_name_key(file_name: str) -> str:
+    """Normalize an APK file name for duplicate detection.
+
+    Windows and default-configured macOS APFS resolve names that differ only by
+    case to the same directory entry, so the duplicate-name guards must compare
+    with the same case-insensitive rule as the extraction write.  ``casefold``
+    is a deliberate fail-closed superset: it can reject a few Unicode name pairs
+    that a case-sensitive filesystem would keep apart, but it never lets a pair
+    through that a case-insensitive filesystem collapses.
+    """
+    return file_name.casefold()
+
+
 class PackageSetIntegrityError(Exception):
     """Integrity rejection mapped cleanly to 4xx HTTP responses."""
 
@@ -117,7 +130,7 @@ class PackageSet(Model):
         if self.base.version_code != self.version_code:
             raise ValueError("base version_code does not match package set")
         seen_splits = set()
-        seen_file_names = {self.base.file_name}
+        seen_file_names = {file_name_key(self.base.file_name)}
         for split in self.splits:
             if split.part != PackagePart.SPLIT:
                 raise ValueError(f"split file '{split.file_name}' must have part=SPLIT")
@@ -132,9 +145,9 @@ class PackageSet(Model):
             if not SPLIT_NAME_REGEX.fullmatch(split.split_name):
                 raise ValueError(f"split name '{split.split_name}' contains invalid characters")
             seen_splits.add(split.split_name)
-            if split.file_name in seen_file_names:
+            if file_name_key(split.file_name) in seen_file_names:
                 raise ValueError(f"duplicate APK file name '{split.file_name}'")
-            seen_file_names.add(split.file_name)
+            seen_file_names.add(file_name_key(split.file_name))
         expected_size = self.base.size_bytes + sum(s.size_bytes for s in self.splits)
         if self.total_size_bytes != expected_size:
             raise ValueError(
@@ -476,7 +489,7 @@ def validate_package_set(
     # Rule 5, 6, 7: Split Package, VersionCode, SplitName and FileName Uniqueness
     splits = [f for f in files if f.part == PackagePart.SPLIT]
     seen_splits = set()
-    seen_file_names = {base.file_name}
+    seen_file_names = {file_name_key(base.file_name)}
     for split in splits:
         if split.package_name != base.package_name:
             raise PackageSetIntegrityError(
@@ -510,11 +523,11 @@ def validate_package_set(
                 f"Duplicate split name '{split.split_name}' in '{split.file_name}'",
             )
         seen_splits.add(split.split_name)
-        if split.file_name in seen_file_names:
+        if file_name_key(split.file_name) in seen_file_names:
             raise PackageSetIntegrityError(
                 "CORRUPTED_FILE", f"Duplicate APK file name '{split.file_name}'"
             )
-        seen_file_names.add(split.file_name)
+        seen_file_names.add(file_name_key(split.file_name))
 
     validate_split_dependencies(base.dependencies, {s.split_name: s.dependencies for s in splits})
 

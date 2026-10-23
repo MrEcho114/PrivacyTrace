@@ -19,7 +19,7 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-from privacytrace.auth import SecuritySeam, generate_capability_token
+from privacytrace.auth import SecuritySeam, generate_capability_token, hash_token
 from privacytrace.config import ServerConfig
 from privacytrace.main import create_app
 from privacytrace.models import AnalysisJob, EvaluationInput, SourceOrigin
@@ -526,6 +526,129 @@ def test_post_cancel_requires_valid_job_token(tmp_path, monkeypatch):
             headers={"Authorization": f"Bearer {token}"},
         )
         assert resp.status_code == 200
+
+
+# ==============================================================================
+# Feature 8b: Authorization scheme case-insensitivity (RFC 9110 §11.1, #279)
+# ==============================================================================
+
+SCHEME_CASES = ("Bearer", "bearer", "BEARER", "bEaReR")
+
+
+def create_remote_draft_with_token(client):
+    """Create a remote web draft and return (draft_id, capability_token)."""
+    resp = client.post(
+        "/api/v1/web/drafts",
+        json={
+            "name": "scheme-case-draft",
+            "sources": [
+                {
+                    "id": "official-web",
+                    "title": "Official Privacy Policy",
+                    "source_type": "OFFICIAL_WEB_POLICY",
+                }
+            ],
+        },
+    )
+    assert resp.status_code in (200, 201), resp.text
+    body = resp.json()
+    draft_id = body.get("id") or body.get("draft_id")
+    token = body.get("capability_token") or body.get("token")
+    assert draft_id and token, "remote draft creation must return an id and capability token"
+    return draft_id, token
+
+
+def flip_credential_case(token: str) -> str:
+    """Flip the case of exactly one credential character, keeping the token format valid."""
+    prefix = "pt_cap_"
+    payload = token[len(prefix) :]
+    replacement = "A" if payload[0] != "A" else "a"
+    return prefix + replacement + payload[1:]
+
+
+@pytest.mark.parametrize("scheme", SCHEME_CASES)
+def test_draft_access_accepts_case_insensitive_bearer_scheme(tmp_path, monkeypatch, scheme):
+    """RFC 9110 §11.1: the auth-scheme token is case-insensitive (#279).
+
+    The same draft capability token must authenticate whether the client writes
+    the scheme as ``Bearer``, ``bearer``, ``BEARER`` or a mixed spelling.
+    """
+    app = get_remote_app(tmp_path, monkeypatch=monkeypatch)
+    client = TestClient(app, base_url="http://testserver")
+    draft_id, token = create_remote_draft_with_token(client)
+
+    resp = client.get(
+        f"/api/v1/web/drafts/{draft_id}",
+        headers={"Authorization": f"{scheme} {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+
+
+@pytest.mark.parametrize("scheme", SCHEME_CASES)
+def test_job_access_accepts_case_insensitive_bearer_scheme(tmp_path, monkeypatch, scheme):
+    """RFC 9110 §11.1: job access accepts any capitalisation of the Bearer scheme (#279)."""
+    app = get_remote_app(tmp_path, monkeypatch=monkeypatch)
+    client = TestClient(app, base_url="http://testserver")
+    token, digest = generate_capability_token()
+    seeded = seed_job(app.state.job_store, token_digest=digest)
+
+    resp = client.get(
+        f"/api/v1/jobs/{seeded.job.id}",
+        headers={"Authorization": f"{scheme} {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+
+
+def test_bearer_scheme_normalization_keeps_credentials_case_sensitive(tmp_path, monkeypatch):
+    """Only the scheme is normalised; capability token content stays case-sensitive (#279)."""
+    app = get_remote_app(tmp_path, monkeypatch=monkeypatch)
+    client = TestClient(app, base_url="http://testserver")
+
+    # Deterministic token so the lowercased variant is guaranteed to differ.
+    token = "pt_cap_AbCdEfGhIjKlMnOpQrStUvWxYz0123456789"
+    seeded = seed_job(app.state.job_store, token_digest=hash_token(token))
+    url = f"/api/v1/jobs/{seeded.job.id}"
+
+    assert client.get(url, headers={"Authorization": f"bEaReR {token}"}).status_code == 200
+
+    lowered = token.lower()
+    assert lowered != token, "test fixture must contain uppercase characters"
+    assert client.get(url, headers={"Authorization": f"bearer {lowered}"}).status_code == 403
+
+
+def test_bearer_scheme_fix_keeps_other_credential_rejections(tmp_path, monkeypatch):
+    """Basic/other schemes, missing, malformed, wrong-case and query tokens stay rejected (#279)."""
+    app = get_remote_app(tmp_path, monkeypatch=monkeypatch)
+    client = TestClient(app, base_url="http://testserver")
+    draft_id, token = create_remote_draft_with_token(client)
+    url = f"/api/v1/web/drafts/{draft_id}"
+
+    # Missing credentials still rejected.
+    assert client.get(url).status_code == 401
+    assert client.get(url, headers={"Authorization": "Bearer"}).status_code == 401
+
+    # Other authentication schemes are not reinterpreted as Bearer.
+    assert client.get(url, headers={"Authorization": f"Basic {token}"}).status_code == 401
+
+    # Malformed capability format still rejected with 401.
+    assert (
+        client.get(url, headers={"Authorization": "Bearer not_a_capability_token"}).status_code
+        == 401
+    )
+
+    # Same token with one character's case changed is still a different credential.
+    assert (
+        client.get(
+            url, headers={"Authorization": f"Bearer {flip_credential_case(token)}"}
+        ).status_code
+        == 403
+    )
+
+    # Query-parameter credentials remain strictly prohibited.
+    assert client.get(f"{url}?token={token}").status_code == 400
+
+    # The X-PrivacyTrace-Token fallback is unchanged.
+    assert client.get(url, headers={"X-PrivacyTrace-Token": token}).status_code == 200
 
 
 # ==============================================================================

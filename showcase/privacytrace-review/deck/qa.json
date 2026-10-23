@@ -1,0 +1,67 @@
+{
+  "deck": {
+    "file": "PrivacyTrace-Review.pptx",
+    "version": "0.2",
+    "bytes": 632407,
+    "sha256": "dce159f12996e2a00d92ba1b44a97304e3789b1ed13c2ed61478cbe042b61595",
+    "slides": 10,
+    "notes": 10
+  },
+  "capture": {
+    "manifest": "../capture/manifest.json",
+    "manifest_sha256": "8e1adf5100916244ed1db34e0d2737e721ebf888e493fdd5c154e5ad5a72be68",
+    "source_commit": "dc2eee0464b78b027c42437d6159b99b9d7c0c2a",
+    "source_commit_short": "dc2eee0",
+    "capture_date": "2026-10-23",
+    "screens": [
+      {
+        "role": "import",
+        "file": "../capture/mobile-import-390x844-dpr3.png",
+        "sha256": "dfc8880b64a9745fac4c2a0a8fbd031906bbaafdb1743026eb10e20f37627047",
+        "viewport": "390x844",
+        "device_scale_factor": 3,
+        "source_commit": "dc2eee0464b78b027c42437d6159b99b9d7c0c2a",
+        "captured_at": "2026-10-23T01:18:32.625Z",
+        "framed_file": ".build/mobile-import-390x844-dpr3-framed.png",
+        "framed_sha256": "7a5ad18cbab3f1e444e3b3810a8a1d075962efd12b7f0d8721d0afa8edcd7e92"
+      },
+      {
+        "role": "report",
+        "file": "../capture/mobile-report-390x844-dpr3.png",
+        "sha256": "d248c07df91fb759771357056066a9db76c360bea850065874e13c234955b64d",
+        "viewport": "390x844",
+        "device_scale_factor": 3,
+        "source_commit": "dc2eee0464b78b027c42437d6159b99b9d7c0c2a",
+        "captured_at": "2026-10-23T01:18:32.625Z",
+        "framed_file": ".build/mobile-report-390x844-dpr3-framed.png",
+        "framed_sha256": "9c0050ac3a85678490a46a49b60700f530b18b539c6e8d3edf021016b0db1894"
+      }
+    ]
+  },
+  "captions": {
+    "slide2": "移动 App · 开发版 / 2026-10-23 采集 @ dc2eee0",
+    "slide4": "移动报告 · 开发版 / 2026-10-23 采集 @ dc2eee0 / 构造材料 / 持久化回放",
+    "slide10": "界面采集 · 移动 App · 2026-10-23 · 390×844 DPR 3 @ dc2eee0"
+  },
+  "banned_strings": [
+    "Issue #",
+    "未上传",
+    "最终上传未发生",
+    "2026-10-22",
+    "07b37b2",
+    "工作台 · 开发版",
+    "交付候选"
+  ],
+  "banned_hits": [],
+  "checks": {
+    "slides_is_10": true,
+    "all_slides_have_notes": true,
+    "slide2_caption": true,
+    "slide2_mobile_label": true,
+    "slide4_caption": true,
+    "slide4_constructed_replay": true,
+    "slide10_ui_capture": true,
+    "no_banned_strings": true
+  },
+  "built_at": "2026-10-23T01:58:21.438562+00:00"
+}

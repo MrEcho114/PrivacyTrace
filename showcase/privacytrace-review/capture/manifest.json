@@ -1,0 +1,102 @@
+{
+  "schema": "privacytrace/review-deck-shots@1",
+  "issue": 265,
+  "repository": "MrEcho114/PrivacyTrace",
+  "purpose": "UI screens consumed by showcase/privacytrace-review/deck/build_deck.py for the 10-page review deck (v0.2)",
+  "generated_by": "scripts/capture-review-deck-shots.cjs",
+  "generated_at": "2026-10-23T01:18:32.625Z",
+  "capture_date": "2026-10-23",
+  "source_commit": "dc2eee0464b78b027c42437d6159b99b9d7c0c2a",
+  "source_commit_short": "dc2eee0",
+  "source_ui_scope": [
+    "apps/web",
+    "apps/mobile",
+    "scripts/fixtures"
+  ],
+  "source_note": "Source commit is the frozen main baseline at capture time; apps/web and apps/mobile were unmodified in the worktree.",
+  "platform": "Chromium headless viewport simulation; not Android WebView and not a device run",
+  "fixture": "production Vue mobile shell + mocked Tauri native bridge + deterministic synthetic fixture; no APK, model, Docker or backend",
+  "device_items": "NOT_RUN",
+  "screens": [
+    {
+      "file": "mobile-import-390x844-dpr3.png",
+      "scenario": "import",
+      "state": "material selected + two policy sources, fixed synthetic demo data",
+      "viewport": "390x844",
+      "device_scale_factor": 3,
+      "pixel_size": "1170x2532",
+      "page_scroll_height": 894,
+      "platform": "Chromium headless viewport simulation (not Android WebView, not a device)",
+      "bridge": "mocked Tauri native bridge (`__TAURI_INTERNALS__.invoke`); no backend request",
+      "fixture": "deterministic report/taxonomy acceptance fixture relabelled SYNTHETIC + fixed policy sources; no APK/model/Docker/device execution",
+      "source_commit": "dc2eee0464b78b027c42437d6159b99b9d7c0c2a",
+      "captured_at": "2026-10-23T01:18:32.625Z",
+      "capture_date": "2026-10-23",
+      "bytes": 248593,
+      "sha256": "dfc8880b64a9745fac4c2a0a8fbd031906bbaafdb1743026eb10e20f37627047",
+      "asserted_text": [
+        "APK 与政策材料",
+        "当前分析材料",
+        "政策来源",
+        "com.example.synthetic.location"
+      ]
+    },
+    {
+      "file": "mobile-report-390x844-dpr3.png",
+      "scenario": "report",
+      "state": "synthetic sample, persisted replay, two issues",
+      "viewport": "390x844",
+      "device_scale_factor": 3,
+      "pixel_size": "1170x2532",
+      "page_scroll_height": 2036,
+      "platform": "Chromium headless viewport simulation (not Android WebView, not a device)",
+      "bridge": "mocked Tauri native bridge (`__TAURI_INTERNALS__.invoke`); no backend request",
+      "fixture": "deterministic report/taxonomy acceptance fixture relabelled SYNTHETIC + fixed policy sources; no APK/model/Docker/device execution",
+      "source_commit": "dc2eee0464b78b027c42437d6159b99b9d7c0c2a",
+      "captured_at": "2026-10-23T01:18:32.625Z",
+      "capture_date": "2026-10-23",
+      "bytes": 263966,
+      "sha256": "d248c07df91fb759771357056066a9db76c360bea850065874e13c234955b64d",
+      "asserted_text": [
+        "APP 隐私收集越权报告",
+        "合成示例 · 位置信息",
+        "人工示例 · SYNTHETIC",
+        "持久化回放 · REPLAY"
+      ]
+    },
+    {
+      "file": "mobile-import-320x568-dpr2.png",
+      "scenario": "import",
+      "state": "narrow-screen cross-check with selected material",
+      "viewport": "320x568",
+      "device_scale_factor": 2,
+      "pixel_size": "640x1136",
+      "page_scroll_height": 926,
+      "platform": "Chromium headless viewport simulation (not Android WebView, not a device)",
+      "bridge": "mocked Tauri native bridge (`__TAURI_INTERNALS__.invoke`); no backend request",
+      "fixture": "deterministic report/taxonomy acceptance fixture relabelled SYNTHETIC + fixed policy sources; no APK/model/Docker/device execution",
+      "source_commit": "dc2eee0464b78b027c42437d6159b99b9d7c0c2a",
+      "captured_at": "2026-10-23T01:18:32.625Z",
+      "capture_date": "2026-10-23",
+      "bytes": 95029,
+      "sha256": "c42ee673990dd24210772d39d836fa83119f2328253d7cf7d93c8f72bc3cb1de"
+    },
+    {
+      "file": "mobile-report-320x568-dpr2.png",
+      "scenario": "report",
+      "state": "narrow-screen cross-check of the report",
+      "viewport": "320x568",
+      "device_scale_factor": 2,
+      "pixel_size": "640x1136",
+      "page_scroll_height": 2358,
+      "platform": "Chromium headless viewport simulation (not Android WebView, not a device)",
+      "bridge": "mocked Tauri native bridge (`__TAURI_INTERNALS__.invoke`); no backend request",
+      "fixture": "deterministic report/taxonomy acceptance fixture relabelled SYNTHETIC + fixed policy sources; no APK/model/Docker/device execution",
+      "source_commit": "dc2eee0464b78b027c42437d6159b99b9d7c0c2a",
+      "captured_at": "2026-10-23T01:18:32.625Z",
+      "capture_date": "2026-10-23",
+      "bytes": 98138,
+      "sha256": "af4097e7df4bfccca2e9bbb6aab69c24ce24b69187e45a8e88da4b6c191aa535"
+    }
+  ]
+}

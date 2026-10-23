@@ -1,4 +1,6 @@
-﻿# PT-906 上传套件与终稿 v5 记录（2026-10-23）
+# PT-906 上传套件与终稿 v5 记录（2026-10-23）
+
+> **2026-10-23 18:05 更新：v6 已重建（换成新版移动端 + 后端 CLI 共 9 张截图，ZIP 重冻结），v5 不再作为上传基准。见 [v6 重建记录](v6-rebuild-20261023.md)。本文件保留为 v5 历史状态。**
 
 > 任务来源：[#74](https://github.com/MrEcho114/PrivacyTrace/issues/74) 赛事材料整理与核对；交付槽位 [#198](https://github.com/MrEcho114/PrivacyTrace/issues/198)（ZIP）、[#199](https://github.com/MrEcho114/PrivacyTrace/issues/199)（截图）、[#200](https://github.com/MrEcho114/PrivacyTrace/issues/200)（评审视频 / PPT）、[#202](https://github.com/MrEcho114/PrivacyTrace/issues/202)（提交审核与回执）。
 >

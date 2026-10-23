@@ -1,174 +1,141 @@
 {
   "task": "PT-906-D",
   "issue": "https://github.com/MrEcho114/PrivacyTrace/issues/199",
-  "generated_at": "2026-10-23T17:04:54+08:00",
+  "basis": "v6",
+  "generated_at": "2026-10-23T18:02:07+08:00",
   "limit": 10,
-  "basis": {
+  "zip": {
     "file": "PrivacyTrace_322234.zip",
-    "bytes": 41917846,
-    "sha256": "559f14f147449aa6eb0293f5489bede1fd0e98d634fc4b3e3fb530c6b45c59e5",
-    "bytes_match": true,
-    "sha256_match": true,
-    "screenshot_entries": 14
+    "bytes": 36720786,
+    "sha256": "19ab74d6f685c405c1afe89d6721c262128a3edebd8df62d929e58a35ca3527a",
+    "entries": 627,
+    "package_files": 627,
+    "package_dirs": 97,
+    "manifest_rows": 626
   },
-  "selected_total_bytes": 5677918,
+  "selected_total_bytes": 698462,
+  "selected_count": 9,
   "selected": [
     {
       "order": 1,
-      "file": "01_live-report-1440.png",
-      "source": "live-report-1440.png",
-      "bytes": 621665,
-      "width": 1440,
-      "height": 4926,
-      "sha256": "d7a948e92cd713a53290ad04f0dc94b5e6a387433b173acb5014e09413468394",
-      "anonymization": "PASS",
-      "note": ""
+      "file": "01_mobile-import.png",
+      "description": "导入步：选择应用材料与政策来源（新版移动端）",
+      "bytes": 77051,
+      "width": 390,
+      "height": 875,
+      "sha256": "7a59d99b5cd1ddb36fc4ce36b009bfee510fe3d829bf157dc6329d83d51565c1",
+      "in_zip": true,
+      "in_kit": true,
+      "anonymization": "PASS"
     },
     {
       "order": 2,
-      "file": "02_live-report-390.png",
-      "source": "live-report-390.png",
-      "bytes": 586591,
+      "file": "02_mobile-candidates.png",
+      "description": "候选步：政策候选声明与人工核对",
+      "bytes": 78580,
       "width": 390,
-      "height": 6876,
-      "sha256": "f47b9725d3f3f51cf29018f8dc136969f4dcb01c3fabae33932aa1f53564156e",
-      "anonymization": "PASS",
-      "note": ""
+      "height": 844,
+      "sha256": "0aca746fbf7936c5a743e5de5bc66572cdc61cf2db2eb89b31bf5a485cf8bf16",
+      "in_zip": true,
+      "in_kit": true,
+      "anonymization": "PASS"
     },
     {
       "order": 3,
-      "file": "03_mobile-import-390.png",
-      "source": "mobile-import-390.png",
-      "bytes": 195357,
+      "file": "03_mobile-progress.png",
+      "description": "分析进度：静态扫描阶段与时间线",
+      "bytes": 39653,
       "width": 390,
-      "height": 2343,
-      "sha256": "792de5f1e2b2f00c3370d1fcce8df8cce7efd86c16b576fea147839d47fcc5f0",
-      "anonymization": "PASS",
-      "note": ""
+      "height": 844,
+      "sha256": "a82b9b35c5af92877b374b45b8d0fd4c461136182b62f3b19ba53ef95353c5c5",
+      "in_zip": true,
+      "in_kit": true,
+      "anonymization": "PASS"
     },
     {
       "order": 4,
-      "file": "04_mobile-report-390.png",
-      "source": "mobile-report-390.png",
-      "bytes": 375054,
+      "file": "04_mobile-report.png",
+      "description": "对照报告：来源、隐私声明对照与证据入口（整页）",
+      "bytes": 195353,
       "width": 390,
-      "height": 4403,
-      "sha256": "1c945a3f8c841fc3a8d9d5f353b8134accf24e966c52e1ae3658274b9221203d",
-      "anonymization": "PASS",
-      "note": ""
+      "height": 2005,
+      "sha256": "81960bd89c692e4ca19070eaf56d1aae50978714d006b94cabb8a7229633f486",
+      "in_zip": true,
+      "in_kit": true,
+      "anonymization": "PASS"
     },
     {
       "order": 5,
-      "file": "05_tc01-long-text-pagination.png",
-      "source": "tc01-long-text-pagination.png",
-      "bytes": 1866878,
-      "width": 1280,
-      "height": 9455,
-      "sha256": "9efccb34ced93957ed8ef248114416026cb6e7654730ff59005a9a00f94ae901",
-      "anonymization": "PASS",
-      "note": "含被测真实应用标识 `gkd-s1-first` 与输入 APK SHA-256 `edcc03be…466a6`；属被测对象指纹，不识别参赛者，#197 判 PASS（可选收紧项，不整改）"
+      "file": "05_mobile-evidence.png",
+      "description": "证据下钻：API 字节码与规则定位",
+      "bytes": 69990,
+      "width": 390,
+      "height": 844,
+      "sha256": "7f82b97e7f3b4b9de155e02a6df7a660c3d92e958e656bde9589bf8e6226a30c",
+      "in_zip": true,
+      "in_kit": true,
+      "anonymization": "PASS"
     },
     {
       "order": 6,
-      "file": "06_tc02-xss-defense.png",
-      "source": "tc02-xss-defense.png",
-      "bytes": 493380,
-      "width": 1280,
-      "height": 4084,
-      "sha256": "3293d47e46e713429a8cd1684bce8fd06b6649ed26f89924891e229fedbc5d50",
-      "anonymization": "PASS",
-      "note": "含被测真实应用标识 `gkd-s1-first` 与输入 APK SHA-256 `edcc03be…466a6`；属被测对象指纹，不识别参赛者，#197 判 PASS（可选收紧项，不整改）"
+      "file": "06_mobile-settings.png",
+      "description": "服务与存储设置：模型连接、材料存储与证据边界",
+      "bytes": 85876,
+      "width": 390,
+      "height": 844,
+      "sha256": "660a26528933a7554ece1dc7a26733a6777ec9226113efecaac4a6ee3077b12c",
+      "in_zip": true,
+      "in_kit": true,
+      "anonymization": "PASS"
     },
     {
       "order": 7,
-      "file": "07_tc03-partial-bytecode-fallback.png",
-      "source": "tc03-partial-bytecode-fallback.png",
-      "bytes": 407053,
-      "width": 1280,
-      "height": 3458,
-      "sha256": "428954d7c431ad5460b319e5cd48c6c2e2b53fa9153a7efe8bb266039be035bb",
-      "anonymization": "PASS",
-      "note": ""
+      "file": "07_cli-apk-scan.png",
+      "description": "后端 CLI：APK 静态扫描输出（包身份与行为线索）",
+      "bytes": 44418,
+      "width": 1304,
+      "height": 892,
+      "sha256": "db3c3cbab279c1f371ecdf8f46934b52aa1ebac321eda3f312b155b6d9460daf",
+      "in_zip": true,
+      "in_kit": true,
+      "anonymization": "PASS"
     },
     {
       "order": 8,
-      "file": "08_tc04-source-controlled.png",
-      "source": "tc04-source-controlled.png",
-      "bytes": 349643,
-      "width": 1280,
-      "height": 2872,
-      "sha256": "e2f8067850d77a9aed85371d0ef743049b30c927a255d19a7dbafeaf26f97a78",
-      "anonymization": "PASS",
-      "note": ""
+      "file": "08_cli-coverage.png",
+      "description": "后端 CLI：扫描覆盖与限制说明",
+      "bytes": 50098,
+      "width": 1304,
+      "height": 892,
+      "sha256": "2311282748393c512bf98541e01140eca5e6e65d47f3c7b7c04f4c086f5d2415",
+      "in_zip": true,
+      "in_kit": true,
+      "anonymization": "PASS"
     },
     {
       "order": 9,
-      "file": "09_tc04-source-real-scan-s1.png",
-      "source": "tc04-source-real-scan-s1.png",
-      "bytes": 423880,
-      "width": 1280,
-      "height": 3458,
-      "sha256": "34caecc8667847cca2e0dab862f0e98d962eb4ca589f8bc7d5e51592bb7b32fa",
-      "anonymization": "PASS",
-      "note": "含被测真实应用标识 `gkd-s1-first` 与输入 APK SHA-256 `edcc03be…466a6`；属被测对象指纹，不识别参赛者，#197 判 PASS（可选收紧项，不整改）"
-    },
-    {
-      "order": 10,
-      "file": "10_tc05-optional-notes-review.png",
-      "source": "tc05-optional-notes-review.png",
-      "bytes": 358417,
-      "width": 1280,
-      "height": 2965,
-      "sha256": "62f520c7bc10e5a43469b1ee233bf792fbb342daddaf09696955baca35d2d320",
-      "anonymization": "PASS",
-      "note": "含被测真实应用标识 `gkd-s1-first` 与输入 APK SHA-256 `edcc03be…466a6`；属被测对象指纹，不识别参赛者，#197 判 PASS（可选收紧项，不整改）"
+      "file": "09_cli-manifest-tools.png",
+      "description": "后端 CLI：输入包权限与工具版本",
+      "bytes": 57443,
+      "width": 1304,
+      "height": 892,
+      "sha256": "fe829546c53ea9f058537c64e7c3e0eca8079783d73c2fc48e85f95211564838",
+      "in_zip": true,
+      "in_kit": true,
+      "anonymization": "PASS"
     }
   ],
-  "unselected": [
-    {
-      "file": "tc03-job-cancelled.png",
-      "bytes": 97779,
-      "width": 1280,
-      "height": 900,
-      "sha256": "1266cf195644781dd5e4a283fa3eaec5b0b12506a69a73f7dd318972c4e36520",
-      "reason": "单页「已取消」状态页，信息量最低；降级路径已由选片 #7 部分字节码回退代表。"
-    },
-    {
-      "file": "tc03-structured-error-failed.png",
-      "bytes": 106392,
-      "width": 1280,
-      "height": 968,
-      "sha256": "a640f2b2abf33426951da09c0239729086824a05c4804fdc7f1ba63ee808bece",
-      "reason": "失败态（错误码 ZIP_INVALID）；异常展示与超时同类，只留代表性一张。"
-    },
-    {
-      "file": "tc03-timeout-failed.png",
-      "bytes": 108841,
-      "width": 1280,
-      "height": 968,
-      "sha256": "1d03522d42412b4aa20c4bcf8fffde7179c4af6ffdee79ab5c4699e9e0a2849f",
-      "reason": "失败态（错误码 SCAN_TIMEOUT）；同上，避免失败态占比过高。"
-    },
-    {
-      "file": "tc04-source-synthetic.png",
-      "bytes": 194337,
-      "width": 1280,
-      "height": 1672,
-      "sha256": "8bf5c93498339f4fe957775cfa014f9df15e19fd9337c84b237457fb701a887a",
-      "reason": "纯人工构造示例；来源维度已由受控源（#8）与真实扫描（#9）覆盖。"
-    }
-  ],
+  "superseded": {
+    "v5_zip_sha256": "559f14f147449aa6eb0293f5489bede1fd0e98d634fc4b3e3fb530c6b45c59e5",
+    "v5_screenshots": 14,
+    "reason": "旧 14 张是 Pioneer 时期移动端与桌面用例截图；负责人 2026-10-23 决定改用新版移动端 6 张 + 后端 CLI 3 张，并重建 v6 同步。"
+  },
   "verification": {
     "script": "docs/acceptance/issue199/verify-upload-slot.py",
-    "report": ".scratch/issue199/verify-report.json",
+    "report": ".scratch/issue199/verify-report-v6.json",
     "ok": true,
     "issues": []
   },
-  "anonymization_evidence": [
-    ".scratch/issue197/check4-a.md",
-    ".scratch/issue197/check4-b.md",
-    ".scratch/issue197/check4-c.md"
-  ],
   "status": {
     "uploaded": false,
     "submitted": false

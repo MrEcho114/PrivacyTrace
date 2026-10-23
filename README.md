@@ -5,9 +5,9 @@
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
 </p>
 
-PrivacyTrace 拿 Android 安装包和它的隐私政策原文做对照。它从 APK 里静态读出隐私相关的调用线索，把每条线索指到具体的代码位置，再摆上政策里对应的那句话。它只回答两件事：代码里有没有这条线索，政策里有没有这句话。应用是否真的收集数据、有没有外传、安不安全、合不合法，都不在结论范围里。
+PrivacyTrace 拿 Android 安装包和它的隐私政策原文做对照。它从 APK 里静态读出隐私相关的调用线索，把每条线索指到具体的代码位置，再摆上政策里对应的那句话。它只回答两件事：代码里有没有这条线索，政策里有没有这句话。应用是否真的收集数据、有没有外传、数据往哪流、安不安全、合不合法，都不在结论范围里。
 
-产品入口只有一个：Android App，也就是 `apps/mobile` 的 Tauri 2 壳加载移动界面。想零安装看一眼，用断网只读的离线回放包。浏览器工作台和 Web 构建产物扮演另外的角色，App 的界面来源、工程验收介质、离线回放载体，不是第三个入口。口径见 [ADR-0004](docs/adr/0004-client-is-android-app.md)。
+产品入口只有一个：Android App，也就是 `apps/mobile` 的 Tauri 2 壳加载移动界面。想零安装看一眼，用断网只读的离线回放包。浏览器工作台和 Web 构建产物扮演另外的角色，App 的界面来源、工程验收介质、离线回放载体，既不是第二个客户端，也不是产品入口。口径见 [ADR-0004](docs/adr/0004-client-is-android-app.md)。
 
 项目准备参加 2026 年第十四届数媒竞赛。API、隔离扫描和部署基线在 main 上，Android 客户端主流程也合了。2026-10-22 的提交前最终验收已经收口，结论是没有全部通过：失败项和未跑项按原样留在 [#128](https://github.com/MrEcho114/PrivacyTrace/issues/128) 的记录里，项目接受现状，不补跑也不改判。正式提交和回执由 [#107](https://github.com/MrEcho114/PrivacyTrace/issues/107) 跟踪，工程节点不等于赛事结果。
 
@@ -21,7 +21,7 @@ PrivacyTrace 拿 Android 安装包和它的隐私政策原文做对照。它从 
 | :---: | :---: |
 | <img src="showcase/privacytrace/assets/stills/report.png" width="420" alt="报告页：按来源对照"><br>按来源对照，结论指得到代码位置 | <img src="showcase/privacytrace/assets/stills/evidence.png" width="420" alt="证据页：代码位置与政策原句"><br>线索定位到文件与方法，并对照政策原句 |
 
-这四张图是 Chromium 在 main 分支上实际截的，材料是构造的 APK 和一段人工短政策，不代表一次真实 App 扫描。每张图的捕获时间、视口和哈希记在 [素材与制作来源](showcase/privacytrace/ASSETS.md)。想连着看流程，有 120 秒[演示视频](showcase/privacytrace/delivery/PrivacyTrace-1080p.mp4)。
+这四张图是 Chromium 在 main 分支上实际截的，材料是构造的 APK 和一段人工短政策，原始 PNG 没有涂改，不代表一次真实 App 扫描。每张图的捕获时间、视口和哈希记在 [素材与制作来源](showcase/privacytrace/ASSETS.md)。想连着看流程，有 120 秒[演示视频](showcase/privacytrace/delivery/PrivacyTrace-1080p.mp4)。
 
 ## 本地启动
 
@@ -64,7 +64,7 @@ npm run android:build
 
 ## 浏览器工作台
 
-浏览器工作台不是客户端。它做三件事：App 界面层的开发与演示、工程验收时查状态和报告、离线回放包打开后展示同一份报告。
+浏览器工作台不是客户端。它做三件事：工程调试与内部走查、工程验收时查状态和报告、离线回放包打开后展示同一份报告。
 
 复核真实 APK 也走这里：上传单个 APK，或者 base 加全部 splits；政策候选网址从 manifest 里提出来抓正文，抓不到可以手工补。确认候选之后，材料进 Docker 隔离 Worker 做静态扫描，产出作业、报告和能下钻的证据。
 
@@ -84,7 +84,7 @@ npm run android:build
   wsl.exe -d Ubuntu-24.04 --exec docker build --file "$root/apps/api/worker.Dockerfile" --tag privacytrace-worker:s1 $root
   ```
 
-政策摄取要两份准备好的材料：纯文本 raw 和候选 candidates。快照写进指定的新目录，旧快照不动；原文里同一句重复出现，每条候选各带各的起止偏移。扫描的 Job ID 必须全局唯一。
+政策摄取要两份准备好的材料：纯文本 raw 和候选 candidates。快照写进指定的新目录，生成不可变快照，旧快照不动；原文里同一句重复出现，每条候选各带各的起止偏移。扫描的 Job ID 必须全局唯一。
 
 ```bash
 # 政策切片摄取
@@ -117,7 +117,7 @@ uv run --project apps/api --locked --extra worker python -m privacytrace.pipelin
 | 部署运行时 | PostgreSQL、Redis、Celery、mTLS Runner | 持久任务、投递、隔离执行、健康检查 |
 | 存储与回放 | 本机 JSON、PostgreSQL、离线只读包 | 作业存档、版本与哈希核对、断网展示 |
 
-链路是：APK 和政策材料进本机或部署的 API，交给隔离扫描，静态证据和政策候选对上，结果在 App 里看。同一份报告也能在浏览器工作台或离线回放包里只读复核。本机模式只绑回环地址、作业存 JSON、没有账号；部署模式接 PostgreSQL、Celery 和 Runner，任务访问凭证随任务发，仍然不建账号。两种模式都没有公网实例。
+链路是：APK 和政策材料进本机或部署的 API，交给隔离扫描，静态证据和政策候选对上，结果在 App 里看。同一份报告也能在浏览器工作台或离线回放包里只读复核。本机模式只绑回环地址、作业存 JSON、没有账号；部署模式接 PostgreSQL、Celery 和 Runner，任务访问靠随任务发放的访问材料，仍然不建账号。两种模式都没有公网实例。
 
 ## 能力边界
 
@@ -127,7 +127,7 @@ uv run --project apps/api --locked --extra worker python -m privacytrace.pipelin
 - 权限声明只说明应用申请了能力，代码里的调用线索也只是静态线索。两样都证明不了实际采集，也撑不起安全或合法性的结论。
 - 加壳应用、Native 库（`.so`）、反射、动态加载、Flutter 和混合开发应用不保证覆盖。生产分析容器里没有 JADX，拿不到反编译结果就走字节码兜底（`UNAVAILABLE_BYTECODE_FALLBACK`）。
 - 政策不靠大模型生成，也不做动态沙箱抓包和用户行为实验。模型只辅助整理候选，最终状态由规则和人工判断。
-- 本机作业存 JSON，部署模式用 PostgreSQL，两边不会自动同步。
+- 本机作业存 JSON，部署模式用 PostgreSQL，本机 JSON 不会自动导入 PostgreSQL。
 - 扫描器用完的 APK 副本默认在退出时删掉，只留受限收据，累计预算默认 1 GiB。网页上传的原文件留在本机供恢复和重试，不做自动清理；扫描目录里的旧残留要人工核对，见 [运行时保留策略](docs/stages/s1-runtime-retention.md)。
 - 本机 API 只绑 `127.0.0.1`，没有账号认证；部署基线默认拒绝生产启动。两条路都不该直接暴露到公网。
 
@@ -135,11 +135,11 @@ uv run --project apps/api --locked --extra worker python -m privacytrace.pipelin
 
 受控评测一共十二个源码场景：C01–C06 是第一批，扩展版补了 C07–C12。三种方案拿同一份材料对照，报告能打包成断网只读回放。
 
-三十六行比较里，状态跟受控真值一致的是 PrivacyTrace 12/12、权限＋关键词 2/12、API＋扁平规则 4/12。这是对受控目标状态的对齐情况，不是对真实 App 的检测准确率。没有「实际采集」的二元真值，所以不给 Precision、Recall 或 F1。六个场景覆盖五类对照状态，材料是源码构建加冻结真值，超出这五类状态就不成立。
+三十六行比较里，状态跟受控真值一致的是 PrivacyTrace 12/12、权限＋关键词 2/12、API＋扁平规则 4/12。这是对受控目标状态的对齐情况，不是对真实 App 的检测准确率。没有「实际采集」的二元真值，所以不给 Precision、Recall 或 F1。六个场景覆盖五类对照状态，材料是源码构建加冻结真值，同样不外推到商业应用。
 
-6 人理解测试算探索性记录：报告在主观可读性上是 4.00 对 2.33，「更方便找到依据」6/6；但 C05 冲突场景的 4 名参与者都读成「不涉及定位」，可能是报告的层级让结论区替代码证据区作了答。样本小、非随机、阅读顺序还不平衡，不能当产品效果结论。详见 [公开摘要](docs/stages/pt907-user-study-20261019.md)。
+6 人理解测试算探索性记录：报告在主观可读性上均值 4.00 对 2.33，「更方便找到依据」6/6；但 C05 冲突场景的 4 名参与者都读成「不涉及定位」，可能是报告的层级让结论区替代码证据区作了答。样本小、非随机、阅读顺序还不平衡，不能当产品效果结论。详见 [公开摘要](docs/stages/pt907-user-study-20261019.md)。
 
-这些结果推不出真实采集或传输行为，推不出合法性，也推不出商业 App 上的泛化表现。
+这些结果推不出真实采集或传输行为，推不出合法性，也推不出商业 App 上的泛化表现和未定义目标下的准确率。
 
 ## 验证
 
@@ -199,7 +199,7 @@ CI 通过、真实 Docker 运行、受控评测、离线验收、正式提交，
 - 受控评测材料：[六场景](benchmarks/controlled/README.md)、[十二场景](benchmarks/controlled-v2/README.md)。
 - 部署和客户端验收：[部署基线](docs/deployment/README.md)、[部署验收](docs/deployment/acceptance.md)、[客户端实机验收执行器](deploy/acceptance/mobile/README.md)。
 - 真实流程的限额与恢复：[docs/design/issue-44-live-workflow.md](docs/design/issue-44-live-workflow.md)。
-- 贡献、认领、依赖等待和交接：先读 [CONTRIBUTING.md](CONTRIBUTING.md)，再按[协作检查清单](docs/agents/skills-workflow.md#6-工单流转阻塞依赖与交接规范)确认唯一执行会话和共享归属。任务用 [任务模板](.github/ISSUE_TEMPLATE/task.yml)，PR 用 [PR 模板](.github/PULL_REQUEST_TEMPLATE.md)。
+- 贡献、认领、依赖等待和交接：开始、恢复、分派或更新 PR 前，先读 [CONTRIBUTING.md](CONTRIBUTING.md)，再按[协作检查清单](docs/agents/skills-workflow.md#6-工单流转阻塞依赖与交接规范)完成任务查重、唯一执行会话和共享归属确认；任务用 [任务模板](.github/ISSUE_TEMPLATE/task.yml)，PR 用 [PR 模板](.github/PULL_REQUEST_TEMPLATE.md)。
 - 短期分支用 `codex/` 前缀；交接或暂停时，在对应 Issue 留下分支名、最新提交、已有进展和剩余工作。
 - 子代理只调查和检查，不独立 push、改 Issue 或合并；合并、发布和部署不在「通过验收」的范围里。
 - 本机环境与已知假失败：[docs/agents/local-environment.md](docs/agents/local-environment.md)。

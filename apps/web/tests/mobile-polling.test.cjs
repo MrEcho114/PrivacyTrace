@@ -35,12 +35,15 @@ function laboratory(random = () => 0) {
       requests.push(now)
     }
   }
+  // The bridge models JSON over HTTP: a read returns a detached copy, never the
+  // mutable object the fake server keeps.
+  const json = value => JSON.parse(JSON.stringify(value))
   const { createMobileFlow } = load(path.resolve(__dirname, '../src/mobile/flow.ts'))
-  function client({ existingJob = true } = {}) {
+  function client({ existingJob = true, sources = [], candidates = [] } = {}) {
     const id = (++clientNumber).toString(16).repeat(32)
     const context = { origin: 'https://shared.example/', draft: id, state: 'SERVER_CONFIRMED' }
-    const draft = { id, revision: 1, sources: [], candidates: [], jobs: existingJob ? [{ job_id: id, events: [] }] : [] }
-    const actions = [], failures = new Map(), blocked = new Map()
+    const draft = { id, revision: 1, sources, candidates, jobs: existingJob ? [{ job_id: id, events: [] }] : [] }
+    const actions = [], saves = [], failures = new Map(), blocked = new Map()
     let job = { id, state: 'QUEUED' }, restores = 0, inFlight = 0, peak = 0
     const bridge = {
       async restore() { restores++; consume(2); return context }, async cancel() {},
@@ -49,7 +52,7 @@ function laboratory(random = () => 0) {
       async modelStatus() { return { configured: false, endpoint: null } },
       async configureModel() { return { configured: true, endpoint: 'https://model.example/v1/chat/completions' } },
       async collect() { return '{"version":"privacytrace-policy-collector/1","results":[]}' },
-      async request(action) {
+      async request(action, body) {
         inFlight += 1
         peak = Math.max(peak, inFlight)
         try {
@@ -62,15 +65,32 @@ function laboratory(random = () => 0) {
           // AnalysisTransport.workflow reconciles capabilities and the draft first.
           consume(action === 'read' ? 2 : 3)
           if (action === 'cancel-job') job = { ...job, state: 'CANCELLED' }
-          const data = action === 'read' ? draft : action === 'taxonomy' ? { data_types: [] } : job
+          if (action === 'candidates') {
+            // The real save rejects a stale revision before persisting; this fake
+            // server does the same so the regression proves the poll refreshed it.
+            if (body.revision !== draft.revision) throw 'INPUT_OR_VERSION_REJECTED'
+            draft.candidates = body.candidates.map(candidate => ({ ...candidate }))
+            draft.revision += 1
+            saves.push({ revision: body.revision, candidates: body.candidates.map(candidate => ({ ...candidate })) })
+            return { origin: context.origin, draft: context.draft, data: json(draft) }
+          }
+          const data = action === 'read' ? json(draft) : action === 'taxonomy' ? { data_types: [] } : job
           return { origin: context.origin, draft: context.draft, data }
         } finally {
           inFlight -= 1
         }
       },
     }
-    return { flow: createMobileFlow(bridge), actions, id, restores: () => restores,
+    return { flow: createMobileFlow(bridge), actions, id, saves, restores: () => restores,
       peak: () => peak,
+      serverCandidates: () => draft.candidates.map(candidate => ({ ...candidate })),
+      setJob: state => { job = { ...job, state } },
+      bumpRevision: () => { draft.revision += 1 },
+      patchCandidate(id, patch) {
+        const found = draft.candidates.find(candidate => candidate.id === id)
+        if (!found) throw new Error(`no server candidate ${id}`)
+        Object.assign(found, patch)
+      },
       failNext: (action, code) => failures.set(action, code),
       blockNext(action) {
         let release
@@ -311,4 +331,72 @@ test('a late automatic read cannot add a second timer after a foreground action'
   assert.equal(lab.scheduled.size, 1, 'the foreground action owns the only pending timer')
   release(); await pending
   assert.equal(lab.scheduled.size, 1, 'the superseded read must leave the new timer alone')
+})
+
+// #273: the candidate page stays editable while the progress poll runs. A
+// background read must refresh the job stage and draft revision but never replace
+// inputs, checked state or a locally added candidate the user has not saved yet.
+test('a background poll keeps unsaved candidate edits and the refreshed revision saves them', async () => {
+  const seeded = {
+    sources: [{
+      id: 's1', title: '官网政策', source_type: 'OFFICIAL_WEB_POLICY', url: 'https://example.com/privacy',
+      text: '我们会收集位置信息用于提供服务。我们不会出售个人信息。', status: 'ready', version: '2026-01',
+    }],
+    candidates: [
+      { id: 'c1', source_id: 's1', excerpt: '我们会收集位置信息', data_type: 'LOCATION', checked: false, declared_purpose: null },
+      { id: 'c2', source_id: 's1', excerpt: '我们不会出售个人信息', data_type: 'PERSONAL_INFO', checked: false, declared_purpose: null },
+    ],
+  }
+  const lab = laboratory(), client = lab.client(seeded)
+  const { flow, actions, saves, setJob, bumpRevision, patchCandidate } = client
+  await flow.select(true)
+  // The step rail returns to candidates without another read, as in the report:
+  // the job keeps running and the candidate editor is not busy.
+  flow.state.step = 'candidates'
+  assert.equal(flow.state.candidates.map(candidate => candidate.id).join(','), 'c1,c2')
+
+  const edited = flow.state.candidates.find(candidate => candidate.id === 'c2')
+  edited.purpose = '用户尚未保存的目的'
+  flow.state.candidates.push({ id: 'local-1', sourceId: 's1', quote: '我们不会出售个人信息', dataType: 'PERSONAL_INFO',
+    polarity: 'UNKNOWN', subject: 'UNKNOWN', condition: '', checked: false, action: 'UNKNOWN' })
+  const savesBefore = saves.length
+
+  // The job advances, another writer changes c1, and the draft revision moves on.
+  setJob('INTAKE')
+  patchCandidate('c1', { checked: true, declared_purpose: '服务端写入目的' })
+  bumpRevision()
+  await lab.advance(lab.next())
+
+  assert.equal(flow.error.value, '')
+  assert.equal(flow.job.value.state, 'INTAKE', 'the job stage still updates')
+  assert.equal(flow.draft.value.revision, 2, 'the poll still applies the newer server revision')
+  assert.equal(flow.state.candidates.map(candidate => candidate.id).join(','), 'c1,c2,local-1', 'local order and additions survive')
+  assert.equal(flow.state.candidates.find(candidate => candidate.id === 'c2').purpose, '用户尚未保存的目的', 'unsaved input survives the poll')
+  assert.equal(flow.state.candidates.find(candidate => candidate.id === 'c2').checked, false, 'an unsaved candidate is never shown as checked')
+  assert.equal(flow.state.candidates.find(candidate => candidate.id === 'c1').checked, true, 'untouched candidates still follow the server')
+  assert.equal(flow.state.candidates.find(candidate => candidate.id === 'c1').purpose, '服务端写入目的')
+  assert.equal(saves.length, savesBefore, 'an automatic poll never saves candidates')
+  assert.equal(actions.filter(action => action.action === 'candidates').length, 0)
+  assert.equal(client.serverCandidates().find(candidate => candidate.id === 'c2').declared_purpose, null, 'the edit stays local until the explicit save')
+
+  // A second poll (25s later) keeps the same local edit and the new stage.
+  setJob('POLICY_PARSING')
+  bumpRevision()
+  await lab.advance(lab.next())
+  assert.equal(flow.job.value.state, 'POLICY_PARSING')
+  assert.equal(flow.draft.value.revision, 3)
+  assert.equal(flow.state.candidates.find(candidate => candidate.id === 'c2').purpose, '用户尚未保存的目的')
+
+  // The explicit save succeeds because the polls kept the draft revision fresh;
+  // the fake server rejects a stale revision just like the real endpoint.
+  await flow.save()
+  assert.equal(flow.error.value, '')
+  assert.equal(saves.length, 1)
+  assert.equal(saves[0].revision, 3)
+  assert.equal(saves[0].candidates.find(candidate => candidate.id === 'c2').declared_purpose, '用户尚未保存的目的')
+  assert.equal(saves[0].candidates.find(candidate => candidate.id === 'c1').checked, true)
+  assert.equal(saves[0].candidates.length, 3, 'the locally added candidate is saved explicitly, not by polling')
+  assert.equal(flow.draft.value.revision, 4, 'the save response is applied')
+  assert.equal(flow.state.candidates.find(candidate => candidate.id === 'c2').purpose, '用户尚未保存的目的')
+  assert.equal(flow.state.candidates.find(candidate => candidate.id === 'c2').checked, false)
 })

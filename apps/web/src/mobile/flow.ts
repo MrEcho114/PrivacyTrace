@@ -55,16 +55,58 @@ export function createMobileFlow(bridge: MobileBridge) {
     const jitter = first && !throttled ? 0 : Math.floor(Math.random() * (throttled ? 10_000 : 4_000))
     timer = setTimeout(() => poll(true), delay + jitter)
   }
-  function apply(value: LiveDraft) {
+  // Candidate fields the editor can change. Comparing them with the last full
+  // server snapshot tells a local edit apart from a newer server value (#273).
+  const editableCandidateFields = ['sourceId', 'quote', 'dataType', 'polarity', 'subject', 'condition', 'checked', 'action', 'purpose', 'recipient', 'startOffset', 'ambiguityFlags'] as const
+  let serverCandidates: WebCandidate[] = []
+  function toCandidate(c: WebCandidate): Candidate {
+    return { id: c.id, sourceId: c.source_id, quote: c.excerpt, dataType: c.data_type,
+      polarity: c.polarity === 'AFFIRMATIVE' ? 'AFFIRMED' : c.polarity === 'NEGATIVE' ? 'NEGATED' : 'UNKNOWN',
+      subject: c.subject === 'HOST_APP' ? 'APP' : c.subject === 'THIRD_PARTY' ? 'THIRD_PARTY' : 'UNKNOWN',
+      condition: c.condition ?? '', checked: c.checked ?? false, action: c.action, purpose: c.declared_purpose ?? '',
+      recipient: c.declared_recipient ?? '', startOffset: c.start_offset ?? undefined, ambiguityFlags: c.ambiguity_flags }
+  }
+  function snapshotCandidate(c: WebCandidate): WebCandidate {
+    return { ...c, ambiguity_flags: c.ambiguity_flags ? [...c.ambiguity_flags] : c.ambiguity_flags }
+  }
+  function sameField(a: unknown, b: unknown) {
+    return Array.isArray(a) && Array.isArray(b) ? a.length === b.length && a.every((value, index) => value === b[index]) : a === b
+  }
+  function mergeCandidateEdit(local: Candidate, incoming: Candidate, base: Candidate | undefined): Candidate {
+    if (!base) return local
+    const merged = { ...incoming }
+    const current = local as unknown as Record<string, unknown>
+    const previous = base as unknown as Record<string, unknown>
+    const target = merged as unknown as Record<string, unknown>
+    for (const field of editableCandidateFields) if (!sameField(current[field], previous[field])) target[field] = current[field]
+    return merged
+  }
+  // An automatic poll must not discard what the candidate page keeps only in
+  // memory. Locally changed fields and locally added candidates survive; a
+  // locally deleted candidate is not resurrected; pristine fields and new server
+  // candidates still follow the server. Explicit actions keep applying the full
+  // server draft (including the save response), so save/refresh/delete/start stay
+  // single-step and polling never issues a candidate write.
+  function mergeCandidateEdits(incoming: WebCandidate[]): Candidate[] {
+    const base = new Map(serverCandidates.map(c => [c.id, toCandidate(c)]))
+    const next = new Map(incoming.map(c => [c.id, toCandidate(c)]))
+    const local = new Set(state.candidates.map(c => c.id))
+    const merged: Candidate[] = []
+    for (const current of state.candidates) {
+      const server = next.get(current.id)
+      if (server) merged.push(mergeCandidateEdit(current, server, base.get(current.id)))
+      else if (!base.has(current.id)) merged.push(current)
+    }
+    for (const raw of incoming) if (!local.has(raw.id) && !base.has(raw.id)) merged.push(toCandidate(raw))
+    return merged
+  }
+  function apply(value: LiveDraft, preserveCandidateEdits = false) {
     draft.value = value
     state.sources = value.sources.map(s => ({ id: s.id, title: s.title, type: s.source_type ?? 'OFFICIAL_WEB_POLICY',
       url: s.url ?? '', text: s.text ?? '', status: s.status ?? 'empty', version: s.version ?? '', region: s.region ?? '',
       product: s.product ?? '', complete: false, provenance: s.provenance, modelAudit: s.model_audit }))
-    state.candidates = value.candidates.map(c => ({ id: c.id, sourceId: c.source_id, quote: c.excerpt, dataType: c.data_type,
-      polarity: c.polarity === 'AFFIRMATIVE' ? 'AFFIRMED' : c.polarity === 'NEGATIVE' ? 'NEGATED' : 'UNKNOWN',
-      subject: c.subject === 'HOST_APP' ? 'APP' : c.subject === 'THIRD_PARTY' ? 'THIRD_PARTY' : 'UNKNOWN',
-      condition: c.condition ?? '', checked: c.checked ?? false, action: c.action, purpose: c.declared_purpose ?? '',
-      recipient: c.declared_recipient ?? '', startOffset: c.start_offset ?? undefined, ambiguityFlags: c.ambiguity_flags }))
+    state.candidates = preserveCandidateEdits ? mergeCandidateEdits(value.candidates) : value.candidates.map(toCandidate)
+    serverCandidates = value.candidates.map(snapshotCandidate)
     if (!state.sources.some(s => s.id === state.sourceId)) state.sourceId = state.sources[0]?.id ?? ''
   }
   async function bridgeRequest<T>(name: string, body?: object): Promise<T> {
@@ -233,7 +275,9 @@ export function createMobileFlow(bridge: MobileBridge) {
         const latest = await bridgeRequest<LiveDraft>('read')
         if (current !== generation || epoch !== pollEpoch || busy.value) return
         job.value = nextJob
-        apply(latest)
+        // The candidate page is editable while an automatic poll runs, so progress
+        // and the server revision update here but local candidate edits survive.
+        apply(latest, true)
         error.value = ''
         nativeBusyRetries = 0
         schedule(current)

@@ -105,3 +105,5 @@ $ echo $?
 - 新增片子需要在脚本 `FILMS` 表里加一条（清单路径 + 项目根）。
 
 当前两片的文案与构图打磨见各片 README；结语统一为「隐私分析，有据可查。」渲染入口为 `node showcase/render-films.cjs`，当前成片身份与实测见 `materials.json` 和 `render-proof.json`。
+
+`render-proof.json` 额外绑定完整素材目录树（路径、文件数与排序后的内容指纹），`finalize-films.py` 会再次核对；这是渲染输入的一致性检查，素材采集提交与日期仍由原清单约束。

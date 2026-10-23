@@ -72,5 +72,11 @@
     "Android App 画面是 Chromium 390×844 移动视口模拟（生产移动壳 + 假原生桥），不是 Android 真机；片内图注写明「视口模拟（非真机）」",
     "项目只有一个前端：Android App；不再展示已冻结的桌面工作台界面",
     "示例流程为持久化回放样本（真实 APK 静态报告，原生成 2026-10-03），用于界面演示"
-  ]
+  ],
+  "renderFrameBank": {
+    "fps": 30,
+    "frames": 505,
+    "script": "showcase/privacytrace-90s/frames.sh",
+    "note": "第二轮从原始30 fps录制重新派生；采集批次、日期与前端提交未改变。旧record.frames10fps保留原采集记录。"
+  }
 }

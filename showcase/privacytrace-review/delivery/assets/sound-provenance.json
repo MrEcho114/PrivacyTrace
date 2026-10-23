@@ -1,0 +1,87 @@
+{
+  "film": "review",
+  "source": "soundtrack.m4a",
+  "sourceSha256": "fb7e005f78aa530d0f2d072e7ddf1b5c88315a69a36413e67d7f2039ad54a30c",
+  "output": "soundtrack-polished.m4a",
+  "sha256": "c2fc836bea5e8c93efcfc015d2a24c084d2a4cae04de2cb880421cae6017f666",
+  "sampleRate": 48000,
+  "seed": 305264,
+  "materials": [
+    "synthesized paper air",
+    "damped wooden contact"
+  ],
+  "externalSamples": [],
+  "events": [
+    {
+      "time": 6.8,
+      "material": "felt",
+      "pan": 0,
+      "gain": 0.04
+    },
+    {
+      "time": 9.375,
+      "material": "paper",
+      "pan": 0.3,
+      "gain": 0.025
+    },
+    {
+      "time": 23.35,
+      "material": "paper",
+      "pan": -0.25,
+      "gain": 0.03
+    },
+    {
+      "time": 40.625,
+      "material": "felt",
+      "pan": -0.25,
+      "gain": 0.04
+    },
+    {
+      "time": 59.35,
+      "material": "paper",
+      "pan": 0.4,
+      "gain": 0.025
+    },
+    {
+      "time": 65.0,
+      "material": "felt",
+      "pan": 0,
+      "gain": 0.04
+    },
+    {
+      "time": 90.95,
+      "material": "paper",
+      "pan": -0.35,
+      "gain": 0.025
+    },
+    {
+      "time": 95.1,
+      "material": "felt",
+      "pan": 0.35,
+      "gain": 0.03
+    },
+    {
+      "time": 108.78,
+      "material": "felt",
+      "pan": 0,
+      "gain": 0.04
+    }
+  ],
+  "mastering": {
+    "targetLufs": -16,
+    "truePeakCeilingDbtp": -2,
+    "twoPass": true,
+    "measurement": {
+      "input_i": "-18.90",
+      "input_tp": "-3.63",
+      "input_lra": "2.00",
+      "input_thresh": "-29.05",
+      "output_i": "-16.00",
+      "output_tp": "-2.00",
+      "output_lra": "1.90",
+      "output_thresh": "-26.08",
+      "normalization_type": "dynamic",
+      "target_offset": "0.00"
+    }
+  }
+}

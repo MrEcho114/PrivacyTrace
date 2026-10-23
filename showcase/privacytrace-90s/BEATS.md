@@ -68,7 +68,7 @@
 
 | 素材 | 来源 | 采集 / 绑定 | 约束 |
 | --- | --- | --- | --- |
-| `assets/android-rec/*.jpg`（168 帧，10 fps） | Playwright recordVideo 录制结果 `assets/recording-android.mp4`（16.83 s） | 2026-10-23 @ `f81ca20` 前端 dev server（`127.0.0.1:6173`，API 使用 fixture store） | 开发版界面；示例材料；录制未采集控制台日志，画面未出现错误横幅 |
+| `assets/android-rec/*.jpg`（505 帧，30 fps） | Playwright recordVideo 录制结果 `assets/recording-android.mp4`（16.83 s） | 2026-10-23 @ `f81ca20` 前端 dev server（`127.0.0.1:6173`，API 使用 fixture store） | 开发版界面；示例材料；录制未采集控制台日志，画面未出现错误横幅 |
 | `assets/stills/android-import.png` | `showcase/materials-20261023-v02/capture-android-flow.cjs` | 2026-10-23 @ `f81ca20` | 开发版；持久化回放样本（真实 APK 静态报告） |
 | `assets/stills/android-report-full.png` | 同上；`gkd-s1-first` 持久化回放全页（780×4438，390 CSS px） | 2026-10-23 @ `f81ca20` | `gkd-s1-first` 真实 APK 静态报告的历史回放，原生成 2026-10-03；不是本批次新扫描 |
 | `assets/stills/android-evidence-full.png` | `showcase/materials-20261023-v02/capture-android-flow.cjs`；生产移动壳 + 假原生桥（390 CSS px） | 2026-10-23 @ `f81ca20` | 移动视口模拟（非真机）；同一 `gkd-s1-first` 回放数据； |
@@ -87,3 +87,7 @@
 ## 本轮剪辑与文案
 
 用户授权两片文案重写与视觉打磨。结语统一为「隐私分析，有据可查。」；副句为「从代码位置到政策原句，保留可复核的依据。」90 s 操作段增加同帧局部放大，报告段改为局部移动后停留。120 s 实现页交叉淡化，报告与证据沿用同一设备位置。章节时间、事实数字与素材来源不变；当前画面逐字文本以对应 HTML 为准。
+
+## 第二轮画面与声音
+
+用户继续授权自由提升。90 s 片头改为人工构造示例的双纸卡，20–22 s 用同源画布完成手机交接，帧库改为 30 fps / 505 帧。120 s 用 12 格比较图呈现三方案名义状态一致数，放大 H12 失败条件，增加实现页签并错开团队与 AI 的阅读时点。原曲保留，新增少量原创合成声效并两遍归一化至约 −16 LUFS；谱面与溯源见 `showcase/mix-film-sound.py` 和各片 `assets/sound-provenance.json`。章节时间、事实数字和截图采集基线不变。

@@ -15,3 +15,5 @@
 采集脚本为 `capture-android-flow.cjs`，详细原始来源与动作见两片 `capture-provenance.json`。本轮只复用已采集的文件；重新采集需要使用冻结版本的前端、临时 fixture store 与相应 API。没有把开发服务器的启动视作新采集证据。
 
 成片复现见 `showcase/privacytrace-90s/README.md` 与 `showcase/privacytrace-review/delivery/README.md`。运行 `python showcase/finalize-films.py` 更新当前清单后，执行 `python showcase/validate_materials.py`。
+
+第二轮仍复用原录制，渲染帧库重新派生为 30 fps / 505 帧；配乐源保留，新混音由 `showcase/mix-film-sound.py` 生成。没有产生新的前端采集批次。

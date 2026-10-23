@@ -257,6 +257,37 @@
   .res-card .rfoot{font-size:12px;letter-spacing:0}
   .chip{font-size:16px}
   #sc-res .h1{top:190px;font-size:54px;line-height:1.15}
+
+  #detail-tabs{position:absolute;left:140px;top:478px;width:800px;display:flex;gap:0;border-bottom:1px solid var(--line)}
+  #detail-tabs span{width:25%;font-size:16px;color:#8f99a8;padding:10px 0;border-bottom:2px solid transparent}
+  #detail-tabs span.active{color:var(--amber);border-color:var(--amber)}
+  .compare-rows{position:absolute;left:24px;right:24px;top:49px}
+  .compare-row{display:flex;align-items:center;height:39px;gap:14px}
+  .compare-label{width:158px;font-size:15px;color:var(--paper2)}
+  .compare-track{display:grid;grid-template-columns:repeat(12,24px);gap:5px}
+  .compare-track i{display:block;height:16px;background:rgba(244,240,228,.07);border:1px solid rgba(244,240,228,.16)}
+  .compare-track i.on{background:var(--amber);border-color:var(--amber)}
+  .compare-row:first-child .compare-label{color:var(--amber)}
+  .compare-value{font-family:var(--mono);font-size:22px;color:var(--paper);width:100px;text-align:right}
+  .compare-note{position:absolute;left:24px;top:180px;font-size:14px;color:var(--muted)}
+  .h-summary{position:absolute;left:24px;top:44px;font-size:21px;color:var(--paper)}
+  .hgrid{position:absolute;left:24px;top:76px;grid-template-columns:repeat(6,44px);gap:6px;margin:0}
+  .hgrid i{height:28px;font-size:11px;color:#9bb6a8;border-color:#506c5f}
+  .hgrid i.fail{background:rgba(229,137,120,.18);color:var(--red);border-color:var(--red)}
+  .h-failure{position:absolute;left:24px;top:151px;font-size:17px;line-height:1.6;color:var(--red)}
+  .h-failure small{font-size:13px;color:var(--muted)}
+  .gkd{top:46px;right:24px;width:350px;font-size:15px;line-height:1.6}
+  .gkd small{font-family:var(--mono);font-size:12px}
+  .ct-head{font-size:14px}
+  .ct-row{font-size:19px;padding:10px 0}
+  .ct-row b{font-size:12px;padding-top:5px}
+  .ct-big{font-size:32px;line-height:1.45}
+  .ct-small{font-size:14px;line-height:1.6}
+  .ct-flow,.ct-foot{font-size:12px;letter-spacing:0}
+  .ledger div{font-size:12px;line-height:1.6}
+  .ledger b{font-size:15px}
+  .caveat{font-size:13px}
+  .res-card .rk{font-size:13px;letter-spacing:.08em}
 </style>
 </head>
 <body>
@@ -369,6 +400,7 @@
       <div class="pipe-node" id="pn4" style="left:1350px"><div class="pt-dot"></div><div class="pt-name">一致性对照</div><div class="pt-sub">多状态 · 缺证据不升级</div></div>
       <div class="pipe-node" id="pn5" style="left:1760px"><div class="pt-dot"></div><div class="pt-name">报告 / 回放</div><div class="pt-sub">Android App · 离线回放</div></div>
     </div>
+    <div id="detail-tabs"><span>隔离扫描</span><span>静态分析</span><span>政策快照</span><span>任务运行</span></div>
     <div class="panel impl-detail" id="detail">
       <div class="d-page" id="d1">
         <div class="d-k">隔离扫描 / CONTAINER</div>
@@ -434,21 +466,19 @@
     </div>
     <div class="res-card" id="rc3" style="left:140px;top:612px">
       <div class="rk">受控评测 / CONTROLLED · 状态一致</div>
-      <div class="mini">
-        <div><b class="green">12 / 12</b><span>PRIVACYTRACE</span></div>
-        <div><b>4 / 12</b><span>API 基线</span></div>
-        <div><b>2 / 12</b><span>权限 + 关键词</span></div>
-      </div>
-      <div class="rsub">36 行三方案 · 执行失败 <b>0</b> · 状态一致 <b>12 / 12</b></div>
+      <div class="compare-rows" id="compare-rows"></div>
+      <div class="compare-note">36 行三方案 · 执行失败 0 · 同一批材料</div>
       <div class="rfoot">b0b3c74 · 名义状态对照</div>
     </div>
     <div class="res-card" id="rc4" style="left:980px;top:612px">
       <div class="rk">真实 App 案例 + H 矩阵 / REAL-WORLD CASE</div>
+      <div class="h-summary">11 通过 / 1 未通过</div>
       <div class="hgrid">
         <i>H01</i><i>H02</i><i>H03</i><i>H04</i><i>H05</i><i>H06</i>
         <i>H07</i><i>H08</i><i>H09</i><i>H10</i><i>H11</i><i class="fail">H12</i>
       </div>
-      <div class="gkd"><b>11 通过 / 1 未通过</b><br>H12 · J × splits × 手机模型<br>失败已复现 2 次，保留。<br><br><b>GKD v1.12.1（仅 1 个历史样本）</b><br>6 证据 / 3 行为 / 2 声明 / 3 问题<br>3 条结论均 <b>INSUFFICIENT_EVIDENCE</b></div>
+      <div class="h-failure">H12 · J × splits × 手机模型<br><small>失败已复现 2 次，保留。</small></div>
+      <div class="gkd"><b>GKD v1.12.1</b><br>仅 1 个历史样本<br>6 证据 / 3 行为 / 2 声明 / 3 问题<br><br>3 条结论均为证据不足<br><small>INSUFFICIENT_EVIDENCE</small></div>
       <div class="rfoot">2626152 · 2026-10-22 · H 矩阵交付头；GKD 记录 2026-10-09</div>
     </div>
     <div class="ladder" id="ladder">
@@ -482,7 +512,7 @@
     </div>
     <div class="panel ct-card r" id="oc2">
       <div class="ct-head">AI 辅助 · 披露在案</div>
-      <div class="ct-big">脚手架与接口胶水。<br>测试与验收脚本。<br>文档与文案草稿。</div>
+      <div class="ct-big">脚手架与接口代码<br>测试与验收脚本<br>文档与文案草稿</div>
       <div class="ct-row" id="air1"><b>用途</b><span>脚手架、测试、文档与文案草稿。</span></div>
       <div class="ct-row" id="air2"><b>披露</b><span>工具、用途与人工筛选记录保留在仓库。</span></div>
       <div class="ct-small">第三方：Androguard 4.1.3（Apache-2.0）· FastAPI · Vue 3 · PostgreSQL · Tauri 2。</div>
@@ -574,6 +604,9 @@
     return String(m).padStart(2,'0') + ':' + String(ss).padStart(2,'0');
   }
 
+  const comparisons=[['PrivacyTrace',12],['API 基线',4],['权限 + 关键词',2]];
+  $('#compare-rows').innerHTML=comparisons.map(([label,n])=>'<div class="compare-row"><span class="compare-label">'+label+'</span><span class="compare-track">'+Array.from({length:12},(_,i)=>'<i class="'+(i<n?'on':'')+'"></i>').join('')+'</span><span class="compare-value">'+n+' / 12</span></div>').join('');
+
   // ------------------------------------------------------------------ hook
   function renderHook(t){
     fade($('#h1'), t, .9, 4.9, .6, 18);
@@ -654,6 +687,9 @@
     $('#pipe').style.opacity = (1 - .78*dim).toFixed(3);
     cardIn($('#detail'), t, 44.3, .6, .98);
     const pages = [['d1',44.4,48.15],['d2',48.15,51.95],['d3',51.95,55.75],['d4',55.75,64.3]];
+    const activePage=Math.max(0,pages.findLastIndex(p=>t>=p[1]));
+    fade($('#detail-tabs'),t,44.3,64.3,.3,0);
+    document.querySelectorAll('#detail-tabs span').forEach((el,i)=>el.classList.toggle('active',i===activePage));
     pages.forEach(([id,a,b])=>{
       const el = $('#'+id);
       const p = smooth((t-a)/.25) * (1-smooth((t-b)/.25));
@@ -706,10 +742,10 @@
   function renderOrig(t){
     fade($('#o-h'), t, 90.02, null, .7, 26);
     cardIn($('#oc1'), t, 90.95, .7, .975);
-    cardIn($('#oc2'), t, 91.3, .7, .975);
+    cardIn($('#oc2'), t, 95.1, .7, .975);
     ['or1','or2','or3','or4','or5'].forEach((id,i)=>fade($('#'+id), t, 91.7+i*.55, null, .45, 8));
-    fade($('#air1'), t, 92.4, null, .5, 8);
-    fade($('#air2'), t, 93.4, null, .5, 8);
+    fade($('#air1'), t, 96.0, null, .5, 8);
+    fade($('#air2'), t, 96.8, null, .5, 8);
     fade($('#ledger'), t, 99.3, null, .6, 14);
     ['lg1','lg2','lg3','lg4','lg5'].forEach((id,i)=>fade($('#'+id), t, 99.7+i*.55, null, .45, 8));
     fade($('#caveat'), t, 104.4, null, .55, 10);

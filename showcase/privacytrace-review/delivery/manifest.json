@@ -7,7 +7,7 @@
   "renderer": "showcase/render-films.cjs",
   "render": {
     "htmlPath": "film-review.html",
-    "audioPath": "assets/soundtrack.m4a",
+    "audioPath": "assets/soundtrack-polished.m4a",
     "durationSeconds": 120,
     "fps": 30,
     "scale": 1,
@@ -17,12 +17,12 @@
   },
   "file": {
     "name": "PrivacyTrace-Review-1080p.mp4",
-    "bytes": 13734510,
-    "sha256": "bdd6374110eb36eae2eb073f3bbf1135c410726b01aa0371476f8d0566443165",
+    "bytes": 14021181,
+    "sha256": "7b866bdebac6a19415b38fb05df396020be3c2ec6afbc450cda725ed9b40fbd2",
     "ffprobe": {
       "duration": "120.000000",
-      "size": "13734510",
-      "bit_rate": "915634",
+      "size": "14021181",
+      "bit_rate": "934745",
       "video": {
         "index": 0,
         "codec_name": "h264",
@@ -51,7 +51,7 @@
         "start_time": "0.000000",
         "duration_ts": 1843200,
         "duration": "120.000000",
-        "bit_rate": "708682",
+        "bit_rate": "725093",
         "bits_per_raw_sample": "8",
         "nb_frames": "3600",
         "extradata_size": 47,
@@ -105,7 +105,7 @@
         "start_time": "0.000000",
         "duration_ts": 5760000,
         "duration": "120.000000",
-        "bit_rate": "198065",
+        "bit_rate": "200770",
         "nb_frames": "5626",
         "extradata_size": 5,
         "disposition": {
@@ -147,18 +147,18 @@
   "sources": [
     {
       "path": "film-review.html",
-      "bytes": 50800,
-      "sha256": "8ebcdc8efbbcb9d25df9668bf3cbb6b079a9e1e9ed4a9bfd1dabcfdf94ed6671"
+      "bytes": 52743,
+      "sha256": "258f422fb8a2dafb3b2a8cd9d594699db7d6ebfc6a33c1b076cbde38a2daf361"
     },
     {
       "path": "BEATS.md",
-      "bytes": 8369,
-      "sha256": "1b45e1a1e3dccc9383885d8f7ed48429457147b46f4dc16a5fc060d3d2d55aa4"
+      "bytes": 8864,
+      "sha256": "5b20116601bdd4df5eb4b02dd8da87e3b5c7a4b51af4dba873642f1a3d134afd"
     },
     {
       "path": "README.md",
-      "bytes": 4898,
-      "sha256": "91e6da450415e67e809c581639ee3cb704c1366e0bc50dea7ef92472c2dceebf"
+      "bytes": 5830,
+      "sha256": "cb995dcaad70f6018bbce41aea61e0d6357d6dfab9706bf7d7eedce95351308c"
     },
     {
       "path": "poster.png",
@@ -178,12 +178,12 @@
     {
       "path": "materials.json",
       "bytes": 1744,
-      "sha256": "2c99b6ba1a34d636c56d7e7dd35f0e84396455a0133a411918e546055b4eb392"
+      "sha256": "1d8cfe60450a1b4da3dc0e42b6851071e44f7e0e8147d104c0070f998f24a107"
     },
     {
       "path": "render-proof.json",
-      "bytes": 1191,
-      "sha256": "4e380d05367392e59b81d1a38c56b7a3c0023b15e7443ffc38a176153500a48b"
+      "bytes": 1594,
+      "sha256": "50e28cfe6bbb4325c2286509802c9c9487440eae096b0079fecde5675c360981"
     },
     {
       "path": "assets/android-import.png",
@@ -204,6 +204,16 @@
       "path": "assets/soundtrack.m4a",
       "bytes": 2994842,
       "sha256": "fb7e005f78aa530d0f2d072e7ddf1b5c88315a69a36413e67d7f2039ad54a30c"
+    },
+    {
+      "path": "assets/soundtrack-polished.m4a",
+      "bytes": 3035429,
+      "sha256": "c2fc836bea5e8c93efcfc015d2a24c084d2a4cae04de2cb880421cae6017f666"
+    },
+    {
+      "path": "assets/sound-provenance.json",
+      "bytes": 1723,
+      "sha256": "bf6228f567fbb6c8646d18ee05f1de990b0c0ef08157608ab02d6af9745d0511"
     }
   ],
   "qa": {
@@ -218,9 +228,9 @@
     ],
     "blackNote": "本轮使用 ffmpeg blackdetect（pix_th=0.06、d=0.1），不复用上一轮 EAC 结果。",
     "audio": {
-      "integratedLufs": -18.8,
-      "truePeakDbfs": -3.6,
-      "lra": 2.1,
+      "integratedLufs": -16.0,
+      "truePeakDbfs": -2.0,
+      "lra": 1.8,
       "channels": 2,
       "sampleRate": 48000,
       "codec": "aac"

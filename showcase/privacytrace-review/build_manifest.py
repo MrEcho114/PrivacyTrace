@@ -82,12 +82,13 @@ def main():
         raise ValueError("Render proof does not match the composition")
     if proof["seek"]["sourceSha256"] != proof["render"]["sourceSha256"]:
         raise ValueError("Seek checks were run against a different composition")
-    if proof["render"]["audioSha256"] != sha256(DELIVERY / "assets/soundtrack.m4a"):
+    if proof["render"]["audioSha256"] != sha256(DELIVERY / "assets/soundtrack-polished.m4a"):
         raise ValueError("Render proof does not match the soundtrack")
     sources = [
         "film-review.html", "BEATS.md", "README.md", "poster.png", "PrivacyTrace-Review.pptx",
         "capture-provenance.json", "materials.json", "render-proof.json",
-        "assets/android-import.png", "assets/android-report-full.png", "assets/android-evidence-full.png", "assets/soundtrack.m4a",
+        "assets/android-import.png", "assets/android-report-full.png", "assets/android-evidence-full.png",
+        "assets/soundtrack.m4a", "assets/soundtrack-polished.m4a", "assets/sound-provenance.json",
     ]
     black = black_segments()
     manifest = {
@@ -99,7 +100,7 @@ def main():
         "renderer": "showcase/render-films.cjs",
         "render": {
             "htmlPath": "film-review.html",
-            "audioPath": "assets/soundtrack.m4a",
+            "audioPath": "assets/soundtrack-polished.m4a",
             "durationSeconds": 120,
             "fps": 30,
             "scale": 1,

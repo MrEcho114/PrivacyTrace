@@ -2,8 +2,8 @@
   "film": "delivery\\PrivacyTrace-作品展示-90s.mp4",
   "probe": {
     "duration": 90.0,
-    "sizeBytes": 12234841,
-    "bitRate": 1087541,
+    "sizeBytes": 12920470,
+    "bitRate": 1148486,
     "video": {
       "codec": "h264",
       "profile": "High",
@@ -17,7 +17,7 @@
       "codec": "aac",
       "sampleRate": 48000,
       "channels": 2,
-      "bitRate": 193293
+      "bitRate": 193616
     }
   },
   "blackSegments": [],
@@ -28,29 +28,24 @@
       "duration": 1.267
     },
     {
-      "start": 2.333333,
-      "end": 3.566667,
-      "duration": 1.233
-    },
-    {
-      "start": 3.866667,
+      "start": 3.833333,
       "end": 8.333333,
-      "duration": 4.467
+      "duration": 4.5
     },
     {
-      "start": 9.8,
-      "end": 11.3,
-      "duration": 1.5
+      "start": 10.766667,
+      "end": 12.133333,
+      "duration": 1.367
     },
     {
       "start": 23.4,
-      "end": 26.833333,
-      "duration": 3.433
+      "end": 26.9,
+      "duration": 3.5
     },
     {
-      "start": 26.9,
-      "end": 30.1,
-      "duration": 3.2
+      "start": 27.4,
+      "end": 30.2,
+      "duration": 2.8
     },
     {
       "start": 30.833333,
@@ -58,19 +53,19 @@
       "duration": 5.467
     },
     {
-      "start": 37.0,
-      "end": 39.166667,
-      "duration": 2.167
+      "start": 36.9,
+      "end": 38.366667,
+      "duration": 1.467
     },
     {
-      "start": 39.166667,
+      "start": 38.366667,
       "end": 40.433333,
-      "duration": 1.267
+      "duration": 2.067
     },
     {
-      "start": 42.1,
-      "end": 43.6,
-      "duration": 1.5
+      "start": 41.1,
+      "end": 43.366667,
+      "duration": 2.267
     },
     {
       "start": 51.1,
@@ -103,14 +98,24 @@
       "duration": 1.9
     },
     {
-      "start": 75.833333,
-      "end": 80.466667,
-      "duration": 4.633
+      "start": 74.333333,
+      "end": 75.833333,
+      "duration": 1.5
     },
     {
-      "start": 80.666667,
-      "end": 83.966667,
-      "duration": 3.3
+      "start": 75.833333,
+      "end": 80.333333,
+      "duration": 4.5
+    },
+    {
+      "start": 80.566667,
+      "end": 82.233333,
+      "duration": 1.667
+    },
+    {
+      "start": 82.233333,
+      "end": 83.933333,
+      "duration": 1.7
     },
     {
       "start": 86.1,
@@ -120,9 +125,9 @@
   ],
   "frozenNote": "包含有意保留的阅读停留；操作段另以五个不同状态的画布截图检查，结果见 render-proof.json。",
   "loudness": {
-    "integratedLufs": -19.0,
-    "truePeakDbfs": -2.3,
-    "lra": 2.6
+    "integratedLufs": -16.0,
+    "truePeakDbfs": -1.9,
+    "lra": 2.2
   },
   "contactSheet": "qa\\final-sheet.png"
 }

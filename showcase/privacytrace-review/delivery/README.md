@@ -8,7 +8,7 @@
 
 | 文件 | 用途 |
 | --- | --- |
-| `PrivacyTrace-Review-1080p.mp4` | 120.000 s / 1920×1080 / 30 fps / H.264 yuv420p + 原始 AAC |
+| `PrivacyTrace-Review-1080p.mp4` | 120.000 s / 1920×1080 / 30 fps / H.264 yuv420p + 新混音 AAC |
 | `film-review.html` | 确定性时间轴，按绝对时间重建全部场景 |
 | `render-proof.json` | 本轮源文件/配乐/成片哈希、正逆序与重复 seek、全片解码结果 |
 | `manifest.json` | 当前文件字节数、SHA-256、ffprobe、黑场和响度实测 |
@@ -19,6 +19,10 @@
 
 ## 本轮调整
 
+受控评测使用三排等分的 12 格比较图，分别显示 12/12、4/12、2/12 的名义状态一致数；与 H 矩阵分区，避免混淆分母。H12 的失败条件与 11 通过 / 1 未通过一起放大。实现细节页增加同步页签，右侧手机保持安静的报告延续。贡献段先呈现团队工作，再呈现 AI 用途，并增大行文与来源字号。
+
+混音保留原 96 BPM 音乐，加入少量原创合成纸张气流与木质接触声；没有外部录音样本。两遍响度处理目标为 −16 LUFS、真峰上限 −2 dBTP；最终 AAC 实测见 `manifest.json`。
+
 手机报告与证据详情使用同一位置、同一尺寸，切换时保留设备位置。长图移到关键局部后停留；实现细节页使用短交叉淡化，并增大参数与说明字号。流水线五节点收进左侧区域，不再越出画面或被手机挡住。结果标题与四张统计卡之间留出间距。
 
 两片文案由两个 GPT-6 Luna 子代理按 humanizer-zh 分别整理，主代理核对并整合。原事实数字、代码片段、政策引文、提交与日期保留。
@@ -28,6 +32,7 @@
 从仓库根目录运行，环境要求见 `showcase/privacytrace-90s/README.md`。
 
 ```bash
+python showcase/mix-film-sound.py
 node showcase/render-films.cjs review check
 node showcase/render-films.cjs review stills
 node showcase/render-films.cjs review render 4
@@ -68,4 +73,6 @@ python showcase/validate_materials.py
 
 H12 失败保留为 11 通过 / 1 未通过；受控 12/12 是名义状态一致数；GKD 仅一例历史样本，三条结论均为证据不足。工程与评测数字分别绑定历史提交，不表示本轮重新获得了这些验证结果。
 
-音轨为 `showcase/privacytrace/soundtrack.py` 原有原创合成器乐，seed 451014，无采样、无人声；本轮直接复用 `assets/soundtrack.m4a`。PPT 仍归 #265；参赛包、系统上传与合并没有在本轮执行。
+音轨为 `showcase/privacytrace/soundtrack.py` 原有原创合成器乐，seed 451014，无采样、无人声；原曲 `assets/soundtrack.m4a` 保留；本轮渲染使用 `assets/soundtrack-polished.m4a`，事件、种子、原曲哈希和混音参数见 `assets/sound-provenance.json`。PPT 仍归 #265；参赛包、系统上传与合并没有在本轮执行。
+
+渲染与 seek 证明同时绑定完整素材目录树，定稿核对源文件、音轨、素材树和成片身份。混音溯源记录的是 loudnorm 滤镜输出、编码前的测量，成片 QA 记录编码后实际电平。

@@ -95,7 +95,7 @@
   #run-plate{position:absolute;left:160px;top:84px;width:1600px;height:900px;display:flex;align-items:center;justify-content:center;
     background:radial-gradient(880px 760px at 50% 50%,rgba(255,255,255,.58),rgba(255,255,255,0) 72%)}
   .device.large{width:390px;height:844px;border-radius:34px}
-  #shot{display:block;width:390px;height:844px;transform-origin:50% 50%}
+  #shot{display:block;width:100%;height:100%;transform-origin:50% 50%}
   #run-plate .sheen{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 60px rgba(60,48,30,.10)}
   #run-tag{position:absolute;left:160px;top:56px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:rgba(23,24,27,.52)}
   #run-tag2{position:absolute;right:160px;top:56px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:rgba(23,24,27,.42)}
@@ -214,6 +214,30 @@
   .col .cs{font-size:12px;letter-spacing:0;line-height:1.6}
   #rec-bound{top:764px;font-size:16px}
   #rec-big{top:844px;font-size:58px}
+
+  #hero-plate{height:690px;top:150px;border:0;background:none;overflow:visible}
+  .pair-id{position:absolute;left:28px;top:14px;font-size:14px;color:var(--muted);letter-spacing:.1em}
+  .source-sheet{position:absolute;background:#faf7ed;border:1px solid #c6bda9;box-shadow:0 20px 44px rgba(62,49,31,.12);padding:26px 28px}
+  .code-sheet{left:28px;top:58px;width:370px;height:262px}
+  .policy-sheet{left:170px;top:346px;width:418px;height:242px}
+  .sheet-k{font-size:14px;letter-spacing:.08em;color:var(--clay)}
+  .sheet-path{margin-top:18px;font-family:var(--mono);font-size:15px;color:var(--ink)}
+  .sheet-loc{margin-top:8px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+  .source-sheet pre{margin-top:18px;font-family:var(--mono);font-size:14px;line-height:1.5;color:var(--ink2)}
+  .sheet-foot{position:absolute;right:22px;bottom:16px;font-size:13px;color:var(--muted)}
+  .source-sheet blockquote{font-family:var(--serif);font-size:27px;line-height:1.65;margin-top:22px;color:var(--ink)}
+  #source-link{position:absolute;inset:0;width:616px;height:616px;overflow:visible}
+  #source-path{fill:none;stroke:var(--clay);stroke-width:2;stroke-dasharray:1;stroke-dashoffset:1}
+  .pair-note{position:absolute;left:28px;top:620px;font-size:14px;color:var(--muted)}
+  #run-tag{left:910px;top:76px;right:100px;font-size:12px;line-height:1.6;letter-spacing:.04em}
+  #run-tag2{left:910px;right:auto;top:119px;font-size:13px;letter-spacing:.04em}
+  #w-plate .device{transform-origin:center}
+  .col{transition:none}
+  .col .cd{color:var(--ink2)}
+  .col .cv{font-size:46px}
+  .col .cs{color:#655f54}
+  #work-copy{position:absolute;inset:0}
+  #carry-shot{position:absolute;inset:0;width:100%;height:100%;opacity:0}
 </style>
 </head>
 <body>
@@ -245,17 +269,29 @@
     </div>
     <div id="hero-meta">90 S · 1920 × 1080 · 30 FPS · 无旁白</div>
     <div id="hero-plate">
-      <div class="big">PT</div>
-      <div class="lbl">CODE · STATIC EVIDENCE</div>
-      <div class="arrow" id="hp-arrow"></div>
-      <div class="node" id="hp-node">POLICY · TEXT</div>
-      <div class="note" id="hp-note">一条证据 = 代码位置 + 政策原句</div>
-      <div class="lines"><i style="width:92%"></i><i style="width:64%"></i><i style="width:80%"></i><i style="width:46%"></i><i style="width:74%"></i><i style="width:58%"></i></div>
+      <div class="pair-id">一条证据的两处依据</div>
+      <div class="source-sheet code-sheet" id="hero-code">
+        <div class="sheet-k">01 / 代码位置</div>
+        <div class="sheet-path">synthetic/LocationFeature.java</div>
+        <div class="sheet-loc">readGpsLocation:12</div>
+        <pre>locationManager.
+  getLastKnownLocation(
+    LocationManager.GPS_PROVIDER);</pre>
+        <div class="sheet-foot">静态调用线索</div>
+      </div>
+      <svg id="source-link" viewBox="0 0 616 616"><path id="source-path" pathLength="1" d="M 230 280 V 312 H 340 V 345"/></svg>
+      <div class="source-sheet policy-sheet" id="hero-policy">
+        <div class="sheet-k">02 / 政策原句</div>
+        <blockquote>我们访问位置信息，<br>用于提供地图功能。</blockquote>
+        <div class="sheet-loc">原文位置 [0, 18)</div>
+      </div>
+      <div class="pair-note">人工构造示例 · 代码位置与政策原句可分别回查</div>
     </div>
   </section>
 
   <!-- 01 the work -->
   <section class="scene" id="s1">
+    <div id="work-copy">
     <div class="eyebrow">Ⅰ · 作品</div>
     <div class="eyebrow-en" id="w-en">THE WORK</div>
     <div class="h" id="w-h">从导入材料<br><em>到查看报告</em></div>
@@ -269,8 +305,10 @@
     <div id="w-note">材料为持久化回放样本（真实 APK 静态报告），本轮未重扫。Android App 在移动视口模拟，非真机。</div>
     <div id="w-tag">图 01 — Android App · 导入与候选</div>
     <div id="w-count">开发版 · 2026-10-23 @ f81ca20</div>
-    <div id="w-plate"><div class="device"><img id="w-img" src="assets/stills/android-import.png" alt="PrivacyTrace Android App 导入材料"></div><div class="device"><img src="assets/stills/android-candidates.png" alt="PrivacyTrace Android App 核对候选"></div></div>
+
     <div id="w-cap"><b>PLATE 01</b> — Android App · 导入材料 / 核对候选 · 持久化回放</div>
+    </div>
+    <div id="w-plate"><div class="device"><img id="w-img" src="assets/stills/android-import.png" alt="PrivacyTrace Android App 导入材料"><canvas id="carry-shot" width="390" height="844"></canvas></div><div class="device"><img src="assets/stills/android-candidates.png" alt="PrivacyTrace Android App 核对候选"></div></div>
   </section>
 
   <!-- 02 running -->
@@ -444,7 +482,7 @@
     .map(src => { const img = new Image(); img.src = src; return img; });
 
   /* --------------------------------------------------- recording frame bank */
-  const REC = { dir:'assets/android-rec', total:168, fps:10 };
+  const REC = { dir:'assets/android-rec', total:505, fps:30 };
   const WINDOWS = [
     { a:21.90, b:23.40, s0:1.60, s1:3.60 },
     { a:23.40, b:26.90, s0:4.10, s1:6.70 },
@@ -521,10 +559,10 @@
       const sy = [440, 180, 90, 170, 170][active];
       // Crop the actual frame; no replacement UI or invented state.
       focus.drawImage(img, 0, sy, img.naturalWidth, img.naturalWidth * 440/720, 0, 0, 720, 440);
+      $('#carry-shot').getContext('2d').drawImage(img,0,0,390,844);
       drawnIndex = k;
     }
-    const runIn = clamp((t - 21.0)/1.4, 0, 1);
-    const s = 1 + 0.025 * smooth(runIn);
+    const s = 1;
     canvas.style.transform = 'scale(' + s.toFixed(4) + ')';
   }
 
@@ -547,9 +585,11 @@
     const plate = $('#hero-plate');
     plate.style.opacity = smooth((t - 1.5)/.8).toFixed(3);
     plate.style.transform = 'translate3d(0,' + ((1-pp)*26).toFixed(2) + 'px,0)';
-    growX($('#hp-arrow'), t, 2.9, 1.0);
-    rise($('#hp-note'), t, 3.6, .55, 8);
-    rise($('#hp-node'), t, 3.8, .55, 8);
+    rise($('#hero-code'), t, 1.65, .85, 28);
+    rise($('#hero-policy'), t, 3.1, .9, 32);
+    $('#source-path').style.strokeDashoffset = (1-outQuint((t-2.6)/1.2)).toFixed(4);
+    rise($('.pair-id'), t, 1.4, .6, 8);
+    rise($('.pair-note'), t, 4.6, .6, 8);
   }
 
   function renderWork(t){
@@ -568,7 +608,16 @@
     plate.style.opacity = smooth((t - 12.1)/.7).toFixed(3);
     plate.style.transform = 'translate3d(' + ((1-pp)*44).toFixed(2) + 'px,' + ((1-pp)*18).toFixed(2) + 'px,0)';
     const wz = 1 + 0.025 * clamp((t - 12.4)/7.8, 0, 1);
-    document.querySelectorAll('#w-plate .device').forEach(el => { el.style.transform = 'scale(' + wz.toFixed(4) + ')'; });
+    const carry = inOut((t-20.1)/1.05);
+    $('#work-copy').style.opacity = (1-smooth((t-20.0)/.55)).toFixed(3);
+    $('#carry-shot').style.opacity = t>=19.75 ? '1' : '0';
+    document.querySelectorAll('#w-plate .device').forEach((el,i) => {
+      el.style.opacity = i === 0 ? '1' : (1-smooth((t-20.0)/.9)).toFixed(3);
+      el.style.borderWidth = i===0 ? lerp(7,7/(390/320),carry).toFixed(3)+'px' : '7px';
+      el.style.borderRadius = i===0 ? lerp(30,34/(390/320),carry).toFixed(3)+'px' : '30px';
+      const scale = i === 0 ? lerp(wz,390/320,carry) : wz;
+      el.style.transform = 'translate3d(' + (i===0 ? -475*carry : 0).toFixed(2) + 'px,' + (i===0 ? 10*carry : 0).toFixed(2) + 'px,0) scale(' + scale.toFixed(5) + ')';
+    });
     rise($('#w-tag'), t, 11.9, .55, 8);
     rise($('#w-count'), t, 12.1, .55, 8);
     rise($('#w-cap'), t, 12.5, .55, 8);
@@ -586,10 +635,9 @@
   let capIndex = -1;
 
   function renderRunning(t){
-    const inPlate = outQuint((t - 20.98)/.85);
     const plate = $('#run-plate');
-    plate.style.opacity = smooth((t - 20.98)/.5).toFixed(3);
-    plate.style.transform = 'translate3d(0,' + ((1-inPlate)*22).toFixed(2) + 'px,0)';
+    plate.style.opacity = '1';
+    plate.style.transform = 'none';
     rise($('#run-tag'), t, 21.1, .55, 8);
     rise($('#run-tag2'), t, 21.25, .55, 8);
     rise($('#run-idx'), t, 21.2, .55, 8);
@@ -672,7 +720,14 @@
   function renderRecord(t){
     rise($('#d-en'), t, 72.1, .55, 8);
     rise($('#d-h'), t, 72.3, .75, 24);
-    ['c1','c2','c3','c4'].forEach((id,i) => rise($('#'+id), t, 73.1 + i*.45, .6, 18));
+    ['c1','c2','c3','c4'].forEach((id,i) => {
+      const el=$('#'+id);
+      rise(el, t, 73.1+i*.45, .6, 18);
+      const focus=Math.floor(clamp((t-74.3)/1.65,0,3));
+      const active = t>=74.3 && t<81.1 && focus===i;
+      el.style.borderTopColor = active ? 'var(--clay)' : 'rgba(23,24,27,.22)';
+      el.querySelector('.cv').style.color = active ? 'var(--clay)' : 'var(--ink)';
+    });
     rise($('#rec-bound'), t, 77.7, .55, 10);
     rise($('#rec-big'), t, 80.2, .75, 18);
   }
@@ -698,8 +753,8 @@
     const time = clamp(t, 0, DUR);
 
     scenes.s0.style.opacity = sceneFade(time, 0, 8.72);
-    scenes.s1.style.opacity = sceneFade(time, 8.86, 20.72);
-    scenes.s2.style.opacity = sceneFade(time, 20.86, 44.72);
+    scenes.s1.style.opacity = sceneFade(time, 8.86, 21.15);
+    scenes.s2.style.opacity = time<21.15 ? '0' : (1-smooth((time-44.72)/.42)).toFixed(3);
     scenes.s3.style.opacity = sceneFade(time, 44.86, 59.84);
     scenes.s4.style.opacity = sceneFade(time, 59.86, 71.84);
     scenes.s5.style.opacity = sceneFade(time, 71.86, 83.84);
@@ -710,7 +765,7 @@
     renderEvidence(time); renderReport(time); renderRecord(time); renderClose(time);
 
     // hide running chrome over full-screen footage
-    const chrome = clamp((1 - smooth((time - 20.8)/.38)) + smooth((time - 44.6)/.38), 0, 1);
+    const chrome = 1;
     headEl.style.opacity = chrome.toFixed(3);
     chapEl.style.opacity = (chrome*.92).toFixed(3);
 
@@ -727,7 +782,7 @@
   window.__seek = async function(t){
     const time = clamp(Number(t) || 0, 0, DUR);
     render(time);
-    if(time >= 20.86 && time <= 45.2) await drawFootage(time);
+    if(time >= 19.75 && time <= 45.2) await drawFootage(time);
     // Await image decode above; the renderer takes the frame after this promise.
   };
   window.__meta = { fps:30, dur:DUR, width:1920, height:1080 };

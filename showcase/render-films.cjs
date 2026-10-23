@@ -13,10 +13,23 @@ const { once } = require('node:events');
 const { chromium } = require('playwright');
 const ROOT = path.resolve(__dirname, '..');
 const films = {
-  '90s': {html:'showcase/privacytrace-90s/film-showcase.html', audio:'showcase/privacytrace-90s/assets/soundtrack-90s.m4a', out:'showcase/privacytrace-90s/delivery/PrivacyTrace-作品展示-90s.mp4', dur:90, times:[5,15,20,22.5,25,31,39,43,50,58,66,70,79,87], boundaries:[9,21,45,60,72,84]},
-  review: {html:'showcase/privacytrace-review/delivery/film-review.html', audio:'showcase/privacytrace-review/delivery/assets/soundtrack.m4a', out:'showcase/privacytrace-review/delivery/PrivacyTrace-Review-1080p.mp4',dur:120,times:[4,8.5,16,26,35,43,47,50,54,58,62,70,77,85,97,104,116],boundaries:[9.375,21.875,40.625,65,90,108.75]}
+  '90s': {html:'showcase/privacytrace-90s/film-showcase.html', audio:'showcase/privacytrace-90s/assets/soundtrack-polished.m4a', out:'showcase/privacytrace-90s/delivery/PrivacyTrace-作品展示-90s.mp4', dur:90, times:[5,15,20,20.5,21,21.35,21.6,22.5,25,31,39,43,50,58,66,70,79,87], boundaries:[9,21,45,60,72,84]},
+  review: {html:'showcase/privacytrace-review/delivery/film-review.html', audio:'showcase/privacytrace-review/delivery/assets/soundtrack-polished.m4a', out:'showcase/privacytrace-review/delivery/PrivacyTrace-Review-1080p.mp4',dur:120,times:[4,8.5,16,26,35,43,47,50,54,58,62,70,77,85,93,97,104,116],boundaries:[9.375,21.875,40.625,65,90,108.75]}
 };
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
+function assetInputs(){
+  const base=path.join(path.dirname(path.join(ROOT,f.html)),'assets');
+  const files=[];
+  function walk(folder){
+    for(const entry of fs.readdirSync(folder,{withFileTypes:true})){
+      const p=path.join(folder,entry.name);
+      if(entry.isDirectory())walk(p);else files.push(p);
+    }
+  }
+  walk(base);
+  const bindings=files.map(p=>path.relative(base,p).replaceAll('\\','/')+'\0'+hash(fs.readFileSync(p))).sort();
+  return {path:path.relative(ROOT,base).replaceAll('\\','/'),files:files.length,sha256:hash(Buffer.from(bindings.join('\n')))};
+}
 const [name,mode='check',workerArg='4']=process.argv.slice(2);
 const f=films[name];
 if(!f || !['check','stills','render'].includes(mode)) throw new Error('Usage: node showcase/render-films.cjs 90s|review check|stills|render [workers=4]');
@@ -38,6 +51,7 @@ async function shot(page,t){
   return page.screenshot({type:'png',animations:'disabled'});
 }
 async function checks(){
+  const sourceSha256=hash(fs.readFileSync(path.join(ROOT,f.html))), inputAssets=assetInputs();
   const browser=await chromium.launch();
   try{
     const {page,errors}=await pageFor(browser);
@@ -58,7 +72,8 @@ async function checks(){
       if(new Set(frames).size!==5)throw new Error('Operation footage has repeated/frozen states');
     }
     if(errors.length)throw new Error(errors.join('\n'));
-    const result={film:name,deterministic:true,exactPixels:true,missingAssets:[],pageErrors:[],times,sourceSha256:hash(fs.readFileSync(path.join(ROOT,f.html)))};
+    if(hash(fs.readFileSync(path.join(ROOT,f.html)))!==sourceSha256 || JSON.stringify(assetInputs())!==JSON.stringify(inputAssets))throw new Error('Inputs changed while checking');
+    const result={film:name,deterministic:true,exactPixels:true,missingAssets:[],pageErrors:[],times,sourceSha256,inputAssets};
     fs.writeFileSync(path.join(dir,'seek-check.json'),JSON.stringify(result,null,2)+'\n');
     console.log(JSON.stringify(result));
   }finally{await browser.close();}
@@ -73,6 +88,7 @@ async function stills(){
   }finally{await browser.close();}
 }
 async function render(){
+  const sourceSha256=hash(fs.readFileSync(path.join(ROOT,f.html))), audioSha256=hash(fs.readFileSync(path.join(ROOT,f.audio))), inputAssets=assetInputs();
   const workers=Math.max(1,Math.min(4,Number(workerArg)||4));
   const count=f.dur*30;
   const chunks=[];
@@ -100,7 +116,8 @@ async function render(){
   execFileSync('ffmpeg',['-hide_banner','-loglevel','error','-y','-f','concat','-safe','0','-i',list,'-i',path.join(ROOT,f.audio),'-map','0:v:0','-map','1:a:0','-c','copy','-t',String(f.dur),'-movflags','+faststart',path.join(ROOT,f.out)]);
   // Complete decode, including audio, rather than trusting container metadata.
   execFileSync('ffmpeg',['-v','error','-xerror','-i',path.join(ROOT,f.out),'-f','null','-']);
-  const proof={film:name,renderer:'showcase/render-films.cjs',width:1920,height:1080,fps:30,frames:count,workers,shutter:0,sourceSha256:hash(fs.readFileSync(path.join(ROOT,f.html))),audioSha256:hash(fs.readFileSync(path.join(ROOT,f.audio))),sha256:hash(fs.readFileSync(path.join(ROOT,f.out))),decode:'passed'};
+  if(hash(fs.readFileSync(path.join(ROOT,f.html)))!==sourceSha256 || JSON.stringify(assetInputs())!==JSON.stringify(inputAssets))throw new Error('Inputs changed while rendering');
+  const proof={film:name,renderer:'showcase/render-films.cjs',width:1920,height:1080,fps:30,frames:count,workers,shutter:0,sourceSha256,audioSha256,inputAssets,sha256:hash(fs.readFileSync(path.join(ROOT,f.out))),decode:'passed'};
   fs.writeFileSync(path.join(dir,'render.json'),JSON.stringify(proof,null,2)+'\n');
   console.log(JSON.stringify(proof));
 }

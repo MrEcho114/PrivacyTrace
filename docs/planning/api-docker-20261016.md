@@ -78,7 +78,7 @@ Caddy 负责正常验证证书的 HTTPS 和静态前端，API 只信任已指定
 
 ## 工单边界与整合次序
 
-本轮只更新受影响的开放规格。#64/#65 的研究及 #5/#20/#74 的赛事工作不因部署方向被重写；#1 仅追加后续规划指针，不改变赛事排期、负责人或已有验收。新增运行时 [#80](https://github.com/MrEcho114/PrivacyTrace/issues/80) 与容器交付 [#81](https://github.com/MrEcho114/PrivacyTrace/issues/81)，实施均未开始；最终状态以 GitHub 当前执行记录为准。
+本轮只更新受影响的开放规格。#64/#65 的研究及 #5/#20/#74 的赛事工作不因部署方向被重写；#1 仅追加后续规划指针，不改变赛事排期、负责人或已有验收。新增运行时 [#80](https://github.com/MrEcho114/PrivacyTrace/issues/80) 与容器交付 [#81](https://github.com/MrEcho114/PrivacyTrace/issues/81)，运行时与部署基线已落 main，公网生产未启用，专用扫描主机/跨机联网按用户授权豁免；最终状态以 GitHub 当前执行记录为准。
 
 | 任务 | 本轮补充的交付边界 |
 | --- | --- |

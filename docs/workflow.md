@@ -14,8 +14,8 @@
 - 来源：TheMasterplan `v5.0.0` / `20eee37922175ad443270e1ab38df7ab38ca5d7b`，固定中央 reusable workflow；selection/state 与执行器受 hash 检查。
 - 范围：中央调用 + AGENTS.md 管理块、core、Git profile、薄 Skill、受管 CLI；项目自己的测试入口和说明仍由项目维护。未初始化 jj，不改全局模型、MCP、登录、sandbox 或 GitHub 保护。
 - 日期：2026-10-09。授权：本会话用户要求采纳 themasterplan、撤销繁琐复核，并授权 push/PR。
-- 当前首次交付：PR #29；验证与最终交付 SHA 在该 PR 记录。合并前不把分支内采纳写成 main 已采用。
-- Git 2.55.0.windows.2 / Git Bash 5.3.15 / Windows + PowerShell 7。目标平台验证结果见 PR；包含合并/清理的完整采用烟雾仍为 PARTIAL，未获合并授权，不宣称完成上游全平台演练。
+- 首次交付（历史）：PR #29 已于 2026-10-09 合并（`7e2e018`），采纳块已在 main；当时验证与交付 SHA 见该 PR。
+- Git 2.55.0.windows.2 / Git Bash 5.3.15 / Windows + PowerShell 7。目标平台验证结果见 PR；包含合并/清理的完整采用烟雾当时为 PARTIAL，未完成上游全平台演练（历史记录）。
 
 ## 不变的边界
 

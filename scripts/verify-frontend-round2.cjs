@@ -246,6 +246,9 @@ async function openInlineEvidence(page) {
   const trigger = page.locator('.m-issue-list .evidence-button').first()
   await trigger.scrollIntoViewIfNeeded()
   const before = await page.evaluate(() => Math.round(scrollY))
+  // #295 review: a 0 start makes the restore assertion a tautology; require that
+  // the report actually scrolled before opening the inline evidence.
+  assert.ok(before > 0, `the report must start below the fold so the scroll restore is meaningful (got ${before})`)
   await trigger.click()
   const panel = page.locator('#evidence-panel')
   await panel.waitFor({ timeout: 5000 })

@@ -208,6 +208,7 @@ Astra 交接的对比证据（`design-takeover/`，来自其本机未推送提�
 - 在新 HEAD（`57a8ae9`）重跑验收：9 条命令全部退出码 0 —— `typecheck`、`build`、web 单测 152、`acceptance:mobile` 22 组、`acceptance:reading` 8 项（`dirty=false`）、`acceptance:motion` 20 项、`acceptance:frontend`（Brand 103 / Reports 15 / Policy assist 10 / Copy contract 42）、`acceptance:hierarchy` 11 项、`acceptance:browser`（PORT=8199，TC-03/04/05）。
 - 重拍主证据：§4 的 14 张已按新 HEAD 重新生成；随后在干净工作树复跑，重生成文件与提交逐字节一致。最终交付 SHA 取 PR #302 的 head（本文件随该 head 提交，避免在文件内自引用一个尚未存在的哈希）。
 - 手工矩阵：`node scripts/verify-frontend-round2.cjs` 在 `c178b25` 全量通过（21 组、23 张截图，`source c178b25`）；接管前记录的「返回后恢复滚动位置」失败（before 580 / after 0）在当前报告结构上不再复现。
+- 回归守卫加固（2026-10-23 只读复查发现）：`acceptance:mobile` 的行内证据滚动恢复原本从 0 起点开始，`|0-0|<=2` 恒真，等于从未恢复过非零位置；`verify-frontend-round2.cjs` 也有同样风险。现两处都在打开前断言 `before > 0`，`acceptance:mobile` 起点改为 420（该页 maxScroll≈2548）。加固后两套各自通过（22 组 / 21 组），旧版「假通过」不再可能；此前 before 580 / after 0 是旧布局下 harness 采样与产品点击时刻错位，不是产品缺陷，产品侧未改。
 - 证据对齐：`design-takeover/` 两份 JSON 的 `source_sha` 保留 `5fff115`——那是 Astra 生成它们时的真实提交，且与本分支 `57a8ae9` patch-id 相同；不把证据里的历史 SHA 改写成新哈希。§4 的主证据绑定最终交付 SHA。
 
 ### 9.4 仍未完成

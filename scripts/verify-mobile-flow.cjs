@@ -687,11 +687,14 @@ async function main() {
     await page.setViewportSize({ width: 390, height: 844 })
     checks.push('report: 200% root font keeps the mobile report inside 320px and switches notes to a relative line-height')
     // Inline evidence: open twice, return to the row, exact scroll position.
-    await page.evaluate(() => window.scrollTo(0, 0))
+    // #295 review: start from a real non-zero offset. At 390x844 the first row is
+    // above the fold, so starting at 0 turns the restore into a 0 == 0 tautology.
+    await page.evaluate(() => window.scrollTo(0, 420))
     for (let round = 1; round <= 2; round += 1) {
       const trigger = page.locator('.m-issue-list .evidence-button').first()
       await trigger.scrollIntoViewIfNeeded()
       const before = await page.evaluate(() => Math.round(scrollY))
+      assert.ok(before > 0, `round ${round}: the fixture must start scrolled so the restore is meaningful (got ${before})`)
       await trigger.click()
       const panel = page.locator('.report-evidence-inline #evidence-panel')
       await panel.waitFor({ timeout: 5000 })

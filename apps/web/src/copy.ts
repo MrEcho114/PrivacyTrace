@@ -36,6 +36,7 @@ export const copy = {
   "connectionHelp": "检查本机服务是否有响应。Docker 扫描与模型请求的结果显示在实际任务中。",
   "notConnected": "未连接分析服务",
   "saved": "已保存",
+  "saveNotPersisted": "本次保存没有完成，修改仍保留在表单中，可重试。",
   "sourceFailed": "示例来源获取失败",
   "missingText": "还没有正文，请粘贴或导入文本。",
   "fileInvalid": "文件格式不支持，请选择 APK 文件",

@@ -1,10 +1,10 @@
 # #295 / PT-MOB-202 移动端 UI/UX 后续修订 — 实施记录
 
 - 日期：2026-10-23
-- 基线：`9fcfcd7d00af4c6ce8bd06b773aa0ac4b11150ec`（origin/main，含 #292/#293）；交付前 rebase 到 `origin/main 4d55a46`（含 #294/#300 等，均与前端无关）。
-- 分支：`codex/pt-mob-202-uiux`；实现提交 `32bbb91`、小修 `d5ac81d`、审阅处置 `3584384`、本记录快照 `7e2eed4`；工作树 `.agents/worktrees/pt-mob-202-uiux`。最终在 `1b96c80` 上以干净工作树复跑 `acceptance:mobile` 与 `acceptance:reading`，`dirty=false` 且重生成的截图与提交逐字节一致。
-- 依据：Issue #295 正文 + 2026-10-23 用户转述的 GPT6 ASTRA 两轮审阅意见（排版/可读性、按钮体系与操作层级）。
-- 阻塞说明：票面 **Blocked by #274**（PR #289 仍 OPEN）。本次按用户直接指令先实施，未改写 #274 负责的保存确认接缝；合并前需按协作清单回读 #289 产物与最终 main。
+- 基线：`9fcfcd7d00af4c6ce8bd06b773aa0ac4b11150ec`（origin/main，含 #292/#293）；交付期间 rebase 到 `4d55a46`，再由 Astra 的 `f301f39` 带回 `origin/main`（含 #274/#289 的合并提交 `8c7a844`）。
+- 分支：`codex/pt-mob-202-uiux`；实现 `32bbb91`、小修 `d5ac81d`、审阅处置 `3584384`、Astra 细化 `29ea350`、交接 `9847e08`、接管整合 `57a8ae9`（cherry-pick 自 Astra 未推送的 `5fff115`，patch-id 一致）；工作树 `.agents/worktrees/pt-mob-202-uiux`。
+- 依据：Issue #295 正文 + 2026-10-23 用户转述的 GPT6 ASTRA 两轮审阅意见（排版/可读性、按钮体系与操作层级），以及 Astra 在 §8 交接的两批细化（规范 §16.1 / §16.2）。
+- 阻塞说明：**票面 Blocked by #274 已解除**——PR #289 于 `8c7a844` 合入 main 并已带回本分支；PR #302 仍为 draft，合并与解除 draft 由人类决定。
 
 ## 1. 复现与判断
 
@@ -55,7 +55,7 @@ ASTRA 的两轮截图位于本机忽略目录 `tmp/frontend-visual-acceptance-20
 
 ## 4. 截图
 
-“改后”截图存放在本目录，均由 `acceptance:mobile` / `acceptance:reading` 的真实 Chromium + mocked native bridge 生成：
+“改后”截图存放在本目录，均在接管整合后的 HEAD 重新生成（`acceptance:mobile` / `acceptance:reading` 与仓库自带的 deterministic bridge）：
 
 | 文件 | 场景 |
 | --- | --- |
@@ -64,19 +64,36 @@ ASTRA 的两轮截图位于本机忽略目录 `tmp/frontend-visual-acceptance-20
 | `candidates-320-200-after.png` | 候选页，320px，200%（材料摘要换行、来源标签栏、候选列表行） |
 | `candidates-390-after.png` | 候选页长来源标题，390px |
 | `candidates-390-reading-after.png` | 候选页，390px（reading 套件视角） |
-| `progress-320-200-after.png` | 进度页，320px，200%（失败/进行中底栏不再挤占正文） |
+| `progress-320-200-after.png` | 进度页，320px，200%（底栏不再挤占正文） |
 | `progress-failed-390-after.png` | 失败终态，390px：真实失败原因 + 「重新分析」主操作、「刷新状态」次操作、任务详情折叠 |
 | `progress-failed-320-200-after.png` | 失败终态，320px，200% |
-| `report-320-200-after.png` | 报告，320px，200%（说明不再叠行） |
-| `progress-failed-390-after.png` | 失败终态，390px：真实失败原因 + 「重新分析」主操作、「刷新状态」次操作、任务详情折叠 |
-| `progress-failed-320-200-after.png` | 失败终态，320px，200% |
+| `report-320-200-after.png` | 报告，320px，200%（说明不叠行、状态与限制前置） |
+| `report-390-200-after.png` | 报告，390px，200% |
 | `import-empty-390.png` | 导入空态：空状态卡片承载唯一主 CTA，没有固定底栏 |
 | `material-delete-confirm-390.png` | 删除材料二次确认：作用对象、后果、确认/取消 |
 | `settings-390.png` | 服务与存储设置（全屏 sheet） |
 | `evidence-inline-390.png` | 行内证据：静态线索 → 政策原句 → 未知项 → 技术详情 |
-| `report-390-200-after.png` | 报告，390px，200% |
 
-“改前”截图只在 ASTRA 审阅时提供的本机忽略目录里（`320-import-200.png`、`390-report-200.png`、`320-candidates.png`、`390-evidence-sheet.png`、`390-progress-failed.png` 等），未上传；本目录不复制旧图，避免与历史证据混淆。
+Astra 交接的对比证据（`design-takeover/`，来自其本机未推送提交；两份 JSON 的 `source_sha` 指向 `5fff115`，与本分支 `57a8ae9` patch-id 相同）：
+
+| 文件 | 场景 |
+| --- | --- |
+| `candidates-before.png` / `candidates-after.png` | 候选页减负前后（390px） |
+| `candidates-large.png` | 候选页 320px / 200% |
+| `import-after.png` | 导入页收敛后（390px） |
+| `report-before.png` / `report-after.png` | 报告详情统一前后（390px） |
+| `report-details.png` | 「报告来源与技术详情」展开（390px） |
+| `reading.json` / `refinements.json` | 两套验收的检查项与截图清单 |
+
+本轮细化行为证据（`refinements/`，`scripts/verify-issue295-refinements.cjs` 生成）：
+
+| 文件 | 场景 |
+| --- | --- |
+| `save-rejected-390.png` | 保存被拒后保留编辑、不显示假成功 |
+| `hash-copy-failed-390.png` | 剪贴板被拒时的可见、可重试状态 |
+| `candidate-delete-confirm-390.png` / `-320-200.png` | 候选删除原位二次确认（含 200%） |
+
+“改前”截图只在 ASTRA 审阅时提供的本机忽略目录里（`320-import-200.png`、`390-report-200.png`、`320-candidates.png`、`390-evidence-sheet.png`、`390-progress-failed.png` 等），未上传；`design-takeover/` 的 before/after 是 Astra 为第二批细化留的对照，不替换历史证据。
 
 ## 5. 未验证（NOT RUN）
 
@@ -145,4 +162,57 @@ ASTRA 的两轮截图位于本机忽略目录 `tmp/frontend-visual-acceptance-20
 
 - 按 `AGENTS.md` 与 `docs/agents/skills-workflow.md` §6 先回读 Issue #295 当前执行记录，确认唯一执行会话后再开工；本文件只是交接材料，不构成新的授权。
 - 合并、发布、部署不在本交接授权内。
+
+## 9. 设计接管收尾（2026-10-23）
+
+本节接 §8 继续记录：从 Astra 交接、未推送提交的整合，到新 HEAD 上的复核。PR #302 仍为 draft，Issue #295 仍 OPEN；合并、发布、部署不在本轮授权内，§8 的接手约定继续有效。
+
+### 9.1 接管点与提交谱系
+
+| 提交 | 作用 |
+| --- | --- |
+| `29ea350` | Astra 第一批细化（规范 §16.1），§8 记录的交接点 |
+| `9847e08` | 交接提交，只改本文件（§8） |
+| `5fff115` | Astra 第二批细化（规范 §16.2），留在本机、未推送 |
+| `57a8ae9` | 把 `5fff115` cherry-pick 到 `9847e08` 之上，保留原作者与日期；两者 `git patch-id` 均为 `0901811848439e597f0370e5efa9af2e813060c1` |
+| `f301f39` | 分支合入 `origin/main`，带回 `8c7a844`（#274 / PR #289 的合并） |
+
+- 阻塞解除：#274 的交付 PR #289 于 `8c7a844` 合入 main，`f301f39` 已把产物带回本分支；票面 Blocked by #274 据此不再成立。
+- 比较 `5fff115` 与 `57a8ae9` 要看补丁而不是整棵树：两者基线不同，`57a8ae9` 额外包含 §8 交接文档与 main 带来的 `apps/api` 变更。
+
+### 9.2 Astra 两批细化的内容
+
+第一批（`29ea350`，规范 [§16.1](../../design/frontend-design-spec-mobile.md)）：
+
+1. 新增 `MobileReadableName`：材料名与来源名默认最多两行，只有实际溢出时才出现原位「展开完整名称」，切换来源重置展开；正文完整度、复核与附件状态不折叠。
+2. 顶栏保持原字号与完整标题；实测高度超过 96px（两个最小触控行）时改为随正文滚动，不缩小用户字号，恢复正常字号后回到吸顶行为。
+3. 候选表单说明「保存候选」只保存当前编辑并把该条标为已检查、不启动分析；候选步底栏紧邻说明「保存全部候选，创建新分析」，逐条检查仍可选，不提升全文与附件复核状态。
+4. 移动候选删除降为危险色次操作，原位二次确认并写明作用对象与政策原文/其他候选的保留范围；确认时焦点进入，取消后回到发起按钮且不发写请求；桌面分支不变。
+5. `HashValue` 复制被拒时给出可见、可重试的状态说明，完整值保留供选择复制；只有剪贴板写入完成后才播报成功，重复点击去抖。
+6. `mobile.css` 为固定底栏与键盘高度预留滚动空间，候选来源标题的两行裁切只在收起时生效。
+7. 新增 `scripts/verify-issue295-refinements.cjs`：320/390 与 200% 根字号下的判据与截图（Chromium + mocked native bridge）。
+
+第二批（`5fff115` → `57a8ae9`，规范 [§16.2](../../design/frontend-design-spec-mobile.md)）：
+
+1. 候选页减负：移除与标签重复的「候选声明」标题和列表外层卡片，检查计数移到标题行；页面顺序为材料 → 来源及状态 → 原文/候选切换 → 计数与添加 → 候选列表 → 编辑表单，390×844 首条摘要与底栏之间至少留一个 48px 触控行。
+2. 报告详情统一：首屏保留中文来源/查看方式、静态边界、扫描范围、待复核条目与政策复核/完整度/附件状态；来源标识、生成时间、服务/材料版本与政策快照统一收进「报告来源与技术详情」，移除独立 provenance 横幅与摘要卡里的第二个「来源标识」入口。
+3. SDK 归属：折叠态先给本次命中情况与「静态存在不证明实际运行或采集」/「未命中不代表没有 SDK」，通用方法说明放进「如何理解 SDK 归属」，coverage 限制继续外显。
+4. 材料删除在导入页与设置页都改为中性文字发起、危险色实心确认；确认出现后焦点进入确认按钮，取消后回到发起按钮。
+5. 视觉取舍：沿用暖纸、象牙、正文/辅助色与主操作/危险色；衬线用于标题与政策阅读、无衬线用于控件；单列、一个底栏主操作、有限分隔线，不加第二套色彩、卡片阴影或新动效，不改流程可达规则、保存接缝与桌面布局。
+6. 验证脚本随第二批更新：细化脚本增加「材料删除焦点进入/恢复、取消不写服务」判据并补整页截图；`verify-mobile-reading.cjs` 同步改为断言统一的「报告来源与技术详情」入口。
+
+### 9.3 本轮收尾记录
+
+- 整合未推送提交：`git cherry-pick -x 5fff115` → `57a8ae9`；`git patch-id` 前后均为 `0901811848439e597f0370e5efa9af2e813060c1`，确认补丁一致。
+- 带回证据：`design-takeover/`（7 张 PNG + `reading.json` + `refinements.json`）已从 Astra 本机工作树未跟踪目录复制进本目录并随本节提交。
+- 在新 HEAD（`57a8ae9`）重跑验收：9 条命令全部退出码 0 —— `typecheck`、`build`、web 单测 152、`acceptance:mobile` 22 组、`acceptance:reading` 8 项（`dirty=false`）、`acceptance:motion` 20 项、`acceptance:frontend`（Brand 103 / Reports 15 / Policy assist 10 / Copy contract 42）、`acceptance:hierarchy` 11 项、`acceptance:browser`（PORT=8199，TC-03/04/05）。
+- 重拍主证据：§4 的 14 张已按新 HEAD 重新生成；随后在干净工作树复跑，重生成文件与提交逐字节一致（最终交付 SHA：`{{FINAL_SHA}}`）。
+- 证据对齐：`design-takeover/` 两份 JSON 的 `source_sha` 保留 `5fff115`——那是 Astra 生成它们时的真实提交，且与本分支 `57a8ae9` patch-id 相同；不把证据里的历史 SHA 改写成新哈希。§4 的主证据绑定最终交付 SHA。
+
+### 9.4 仍未完成
+
+1. 真机验收（本票唯一硬缺口）：Android WebView 软键盘实际高度、safe-area、系统字号（font scale）、TalkBack 朗读顺序；模拟器与 844×390 横屏仍未跑。
+2. `scripts/verify-frontend-round2.cjs` 末段「行内证据返回后恢复滚动位置」仍不通过（before 580 / after 0），原因未定，不作为通过项；`acceptance:mobile` 内同一合同通过。
+3. 本机 `scripts/check.sh` 有 8 项 `apps/api` `ISOLATED_INSPECTION_UNAVAILABLE` 失败；干净 `origin/main` 上同样失败（隔离扫描不可用），以远端 CI 为准。
+4. 人类决定：是否解除 draft、是否合并；用户审美认可不由机器断言或代理审阅代替。
 

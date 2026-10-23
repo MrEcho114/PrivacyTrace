@@ -1,6 +1,7 @@
 const fs = require('node:fs')
 const path = require('node:path')
 const http = require('node:http')
+const net = require('node:net')
 const { randomUUID } = require('node:crypto')
 const { fork, spawn } = require('node:child_process')
 const { assertPortBindable, resolvePort } = require('./lib/local-ports.cjs')
@@ -30,15 +31,63 @@ async function request(state, route) {
   delete result.instance
   return result
 }
+// A control endpoint that refuses or drops a connection can be the tail of a
+// daemon that is still shutting down (#285: CI saw `fetch failed` here while a
+// preview was retiring, then treated it as a fatal ownership error). Those
+// failures are retried for a bounded window; identity mismatches and malformed
+// replies are not retried because they cannot heal on their own.
+const STATUS_RETRY_BUDGET_MS = 2000
+const STATUS_RETRY_INTERVAL_MS = 100
+const PORT_PROBE_TIMEOUT_MS = 500
+function isTransientControlError(error) {
+  if (!error) return false
+  if (error.name === 'TimeoutError' || error.name === 'AbortError') return true
+  if (error.message === 'fetch failed') return true
+  const code = error.cause && error.cause.code
+  return ['ECONNREFUSED', 'ECONNRESET', 'EPIPE', 'ETIMEDOUT', 'EHOSTUNREACH', 'ENETUNREACH', 'UND_ERR_SOCKET', 'UND_ERR_CLOSED', 'UND_ERR_CONNECT_TIMEOUT'].includes(code)
+}
+function isPreviewPortServing(port) {
+  if (!Number.isInteger(port) || port < 1 || port > 65535) return Promise.resolve(false)
+  return new Promise(resolve => {
+    const socket = net.connect({ host: '127.0.0.1', port })
+    const settle = value => { socket.destroy(); resolve(value) }
+    socket.setTimeout(PORT_PROBE_TIMEOUT_MS, () => settle(false))
+    socket.once('connect', () => settle(true))
+    socket.once('error', () => settle(false))
+  })
+}
 async function status() {
   const state = readState()
   if (!state) return { running: false }
-  try { return await request(state, 'status') }
-  catch (error) {
-    if (isProcessAlive(state.pid)) throw new Error(`Cannot confirm owned preview; no process stopped: ${error.message}`)
-    removeRecord(state.token)
-    return { running: false }
+  const deadline = Date.now() + STATUS_RETRY_BUDGET_MS
+  let lastError
+  for (;;) {
+    try { return await request(state, 'status') }
+    catch (error) {
+      lastError = error
+      if (!isTransientControlError(error)) break
+    }
+    // A daemon that is shutting down removes its record and exits; either
+    // signal proves the preview is gone instead of merely unreachable.
+    if (!readState()) return { running: false }
+    if (!isProcessAlive(state.pid)) { removeRecord(state.token); return { running: false } }
+    if (Date.now() >= deadline) break
+    await pause(STATUS_RETRY_INTERVAL_MS)
   }
+  // Only a record whose preview port still serves can describe an owned
+  // preview. When the control endpoint stays unreachable and the preview port
+  // is gone too, the record is stale (for example, a retiring daemon that never
+  // removed it): clearing it must not block a new start and must never kill the
+  // recorded PID. A live control endpoint with the wrong identity still fails
+  // this check only when its preview port serves, preserving the "unconfirmed
+  // ownership is never a permission to kill" rule.
+  const alive = isProcessAlive(state.pid)
+  if (alive && await isPreviewPortServing(state.port)) {
+    throw new Error(`Cannot confirm owned preview; no process stopped: ${lastError.message}`)
+  }
+  if (alive) console.error(`[preview] cleared a stale ownership record (pid ${state.pid}); ${lastError.message}`)
+  removeRecord(state.token)
+  return { running: false }
 }
 async function stop() {
   const current = await status()

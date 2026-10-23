@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.90"
 publish = false
+license = "MIT"
 links = "tauri-plugin-package-probe"
 description = "Local-only Android package selection and digest experiment"
 

@@ -221,13 +221,13 @@ td,th{border:1px solid #999;padding:.5rem}table{border-collapse:collapse}</style
         "PrivacyTrace authored controlled replay. Requires Python 3.11+ only; no model key.\n"
         "Run: python viewer.py --port 8765\nOpen http://127.0.0.1:8765\n"
         "Six source-built scenarios. No APK, private policy, local review or credentials.\n"
-        "Internal verification package only. Project source license is not yet decided.\n"
+        "Internal verification package only. Project source is MIT-licensed; see the repository LICENSE.\n"
         "Viewer verifies exact package file set and SHA256 before serving.\n",
         encoding="utf-8",
     )
     (args.output / "DISTRIBUTION.txt").write_text(
-        "INTERNAL VERIFICATION ONLY. Project source license is pending team decision.\n"
-        "This task grants no public release or competition-submission authorization.\n"
+        "INTERNAL VERIFICATION ONLY. This archive's acceptance covers internal verification and makes no deployment or competition-submission claim.\n"
+        "Project source is MIT-licensed; see the repository LICENSE file.\n"
         "Only agent-authored controlled policies are included. No real APK/policy is distributed.\n"
         "The bundle uses Vue runtime and Vite preload helper; their license texts follow.\n",
         encoding="utf-8",

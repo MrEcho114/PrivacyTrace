@@ -318,7 +318,8 @@ onBeforeUnmount(() => {
 
       <template v-else-if="state.step === 'candidates' && context">
         <p v-if="!hasPolicyText" class="m-notice m-message" role="status">当前没有可对照的政策正文，保存候选并开始分析会被服务拒绝。请返回材料页重新获取网址，或粘贴／导入政策文本。</p>
-        <CandidatePage mobile :state="state" :busy="busy" :type-labels="labels" @back="navigate('import')" @next="flow.begin" @persist-candidates="flow.save" @retry-source="flow.retrySource" @retry-model="flow.retryModel" />
+        <!-- 移动端由下方共享消息区渲染 flow.error；页内再传一次会重复 role="alert"。 -->
+        <CandidatePage mobile :state="state" :busy="busy" :type-labels="labels" :persist="flow.save" @back="navigate('import')" @next="flow.begin" @retry-source="flow.retrySource" @retry-model="flow.retryModel" />
       </template>
 
       <template v-else-if="state.step === 'progress'">

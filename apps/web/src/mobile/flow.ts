@@ -114,8 +114,11 @@ export function createMobileFlow(bridge: MobileBridge) {
     if (!context.value || response.origin !== context.value.origin || response.draft !== context.value.draft) throw new Error('INSTANCE_MISMATCH')
     return response.data
   }
-  async function run(action: (request: Request, check: () => void) => Promise<void>) {
-    if (busy.value) return
+  // Returns whether the action actually completed. A caller that shows a
+  // success message (candidate save) must not receive `true` for a request it
+  // never made: a busy gate or a superseded generation is not a saved write.
+  async function run(action: (request: Request, check: () => void) => Promise<void>): Promise<boolean> {
+    if (busy.value) return false
     stopPoll()
     busy.value = true; error.value = ''
     const current = generation
@@ -126,7 +129,8 @@ export function createMobileFlow(bridge: MobileBridge) {
       if (!context.value || response.origin !== context.value.origin || response.draft !== context.value.draft) throw new Error('INSTANCE_MISMATCH')
       return response.data
     }
-    try { await action(request, active) }
+    let completed = false
+    try { await action(request, active); completed = true }
     catch (cause) { if (current === generation) error.value = typeof cause === 'string' ? cause : cause instanceof Error ? cause.message : '操作未完成，请刷新确认。' }
     finally {
       if (current === generation) {
@@ -138,6 +142,7 @@ export function createMobileFlow(bridge: MobileBridge) {
         schedule(current, true)
       }
     }
+    return completed
   }
   async function stop() {
     generation++; stopPoll(); busy.value = false
@@ -221,7 +226,12 @@ export function createMobileFlow(bridge: MobileBridge) {
       condition: c.condition || null, action: c.action ?? 'UNKNOWN', declared_purpose: c.purpose || null,
       declared_recipient: c.recipient || null, start_offset: c.startOffset ?? (position < 0 ? null : [...text.slice(0, position)].length), ambiguity_flags: c.ambiguityFlags ?? [] }
   }
-  async function save() { await run(async request => { if (draft.value) apply(await request<LiveDraft>('candidates', { revision: draft.value.revision, candidates: state.candidates.map(encode) })) }) }
+  // A save that never reached the service (no draft, busy gate, bridge error)
+  // resolves false so the candidate page keeps its edit and withholds "已保存".
+  async function save(): Promise<boolean> {
+    if (!draft.value) return false
+    return await run(async request => { if (draft.value) apply(await request<LiveDraft>('candidates', { revision: draft.value.revision, candidates: state.candidates.map(encode) })) })
+  }
   async function begin() {
     const current = generation
     nativeBusyRetries = 0

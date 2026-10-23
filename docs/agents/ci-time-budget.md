@@ -36,15 +36,29 @@ R2→R3 有数据依赖（R3 读 R2 写进 Runner ledger 的两次扫描），R4
 
 ## 3. 当前矩阵（`pull_request` 触发）
 
-`main` 的 push 一律不过滤，合入后仍然产出全量证据；PR 上按改动路径选择门禁：
+`main` 的 push 一律不过滤，合入后仍然产出全量证据；PR 上按改动路径选择门禁。
+下表是路径矩阵与并行改造后的**单次实测**（PR #304，五条门禁全部触发的那一类）：
 
-| PR 改动 | 会跑的 workflow | 预计墙钟 |
+| PR 改动 | 会跑的 workflow | 墙钟 |
 | --- | --- | --- |
-| 只有文档 | Check + Deployment Baseline | 约 4m43 |
-| `apps/mobile/**` | 上面 + Browser Acceptance | 约 4m43 |
-| `apps/web/**` | 上面 + Spec30 Integration | 约 7m04 |
-| `apps/api/**` | 上面 + Deployment Acceptance（拆轮后） | 约 7m04 |
-| `deploy/**`、Dockerfile | 上面 + Deployment Acceptance（拆轮后） | 约 5m50 |
+| 只有文档 | Check + Deployment Baseline | 约 3m30 |
+| `apps/mobile/**` | 上面 + Browser Acceptance | 约 3m30 |
+| `apps/web/**` | 上面 + Spec30 Integration | 约 3m30 |
+| `apps/api/**` | 上面 + Deployment Acceptance | 约 6m00 |
+| `deploy/**`、Dockerfile | 上面 + Deployment Acceptance | 约 6m00 |
+
+同一批（PR #304，09:31:21 创建、09:37:20 结束，**5m59s**，改造前 9m51s）：
+
+| workflow | 改造后 | 改造前 |
+| --- | --- | --- |
+| Deployment Acceptance | 5m59s（R1–R4 job 5m56s + R5–R6 job 4m53s 并行，27 + 13 = 40 项全 PASS） | 9m48s |
+| Spec30 Integration | 3m04s | 7m04s |
+| Deployment Baseline | 3m32s | 3m01s |
+| Check | 2m57s | 4m43s |
+| Browser Acceptance | 2m33s | 3m17s |
+
+单次样本受 runner 负载影响（Spec30 基线那次 7m04s、这次 3m04s），不要把某一列
+当成稳态；要判断改动是否有效，看同一批里最长的那个 workflow。
 
 路径清单写在各 workflow 的 `on.pull_request.paths` 里，改之前先确认那条门禁真的
 不读你要排除的目录（例如 `scripts/verify-*.cjs` 会读 `docs/design/**` 与
@@ -53,12 +67,14 @@ R2→R3 有数据依赖（R3 读 R2 写进 Runner ledger 的两次扫描），R4
 ## 4. 两处并行
 
 - **Deployment Acceptance 拆成两个 job**：R1–R4 与 R5–R6 之间没有数据依赖，并行后
-  墙钟约 5m42s（原 9m37s），代价是 CI 总分钟数约 +11%，以及证据从一个 receipt 变成
-  两个（`issue81-r1-r4` / `issue81-r5-r6`，两份 artifact 必须同时存在才算完整）。
-  `deploy/check_acceptance.sh` 的默认阶段仍是 `all`，本地与手动复现照旧一条命令。
+  实测 5m59s（原单步 9m37s / workflow 9m48s），代价是 CI 总分钟数约 +11%，以及证据
+  从一个 receipt 变成两个（`issue81-r1-r4` / `issue81-r5-r6`，两份 artifact 必须同时
+  存在才算完整）。`deploy/check_acceptance.sh` 的默认阶段仍是 `all`，本地与手动复现
+  照旧一条命令。
 - **`apps/api/tests` 用 pytest-xdist**：1936 个用例的 89% 时间在 test body（不是
   fixture），没有可抽的热点，唯一证据中立的杠杆是跨进程并行。`--dist loadfile` 保证
   同文件同 worker；`PRIVACYTRACE_PYTEST_WORKERS=0` 回串行，给数字则固定 worker 数。
+  Check 从 4m43s 降到 2m57s。
 
 ## 5. 强制全跑
 

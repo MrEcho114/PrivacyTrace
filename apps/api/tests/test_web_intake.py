@@ -2,6 +2,7 @@
 
 import json
 import threading
+import zipfile
 from uuid import uuid4
 
 import pytest
@@ -10,6 +11,7 @@ from fastapi.testclient import TestClient
 from privacytrace import pipeline, policy_fetch
 from privacytrace.main import create_app
 from privacytrace.models import AnalysisJob
+from privacytrace.package_set import PackageSetIntegrityError
 from privacytrace.resources import taxonomy
 from privacytrace.web_models import DraftInput
 
@@ -741,3 +743,35 @@ def test_fake_ip_fallback_still_requires_global_dns(monkeypatch):
     )
     with pytest.raises(policy_fetch.FetchError, match="PUBLIC_URL_REQUIRED"):
         policy_fetch.public_target("https://public.example/privacy")
+
+
+def test_unpack_rejects_case_variant_duplicate_apk_file_names(tmp_path):
+    """#286: case-variant duplicate names are rejected before the O_EXCL write."""
+    service = create_app(tmp_path / "jobs").state.web_intake
+    archive_path = tmp_path / "case-variant.apks"
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        archive.writestr("base.apk", b"base APK")
+        archive.writestr("Base.apk", b"split APK")
+    target = service.root / "case-variant-target"
+    target.mkdir()
+
+    with pytest.raises(PackageSetIntegrityError) as error:
+        service._unpack_package_set(archive_path, target)
+
+    assert error.value.code == "CORRUPTED_FILE"
+    assert error.value.http_status == 400
+    assert list(target.iterdir()) == []
+
+
+def test_unpack_accepts_distinct_mixed_case_apk_file_names(tmp_path):
+    service = create_app(tmp_path / "jobs").state.web_intake
+    archive_path = tmp_path / "distinct-mixed-case.apks"
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        archive.writestr("base.apk", b"base APK")
+        archive.writestr("Config.en.apk", b"split APK")
+    target = service.root / "distinct-mixed-case-target"
+    target.mkdir()
+
+    service._unpack_package_set(archive_path, target)
+
+    assert sorted(path.name for path in target.iterdir()) == ["Config.en.apk", "base.apk"]

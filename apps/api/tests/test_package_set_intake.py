@@ -17,6 +17,7 @@ import pytest
 from apk_fixture_builder import apk as build_apk
 from apk_fixture_builder import apk_bytes, package_set_archive
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from privacytrace.apk_worker import scan, scan_package_set
 from privacytrace.main import create_app
@@ -25,6 +26,7 @@ from privacytrace.package_set import (
     MAX_FILE_SIZE,
     PackageFile,
     PackagePart,
+    PackageSet,
     PackageSetIntegrityError,
     PackageSetManifestInput,
     validate_package_set,
@@ -88,6 +90,76 @@ def test_duplicate_apk_file_names_return_400_and_roll_back(tmp_path, endpoint):
     retry = client.post(url, headers=HEADERS, content=valid_archive)
     assert retry.status_code == 200, retry.text
     assert retry.json()["uploaded"] is True
+
+
+@pytest.mark.parametrize("endpoint", ["apk", "package-set"])
+def test_case_variant_duplicate_apk_file_names_return_400_and_roll_back(tmp_path, endpoint):
+    """#286: base.apk/Base.apk collapses to one entry on case-insensitive filesystems.
+
+    The duplicate-name guard must use the same case-insensitive rule as the
+    O_CREAT | O_EXCL write so this input is rejected as CORRUPTED_FILE before any
+    bytes are written, instead of escaping as a 409 UPLOAD_REJECTED.
+    """
+    client = TestClient(create_app(tmp_path))
+    draft = create_draft(client)
+    draft_id = draft["id"]
+    url = f"/api/v1/web/drafts/{draft_id}/{endpoint}"
+    draft_dir = tmp_path / "web" / draft_id
+    original_files = {p.relative_to(draft_dir): p.read_bytes()
+                      for p in draft_dir.rglob("*") if p.is_file()}
+    case_variant_archive = package_set_archive(apks={
+        "base.apk": b"first APK", "Base.apk": b"second APK",
+    })
+
+    response = client.post(url, headers=HEADERS, content=case_variant_archive)
+
+    assert response.status_code == 400, response.text
+    assert "CORRUPTED_FILE" in response.text
+    current = client.get(f"/api/v1/web/drafts/{draft_id}", headers=HEADERS).json()
+    assert current == draft
+    assert {p.relative_to(draft_dir): p.read_bytes()
+            for p in draft_dir.rglob("*") if p.is_file()} == original_files
+    assert not list(draft_dir.glob("packages.pending.*"))
+    assert not list(draft_dir.glob("upload.pending.*"))
+
+
+def case_variant_package_files():
+    base = PackageFile(
+        file_name="base.apk", part=PackagePart.BASE, sha256="a" * 64,
+        size_bytes=10, package_name="org.privacytrace.casefold", version_code=1,
+    )
+    split = PackageFile(
+        file_name="Base.apk", part=PackagePart.SPLIT, split_name="config.en",
+        sha256="b" * 64, size_bytes=20,
+        package_name=base.package_name, version_code=base.version_code,
+    )
+    return [base, split]
+
+
+def test_validate_package_set_rejects_case_variant_duplicate_file_names():
+    with pytest.raises(PackageSetIntegrityError) as error:
+        validate_package_set(case_variant_package_files())
+    assert error.value.code == "CORRUPTED_FILE"
+    assert error.value.http_status == 400
+
+
+def test_package_set_model_rejects_case_variant_duplicate_file_names():
+    files = case_variant_package_files()
+    with pytest.raises(ValidationError, match="duplicate APK file name"):
+        PackageSet(
+            package_name=files[0].package_name,
+            version_code=files[0].version_code,
+            base=files[0],
+            splits=[files[1]],
+            total_size_bytes=sum(f.size_bytes for f in files),
+        )
+
+
+def test_validate_package_set_accepts_distinct_mixed_case_file_names():
+    files = case_variant_package_files()
+    files[1] = files[1].model_copy(update={"file_name": "Config.en.apk"})
+    validated = validate_package_set(files)
+    assert len(validated.all_files) == 2
 
 
 def test_single_apk_intake_via_package_set_endpoint(tmp_path: Path):

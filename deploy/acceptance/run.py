@@ -136,7 +136,9 @@ def combine(receipts: Sequence[Receipt]) -> dict:
     return summary
 
 
-def write_receipts(receipts: Sequence[Receipt], directory: Path) -> list[Path]:
+def write_receipts(
+    receipts: Sequence[Receipt], directory: Path, *, scope: str = "issue81-r1-r6"
+) -> list[Path]:
     directory.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     written: list[Path] = []
@@ -145,7 +147,7 @@ def write_receipts(receipts: Sequence[Receipt], directory: Path) -> list[Path]:
         written.append(receipt.write(directory / name))
     combined = {
         "receipt_version": 1,
-        "scope": "issue81-r1-r6",
+        "scope": scope,
         "source_sha": receipts[0].source_sha if receipts else "UNKNOWN",
         "generated_at": utc_now(),
         "summary": combine(receipts),
@@ -245,7 +247,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         receipts[selected.index("r6")].checks.append(audit)
 
     summary = combine(receipts)
-    written = [] if args.no_write else write_receipts(receipts, receipt_dir)
+    # The single round keeps its historical label. A split round (the same checks
+    # run as r1-r4 and r5-r6 jobs) must not claim evidence it did not collect.
+    round_scope = (
+        "issue81-r1-r6" if selected == list(COLLECTORS) else "issue81-" + "-".join(selected)
+    )
+    written = [] if args.no_write else write_receipts(receipts, receipt_dir, scope=round_scope)
 
     print("=" * 72)
     print(render_summary(summary, scope=",".join(selected), source_sha=receipts[0].source_sha))

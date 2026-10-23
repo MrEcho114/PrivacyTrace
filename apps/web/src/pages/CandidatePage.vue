@@ -68,21 +68,28 @@ function add() {
 }
 // "已检查" is part of the saved payload, but the success wording is not: the
 // service may refuse this write (busy, stale revision, native bridge). Set the
-// flag before persisting so an accepted snapshot carries it, then put it back
-// when the write did not happen. The edits stay in `state` either way, so the
-// retry starts from what the reader typed instead of an empty form.
+// flag before persisting so an accepted snapshot carries it, then put the
+// previous value back when the write did not happen. Restoring the old value
+// matters for an already-checked candidate: #273 merges a changed `checked`
+// back as a local edit, so a hard-coded false would turn a refused save into a
+// sticky "待检查" that only a full re-read repairs. The edits stay in `state`
+// either way, so the retry starts from what the reader typed.
 async function save() {
   if (!chosen.value || saving.value) return
   if (!quoteValid.value) { notice.value = quoteError.value; return }
-  if (props.state.example || !props.persist) { chosen.value.checked = true; notice.value = copy.saved; return }
+  if (props.state.example) { chosen.value.checked = true; notice.value = copy.saved; return }
+  // Only the example may report success without persisting. A real flow that
+  // forgets to wire `persist` must stay silent instead of claiming a save.
+  if (!props.persist) return
   const target = chosen.value
+  const wasChecked = target.checked
   target.checked = true
   notice.value = ''
   saving.value = true
   let persisted = false
   try { persisted = await props.persist() } catch { persisted = false } finally { saving.value = false }
   if (persisted) { notice.value = copy.saved; return }
-  target.checked = false
+  target.checked = wasChecked
   notice.value = copy.saveNotPersisted
 }
 function remove() {

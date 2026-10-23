@@ -78,6 +78,25 @@ test('a throwing persist is treated as a rejected save, not a success', async ()
   assert.equal(page.chosen.value.checked, false)
 })
 
+// #273 merges a changed `checked` back as a local edit, so a refused save on an
+// already-checked candidate must restore `true` rather than hard-code `false`:
+// otherwise the page shows 待检查 while the service snapshot still says checked.
+test('a refused save restores an already-checked candidate instead of clearing it', async () => {
+  const page = harness(async () => false)
+  page.chosen.value.checked = true
+  await page.save()
+  assert.equal(page.chosen.value.checked, true, 'an already-checked candidate keeps its persisted state')
+  assert.equal(page.notice.value, copyExports.copy.saveNotPersisted)
+})
+
+test('an already-checked candidate stays checked after an accepted save', async () => {
+  const page = harness(async () => true)
+  page.chosen.value.checked = true
+  await page.save()
+  assert.equal(page.chosen.value.checked, true)
+  assert.equal(page.notice.value, copyExports.copy.saved)
+})
+
 test('the candidate is still marked checked while the write is in flight', async () => {
   let release
   const page = harness(() => new Promise(resolve => { release = resolve }))

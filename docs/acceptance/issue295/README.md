@@ -2,7 +2,7 @@
 
 - 日期：2026-10-23
 - 基线：`9fcfcd7d00af4c6ce8bd06b773aa0ac4b11150ec`（origin/main，含 #292/#293）。实施期间 origin/main 前进到 `5900470`（#294 APK casefold，与前端无关）；本分支未包含该提交。
-- 分支：`codex/pt-mob-202-uiux`；工作树 `.agents/worktrees/pt-mob-202-uiux`。
+- 分支：`codex/pt-mob-202-uiux`；实现提交 `54764d674ef8fc4f21663e17433503602caf3ef5`；工作树 `.agents/worktrees/pt-mob-202-uiux`。
 - 依据：Issue #295 正文 + 2026-10-23 用户转述的 GPT6 ASTRA 两轮审阅意见（排版/可读性、按钮体系与操作层级）。
 - 阻塞说明：票面 **Blocked by #274**（PR #289 仍 OPEN）。本次按用户直接指令先实施，未改写 #274 负责的保存确认接缝；合并前需按协作清单回读 #289 产物与最终 main。
 
@@ -40,7 +40,7 @@ ASTRA 的两轮截图位于本机忽略目录 `tmp/frontend-visual-acceptance-20
 | `npm run build` | 通过 |
 | `npm run test --workspace @privacytrace/web` | 通过 |
 | `npm run acceptance:mobile` | 22 组通过；新增 200% 断言：`import/200%/320` 底栏 75px、主按钮 288×58、步骤标签 1 行；`candidates/200%/320` 同上；`progress/200%/320` 底栏 141/568px；`report/200%/320` 说明行高 42px/28px |
-| `npm run acceptance:reading` | 8 项通过；内部代码断言改为“中文语义首屏可见 + 来源标识展开后可见 `REAL_SCAN`/`REPLAY`” |
+| `npm run acceptance:reading` | 8 项通过；内部代码断言改为“中文语义首屏可见 + 来源标识展开后可见 `REAL_SCAN`/`REPLAY`”。在 `54764d6` 上复跑：`source 54764d6…, dirty=false`，截图逐字节一致 |
 | `npm run acceptance:motion` | 20 项通过 |
 | `npm run acceptance:frontend` | 通过（含冻结桌面回归、copy contract 42 项） |
 | `npm run acceptance:hierarchy` | 11 项通过 |

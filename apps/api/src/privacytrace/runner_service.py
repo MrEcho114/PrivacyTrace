@@ -114,11 +114,36 @@ class Runner:
             self.lock.close()
 
     def prune(self):
+        now = int(time.time())
         with self._database() as conn:
-            conn.execute(
-                "DELETE FROM operations WHERE state <> 'RUNNING' AND expires < ?",
-                (int(time.time()),),
-            )
+            expired = [
+                row[0]
+                for row in conn.execute(
+                    "SELECT id FROM operations WHERE state <> 'RUNNING' AND expires < ?",
+                    (now,),
+                )
+            ]
+        # Remove the directory before its ledger row. A row deleted ahead of a
+        # failed cleanup leaves a directory that _recover() cannot attribute,
+        # which turns a transient filesystem error into a startup refusal.
+        removable = []
+        for request_id in expired:
+            operation = self.operations / request_id
+            safe_path(operation)
+            try:
+                shutil.rmtree(operation)
+            except FileNotFoundError:
+                pass
+            except OSError:
+                # The row is this directory's only ownership proof; keep both
+                # and let the next prune or startup recovery retry.
+                continue
+            removable.append(request_id)
+        if removable:
+            with self._database() as conn:
+                conn.executemany(
+                    "DELETE FROM operations WHERE id = ?", [(item,) for item in removable]
+                )
 
     def _recover(self):
         # This root is exclusively locked. Only UUID operations present in its
@@ -243,11 +268,10 @@ class Runner:
         digest = hashlib.sha256(
             json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
+        # Same rule as the periodic sweep: an expired row is deleted only after
+        # its directory is gone, so a cleanup failure stays attributable.
+        self.prune()
         with self._database() as conn:
-            conn.execute(
-                "DELETE FROM operations WHERE state <> 'RUNNING' AND expires < ?",
-                (int(time.time()),),
-            )
             previous = conn.execute(
                 "SELECT digest,state,result FROM operations WHERE id=?", (request_id,)
             ).fetchone()
@@ -276,9 +300,24 @@ class Runner:
             )
         operation = self.operations / request_id
         safe_path(operation)
-        operation.mkdir(mode=0o700)
-        inputs = operation / "inputs"
-        inputs.mkdir(mode=0o700)
+        try:
+            operation.mkdir(mode=0o700)
+            inputs = operation / "inputs"
+            inputs.mkdir(mode=0o700)
+        except OSError:
+            # The RUNNING row committed above must not outlive a failed
+            # initialization: prune excludes RUNNING, so a transient ENOSPC or
+            # EACCES here would charge one of the 128 operation slots until the
+            # next restart. Drop what this attempt created and let the row
+            # expire as a terminal ABORTED record.
+            shutil.rmtree(operation, ignore_errors=True)
+            with self._database() as conn:
+                conn.execute(
+                    "UPDATE operations SET state='ABORTED',result=NULL "
+                    "WHERE id=? AND state='RUNNING'",
+                    (request_id,),
+                )
+            raise
         try:
             transfer_deadline = time.monotonic() + MAX_TRANSFER_SECONDS
             for item in value["files"]:
@@ -400,7 +439,15 @@ class Runner:
             conn.execute(
                 "UPDATE operations SET state='DONE',result=? WHERE id=?", (raw, request_id)
             )
-        shutil.rmtree(operation)
+        try:
+            shutil.rmtree(operation)
+        except OSError:
+            # Keep the DONE row: it is this directory's only ownership proof.
+            # prune keeps rows whose directory still exists, and startup
+            # recovery reaps a known DONE operation instead of refusing to start
+            # on an unattributable residue.
+            self.faulted = True
+            raise RuntimeUnavailable("Runner operation cleanup requires recovery") from None
         return result
 
 

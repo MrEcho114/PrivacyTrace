@@ -2,8 +2,8 @@
   "film": "delivery\\PrivacyTrace-作品展示-90s.mp4",
   "probe": {
     "duration": 90.0,
-    "sizeBytes": 13446698,
-    "bitRate": 1195262,
+    "sizeBytes": 12234841,
+    "bitRate": 1087541,
     "video": {
       "codec": "h264",
       "profile": "High",
@@ -11,41 +11,41 @@
       "height": 1080,
       "fps": "30/1",
       "frames": 2700,
-      "pixFmt": "yuvj420p"
+      "pixFmt": "yuv420p"
     },
     "audio": {
       "codec": "aac",
-      "sampleRate": 96000,
+      "sampleRate": 48000,
       "channels": 2,
-      "bitRate": 199017
+      "bitRate": 193293
     }
   },
   "blackSegments": [],
   "frozenSegments": [
     {
       "start": 0.0,
-      "end": 1.233333,
+      "end": 1.266667,
+      "duration": 1.267
+    },
+    {
+      "start": 2.333333,
+      "end": 3.566667,
       "duration": 1.233
     },
     {
-      "start": 3.933333,
+      "start": 3.866667,
       "end": 8.333333,
-      "duration": 4.4
+      "duration": 4.467
     },
     {
-      "start": 10.8,
-      "end": 12.033333,
-      "duration": 1.233
+      "start": 9.8,
+      "end": 11.3,
+      "duration": 1.5
     },
     {
       "start": 23.4,
-      "end": 25.0,
-      "duration": 1.6
-    },
-    {
-      "start": 25.0,
       "end": 26.833333,
-      "duration": 1.833
+      "duration": 3.433
     },
     {
       "start": 26.9,
@@ -53,66 +53,76 @@
       "duration": 3.2
     },
     {
-      "start": 30.1,
+      "start": 30.833333,
       "end": 36.3,
-      "duration": 6.2
+      "duration": 5.467
     },
     {
-      "start": 36.7,
+      "start": 37.0,
+      "end": 39.166667,
+      "duration": 2.167
+    },
+    {
+      "start": 39.166667,
       "end": 40.433333,
-      "duration": 3.733
-    },
-    {
-      "start": 41.666667,
-      "end": 43.6,
-      "duration": 1.933
-    },
-    {
-      "start": 50.8,
-      "end": 52.166667,
-      "duration": 1.367
-    },
-    {
-      "start": 52.166667,
-      "end": 53.633333,
-      "duration": 1.467
-    },
-    {
-      "start": 54.466667,
-      "end": 55.733333,
       "duration": 1.267
     },
     {
-      "start": 55.733333,
-      "end": 56.966667,
-      "duration": 1.233
+      "start": 42.1,
+      "end": 43.6,
+      "duration": 1.5
     },
     {
-      "start": 75.0,
-      "end": 80.4,
-      "duration": 5.4
+      "start": 51.1,
+      "end": 52.766667,
+      "duration": 1.667
     },
     {
-      "start": 80.6,
-      "end": 83.333333,
-      "duration": 2.733
+      "start": 54.466667,
+      "end": 55.933333,
+      "duration": 1.467
     },
     {
-      "start": 84.933333,
-      "end": 86.133333,
-      "duration": 1.2
+      "start": 55.933333,
+      "end": 57.4,
+      "duration": 1.467
     },
     {
-      "start": 86.133333,
+      "start": 58.466667,
+      "end": 59.9,
+      "duration": 1.433
+    },
+    {
+      "start": 61.666667,
+      "end": 63.433333,
+      "duration": 1.767
+    },
+    {
+      "start": 70.0,
+      "end": 71.9,
+      "duration": 1.9
+    },
+    {
+      "start": 75.833333,
+      "end": 80.466667,
+      "duration": 4.633
+    },
+    {
+      "start": 80.666667,
+      "end": 83.966667,
+      "duration": 3.3
+    },
+    {
+      "start": 86.1,
       "end": 89.066667,
-      "duration": 2.933
+      "duration": 2.967
     }
   ],
-  "frozenNote": "长镜头本片刻意保留静态停留（展厅式读页），机器冻结检测会把静止画面判为 frozen；逐帧复核确认停留段内有文字上浮/图版推进，不是编码卡帧。",
+  "frozenNote": "包含有意保留的阅读停留；操作段另以五个不同状态的画布截图检查，结果见 render-proof.json。",
   "loudness": {
-    "integratedLufs": -16.1,
-    "truePeakDbfs": -1.5,
-    "lra": 2.3
+    "integratedLufs": -19.0,
+    "truePeakDbfs": -2.3,
+    "lra": 2.6
   },
   "contactSheet": "qa\\final-sheet.png"
 }

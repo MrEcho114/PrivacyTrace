@@ -41,3 +41,5 @@
    ```
 
 视频源：`delivery/film-review.html`（单文件确定性时间线，`window.__seek(t)`）。
+
+当前两片的文案与构图打磨见各片 README；结语统一为「隐私分析，有据可查。」渲染入口为 `node showcase/render-films.cjs`，当前成片身份与实测见 `materials.json` 和 `render-proof.json`。

@@ -6,6 +6,8 @@
 set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
 
+mkdir -p assets/android-rec
+
 ffmpeg -hide_banner -loglevel error -y \
   -i assets/recording-android.mp4 \
   -vf fps=10 -q:v 3 assets/android-rec/f_%04d.jpg

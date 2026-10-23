@@ -1,33 +1,41 @@
-# PrivacyTrace · 作品评审材料（专家版）· 交付说明
+# PrivacyTrace · 作品评审片（120 s）
 
-> 视频 120.000 s / 1920×1080 / 30 fps / H.264 + AAC / 原创配乐 / 无旁白；PPT 10 页。
-> 面向竞赛专家评审，按「定位 / 创新 / 关键实现 / 真实成果 / 学生原创贡献」五段组织。
-> 状态：成片已渲染并通过 EAC 技术质检；PPT v0.3 已采用学术论文风（`od-hps-academic-paper`）并逐页导图检查；**尚未上传赛事系统**。上传、系统反馈与 #200 上传槽记录仍由人工完成。
+按定位、创新、关键实现、真实成果、团队贡献组织。深色底、琥珀色强调，保留原 96 BPM 原创器乐，无旁白。
 
-## 文件
+本轮按用户授权重新梳理文案，结语为「隐私分析，有据可查。」副句为「从代码位置到政策原句，保留可复核的依据。」界面仍使用 `20261023-v02` 批次（`2026-10-23 @ f81ca20`），没有重采集、重扫 APK 或改动 PPT。
 
-| 文件 | 说明 |
+## 文件与验证
+
+| 文件 | 用途 |
 | --- | --- |
-| `PrivacyTrace-Review-1080p.mp4` | 评审片成片（120 s，H.264/AAC） |
-| `PrivacyTrace-Review.pptx` | 评审 PPT（10 页，学术论文风；逐页 1920×1080 渲染图 + 备注；源见 `../deck/academic.html`） |
-| `film-review.html` | 可编辑源：单文件确定性时间线（`window.__seek(t)`），无外部 JS 依赖 |
-| `assets/` | 真实产品截图与原创配乐（来源见 `BEATS.md`） |
-| `BEATS.md` | 分镜、96 BPM 小节切点、事实绑定与素材来源（含 PPT 素材批次） |
-| `manifest.json` | 成片 / 源文件 SHA-256、ffprobe、渲染任务与 QA 记录 |
-| `poster.png` | 片名卡静帧（预览用，非成片帧率序列） |
+| `PrivacyTrace-Review-1080p.mp4` | 120.000 s / 1920×1080 / 30 fps / H.264 yuv420p + 原始 AAC |
+| `film-review.html` | 确定性时间轴，按绝对时间重建全部场景 |
+| `render-proof.json` | 本轮源文件/配乐/成片哈希、正逆序与重复 seek、全片解码结果 |
+| `manifest.json` | 当前文件字节数、SHA-256、ffprobe、黑场和响度实测 |
+| `contact-sheet.png` | 最终 MP4 的代表帧 |
+| `poster.png` | 最终 MP4 的 8.5 s 片名帧 |
+| `materials.json` | 共享采集批次与素材哈希 |
+| `BEATS.md` | 分镜及历史事实来源 |
 
-## 视频身份（供 #200 填写）
+## 本轮调整
 
-| 项 | 值 |
-| --- | --- |
-| 文件名 | `PrivacyTrace-Review-1080p.mp4` |
-| 字节数 | 17,677,972 B |
-| SHA-256 | `98b8d60c365b5cb047d0553b88efae8aa6a9fb3e11ee5541fa43b5dc818e3679` |
-| 时长 | `120.000 s` |
-| 分辨率 / 帧率 | 1920×1080 / 30 fps |
-| 视频 | H.264 High，`yuvj420p` full-range（已标记），约 894 kb/s |
-| 音频 | AAC LC，96 kHz 立体声，约 201 kb/s；无旁白 |
-| 上传状态 | **未上传**；上传栏、时间与系统反馈待人工执行并记录 |
+手机报告与证据详情使用同一位置、同一尺寸，切换时保留设备位置。长图移到关键局部后停留；实现细节页使用短交叉淡化，并增大参数与说明字号。流水线五节点收进左侧区域，不再越出画面或被手机挡住。结果标题与四张统计卡之间留出间距。
+
+两片文案由两个 GPT-6 Luna 子代理按 humanizer-zh 分别整理，主代理核对并整合。原事实数字、代码片段、政策引文、提交与日期保留。
+
+## 复跑
+
+从仓库根目录运行，环境要求见 `showcase/privacytrace-90s/README.md`。
+
+```bash
+node showcase/render-films.cjs review check
+node showcase/render-films.cjs review stills
+node showcase/render-films.cjs review render 4
+python showcase/finalize-films.py
+python showcase/validate_materials.py
+```
+
+渲染中间文件位于忽略目录 `tmp/film-render/review/`。`finalize-films.py` 汇总本轮实测，重建清单；不复用旧 EAC 的 job 或固定通过标志。
 
 ## 评审 PPT
 
@@ -45,22 +53,6 @@
 | 校验 | `node scripts/verify-academic-deck.cjs`（20 项） |
 | 边界 | 不是真机、不是 APK 扫描结论；上传前需人工确认视觉与匿名化 |
 
-## 评审要素覆盖
-
-| 评审要素 | 片中位置 | PPT 页 | 覆盖方式 |
-| --- | --- | --- | --- |
-| 定位 | 01 定位（9.375–21.875 s） | 3 | 明确「读取静态线索、对齐政策原文」；`越权，就是越权` |
-| 创新 | 02 创新（21.875–40.625 s） | 4 | 一条证据挂代码位置与政策原句两个终点；事实/声明/推断分层；UNKNOWN 保留；真值先冻结；明确说明一致性分析并非首创 |
-| 关键实现 | 03 关键实现（40.625–65.0 s） | 5 | 五节点流水线；隔离容器参数；Androguard 与字节码兜底；码点半开区间与不可变快照；API/契约/部署/客户端/离线回放 |
-| 真实成果 | 04 真实成果（65.0–90.0 s） | 7–8 | 工程门禁、部署验收、12 场景受控评测、H 矩阵、GKD 真实样本，四类分开报；失败与缺口保留 |
-| 学生原创贡献 | 05 学生原创贡献（90.0–108.75 s） | 9 | 团队提出并执行的定位/证据模型/规则归因/受控基准/验收治理；AI 辅助边界；提交绑定账本 |
-
-### 覆盖判断（供 #200 记录）
-
-- **已覆盖**：定位、创新、关键实现、真实成果、学生/团队原创贡献与 AI 边界，五段均有独立画面与字幕；边界、失败项与缺口同屏保留。
-- **仍缺 / 不能宣称**：前端未完成，PPT 第 6 页界面图只代表 2026-10-23 的移动 App 开发版（固定合成材料），影片界面素材已按 #264 重采集为 Android App 单一前端（2026-10-23 @ f81ca20）；H12 失败未修复；真实 App 只有 1 个历史样本，没有全局准确率/召回率；本片未上传，上传结果与系统反馈仍未知。
-- **为什么两份都给**：视频用于 120 秒连续陈述，PPT 用于可翻阅复核；两者使用同一组事实、数字与边界。2026-10-23 已将 #200 / #107 规则改为「PPT + 视频都要」；系统有独立的「评审视频」「汇报 PPT」栏目，两份分别上传。
-
 ## 数字与绑定（片内可核）
 
 - 工程门禁：`1578 passed / 179 skipped`、e2e `65`、Web 单测 `111`、生产构建通过；绑定 `65b49f7`（2026-10-21）。
@@ -70,41 +62,10 @@
 - GKD v1.12.1（仅 1 个历史样本）：`6 证据 / 3 行为 / 2 声明 / 3 问题`，3 条结论均 `INSUFFICIENT_EVIDENCE`；2026-10-09 历史记录，本轮未重扫。
 - 离线回放：24 成员 / 18 行对照；绑定 `9e56771`（2026-10-13）。
 
-## 边界（必须随片保留）
+## 素材与交付范围
 
-- H12 失败保留在片内，不剪成 12/12。
-- 真实 App 只有 1 个历史样本；三条结果均为证据不足。
-- 提交头以维护者冻结为准；片中不写「当前版本」，每个数字绑定各自提交。
+手机画面为生产 `MobileApp.vue` 加假原生桥的 Chromium 390×844 移动视口模拟。报告与证据来自 `gkd-s1-first` 历史持久化回放，原生成 2026-10-03；本轮未重扫。示例代码/政策原句为人工构造材料。截图与录制的来源见 `capture-provenance.json`。
 
-## 音乐来源
+H12 失败保留为 11 通过 / 1 未通过；受控 12/12 是名义状态一致数；GKD 仅一例历史样本，三条结论均为证据不足。工程与评测数字分别绑定历史提交，不表示本轮重新获得了这些验证结果。
 
-`assets/soundtrack.m4a` 来自原项目 `showcase/privacytrace/soundtrack.py` 生成的原创程序化器乐（seed `451014`，96 BPM，48 kHz，立体声；无采样、无人声），原项目 `audio-provenance.json` 记录其生成参数与哈希。本片沿用该配乐，没有重新作曲，也没有使用参考片音轨。
-
-## 制作方式
-
-- 单文件 HTML，所有画面由 `window.__seek(t)` 纯函数驱动；无 CSS transition/animation、无 `Math.random()`；同一时间点重复渲染一致。
-- 使用 EAC `render-template` 逐帧渲染（Playwright + Edge headless），音频为项目原有原创器乐 `soundtrack.m4a`（96 BPM，48 小节 = 120.000 s；引子 0–9 s、降密度 66–89 s、尾奏 113–120 s）。
-- 主切点落在 96 BPM 整小节：9.375 / 21.875 / 40.625 / 65.0 / 90.0 / 108.75 s。
-- 画面素材为真实产品截图（`assets/`）与排版图形；未使用 AI 生成图像。片尾注明本片由 AI 辅助分镜与排版。
-- PPT 由 `deck/academic.html`（`od-hps-academic-paper`，MIT）逐页渲染为 1920×1080，再由 `deck/build_academic_pptx.py` 装配为 PPTX 并写入 10 页演讲备注；第 6 页界面图相对引用 `../capture/`（提交、日期、视口、DPR、fixture、SHA-256）；其余事实与影片同源。渲染脚本 `scripts/render-academic-deck.cjs`，采集脚本 `scripts/capture-review-deck-shots.cjs`，材料级校验 `scripts/verify-academic-deck.cjs`。
-
-## 媒体实测与质检
-
-| 项 | 实测值 |
-| --- | --- |
-| 时长 / 帧数 | `120.000000 s` / 3600 帧 |
-| 画面 | 1920×1080，30 fps，H.264 High（`yuvj420p`，full range，已标记），约 894 kb/s |
-| 音频 | AAC LC，96 kHz 立体声，约 201 kb/s；无旁白 |
-| 响度 / 真峰值 | 集成 `-16.3 LUFS` / `-1.5 dBFS`（EAC 目标 `-16`，容差内） |
-| 文件 | 17,677,972 B；SHA-256 `98b8d60c…818e3679` |
-| EAC QA | `ok=true`；`deterministic=true`；`exactPixels=true`；`missingAssets=[]` |
-| QA 警告 | `Black video detected`、`Static/frozen video detected`：对应冷开场、阅读停留与静态构图，属有意静止，不是丢帧；已逐帧抽检 |
-| PPT | 10 页；10 页均有备注；逐页导图检查（PowerPoint 导出 1920×1080）；v0.3，1,114,540 B；SHA-256 `c57840cb…95860069` |
-| PPT 字体提示 | 学术版使用系统 serif（Noto Serif SC / Georgia）；交付的是 1920×1080 渲染图，不依赖 PowerPoint 本机字体 |
-
-> EAC 输出为 full-range `yuvj420p`、96 kHz AAC。两者都是有效 MP4 规格。如果上传系统要求 limited-range `yuv420p` 或 48 kHz，转码会改变文件哈希；届时同步更新 `manifest.json` 和上传记录。
-
-## 本材料不包含
-
-- 不重新扫描 APK，不调用外部模型，不含真实 APK、政策全文、反编译全文、模型 Key 或个人信息。
-- 不提供上传结果；Issue #200 的上传与系统反馈仍待人工执行。
+音轨为 `showcase/privacytrace/soundtrack.py` 原有原创合成器乐，seed 451014，无采样、无人声；本轮直接复用 `assets/soundtrack.m4a`。PPT 仍归 #265；参赛包、系统上传与合并没有在本轮执行。

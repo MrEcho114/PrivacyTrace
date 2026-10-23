@@ -24,3 +24,5 @@ python showcase/validate_materials.py
 ```
 
 该脚本只断言外部可观察产物（文件哈希、清单、图注 token、成片规格与 QA 范围），不校验艺术质量；视觉复核见各片 README 的抽帧记录。
+
+当前两片的文案与构图打磨见各片 README；结语统一为「隐私分析，有据可查。」渲染入口为 `node showcase/render-films.cjs`，当前成片身份与实测见 `materials.json` 和 `render-proof.json`。

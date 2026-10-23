@@ -182,6 +182,38 @@
   #cl-meta{position:absolute;left:0;top:700px;width:1920px;text-align:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;color:rgba(23,24,27,.46)}
   #cl-disc{position:absolute;left:0;top:734px;width:1920px;text-align:center;font-size:11.5px;color:rgba(23,24,27,.36);font-weight:300;letter-spacing:.02em}
   #wipe{position:absolute;inset:0;background:var(--paper);opacity:0;z-index:40;pointer-events:none}
+
+  /* Projection-safe devices and a magnified view of the same captured frame. */
+  #w-plate{left:650px;width:1120px;gap:80px}
+  #w-plate .device{width:320px;height:692px;flex-shrink:0}
+  #w-cap{top:914px}
+  #run-plate{left:285px;top:94px;width:500px;height:856px}
+  #run-cap{left:96px;top:972px;font-size:23px;max-width:1560px}
+  #run-detail{position:absolute;left:910px;top:174px;width:830px}
+  #run-step{font-family:var(--mono);font-size:16px;letter-spacing:.18em;color:var(--clay)}
+  #run-heading{margin-top:18px;font-family:var(--serif);font-size:52px;line-height:1.3}
+  #run-desc{margin:20px 0 32px;font-size:23px;line-height:1.65;color:var(--ink2);max-width:760px}
+  #focus-wrap{width:720px;height:440px;overflow:hidden;border:1px solid rgba(23,24,27,.2);background:#fbfaf6;box-shadow:0 20px 50px rgba(70,56,36,.1)}
+  #focus{display:block;width:720px;height:440px}
+  #focus-label{margin-top:16px;font-size:14px;color:var(--muted)}
+  #rep-plate{left:140px;top:314px;width:390px;height:640px}
+  #rep-plate img{width:100%}
+  #rep-cap{left:140px;top:970px;font-size:13px;width:480px;line-height:1.6}
+  #rep-notes{left:650px;top:390px;width:580px}
+  #rep-notes .row{font-size:19px;padding:23px 0;gap:12px;flex-wrap:wrap}
+  #rep-notes .row b{font-size:13px;width:76px}
+  #rep-notes .row em{font-size:13px}
+  #phone{right:140px;top:314px;width:390px;height:640px}
+  #phone img{width:100%}
+  #phone-cap{right:120px;top:970px;width:430px;font-size:13px;line-height:1.6}
+  #rep-foot{top:1030px;font-size:13px}
+  .col .ck{font-size:13px;letter-spacing:.08em}
+  .col .cv{font-size:43px}
+  .col .cv small{font-size:17px}
+  .col .cd{font-size:17px;min-height:116px}
+  .col .cs{font-size:12px;letter-spacing:0;line-height:1.6}
+  #rec-bound{top:764px;font-size:16px}
+  #rec-big{top:844px;font-size:58px}
 </style>
 </head>
 <body>
@@ -205,9 +237,9 @@
     <div class="eyebrow" id="h0-eyebrow">2026 · 作品展示</div>
     <div class="eyebrow-en" id="h0-eyebrow-en">WORK SHOWCASE</div>
     <div id="hero-title">PrivacyTrace</div>
-    <div id="hero-sub">Android APK 静态隐私线索 × 政策原文 · 逐条对照</div>
+    <div id="hero-sub">对照 Android APK 静态线索与政策原文</div>
     <div id="hero-rule"></div>
-    <div id="hero-claim">越权，就是越权。</div>
+    <div id="hero-claim">从静态线索到原始依据。</div>
     <div id="hero-tags">
       <span id="tg1">静态证据</span><span id="tg2">政策原文</span><span id="tg3">可复核位置</span>
     </div>
@@ -226,11 +258,11 @@
   <section class="scene" id="s1">
     <div class="eyebrow">Ⅰ · 作品</div>
     <div class="eyebrow-en" id="w-en">THE WORK</div>
-    <div class="h" id="w-h">一次对照，<br><em>四步走完。</em></div>
-    <div class="lead" id="w-lead">读的是安装包里的静态线索，不是运行时的数据流；政策一侧只用原文。</div>
+    <div class="h" id="w-h">从导入材料<br><em>到查看报告</em></div>
+    <div class="lead" id="w-lead">提取安装包中的静态线索，逐条对照政策原文；静态线索不代表运行时行为。</div>
     <div class="steps">
       <div class="step" id="st1"><span class="n">01</span><span class="t">导入材料</span><span class="s">APK · 政策来源</span></div>
-      <div class="step" id="st2"><span class="n">02</span><span class="t">检查候选</span><span class="s">原文 · 候选声明</span></div>
+      <div class="step" id="st2"><span class="n">02</span><span class="t">核对候选</span><span class="s">原文 · 候选声明</span></div>
       <div class="step" id="st3"><span class="n">03</span><span class="t">分析进度</span><span class="s">五阶段 · 可切换</span></div>
       <div class="step" id="st4"><span class="n">04</span><span class="t">对照报告</span><span class="s">线索 · 声明 · 依据</span></div>
     </div>
@@ -246,7 +278,12 @@
     <div id="run-tag">Android App 实录 · 移动视口录制 · 2026-10-23 @ f81ca20 · 剪辑节奏，非实时速度</div>
     <div id="run-tag2">开发版 · 持久化回放样本</div>
     <div id="run-plate"><div class="device large"><canvas id="shot" width="390" height="844"></canvas><div class="sheen"></div></div></div>
-    <div id="run-cap"><span id="run-num">①</span> <span id="run-text">导入：一个示例 APK 名称，两份政策来源。</span></div>
+    <div id="run-detail">
+      <div id="run-step">01 / 05</div><div id="run-heading"></div><div id="run-desc"></div>
+      <div id="focus-wrap"><canvas id="focus" width="720" height="440"></canvas></div>
+      <div id="focus-label">同一录制画面 · 局部放大</div>
+    </div>
+    <div id="run-cap"><span id="run-num">①</span> <span id="run-text">导入：示例 APK 名称和两份政策来源。</span></div>
     <div id="run-idx">02 / RUNNING</div>
   </section>
 
@@ -254,8 +291,8 @@
   <section class="scene" id="s3">
     <div class="eyebrow">Ⅲ · 证据</div>
     <div class="eyebrow-en" id="e-en">THE EVIDENCE</div>
-    <div class="h" id="e-h">一条结论，<em>两个终点。</em></div>
-    <div class="lead" id="e-lead">每条结论都落到两处：左边是代码位置，右边是政策原句，两边都能自己走一遍。</div>
+    <div class="h" id="e-h">一条结论，<em>两处原始依据。</em></div>
+    <div class="lead" id="e-lead">左侧标出代码位置，右侧列出政策原句；两处都可以回到来源核对。</div>
     <div id="ev-card">
       <div class="ev-col l">
         <div class="ev-k">① 代码位置 / STATIC LOCATION</div>
@@ -276,20 +313,20 @@
         <div class="ev-span">切片必须严格等于 excerpt；旧快照不覆盖</div>
       </div>
     </div>
-    <div id="ev-foot">一条证据，两个可走通的终点：代码位置与政策原句。</div>
+    <div id="ev-foot">从代码位置和政策原句，分别回查这条证据。</div>
     <div class="principles">
       <div id="pr1"><b>01 / 三层分离</b>事实、声明、推断分开记录；权限是能力，invoke 是静态线索。</div>
       <div id="pr2"><b>02 / 保留未知</b>材料不足就写 INSUFFICIENT_EVIDENCE，不补零、不升级。</div>
       <div id="pr3"><b>03 / 先冻真值</b>12 个受控场景、36 行三方案，真值在首次运行前冻结。</div>
     </div>
-    <div id="ev-caveat">每条证据都能回到代码位置与政策原句。</div>
+    <div id="ev-caveat">示例展示代码位置与政策原句的对应关系。</div>
   </section>
 
   <!-- 04 report -->
   <section class="scene" id="s4">
     <div class="eyebrow">Ⅳ · 报告</div>
     <div class="eyebrow-en" id="r-en">THE REPORT</div>
-    <div class="h" id="r-h">报告，<em>就在 Android App 里。</em></div>
+    <div class="h" id="r-h">在 Android App 中<em>查看报告。</em></div>
     <div id="rep-plate"><img id="rep-img" src="assets/stills/android-report-full.png" alt="PrivacyTrace Android App 对照报告长图"><div class="mask"></div><div class="mask b"></div></div>
     <div id="rep-cap"><b>PLATE 02</b> — Android App · 分析报告 · 持久化回放 · 2026-10-23 @ f81ca20</div>
     <div id="rep-notes">
@@ -307,7 +344,7 @@
   <section class="scene" id="s5">
     <div class="eyebrow">Ⅴ · 结果</div>
     <div class="eyebrow-en" id="d-en">THE RECORD</div>
-    <div class="h" id="d-h">把数字<em>分开摆。</em></div>
+    <div class="h" id="d-h">四类结果，<em>分别列出。</em></div>
     <div class="cols">
       <div class="col" id="c1">
         <div class="ck">工程门禁 / ENGINEERING</div>
@@ -335,18 +372,18 @@
       </div>
     </div>
     <div id="rec-bound"><b>受控场景：36 行三方案、真值冻结。</b>12/12 名义状态一致。</div>
-    <div id="rec-big">证据不足，也是结果。</div>
+    <div id="rec-big">证据不足，保留为结果。</div>
   </section>
 
   <!-- 06 close -->
   <section class="scene" id="s6">
     <div class="eyebrow" id="cl-eyebrow">Ⅵ · 结语</div>
-    <div id="cl-main">越权，<em>就是越权。</em></div>
-    <div id="cl-sub">把代码位置和政策原句，摆在同一行。</div>
+    <div id="cl-main">隐私分析，<em>有据可查。</em></div>
+    <div id="cl-sub">从代码位置到政策原句，保留可复核的依据。</div>
     <div id="cl-rule"></div>
     <div id="cl-brand"><div class="mk">PT</div><div class="nm">PrivacyTrace</div></div>
     <div id="cl-meta">2026 作品展示片 · 90 S · 1920×1080 · 30 FPS · 原创配乐 · 无旁白</div>
-    <div id="cl-disc">分镜与排版由 AI 辅助；产品画面为真实界面录制。</div>
+    <div id="cl-disc">分镜和排版由 AI 辅助；产品画面来自移动视口录制。</div>
   </section>
 
   <div id="wipe"></div>
@@ -387,7 +424,7 @@
     { t:45,   no:'Ⅲ — EVIDENCE',  nm:'证据 / 两个终点' },
     { t:60,   no:'Ⅳ — REPORT',    nm:'报告 / Android App' },
     { t:72,   no:'Ⅴ — RECORD',    nm:'结果 / 分开摆' },
-    { t:84,   no:'Ⅵ — CLOSE',     nm:'结语 / 越权' }
+    { t:84,   no:'Ⅵ — CLOSE',     nm:'结语 / 依据' }
   ];
   let chapterIndex = -1;
 
@@ -471,7 +508,7 @@
     for(const w of WINDOWS){ if(t >= w.a) win = w; }
     const p = clamp((t - win.a)/(win.b - win.a), 0, 1);
     const src = lerp(win.s0, win.s1, p);
-    return clamp(1, REC.total, Math.round(src * REC.fps) + 1);
+    return clamp(Math.round(src * REC.fps) + 1, 1, REC.total);
   }
 
   async function drawFootage(t){
@@ -479,6 +516,11 @@
     if(k !== drawnIndex){
       const img = await frameImage(k);
       ctx.drawImage(img, 0, 0, 390, 844);
+      const active = Math.max(0, WINDOWS.findLastIndex(w => t >= w.a));
+      const focus = $('#focus').getContext('2d');
+      const sy = [440, 180, 90, 170, 170][active];
+      // Crop the actual frame; no replacement UI or invented state.
+      focus.drawImage(img, 0, sy, img.naturalWidth, img.naturalWidth * 440/720, 0, 0, 720, 440);
       drawnIndex = k;
     }
     const runIn = clamp((t - 21.0)/1.4, 0, 1);
@@ -534,11 +576,11 @@
   }
 
   const CAPTIONS = [
-    { t:21.90, num:'①', text:'导入：材料名称与两份政策来源。' },
-    { t:23.40, num:'②', text:'候选：政策原文与候选声明；「定位原句」回到原文。' },
-    { t:26.90, num:'③', text:'分析：核对 → 扫描 → 装载政策 → 规则对照 → 报告。' },
-    { t:36.30, num:'④', text:'报告：三条结果，每条都能打开证据。' },
-    { t:41.10, num:'⑤', text:'证据：代码位置与政策原句，出现在同一屏。' }
+    { t:21.90, num:'①', text:'导入：材料名称和两份政策来源。' },
+    { t:23.40, num:'②', text:'候选：核对声明，用「定位原句」检查出处。' },
+    { t:26.90, num:'③', text:'分析：核对输入、扫描线索、载入政策、规则对照、生成报告。' },
+    { t:36.30, num:'④', text:'报告：展示三条结果，可逐条打开证据。' },
+    { t:41.10, num:'⑤', text:'证据：同屏查看代码位置和政策原句。' }
   ];
   const capNum = $('#run-num'), capText = $('#run-text');
   let capIndex = -1;
@@ -564,7 +606,17 @@
     const out = next ? smooth((t - next.t)/.26) : 0;
     $('#run-cap').style.opacity = (smooth((t-c.t)/.32) * (1-out)).toFixed(3);
     $('#run-cap').style.transform = 'translate3d(0,' + ((1-p)*9).toFixed(2) + 'px,0)';
-    drawFootage(t);
+    const detail = [
+      ['导入 APK 与政策', '填写材料名称，分别保存两份政策来源。'],
+      ['回到政策原句', '核对候选声明，再用「定位原句」检查出处。'],
+      ['查看分析进度', '从材料核对到报告生成，逐阶段查看进度。'],
+      ['逐条查看结果', '三条结果分别展示线索、声明和对照依据。'],
+      ['展开证据详情', '在同一屏核对代码位置与政策原句。']
+    ][idx];
+    $('#run-step').textContent = String(idx+1).padStart(2,'0') + ' / 05';
+    $('#run-heading').textContent = detail[0];
+    $('#run-desc').textContent = detail[1];
+    rise($('#run-detail'), t, 21.3, .65, 14);
   }
 
   function renderEvidence(t){
@@ -589,6 +641,11 @@
     rise($('#ev-caveat'), t, 55.7, .5, 8);
   }
 
+  function panImage(img, progress, limit){
+    const travel = Math.min(limit, Math.max(0, img.offsetHeight-img.parentElement.clientHeight));
+    img.style.transform = 'translate3d(0,' + (-progress*travel).toFixed(2) + 'px,0)';
+  }
+
   function renderReport(t){
     rise($('#r-en'), t, 60.1, .55, 8);
     rise($('#r-h'), t, 60.3, .75, 24);
@@ -596,8 +653,7 @@
     const plate = $('#rep-plate');
     plate.style.opacity = smooth((t - 60.9)/.55).toFixed(3);
     plate.style.transform = 'translate3d(' + ((1-pp)*-30).toFixed(2) + 'px,' + ((1-pp)*14).toFixed(2) + 'px,0)';
-    const pan = clamp((t - 61.3)/8.0, 0, 1);
-    $('#rep-img').style.transform = 'translate3d(0,' + (-pan*1050).toFixed(2) + 'px,0)';
+    panImage($('#rep-img'), smooth((t - 63.4)/3.4), 460);
     rise($('#rep-cap'), t, 61.4, .5, 8);
     document.querySelectorAll('#rep-notes .row').forEach((row,i) => {
       const t0 = 61.8 + i*.5;
@@ -608,8 +664,7 @@
     const ph = outQuint((t - 65.5)/.8);
     $('#phone').style.opacity = smooth((t - 65.5)/.6).toFixed(3);
     $('#phone').style.transform = 'translate3d(0,' + ((1-ph)*40).toFixed(2) + 'px,0)';
-    const phPan = clamp((t - 67.0)/4.2, 0, 1);
-    $('#ph-img').style.transform = 'translate3d(0,' + (-phPan*1200).toFixed(2) + 'px,0)';
+    panImage($('#ph-img'), .55 + .12*smooth((t - 68.2)/1.8), 2000);
     rise($('#phone-cap'), t, 66.0, .5, 8);
     rise($('#rep-foot'), t, 68.9, .5, 8);
   }
@@ -650,13 +705,9 @@
     scenes.s5.style.opacity = sceneFade(time, 71.86, 83.84);
     scenes.s6.style.opacity = sceneFade(time, 83.86, DUR + 1);
 
-    if(time < 9) renderHero(time);
-    else if(time < 21) renderWork(time);
-    else if(time < 45) renderRunning(time);
-    else if(time < 60) renderEvidence(time);
-    else if(time < 72) renderReport(time);
-    else if(time < 84) renderRecord(time);
-    else renderClose(time);
+    // Reset every scene from absolute time, including scenes in a dissolve.
+    renderHero(time); renderWork(time); renderRunning(time);
+    renderEvidence(time); renderReport(time); renderRecord(time); renderClose(time);
 
     // hide running chrome over full-screen footage
     const chrome = clamp((1 - smooth((time - 20.8)/.38)) + smooth((time - 44.6)/.38), 0, 1);
@@ -674,13 +725,15 @@
   }
 
   window.__seek = async function(t){
-    render(Number(t) || 0);
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const time = clamp(Number(t) || 0, 0, DUR);
+    render(time);
+    if(time >= 20.86 && time <= 45.2) await drawFootage(time);
+    // Await image decode above; the renderer takes the frame after this promise.
   };
   window.__meta = { fps:30, dur:DUR, width:1920, height:1080 };
 
   function boot(){
-    const ready = Promise.all(stills.map(img => img.decode().catch(() => {})));
+    const ready = Promise.all(stills.map(img => img.decode()));
     Promise.all([document.fonts.ready, ready, frameImage(28)]).then(async () => {
       await drawFootage(21.5);
       render(0);

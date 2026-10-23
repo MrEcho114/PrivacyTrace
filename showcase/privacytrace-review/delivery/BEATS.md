@@ -3,7 +3,7 @@
 > 目标：120.000 秒、1920×1080、30 fps、H.264/AAC、原创配乐、无旁白。
 > 面向专家评审，按「定位 / 创新 / 关键实现 / 真实成果 / 学生原创贡献」五段组织。
 > 本文件是制作分镜与事实绑定表，不是对外提交声明。成片与源文件见 `delivery/`。
-> 状态：成片已渲染并通过 EAC 技术质检（`qa.ok=true`、`deterministic=true`、无缺失素材）；媒体实测与哈希见 `delivery/manifest.json`。
+> 本轮由 `showcase/render-films.cjs` 渲染；实测与哈希见同目录 `manifest.json`、`render-proof.json`，不复用旧 EAC job 的结果。
 
 ## 音乐与切点
 
@@ -26,24 +26,24 @@
 | # | 时间 | 画面 | 屏上文字（要点） | 事实 / 来源 |
 | --- | --- | --- | --- | --- |
 | 00a | 0.9–4.9 | 暗场；左侧三句，右侧代码/政策细线列，中间证据线 | 权限说它能做什么。代码说它可能怎么做。政策说它承诺了什么。 | 定位边界：权限=能力、invoke=静态线索 |
-| 00b | 5.25–6.55 | 三句压暗，问题居中 | 把两边摆到一起，才有对照。 | — |
-| 00c | 6.8–9.375 | 片名卡 | PrivacyTrace / Android APK 静态隐私线索 × 政策原文 / 作品评审 · 专家版 · 120 秒 | — |
-| 01 | 9.375–21.875 | Android App 开发版窗口 + 三条要点 + 纸卡「它说越权」 | 读取静态线索，对齐政策原文。越权，就是越权。 | `docs/project-introduction-draft.md#L31-L59`；`GLOSSARY.md` |
+| 00b | 5.25–6.55 | 三句压暗，问题居中 | 把代码线索和政策原文放在一起核对。 | — |
+| 00c | 6.8–9.375 | 片名卡 | PrivacyTrace / 对照 Android APK 静态线索与政策原文 / 作品评审 · 专家版 · 120 秒 | — |
+| 01 | 9.375–21.875 | Android App 开发版窗口 + 三条要点 + 纸卡「可复核位置」 | 从 APK 提取线索，逐条对照政策原文。隐私分析，有据可查。 | `docs/project-introduction-draft.md#L31-L59`；`GLOSSARY.md` |
 | 02a | 21.875–29.0 | 证据解剖纸卡：代码位置 ↔ 政策原句 | ① 代码位置 ② 政策原句；[0,18)；按 Unicode 码点、半开区间 | `samples/demo/evaluation-input.json`（人工构造示例）；`docs/stages/s0-report.md#L10-L11` |
 | 02b | 29.5–38.5 | 三张原则卡 | 一条证据两个终点；事实/声明/推断分层；12 场景三方案同材料 | `GLOSSARY.md`；`benchmarks/controlled-v2/README.md`；`docs/stages/issue64/README.md` |
 | 02c | 33.95–40.35 | 大号总结句 | 代码位置、原文区间、材料来源，都留在同一份报告里。 | 同上；不宣称首创一致性分析 |
 | 03a | 40.625–44.2 | 五节点流水线 | APK+政策材料 → 隔离扫描 → 证据+候选 → 一致性对照 → 报告/回放 | `README.md#L99-L103` |
-| 03b | 44.4–62.5 | 四页实现细节 + Android App 报告窗口滚动 | 非 root 65534、network none、只读根、cap-drop ALL、1 CPU/1 GiB/PID 32；Androguard 4.1.3；[start,end) 切片==excerpt、快照不覆盖；FastAPI/Pydantic、PostgreSQL outbox、Redis/Celery、mTLS Runner | `docs/stages/s1-pr29-real-sample-verification-20261009.md#L25`；`README.md#L90-L92`；`docs/stages/s0-report.md#L10-L11` |
+| 03b | 44.4–62.5 | 四页实现细节交叉淡化 + Android App 报告局部移动后停留 | 非 root 65534、network none、只读根、cap-drop ALL、1 CPU/1 GiB/PID 32；Androguard 4.1.3；[start,end) 切片==excerpt、快照不覆盖；FastAPI/Pydantic、PostgreSQL outbox、Redis/Celery、mTLS Runner | `docs/stages/s1-pr29-real-sample-verification-20261009.md#L25`；`README.md#L90-L92`；`docs/stages/s0-report.md#L10-L11` |
 | 03c | 59.35–65.0 | Android App 证据窗口滚动 | Android App 报告与证据详情 | 2026-10-23 @ f81ca20；`assets/android-evidence-full.png` |
 | 03b-label | 44.0–65.0 | 报告窗口标签 | Android App 报告 · 持久化回放 · 真实 APK（S1 夹具）· 2026-10-23 @ f81ca20 | `fixtures/acceptance-jobs/gkd-s1-first.json` |
 | 04a | 65.9 | 工程门禁卡 | 1578 passed / 179 skipped；e2e 65；Web 111；生产构建通过 | `65b49f7`，2026-10-21，`docs/acceptance/issue136/execution-20261022.md` |
 | 04b | 68.9 | 部署验收卡 | 40 pass / 0 fail / 0 skip；四入口 4/4；唯一既有豁免 `dedicated-scan-host-verification`（用户授权） | `65b49f7`；`deployment-summary.json` |
 | 04c | 71.9 | 受控评测卡 | 12/12 · 4/12 · 2/12（状态一致）；36 行；执行失败 0；P/R/F1 = N/A | `b0b3c74`；`docs/stages/issue64/README.md` |
 | 04d | 74.9 | H 矩阵 + GKD 卡 | 11 通过 / 1 未通过；H12（J × splits × 手机模型）失败复现 2 次；GKD v1.12.1（仅 1 个历史样本）：6 证据 / 3 行为 / 2 声明 / 3 问题，3 条结论均 `INSUFFICIENT_EVIDENCE` | `2626152`；`docs/acceptance/h-matrix-final-20261022.md`；`s1-pr29…` |
-| 04e | 80.0–86 | 三级阶梯 + 结论 | 工程测试 → 受控评测 → 真实 App；证据不足，也要写进报告。 | `README.md#L129-L132`；`benchmarks/controlled-v2/README.md#L32` |
+| 04e | 80.0–86 | 三级阶梯 + 结论 | 工程测试 → 受控评测 → 真实 App；证据不足，就如实标在报告里。 | `README.md#L129-L132`；`benchmarks/controlled-v2/README.md#L32` |
 | 05a | 90.0–99.3 | 团队原创卡 + AI 披露卡 | 团队提出并执行：定位/证据模型/规则归因/受控基准/验收治理；AI：脚手架、测试、文档文案 | `docs/submission/07-ai-usage-disclosure.md#L45-L53`；`docs/ai-usage-disclosure.md#L46-L49` |
 | 05b | 99.3–108.75 | 提交绑定账本 + 保留项 | 65b49f7 / 323780c9 / b0b3c74 / 9e56771 / 2626152；H12 失败保留；界面仍在开发；提交头以维护者冻结为准 | 同各段；`docs/acceptance/issue136/final-package-20261022.md` |
-| 06 | 108.75–120 | 结语卡 | 越权，就是越权。权限声明 / 代码线索 / 政策原句。 | 定位边界；交付边界 |
+| 06 | 108.75–120 | 结语卡 | 隐私分析，有据可查。从代码位置到政策原句，保留可复核的依据。 | 定位边界；交付边界 |
 
 ## 素材与可复核性
 
@@ -70,3 +70,7 @@
 - H12（J × splits × 手机模型）失败，复现 2 次；片内保留，不剪成 12/12。
 - 真实 App 仅 1 个历史样本（GKD v1.12.1），三条结果均为 `INSUFFICIENT_EVIDENCE`。
 - 提交头以维护者冻结为准；本片不写「当前版本」，每个数字绑定各自提交。
+
+## 本轮剪辑与文案
+
+用户授权两片文案重写与视觉打磨。结语统一为「隐私分析，有据可查。」；副句为「从代码位置到政策原句，保留可复核的依据。」90 s 操作段增加同帧局部放大，报告段改为局部移动后停留。120 s 实现页交叉淡化，报告与证据沿用同一设备位置。章节时间、事实数字与素材来源不变；当前画面逐字文本以对应 HTML 为准。

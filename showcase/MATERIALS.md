@@ -27,7 +27,7 @@ python showcase/validate_materials.py --root PATH     # 指定仓库根（默认
 
 > 清单里的 `path` 一般相对**片子的项目根**，不是相对 `materials.json` 所在目录。评审片的清单在 `delivery/` 里，但 `film.path` 仍写 `delivery/xxx.mp4`，字幕写 `delivery/film-review.html`。
 >
-> 当前批次生成器 `showcase/materials-20261023-v02/build-materials.cjs` 写的是**仓库根相对**路径（`showcase/privacytrace-90s/delivery/...`），并把 `qa` 嵌在 `film.qa` 下。脚本两种布局都接受：路径先按项目根解析，不存在再按仓库根解析（两者都存在时以项目根为准）；`qa` 先找顶层，没有再用 `film.qa`。
+> 当前批次生成器 `showcase/materials-20261023-v02/build-materials.cjs` 写片子项目根相对路径，`qa` 位于顶层。校验器仍兼容旧的仓库根相对路径与 `film.qa`：路径先按项目根解析，不存在再按仓库根解析；`qa` 先找顶层，没有再用 `film.qa`。
 
 Schema：
 
@@ -66,7 +66,7 @@ Schema：
 }
 ```
 
-- `kind`：`screenshot` 或 `recording`；`qa.source`：`showcase-qa` 或 `review-manifest`。`qa` 也可以放在 `film.qa` 下（当前批次生成器的写法）。
+- `kind`：`screenshot` 或 `recording`；`qa.source`：`showcase-qa` 或 `review-manifest`。兼容旧清单的 `film.qa` 写法。
 - `fps` 允许数字或 `"30/1"`；commit 必须是 40 位、sha256 必须是 64 位**小写** hex，长度或大小写不对直接失败。
 - `capturedAt` 只接受 `YYYY-MM-DD`。
 
@@ -103,3 +103,5 @@ $ echo $?
 - 只校验清单点名的文件，不扫描目录，也不校验 PPT / poster / README 等其他交付件。
 - QA 数据取自清单引用的报告（不重跑 EAC）；ffprobe 只复核成片本身的容器/流元数据，不做艺术质量判断。
 - 新增片子需要在脚本 `FILMS` 表里加一条（清单路径 + 项目根）。
+
+当前两片的文案与构图打磨见各片 README；结语统一为「隐私分析，有据可查。」渲染入口为 `node showcase/render-films.cjs`，当前成片身份与实测见 `materials.json` 和 `render-proof.json`。

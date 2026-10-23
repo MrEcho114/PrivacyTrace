@@ -14,7 +14,7 @@ QA = ROOT / "delivery" / "qa.json"
 
 
 def run(args):
-    return subprocess.run(args, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    return subprocess.run(args, capture_output=True, text=True, encoding="utf-8", errors="replace", check=True)
 
 
 def probe():
@@ -75,10 +75,7 @@ def main():
         "probe": info,
         "blackSegments": black,
         "frozenSegments": frozen,
-        "frozenNote": (
-            "长镜头本片刻意保留静态停留（展厅式读页），机器冻结检测会把静止画面判为 frozen；"
-            "逐帧复核确认停留段内有文字上浮/图版推进，不是编码卡帧。"
-        ),
+        "frozenNote": "包含有意保留的阅读停留；操作段另以五个不同状态的画布截图检查，结果见 render-proof.json。",
         "loudness": loud,
         "contactSheet": sheet,
     }

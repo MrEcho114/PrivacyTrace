@@ -236,6 +236,27 @@
   .close-meta{position:absolute;left:0;top:770px;width:1920px;text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:rgba(233,184,114,.9)}
   .close-foot{position:absolute;left:0;top:850px;width:1920px;text-align:center;font-size:12px;letter-spacing:.03em;color:rgba(244,240,228,.36)}
   .fade-to-black{position:absolute;inset:0;background:#000;opacity:0;z-index:30;pointer-events:none}
+
+  /* Keep report and evidence on the same device plane; stop to read each crop. */
+  #pwin{left:1230px;top:180px;width:350px;height:754px}
+  #p-wl{left:1230px;top:128px;width:500px}
+  #rwin,#phone{left:1230px;top:210px;width:410px;height:740px}
+  #rwl,#phl{left:1230px;top:142px;width:510px;font-size:13px;line-height:1.65;letter-spacing:.02em}
+  .d-k{font-size:15px}
+  .d-row{font-size:16px;padding:13px 0}
+  .d-note{font-size:17px}
+  .d-page{background:#10141c}
+  #pipe{width:1000px}
+  #pipe-line{width:1000px}
+  #pipe .pipe-node{width:190px}
+  #pn1{left:80px!important} #pn2{left:285px!important} #pn3{left:490px!important}
+  #pn4{left:695px!important} #pn5{left:900px!important}
+  .pipe-node .pt-name{font-size:16px}
+  .pipe-node .pt-sub{font-size:11px}
+  .res-card .rsub{font-size:16px}
+  .res-card .rfoot{font-size:12px;letter-spacing:0}
+  .chip{font-size:16px}
+  #sc-res .h1{top:190px;font-size:54px;line-height:1.15}
 </style>
 </head>
 <body>
@@ -266,9 +287,9 @@
     <p class="hook-line" id="h1">权限说它能<em>做什么</em>。</p>
     <p class="hook-line" id="h2">代码说它<em>可能</em>怎么做。</p>
     <p class="hook-line" id="h3">政策说它<em>承诺</em>了什么。</p>
-    <p class="hook-q" id="hq">把两边摆到一起，<br>才有对照。</p>
+    <p class="hook-q" id="hq">把代码线索和政策原文<br>放在一起核对。</p>
     <h1 class="hook-title" id="ht">PrivacyTrace</h1>
-    <p class="hook-sub" id="hs">Android APK 静态隐私线索 × 政策原文</p>
+    <p class="hook-sub" id="hs">对照 Android APK 静态线索与政策原文</p>
     <p class="hook-meta" id="hm">作品评审 · 专家版 · 120 秒</p>
     <div class="hook-rule" id="hr"></div>
   </section>
@@ -278,7 +299,7 @@
     <div class="ghost">01</div>
     <p class="sec-no">01 / 定位</p>
     <p class="sec-en">POSITIONING</p>
-    <h2 class="h1" id="p-h">读取静态线索，<br><em>对齐政策原文。</em></h2>
+    <h2 class="h1" id="p-h">从 APK 提取线索，<br><em>逐条对照政策原文。</em></h2>
     <p class="body" id="p-b">上传 APK 或 base + splits，解析 manifest 与全部 <code>classesN.dex</code>。再放入政策正文：可定位的线索落到代码位置与政策原句，材料不足保留 UNKNOWN。</p>
     <div class="chips">
       <div class="chip" id="p-c1"><span class="dot"></span><b>权限</b> = 能力声明</div>
@@ -289,9 +310,9 @@
       <span class="corner tl"></span><span class="corner br"></span>
       <div class="not-head">它说越权</div>
       <div class="not-items"><span>权限声明</span><i>/</i><span>代码线索</span><i>/</i><span>政策原句</span></div>
-      <div class="not-foot">每条都落到可复核的位置。</div>
+      <div class="not-foot">逐条查看代码位置和政策原文。</div>
     </div>
-    <p class="claim" id="p-claim">越权，就是越权。</p>
+    <p class="claim" id="p-claim">隐私分析，有据可查。</p>
     <div class="win-label" id="p-wl"><b>Android App · 开发版</b><span>2026-10-23 @ f81ca20</span></div>
     <div class="window" id="pwin">
       <img src="assets/android-import.png" alt="PrivacyTrace Android App 导入材料页">
@@ -303,7 +324,7 @@
     <div class="ghost">02</div>
     <p class="sec-no">02 / 创新</p>
     <p class="sec-en">INNOVATION</p>
-    <h2 class="h1" id="i-h">结论要能回到<br><em>代码与原文。</em></h2>
+    <h2 class="h1" id="i-h">结论附上<br><em>可回查的代码与原文。</em></h2>
     <div class="paper ev-card" id="evcard">
       <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
       <div class="ev-head"><span>EVIDENCE / evidence-location-api</span><span>人工构造示例 · 可复算</span></div>
@@ -323,15 +344,15 @@
         <blockquote>我们访问位置信息，用于提供地图功能。</blockquote>
         <div class="ev-rule">按 Unicode 码点计数 · 半开区间</div>
       </div>
-      <div class="ev-foot" id="ev-foot">一条证据，两个终点；两边都能自己走一遍。</div>
+      <div class="ev-foot" id="ev-foot">从代码位置和原文区间，分别回查这条证据。</div>
     </div>
     <p class="inno-quote" id="iquote">代码位置、原文区间、材料来源，<br>都留在同一份报告里。</p>
     <div class="principles">
-      <div class="pr" id="pr1"><b>01 / 两个终点</b><span class="pt">一条证据，两个终点。</span><span>代码位置与政策原句，都能自己走一遍。</span></div>
+      <div class="pr" id="pr1"><b>01 / 两个终点</b><span class="pt">一条证据，两个终点。</span><span>分别回查代码位置和政策原句。</span></div>
       <div class="pr" id="pr2"><b>02 / 三层分离</b><span class="pt">事实、声明、推断，分开记录。</span><span>UNKNOWN 保留为结果，不补零。</span></div>
-      <div class="pr" id="pr3"><b>03 / 真值先冻结</b><span class="pt">12 个场景，三方案同材料。</span><span>先冻结真值，再让算法跑。</span></div>
+      <div class="pr" id="pr3"><b>03 / 真值先冻结</b><span class="pt">12 个场景，三方案同材料。</span><span>先冻结预期状态，再运行三种方案。</span></div>
     </div>
-    <p class="ifoot" id="ifoot">证据链回到代码与原文。</p>
+    <p class="ifoot" id="ifoot">保留代码位置和政策原文的对应关系。</p>
   </section>
 
   <!-- 03 implementation -->
@@ -339,14 +360,14 @@
     <div class="ghost">03</div>
     <p class="sec-no">03 / 关键实现</p>
     <p class="sec-en">IMPLEMENTATION</p>
-    <h2 class="h1" id="im-h">一条流水线，<br><em>同一条证据链。</em></h2>
+    <h2 class="h1" id="im-h">从 APK 到报告，<br><em>沿用同一条证据链。</em></h2>
     <div class="pipe" id="pipe">
       <div class="pipe-line" id="pipe-line"></div>
       <div class="pipe-node" id="pn1" style="left:120px"><div class="pt-dot"></div><div class="pt-name">APK + 政策材料</div><div class="pt-sub">单包 / base + splits</div></div>
       <div class="pipe-node" id="pn2" style="left:530px"><div class="pt-dot"></div><div class="pt-name">隔离扫描</div><div class="pt-sub">Docker · network none</div></div>
       <div class="pipe-node" id="pn3" style="left:940px"><div class="pt-dot"></div><div class="pt-name">证据 + 候选</div><div class="pt-sub">代码位置 · 原句区间</div></div>
       <div class="pipe-node" id="pn4" style="left:1350px"><div class="pt-dot"></div><div class="pt-name">一致性对照</div><div class="pt-sub">多状态 · 缺证据不升级</div></div>
-      <div class="pipe-node" id="pn5" style="left:1760px"><div class="pt-dot"></div><div class="pt-name">报告 / 回放</div><div class="pt-sub">Web · Android · 离线</div></div>
+      <div class="pipe-node" id="pn5" style="left:1760px"><div class="pt-dot"></div><div class="pt-name">报告 / 回放</div><div class="pt-sub">Android App · 离线回放</div></div>
     </div>
     <div class="panel impl-detail" id="detail">
       <div class="d-page" id="d1">
@@ -363,7 +384,7 @@
         <div class="d-row"><span>INPUTS</span><b>AXML · 全部 classesN.dex</b></div>
         <div class="d-row"><span>FALLBACK</span><b>UNAVAILABLE_BYTECODE_FALLBACK</b></div>
         <div class="d-row"><span>SCOPE</span><b>方法内无分支局部常量</b></div>
-        <div class="d-note">静态分析：规则集覆盖的权限与调用。</div>
+        <div class="d-note">静态分析只检查规则集覆盖的权限与调用。</div>
       </div>
       <div class="d-page" id="d3">
         <div class="d-k">政策快照 / POLICY</div>
@@ -379,7 +400,7 @@
         <div class="d-row"><span>STATE</span><b>PostgreSQL outbox</b></div>
         <div class="d-row"><span>JOBS</span><b>Redis · Celery</b></div>
         <div class="d-row"><span>RUNNER</span><b>mTLS · 不持 Docker socket</b></div>
-        <div class="d-note">Android App · 离线报告包：同一份证据，多个入口。</div>
+        <div class="d-note">同一份证据可从 Android App 或离线报告包查看。</div>
       </div>
     </div>
     <div class="rwin-label" id="rwl">Android App 报告 · 持久化回放 · 真实 APK（S1 夹具）· 2026-10-23 @ f81ca20</div>
@@ -398,7 +419,7 @@
     <div class="ghost">04</div>
     <p class="sec-no">04 / 真实成果</p>
     <p class="sec-en">RESULTS / BOUNDED</p>
-    <h2 class="h1" id="r-h">把四类数字，<br><em>分开报。</em></h2>
+    <h2 class="h1" id="r-h">四类结果，<br><em>分别列出。</em></h2>
     <div class="res-card" id="rc1" style="left:140px;top:342px">
       <div class="rk">工程门禁 / ENGINEERING GATE</div>
       <div class="rbig">1578 <small>passed</small> · 179 <small>skipped</small></div>
@@ -438,7 +459,7 @@
       <div class="step"><b>真实 App</b><span>GKD · 3 条结论</span><div class="stamp" id="stamp">GKD</div></div>
     </div>
     <p class="res-foot" id="r-foot">受控结果来自自建源码场景。</p>
-    <p class="res-end" id="r-end">证据不足，也要写进报告。</p>
+    <p class="res-end" id="r-end">证据不足，就如实标在报告里。</p>
   </section>
 
   <!-- 05 contribution -->
@@ -446,11 +467,11 @@
     <div class="ghost">05</div>
     <p class="sec-no">05 / 学生原创贡献</p>
     <p class="sec-en">ORIGINAL CONTRIBUTION</p>
-    <h2 class="h1" id="o-h">团队提出什么，<br><em>AI 辅助什么。</em></h2>
+    <h2 class="h1" id="o-h">团队负责哪些工作，<br><em>AI 用于哪些环节。</em></h2>
     <div class="paper ct-card l" id="oc1">
       <span class="corner tl"></span><span class="corner br"></span>
       <div class="ct-head">团队提出并执行</div>
-      <div class="ct-row" id="or1"><b>01</b><span>项目定位与「越权就是越权」</span></div>
+      <div class="ct-row" id="or1"><b>01</b><span>项目定位与判断边界</span></div>
       <div class="ct-row" id="or2"><b>02</b><span>证据模型与一致性状态机</span></div>
       <div class="ct-row" id="or3"><b>03</b><span>确定性规则与字节码归因</span></div>
       <div class="ct-row" id="or4"><b>04</b><span>受控场景 · 冻结真值 · 三方案对照</span></div>
@@ -475,13 +496,13 @@
       <div id="lg4"><b>9e56771</b>离线回放 · 24 成员</div>
       <div id="lg5"><b>2626152</b>H 矩阵 · 2026-10-22</div>
     </div>
-    <p class="caveat" id="caveat">每个数字绑定各自的提交与日期，H12 失败保留在片内。</p>
+    <p class="caveat" id="caveat">各项数字注明对应提交和日期；H12 失败如实保留。</p>
   </section>
 
   <!-- 06 close -->
   <section class="scene" id="sc-close">
-    <p class="close-main" id="cm">越权，就是越权。</p>
-    <div class="close-sub" id="cs"><span>权限声明</span><i>/</i><span>代码线索</span><i>/</i><span>政策原句</span></div>
+    <p class="close-main" id="cm">隐私分析，有据可查。</p>
+    <div class="close-sub" id="cs">从代码位置到政策原句，保留可复核的依据。</div>
     <div class="close-brand" id="cb"><div class="mark">PT</div><div class="nm">PrivacyTrace</div></div>
     <p class="close-meta" id="cmt">2026 作品评审片 · 120s / 1920×1080 / 30fps</p>
     <p class="close-foot" id="cf">截图采集于 2026-10-23 · 提交 f81ca20；数字绑定各自提交与日期。</p>
@@ -539,12 +560,12 @@
   const chapterEl = $('#chapter');
   const chapters = [
     { t:0,   idx:'00 — COLD OPEN',    name:'开场 / 120 秒' },
-    { t:T.pos,  idx:'01 — POSITIONING',   name:'定位 / 它是什么，不是什么' },
+    { t:T.pos,  idx:'01 — POSITIONING',   name:'定位 / 材料与结果' },
     { t:T.inno, idx:'02 — INNOVATION',    name:'创新 / 证据链的形状' },
     { t:T.impl, idx:'03 — IMPLEMENTATION',name:'关键实现 / 一条流水线' },
     { t:T.res,  idx:'04 — RESULTS',       name:'真实成果 / 四类数字' },
     { t:T.orig, idx:'05 — CONTRIBUTION',  name:'原创贡献 / 分工与披露' },
-    { t:T.close,idx:'06 — CLOSE',         name:'结语 / 越权' }
+    { t:T.close,idx:'06 — CLOSE',         name:'结语 / 依据' }
   ];
   let currentChapter = -1;
 
@@ -590,8 +611,8 @@
     const win = $('#pwin');
     win.style.opacity = smooth((t-11.55)/.55).toFixed(3);
     win.style.transform = 'translate3d(' + ((1-p)*54).toFixed(2) + 'px,' + ((1-p)*30).toFixed(2) + 'px,0) scale(' + (0.965+0.035*p).toFixed(4) + ')';
-    const img = win.querySelector('img');
-    img.style.transform = 'translate3d(0,' + (-(t-11.55)*1.2).toFixed(1) + 'px,0) scale(1.015)';
+    // Keep the import screen still while its labels are read.
+    win.querySelector('img').style.transform = 'none';
   }
 
   // ------------------------------------------------------------- innovation
@@ -618,6 +639,10 @@
   }
 
   // ---------------------------------------------------------- implementation
+  function panImage(img, progress, limit){
+    const travel = Math.min(limit, Math.max(0, img.offsetHeight-img.parentElement.clientHeight));
+    img.style.transform = 'translate3d(0,' + (-progress*travel).toFixed(2) + 'px,0)';
+  }
   function renderImpl(t){
     fade($('#im-h'), t, 40.65, null, .7, 26);
     const lp = outQuint(clamp((t-41.5)/1.6,0,1));
@@ -631,8 +656,7 @@
     const pages = [['d1',44.4,48.15],['d2',48.15,51.95],['d3',51.95,55.75],['d4',55.75,64.3]];
     pages.forEach(([id,a,b])=>{
       const el = $('#'+id);
-      const on = t >= a && t < b;
-      const p = on ? smooth((t-a)/.35) : 0;
+      const p = smooth((t-a)/.25) * (1-smooth((t-b)/.25));
       el.style.opacity = p.toFixed(3);
       el.style.transform = 'translate3d(0,' + ((1-p)*10).toFixed(2) + 'px,0)';
     });
@@ -641,22 +665,20 @@
     const rwin = $('#rwin');
     rwin.style.opacity = smooth((t-44.25)/.5).toFixed(3);
     rwin.style.transform = 'translate3d(' + ((1-rp)*40).toFixed(2) + 'px,' + ((1-rp)*24).toFixed(2) + 'px,0)';
-    const pan = clamp((t-44.6)/16.2,0,1);
-    $('#rimg').style.transform = 'translate3d(0,' + (-pan*1250).toFixed(1) + 'px,0)';
+    panImage($('#rimg'), smooth((t-48.8)/5.4), 520);
     const phoneOn = t >= 59.35;
     if(phoneOn){
       const pp = outQuint(clamp((t-59.35)/.65,0,1));
       const ph = $('#phone');
       ph.style.opacity = smooth((t-59.35)/.45).toFixed(3);
       ph.style.transform = 'translate3d(0,' + ((1-pp)*28).toFixed(2) + 'px,0) scale(' + (0.97+0.03*pp).toFixed(4) + ')';
-      const scroll = clamp((t-61.0)/3.8,0,1);
-      $('#pimg').style.transform = 'translate3d(0,' + (-scroll*1450).toFixed(1) + 'px,0)';
+      panImage($('#pimg'), .55 + .12*smooth((t-61.0)/1.8), 2000);
     } else {
       $('#phone').style.opacity = '0';
     }
     fade($('#phl'), t, 59.35, null, .5, 8);
     fade($('#im-foot'), t, 62.6, null, .5, 8);
-    rwin.style.opacity = (smooth((t-44.25)/.5) * (1-smooth((t-59.4)/.55))).toFixed(3);
+    rwin.style.opacity = (smooth((t-44.25)/.5) * (1-smooth((t-59.35)/.45))).toFixed(3);
   }
 
   // ---------------------------------------------------------------- results
@@ -719,13 +741,8 @@
     scenes.orig.style.opacity = time >= T.orig && time < T.close ? '1' : '0';
     scenes.close.style.opacity= time >= T.close ? '1' : '0';
 
-    if(time < T.pos) renderHook(time);
-    if(time >= T.pos && time < T.inno) renderPos(time);
-    if(time >= T.inno && time < T.impl) renderInno(time);
-    if(time >= T.impl && time < T.res) renderImpl(time);
-    if(time >= T.res && time < T.orig) renderRes(time);
-    if(time >= T.orig && time < T.close) renderOrig(time);
-    if(time >= T.close) renderClose(time);
+    renderHook(time); renderPos(time); renderInno(time); renderImpl(time);
+    renderRes(time); renderOrig(time); renderClose(time);
 
     const ci = chapterIndex(time);
     if(ci !== currentChapter){
@@ -744,7 +761,7 @@
 
   function boot(){
     const imgs = Array.from(document.images);
-    const ready = imgs.length ? Promise.all(imgs.map(img => img.decode().catch(()=>{}))) : Promise.resolve();
+    const ready = imgs.length ? Promise.all(imgs.map(img => img.decode())) : Promise.resolve();
     Promise.all([document.fonts.ready, ready]).then(() => {
       render(0);
       window.__ready = true;

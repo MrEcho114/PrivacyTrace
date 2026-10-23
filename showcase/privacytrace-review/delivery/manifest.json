@@ -1,12 +1,10 @@
 {
   "title": "PrivacyTrace 作品评审片（专家版）",
-  "version": "review-20261023-v02",
+  "version": "review-20261023-v02-polished",
   "batch": "20261023-v02",
   "baselineCommit": "f81ca201b932a11e24a9f7175a9583150d44e9ed",
   "capturedAt": "2026-10-23",
-  "projectId": "f52e5212-9281-462c-a296-50d92fbf3fe3",
-  "renderJobId": "25271ade-9f16-4832-8817-f28298c9f2f4",
-  "templateId": "motion-promo-film-v2",
+  "renderer": "showcase/render-films.cjs",
   "render": {
     "htmlPath": "film-review.html",
     "audioPath": "assets/soundtrack.m4a",
@@ -19,12 +17,12 @@
   },
   "file": {
     "name": "PrivacyTrace-Review-1080p.mp4",
-    "bytes": 17677972,
-    "sha256": "98b8d60c365b5cb047d0553b88efae8aa6a9fb3e11ee5541fa43b5dc818e3679",
+    "bytes": 13734510,
+    "sha256": "bdd6374110eb36eae2eb073f3bbf1135c410726b01aa0371476f8d0566443165",
     "ffprobe": {
       "duration": "120.000000",
-      "size": "17677972",
-      "bit_rate": "1178531",
+      "size": "13734510",
+      "bit_rate": "915634",
       "video": {
         "index": 0,
         "codec_name": "h264",
@@ -39,12 +37,8 @@
         "coded_width": 1920,
         "coded_height": 1080,
         "has_b_frames": 2,
-        "sample_aspect_ratio": "1:1",
-        "display_aspect_ratio": "16:9",
-        "pix_fmt": "yuvj420p",
+        "pix_fmt": "yuv420p",
         "level": 40,
-        "color_range": "pc",
-        "color_space": "bt470bg",
         "chroma_location": "left",
         "field_order": "progressive",
         "is_avc": "true",
@@ -57,10 +51,10 @@
         "start_time": "0.000000",
         "duration_ts": 1843200,
         "duration": "120.000000",
-        "bit_rate": "968846",
+        "bit_rate": "708682",
         "bits_per_raw_sample": "8",
         "nb_frames": "3600",
-        "extradata_size": 51,
+        "extradata_size": 47,
         "disposition": {
           "default": 1,
           "dub": 0,
@@ -86,12 +80,7 @@
           "language": "und",
           "handler_name": "VideoHandler",
           "encoder": "Lavc62.28.102 libx264"
-        },
-        "side_data_list": [
-          {
-            "side_data_type": "ICC Profile"
-          }
-        ]
+        }
       },
       "audio": {
         "index": 1,
@@ -103,7 +92,7 @@
         "codec_tag": "0x6134706d",
         "mime_codec_string": "mp4a.40.2",
         "sample_fmt": "fltp",
-        "sample_rate": "96000",
+        "sample_rate": "48000",
         "channels": 2,
         "channel_layout": "stereo",
         "bits_per_sample": 0,
@@ -111,13 +100,13 @@
         "id": "0x2",
         "r_frame_rate": "0/0",
         "avg_frame_rate": "0/0",
-        "time_base": "1/96000",
+        "time_base": "1/48000",
         "start_pts": 0,
         "start_time": "0.000000",
-        "duration_ts": 11520000,
+        "duration_ts": 5760000,
         "duration": "120.000000",
-        "bit_rate": "201145",
-        "nb_frames": "11251",
+        "bit_rate": "198065",
+        "nb_frames": "5626",
         "extradata_size": 5,
         "disposition": {
           "default": 1,
@@ -158,23 +147,23 @@
   "sources": [
     {
       "path": "film-review.html",
-      "bytes": 49270,
-      "sha256": "eb74d1d1dfa26193092830f194c99850b698387d11a3536d3b5f902fe9585eb9"
+      "bytes": 50800,
+      "sha256": "8ebcdc8efbbcb9d25df9668bf3cbb6b079a9e1e9ed4a9bfd1dabcfdf94ed6671"
     },
     {
       "path": "BEATS.md",
-      "bytes": 7776,
-      "sha256": "8793a6994d4985b9e0c0e255d2bef7f8265467032b9f8e3dd872308628aefd17"
+      "bytes": 8369,
+      "sha256": "1b45e1a1e3dccc9383885d8f7ed48429457147b46f4dc16a5fc060d3d2d55aa4"
     },
     {
       "path": "README.md",
-      "bytes": 8811,
-      "sha256": "4d26b0a6526b336519ef210c7e0cfd709dd26a17d6c468e2adc9bdd299d0965a"
+      "bytes": 4898,
+      "sha256": "91e6da450415e67e809c581639ee3cb704c1366e0bc50dea7ef92472c2dceebf"
     },
     {
       "path": "poster.png",
-      "bytes": 1548003,
-      "sha256": "a01ddc1b1d6280a2470ff6e454e91261f95722a01f1fca7f810a041507fd9769"
+      "bytes": 1238429,
+      "sha256": "9f0e006fcbf72832b39e8bc9c01364e79d55ae81bc2b1d5de9d0a5328a892455"
     },
     {
       "path": "PrivacyTrace-Review.pptx",
@@ -189,7 +178,12 @@
     {
       "path": "materials.json",
       "bytes": 1744,
-      "sha256": "6e69248bb7559db8ab272e7a8d6eebce46a1fb9c235b550b75d4b2ce7d8d2b9d"
+      "sha256": "2c99b6ba1a34d636c56d7e7dd35f0e84396455a0133a411918e546055b4eb392"
+    },
+    {
+      "path": "render-proof.json",
+      "bytes": 1191,
+      "sha256": "4e380d05367392e59b81d1a38c56b7a3c0023b15e7443ffc38a176153500a48b"
     },
     {
       "path": "assets/android-import.png",
@@ -214,25 +208,21 @@
   ],
   "qa": {
     "ok": true,
-    "warnings": [
-      "Black video detected",
-      "Static/frozen video detected"
-    ],
-    "note": "黑场/静止判定基于平均亮度与画面差分：冷开场、阅读停留与静态构图可能触发；逐帧抽检未见丢失帧或非预期冻结。",
+    "note": "全片解码检查与跨章节正序、逆序、重复 seek 检查见 render-proof.json。保留阅读停留。",
     "blackSegments": [
       {
-        "start": 119.433333,
+        "start": 119.666667,
         "end": 119.966667,
-        "duration": 0.533
+        "duration": 0.3
       }
     ],
-    "blackNote": "本机 ffmpeg blackdetect（pix_th=0.06）只判出收尾 1 段；EAC 渲染自检另报冷开场 2 段接近黑场（0–1.633 s、1.933–2.200 s），两套阈值不同，逐帧复核为有意暗场。",
+    "blackNote": "本轮使用 ffmpeg blackdetect（pix_th=0.06、d=0.1），不复用上一轮 EAC 结果。",
     "audio": {
-      "integratedLufs": -16.3,
-      "truePeakDbfs": -1.5,
-      "lra": 1.9,
+      "integratedLufs": -18.8,
+      "truePeakDbfs": -3.6,
+      "lra": 2.1,
       "channels": 2,
-      "sampleRate": 96000,
+      "sampleRate": 48000,
       "codec": "aac"
     }
   },

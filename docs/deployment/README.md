@@ -2,7 +2,7 @@
 
 新增验收执行入口与当前证据边界见 [实际部署验收](acceptance.md)。历史基线说明保留；最新结果以交付 SHA 的收据为准。
 
-本目录对应 [Issue #81](https://github.com/MrEcho114/PrivacyTrace/issues/81)。当前已封装运行时组件和单次数据库迁移候选，但尚未完成 #81 六项真实部署验收。**生产 preflight 仍拒绝启动授权；不得直接用于公网发布。** #80 的运行时代码已合入 main，当前剩余是独立 Runner/网关实际装配、凭据与跨机联网、恢复和容量的最终部署验收。
+本目录对应 [Issue #81](https://github.com/MrEcho114/PrivacyTrace/issues/81)。运行时组件与 R1–R6 验收已在 CI 跑通：40 pass / 0 fail / 0 skip；`dedicated-scan-host-verification` 按用户授权记为豁免（`WAIVED_BY_USER`），不计为 PASS。**生产 preflight 仍拒绝启动授权；不得直接用于公网发布。** #80 的运行时代码已合入 main，未做公网部署、镜像发布或 Issue 关闭。
 
 入口：[`deploy/Dockerfile`](../../deploy/Dockerfile)、[生产清单](../../deploy/compose.yaml)、[独立 smoke](../../deploy/compose.smoke.yaml)、[运行时交接契约](../../deploy/runtime-contract.json)、[恢复手册](operations.md)、[证据与兼容矩阵](validation.md)。没有修改应用业务、既有 worker 镜像、依赖锁、根 `.dockerignore` 或权威检查入口。
 

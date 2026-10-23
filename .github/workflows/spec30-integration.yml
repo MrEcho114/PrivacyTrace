@@ -4,6 +4,18 @@ on:
   pull_request:
     branches: ["main"]
     types: [opened, reopened, synchronize]
+    # 集成套件只在源码、受控基准与验收脚本变化时跑。main 的 push 不过滤，
+    # 合入后仍然产出全量证据；需要临时全跑用 workflow_dispatch。
+    paths:
+      - ".github/workflows/spec30-integration.yml"
+      - "apps/api/**"
+      - "apps/web/**"
+      - "benchmarks/**"
+      - "fixtures/**"
+      - "packages/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
   push:
     branches: ["main"]
   workflow_dispatch:

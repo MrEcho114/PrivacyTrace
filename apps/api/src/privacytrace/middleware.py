@@ -15,6 +15,24 @@ from .config import ServerConfig
 
 TOKEN_PATTERN = re.compile(r"pt_cap_[A-Za-z0-9_-]{20,}")
 
+MAX_HOST_PORT = 65535
+MAX_PORT_DIGITS = len(str(MAX_HOST_PORT))
+
+
+def _valid_host_port(port_str: str) -> bool:
+    """Return whether ``port_str`` is a usable decimal port for a Host header.
+
+    Two conversion hazards are filtered before ``int()``: ``str.isdigit()`` also
+    accepts non-ASCII digits that ``int()`` cannot always parse, and Python 3.12+
+    refuses digit strings longer than its integer-conversion limit (4300 digits).
+    Either must become a controlled rejection instead of an unhandled 500 (#280).
+    """
+    if not port_str or not port_str.isascii() or not port_str.isdigit():
+        return False
+    if len(port_str) > MAX_PORT_DIGITS:
+        return False
+    return 0 < int(port_str) <= MAX_HOST_PORT
+
 
 def redact_log_value(value, depth=0):
     """Mask tokens in structured and non-string logging fields before formatting."""
@@ -196,11 +214,7 @@ class RemoteTransportSecurityMiddleware(BaseHTTPMiddleware):
             if rest:
                 if not rest.startswith(":"):
                     return False
-                port_str = rest[1:]
-                if not port_str.isdigit():
-                    return False
-                port = int(port_str)
-                if not (0 < port <= 65535):
+                if not _valid_host_port(rest[1:]):
                     return False
         else:
             if ":" in host_header:
@@ -209,10 +223,7 @@ class RemoteTransportSecurityMiddleware(BaseHTTPMiddleware):
                     # Unbracketed IPv6 (e.g. ::1)
                     return False
                 host_part, port_str = parts[0], parts[1]
-                if not port_str.isdigit():
-                    return False
-                port = int(port_str)
-                if not (0 < port <= 65535):
+                if not _valid_host_port(port_str):
                     return False
             else:
                 host_part = host_header

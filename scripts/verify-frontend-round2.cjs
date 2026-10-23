@@ -236,9 +236,9 @@ function bridge(options) {
 }
 
 async function selectAndPrepare(page) {
-  await page.getByRole('button', { name: '选择应用并上传', exact: true }).click()
+  await page.getByRole('button', { name: '选择应用', exact: true }).click()
   await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
-  await page.getByRole('button', { name: '准备政策并继续', exact: true }).click()
+  await page.getByRole('button', { name: '准备政策', exact: true }).click()
   await waitTitle(page, '核对政策声明', 12000)
 }
 
@@ -246,10 +246,16 @@ async function openInlineEvidence(page) {
   const trigger = page.locator('.m-issue-list .evidence-button').first()
   await trigger.scrollIntoViewIfNeeded()
   const before = await page.evaluate(() => Math.round(scrollY))
+  // #295 review: a 0 start makes the restore assertion a tautology; require that
+  // the report actually scrolled before opening the inline evidence.
+  assert.ok(before > 0, `the report must start below the fold so the scroll restore is meaningful (got ${before})`)
   await trigger.click()
   const panel = page.locator('#evidence-panel')
   await panel.waitFor({ timeout: 5000 })
-  await page.waitForTimeout(150)
+  // #295: the evidence panel is much shorter now, so opening it really scrolls the
+  // reading region into view. Wait for that entrance scroll to settle before
+  // returning; a tap during the animation is not the reading scenario under test.
+  await page.waitForTimeout(700)
   const state = await page.evaluate(() => ({
     inline: Boolean(document.querySelector('.report-evidence-inline #evidence-panel')),
     dialogs: document.querySelectorAll('dialog.ui-sheet').length,
@@ -291,7 +297,7 @@ async function main() {
     page.on('request', request => { if (new URL(request.url()).pathname.startsWith('/api/')) api.push(request.url()) })
     await page.addInitScript(bridge, bridgeFixtures)
     await page.goto(origin)
-    await page.getByRole('button', { name: '选择应用并上传', exact: true }).waitFor({ timeout: 10000 })
+    await page.getByRole('button', { name: '选择应用', exact: true }).waitFor({ timeout: 10000 })
 
     // ---- shell frame at 390x844 -------------------------------------------
     const frame = await page.evaluate(() => {
@@ -337,15 +343,18 @@ async function main() {
     assert.deepEqual(frame.railDisabled, [false, true, true, true], 'future steps must be disabled before a material is selected')
     assert.equal(frame.back, false, 'import is the root step: no back arrow')
     assert.deepEqual(frame.settingsSize, [48, 48], `settings icon button must be 48x48 (got ${frame.settingsSize.join('x')})`)
-    assert.equal(frame.actionbarPosition, 'fixed', 'the action bar must be fixed to the viewport bottom')
-    assert.ok(Math.abs(frame.actionbarBottom - 844) <= 1, `action bar must sit on the bottom edge (bottom ${frame.actionbarBottom})`)
-    // #165: before any material is chosen the action bar keeps no red primary at
-    // all (the prepare action turns primary only when it can act). The guard
-    // therefore pins "no primary in the empty state" and checks the actionable
-    // primary's size in the selected state below.
+    // #295: the empty material state has no fixed bar — the empty-state card owns
+    // the single primary CTA, so nothing competes with it at 200% font.
+    assert.equal(frame.actionbarPosition, '', 'the empty import state must not mount the fixed action bar')
     assert.equal(frame.primaryActions, 0, 'no red primary action before a material is selected')
     assert.equal(frame.primaryDisabled, null, 'the empty state keeps no primary action to disable')
-    assert.equal(frame.prepareDisabled, true, 'the import action bar waits for a material')
+    const emptyCta = await page.evaluate(() => {
+      const primaries = [...document.querySelectorAll('.m-empty-card .ui-button.primary')]
+      return primaries.length ? { count: primaries.length, height: Math.round(primaries[0].getBoundingClientRect().height) } : null
+    })
+    assert.ok(emptyCta, 'the empty state must expose one primary CTA inside the card')
+    assert.equal(emptyCta.count, 1, 'the empty state keeps exactly one primary CTA')
+    assert.ok(emptyCta.height >= 48, `the empty CTA must stay at least 48px (got ${emptyCta.height})`)
     assert.match(frame.viewport, /viewport-fit=cover/, 'viewport meta must opt into safe-area insets')
     assert.match(frame.viewport, /interactive-widget=resizes-content/, 'viewport meta must resize for the soft keyboard')
     assert.doesNotMatch(frame.viewport, /user-scalable=no|maximum-scale=1/, 'zoom must stay available')
@@ -354,15 +363,14 @@ async function main() {
     assert.ok(frame.shellHeight >= 844, `shell must fill 100dvh (got ${frame.shellHeight})`)
     assert.equal(frame.skip, true, 'the shell must keep the skip link')
     assert.equal(frame.navLabel, '创建流程', 'the step rail must be a labelled navigation landmark')
-    assert.equal(frame.actionbarLabel, '当前步骤操作', 'the fixed action bar must expose a group label')
     assert.equal(frame.titleOutline, 'none', 'programmatic title focus must not paint a control-like focus ring')
     await assertSingleTitle(page, 'APK 与政策材料', 'import/empty')
     await assertNoPageOverflow(page, 'import/empty/390')
     await shot(page, '390-import-empty.png', { scenario: 'import', state: 'no material selected' })
-    checks.push('390x844 shell: 56px serif app bar, one-row 4-step rail, fixed 64px action bar, 48px targets, 100dvh, viewport/theme/zoom contract')
+    checks.push('390x844 shell: 56px serif app bar, one-row 4-step rail, empty-state primary CTA, 48px targets, 100dvh, viewport/theme/zoom contract')
 
     // ---- import selected ---------------------------------------------------
-    await page.getByRole('button', { name: '选择应用并上传', exact: true }).click()
+    await page.getByRole('button', { name: '选择应用', exact: true }).click()
     await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
     await assertSingleTitle(page, 'APK 与政策材料', 'import/selected')
     const selectedFrame = await page.evaluate(() => {
@@ -374,6 +382,14 @@ async function main() {
     assert.equal(selectedFrame.count, 1, 'exactly one red primary action in the action bar')
     assert.ok(selectedFrame.height >= 48, `the actionable primary must be at least 48px tall (got ${selectedFrame.height})`)
     assert.equal(selectedFrame.disabled, false, 'the actionable primary must be enabled once a material is selected')
+    const barState = await page.evaluate(() => {
+      const bar = document.querySelector('.m-actionbar')
+      return { position: getComputedStyle(bar).position, bottom: Math.round(bar.getBoundingClientRect().bottom), label: bar.getAttribute('aria-label'), buttons: bar.querySelectorAll('.ui-button').length }
+    })
+    assert.equal(barState.position, 'fixed', 'the action bar must be fixed once a material is selected')
+    assert.ok(Math.abs(barState.bottom - 844) <= 1, `action bar must sit on the bottom edge (bottom ${barState.bottom})`)
+    assert.equal(barState.label, '当前步骤操作', 'the fixed action bar must expose a group label')
+    assert.equal(barState.buttons, 1, 'the material step keeps exactly one bar action (准备政策)')
     assert.equal(await page.evaluate(() => document.querySelectorAll('.m-source-row').length), 2, 'both policy sources must render as collapsible rows')
     assert.equal(await page.evaluate(() => document.querySelectorAll('.m-steps button[disabled]').length), 2, 'candidates becomes reachable, progress/report stay disabled')
     await assertNoPageOverflow(page, 'import/selected/390')
@@ -425,7 +441,7 @@ async function main() {
     checks.push('settings: full-screen page-like sheet, scroll body, Escape/hardware back close, focus returns to trigger')
 
     // ---- candidates --------------------------------------------------------
-    await page.getByRole('button', { name: '准备政策并继续', exact: true }).click()
+    await page.getByRole('button', { name: '准备政策', exact: true }).click()
     await waitTitle(page, '核对政策声明', 12000)
     await assertSingleTitle(page, '核对政策声明', 'candidates')
     assert.equal(await page.evaluate(() => Boolean(document.querySelector('.m-context'))), true, 'candidates must show the compact material context row')
@@ -479,7 +495,7 @@ async function main() {
     checks.push('hardware back: candidate -> import, title focus, forward restores the exact per-step scroll position')
 
     // ---- progress + polling stability -------------------------------------
-    await page.getByRole('button', { name: '保存候选并开始分析', exact: true }).click()
+    await page.getByRole('button', { name: '保存并分析', exact: true }).click()
     await waitTitle(page, '扫描与对照进度', 12000)
     // The real mobile flow records discrete server stages: the first automatic
     // poll is 10s after the start (FIRST_POLL_MS), so wait for that poll instead
@@ -568,7 +584,8 @@ async function main() {
     await panel.getByRole('button', { name: '返回刚才的操作', exact: true }).click()
     await page.waitForTimeout(150)
     assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('.m-issue-list .evidence-button')), true, 'returning must restore focus to the triggering issue row')
-    assert.ok(Math.abs(await page.evaluate(() => Math.round(scrollY)) - before) <= 2, 'returning must restore the report scroll position')
+    const restore = await page.evaluate(() => Math.round(scrollY))
+    assert.ok(Math.abs(restore - before) <= 2, `returning must restore the report scroll position (before ${before}, after ${restore})`)
     assert.equal(await page.evaluate(() => document.querySelectorAll('.m-issue-row.report-row-current').length), 1, 'returning keeps exactly one current row')
     // No modal exists, so Escape must not dismiss the reading region.
     await page.keyboard.press('Escape')
@@ -756,7 +773,7 @@ async function main() {
     await failPage.addInitScript(bridge, { ...bridgeFixtures, failJob: true })
     await failPage.goto(origin)
     await selectAndPrepare(failPage)
-    await failPage.getByRole('button', { name: '保存候选并开始分析', exact: true }).click()
+    await failPage.getByRole('button', { name: '保存并分析', exact: true }).click()
     await waitTitle(failPage, '扫描与对照进度', 12000)
     // The first automatic poll is 10s after start; the mocked bridge reports the
     // failure on that poll. Wait for the real poll instead of a static banner.

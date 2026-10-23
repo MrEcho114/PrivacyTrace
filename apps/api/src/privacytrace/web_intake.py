@@ -30,6 +30,7 @@ from .models import AnalysisJob, EvaluationInput, PolicyClaim, PolicyDocument
 from .package_set import (
     PackageFile,
     PackageSetIntegrityError,
+    file_name_key,
     validate_package_set,
 )
 from .policy_fetch import FetchError, display_url, fetch_policy
@@ -236,11 +237,26 @@ class WebIntake:
                 "INPUT_HISTORY_QUOTA_REACHED", "Input history quota reached; create a new draft"
             )
         snapshot = self._safe(directory / f"revision-{revision}.json")
-        if self._document_exists(snapshot):
-            raise ValueError("Input revision already exists")
+        if self._document_exists(snapshot) and self._committed_revision(directory) >= revision:
+            # current.json is the commit pointer, so a snapshot it references is
+            # immutable history: an identical replay is already committed, and any
+            # other content for the same revision is a conflict.
+            if self._read(snapshot) != draft:
+                raise ValueError("Input revision already exists")
+            return draft
+        # A snapshot no committed revision references is an interrupted save: the
+        # revision bytes landed but current.json did not. Publishing it again is a
+        # retry, not a conflict.
         self._write_private(snapshot, draft)
         self._write_private(self._safe(directory / "current.json"), draft)
         return draft
+
+    def _committed_revision(self, directory):
+        """The revision current.json points at; everything above it is unpublished."""
+        current = self._safe(directory / "current.json")
+        if not self._document_exists(current):
+            return 0
+        return int(self._read(current).get("revision") or 0)
 
     def _get(self, draft_id):
         path = self.directory(draft_id) / "current.json"
@@ -520,11 +536,12 @@ class WebIntake:
 
                 if name.lower().endswith(".apk") and not name.endswith("/"):
                     file_basename = PurePosixPath(name).name
-                    if file_basename in seen_apk_names:
+                    key = file_name_key(file_basename)
+                    if key in seen_apk_names:
                         raise PackageSetIntegrityError(
                             "CORRUPTED_FILE", "Archive contains duplicate APK file names"
                         )
-                    seen_apk_names.add(file_basename)
+                    seen_apk_names.add(key)
                     apk_entries.append(entry)
 
             if not apk_entries:

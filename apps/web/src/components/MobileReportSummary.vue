@@ -1,18 +1,28 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { frontendCopy } from '../copy'
 
 // The mobile report's first screen. Report-level metadata is folded at the end
 // of the report (MobileApp) per #165, so this block only carries identity,
-// scope/boundary and the counts a reader needs before the finding list.
-defineProps<{
+// scope/boundary, the result limits a reader must see before the findings, and
+// the counts. Internal source/delivery codes stay behind “来源标识” instead of
+// competing with the Chinese labels (#295 §5/§6).
+const props = defineProps<{
   name: string
   version: string
   sourceBadge: string
   deliveryBadge: string
+  coverageStatus?: 'COMPLETE' | 'PARTIAL' | null
+  reviewCount?: number
   dataTypeCount: number
   policyCount: number
   evidenceCount: number
+  policyStates: string[]
 }>()
+const human = (badge: string) => badge.split(' · ')[0]?.trim() || badge
+const coverageLine = computed(() => props.coverageStatus === 'PARTIAL'
+  ? '扫描范围不完整 · PARTIAL：部分 DEX 未完成'
+  : props.coverageStatus === 'COMPLETE' ? '扫描范围完整：已扫描所支持的 DEX' : '')
 </script>
 
 <template>
@@ -22,10 +32,15 @@ defineProps<{
       <div><h2>{{ name }}</h2><p class="reading-version">版本 {{ version }}</p></div>
     </header>
     <div class="reading-origin" aria-label="来源与查看方式">
-      <span>{{ sourceBadge }}</span><span>{{ deliveryBadge }}</span>
+      <span>{{ human(sourceBadge) }}</span><span>{{ human(deliveryBadge) }}</span>
     </div>
     <p class="reading-scope">{{ frontendCopy.reportScope }}</p>
     <p class="reading-boundary">{{ frontendCopy.facts.staticRuntime }}</p>
+    <ul v-if="coverageLine || reviewCount" class="reading-status" aria-label="结果状态">
+      <li v-if="coverageLine" :class="coverageStatus === 'PARTIAL' ? 'warn' : 'ok'">{{ coverageLine }}</li>
+      <li v-if="reviewCount" class="warn">待复核条目 {{ reviewCount }} 条；复核状态未改变</li>
+    </ul>
+    <p v-for="state in policyStates" :key="state" class="reading-policy-state">{{ state }}</p>
     <dl class="reading-counts">
       <div><dt>{{ frontendCopy.table.dataType }}</dt><dd>{{ dataTypeCount }}</dd></div>
       <div><dt>政策来源</dt><dd>{{ policyCount }}</dd></div>
@@ -45,6 +60,11 @@ defineProps<{
 .reading-origin > span { padding: 3px 8px; border: 1px solid var(--pt-rule); border-radius: 6px; color: var(--pt-ink); font-size: var(--m-caption); line-height: 1.5; overflow-wrap: anywhere; }
 .reading-scope { margin: 12px 0 0; color: var(--pt-ink); font-size: var(--pt-type-reading); line-height: 1.6; }
 .reading-boundary { margin: 4px 0 12px; color: var(--pt-muted); font-size: var(--m-caption); line-height: 1.6; }
+.reading-status { display: grid; gap: 6px; margin: 0 0 12px; padding: 10px 12px; list-style: none; border-radius: 10px; background: var(--mt-warn-bg, #fbf3d9); }
+.reading-status li { color: var(--mt-warn, #8a5a00); font-size: var(--m-caption); line-height: 1.5; }
+.reading-status li.ok { color: var(--mt-success, #0f7a3c); }
+.reading-status li.warn { color: var(--mt-warn, #8a5a00); }
+.reading-policy-state { margin: 0 0 12px; color: var(--mt-muted); font-size: var(--mt-text-caption); line-height: 1.5; }
 .reading-counts { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--pt-rule); }
 .reading-counts > div { display: flex; align-items: baseline; gap: 6px; }
 .reading-counts dt { font-size: var(--m-caption); color: var(--pt-muted); }

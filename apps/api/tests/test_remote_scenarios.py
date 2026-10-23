@@ -132,6 +132,53 @@ def test_scenario_1_full_anonymous_remote_lifecycle(tmp_path, monkeypatch):
     assert replay_resp.status_code in (404, 409, 410)
 
 
+def test_scenario_1b_mixed_case_bearer_scheme_lifecycle(tmp_path, monkeypatch):
+    """Scenario 1b (#279): one capability token keeps working even when the client
+    capitalises the ``Bearer`` scheme differently on each call.
+
+    RFC 9110 §11.1 makes the authentication scheme token case-insensitive, while
+    the token credentials themselves remain case-sensitive.
+    """
+    app = create_remote_app(tmp_path, monkeypatch)
+    client = TestClient(app, base_url="http://testserver")
+
+    created = client.post(
+        "/api/v1/jobs",
+        json={"input_mode": "SYNTHETIC", "sample_id": "mixed-case-scheme-app"},
+    )
+    assert created.status_code in (200, 201), created.text
+    body = created.json()
+    job_id = body.get("job_id") or body.get("id")
+    token = body.get("capability_token") or body.get("token")
+    assert job_id and token, "anonymous remote creation must return job id and token"
+
+    # 1. Reads succeed for every scheme spelling.
+    for scheme in ("Bearer", "bearer", "BEARER", "bEaReR"):
+        read_resp = client.get(
+            f"/api/v1/jobs/{job_id}", headers={"Authorization": f"{scheme} {token}"}
+        )
+        assert read_resp.status_code == 200, (scheme, read_resp.text)
+
+    # 2. A write (cancel) with an upper-case scheme reaches the same credential.
+    cancel_resp = client.post(
+        f"/api/v1/jobs/{job_id}/cancel",
+        headers={"Authorization": f"BEARER {token}"},
+    )
+    assert cancel_resp.status_code == 200, cancel_resp.text
+
+    # 3. Delete (tombstone) also works with a mixed-case scheme.
+    delete_resp = client.delete(
+        f"/api/v1/jobs/{job_id}", headers={"Authorization": f"bEaReR {token}"}
+    )
+    assert delete_resp.status_code in (200, 204)
+
+    # 4. The tombstone still applies to the same credential afterwards.
+    post_delete = client.get(
+        f"/api/v1/jobs/{job_id}", headers={"Authorization": f"bearer {token}"}
+    )
+    assert post_delete.status_code in (404, 410)
+
+
 # ==============================================================================
 # Scenario 2: Adversarial Cross-Tenant Attack
 # ==============================================================================

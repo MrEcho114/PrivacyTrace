@@ -21,6 +21,9 @@ export function createMobileFlow(bridge: MobileBridge) {
   const context = ref<Upload | null>(null), draft = ref<LiveDraft | null>(null)
   const job = ref<AnalysisJob | null>(null), report = ref<Report | null>(null), taxonomy = ref<Taxonomy | null>(null)
   const busy = ref(false), error = ref(''), notice = ref('')
+  // 自动轮询仍在后台运行时，进度页要能说清“最近一次读到状态是什么时候”，
+  // 而不是让用户误以为必须手点刷新。只记录真实成功的读取时间。
+  const lastUpdated = ref('')
   const model = ref<ModelStatus>({ configured: false, endpoint: null }), modelResult = ref(''), resultToken = ref(0)
   // Starting without a body is always rejected by captures(), so the shell gates
   // the action on the same condition and explains the missing material (#249).
@@ -55,16 +58,58 @@ export function createMobileFlow(bridge: MobileBridge) {
     const jitter = first && !throttled ? 0 : Math.floor(Math.random() * (throttled ? 10_000 : 4_000))
     timer = setTimeout(() => poll(true), delay + jitter)
   }
-  function apply(value: LiveDraft) {
+  // Candidate fields the editor can change. Comparing them with the last full
+  // server snapshot tells a local edit apart from a newer server value (#273).
+  const editableCandidateFields = ['sourceId', 'quote', 'dataType', 'polarity', 'subject', 'condition', 'checked', 'action', 'purpose', 'recipient', 'startOffset', 'ambiguityFlags'] as const
+  let serverCandidates: WebCandidate[] = []
+  function toCandidate(c: WebCandidate): Candidate {
+    return { id: c.id, sourceId: c.source_id, quote: c.excerpt, dataType: c.data_type,
+      polarity: c.polarity === 'AFFIRMATIVE' ? 'AFFIRMED' : c.polarity === 'NEGATIVE' ? 'NEGATED' : 'UNKNOWN',
+      subject: c.subject === 'HOST_APP' ? 'APP' : c.subject === 'THIRD_PARTY' ? 'THIRD_PARTY' : 'UNKNOWN',
+      condition: c.condition ?? '', checked: c.checked ?? false, action: c.action, purpose: c.declared_purpose ?? '',
+      recipient: c.declared_recipient ?? '', startOffset: c.start_offset ?? undefined, ambiguityFlags: c.ambiguity_flags }
+  }
+  function snapshotCandidate(c: WebCandidate): WebCandidate {
+    return { ...c, ambiguity_flags: c.ambiguity_flags ? [...c.ambiguity_flags] : c.ambiguity_flags }
+  }
+  function sameField(a: unknown, b: unknown) {
+    return Array.isArray(a) && Array.isArray(b) ? a.length === b.length && a.every((value, index) => value === b[index]) : a === b
+  }
+  function mergeCandidateEdit(local: Candidate, incoming: Candidate, base: Candidate | undefined): Candidate {
+    if (!base) return local
+    const merged = { ...incoming }
+    const current = local as unknown as Record<string, unknown>
+    const previous = base as unknown as Record<string, unknown>
+    const target = merged as unknown as Record<string, unknown>
+    for (const field of editableCandidateFields) if (!sameField(current[field], previous[field])) target[field] = current[field]
+    return merged
+  }
+  // An automatic poll must not discard what the candidate page keeps only in
+  // memory. Locally changed fields and locally added candidates survive; a
+  // locally deleted candidate is not resurrected; pristine fields and new server
+  // candidates still follow the server. Explicit actions keep applying the full
+  // server draft (including the save response), so save/refresh/delete/start stay
+  // single-step and polling never issues a candidate write.
+  function mergeCandidateEdits(incoming: WebCandidate[]): Candidate[] {
+    const base = new Map(serverCandidates.map(c => [c.id, toCandidate(c)]))
+    const next = new Map(incoming.map(c => [c.id, toCandidate(c)]))
+    const local = new Set(state.candidates.map(c => c.id))
+    const merged: Candidate[] = []
+    for (const current of state.candidates) {
+      const server = next.get(current.id)
+      if (server) merged.push(mergeCandidateEdit(current, server, base.get(current.id)))
+      else if (!base.has(current.id)) merged.push(current)
+    }
+    for (const raw of incoming) if (!local.has(raw.id) && !base.has(raw.id)) merged.push(toCandidate(raw))
+    return merged
+  }
+  function apply(value: LiveDraft, preserveCandidateEdits = false) {
     draft.value = value
     state.sources = value.sources.map(s => ({ id: s.id, title: s.title, type: s.source_type ?? 'OFFICIAL_WEB_POLICY',
       url: s.url ?? '', text: s.text ?? '', status: s.status ?? 'empty', version: s.version ?? '', region: s.region ?? '',
       product: s.product ?? '', complete: false, provenance: s.provenance, modelAudit: s.model_audit }))
-    state.candidates = value.candidates.map(c => ({ id: c.id, sourceId: c.source_id, quote: c.excerpt, dataType: c.data_type,
-      polarity: c.polarity === 'AFFIRMATIVE' ? 'AFFIRMED' : c.polarity === 'NEGATIVE' ? 'NEGATED' : 'UNKNOWN',
-      subject: c.subject === 'HOST_APP' ? 'APP' : c.subject === 'THIRD_PARTY' ? 'THIRD_PARTY' : 'UNKNOWN',
-      condition: c.condition ?? '', checked: c.checked ?? false, action: c.action, purpose: c.declared_purpose ?? '',
-      recipient: c.declared_recipient ?? '', startOffset: c.start_offset ?? undefined, ambiguityFlags: c.ambiguity_flags }))
+    state.candidates = preserveCandidateEdits ? mergeCandidateEdits(value.candidates) : value.candidates.map(toCandidate)
+    serverCandidates = value.candidates.map(snapshotCandidate)
     if (!state.sources.some(s => s.id === state.sourceId)) state.sourceId = state.sources[0]?.id ?? ''
   }
   async function bridgeRequest<T>(name: string, body?: object): Promise<T> {
@@ -72,8 +117,11 @@ export function createMobileFlow(bridge: MobileBridge) {
     if (!context.value || response.origin !== context.value.origin || response.draft !== context.value.draft) throw new Error('INSTANCE_MISMATCH')
     return response.data
   }
-  async function run(action: (request: Request, check: () => void) => Promise<void>) {
-    if (busy.value) return
+  // Returns whether the action actually completed. A caller that shows a
+  // success message (candidate save) must not receive `true` for a request it
+  // never made: a busy gate or a superseded generation is not a saved write.
+  async function run(action: (request: Request, check: () => void) => Promise<void>): Promise<boolean> {
+    if (busy.value) return false
     stopPoll()
     busy.value = true; error.value = ''
     const current = generation
@@ -84,7 +132,8 @@ export function createMobileFlow(bridge: MobileBridge) {
       if (!context.value || response.origin !== context.value.origin || response.draft !== context.value.draft) throw new Error('INSTANCE_MISMATCH')
       return response.data
     }
-    try { await action(request, active) }
+    let completed = false
+    try { await action(request, active); completed = true }
     catch (cause) { if (current === generation) error.value = typeof cause === 'string' ? cause : cause instanceof Error ? cause.message : '操作未完成，请刷新确认。' }
     finally {
       if (current === generation) {
@@ -96,6 +145,7 @@ export function createMobileFlow(bridge: MobileBridge) {
         schedule(current, true)
       }
     }
+    return completed
   }
   async function stop() {
     generation++; stopPoll(); busy.value = false
@@ -108,7 +158,7 @@ export function createMobileFlow(bridge: MobileBridge) {
     taxonomy.value = await request<Taxonomy>('taxonomy')
     if (restored.jobs.length) {
       state.step = 'progress'
-      try { job.value = await request<AnalysisJob>('job') }
+      try { job.value = await request<AnalysisJob>('job'); lastUpdated.value = new Date().toISOString() }
       catch (cause) {
         check()
         if (cause === 'SERVER_BUSY' || (cause instanceof Error && cause.message === 'SERVER_BUSY')) throw cause
@@ -179,7 +229,12 @@ export function createMobileFlow(bridge: MobileBridge) {
       condition: c.condition || null, action: c.action ?? 'UNKNOWN', declared_purpose: c.purpose || null,
       declared_recipient: c.recipient || null, start_offset: c.startOffset ?? (position < 0 ? null : [...text.slice(0, position)].length), ambiguity_flags: c.ambiguityFlags ?? [] }
   }
-  async function save() { await run(async request => { if (draft.value) apply(await request<LiveDraft>('candidates', { revision: draft.value.revision, candidates: state.candidates.map(encode) })) }) }
+  // A save that never reached the service (no draft, busy gate, bridge error)
+  // resolves false so the candidate page keeps its edit and withholds "已保存".
+  async function save(): Promise<boolean> {
+    if (!draft.value) return false
+    return await run(async request => { if (draft.value) apply(await request<LiveDraft>('candidates', { revision: draft.value.revision, candidates: state.candidates.map(encode) })) })
+  }
   async function begin() {
     const current = generation
     nativeBusyRetries = 0
@@ -206,7 +261,10 @@ export function createMobileFlow(bridge: MobileBridge) {
         apply(await request<LiveDraft>('candidates', { revision: draft.value.revision, candidates: state.candidates.map(encode) }))
         pendingStart = { revision: draft.value.revision, request_id: crypto.randomUUID().replaceAll('-', '') }
       }
-      try { job.value = await request<AnalysisJob>('start', pendingStart) }
+      try {
+        job.value = await request<AnalysisJob>('start', pendingStart)
+        lastUpdated.value = new Date().toISOString()
+      }
       catch (cause) {
         check()
         if (!await recover(await request<LiveDraft>('read'))) throw cause
@@ -233,7 +291,10 @@ export function createMobileFlow(bridge: MobileBridge) {
         const latest = await bridgeRequest<LiveDraft>('read')
         if (current !== generation || epoch !== pollEpoch || busy.value) return
         job.value = nextJob
-        apply(latest)
+        lastUpdated.value = new Date().toISOString()
+        // The candidate page is editable while an automatic poll runs, so progress
+        // and the server revision update here but local candidate edits survive.
+        apply(latest, true)
         error.value = ''
         nativeBusyRetries = 0
         schedule(current)
@@ -258,13 +319,21 @@ export function createMobileFlow(bridge: MobileBridge) {
     }
     await run(async (request, check) => {
       if (restoring) await readSelection(request, check)
-      else { job.value = await request<AnalysisJob>('job'); apply(await request<LiveDraft>('read')) }
+      else {
+        job.value = await request<AnalysisJob>('job')
+        lastUpdated.value = new Date().toISOString()
+        apply(await request<LiveDraft>('read'))
+      }
     })
     schedule(current)
   }
   async function control(action: 'cancel-job' | 'retry-job') {
     const current = generation
-    await run(async request => { job.value = await request<AnalysisJob>(action); state.step = 'progress' })
+    await run(async request => {
+      job.value = await request<AnalysisJob>(action)
+      lastUpdated.value = new Date().toISOString()
+      state.step = 'progress'
+    })
     schedule(current, true, true)
   }
   async function openReport() { await run(async request => { report.value = await request<Report>('report'); state.step = 'report' }) }
@@ -321,5 +390,5 @@ export function createMobileFlow(bridge: MobileBridge) {
         : `${source.title || '这份来源'}：候选提取已完成；候选仍需检查，政策全文及附件未复核。`
     })
   }
-  return { state, context, draft, job, report, taxonomy, busy, error, notice, model, modelResult, resultToken, hasPolicyText, settings, collect, select, refresh, importCollected, prepare, save, begin, poll, control, openReport, remove, retrySource, retryModel, stop }
+  return { state, context, draft, job, report, taxonomy, busy, error, notice, lastUpdated, model, modelResult, resultToken, hasPolicyText, settings, collect, select, refresh, importCollected, prepare, save, begin, poll, control, openReport, remove, retrySource, retryModel, stop }
 }

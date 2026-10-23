@@ -114,11 +114,59 @@ class Runner:
             self.lock.close()
 
     def prune(self):
+        self._purge(int(time.time()))
+
+    def _purge(self, deadline):
+        # A residue directory is ours only while its own ledger row proves it, so
+        # the directory goes before its row. A failed removal keeps the row: prune
+        # must not forget ownership and hand recovery an unknown directory, and
+        # the next start reaps the proven residue instead of refusing to boot.
         with self._database() as conn:
-            conn.execute(
-                "DELETE FROM operations WHERE state <> 'RUNNING' AND expires < ?",
-                (int(time.time()),),
-            )
+            expired = [
+                row[0]
+                for row in conn.execute(
+                    "SELECT id FROM operations WHERE state <> 'RUNNING' AND expires < ?",
+                    (deadline,),
+                )
+            ]
+            for request_id in expired:
+                try:
+                    canonical_uuid(request_id)
+                    operation = self.operations / request_id
+                    safe_path(operation)
+                except (ValueError, ScanError):
+                    # Ownership is unprovable: keep the row for operator inspection.
+                    self.faulted = True
+                    continue
+                if operation.exists():
+                    try:
+                        shutil.rmtree(operation)
+                    except OSError:
+                        self.faulted = True
+                        continue
+                conn.execute("DELETE FROM operations WHERE id=?", (request_id,))
+
+    def _abort_initialization(self, request_id, operation, created):
+        # A transient failure while creating the operation tree must not leave a
+        # charged RUNNING row: it is retired as interrupted and expired, exactly
+        # as recovery treats an interrupted operation, so the next prune
+        # reclaims it. Unproven cleanup keeps Runner faulted (fail closed).
+        try:
+            with self._database() as conn:
+                conn.execute(
+                    "UPDATE operations SET state='ABORTED',result=NULL,expires=? "
+                    "WHERE id=? AND state='RUNNING'",
+                    (int(time.time()) - 1, request_id),
+                )
+        except (sqlite3.Error, OSError):
+            self.faulted = True
+        for path, made in ((operation / "inputs", created[1]), (operation, created[0])):
+            if not made:
+                continue
+            try:
+                shutil.rmtree(path)
+            except OSError:
+                self.faulted = True
 
     def _recover(self):
         # This root is exclusively locked. Only UUID operations present in its
@@ -243,11 +291,10 @@ class Runner:
         digest = hashlib.sha256(
             json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
+        self._purge(int(time.time()))
+        if self.faulted:
+            raise RuntimeUnavailable("Runner cleanup requires recovery")
         with self._database() as conn:
-            conn.execute(
-                "DELETE FROM operations WHERE state <> 'RUNNING' AND expires < ?",
-                (int(time.time()),),
-            )
             previous = conn.execute(
                 "SELECT digest,state,result FROM operations WHERE id=?", (request_id,)
             ).fetchone()
@@ -276,9 +323,16 @@ class Runner:
             )
         operation = self.operations / request_id
         safe_path(operation)
-        operation.mkdir(mode=0o700)
         inputs = operation / "inputs"
-        inputs.mkdir(mode=0o700)
+        created = [False, False]
+        try:
+            operation.mkdir(mode=0o700)
+            created[0] = True
+            inputs.mkdir(mode=0o700)
+            created[1] = True
+        except OSError:
+            self._abort_initialization(request_id, operation, created)
+            raise
         try:
             transfer_deadline = time.monotonic() + MAX_TRANSFER_SECONDS
             for item in value["files"]:
@@ -400,7 +454,13 @@ class Runner:
             conn.execute(
                 "UPDATE operations SET state='DONE',result=? WHERE id=?", (raw, request_id)
             )
-        shutil.rmtree(operation)
+        try:
+            shutil.rmtree(operation)
+        except OSError:
+            # The DONE row is the residue's only ownership proof; retention keeps
+            # it and recovery reaps it, so no new work is admitted in the meantime.
+            self.faulted = True
+            raise RuntimeUnavailable("Runner operation cleanup requires recovery") from None
         return result
 
 

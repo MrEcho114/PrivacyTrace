@@ -194,8 +194,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 9033,
-      "sha256": "2b91e546714752f5fdd317f414c2cb809bccb02c6656224ef7d95cacbf946e2d"
+      "bytes": 9974,
+      "sha256": "8861eac47fed875f7155a7fd296ee3a13e90b31b4d8c1019f2c09684902abacf"
     },
     {
       "path": "poster.png",
@@ -226,6 +226,16 @@
       "path": "assets/soundtrack.m4a",
       "bytes": 2994842,
       "sha256": "fb7e005f78aa530d0f2d072e7ddf1b5c88315a69a36413e67d7f2039ad54a30c"
+    },
+    {
+      "path": "academic/PrivacyTrace-Review-Academic.pptx",
+      "bytes": 1113599,
+      "sha256": "0257965ea56e589dbff20ff87e998899b070314635a413c031964481f7f39cc3"
+    },
+    {
+      "path": "academic/manifest.json",
+      "bytes": 3512,
+      "sha256": "a485067e905251673eaa71e6ae30d64d8b21df7e326091046ebfff79083e51b5"
     }
   ],
   "qa": {
@@ -269,5 +279,25 @@
     "前端仍在开发；PPT 第 2 / 4 页为 2026-10-23 移动 App 采集（提交 f81ca20，固定合成材料），影片素材仍为 v0.1；最终视觉可能变化。",
     "不宣称 100% 独立、不给 AI 代码比例、不说完全无 AI 参与；不宣称开源。",
     "尚未上传；Issue #200 的上传与系统反馈仍待人工执行。"
-  ]
+  ],
+  "academicDeck": {
+    "name": "academic/PrivacyTrace-Review-Academic.pptx",
+    "version": "0.1",
+    "kind": "academic-paper",
+    "template": {
+      "id": "od-hps-academic-paper",
+      "license": "MIT",
+      "attribution": "lewislulu/html-ppt-skill · theme academic-paper"
+    },
+    "bytes": 1113599,
+    "sha256": "0257965ea56e589dbff20ff87e998899b070314635a413c031964481f7f39cc3",
+    "slides": 10,
+    "notes": 10,
+    "manifest": "academic/manifest.json",
+    "manifest_sha256": "a485067e905251673eaa71e6ae30d64d8b21df7e326091046ebfff79083e51b5",
+    "source_html": "../deck/academic.html",
+    "source_sha256": "45226ca13d3bb742ffc36c76cc73579d69a6625f280ac88bb3284f279037a8f6",
+    "capture_date": "2026-10-23",
+    "source_commit": "f81ca201b932a11e24a9f7175a9583150d44e9ed"
+  }
 }

@@ -42,6 +42,22 @@
 | 界面图 | 第 2 页移动导入、第 4 页移动报告：2026-10-23 采集，390×844 DPR 3，提交 `f81ca20`；清单见 `../capture/manifest.json` |
 | 备注 | 每页含演讲备注；文本、表格与形状可编辑；事实、数字与边界与影片同一组 |
 
+## 学术论文风备选版（v0.1）
+
+按 `od-hps-academic-paper`（MIT，`lewislulu/html-ppt-skill`）重排版：纸白、全衬线、零圆角、编号图注与 booktabs 三线表；内容与主 PPT 一致，视觉不沿用 120 秒评审片。**上传时与 v0.2 二选一。**
+
+| 项 | 值 |
+| --- | --- |
+| 文件 | `academic/PrivacyTrace-Review-Academic.pptx` |
+| 页数 / 备注 | 10 / 10 |
+| 字节数 | 1,113,599 B |
+| SHA-256 | `0257965ea56e589dbff20ff87e998899b070314635a413c031964481f7f39cc3` |
+| 源 | `../deck/academic.html`（单文件，相对引用 `../capture/` 截图） |
+| 采集 | 2026-10-23 · 390×844 DPR 3 · 基线 `f81ca20` |
+| 生成 | `node scripts/render-academic-deck.cjs` → `python ../deck/build_academic_pptx.py` |
+| 校验 | `node scripts/verify-academic-deck.cjs` |
+| 边界 | 每页是 1920×1080 渲染图 + 演讲备注，文字不可编辑；HTML 是源。不是真机、不是 APK 扫描结论 |
+
 ## 评审要素覆盖
 
 | 评审要素 | 片中位置 | PPT 页 | 覆盖方式 |

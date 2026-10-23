@@ -25,9 +25,9 @@ def run(args):
 def main():
     for name, folder, html, filename, times in [
         ('90s', 'showcase/privacytrace-90s/delivery', '../film-showcase.html',
-         'PrivacyTrace-作品展示-90s.mp4', [3, 12, 20, 25, 31, 39, 43, 50, 58, 66, 79, 87]),
+         'PrivacyTrace-作品展示-90s.mp4', [5, 8, 15, 20, 21.35, 25, 31, 43, 50, 58, 66, 70, 74, 79, 82, 87]),
         ('review', 'showcase/privacytrace-review/delivery', 'film-review.html',
-         'PrivacyTrace-Review-1080p.mp4', [4, 8.5, 16, 26, 35, 47, 54, 62, 77, 97, 104, 116]),
+         'PrivacyTrace-Review-1080p.mp4', [8.5, 16, 26, 34, 47, 54, 62, 68, 72, 77, 81, 88, 93, 99, 104, 116]),
     ]:
         delivery = ROOT / folder
         render_dir = ROOT / 'tmp/film-render' / name
@@ -50,14 +50,14 @@ def main():
         if not seek['deterministic'] or not seek['exactPixels'] or seek['missingAssets'] or seek['pageErrors']:
             raise ValueError(f'{name}: seek/asset checks failed')
         (delivery / 'render-proof.json').write_text(json.dumps({'render': render, 'seek': seek}, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
-        sheet = Image.new('RGB', (1920, 870), '#171717')
+        sheet = Image.new('RGB', (1920, ((len(times)+3)//4)*290), '#0b1520')
         draw = ImageDraw.Draw(sheet)
         for i, second in enumerate(times):
             png = render_dir / f'final-{second}.png'
             run(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-ss', str(second), '-i', str(delivery/filename), '-frames:v', '1', str(png)])
             with Image.open(png) as frame:
                 sheet.paste(frame.convert('RGB').resize((480, 270), Image.Resampling.LANCZOS), ((i % 4)*480, (i//4)*290+20))
-            draw.text(((i % 4)*480+8, (i//4)*290+3), f'{second:05.1f}s', fill='#e9b872')
+            draw.text(((i % 4)*480+8, (i//4)*290+3), f'{second:06.2f}s', fill='#7cc8ff')
         sheet.save(delivery / 'contact-sheet.png')
         if name == 'review':
             run(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-ss', '8.5', '-i', str(delivery/filename), '-frames:v', '1', str(delivery/'poster.png')])

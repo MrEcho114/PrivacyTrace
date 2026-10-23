@@ -5,13 +5,13 @@
 <title>PrivacyTrace — 作品展示（严肃展示版 90s）</title>
 <style>
   :root{
-    --paper:#f2ede0;
-    --ink:#17181b;
-    --ink2:#3a3a38;
-    --muted:#6f6b60;
-    --clay:#a2532f;
+    --paper:#edf2f5;
+    --ink:#142b3e;
+    --ink2:#3f5668;
+    --muted:#657d8d;
+    --clay:#176cba;
     --green:#3f6b52;
-    --serif:"Noto Serif SC","Source Han Serif SC","Songti SC",serif;
+    --serif:"Noto Sans SC","Microsoft YaHei UI",sans-serif;
     --sans:"Noto Sans SC","Microsoft YaHei UI",sans-serif;
     --mono:"Cascadia Mono","Consolas",monospace;
   }
@@ -238,11 +238,91 @@
   .col .cs{color:#655f54}
   #work-copy{position:absolute;inset:0}
   #carry-shot{position:absolute;inset:0;width:100%;height:100%;opacity:0}
+
+  /* Third cut: a cool evidence desk, with the current item occupying the frame. */
+  .paper{background:#edf2f5}.grain,.vign{display:none}
+  #head .nm{font-size:20px;font-weight:650} #head .mark{border-color:#176cba;color:#176cba}
+  #head .kicker{font-size:12px;letter-spacing:.12em}
+  .h{font-size:62px;letter-spacing:-.035em;font-weight:650}
+  .eyebrow{font-size:13px;letter-spacing:.16em} .eyebrow-en{letter-spacing:.2em}
+  #spine{position:absolute;left:96px;top:110px;width:1728px;height:1px;background:#c4d4df;z-index:24}
+  #spine i{position:absolute;left:0;top:0;height:2px;background:var(--clay);transform-origin:left;width:100%}
+  #spine b{position:absolute;top:-4px;width:9px;height:9px;background:var(--clay);border:2px solid #edf2f5}
+  #hero-plate{left:96px;right:auto;top:180px;width:1728px;height:490px}
+  .pair-id{left:0;top:0;font-size:18px;color:var(--clay)}
+  .source-sheet{padding:32px 36px;box-shadow:none;border:0;border-top:2px solid #176cba}
+  .code-sheet{left:0;top:78px;width:720px;height:300px;background:#142b3e;color:#f4f8fb}
+  .policy-sheet{left:1008px;top:78px;width:720px;height:300px;background:#fff}
+  .sheet-k{font-size:18px}.code-sheet .sheet-k{color:#8bc7ff}
+  .sheet-path{font-size:21px}.code-sheet .sheet-path{color:#f4f8fb}
+  .sheet-loc{font-size:16px}.code-sheet .sheet-loc{color:#a9c5dc}
+  .source-sheet pre{font-size:21px;line-height:1.5;color:#d0e8ff;margin-top:20px}
+  .source-sheet blockquote{font-size:38px;line-height:1.7;margin-top:24px;font-weight:550}
+  .sheet-foot{font-size:16px;color:#a9c5dc}
+  #source-link{width:1728px;height:490px} .pair-note{left:0;top:416px;font-size:17px}
+  #hero-title{left:92px;top:760px;font-size:114px;letter-spacing:-.05em}
+  #hero-sub{left:101px;top:908px;font-size:24px}
+  #hero-claim{left:1160px;top:808px;font-size:34px;letter-spacing:-.01em}
+  #hero-rule,#hero-tags,#hero-meta,#h0-eyebrow,#h0-eyebrow-en{display:none}
+  #w-lead{font-size:22px;line-height:1.7} .steps .step .s{font-size:13px;letter-spacing:0}
+  #w-note{font-size:15px;top:802px}.device{box-shadow:0 28px 55px #12334c20}
+  #w-tag,#w-count{font-size:13px} #w-cap{font-size:14px;letter-spacing:.01em}
+  #run-tag{top:132px;max-width:850px} #run-tag2{top:181px}
+  #run-detail{top:243px} #run-heading{font-size:58px;font-weight:650;letter-spacing:-.03em}
+  #run-desc{font-size:24px;line-height:1.6;margin-top:14px;margin-bottom:24px}
+  #focus-wrap{border:0;border-top:2px solid #176cba;box-shadow:0 24px 50px #12334c16}
+  #focus-label{font-size:17px} #run-cap{font-size:21px;top:993px} #run-idx{display:none}
+  #focus-wire{position:absolute;inset:0;width:1920px;height:1080px;pointer-events:none}
+  #focus-wire path{fill:none;stroke:#176cba;stroke-width:1.5}
+  #focus-box{position:absolute;left:347px;width:376px;border:2px solid #176cba;pointer-events:none;background:#176cba08}
+  #e-lead{font-size:23px;top:292px;width:1400px}
+  #ev-card{left:96px;top:390px;width:1728px;height:376px;border:0;background:transparent;box-shadow:none}
+  .ev-col.l,.ev-col.r{top:0;width:720px;height:376px;background:#fff;padding:28px 32px}
+  .ev-col.l{left:0;background:#142b3e;color:#f4f8fb}.ev-col.r{right:0}
+  .ev-k{font-size:17px}.ev-col.l .ev-k{color:#8bc7ff}
+  .ev-path{font-size:20px}.ev-col.l .ev-path{color:#f4f8fb}
+  .ev-meta{font-size:15px}.ev-col.l .ev-meta{color:#b1c8da}
+  .ev-code{font-size:23px;line-height:1.6;background:transparent;padding:22px 0;color:#d0e8ff}
+  .ev-quote{font-size:36px;line-height:1.65;border:0;padding:18px 0;font-weight:550}
+  .ev-rule,.ev-span{font-size:15px}.ev-col.l .ev-rule,.ev-col.l .ev-span{color:#b1c8da}
+  #ev-link{left:720px;top:170px;width:288px;background:#176cba}
+  #ev-link span{font-size:16px;color:var(--clay)} #ev-foot{top:800px;font-size:24px}
+  .principles{top:867px;left:96px;width:1728px;gap:28px}
+  .principles>div{width:548px;font-size:16px;line-height:1.7;border-top-color:#b9cbd9}
+  .principles b{font-size:14px;color:var(--clay)} #ev-caveat{display:none}
+  #r-h{top:227px;width:850px;line-height:1.35} #r-h em{display:block}
+  #rep-plate,#phone{left:1210px;right:auto;top:220px;width:420px;height:720px;border:7px solid #243c50;border-radius:30px;box-shadow:0 30px 60px #12334c22;background:#fbfaf6}
+  #rep-plate .mask{display:none} #rep-plate img,#phone img{width:100%}
+  #rep-cap,#phone-cap{left:1110px;right:auto;top:965px;width:650px;font-size:14px;line-height:1.6;text-align:center}
+  #rep-notes{left:96px;top:486px;width:860px}
+  #rep-notes .row{font-size:25px;padding:22px 0;border-color:#c4d4df;align-items:center}
+  #rep-notes .row b{font-size:18px;width:95px} #rep-notes .row em{font-size:18px;color:var(--clay);border-color:#9ab9d2}
+  #rep-foot{left:96px;top:1014px;font-size:13px}
+  .cols{left:0;top:0;width:1920px;height:1080px}
+  .col,.col+.col{position:absolute;left:580px;top:360px;width:1244px;height:418px;border:0;border-top:2px solid #176cba;padding:24px 0}
+  .col .ck{font-size:20px;letter-spacing:.04em}
+  .col .cv{font-size:96px;line-height:1.1;margin-top:32px;letter-spacing:-.06em}
+  .col .cv small{font-size:27px;letter-spacing:0}
+  .col .cd{position:absolute;left:660px;top:92px;width:570px;font-size:27px;line-height:1.65;min-height:0}
+  .col .cs,.col+.col .cs{left:0;bottom:12px;font-size:17px;line-height:1.6;color:#657d8d}
+  #record-nav{position:absolute;left:96px;top:390px;width:350px;display:flex;flex-direction:column;gap:26px}
+  #record-nav span{font-size:28px;color:#8b9eac;border-left:3px solid transparent;padding-left:22px}
+  #record-nav span.active{color:var(--clay);border-color:var(--clay)}
+  #rec-bound{display:none} #rec-big{left:580px;top:870px;font-size:44px}
+  #cl-main{font-size:112px;letter-spacing:-.04em} #cl-sub{font-size:31px;font-weight:400}
+  #cl-disc{font-size:14px} #cl-meta{font-size:13px}
+
+
+  #spine{z-index:0}
+  #rep-notes .row{color:#3f5668;font-weight:400}#rep-notes .row b{color:#657d8d}
+  .ev-col.r .ev-meta,.ev-col.r .ev-rule,.ev-col.r .ev-span{color:#657d8d}
+  .col .cv small{color:#657d8d}.col .ck{color:#657d8d}
+  #hero-sub{color:#3f5668}
 </style>
 </head>
 <body>
 <div id="stage">
-  <div class="paper"></div>
+  <div class="paper"></div><div id="spine"><i></i><b></b></div>
   <div class="grain"></div>
   <div class="vign"></div>
 
@@ -263,7 +343,7 @@
     <div id="hero-title">PrivacyTrace</div>
     <div id="hero-sub">对照 Android APK 静态线索与政策原文</div>
     <div id="hero-rule"></div>
-    <div id="hero-claim">从静态线索到原始依据。</div>
+    <div id="hero-claim">代码位置 × 政策原句</div>
     <div id="hero-tags">
       <span id="tg1">静态证据</span><span id="tg2">政策原文</span><span id="tg3">可复核位置</span>
     </div>
@@ -279,7 +359,7 @@
     LocationManager.GPS_PROVIDER);</pre>
         <div class="sheet-foot">静态调用线索</div>
       </div>
-      <svg id="source-link" viewBox="0 0 616 616"><path id="source-path" pathLength="1" d="M 230 280 V 312 H 340 V 345"/></svg>
+      <svg id="source-link" viewBox="0 0 1728 490"><path id="source-path" pathLength="1" d="M 720 228 H 1008"/></svg>
       <div class="source-sheet policy-sheet" id="hero-policy">
         <div class="sheet-k">02 / 政策原句</div>
         <blockquote>我们访问位置信息，<br>用于提供地图功能。</blockquote>
@@ -316,7 +396,7 @@
     <div id="run-tag">Android App 实录 · 移动视口录制 · 2026-10-23 @ f81ca20 · 剪辑节奏，非实时速度</div>
     <div id="run-tag2">开发版 · 持久化回放样本</div>
     <div id="run-plate"><div class="device large"><canvas id="shot" width="390" height="844"></canvas><div class="sheen"></div></div></div>
-    <div id="run-detail">
+    <svg id="focus-wire"><path/></svg><div id="focus-box"></div><div id="run-detail">
       <div id="run-step">01 / 05</div><div id="run-heading"></div><div id="run-desc"></div>
       <div id="focus-wrap"><canvas id="focus" width="720" height="440"></canvas></div>
       <div id="focus-label">同一录制画面 · 局部放大</div>
@@ -347,7 +427,7 @@
         <div class="ev-path">示例 App 内隐私政策 · 示例 0.1</div>
         <div class="ev-meta">sentence[1] · 全文快照 · COMPLETE</div>
         <div class="ev-quote">我们访问位置信息，用于提供地图功能。</div>
-        <div class="ev-rule">原文位置 [0, 18) · UTF-8 码点 · 半开区间</div>
+        <div class="ev-rule">原文位置 [0, 18) · Unicode 码点 · 半开区间</div>
         <div class="ev-span">切片必须严格等于 excerpt；旧快照不覆盖</div>
       </div>
     </div>
@@ -383,7 +463,7 @@
     <div class="eyebrow">Ⅴ · 结果</div>
     <div class="eyebrow-en" id="d-en">THE RECORD</div>
     <div class="h" id="d-h">四类结果，<em>分别列出。</em></div>
-    <div class="cols">
+    <div id="record-nav"><span>工程门禁</span><span>部署验收</span><span>受控评测</span><span>真实样本</span></div><div class="cols">
       <div class="col" id="c1">
         <div class="ck">工程门禁 / ENGINEERING</div>
         <div class="cv">1578 <small>passed</small><br>179 <small>skipped</small></div>
@@ -573,23 +653,23 @@
   function renderHero(t){
     rise($('#h0-eyebrow'), t, .5, .6, 10);
     rise($('#h0-eyebrow-en'), t, .7, .6, 10);
-    rise($('#hero-title'), t, 1.1, .9, 30);
-    rise($('#hero-sub'), t, 2.1, .7, 18);
+    rise($('#hero-title'), t, 5.65, .8, 0);
+    rise($('#hero-sub'), t, 6.25, .6, 0);
     growX($('#hero-rule'), t, 2.55, .9);
-    rise($('#hero-claim'), t, 3.4, .7, 22);
+    rise($('#hero-claim'), t, 6.1, .6, 0);
     rise($('#tg1'), t, 4.5, .5, 12);
     rise($('#tg2'), t, 4.8, .5, 12);
     rise($('#tg3'), t, 5.1, .5, 12);
     rise($('#hero-meta'), t, 5.5, .55, 10);
-    const pp = outQuint((t - 1.5)/1.1);
+    const pp = outQuint((t - .5)/.6);
     const plate = $('#hero-plate');
-    plate.style.opacity = smooth((t - 1.5)/.8).toFixed(3);
+    plate.style.opacity = smooth((t - .5)/.6).toFixed(3);
     plate.style.transform = 'translate3d(0,' + ((1-pp)*26).toFixed(2) + 'px,0)';
-    rise($('#hero-code'), t, 1.65, .85, 28);
-    rise($('#hero-policy'), t, 3.1, .9, 32);
+    rise($('#hero-code'), t, .75, .55, 0);
+    rise($('#hero-policy'), t, 2.6, .55, 0);
     $('#source-path').style.strokeDashoffset = (1-outQuint((t-2.6)/1.2)).toFixed(4);
     rise($('.pair-id'), t, 1.4, .6, 8);
-    rise($('.pair-note'), t, 4.6, .6, 8);
+    rise($('.pair-note'), t, 3.7, .5, 0);
   }
 
   function renderWork(t){
@@ -664,7 +744,17 @@
     $('#run-step').textContent = String(idx+1).padStart(2,'0') + ' / 05';
     $('#run-heading').textContent = detail[0];
     $('#run-desc').textContent = detail[1];
-    rise($('#run-detail'), t, 21.3, .65, 14);
+    const cropY=[440,180,90,170,170][idx];
+    const top=107+cropY*(830/844), height=(390*440/720)*(830/844);
+    const reveal=smooth((t-c.t-.12)/.42);
+    $('#focus-box').style.top=top.toFixed(2)+'px';
+    $('#focus-box').style.height=height.toFixed(2)+'px';
+    $('#focus-box').style.opacity=reveal.toFixed(3);
+    const targetY=557;
+    $('#focus-wire path').setAttribute('d',`M 723 ${top+height/2} H 815 V ${targetY} H 910`);
+    $('#focus-wire').style.opacity=(.6*reveal).toFixed(3);
+    $('#focus-wrap').style.clipPath='inset(0 '+((1-reveal)*100).toFixed(2)+'% 0 0)';
+    rise($('#run-detail'), t, 21.3, .65, 0);
   }
 
   function renderEvidence(t){
@@ -695,41 +785,32 @@
   }
 
   function renderReport(t){
-    rise($('#r-en'), t, 60.1, .55, 8);
-    rise($('#r-h'), t, 60.3, .75, 24);
-    const pp = outQuint((t - 60.9)/.85);
-    const plate = $('#rep-plate');
-    plate.style.opacity = smooth((t - 60.9)/.55).toFixed(3);
-    plate.style.transform = 'translate3d(' + ((1-pp)*-30).toFixed(2) + 'px,' + ((1-pp)*14).toFixed(2) + 'px,0)';
-    panImage($('#rep-img'), smooth((t - 63.4)/3.4), 460);
-    rise($('#rep-cap'), t, 61.4, .5, 8);
-    document.querySelectorAll('#rep-notes .row').forEach((row,i) => {
-      const t0 = 61.8 + i*.5;
-      const p = outQuint((t - t0)/.55);
-      row.style.opacity = smooth((t - t0)/.5).toFixed(3);
-      row.style.transform = 'translate3d(' + ((1-p)*14).toFixed(2) + 'px,0)';
-    });
-    const ph = outQuint((t - 65.5)/.8);
-    $('#phone').style.opacity = smooth((t - 65.5)/.6).toFixed(3);
-    $('#phone').style.transform = 'translate3d(0,' + ((1-ph)*40).toFixed(2) + 'px,0)';
-    panImage($('#ph-img'), .55 + .12*smooth((t - 68.2)/1.8), 2000);
-    rise($('#phone-cap'), t, 66.0, .5, 8);
-    rise($('#rep-foot'), t, 68.9, .5, 8);
+    rise($('#r-en'), t, 60.1, .45, 0);
+    rise($('#r-h'), t, 60.3, .55, 0);
+    const switchAt=66.1, a=smooth((t-60.6)/.55), b=smooth((t-switchAt)/.45);
+    $('#rep-plate').style.opacity=(a*(1-b)).toFixed(3);
+    $('#rep-plate').style.transform='none';
+    $('#phone').style.opacity=b.toFixed(3); $('#phone').style.transform='none';
+    panImage($('#rep-img'),smooth((t-62.2)/2.8),460);
+    panImage($('#ph-img'),.55+.12*smooth((t-67.1)/1.8),2000);
+    $('#rep-cap').style.opacity=(a*(1-b)).toFixed(3);
+    $('#phone-cap').style.opacity=b.toFixed(3);
+    document.querySelectorAll('#rep-notes .row').forEach((row,i)=>rise(row,t,61.15+i*.4,.4,0));
+    rise($('#rep-foot'),t,60.5,.5,0);
   }
 
   function renderRecord(t){
-    rise($('#d-en'), t, 72.1, .55, 8);
-    rise($('#d-h'), t, 72.3, .75, 24);
-    ['c1','c2','c3','c4'].forEach((id,i) => {
-      const el=$('#'+id);
-      rise(el, t, 73.1+i*.45, .6, 18);
-      const focus=Math.floor(clamp((t-74.3)/1.65,0,3));
-      const active = t>=74.3 && t<81.1 && focus===i;
-      el.style.borderTopColor = active ? 'var(--clay)' : 'rgba(23,24,27,.22)';
-      el.querySelector('.cv').style.color = active ? 'var(--clay)' : 'var(--ink)';
+    rise($('#d-en'), t, 72.1, .4, 0); rise($('#d-h'),t,72.2,.5,0);
+    const starts=[72.75,75.35,77.95,80.65];
+    ['c1','c2','c3','c4'].forEach((id,i)=>{
+      const a=starts[i], b=i===3?84:starts[i+1];
+      const on=smooth((t-a)/.32)*(1-smooth((t-b+.12)/.2));
+      const el=$('#'+id); el.style.opacity=on.toFixed(3);
+      el.style.transform='translateX('+((1-on)*20).toFixed(2)+'px)';
+      el.querySelector('.cv').style.color='var(--ink)';
+      $('#record-nav').children[i].classList.toggle('active',t>=a&&t<b);
     });
-    rise($('#rec-bound'), t, 77.7, .55, 10);
-    rise($('#rec-big'), t, 80.2, .75, 18);
+    rise($('#record-nav'),t,72.4,.4,0); rise($('#rec-big'),t,81.2,.6,0);
   }
 
   function renderClose(t){
@@ -764,7 +845,10 @@
     renderHero(time); renderWork(time); renderRunning(time);
     renderEvidence(time); renderReport(time); renderRecord(time); renderClose(time);
 
-    // hide running chrome over full-screen footage
+    const routeX=1728*clamp((time-9)/75,0,1);
+    $('#spine i').style.transform='scaleX('+clamp((time-9)/75,0,1).toFixed(4)+')';
+    $('#spine b').style.left=(routeX-4).toFixed(2)+'px';
+    // Persistent brand and progress.
     const chrome = 1;
     headEl.style.opacity = chrome.toFixed(3);
     chapEl.style.opacity = (chrome*.92).toFixed(3);

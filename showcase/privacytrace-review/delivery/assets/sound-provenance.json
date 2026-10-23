@@ -3,7 +3,7 @@
   "source": "soundtrack.m4a",
   "sourceSha256": "fb7e005f78aa530d0f2d072e7ddf1b5c88315a69a36413e67d7f2039ad54a30c",
   "output": "soundtrack-polished.m4a",
-  "sha256": "c2fc836bea5e8c93efcfc015d2a24c084d2a4cae04de2cb880421cae6017f666",
+  "sha256": "4f7bd32b9f8547162d74b7ebe0302e47c7c1015c64c8a2aafee726a3b4b66946",
   "sampleRate": 48000,
   "seed": 305264,
   "materials": [
@@ -25,7 +25,7 @@
       "gain": 0.025
     },
     {
-      "time": 23.35,
+      "time": 23.15,
       "material": "paper",
       "pan": -0.25,
       "gain": 0.03
@@ -49,16 +49,22 @@
       "gain": 0.04
     },
     {
-      "time": 90.95,
+      "time": 90.75,
       "material": "paper",
       "pan": -0.35,
       "gain": 0.025
     },
     {
-      "time": 95.1,
+      "time": 96.6,
       "material": "felt",
       "pan": 0.35,
       "gain": 0.03
+    },
+    {
+      "time": 102.4,
+      "material": "paper",
+      "pan": 0,
+      "gain": 0.02
     },
     {
       "time": 108.78,

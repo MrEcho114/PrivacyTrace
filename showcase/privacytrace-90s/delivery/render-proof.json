@@ -8,14 +8,14 @@
     "frames": 2700,
     "workers": 4,
     "shutter": 0,
-    "sourceSha256": "d3b5fdb9808efe4991686769ee8f19d50ce8cc96cf2628fa8d9bb09edec09fc2",
-    "audioSha256": "dbe406ac4e99f3889780eb5bbe855a4e997445ad6c794e6ddea4df2464060c7c",
+    "sourceSha256": "fb05f6a131e77e7203188dd03d0e1a0253de16bc04f3b4d47f23ff62b90b1bc3",
+    "audioSha256": "7c6361077ea9323ae9fa54c6387200e0bfaafc1dc45a485f2627417c6b3f1468",
     "inputAssets": {
       "path": "showcase/privacytrace-90s/assets",
       "files": 513,
-      "sha256": "3c071b050dc6657ac80b36af0ad4d3a56b79aad0851c94ad62f7d4968285850f"
+      "sha256": "f7dbb0ce1950488ec52116304454e04d0a011b7d7820000d18efe142a5cee821"
     },
-    "sha256": "b26898e5cc0ff4f09a6e3993c4182969929dc616346105a0eb314a60a60b37aa",
+    "sha256": "c06238761b57450c14b76349231ebde262d679eb38a217a5f86d261eb860d8fd",
     "decode": "passed"
   },
   "seek": {
@@ -41,7 +41,10 @@
       58,
       66,
       70,
+      74,
+      76,
       79,
+      82,
       87,
       8.9,
       9,
@@ -61,11 +64,11 @@
       84,
       84.1
     ],
-    "sourceSha256": "d3b5fdb9808efe4991686769ee8f19d50ce8cc96cf2628fa8d9bb09edec09fc2",
+    "sourceSha256": "fb05f6a131e77e7203188dd03d0e1a0253de16bc04f3b4d47f23ff62b90b1bc3",
     "inputAssets": {
       "path": "showcase/privacytrace-90s/assets",
       "files": 513,
-      "sha256": "3c071b050dc6657ac80b36af0ad4d3a56b79aad0851c94ad62f7d4968285850f"
+      "sha256": "f7dbb0ce1950488ec52116304454e04d0a011b7d7820000d18efe142a5cee821"
     }
   }
 }

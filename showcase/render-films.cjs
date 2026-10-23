@@ -13,8 +13,8 @@ const { once } = require('node:events');
 const { chromium } = require('playwright');
 const ROOT = path.resolve(__dirname, '..');
 const films = {
-  '90s': {html:'showcase/privacytrace-90s/film-showcase.html', audio:'showcase/privacytrace-90s/assets/soundtrack-polished.m4a', out:'showcase/privacytrace-90s/delivery/PrivacyTrace-作品展示-90s.mp4', dur:90, times:[5,15,20,20.5,21,21.35,21.6,22.5,25,31,39,43,50,58,66,70,79,87], boundaries:[9,21,45,60,72,84]},
-  review: {html:'showcase/privacytrace-review/delivery/film-review.html', audio:'showcase/privacytrace-review/delivery/assets/soundtrack-polished.m4a', out:'showcase/privacytrace-review/delivery/PrivacyTrace-Review-1080p.mp4',dur:120,times:[4,8.5,16,26,35,43,47,50,54,58,62,70,77,85,93,97,104,116],boundaries:[9.375,21.875,40.625,65,90,108.75]}
+  '90s': {html:'showcase/privacytrace-90s/film-showcase.html', audio:'showcase/privacytrace-90s/assets/soundtrack-polished.m4a', out:'showcase/privacytrace-90s/delivery/PrivacyTrace-作品展示-90s.mp4', dur:90, times:[5,15,20,20.5,21,21.35,21.6,22.5,25,31,39,43,50,58,66,70,74,76,79,82,87], boundaries:[9,21,45,60,72,84]},
+  review: {html:'showcase/privacytrace-review/delivery/film-review.html', audio:'showcase/privacytrace-review/delivery/assets/soundtrack-polished.m4a', out:'showcase/privacytrace-review/delivery/PrivacyTrace-Review-1080p.mp4',dur:120,times:[4,8.5,16,26,34,35,37,43,47,50,54,58,62,68,70,72,77,81,85,88,93,97,99,104,116],boundaries:[9.375,21.875,40.625,65,90,108.75]}
 };
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 function assetInputs(){

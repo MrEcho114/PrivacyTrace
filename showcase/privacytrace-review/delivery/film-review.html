@@ -7,15 +7,15 @@
   :root{
     --ink:#07090c;
     --ink2:#0d1219;
-    --paper:#f4f0e4;
-    --paper2:#e6dfcf;
+    --paper:#edf5fc;
+    --paper2:#c0cfdd;
     --muted:#98a2b3;
     --line:rgba(244,240,228,.16);
-    --amber:#e9b872;
-    --blue:#8ea3ff;
+    --amber:#7cc8ff;
+    --blue:#9aa9ff;
     --green:#84c9a6;
     --red:#e58978;
-    --serif:"Noto Serif SC", serif;
+    --serif:"Noto Sans SC", "Microsoft YaHei UI", sans-serif;
     --sans:"Noto Sans SC", "Microsoft YaHei UI", sans-serif;
     --mono:"Cascadia Mono", "Consolas", monospace;
   }
@@ -288,6 +288,83 @@
   .ledger b{font-size:15px}
   .caveat{font-size:13px}
   .res-card .rk{font-size:13px;letter-spacing:.08em}
+
+  /* Third cut: each proof occupies a full field, then makes room for the next. */
+  .bg{background:#0b1520}.grain,.vig,.grid{display:none}.ghost{display:none}
+  #brand .name{font-size:21px} #brand .sub{font-size:12px;letter-spacing:.12em}
+  .h1{font-size:62px;letter-spacing:-.035em;line-height:1.27;font-weight:650}
+  .sec-no{font-size:15px;letter-spacing:.1em}.sec-en{font-size:11px}
+  .hook-line{font-size:64px;font-weight:500;letter-spacing:-.02em}
+  #h1{top:245px}#h2{top:365px}#h3{top:485px}
+  .hook-q{font-size:80px;top:275px}
+  .hook-title{font-size:142px;font-weight:650;letter-spacing:-.055em}
+  .hook-code,.hook-policy,.hook-tag,.hook-link,.hook-node{display:none}
+  .hook-sub{font-size:30px}.hook-meta{font-size:14px}
+  #p-b{font-size:26px;width:900px;top:420px;line-height:1.7}
+  .chips{top:605px;gap:18px}.chip{font-size:23px}.chip b{min-width:100px}
+  #p-not{background:transparent;box-shadow:none;border:0;border-top:1px solid #537187;top:788px;width:900px;height:160px;padding:24px 0}
+  #p-not::after{display:none}.not-head{color:#7cc8ff;font-size:14px}.not-items{color:#edf5fc;font-size:34px}.not-foot{color:#96a9b9;font-size:17px}
+  #p-claim{display:none}
+  #pwin{left:1280px;top:205px;width:330px;height:715px;border-color:#304254;box-shadow:0 30px 70px #0004}
+  #p-wl{left:1280px;top:140px;font-size:14px;line-height:1.6}
+  #i-h{width:1700px} #evcard{left:140px;top:365px;width:1640px;height:460px;background:#f2f6fa;box-shadow:none}
+  .ev-head{font-size:15px}.ev-col{top:95px;width:660px}.ev-k{font-size:17px;color:#176cba}
+  .ev-path{font-size:20px}.ev-loc{font-size:16px}.ev-col pre{font-size:21px;line-height:1.7;padding:20px;min-height:132px}
+  .ev-col blockquote{font-size:33px;line-height:1.7;min-height:132px;border-color:#176cba}
+  .ev-rule{font-size:15px}.ev-foot{font-size:23px}.ev-link{left:730px;top:265px;width:180px;background:#176cba}
+  .ev-link span{font-size:14px;color:#176cba}
+  .principles{left:140px;top:450px;width:1640px;height:300px}
+  .pr{position:absolute;left:0;top:0;width:1640px;height:300px;border:0;border-top:1px solid #537187;background:transparent;padding:32px 0}
+  .pr b{font-size:18px}.pr .pt{font-size:68px;margin-top:32px;letter-spacing:-.03em}
+  .pr span{font-size:28px;line-height:1.7;max-width:1450px;color:#c0cfdd}
+  .inno-quote{top:312px;font-size:55px}.ifoot{font-size:18px;top:920px}
+  #pipe{left:140px;top:382px;width:1640px} #pipe-line{width:1640px}
+  #pn1{left:100px!important}#pn2{left:460px!important}#pn3{left:820px!important}#pn4{left:1180px!important}#pn5{left:1540px!important}
+  #pipe .pipe-node{width:270px}.pipe-node .pt-name{font-size:24px}.pipe-node .pt-sub{font-size:15px;line-height:1.7}
+  #detail-tabs{left:140px;top:385px;width:1000px}#detail-tabs span{font-size:20px;padding:18px 0}
+  #detail{left:140px;top:470px;width:1000px;height:450px;border:0;background:transparent;box-shadow:none;padding:0}
+  .d-page{inset:0;background:#0b1520}.d-k{font-size:21px;letter-spacing:.1em;margin-bottom:18px}
+  .d-row{font-size:23px;padding:16px 0}.d-note{font-size:22px;line-height:1.7;margin-top:20px}
+  #rwin,#phone{left:1300px;top:226px;width:382px;height:720px;border-color:#304254;box-shadow:0 25px 60px #0004}
+  #rwl,#phl{left:1250px;top:146px;width:530px;font-size:14px;line-height:1.65}
+  #im-foot{font-size:14px;top:1007px}
+  #r-h{font-size:58px!important;top:205px!important;line-height:1.2!important;width:1600px}
+  #r-h br{display:none}
+  .res-card{left:140px!important;top:365px!important;width:1640px;height:500px;padding:32px 0;border:0;border-top:1px solid #537187;background:transparent;box-shadow:none}
+  .res-card .rk{font-size:21px;letter-spacing:.08em}
+  .res-card .rbig{margin-top:48px;font-size:104px;letter-spacing:-.04em}.res-card .rbig small{font-size:28px}
+  .res-card .rsub{font-size:27px;margin-top:32px;line-height:1.7}
+  .res-card .rfoot{left:0;bottom:12px;font-size:17px;color:#8da3b5}
+  .compare-rows{left:0;right:0;top:95px}.compare-row{height:92px;gap:36px}
+  .compare-label{width:300px;font-size:28px}.compare-track{grid-template-columns:repeat(12,52px);gap:9px}.compare-track i{height:34px}
+  .compare-value{font-size:48px;width:200px}.compare-note{left:0;top:392px;font-size:22px}
+  .h-summary{left:0;top:92px;font-size:38px}.hgrid{left:0;top:166px;grid-template-columns:repeat(6,94px);gap:12px}
+  .hgrid i{height:56px;font-size:22px}.h-failure{left:0;top:327px;font-size:27px}.h-failure small{font-size:21px}
+  .gkd{left:860px;right:auto;top:91px;width:760px;font-size:26px;line-height:1.6}.gkd small{font-size:20px}
+  .ladder{top:440px}.ladder .step{width:450px;padding-top:25px}.ladder .step b{font-size:36px}.ladder .step span{font-size:21px;margin-top:20px;line-height:1.6}
+  .ladder .neq{font-size:38px}.stamp{left:0;top:176px;font-size:19px}
+  #r-end{top:765px;font-size:52px;letter-spacing:-.02em} #r-foot{top:904px;font-size:20px}
+  #o-h{font-size:58px;top:210px;width:1700px}#o-h br{display:none}
+  #oc1,#oc2{left:140px;top:365px;width:1640px;height:560px;padding:28px 0;border:0;border-top:1px solid #537187;box-shadow:none;background:transparent;color:#edf5fc}
+  #oc1::after{display:none}.ct-head{font-size:20px;color:#7cc8ff}.ct-row{font-size:29px;color:#edf5fc;padding:15px 0;border-color:#263d50}
+  .ct-row b{font-size:17px;color:#7cc8ff;min-width:60px;padding-top:8px}
+  .ct-big{font-size:42px;margin-top:26px;line-height:1.45}
+  .ct-small{font-size:19px;color:#9db0c0;margin-top:20px}.ct-foot{left:0;bottom:12px;font-size:16px;color:#8da3b5}
+  .ct-flow{left:0;bottom:56px;font-size:18px;color:#7cc8ff}.corner{display:none}
+  #oc2 .ct-big{position:absolute;left:0;top:80px;width:760px;font-size:46px}
+  #oc2 .ct-row{position:relative;left:860px;width:780px;top:62px;font-size:25px;padding:24px 0}
+  #oc2 .ct-small{position:absolute;left:860px;top:270px;width:780px;font-size:19px}
+  .ledger{left:140px;top:390px;width:1640px;display:grid;grid-template-columns:repeat(3,1fr);gap:40px 30px;padding-top:32px}
+  .ledger div{font-size:23px;line-height:1.8;width:auto}.ledger b{font-size:37px;color:#7cc8ff;margin-bottom:8px}
+  .caveat{top:872px;font-size:21px;letter-spacing:0}
+  .close-main{font-size:110px!important;letter-spacing:-.04em}.close-sub{font-size:30px;font-weight:400}
+  .close-meta{font-size:14px}.close-foot{font-size:15px}
+
+
+  .d-row span,.d-note{color:#94aabd}
+  #oc2 .ct-small,#oc2 .ct-foot{color:#9db0c0}#oc2 .ct-flow{color:#7cc8ff}
+  .ledger div,.caveat{color:#a3b6c5}
+  .not-head,.ev-head,.ev-head span:last-child{color:#176cba}
 </style>
 </head>
 <body>
@@ -420,7 +497,7 @@
       </div>
       <div class="d-page" id="d3">
         <div class="d-k">政策快照 / POLICY</div>
-        <div class="d-row"><span>OFFSET</span><b>[start, end) · UTF-8 码点</b></div>
+        <div class="d-row"><span>OFFSET</span><b>[start, end) · Unicode 码点</b></div>
         <div class="d-row"><span>CHECK</span><b>切片 == excerpt</b></div>
         <div class="d-row"><span>IMMUTABLE</span><b>旧快照不覆盖</b></div>
         <div class="d-row"><span>META</span><b>来源 · 版本 · 采集时点</b></div>
@@ -512,8 +589,8 @@
     </div>
     <div class="panel ct-card r" id="oc2">
       <div class="ct-head">AI 辅助 · 披露在案</div>
-      <div class="ct-big">脚手架与接口代码<br>测试与验收脚本<br>文档与文案草稿</div>
-      <div class="ct-row" id="air1"><b>用途</b><span>脚手架、测试、文档与文案草稿。</span></div>
+      <div class="ct-big">脚手架与接口代码<br>测试与验收脚本<br>文档、文案草稿</div>
+      <div class="ct-row" id="air1"><b>用途</b><span>辅助起草，由团队筛选、修改。</span></div>
       <div class="ct-row" id="air2"><b>披露</b><span>工具、用途与人工筛选记录保留在仓库。</span></div>
       <div class="ct-small">第三方：Androguard 4.1.3（Apache-2.0）· FastAPI · Vue 3 · PostgreSQL · Tauri 2。</div>
       <div class="ct-flow">工具 → 用途 → 受影响文件 → 人工修改 → 复核</div>
@@ -650,25 +727,18 @@
 
   // ------------------------------------------------------------- innovation
   function renderInno(t){
-    fade($('#i-h'), t, 21.95, 33.55, .7, 26);
-    const w = clamp((t-23.35)/.8,0,1);
-    const card = $('#evcard');
-    card.style.clipPath = 'inset(0 ' + ((1-outQuint(w))*100).toFixed(2) + '% 0 0)';
-    card.style.opacity = w > .001 ? '1' : '0';
-    fade($('#ev-l'), t, 23.9, 33.6, .55, 14);
-    fade($('#ev-r'), t, 24.6, 33.6, .55, 14);
-    const lp = outQuint(clamp((t-25.6)/.75,0,1));
-    $('#ev-line').style.transform = 'scaleX(' + lp.toFixed(4) + ')';
-    $('#ev-line').style.opacity = (.9*lp).toFixed(3);
-    fade($('#ev-foot'), t, 26.6, 33.6, .5, 10);
-    const shrink = inOut(clamp((t-29.0)/1.1,0,1));
-    card.style.transform = 'translate3d(' + (-30*shrink).toFixed(2) + 'px,' + (-54*shrink).toFixed(2) + 'px,0) scale(' + (1-0.10*shrink).toFixed(4) + ')';
-    card.style.opacity = ((w > .001 ? 1 : 0) * (1 - smooth((t-33.65)/.6))).toFixed(3);
-    fade($('#pr1'), t, 29.5, 38.5, .55, 22);
-    fade($('#pr2'), t, 30.15, 38.5, .55, 22);
-    fade($('#pr3'), t, 30.8, 38.5, .55, 22);
-    fade($('#iquote'), t, 33.95, 40.05, .65, 22);
-    fade($('#ifoot'), t, 34.4, 40.35, .55, 12);
+    fade($('#i-h'),t,21.95,32.1,.55,0);
+    const card=$('#evcard');
+    card.style.opacity=(smooth((t-23.15)/.5)*(1-smooth((t-32.1)/.35))).toFixed(3);
+    card.style.clipPath='none';card.style.transform='none';
+    fade($('#ev-l'),t,23.4,null,.45,0);fade($('#ev-r'),t,25.1,null,.45,0);
+    $('#ev-line').style.transform='scaleX('+outQuint((t-26.5)/.75).toFixed(4)+')';
+    $('#ev-line').style.opacity=smooth((t-26.5)/.5).toFixed(3);
+    fade($('#ev-foot'),t,27.4,null,.4,0);
+    const principles=[['pr1',32.45,35.0],['pr2',35.0,37.55],['pr3',37.55,40.3]];
+    principles.forEach(([id,a,b])=>fade($('#'+id),t,a,b-.15,.25,0));
+    $('#iquote').style.opacity='0';
+    fade($('#ifoot'),t,32.5,40.1,.4,0);
   }
 
   // ---------------------------------------------------------- implementation
@@ -683,12 +753,12 @@
     for(let i=1;i<=5;i++){
       fade($('#pn'+i), t, 41.85 + (i-1)*.42, null, .5, 16);
     }
-    const dim = smooth((t-44.2)/1.0);
-    $('#pipe').style.opacity = (1 - .78*dim).toFixed(3);
-    cardIn($('#detail'), t, 44.3, .6, .98);
+    const dim = smooth((t-44.2)/.45);
+    $('#pipe').style.opacity = (1 - dim).toFixed(3);
+    fade($('#detail'),t,44.5,null,.35,0);
     const pages = [['d1',44.4,48.15],['d2',48.15,51.95],['d3',51.95,55.75],['d4',55.75,64.3]];
     const activePage=Math.max(0,pages.findLastIndex(p=>t>=p[1]));
-    fade($('#detail-tabs'),t,44.3,64.3,.3,0);
+    fade($('#detail-tabs'),t,44.4,64.3,.3,0);
     document.querySelectorAll('#detail-tabs span').forEach((el,i)=>el.classList.toggle('active',i===activePage));
     pages.forEach(([id,a,b])=>{
       const el = $('#'+id);
@@ -719,36 +789,28 @@
 
   // ---------------------------------------------------------------- results
   function renderRes(t){
-    fade($('#r-h'), t, 65.05, null, .7, 26);
-    cardIn($('#rc1'), t, 65.90, .6, .97);
-    cardIn($('#rc2'), t, 68.90, .6, .97);
-    cardIn($('#rc3'), t, 71.90, .6, .97);
-    cardIn($('#rc4'), t, 74.90, .6, .97);
-    const dim = smooth((t-79.8)/1.2);
-    const dimF = 1 - .45*dim;
-    ['rc1','rc2','rc3','rc4'].forEach(id => { const el = $('#'+id); const base = parseFloat(el.style.opacity) || 0; el.style.opacity = (base*dimF).toFixed(3); });
-    fade($('#ladder'), t, 80.0, null, .65, 18);
-    const stamp = $('#stamp');
-    const sp = smooth((t-82.2)/.5);
-    stamp.style.opacity = (sp*.95).toFixed(3);
-    stamp.style.transform = 'rotate(-4deg) scale(' + (1.25 - .25*sp).toFixed(3) + ')';
-    fade($('#r-foot'), t, 83.2, null, .5, 10);
-    fade($('#r-end'), t, 85.8, null, .65, 16);
-    const glow = clamp((t-85.8)/.6,0,1);
-    $('#r-end').style.color = glow > .5 ? 'var(--amber)' : 'var(--paper)';
+    fade($('#r-h'),t,65.05,null,.55,0);
+    const items=[['rc1',65.65,69.65],['rc2',69.65,73.6],['rc3',73.6,79],['rc4',79,85.2]];
+    items.forEach(([id,a,b])=>fade($('#'+id),t,a,b-.16,.27,0));
+    document.querySelectorAll('.compare-row').forEach((el,i)=>fade(el,t,74.0+i*.65,null,.4,0));
+    fade($('#ladder'),t,85.3,null,.4,0);
+    $('#stamp').style.opacity=smooth((t-86.0)/.3).toFixed(3);
+    $('#stamp').style.transform='none';
+    fade($('#r-end'),t,86.0,null,.45,0);
+    $('#r-end').style.color='var(--amber)';
+    fade($('#r-foot'),t,86.5,null,.4,0);
   }
 
   // ----------------------------------------------------------- contribution
   function renderOrig(t){
-    fade($('#o-h'), t, 90.02, null, .7, 26);
-    cardIn($('#oc1'), t, 90.95, .7, .975);
-    cardIn($('#oc2'), t, 95.1, .7, .975);
-    ['or1','or2','or3','or4','or5'].forEach((id,i)=>fade($('#'+id), t, 91.7+i*.55, null, .45, 8));
-    fade($('#air1'), t, 96.0, null, .5, 8);
-    fade($('#air2'), t, 96.8, null, .5, 8);
-    fade($('#ledger'), t, 99.3, null, .6, 14);
-    ['lg1','lg2','lg3','lg4','lg5'].forEach((id,i)=>fade($('#'+id), t, 99.7+i*.55, null, .45, 8));
-    fade($('#caveat'), t, 104.4, null, .55, 10);
+    fade($('#o-h'),t,90.02,null,.55,0);
+    fade($('#oc1'),t,90.75,96.35,.35,0);
+    ['or1','or2','or3','or4','or5'].forEach((id,i)=>fade($('#'+id),t,91.1+i*.22,null,.25,0));
+    fade($('#oc2'),t,96.6,102.15,.35,0);
+    fade($('#air1'),t,97.1,null,.3,0);fade($('#air2'),t,97.6,null,.3,0);
+    fade($('#ledger'),t,102.4,null,.35,0);
+    ['lg1','lg2','lg3','lg4','lg5'].forEach((id,i)=>fade($('#'+id),t,102.7+i*.2,null,.25,0));
+    fade($('#caveat'),t,104.35,null,.4,0);
   }
 
   // ------------------------------------------------------------------ close

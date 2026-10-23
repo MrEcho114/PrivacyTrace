@@ -3,7 +3,7 @@
   "source": "soundtrack-90s.m4a",
   "sourceSha256": "ca69b0e6cb46a82e532ec308ab5bdfe3552287a1f0a9b0ddf4fd53c0c79528f0",
   "output": "soundtrack-polished.m4a",
-  "sha256": "dbe406ac4e99f3889780eb5bbe855a4e997445ad6c794e6ddea4df2464060c7c",
+  "sha256": "7c6361077ea9323ae9fa54c6387200e0bfaafc1dc45a485f2627417c6b3f1468",
   "sampleRate": 48000,
   "seed": 305264,
   "materials": [
@@ -13,16 +13,22 @@
   "externalSamples": [],
   "events": [
     {
-      "time": 1.65,
+      "time": 0.75,
       "material": "felt",
-      "pan": 0.1,
-      "gain": 0.045
+      "pan": -0.3,
+      "gain": 0.04
     },
     {
-      "time": 3.1,
+      "time": 2.6,
       "material": "paper",
       "pan": 0.35,
       "gain": 0.025
+    },
+    {
+      "time": 5.65,
+      "material": "felt",
+      "pan": 0,
+      "gain": 0.035
     },
     {
       "time": 9.0,
@@ -49,7 +55,7 @@
       "gain": 0.03
     },
     {
-      "time": 72.0,
+      "time": 72.75,
       "material": "felt",
       "pan": 0,
       "gain": 0.035
@@ -73,7 +79,7 @@
       "output_i": "-16.02",
       "output_tp": "-2.00",
       "output_lra": "2.20",
-      "output_thresh": "-26.11",
+      "output_thresh": "-26.10",
       "normalization_type": "dynamic",
       "target_offset": "0.02"
     }

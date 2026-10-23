@@ -37,6 +37,13 @@ const sourceVersionLabel = computed(() => {
   return version && version.toUpperCase() !== 'UNKNOWN' ? version : '版本未知'
 })
 const candidates = computed(() => props.state.candidates.filter(item => item.sourceId === props.state.sourceId))
+// 移动端的来源切换是标签栏：短名保证可横滚且互不重复，完整标题紧挨在下方展示；
+// 桌面保持原来的完整标题按钮，不改冻结布局。只有一份来源且标题很短时才直接用标题。
+const sourceTabLabel = (item: PolicySource, index: number) => {
+  const title = item.title || '未命名来源'
+  if (!props.mobile) return title
+  return props.state.sources.length > 1 || title.length > 10 ? `来源 ${index + 1}` : title
+}
 const extractionUnavailable = computed(() => !!source.value && (props.failedSourceIds?.includes(source.value.id) || source.value.modelAudit?.status === 'FAILED'))
 const quoteValid = computed(() => !!chosen.value && quoteExists(chosen.value, props.state.sources))
 const quoteError = computed(() => {
@@ -84,8 +91,9 @@ function editQuote() { if (chosen.value) chosen.value.startOffset = undefined; e
   <div class="page page-candidates">
     <div v-if="!mobile" class="page-heading"><h1 id="page-title" tabindex="-1">{{ frontendCopy.pageTitles.candidates }}</h1><p>{{ copy.candidateHelp }}</p></div>
     <slot name="context" />
-    <div class="source-tabs" role="group" aria-label="政策来源"><button v-for="item in state.sources" :key="item.id" :aria-pressed="item.id === state.sourceId" :class="{ selected: item.id === state.sourceId }" @click="state.sourceId = item.id">{{ item.title || '未命名来源' }}<span v-if="item.status === 'failed'"> · 获取失败</span></button></div>
+    <div class="source-tabs" role="group" aria-label="政策来源"><button v-for="(item, index) in state.sources" :key="item.id" :aria-pressed="item.id === state.sourceId" :aria-label="item.title || `来源 ${index + 1}`" :class="{ selected: item.id === state.sourceId }" @click="state.sourceId = item.id">{{ sourceTabLabel(item, index) }}<span v-if="item.status === 'failed'"> · 失败</span></button></div>
     <p v-if="source" class="source-context" role="note" data-testid="candidate-source-context">
+      <strong v-if="mobile" class="source-context-title">{{ source.title || '未命名来源' }}</strong>
       <StatusTag :tone="source.status === 'failed' ? 'error' : 'neutral'">{{ sourceTypes[source.type] }}</StatusTag>
       <span>{{ sourceVersionLabel }}</span>
       <span class="source-context-meta"><span v-if="source.status === 'failed'">来源获取失败</span><span>{{ policyStateFromSource(source) }}</span><span>{{ copy.sourceScopeUnknown }}</span></span>
@@ -96,13 +104,13 @@ function editQuote() { if (chosen.value) chosen.value.startOffset = undefined; e
       <button id="tab-candidates" type="button" role="tab" aria-controls="panel-candidates" :aria-selected="mobileTab === 'candidates'" :tabindex="mobileTab === 'candidates' ? 0 : -1" :class="{ selected: mobileTab === 'candidates' }" @click="mobileTab = 'candidates'">候选声明 {{ candidates.length }}</button>
     </div>
     <div v-if="source" class="candidate-grid" :data-tab="mobileTab" :inert="busy || undefined" :aria-busy="busy || undefined">
-      <section id="panel-original" class="material-panel original-panel" role="tabpanel" aria-labelledby="tab-original"><div class="panel-heading"><h2>政策原文</h2><StatusTag :tone="source.status === 'failed' ? 'error' : 'neutral'">{{ sourceTypes[source.type] }}</StatusTag></div><UiButton v-if="!state.example" :disabled="busy || source.status === 'failed'" variant="quiet" @click="$emit('retryModel', source.id)">重新提取候选</UiButton>
+      <section id="panel-original" class="material-panel original-panel" role="tabpanel" aria-labelledby="tab-original"><div class="panel-heading"><h2>政策原文</h2><StatusTag v-if="!mobile" :tone="source.status === 'failed' ? 'error' : 'neutral'">{{ sourceTypes[source.type] }}</StatusTag></div><UiButton v-if="!state.example" :disabled="busy || source.status === 'failed'" variant="quiet" @click="$emit('retryModel', source.id)">重新提取候选</UiButton>
         <div v-if="source.status === 'failed'" class="notice" role="status"><p>{{ state.example ? copy.sourceFailed : "这份来源未获得正文，可重试或返回材料页手动补入。" }}</p><UiButton v-if="state.example" @click="source.status = source.text.trim() ? 'ready' : 'empty'">重试示例来源</UiButton><UiButton v-else @click="$emit('retrySource', source.id)">重新获取来源</UiButton></div>
         <div v-else class="policy-reading" tabindex="0" aria-label="政策原文阅读区"><span>{{ parts.before }}</span><mark v-if="parts.quote" id="candidate-quote-mark" tabindex="-1">{{ parts.quote }}</mark><span>{{ parts.after }}</span><p v-if="!source.text">{{ copy.missingText }}</p></div>
         <div class="source-notes"><span>正文节选</span></div>
       </section>
-      <section id="panel-candidates" class="material-panel candidates-panel priority-panel" role="tabpanel" aria-labelledby="tab-candidates"><div class="panel-heading"><h2>候选声明 <span class="count">{{ candidates.length }}</span></h2><UiButton id="add-candidate" :disabled="source.status === 'failed' || state.candidates.length >= candidateLimit" @click="add">{{ copy.addCandidate }}</UiButton></div>
-        <p class="candidate-summary" role="status">已检查 {{ checkedCount }}/{{ candidates.length }} 条<span>选择一条查看或修改</span></p>
+      <section id="panel-candidates" class="material-panel candidates-panel priority-panel" role="tabpanel" aria-labelledby="tab-candidates"><div class="panel-heading"><h2>候选声明<span v-if="!mobile" class="count">{{ candidates.length }}</span></h2><UiButton id="add-candidate" :disabled="source.status === 'failed' || state.candidates.length >= candidateLimit" @click="add">{{ copy.addCandidate }}</UiButton></div>
+        <p class="candidate-summary" role="status">已检查 {{ checkedCount }}/{{ candidates.length }} 条<span> · 选择一条查看或修改</span></p>
         <div class="candidate-list" role="group" aria-label="候选列表"><button v-for="candidate in candidates" :key="candidate.id" class="candidate-item" :class="{ selected: chosenId === candidate.id }" :aria-pressed="chosenId === candidate.id" @click="select(candidate)"><span class="candidate-item-heading"><strong>{{ editorTypes[candidate.dataType] || candidate.dataType }}</strong><StatusTag :tone="candidate.checked && quoteExists(candidate, state.sources) ? 'success' : 'wait'">{{ candidate.checked && quoteExists(candidate, state.sources) ? '已检查' : '待检查' }}</StatusTag></span><span class="candidate-quote-preview">{{ candidate.quote || copy.quoteMissing }}</span><UiIcon v-if="mobile" name="chevron-right" class="candidate-chevron" /></button><p v-if="!candidates.length" class="field-help">{{ frontendCopy.facts.noCandidates }}</p></div>
         <p v-if="candidates.length" class="field-help">{{ frontendCopy.facts.candidateUnconfirmed }}</p>
         <form v-if="chosen" class="candidate-editor" @submit.prevent="save">

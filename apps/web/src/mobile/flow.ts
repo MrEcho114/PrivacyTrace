@@ -21,6 +21,9 @@ export function createMobileFlow(bridge: MobileBridge) {
   const context = ref<Upload | null>(null), draft = ref<LiveDraft | null>(null)
   const job = ref<AnalysisJob | null>(null), report = ref<Report | null>(null), taxonomy = ref<Taxonomy | null>(null)
   const busy = ref(false), error = ref(''), notice = ref('')
+  // 自动轮询仍在后台运行时，进度页要能说清“最近一次读到状态是什么时候”，
+  // 而不是让用户误以为必须手点刷新。只记录真实成功的读取时间。
+  const lastUpdated = ref('')
   const model = ref<ModelStatus>({ configured: false, endpoint: null }), modelResult = ref(''), resultToken = ref(0)
   // Starting without a body is always rejected by captures(), so the shell gates
   // the action on the same condition and explains the missing material (#249).
@@ -150,7 +153,7 @@ export function createMobileFlow(bridge: MobileBridge) {
     taxonomy.value = await request<Taxonomy>('taxonomy')
     if (restored.jobs.length) {
       state.step = 'progress'
-      try { job.value = await request<AnalysisJob>('job') }
+      try { job.value = await request<AnalysisJob>('job'); lastUpdated.value = new Date().toISOString() }
       catch (cause) {
         check()
         if (cause === 'SERVER_BUSY' || (cause instanceof Error && cause.message === 'SERVER_BUSY')) throw cause
@@ -248,7 +251,10 @@ export function createMobileFlow(bridge: MobileBridge) {
         apply(await request<LiveDraft>('candidates', { revision: draft.value.revision, candidates: state.candidates.map(encode) }))
         pendingStart = { revision: draft.value.revision, request_id: crypto.randomUUID().replaceAll('-', '') }
       }
-      try { job.value = await request<AnalysisJob>('start', pendingStart) }
+      try {
+        job.value = await request<AnalysisJob>('start', pendingStart)
+        lastUpdated.value = new Date().toISOString()
+      }
       catch (cause) {
         check()
         if (!await recover(await request<LiveDraft>('read'))) throw cause
@@ -275,6 +281,7 @@ export function createMobileFlow(bridge: MobileBridge) {
         const latest = await bridgeRequest<LiveDraft>('read')
         if (current !== generation || epoch !== pollEpoch || busy.value) return
         job.value = nextJob
+        lastUpdated.value = new Date().toISOString()
         // The candidate page is editable while an automatic poll runs, so progress
         // and the server revision update here but local candidate edits survive.
         apply(latest, true)
@@ -302,13 +309,21 @@ export function createMobileFlow(bridge: MobileBridge) {
     }
     await run(async (request, check) => {
       if (restoring) await readSelection(request, check)
-      else { job.value = await request<AnalysisJob>('job'); apply(await request<LiveDraft>('read')) }
+      else {
+        job.value = await request<AnalysisJob>('job')
+        lastUpdated.value = new Date().toISOString()
+        apply(await request<LiveDraft>('read'))
+      }
     })
     schedule(current)
   }
   async function control(action: 'cancel-job' | 'retry-job') {
     const current = generation
-    await run(async request => { job.value = await request<AnalysisJob>(action); state.step = 'progress' })
+    await run(async request => {
+      job.value = await request<AnalysisJob>(action)
+      lastUpdated.value = new Date().toISOString()
+      state.step = 'progress'
+    })
     schedule(current, true, true)
   }
   async function openReport() { await run(async request => { report.value = await request<Report>('report'); state.step = 'report' }) }
@@ -365,5 +380,5 @@ export function createMobileFlow(bridge: MobileBridge) {
         : `${source.title || '这份来源'}：候选提取已完成；候选仍需检查，政策全文及附件未复核。`
     })
   }
-  return { state, context, draft, job, report, taxonomy, busy, error, notice, model, modelResult, resultToken, hasPolicyText, settings, collect, select, refresh, importCollected, prepare, save, begin, poll, control, openReport, remove, retrySource, retryModel, stop }
+  return { state, context, draft, job, report, taxonomy, busy, error, notice, lastUpdated, model, modelResult, resultToken, hasPolicyText, settings, collect, select, refresh, importCollected, prepare, save, begin, poll, control, openReport, remove, retrySource, retryModel, stop }
 }

@@ -5,6 +5,7 @@ import { clampSdkPage, getSdkEvidence, sdkPageCount, sdkPageSlice } from './sdkE
 import type { AnalysisJob, DemoReport, MatchStatus, PrivacyIssue, Report, ReportSource, Taxonomy, WebSource } from './types'
 import { parseSource, serializeSource, sourceProvenanceLabel, sourceStatusLabel } from './types'
 import EvidencePanel from './components/EvidencePanel.vue'
+import HashValue from './components/HashValue.vue'
 import UiIcon from './components/UiIcon.vue'
 import BrandMark from './components/BrandMark.vue'
 import MobileReportSummary from './components/MobileReportSummary.vue'
@@ -709,6 +710,8 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
         :name="report.sample.name" :version="report.demo ? report.sample.version : (report.sample.version_name ?? ('v' + report.sample.version_code))"
         :source-badge="sourceInfo?.badge ?? '来源未标注'"
         :delivery-badge="deliveryInfo?.badge ?? '投递方式未标注'"
+        :coverage-status="report.demo ? null : (realReport?.coverage.status ?? null)"
+        :review-count="report.result.issues.filter(issue => issue.requires_review).length"
         :data-type-count="dataTypeCount" :policy-count="report.policy_documents.length" :evidence-count="report.evidence.length" />
       <details v-if="!mobile" class="demo-note"><summary>分析范围与来源 · <strong>{{ sourceInfo?.label ?? (source.kind === 'demo' ? 'SYNTHETIC 示例' : '真实 APK 静态报告') }}</strong></summary>
         {{ sourceInfo?.desc ?? (source.kind === 'demo' ? '人工构造的代码片段与政策文本，不属于真实 APK。' : 'APK 只做静态扫描，没有安装或运行。') }}
@@ -775,7 +778,8 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
               </div>
               <p v-if="!report.result.issues.length" class="subtle">未产生对照项。核对下方权限与扫描范围。</p>
               <p class="comparison-scope">{{ frontendCopy.comparisonScope }}</p>
-              <div class="report-actions">
+              <!-- 移动端每条结论自带“查看 N 条证据”入口，底部不再放第二个主操作。 -->
+              <div v-if="!mobile" class="report-actions">
                 <p class="report-action-context">{{ selected ? `当前对象：${issueNumber(selected)} / ${label(selected.data_type)} · 结论：${statusLabels[selected.status]}` : '尚无条目可阅读' }}</p>
                 <button type="button" class="ui-button primary report-primary-action" :disabled="!selected" @click="openSelectedEvidence($event)">查看{{ selected ? `「${label(selected.data_type)}」` : '' }}证据与政策原文</button>
               </div>
@@ -790,7 +794,7 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
              confirmed lower-area reading, not a sheet/drawer/second reader. The
              return control keeps the selected item and restores the trigger. -->
         <section v-if="mobile && selected && report" class="report-evidence report-evidence-inline" aria-label="当前条目证据">
-          <EvidencePanel :issue="selected" :report="report" :taxonomy="taxonomy" :status-labels="statusLabels" :kind-labels="kindLabels" :source-labels="sourceLabels" @close="returnToTrigger()" @open-policy="jumpToPolicy" />
+          <EvidencePanel compact :issue="selected" :report="report" :taxonomy="taxonomy" :status-labels="statusLabels" :kind-labels="kindLabels" :source-labels="sourceLabels" @close="returnToTrigger()" @open-policy="jumpToPolicy" />
         </section>
         <section v-if="realReport" class="report-provenance" aria-label="报告生成来源">
           <strong>{{ offlineReplay ? 'OFFLINE REPLAY · 离线回放' : '存档报告查看 · PERSISTED REPLAY' }}</strong>
@@ -809,7 +813,8 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           <article v-for="doc in report.policy_documents" :key="doc.id" :id="'policy-' + doc.id" class="policy-document" tabindex="-1">
             <strong>{{ doc.title }}</strong>
             <p>{{ sourceLabels[doc.source_type] }} · {{ doc.version }} · {{ doc.captured_at }}</p>
-            <p class="hash">SHA-256 {{ doc.artifact.sha256 }}</p>
+            <HashValue v-if="mobile" label="SHA-256" :value="doc.artifact.sha256" />
+            <p v-else class="hash">SHA-256 {{ doc.artifact.sha256 }}</p>
             <p>{{ policyStateLine(doc) }} · 提取 {{ doc.extraction_status ?? '未知' }}</p>
             <p class="hash">适用范围 {{ JSON.stringify(doc.applicability) }}</p>
             <details :open="openedPolicyId === doc.id" @toggle="policyToggle($event, doc.id)">
@@ -842,7 +847,8 @@ onBeforeUnmount(() => { ++requestId; controller?.abort(); clearTimeout(timer) })
           <ul><li v-for="limitation in (realReport.coverage.limitations ?? [])" :key="limitation">{{ limitation }}</li></ul>
           <p class="subtle">{{ frontendCopy.facts.coverage }}</p>
           <ul><li v-for="limitation in (realReport.coverage.behavior_limitations ?? [])" :key="limitation">{{ limitation }}</li></ul>
-          <p class="hash">输入 APK SHA-256：{{ realReport.sample.apk_sha256 }}</p>
+          <HashValue v-if="mobile" label="输入 APK SHA-256" :value="realReport.sample.apk_sha256 ?? ''" />
+          <p v-else class="hash">输入 APK SHA-256：{{ realReport.sample.apk_sha256 }}</p>
         </section>
         <section v-if="webSources.length" class="coverage-card"><h2>输入来源状态</h2><p>失败来源保留；{{ webSourceState }}。</p><ul><li v-for="(item, index) in webSources" :key="index"><strong>{{ item.title }}</strong> · {{ sourceStatusLabel(item.status) }} · {{ sourceProvenanceLabel(item.provenance) }}<span v-if="item.error_code"> · {{ item.error_code }}</span><p class="subtle">请求网址 {{ item.url || '手动输入' }} · 最终网址 {{ item.final_url || '未获取／手动输入' }}</p></li></ul></section>
         <section v-if="realReport && !offlineReplay && !snapshot" class="review-panel">

@@ -100,6 +100,56 @@ async function checkMobileDesign(page) {
   await page.mouse.move(0, 0)
   await assertMobileDesign(page)
 }
+// #295: 200% 根字号下真正要守的不是“没有横向溢出”，而是正文还有阅读空间、
+// 主操作没有逐字竖排、当前步骤标签完整可辨。旧实现（次按钮不收缩 + 主按钮被挤窄）
+// 会在这里失败。
+async function assertLargeTextLayout(page, label, options = {}) {
+  const measured = await page.evaluate(() => {
+    const lineCount = element => {
+      if (!element) return null
+      const range = document.createRange()
+      range.selectNodeContents(element)
+      const tops = new Set([...range.getClientRects()].filter(rect => rect.width > 0 && rect.height > 0).map(rect => Math.round(rect.top)))
+      return tops.size
+    }
+    const bar = document.querySelector('.m-actionbar')
+    const primary = document.querySelector('.m-actionbar .ui-button.primary')
+    const step = document.querySelector('.m-step[aria-current="step"] .m-step-label')
+    const primaryRect = primary?.getBoundingClientRect()
+    return {
+      barHeight: bar ? Math.round(bar.getBoundingClientRect().height) : 0,
+      primaryLines: lineCount(primary),
+      primaryHeight: primaryRect ? Math.round(primaryRect.height) : 0,
+      primaryWidth: primaryRect ? Math.round(primaryRect.width) : 0,
+      stepLines: lineCount(step),
+      stepClipped: step ? step.scrollWidth > step.clientWidth + 1 || step.scrollHeight > step.clientHeight + 1 : null,
+      stepText: step?.textContent?.trim() ?? '',
+      viewport: innerHeight,
+    }
+  })
+  if (options.expectPrimary !== false) {
+    assert.ok(measured.primaryLines != null, `${label}: the step must keep one primary action`)
+    assert.ok(measured.primaryLines <= 2, `${label}: the primary action must not stack one character per line (${measured.primaryLines} text lines)`)
+    assert.ok(measured.primaryWidth >= 160, `${label}: the primary action keeps a usable width (got ${measured.primaryWidth}px)`)
+    assert.ok(measured.primaryHeight >= 47.5, `${label}: the primary action keeps its 48px touch height (got ${measured.primaryHeight}px)`)
+  }
+  assert.ok(measured.barHeight <= measured.viewport * 0.4, `${label}: the fixed action bar must leave the body readable (bar ${measured.barHeight}px of ${measured.viewport}px)`)
+  assert.ok(measured.stepLines != null && measured.stepLines <= 2, `${label}: the current step label must stay complete (got ${measured.stepLines} lines for "${measured.stepText}")`)
+  assert.equal(measured.stepClipped, false, `${label}: the current step label must not be clipped`)
+  return `${label}: bar ${measured.barHeight}px/${measured.viewport}px, primary ${measured.primaryWidth}x${measured.primaryHeight}, step "${measured.stepText}" ${measured.stepLines} line(s)`
+}
+// 报告的章节说明沿用了共享固定行高；这里按真实计算值确认 200% 下换成了相对行高。
+async function assertReportNoteLineHeight(page, label) {
+  const note = await page.evaluate(() => {
+    const element = document.querySelector('.m-report .shell .section-heading .subtle')
+    if (!element) return null
+    const style = getComputedStyle(element)
+    return { size: Number.parseFloat(style.fontSize), line: Number.parseFloat(style.lineHeight) }
+  })
+  assert.ok(note, `${label}: the report keeps its section note`)
+  assert.ok(note.line >= note.size * 1.4, `${label}: report notes must use a relative line-height (${note.line}px for ${note.size}px text)`)
+  return `${label}: report note line-height ${note.line}px / ${note.size}px`
+}
 
 function bridge(options) {
   globalThis.isTauri = true
@@ -269,7 +319,7 @@ async function verifyIssueFixes(browser, origin) {
         await page.getByRole('button', { name: '使用个人模型收集一次', exact: true }).click()
         await openAssist()
         await settleCollect(page, first)
-        await page.getByRole('button', { name: '准备政策并继续', exact: true }).click()
+        await page.getByRole('button', { name: '准备政策', exact: true }).click()
         await waitTitle(page, '核对政策声明', 12000)
         await page.getByRole('button', { name: '返回上一步' }).click()
         await waitTitle(page, 'APK 与政策材料', 12000)
@@ -289,8 +339,11 @@ async function verifyIssueFixes(browser, origin) {
         // #243 acceptance 3: deleting the old material and choosing a new instance
         // must not carry the retained answer into the new draft.
         await page.getByRole('button', { name: '删除已上传材料', exact: true }).click()
-        await page.getByRole('button', { name: '选择应用并上传', exact: true }).waitFor({ timeout: 10000 })
-        await page.getByRole('button', { name: '选择应用并上传', exact: true }).click()
+        // #295: deletion is destructive, so the shell asks for an explicit confirm
+        // in place before the native delete runs.
+        await page.getByRole('button', { name: '确认删除', exact: true }).click()
+        await page.getByRole('button', { name: '选择应用', exact: true }).waitFor({ timeout: 10000 })
+        await page.getByRole('button', { name: '选择应用', exact: true }).click()
         await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 10000 })
         await page.waitForTimeout(200)
         assert.equal(await page.evaluate(() => document.querySelector('#collector-result')?.value ?? '<missing>'), '', 'a new material instance must start with an empty assistant box')
@@ -312,7 +365,7 @@ async function verifyIssueFixes(browser, origin) {
       async run(page) {
         await page.getByRole('button', { name: '恢复当前材料', exact: true }).click()
         await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
-        await page.getByRole('button', { name: '准备政策并继续', exact: true }).click()
+        await page.getByRole('button', { name: '准备政策', exact: true }).click()
         await waitTitle(page, '核对政策声明', 12000)
         await page.getByRole('tab', { name: '政策原文', exact: true }).click()
         const extract = page.getByRole('button', { name: '重新提取候选', exact: true })
@@ -344,7 +397,7 @@ async function verifyIssueFixes(browser, origin) {
       async run(page) {
         await page.getByRole('button', { name: '恢复当前材料', exact: true }).click()
         await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
-        await page.getByRole('button', { name: '准备政策并继续', exact: true }).click()
+        await page.getByRole('button', { name: '准备政策', exact: true }).click()
         const alert = page.getByRole('alert')
         await alert.waitFor({ timeout: 10000 })
         assert.ok((await alert.innerText()).includes('正文'), 'the blocked start states that a policy body is required')
@@ -353,12 +406,12 @@ async function verifyIssueFixes(browser, origin) {
         assert.equal(await count(page, 'start'), 0)
         await page.getByRole('button', { name: '核对政策声明', exact: true }).click()
         await waitTitle(page, '核对政策声明', 8000)
-        const start = page.getByRole('button', { name: '保存候选并开始分析', exact: true })
+        const start = page.getByRole('button', { name: '保存并分析', exact: true })
         assert.equal(await start.isDisabled(), true, 'the start action is disabled while every source lacks text')
         assert.ok((await page.locator('main').innerText()).includes('可对照的政策正文'), 'the candidate step explains the missing prerequisite')
-        await page.getByRole('button', { name: '修改材料', exact: true }).click()
+        await page.getByRole('button', { name: '更换材料', exact: true }).click()
         await waitTitle(page, 'APK 与政策材料', 8000)
-        await page.getByRole('button', { name: '准备政策并继续', exact: true }).click()
+        await page.getByRole('button', { name: '准备政策', exact: true }).click()
         await waitTitle(page, '核对政策声明', 12000)
         assert.equal(await start.isDisabled(), false, 'a fetched body restores the existing start action')
         await start.click()
@@ -458,7 +511,7 @@ async function main() {
     page.on('request', request => { if (new URL(request.url()).pathname.startsWith('/api/')) api.push(request.url()) })
     await page.addInitScript(bridge, { ...fixtures, policyTitle: longTitle, policyText: longPolicy, policyUrl: longUrl })
     await page.goto(origin)
-    await page.getByRole('button', { name: '选择应用并上传', exact: true }).click()
+    await page.getByRole('button', { name: '选择应用', exact: true }).click()
     await page.getByRole('heading', { name: '政策来源', exact: true }).waitFor({ timeout: 8000 })
     // #169 mobile brand slot: the import step shows the same-origin symbol in the
     // 48x48 app-bar slot (no letter placeholder); later steps keep the back button.
@@ -516,12 +569,13 @@ async function main() {
       await page.evaluate(() => { document.documentElement.style.fontSize = '32px' })
       await page.evaluate(() => document.fonts.ready)
       await assertNoPageOverflow(page, `import/200%/${width}`)
+      checks.push(await assertLargeTextLayout(page, `import/200%/${width}`))
       await shot(page, `round2-import-200-${width}.png`)
       await page.evaluate(() => { document.documentElement.style.fontSize = '' })
     }
-    checks.push('import: 200% root font keeps 320/390 free of page overflow with the model fields open')
+    checks.push('import: 200% root font keeps 320/390 readable: one primary action on its own line, complete step label, bar leaves the body visible')
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.getByRole('button', { name: '准备政策并继续', exact: true }).click()
+    await page.getByRole('button', { name: '准备政策', exact: true }).click()
     await waitTitle(page, '核对政策声明', 12000)
     assert.equal(await page.locator('.m-appbar-brand').count(), 0, 'non-import steps replace the brand slot with the back button')
     assert.equal(await page.getByRole('button', { name: '返回上一步' }).count(), 1, 'non-import steps keep the back arrow')
@@ -538,8 +592,18 @@ async function main() {
     await page.locator('.source-tabs button').first().click()
     await page.getByRole('tab', { name: '候选声明', exact: false }).click()
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.evaluate(() => document.fonts.ready)
     checks.push(await assertTouchTargets(page, 'candidates'))
+    // #295: candidates carry the longest labels; 320px + 200% must still show the
+    // source tab bar, the list rows and one full-width primary action.
+    await page.setViewportSize({ width: 320, height: 568 })
+    await page.evaluate(() => { document.documentElement.style.fontSize = '32px' })
+    await page.evaluate(() => document.fonts.ready)
+    await assertNoPageOverflow(page, 'candidates/200%/320')
+    checks.push(await assertLargeTextLayout(page, 'candidates/200%/320'))
+    await shot(page, 'round2-candidates-200-320.png')
+    await page.evaluate(() => { document.documentElement.style.fontSize = '' })
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.evaluate(() => document.fonts.ready)
     // Soft-keyboard fallback: the hidden height is reserved and the focused field
     // can be scrolled above it; this simulates the measurement, not a real IME.
     await page.locator('#candidate-quote').focus()
@@ -588,9 +652,20 @@ async function main() {
     assert.ok(reset.padding <= 1, 'closing the keyboard must release the reserved space')
     assert.ok(Math.abs(reset.barBottom - 844) <= 1, 'the action bar must return to the bottom edge')
     checks.push('soft keyboard: --keyboard-inset reserves the IME height, lifts the action bar, keeps the field reachable, releases on close')
-    await page.getByRole('button', { name: '保存候选并开始分析', exact: true }).click()
+    await page.getByRole('button', { name: '保存并分析', exact: true }).click()
     await waitTitle(page, '扫描与对照进度', 12000)
-    await page.getByRole('button', { name: '查看报告', exact: true }).waitFor({ timeout: 12000 })
+    // #295: while the job runs the bar only holds light controls; at 200% it must
+    // still leave the status card readable instead of covering most of 320x568.
+    await page.setViewportSize({ width: 320, height: 568 })
+    await page.evaluate(() => { document.documentElement.style.fontSize = '32px' })
+    await page.evaluate(() => document.fonts.ready)
+    await assertNoPageOverflow(page, 'progress/200%/320')
+    checks.push(await assertLargeTextLayout(page, 'progress/200%/320', { expectPrimary: false }))
+    await shot(page, 'round2-progress-200-320.png')
+    await page.evaluate(() => { document.documentElement.style.fontSize = '' })
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.evaluate(() => document.fonts.ready)
+    await page.getByRole('button', { name: '查看报告', exact: true }).waitFor({ timeout: 45000 })
     await page.getByRole('button', { name: '查看报告', exact: true }).click()
     await waitTitle(page, 'APP 隐私收集越权报告', 12000)
     for (const width of [320, 390, 768]) {
@@ -606,10 +681,11 @@ async function main() {
     await page.evaluate(() => { document.documentElement.style.fontSize = '32px' })
     await page.evaluate(() => document.fonts.ready)
     await assertNoPageOverflow(page, 'report/200%/320')
+    checks.push(await assertReportNoteLineHeight(page, 'report/200%/320'))
     await shot(page, 'round2-report-200-320.png')
     await page.evaluate(() => { document.documentElement.style.fontSize = '' })
     await page.setViewportSize({ width: 390, height: 844 })
-    checks.push('report: 200% root font keeps the mobile report inside 320px')
+    checks.push('report: 200% root font keeps the mobile report inside 320px and switches notes to a relative line-height')
     // Inline evidence: open twice, return to the row, exact scroll position.
     await page.evaluate(() => window.scrollTo(0, 0))
     for (let round = 1; round <= 2; round += 1) {

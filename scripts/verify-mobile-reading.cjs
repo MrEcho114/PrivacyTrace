@@ -81,7 +81,7 @@ async function main() {
     await page.keyboard.press('Escape')
     checks.push('settings distinguish remote material storage from device-local model credentials')
 
-    await page.getByRole('button', { name: '保存候选并开始分析', exact: true }).click()
+    await page.getByRole('button', { name: '保存并分析', exact: true }).click()
     await waitTitle(page, '扫描与对照进度', 12000)
     // The flow records real discrete stages: the first poll is 10s after start,
     // the second (SUCCEEDED/report action) uses the 25s interval + jitter.
@@ -93,8 +93,15 @@ async function main() {
     const firstIssue = page.locator('.m-issue-list .evidence-button').first()
     const issueBounds = await firstIssue.boundingBox()
     assert.ok(issueBounds && issueBounds.y >= 0 && issueBounds.y + issueBounds.height < 844, 'a complete conclusion and its evidence action must fit in the first 390x844 viewport')
-    assert.match(await summary.innerText(), /REAL_SCAN/)
-    assert.match(await summary.innerText(), /REPLAY/)
+    // #295: internal origin/delivery codes stay behind “来源标识”; the first screen
+    // keeps the Chinese labels, and the exact codes remain reachable on demand.
+    assert.match(await summary.innerText(), /真实 APK/, 'the summary must name the real-APK origin in Chinese')
+    assert.match(await summary.innerText(), /持久化回放/, 'the summary must name the replay delivery in Chinese')
+    const sourceCode = summary.locator('.reading-source-code')
+    await sourceCode.locator('summary').click()
+    assert.match(await sourceCode.innerText(), /REAL_SCAN/, 'the exact source code must stay reachable')
+    assert.match(await sourceCode.innerText(), /REPLAY/, 'the exact delivery code must stay reachable')
+    await sourceCode.locator('summary').click()
     assert.match(await summary.innerText(), /不证明运行时采集/)
     await capture(page, 'report-390')
     checks.push('report shows one identity, independent origin/delivery labels, and a complete evidence action above the fold')

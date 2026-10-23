@@ -48,7 +48,7 @@ API 与 Worker 的 `PRIVACYTRACE_DELETION_JOURNAL_ROOT` 指向单独命名卷 `d
 常驻七服务以外的 `reclaim` 仅在 `reclamation` profile 下可见；由受控宿主 systemd timer 在业务低峰周期性执行（建议每 30 分钟，实际按备份/任务负载设置），不以后台无限循环进程偷偷替代。仅在部署已完成数据库迁移且具备受限 runtime 角色后运行：
 
 ```bash
-docker compose --env-file /etc/privacytrace/deployment.env -f deploy/compose.yaml \\
+docker compose --env-file /etc/privacytrace/deployment.env -f deploy/compose.yaml \
   --profile reclamation run --rm reclaim
 ```
 

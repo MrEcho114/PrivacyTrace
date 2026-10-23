@@ -2,9 +2,9 @@
 
 后续服务端方向：[公网 API Docker 部署调研与实施方案（2026-10-16）](api-docker-20261016.md)，对应 [Android 总规格 #68](https://github.com/MrEcho114/PrivacyTrace/issues/68)。本轮完成方案与工单调整，容器化及公网服务尚未实现，不改变赛事保底与历史验收。
 
-当前计划：[2026-10-10 Issue 重建与同步记录](2026-10-10-issue-rebuild/README.md) · [落地计划](2026-10-10-issue-rebuild/spec.md) · [验收规范#30](https://github.com/MrEcho114/PrivacyTrace/issues/30)。现有编号保留，已新增[#31双场景闭环](https://github.com/MrEcho114/PrivacyTrace/issues/31)、同步11张、关闭S0#2并核验6条依赖。
+当前计划与落地记录：2026-10-10 Issue 重建与同步记录（`README.md`）、落地计划（`spec.md`）与回读收据（`publication-receipt.json`）未随仓库发布，`docs/planning/2026-10-10-issue-rebuild/` 不在 Git tree 中，本文件不重造其内容；权威入口为 [总索引 #1（2026-10-10 重建，已关闭）](https://github.com/MrEcho114/PrivacyTrace/issues/1) 与 [验收规范 #30](https://github.com/MrEcho114/PrivacyTrace/issues/30)。现有编号保留，已新增[#31双场景闭环](https://github.com/MrEcho114/PrivacyTrace/issues/31)、同步11张、关闭S0#2并核验6条依赖。
 
-[总索引#1](https://github.com/MrEcho114/PrivacyTrace/issues/1) 已于 2026-10-19 关闭并停止维护，仅作历史索引；当前任务状态以各 Issue/PR 的执行记录为准。[回读核验收据](2026-10-10-issue-rebuild/publication-receipt.json)记录本次结果。原始快照和历史文档仍保留。
+[总索引#1](https://github.com/MrEcho114/PrivacyTrace/issues/1) 已于 2026-10-19 关闭并停止维护，仅作历史索引；当前任务状态以各 Issue/PR 的执行记录为准。回读核验收据（`publication-receipt.json`）未随仓库发布，本文件不伪造该收据；当时结果以 #1 及关联 Issue 的既有记录为准。原始快照和历史文档仍保留。
 
 下文是 **2026-10-03 生成的历史索引快照**。其中建仓 SHA、35测试数、未做清单、排期与门禁不代表当前状态。PR29 已合并，S1 已接受且双人门槛已撤销；执行应使用上面的新计划。
 

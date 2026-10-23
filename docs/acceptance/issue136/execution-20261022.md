@@ -26,7 +26,7 @@ cd <repo> && CI=true bash scripts/check.sh
 
 - 起始/结束：`2026-10-21T17:41:47Z` → `2026-10-21T17:52:18Z`（UTC），退出码 0。
 - 摘要：`1578 passed, 179 skipped, 3 warnings in 299.23s`；e2e `65 passed`；Web `111 pass`；`PrivacyTrace checks passed.`。
-- 完整日志：[r01/check.log](evidence/final-65b49f7/r01/check.log)。
+- 完整日志未随仓库发布：`r01/check.log` 不在 Git tree 中（根目录 `.gitignore` 的 `*.log` 使其默认不跟踪），本记录不合成或补发日志；可复核的已跟踪收据见 [r02–r04 JSON 收据](evidence/final-65b49f7/)，R01 摘要见上一条。
 - 已知假失败说明：`scripts/check.sh` 在本机 Linux/WSL 下可自举（`python3 -m venv`）；Windows Git Bash 侧的历史 `bin/python` 问题未在本轮复现（BUG-136-01 仅在本轮环境记为“未复现”，不改变历史记录）。
 - 运行期间仓库内 `evidence/` 下的浏览器截图与 `browser-proof.json` 被 R03 写为已跟踪文件，导致 `git status` 有 11 个已跟踪改动；`apps/`、`scripts/`、`deploy/`、`rules/` 等源码路径无改动（`git diff --stat` 仅 evidence/*）。
 

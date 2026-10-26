@@ -1,0 +1,15 @@
+{
+  "name": "PT-906 competition freeze tag",
+  "target": "tag",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": ["refs/tags/pt-906-freeze-*"],
+      "exclude": []
+    }
+  },
+  "rules": [
+    { "type": "deletion" },
+    { "type": "update" }
+  ]
+}

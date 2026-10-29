@@ -29,6 +29,7 @@ the final diff is reviewed — or until a genuine human decision boundary is rea
 
 - 项目：PrivacyTrace；Android APK 静态证据与政策声明对照，不判断违法/安全/实际采集。
 - 默认分支：`main`；短期任务分支：`codex/`；保留现有 Git，不自动迁移 jj。
+- 2026-10-23 参赛作品已通过平台审核，进入 PT-906 冻结：不覆盖已提交材料与其私有原件；控制单 #307，记录 `docs/stages/pt906-freeze-20261026.md`；开发在独立分支继续，不把新提交称为已审核参赛版。
 - 权威验证：`bash scripts/check.sh`（Windows 用 Git for Windows Bash）；PowerShell 入口 `scripts/check.ps1` 委托同一脚本，`pwsh -NoProfile -File scripts/check.ps1`（PowerShell 7）或 `powershell -NoProfile -File scripts/check.ps1`（5.1）都行。
 - 本机环境纪律（跨 shell 命令写法、恢复入口、已知假失败）：`docs/agents/local-environment.md`。
 - 发布分支前跑 `bash scripts/preflight.sh`（快，抓 lint/语法）；冻结 head、重建包或排查网络/容器/设备前跑 `bash scripts/agent-env-probe.sh`（报告真实环境，别信记忆）。
@@ -36,7 +37,7 @@ the final diff is reviewed — or until a genuine human decision boundary is rea
 - 当前任务来自 Issue 或用户直接授权；小任务不要求另填表或补造工单编号。
 - 2026-10-09 用户撤销 S1 双人逐条 comment/签字门槛，接受现有技术核验；见 `docs/stages/s1-acceptance-20261009.md`。不再因缺 A/B 表单阻塞交付。
 - PR 信息、验证记录、五项自审由交付代理填写，不要求用户重复填表。用户只提出目标、回答必要的范围问题、决定是否合并。
-- 合并/发布/部署不包含在一般“通过验收”中；本次不自动合并 #27/#28/#29，不改远端保护设置。
+- 合并/发布/部署不包含在一般“通过验收”中；不自动合并 PR，不改远端保护设置（#307 的规则集由仓库管理员另行应用）。
 - APK/完整政策/反编译全文、密钥、数据库和本机私有路径不提交；真实 APK 仅在受限 Docker 中处理。
 - 权限是能力，invoke 是静态潜在线索；事实、声明、推断分开，未知保留 UNKNOWN。
 - 政策 UNREVIEWED/PARTIAL/附件未检查仍为数据事实；取消团队流程不把政策标为已复核，不降低引擎缺证据条件。

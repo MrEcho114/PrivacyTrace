@@ -9,7 +9,7 @@ PrivacyTrace 拿 Android 安装包和它的隐私政策原文做对照。它从 
 
 产品入口只有一个：Android App，也就是 `apps/mobile` 的 Tauri 2 壳加载移动界面。想零安装看一眼，用断网只读的离线回放包。浏览器工作台和 Web 构建产物扮演另外的角色，App 的界面来源、工程验收介质、离线回放载体，既不是第二个客户端，也不是产品入口。口径见 [ADR-0004](docs/adr/0004-client-is-android-app.md)。
 
-项目准备参加 2026 年第十四届数媒竞赛。API、隔离扫描和部署基线在 main 上，Android 客户端主流程也合了。2026-10-22 的提交前最终验收已经收口，结论是没有全部通过：失败项和未跑项按原样留在 [#128](https://github.com/MrEcho114/PrivacyTrace/issues/128) 的记录里，项目接受现状，不补跑也不改判。正式提交和回执由 [#107](https://github.com/MrEcho114/PrivacyTrace/issues/107) 跟踪，工程节点不等于赛事结果。
+项目参加 2026 年第十四届数媒竞赛，作品已于 2026-10-23 由赛事系统显示「通过审核」（负责人提供的页面证据，不等于获奖）。已提交的 ZIP、评审视频、PPT、截图与承诺书进入 PT-906 冻结：团队变更约束见 [#307](https://github.com/MrEcho114/PrivacyTrace/issues/307)，仓库侧赛用基线 tag 为 `pt-906-freeze-20261023`，冻结记录见 [PT-906 冻结收口](docs/stages/pt906-freeze-20261026.md)。2026-10-22 的提交前最终验收结论仍是未全部通过，失败项和未跑项按原样留在 [#128](https://github.com/MrEcho114/PrivacyTrace/issues/128)，项目接受现状，不补跑也不改判。平台附件的实际字节、SHA 与提交时间尚未取回，归 [#196](https://github.com/MrEcho114/PrivacyTrace/issues/196)/[#197](https://github.com/MrEcho114/PrivacyTrace/issues/197)；工程节点与审核通过都不等于获奖。
 
 ## 界面预览
 
@@ -182,15 +182,16 @@ CI 通过、真实 Docker 运行、受控评测、离线验收、正式提交，
 | [S1 真实 APK 分析](https://github.com/MrEcho114/PrivacyTrace/issues/3) | 完成 | 隔离扫描、作业存储、Web 报告和证据下钻 |
 | [S2 六场景评测](https://github.com/MrEcho114/PrivacyTrace/issues/4) | 完成 | C01–C06 源码构建、三方案比较、浏览器和离线回放 |
 | [P1 扩展评测](https://github.com/MrEcho114/PrivacyTrace/issues/6) | 主要交付完成 | C07–C12 经 [PR #76](https://github.com/MrEcho114/PrivacyTrace/pull/76) 合入，合计 12 个场景、36 行比较；[#65](https://github.com/MrEcho114/PrivacyTrace/issues/65) 的理解测试已交付并关闭 |
-| [Android 客户端](https://github.com/MrEcho114/PrivacyTrace/issues/68) | 主流程已合入 | 提交前最终验收已收口，结论是未全部通过，失败项和未跑项见 [#128](https://github.com/MrEcho114/PrivacyTrace/issues/128) |
+| [Android 客户端](https://github.com/MrEcho114/PrivacyTrace/issues/68) | 主流程已合入 | 截至 2026-10-22，提交前最终验收已收口，结论是未全部通过；失败项和未跑项见 [#128](https://github.com/MrEcho114/PrivacyTrace/issues/128)，不用赛事审核状态覆盖工程结论 |
 | [服务端部署](https://github.com/MrEcho114/PrivacyTrace/issues/81) | 基线已合入 | R1–R6 验收脚本在 main 的 CI 跑通；独立扫描主机和跨机防火墙按授权记为豁免，不算通过；生产门禁关着 |
-| [S3 竞赛交付](https://github.com/MrEcho114/PrivacyTrace/issues/5) | 内部交付完成 | 离线包和材料已归档；正式提交和回执见 [#107](https://github.com/MrEcho114/PrivacyTrace/issues/107) |
+| [S3 竞赛交付](https://github.com/MrEcho114/PrivacyTrace/issues/5) | 已提交并通过审核 | 2026-10-23 平台显示通过审核，[#107](https://github.com/MrEcho114/PrivacyTrace/issues/107) 已关闭；实际附件身份与合规归档归 [#196](https://github.com/MrEcho114/PrivacyTrace/issues/196)/[#197](https://github.com/MrEcho114/PrivacyTrace/issues/197) |
+| [PT-906 赛事冻结](https://github.com/MrEcho114/PrivacyTrace/issues/307) | 生效中 | 已提交材料与其私有原件不再覆盖；仓库侧 tag `pt-906-freeze-20261023`，记录见 [PT-906 冻结收口](docs/stages/pt906-freeze-20261026.md) |
 | 理解测试 | 已完成（探索性） | 6 人测试的公开摘要见 [PT-907 理解测试](docs/stages/pt907-user-study-20261019.md)；[#65](https://github.com/MrEcho114/PrivacyTrace/issues/65) 于 2026-10-21 关闭 |
 | 前端打磨 | 已完成 | [#141](https://github.com/MrEcho114/PrivacyTrace/issues/141)–[#146](https://github.com/MrEcho114/PrivacyTrace/issues/146) 的 Pioneer 视觉与交互打磨在 2026-10-22 关闭；移动端 UI/UX 修订 [#295](https://github.com/MrEcho114/PrivacyTrace/issues/295) 经 [PR #302](https://github.com/MrEcho114/PrivacyTrace/pull/302) 于 2026-10-23 合入 |
 
 收口不等于通过。2026-10-22 的最终验收按「计划执行完了、结论是未全部通过、缺口已记录」关闭，项目接受现状，不补跑、不开新票。关闭不改变记录里的失败项和未跑项。
 
-赛事边界：内部验包通过，不等于公开发布，也不等于在竞赛平台提交过。材料要求以 [赛事指南 #74](https://github.com/MrEcho114/PrivacyTrace/issues/74)、[正式提交 #107](https://github.com/MrEcho114/PrivacyTrace/issues/107) 和官方通知为准；官方截止是全国统一时间 2026-10-23 23:59:59，本项目没有校内提交环节。系统提交和回执以 #107 的当前记录为准，README 不预写完成态。
+赛事边界：平台显示「通过审核」不等于获奖，也不等于已取回附件逐字节核对。材料要求以 [赛事指南 #74](https://github.com/MrEcho114/PrivacyTrace/issues/74)、[正式提交 #107](https://github.com/MrEcho114/PrivacyTrace/issues/107) 和官方通知为准；官方截止为全国统一时间 2026-10-23 23:59:59，本项目没有校内提交环节。实际提交件、平台回执与附件哈希以 #196/#197 的记录为准，README 不把候选包 SHA 写成已上传件 SHA。
 
 ## 文档与协作
 

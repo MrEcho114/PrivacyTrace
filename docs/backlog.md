@@ -1,5 +1,9 @@
 # PT 任务清单
 
+## 2026-10-26 PT-906 赛事冻结（审核通过后）
+
+作品于 2026-10-23 通过平台审核（负责人提供的系统页面；[#107](https://github.com/MrEcho114/PrivacyTrace/issues/107) 已关闭），进入冻结期：已提交材料与私有原件不再覆盖，开发在独立分支继续。团队变更约束见 [#307](https://github.com/MrEcho114/PrivacyTrace/issues/307)；仓库侧赛用基线 tag 为 `pt-906-freeze-20261023`（annotated，指向 `a6b3a27`，不在 main 历史），记录见 [PT-906 冻结收口](stages/pt906-freeze-20261026.md)。平台附件的实际字节、SHA 与提交时间未回验，归 [#196](https://github.com/MrEcho114/PrivacyTrace/issues/196)/[#197](https://github.com/MrEcho114/PrivacyTrace/issues/197)；分支与 tag 保护规则因当前账号无 admin 权限未创建。S3 的“内部交付／未参赛”表述只代表 2026-10-19 时点。
+
 ## 2026-10-23 PT-MOB-301 验收记录归档
 
 [#291](https://github.com/MrEcho114/PrivacyTrace/issues/291) 与 [#301](https://github.com/MrEcho114/PrivacyTrace/issues/301) 两份执行记录已整理为 [归档](acceptance/pt-mob-301/README.md) 并关闭。两条记录基线不同（`682ca54` / `83a7983`）、覆盖不同（#291 为基线整合 + 部署电池，#301 为完整 R01–R04 + F + H/N 复核），结论不互相替代；#301 的 10 份回执已入库，未处理缺口与待决事项见归档第 5、6 节。

@@ -31,7 +31,7 @@
 ## 影响与后续
 
 - 历史材料不回改：`docs/stages/*`、`docs/acceptance/*` 等在“许可待定”时期产生的记录保留当时状态与 SHA。
-- 提交包副本与仓库外文案需在下一次重打包时同步：`scripts/export-offline.py` 已改为写明 MIT，已生成的包副本（如 `demo-web/DISTRIBUTION.txt` 的“源码许可待定”）仍待 #224 重冻结时更新。
+- 提交包副本与仓库外文案已随 v5–v7 重打包同步：`scripts/export-offline.py` 写明 MIT，`demo-web/DISTRIBUTION.txt` 的“源码许可待定”已清理；[#224](https://github.com/MrEcho114/PrivacyTrace/issues/224) 已于 2026-10-22 关闭，后续冻结见 [#307](https://github.com/MrEcho114/PrivacyTrace/issues/307)。
 - 版权人写法为 `PrivacyTrace contributors`；若赛事申报需要具名单位或个人，应在首次对外正式发布前定稿，并把定稿写回本 ADR。
 - 依赖许可变化时按 #223 的清单重新核对，不沿用旧结论。
 

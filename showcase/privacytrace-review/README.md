@@ -17,7 +17,7 @@
 - 受控 12 场景：状态一致 12/12；API 基线 4/12；权限 + 关键词 2/12。
 - 真实 App 仅 1 个历史样本（GKD v1.12.1），3 条结论均为 `INSUFFICIENT_EVIDENCE`。
 - 界面：Android App 390×844 移动视口模拟（生产 `MobileApp.vue` + 假原生桥）。
-- 提交状态以报名系统实际提交与回执为准；本目录只固定材料版本与哈希。
+- 2026-10-23 平台显示「通过审核」（[#107](https://github.com/MrEcho114/PrivacyTrace/issues/107)）；实际附件取回与哈希比对归 [#196](https://github.com/MrEcho114/PrivacyTrace/issues/196)/[#197](https://github.com/MrEcho114/PrivacyTrace/issues/197)。本目录只固定材料版本与哈希。
 
 ## 生成
 
